@@ -1,0 +1,232 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2025-09-30 07:25:25.661428",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "mission_details_section",
+  "naming_series",
+  "title_of_mission",
+  "company",
+  "column_break_ehba",
+  "date_of_visit",
+  "section_break_ozuk",
+  "accompanying_staff",
+  "section_break_calj",
+  "mission_background",
+  "section_break_7hzn",
+  "amended_from",
+  "objectives_approach_tab",
+  "specific_objectives_section",
+  "objectives",
+  "proposed_approach_section",
+  "approach_methods",
+  "stakeholders_section",
+  "stakeholders",
+  "itinerary_outputs_resources_tab",
+  "itinerary_section",
+  "itinerary",
+  "expected_outputs_section",
+  "expected_outputs",
+  "resources_section",
+  "resources"
+ ],
+ "fields": [
+  {
+   "fieldname": "mission_details_section",
+   "fieldtype": "Section Break",
+   "label": "Mission Details"
+  },
+  {
+   "default": "TOR-.YYYY.-.######",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Naming Series",
+   "options": "TOR-.YYYY.-.######",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title_of_mission",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title of Mission",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Region / Branch",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ehba",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_of_visit",
+   "fieldtype": "Date",
+   "label": "Date of Visit"
+  },
+  {
+   "fieldname": "section_break_ozuk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "accompanying_staff",
+   "fieldtype": "Table",
+   "label": "Accompanying Staff",
+   "options": "TOR Accompanying Staff"
+  },
+  {
+   "fieldname": "section_break_calj",
+   "fieldtype": "Section Break",
+   "label": "Mission Background"
+  },
+  {
+   "fieldname": "mission_background",
+   "fieldtype": "Text Editor",
+   "in_list_view": 1,
+   "label": "Mission Background",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_7hzn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Personnel Terms of Reference",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "objectives_approach_tab",
+   "fieldtype": "Tab Break",
+   "label": "Objectives, Approach & Stakeholders"
+  },
+  {
+   "fieldname": "specific_objectives_section",
+   "fieldtype": "Section Break",
+   "label": "Specific Objectives"
+  },
+  {
+   "fieldname": "objectives",
+   "fieldtype": "Table",
+   "label": "Objectives",
+   "options": "TOR Objectives"
+  },
+  {
+   "fieldname": "proposed_approach_section",
+   "fieldtype": "Section Break",
+   "label": "Proposed Approach"
+  },
+  {
+   "fieldname": "approach_methods",
+   "fieldtype": "Table",
+   "label": "Approach Methods",
+   "options": "TOR Approach Methods"
+  },
+  {
+   "fieldname": "stakeholders_section",
+   "fieldtype": "Section Break",
+   "label": "Stakeholders"
+  },
+  {
+   "fieldname": "stakeholders",
+   "fieldtype": "Table",
+   "label": "Stakeholders",
+   "options": "TOR Stakeholders"
+  },
+  {
+   "fieldname": "itinerary_outputs_resources_tab",
+   "fieldtype": "Tab Break",
+   "label": "Itinerary, Outputs & Resources"
+  },
+  {
+   "fieldname": "itinerary_section",
+   "fieldtype": "Section Break",
+   "label": "Itinerary"
+  },
+  {
+   "fieldname": "itinerary",
+   "fieldtype": "Table",
+   "label": "Itinerary",
+   "options": "TOR Itinerary"
+  },
+  {
+   "fieldname": "expected_outputs_section",
+   "fieldtype": "Section Break",
+   "label": "Expected Outputs"
+  },
+  {
+   "fieldname": "expected_outputs",
+   "fieldtype": "Table",
+   "label": "Expected Outputs",
+   "options": "TOR Outputs"
+  },
+  {
+   "fieldname": "resources_section",
+   "fieldtype": "Section Break",
+   "label": "Resources"
+  },
+  {
+   "fieldname": "resources",
+   "fieldtype": "Table",
+   "label": "Resources",
+   "options": "TOR Resources"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Deployment",
+   "link_doctype": "Personnel Deployment Request",
+   "link_fieldname": "terms_of_reference"
+  },
+  {
+   "group": "Deployment",
+   "link_doctype": "Personnel Deployment Assignment",
+   "link_fieldname": "terms_of_reference"
+  }
+ ],
+ "modified": "2025-10-16 10:30:20.208465",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "Personnel Terms of Reference",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "title_of_mission,company",
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title_of_mission",
+ "translated_doctype": 1
+}

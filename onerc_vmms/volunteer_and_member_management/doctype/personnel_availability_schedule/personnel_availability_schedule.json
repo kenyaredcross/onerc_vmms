@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PAS-{YYYY}-{MM}-{####}",
+ "creation": "2025-09-20 10:58:44.941178",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_rhcn",
+  "employee",
+  "employee_name",
+  "section_break_xogz",
+  "start_date",
+  "end_date",
+  "column_break_phbe",
+  "fiscal_year",
+  "section_break_ylly",
+  "schedules",
+  "tab_break_pdfh",
+  "available_days_section",
+  "available_days"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_rhcn",
+   "fieldtype": "Section Break",
+   "label": "Employee Details"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fetch_from": "employee.first_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_xogz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "fiscal_year.year_start_date",
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Start Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "fiscal_year.year_end_date",
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "End Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_phbe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fiscal_year",
+   "fieldtype": "Link",
+   "label": "Fiscal Year",
+   "options": "Fiscal Year"
+  },
+  {
+   "fieldname": "section_break_ylly",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "schedules",
+   "fieldtype": "Table",
+   "label": "Schedules",
+   "options": "Schedule"
+  },
+  {
+   "fieldname": "tab_break_pdfh",
+   "fieldtype": "Tab Break",
+   "label": "Availability Slots"
+  },
+  {
+   "fieldname": "available_days_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "available_days",
+   "fieldtype": "Table",
+   "label": "Available Days",
+   "options": "Weekly Schedule Pattern"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-16 10:30:17.886292",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "Personnel Availability Schedule",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

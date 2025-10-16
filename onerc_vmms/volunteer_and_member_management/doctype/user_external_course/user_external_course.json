@@ -1,0 +1,78 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-20 18:25:43.691959",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "course_name",
+  "institution",
+  "date_completed",
+  "column_break_jyfw",
+  "remarks",
+  "attachment"
+ ],
+ "fields": [
+  {
+   "fieldname": "course_name",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Course Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "institution",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Institution",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_completed",
+   "fieldtype": "Date",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Date Completed"
+  },
+  {
+   "fieldname": "column_break_jyfw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Attachment"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-10-16 10:30:12.823198",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "User External Course",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

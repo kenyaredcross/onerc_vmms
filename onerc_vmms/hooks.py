@@ -2,7 +2,7 @@ app_name = "onerc_vmms"
 app_title = "Volunteer and Member Management"
 app_publisher = "Kenya Red Cross Society"
 app_description = "Volunteer and Member Management"
-app_email = "onerc@redcross.or.ke"
+app_email = "digital@redcross.or.ke"
 app_license = "gpl-3.0"
 
 # Apps
@@ -241,4 +241,3 @@ app_license = "gpl-3.0"
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-
