@@ -1,0 +1,387 @@
+{
+ "actions": [],
+ "allow_guest_to_view": 1,
+ "allow_import": 1,
+ "autoname": "HR-OPN-TEMP-.YYYY.-.####",
+ "creation": "2025-10-07 06:17:35.268689",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "job_details_section",
+  "opportunity_type",
+  "column_break_5",
+  "designation",
+  "section_break_nngy",
+  "company",
+  "department",
+  "column_break_dxpv",
+  "employment_type",
+  "location",
+  "section_break_6",
+  "publish",
+  "column_break_12",
+  "publish_applications_received",
+  "section_break_14",
+  "description",
+  "section_break_16",
+  "currency",
+  "lower_range",
+  "upper_range",
+  "column_break_20",
+  "salary_per",
+  "publish_salary_range",
+  "amended_from",
+  "screening_requirements",
+  "enable_autograding",
+  "disqualify_if_requirement_not_met",
+  "column_break_unps0",
+  "minimum_pass_score",
+  "minimum_education",
+  "minimum_qualification_level",
+  "allow_equivalent_experience",
+  "column_break_rlcns",
+  "required_gpa__grade",
+  "column_break_617ar",
+  "preferred_field_of_study",
+  "minimum_experience",
+  "minimum_years_of_experience",
+  "column_break_vf32z",
+  "experience_area",
+  "column_break_ljgkc",
+  "disqualify_if_below_minimum",
+  "certifications__skills",
+  "required_skills",
+  "required_licences",
+  "required_attachments_section",
+  "required_attachments",
+  "screening_questions_tab",
+  "screening_questions_section",
+  "screening_questions"
+ ],
+ "fields": [
+  {
+   "fieldname": "job_details_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "opportunity_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Opportunity Type",
+   "options": "\nInternal\nGuest",
+   "translatable": 1
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation"
+  },
+  {
+   "fieldname": "section_break_nngy",
+   "fieldtype": "Section Break",
+   "label": "Company Details"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "column_break_dxpv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employment_type",
+   "fieldtype": "Link",
+   "label": "Employment Type",
+   "options": "Employment Type"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "label": "Location",
+   "options": "Branch"
+  },
+  {
+   "fieldname": "section_break_6",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "publish",
+   "fieldtype": "Check",
+   "label": "Publish on website"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "depends_on": "publish",
+   "description": "If enabled, the total no. of applications received for this opening will be displayed on the website",
+   "fieldname": "publish_applications_received",
+   "fieldtype": "Check",
+   "label": "Publish Applications Received"
+  },
+  {
+   "fieldname": "section_break_14",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Job profile, qualifications required etc.",
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_16",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "lower_range",
+   "fieldtype": "Currency",
+   "label": "Lower Range",
+   "options": "currency",
+   "precision": "0"
+  },
+  {
+   "fieldname": "upper_range",
+   "fieldtype": "Currency",
+   "label": "Upper Range",
+   "options": "currency",
+   "precision": "0"
+  },
+  {
+   "fieldname": "column_break_20",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Month",
+   "fieldname": "salary_per",
+   "fieldtype": "Select",
+   "label": "Salary Paid Per",
+   "options": "Month\nYear"
+  },
+  {
+   "default": "0",
+   "fieldname": "publish_salary_range",
+   "fieldtype": "Check",
+   "label": "Publish Salary Range"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Job Opening Template",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "screening_requirements",
+   "fieldtype": "Tab Break",
+   "label": "Requirements"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_autograding",
+   "fieldtype": "Check",
+   "label": "Enable Auto-Grading"
+  },
+  {
+   "default": "0",
+   "fieldname": "disqualify_if_requirement_not_met",
+   "fieldtype": "Check",
+   "label": "Disqualify if Requirement Not Met"
+  },
+  {
+   "fieldname": "column_break_unps0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "minimum_pass_score",
+   "fieldtype": "Float",
+   "label": "Minimum Pass Score"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "minimum_education",
+   "fieldtype": "Section Break",
+   "label": "Minimum Education"
+  },
+  {
+   "fieldname": "minimum_qualification_level",
+   "fieldtype": "Select",
+   "label": "Minimum Qualification Level",
+   "options": "\nPrimary\nSecondary / High School\nUndergraduate\nGraduate\nPostgraduate",
+   "translatable": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_equivalent_experience",
+   "fieldtype": "Check",
+   "label": "Allow Equivalent Experience"
+  },
+  {
+   "fieldname": "column_break_rlcns",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "required_gpa__grade",
+   "fieldtype": "Data",
+   "label": "Required GPA / Grade",
+   "translatable": 1
+  },
+  {
+   "fieldname": "column_break_617ar",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "preferred_field_of_study",
+   "fieldtype": "Data",
+   "label": "Preferred Field of Study",
+   "translatable": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "minimum_experience",
+   "fieldtype": "Section Break",
+   "label": "Minimum Experience"
+  },
+  {
+   "fieldname": "minimum_years_of_experience",
+   "fieldtype": "Float",
+   "label": "Minimum Years of Experience"
+  },
+  {
+   "fieldname": "column_break_vf32z",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "e.g., Software Development, Project Management",
+   "fieldname": "experience_area",
+   "fieldtype": "Data",
+   "label": "Experience Area",
+   "translatable": 1
+  },
+  {
+   "fieldname": "column_break_ljgkc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "disqualify_if_below_minimum",
+   "fieldtype": "Check",
+   "label": "Disqualify if Below Minimum"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "certifications__skills",
+   "fieldtype": "Section Break",
+   "label": "Certifications & Skills"
+  },
+  {
+   "fieldname": "required_skills",
+   "fieldtype": "Table",
+   "label": "Required Skills",
+   "options": "Designation Skill"
+  },
+  {
+   "fieldname": "required_licences",
+   "fieldtype": "Table",
+   "label": "Required Licences",
+   "options": "Personnel Licence"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "required_attachments_section",
+   "fieldtype": "Section Break",
+   "label": "Required Attachments"
+  },
+  {
+   "fieldname": "required_attachments",
+   "fieldtype": "Table",
+   "label": "Required Attachments",
+   "options": "Required Attachments"
+  },
+  {
+   "fieldname": "screening_questions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Screening Questions"
+  },
+  {
+   "fieldname": "screening_questions_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "screening_questions",
+   "fieldtype": "Table",
+   "label": "Screening Questions",
+   "options": "Job Application Screening Questions"
+  }
+ ],
+ "icon": "fa fa-bookmark",
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "Job Opening",
+   "link_fieldname": "job_opening_template"
+  }
+ ],
+ "modified": "2025-10-16 10:30:09.110137",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "Job Opening Template",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "ASC",
+ "states": [
+  {
+   "color": "Green",
+   "title": "Open"
+  },
+  {
+   "color": "Gray",
+   "title": "Closed"
+  }
+ ]
+}

@@ -1,0 +1,352 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PDR-{YYYY}-{MM}-{####}",
+ "creation": "2025-09-18 14:01:42.591353",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_tab",
+  "details_section",
+  "project",
+  "task",
+  "location",
+  "column_break_qbmp",
+  "expected_start_date",
+  "expected_end_date",
+  "column_break_qlgy",
+  "company",
+  "number_of_volunteers_required",
+  "notification_channels",
+  "require_contract_before_deployment",
+  "terms_section",
+  "terms_of_reference",
+  "term_details",
+  "approvers_section",
+  "deployment_approver",
+  "column_break_lfwy",
+  "advance_approver",
+  "expense_approver",
+  "section_break_rmvn",
+  "notes",
+  "quick_filters_section",
+  "companies",
+  "department",
+  "employment_type",
+  "designation",
+  "column_break_jhih",
+  "courses",
+  "skills",
+  "licences",
+  "filter_criteria",
+  "advanced_filters_section",
+  "filter_list",
+  "select_employees_section",
+  "employee_list"
+ ],
+ "fields": [
+  {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details",
+   "show_dashboard": 1
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Task",
+   "options": "Task",
+   "search_index": 1
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "label": "Location",
+   "options": "Location",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_qbmp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expected_start_date",
+   "fieldtype": "Datetime",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Expected Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_end_date",
+   "fieldtype": "Datetime",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Expected End Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_qlgy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "project.company",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Company / Branch",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "number_of_volunteers_required",
+   "fieldtype": "Int",
+   "label": "Number of Volunteers Required",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "notification_channels",
+   "fieldtype": "Table MultiSelect",
+   "label": "Notification Channels",
+   "options": "Notification Channel Item"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_contract_before_deployment",
+   "fieldtype": "Check",
+   "label": "Require Contract Before Deployment"
+  },
+  {
+   "fieldname": "terms_section",
+   "fieldtype": "Section Break",
+   "label": "Terms"
+  },
+  {
+   "fieldname": "terms_of_reference",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Terms of Reference",
+   "options": "Personnel Terms of Reference",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "term_details",
+   "fieldtype": "Text Editor",
+   "hidden": 1,
+   "label": "Term Details"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "approvers_section",
+   "fieldtype": "Section Break",
+   "label": "Approvers"
+  },
+  {
+   "fieldname": "deployment_approver",
+   "fieldtype": "Link",
+   "label": "Deployment Approver",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_lfwy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "advance_approver",
+   "fieldtype": "Link",
+   "label": "Advance Approver",
+   "options": "User"
+  },
+  {
+   "fieldname": "expense_approver",
+   "fieldtype": "Link",
+   "label": "Expense Approver",
+   "options": "User"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_rmvn",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "quick_filters_section",
+   "fieldtype": "Section Break",
+   "label": "Quick Filters"
+  },
+  {
+   "fieldname": "companies",
+   "fieldtype": "Table MultiSelect",
+   "label": "Companies",
+   "options": "Company Item"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Table MultiSelect",
+   "hidden": 1,
+   "label": "Department",
+   "options": "Department Item"
+  },
+  {
+   "fieldname": "employment_type",
+   "fieldtype": "Table MultiSelect",
+   "label": "Personnel Type",
+   "options": "Employment Type Item"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Table MultiSelect",
+   "label": "Designation",
+   "options": "Designation Item"
+  },
+  {
+   "fieldname": "column_break_jhih",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "courses",
+   "fieldtype": "Table MultiSelect",
+   "label": "Courses",
+   "options": "Related Courses"
+  },
+  {
+   "fieldname": "skills",
+   "fieldtype": "Table MultiSelect",
+   "label": "Skills",
+   "options": "Volunteer Skill"
+  },
+  {
+   "fieldname": "licences",
+   "fieldtype": "Table MultiSelect",
+   "label": "Licences",
+   "options": "Personnel Licence Item"
+  },
+  {
+   "default": "Availability",
+   "fieldname": "filter_criteria",
+   "fieldtype": "Link",
+   "label": "Filter Criteria",
+   "options": "Volunteer Deployment Criteria"
+  },
+  {
+   "fieldname": "advanced_filters_section",
+   "fieldtype": "Section Break",
+   "label": "Advanced Filters"
+  },
+  {
+   "fieldname": "filter_list",
+   "fieldtype": "HTML",
+   "label": "Filter List"
+  },
+  {
+   "fieldname": "select_employees_section",
+   "fieldtype": "Section Break",
+   "label": "Select Employees"
+  },
+  {
+   "fieldname": "employee_list",
+   "fieldtype": "HTML",
+   "label": "Employee List"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "group": "Deployment",
+   "link_doctype": "Personnel Deployment Assignment",
+   "link_fieldname": "deployment"
+  },
+  {
+   "group": "Support",
+   "link_doctype": "Issue",
+   "link_fieldname": "personnel_deployment_request"
+  },
+  {
+   "group": "Material",
+   "link_doctype": "Material Request",
+   "link_fieldname": "personnel_deployment_request"
+  },
+  {
+   "group": "Claims",
+   "link_doctype": "Expense Claim",
+   "link_fieldname": "personnel_deployment_request"
+  },
+  {
+   "group": "Claims",
+   "link_doctype": "Employee Advance",
+   "link_fieldname": "personnel_deployment_request"
+  },
+  {
+   "group": "Activity",
+   "link_doctype": "Timesheet",
+   "link_fieldname": "personnel_deployment_request"
+  },
+  {
+   "group": "Contract",
+   "link_doctype": "Contract",
+   "link_fieldname": "personnel_deployment_request"
+  }
+ ],
+ "modified": "2025-10-16 10:30:19.290287",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "Personnel Deployment Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
