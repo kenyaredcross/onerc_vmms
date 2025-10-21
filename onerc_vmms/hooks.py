@@ -241,3 +241,5 @@ app_license = "gpl-3.0"
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
+
+website_route_rules = [{'from_route': '/vmms/<path:app_path>', 'to_route': 'vmms'},]
