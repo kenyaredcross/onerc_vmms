@@ -1,4 +1,4 @@
-import { usersStore } from "./stores/user";
+import { userStore } from "./stores/user";
 import { sessionStore } from "./stores/session";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -22,7 +22,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
 	const { isLoggedIn } = sessionStore();
-	const { userResource } = usersStore();
+	const { userResource } = userStore();
 	try {
 		await userResource.promise;
 	} catch (error) {

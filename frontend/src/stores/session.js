@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
 import { createResource } from "frappe-ui";
-import { usersStore } from "./user";
+import { userStore } from "./user";
 import router from "@/router";
 import { computed, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 export const sessionStore = defineStore("vmms-session", () => {
-	let { userResource } = usersStore();
+	let { userResource } = userStore();
 	const brand = reactive({});
 
 	function sessionUser() {
@@ -20,7 +20,7 @@ export const sessionStore = defineStore("vmms-session", () => {
 
 	let user = ref(sessionUser());
 	const isLoggedIn = computed(() => !!user.value);
-  const route = useRoute();
+	const route = useRoute();
 
 	const login = createResource({
 		url: "login",
