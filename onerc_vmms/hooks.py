@@ -12,14 +12,24 @@ app_license = "gpl-3.0"
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
-# 	{
-# 		"name": "onerc_vmms",
-# 		"logo": "/assets/onerc_vmms/logo.png",
-# 		"title": "Volunteer and Member Management",
-# 		"route": "/onerc_vmms",
-# 		"has_permission": "onerc_vmms.api.permission.has_app_permission"
-# 	}
+#     {
+#         "name": "vmms",
+#         "logo": "/assets/onerc_vmms/frontend/vmms.png",
+#         "title": "VMMS",
+#         "route": "/vmms",
+#         "has_permission": "onerc_vmms.api.permission.has_app_permission",
+#     }
 # ]
+
+add_to_apps_screen = [
+    {
+        "name": "vmms",
+        "logo": "/assets/onerc_vmms/frontend/vmms.png",
+        "title": "VMMS",
+        "route": "/vmms",
+        "has_permission": "onerc_vmms.api.permission.check_app_permission",
+    }
+]
 
 # Includes in <head>
 # ------------------
@@ -242,4 +252,6 @@ app_license = "gpl-3.0"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
-website_route_rules = [{'from_route': '/vmms/<path:app_path>', 'to_route': 'vmms'},]
+website_route_rules = [
+    {"from_route": "/vmms/<path:app_path>", "to_route": "vmms"},
+]
