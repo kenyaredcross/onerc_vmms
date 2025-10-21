@@ -8,7 +8,17 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Apps: typeof import('./src/components/Apps.vue')['default']
+    AppSidebar: typeof import('./src/components/AppSidebar.vue')['default']
+    CollapseSidebar: typeof import('./src/components/Icons/CollapseSidebar.vue')['default']
+    DesktopLayout: typeof import('./src/components/DesktopLayout.vue')['default']
+    FrappeCloudIcon: typeof import('./src/components/Icons/FrappeCloudIcon.vue')['default']
+    MobileLayout: typeof import('./src/components/MobileLayout.vue')['default']
+    NoSideBarLayout: typeof import('./src/components/NoSideBarLayout.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SidebarLink: typeof import('./src/components/SidebarLink.vue')['default']
+    UserDropdown: typeof import('./src/components/UserDropdown.vue')['default']
+    VMMSLogo: typeof import('./src/components/VMMSLogo.vue')['default']
   }
 }
