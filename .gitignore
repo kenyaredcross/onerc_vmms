@@ -5,3 +5,8 @@
 tags
 node_modules
 __pycache__
+
+/frontend/node_modules
+/frontend/package-lock.json
+/frontend/yarn.lock
+/public/frontend
