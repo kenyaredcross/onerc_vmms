@@ -207,16 +207,7 @@ function submit() {
   if (isLogin.value) {
     session.login.submit(
       { usr: userEmail.value, pwd: password.value },
-      {
-        onSuccess: () => {
-          const redirectTo = route.query["redirect-to"] as string;
-          if (redirectTo) {
-            router.push(redirectTo);
-          } else {
-            router.push({ name: "Dashboard" });
-          }
-        },
-      }
+      
     );
   } else {
     if (!isValidPhone(signUpForm.phone)) {
