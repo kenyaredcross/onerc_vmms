@@ -1,6 +1,6 @@
-import { userResource } from "@/data/user"
-import { createRouter, createWebHistory } from "vue-router"
-import { session } from "./data/session"
+import { usersStore } from "./stores/user";
+import { sessionStore } from "./stores/session";
+import { createRouter, createWebHistory } from "vue-router";
 
 const routes = [
 	{
@@ -13,28 +13,29 @@ const routes = [
 		path: "/account/login",
 		component: () => import("@/pages/Login.vue"),
 	},
-]
+];
 
 const router = createRouter({
 	history: createWebHistory("/vmms"),
 	routes,
-})
+});
 
 router.beforeEach(async (to, from, next) => {
-	let isLoggedIn = session.isLoggedIn
+	const { isLoggedIn } = sessionStore();
+	const { userResource } = usersStore();
 	try {
-		await userResource.promise
+		await userResource.promise;
 	} catch (error) {
-		isLoggedIn = false
+		isLoggedIn = false;
 	}
 
 	if (to.name === "Login" && isLoggedIn) {
-		next({ name: "Dashboard" })
+		next({ name: "Dashboard" });
 	} else if (to.name !== "Login" && !isLoggedIn) {
-		next({ name: "Login" })
+		next({ name: "Login" });
 	} else {
-		next()
+		next();
 	}
-})
+});
 
-export default router
+export default router;
