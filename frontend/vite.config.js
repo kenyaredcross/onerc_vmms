@@ -1,7 +1,7 @@
-import path from "node:path"
-import vue from "@vitejs/plugin-vue"
-import frappeui from "frappe-ui/vite"
-import { defineConfig } from "vite"
+import path from "node:path";
+import vue from "@vitejs/plugin-vue";
+import frappeui from "frappe-ui/vite";
+import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,7 +11,7 @@ export default defineConfig({
 			jinjaBootData: true,
 			lucideIcons: true,
 			buildConfig: {
-				indexHtmlPath: "../onerc_vmms/www/frontend.html",
+				indexHtmlPath: "../onerc_vmms/www/vmms.html",
 				emptyOutDir: true,
 				sourcemap: true,
 			},
@@ -37,4 +37,4 @@ export default defineConfig({
 	server: {
 		allowedHosts: true,
 	},
-})
+});

@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "copy-html-entry": "cp ../onerc_vmms/public/frontend/index.html ../onerc_vmms/www/frontend.html"
+    "copy-html-entry": "cp ../onerc_vmms/public/frontend/index.html ../onerc_vmms/www/vmms.html"
   },
   "dependencies": {
     "feather-icons": "^4.29.2",

@@ -5,3 +5,9 @@
 tags
 node_modules
 __pycache__
+
+frontend/node_modules
+frontend/package-lock.json
+frontend/yarn.lock
+onerc_vmms/public/frontend
+onerc_vmms/www/vmms.html
