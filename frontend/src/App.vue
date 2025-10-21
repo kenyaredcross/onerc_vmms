@@ -12,7 +12,6 @@ import FrappeUIProvider from "frappe-ui/src/components/Provider/FrappeUIProvider
 import { computed, onUnmounted, ref } from "vue";
 import { useScreenSize } from "./utils/composables";
 import { useRouter } from "vue-router";
-import { usersStore } from "./stores/user";
 import NoSideBarLayout from "./components/NoSideBarLayout.vue";
 import MobileLayout from "./components/MobileLayout.vue";
 import DesktopLayout from "./components/DesktopLayout.vue";
@@ -20,7 +19,6 @@ import DesktopLayout from "./components/DesktopLayout.vue";
 const { isMobile } = useScreenSize();
 const router = useRouter();
 const noSidebar = ref(false);
-const { userResource } = usersStore();
 
 router.beforeEach((to, from, next) => {
 	if (

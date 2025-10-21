@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-export const usersStore = defineStore("vmms-user", () => {
+export const userStore = defineStore("vmms-user", () => {
 	let userResource = createResource({
 		url: "non_profit.non_profit.api.get_user_info",
 		onError(error) {

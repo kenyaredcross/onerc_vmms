@@ -51,14 +51,14 @@ import { Dropdown } from "frappe-ui";
 import Apps from "./Apps.vue";
 import { useRouter } from "vue-router";
 import { convertToTitleCase } from "@/utils";
-import { usersStore } from "@/stores/user";
+import { userStore } from "@/stores/user";
 import { markRaw, computed } from "vue";
 import { ChevronDown, LogIn, LogOut, User } from "lucide-vue-next";
 import VMMSLogo from "./VMMSLogo.vue";
 
 const router = useRouter();
 const { logout } = sessionStore();
-let { userResource } = usersStore();
+let { userResource } = userStore();
 let { isLoggedIn } = sessionStore();
 const frappeCloudBaseEndpoint = "https://frappecloud.com";
 
