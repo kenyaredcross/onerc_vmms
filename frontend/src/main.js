@@ -20,6 +20,7 @@ import {
 } from "frappe-ui"
 
 import "./index.css"
+import { createPinia } from "pinia"
 
 const globalComponents = {
 	Button,
@@ -33,12 +34,14 @@ const globalComponents = {
 }
 
 const app = createApp(App)
+const pinia = createPinia()
 
 setConfig("resourceFetcher", frappeRequest)
 
 app.use(router)
 app.use(resourcesPlugin)
 app.use(pageMetaPlugin)
+app.use(pinia)
 
 const socket = initSocket()
 app.config.globalProperties.$socket = socket
