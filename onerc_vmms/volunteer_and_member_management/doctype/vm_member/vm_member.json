@@ -1,0 +1,172 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2025-10-22 12:23:52.759361",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "member_name",
+  "membership_expiry_date",
+  "column_break_5",
+  "membership_type",
+  "email_id",
+  "image",
+  "customer_section",
+  "customer",
+  "customer_name",
+  "supplier_section",
+  "supplier",
+  "section_break_dblh",
+  "volunteer",
+  "address_contacts",
+  "address_html",
+  "column_break_9",
+  "contact_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "VM-MEM-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "member_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Member Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "membership_expiry_date",
+   "fieldtype": "Date",
+   "label": "Membership Expiry Date"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "membership_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Membership Type",
+   "options": "VMn Membership"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Image",
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "customer_section",
+   "fieldtype": "Section Break",
+   "label": "Customer"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "supplier_section",
+   "fieldtype": "Section Break",
+   "label": "Supplier"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "depends_on": "eval:!doc.__islocal;",
+   "fieldname": "address_contacts",
+   "fieldtype": "Section Break",
+   "label": "Address and Contact",
+   "options": "fa fa-map-marker"
+  },
+  {
+   "fieldname": "address_html",
+   "fieldtype": "HTML",
+   "label": "Address HTML"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_html",
+   "fieldtype": "HTML",
+   "label": "Contact HTML"
+  },
+  {
+   "fieldname": "email_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Email Address",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_dblh",
+   "fieldtype": "Section Break",
+   "label": "Volunteer"
+  },
+  {
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "label": "Volunteer",
+   "options": "Employee"
+  }
+ ],
+ "grid_page_length": 50,
+ "image_field": "image",
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-22 12:41:40.082610",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "VM Member",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "member_name",
+ "track_changes": 1
+}

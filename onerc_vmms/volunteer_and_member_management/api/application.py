@@ -1,0 +1,387 @@
+import frappe
+from frappe import _
+from frappe.utils import now_datetime
+
+from ..utils import set_field_value
+
+
+@frappe.whitelist(allow_guest=True)
+def get_job_openings(filters=None, orFilters=None):
+
+    if not filters:
+        filters = {}
+    filters["publish"] = 1
+    filters["status"] = "Open"
+    now = now_datetime()
+    filters["posted_on"] = ["<=", now]
+
+    or_filters = orFilters or []
+
+    user = frappe.session.user
+
+    employee_exists = frappe.db.exists(
+        "Employee", {"user_id": user, "status": "Active"}
+    )
+
+    if not employee_exists:
+        filters["opportunity_type"] = "Guest"
+
+    regions = None
+    if "region" in filters:
+        region_value = filters.pop("region")
+        if (
+            isinstance(region_value, list)
+            and region_value
+            and isinstance(region_value[0], dict)
+        ):
+            regions = [item.get("value") for item in region_value if item.get("value")]
+        else:
+            regions = region_value
+
+    companies = None
+    if "company" in filters:
+        companies_value = filters.pop("company")
+        if (
+            isinstance(companies_value, list)
+            and companies_value
+            and isinstance(companies_value[0], dict)
+        ):
+            companies = [
+                item.get("value") for item in companies_value if item.get("value")
+            ]
+        else:
+            companies = companies_value
+
+    company_list = []
+
+    if regions:
+        children = []
+
+        if isinstance(regions, list):
+            for region in regions:
+                region_children = frappe.get_all(
+                    "Company",
+                    filters={"parent_company": region},
+                    pluck="name",
+                )
+                children.extend(region_children)
+        else:
+            children = frappe.get_all(
+                "Company",
+                filters={"parent_company": regions},
+                pluck="name",
+            )
+
+        if companies:
+            company_list = regions + companies
+        else:
+            company_list = regions + children
+
+        filters["company"] = ["in", company_list]
+    elif companies:
+        filters["company"] = ["in", companies]
+
+    jobs = frappe.get_all(
+        "Job Opening",
+        filters=filters,
+        or_filters=or_filters,
+        fields=[
+            "job_title",
+            "posted_on",
+            "closes_on",
+            "closed_on",
+            "designation",
+            "vacancies",
+            "location",
+            "employment_type",
+            "company",
+            "department",
+            "name",
+            "creation",
+            "description",
+            "status",
+            "is_internal",
+        ],
+        order_by="creation desc",
+    )
+
+    if user != "Guest":
+        user_email = frappe.db.get_value("User", user, "email")
+        if user_email:
+            applied_jobs = frappe.get_all(
+                "Job Applicant",
+                filters={"email_id": user_email},
+                pluck="job_title",
+            )
+            jobs = [job for job in jobs if job.name not in applied_jobs]
+
+    for job in jobs:
+        job.description = (
+            frappe.utils.strip_html_tags(job.description) if job.description else ""
+        )
+        job.applicants = frappe.db.count("Job Applicant", {"job_title": job.name})
+
+    return jobs
+
+
+@frappe.whitelist(allow_guest=True)
+def get_job_details(job):
+    job_doc = frappe.get_doc("Job Opening", job)
+
+    if not job_doc:
+        return {}
+
+    job_details = job_doc.as_dict()
+
+    if not job_details:
+        return {}
+
+    job_details["applicant_count"] = frappe.db.count(
+        "Job Applicant", {"job_title": job_details["name"]}
+    )
+
+    job_details["designation"] = frappe.get_doc(
+        "Designation", job_details["designation"]
+    ).as_dict()
+
+    if job_details.get("company"):
+        company = frappe.db.get_value(
+            "Company",
+            job_details["company"],
+            [
+                "company_name",
+                "company_logo",
+                "website",
+                "email",
+                "phone_no",
+            ],
+            as_dict=1,
+        )
+        job_details.update(company or {})
+
+    return job_details
+
+
+@frappe.whitelist(allow_guest=True)
+def update_job_application(id: str, **kwargs) -> dict:
+    try:
+
+        application = frappe.get_doc("Job Applicant", id)
+
+        for fieldname, value in kwargs.items():
+            if application.meta.has_field(fieldname):
+                fieldtype = application.meta.get_field(fieldname).fieldtype
+                set_field_value(application, fieldname, value, fieldtype)
+
+        application.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "success": True,
+            "message": "Application updated successfully",
+            "name": application.name,
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Job Application Update Error")
+        return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist(allow_guest=True)
+def submit_job_application(id: str = None) -> dict:
+    try:
+        if not id or not frappe.db.exists("Job Applicant", id):
+            return {"error": "Invalid Job Application ID"}
+
+        application = frappe.get_doc("Job Applicant", id)
+
+        if application.status != "Draft":
+            return {"error": "Only applications with status 'Draft' can be submitted."}
+
+        application.status = "Open"
+        application.save(ignore_permissions=True)
+        frappe.db.commit()
+        return {"message": "Application submitted successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@frappe.whitelist(allow_guest=True)
+def create_job_application(job_opening: str = None, id: str = None, **kwargs) -> dict:
+    try:
+        if id and frappe.db.exists("Job Applicant", id):
+            return update_job_application(id, **kwargs)
+
+        company = kwargs.get("company")
+
+        if job_opening:
+            job_opening_data = frappe.db.get_value(
+                "Job Opening", job_opening, ["company"]
+            )
+            if job_opening_data:
+                company = job_opening_data or company
+
+        if not company:
+            frappe.throw("Company is required")
+
+        user_id = frappe.session.user
+        user_doc = None
+        if user_id != "Guest":
+            user_doc = frappe.get_doc("User", user_id)
+            kwargs["surname"] = user_doc.last_name or ""
+            first_name = user_doc.first_name or ""
+            middle_name = user_doc.middle_name or ""
+            kwargs["other_names"] = f"{first_name} {middle_name}".strip()
+            kwargs["email_id"] = user_doc.email or ""
+            kwargs["gender"] = user_doc.gender or ""
+            kwargs["phone_number"] = user_doc.phone or user_doc.mobile_no or ""
+
+        email_id = kwargs.get("email_id")
+        if (
+            email_id
+            and job_opening
+            and frappe.db.exists(
+                "Job Applicant", {"job_title": job_opening, "email_id": email_id}
+            )
+        ):
+            return {
+                "success": False,
+                "message": "You have already applied for this position.",
+            }
+
+        surname = kwargs.get("surname", "")
+        other_names = kwargs.get("other_names", "")
+        name_to_use = f"{other_names} {surname}".strip()
+
+        minimal_doc_data = {
+            "doctype": "Job Applicant",
+            "applicant_name": name_to_use,
+            "email_id": email_id,
+            "company": company,
+            "status": "Draft",
+        }
+
+        if job_opening:
+            minimal_doc_data["job_title"] = job_opening
+
+        job_application = frappe.get_doc(minimal_doc_data)
+        job_application.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        update_fields = kwargs.copy()
+        update_fields.pop("email_id", None)
+        update_fields.pop("surname", None)
+        update_fields.pop("other_names", None)
+
+        return update_job_application(job_application.name, **update_fields)
+
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.log_error(frappe.get_traceback(), "Job Application Submission Error")
+        return {
+            "success": False,
+            "message": f"Failed to submit job application: {str(e)}",
+        }
+
+
+@frappe.whitelist()
+def fetch_applications(email: str):
+    """
+    Fetch all job applications (Job Applicant) for a given email,
+    along with related Job Opening details.
+    """
+    if not email:
+        frappe.throw(_("Email is required to fetch job applications."))
+
+    applicants = frappe.get_all(
+        "Job Applicant",
+        filters={"email_id": email, "job_title": ("!=", None), "is_volunteer": 0},
+        fields=[
+            "name",
+            "applicant_name",
+            "designation",
+            "job_title",
+            "status",
+            "company",
+            "cover_letter",
+            "creation",
+            "modified",
+        ],
+        order_by="creation desc",
+    )
+
+    if not applicants:
+        return []
+
+    for app in applicants:
+        job_opening = (
+            frappe.get_doc("Job Opening", app.get("job_title")).as_dict()
+            if app.get("job_title")
+            else {}
+        )
+        app["job_opening_details"] = job_opening
+
+    return applicants
+
+
+@frappe.whitelist()
+def can_edit_job_application(applicant_id: str) -> bool:
+    if not applicant_id:
+        return False
+
+    try:
+        applicant = frappe.get_doc(
+            "Job Applicant", applicant_id, ignore_permissions=True
+        )
+
+        if applicant.status and applicant.status.lower() != "draft":
+            return False
+
+        if applicant.job_title:
+            job_opening = frappe.get_doc(
+                "Job Opening", applicant.job_title, ignore_permissions=True
+            )
+            if job_opening.status.lower() != "open":
+                return False
+
+        interview = frappe.db.exists("Interview", {"job_applicant": applicant_id})
+        if interview:
+            return False
+
+        offer = frappe.db.exists("Job Offer", {"job_applicant": applicant_id})
+        if offer:
+            return False
+
+        return True
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(), "Error checking job application edit permission"
+        )
+        return False
+
+
+@frappe.whitelist()
+def get_job_application(name=None):
+    if not name:
+        return {"error": "Application ID is required"}
+
+    try:
+        job_application = frappe.get_doc("Job Applicant", name).as_dict()
+
+        if (
+            frappe.session.user != "Administrator"
+            and job_application.get("email_id") != frappe.session.user
+        ):
+            return {"error": "You don't have permission to access this application"}
+
+        if job_application.get("job_title"):
+            job_opening = frappe.get_doc(
+                "Job Opening", job_application.get("job_title"), ignore_permissions=True
+            ).as_dict()
+            job_application["job_opening_details"] = job_opening
+
+        return job_application
+
+    except Exception as e:
+        frappe.log_error(str(e), "Error fetching job application")
+        return {"error": "Failed to retrieve application details"}
