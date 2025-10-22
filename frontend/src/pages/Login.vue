@@ -144,9 +144,11 @@
 <script setup lang="ts">
 import Button from "frappe-ui/src/components/Button/Button.vue";
 import { sessionStore } from "../stores/session";
+import Card from "frappe-ui/src/components/Card.vue";
+import Input from "frappe-ui/src/components/Input.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
-import { Card, createResource, Select, Input } from "frappe-ui";
+import { createResource, Select } from "frappe-ui";
 import Dialog from "frappe-ui/src/components/Dialog/Dialog.vue";
 import {
   SignUp,
@@ -207,7 +209,16 @@ function submit() {
   if (isLogin.value) {
     session.login.submit(
       { usr: userEmail.value, pwd: password.value },
-      
+      {
+        onSuccess: () => {
+          const redirectTo = route.query["redirect-to"] as string;
+          if (redirectTo) {
+            router.push(redirectTo);
+          } else {
+            router.push({ name: "Dashboard" });
+          }
+        },
+      }
     );
   } else {
     if (!isValidPhone(signUpForm.phone)) {
