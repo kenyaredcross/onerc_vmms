@@ -3,38 +3,75 @@ import vue from "@vitejs/plugin-vue";
 import frappeui from "frappe-ui/vite";
 import { defineConfig } from "vite";
 
-// https://vitejs.dev/config/
 export default defineConfig({
-	plugins: [
-		frappeui({
-			frappeProxy: true,
-			jinjaBootData: true,
-			lucideIcons: true,
-			buildConfig: {
-				indexHtmlPath: "../onerc_vmms/www/vmms.html",
-				emptyOutDir: true,
-				sourcemap: true,
-			},
-		}),
-		vue(),
-	],
-	build: {
-		chunkSizeWarningLimit: 1500,
-		outDir: "../onerc_vmms/public/frontend",
-		emptyOutDir: true,
-		target: "es2015",
-		sourcemap: true,
-	},
-	resolve: {
-		alias: {
-			"@": path.resolve(__dirname, "src"),
-			"tailwind.config.js": path.resolve(__dirname, "tailwind.config.js"),
-		},
-	},
-	optimizeDeps: {
-		include: ["feather-icons", "showdown", "highlight.js/lib/core", "interactjs"],
-	},
-	server: {
-		allowedHosts: true,
-	},
+  plugins: [
+    frappeui({
+      frappeProxy: true,
+      jinjaBootData: true,
+      lucideIcons: true,
+      buildConfig: {
+        indexHtmlPath: "../non_profit/www/vmms-portal.html",
+        emptyOutDir: true,
+        sourcemap: true,
+      },
+    }),
+
+    vue(),
+
+    /*
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'robots.txt'],
+      manifest: {
+        name: 'VMMS Portal',
+        short_name: 'VMMS',
+        start_url: '.',
+        display: 'standalone',
+        background_color: '#ffffff',
+        theme_color: '#ff0000',
+        icons: [],
+      },
+    }),
+    */
+  ],
+
+  build: {
+    outDir: "../non_profit/public/frontend",
+    emptyOutDir: true,
+    target: "es2015",
+    sourcemap: true,
+    chunkSizeWarningLimit: 1500,
+  },
+
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      "tailwind.config.js": path.resolve(__dirname, "tailwind.config.js"),
+    },
+  },
+
+  optimizeDeps: {
+    include: [
+      "feather-icons",
+      "showdown",
+      "highlight.js/lib/core",
+      "interactjs",
+    ],
+
+    esbuildOptions: {
+      define: {
+        global: "globalThis",
+      },
+    },
+  },
+
+  server: {
+    allowedHosts: true,
+    port: 8080,
+    open: true,
+  },
+
+  define: {
+    "process.env": {},
+  },
 });

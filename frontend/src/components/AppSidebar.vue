@@ -23,7 +23,7 @@
         class="z-10 m-2 bg-surface-modal py-2.5 px-3 text-xs text-ink-gray-7 leading-5 rounded-md"
       >
         {{
-          (
+          __(
             "This site is being updated. You will not be able to make any changes. Full access will be restored shortly."
           )
         }}
@@ -52,14 +52,14 @@
                 class="max-w-[30ch] rounded bg-surface-gray-7 px-2 py-1 text-center text-p-xs text-ink-white shadow-xl"
               >
                 {{
-                  (
+                  __(
                     "This site is being updated. You will not be able to make any changes. Full access will be restored shortly."
                   )
                 }}
               </div>
             </template>
           </Tooltip>
-          <Tooltip :text="('Powered by VMMS Portal')">
+          <Tooltip :text="__('Powered by VMMS Portal')">
             <Zap
               class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer"
               @click="redirectToWebsite()"
@@ -67,7 +67,7 @@
           </Tooltip>
         </div>
         <Tooltip
-          :text="sidebarStore.sidebarCollapsed ? ('Expand') : ('Collapse')"
+          :text="sidebarStore.sidebarCollapsed ? __('Expand') : __('Collapse')"
         >
           <CollapseSidebar
             class="size-4 text-ink-gray-7 duration-300 stroke-1.5 ease-in-out cursor-pointer"
