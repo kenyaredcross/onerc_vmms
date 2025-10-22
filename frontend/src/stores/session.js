@@ -1,60 +1,65 @@
 import { defineStore } from "pinia";
 import { createResource } from "frappe-ui";
-import { userStore } from "./user";
+import { usersStore } from "./user";
 import router from "@/router";
 import { computed, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
 
 export const sessionStore = defineStore("vmms-session", () => {
-	let { userResource } = userStore();
-	const brand = reactive({});
+  let { userResource } = usersStore();
+  const brand = reactive({});
 
-	function sessionUser() {
-		let cookies = new URLSearchParams(document.cookie.split("; ").join("&"));
-		let _sessionUser = cookies.get("user_id");
-		if (_sessionUser === "Guest") {
-			_sessionUser = null;
-		}
-		return _sessionUser;
-	}
+  function sessionUser() {
+    let cookies = new URLSearchParams(document.cookie.split("; ").join("&"));
+    let _sessionUser = cookies.get("user_id");
+    if (_sessionUser === "Guest") {
+      _sessionUser = null;
+    }
+    return _sessionUser;
+  }
 
-	let user = ref(sessionUser());
-	const isLoggedIn = computed(() => !!user.value);
-	const route = useRoute();
+  let user = ref(sessionUser());
+  const isLoggedIn = computed(() => !!user.value);
 
-	const login = createResource({
-		url: "login",
-		onError() {
-			throw new Error("Invalid email or password");
-		},
-		onSuccess() {
-			userResource.reload();
-			user.value = sessionUser();
-			login.reset();
+  const login = createResource({
+    url: "login",
+    onError() {
+      throw new Error("Invalid email or password");
+    },
+    onSuccess() {
+      userResource.reload();
+      user.value = sessionUser();
+      login.reset();
+      router.replace({ path: "/" });
+    },
+  });
 
-			const redirectTo = route.query["redirect-to"];
-			if (redirectTo) {
-				router.push(redirectTo);
-			} else {
-				router.push({ name: "Dashboard" });
-			}
-		},
-	});
+  const logout = createResource({
+    url: "logout",
+    onSuccess() {
+      userResource.reset();
+      user.value = null;
+      window.location.reload();
+    },
+  });
 
-	const logout = createResource({
-		url: "logout",
-		onSuccess() {
-			userResource.reset();
-			user.value = null;
-			window.location.reload();
-		},
-	});
+  const branding = createResource({
+    url: "non_profit.non_profit.api.get_branding",
+    cache: "brand",
+    auto: true,
+    onSuccess(data) {
+      brand.name = data.app_name;
+      brand.logo = data.app_logo;
+      brand.favicon =
+        data.favicon?.file_url || "/assets/non_profit/frontend/favicon.png";
+    },
+  });
 
-	return {
-		user,
-		isLoggedIn,
-		login,
-		logout,
-		brand,
-	};
+  return {
+    user,
+    isLoggedIn,
+    login,
+    logout,
+    brand,
+    branding,
+  };
 });

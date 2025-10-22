@@ -1,58 +1,30 @@
-import { createApp } from "vue";
-
-import App from "./App.vue";
-import router from "./router";
-import { initSocket } from "./socket";
-
-import {
-	Alert,
-	Badge,
-	Button,
-	Dialog,
-	ErrorMessage,
-	FormControl,
-	FrappeUI,
-	Input,
-	TextInput,
-	frappeRequest,
-	pageMetaPlugin,
-	resourcesPlugin,
-	setConfig,
-} from "frappe-ui";
-
 import "./index.css";
+import { createApp } from "vue";
+import router from "./router";
+import App from "./App.vue";
 import { createPinia } from "pinia";
-import { userStore } from "./stores/user";
+import dayjs from "@/utils/dayjs";
+import { createDialog } from "@/utils/dialogs";
+import translationPlugin from "./translation";
+import { usersStore } from "./stores/user";
+import { initSocket } from "./socket";
+import { FrappeUI, setConfig, frappeRequest, pageMetaPlugin } from "frappe-ui";
 
-const globalComponents = {
-	Button,
-	TextInput,
-	Input,
-	FormControl,
-	ErrorMessage,
-	Dialog,
-	Alert,
-	Badge,
-};
-
-const app = createApp(App);
-const pinia = createPinia();
-
+let pinia = createPinia();
+let app = createApp(App);
 setConfig("resourceFetcher", frappeRequest);
 
-app.use(router);
-app.use(resourcesPlugin);
-app.use(pageMetaPlugin);
-app.use(pinia);
 app.use(FrappeUI);
-const { userResource } = userStore();
-
-app.provide("$user", userResource);
-const socket = initSocket();
-app.config.globalProperties.$socket = socket;
-
-for (const key in globalComponents) {
-	app.component(key, globalComponents[key]);
-}
-
+app.use(pinia);
+app.use(router);
+app.use(translationPlugin);
+app.use(pageMetaPlugin);
+app.provide("$dayjs", dayjs);
+app.provide("$socket", initSocket());
 app.mount("#app");
+
+const { userResource } = usersStore();
+app.provide("$user", userResource);
+
+app.config.globalProperties.$user = userResource;
+app.config.globalProperties.$dialog = createDialog;
