@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "autoname": "field:membership_type",
+ "creation": "2025-10-16 10:45:33.478337",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "membership_type",
+  "membership_package",
+  "linked_item",
+  "column_break_tssr",
+  "amount",
+  "currency",
+  "billing_cycle",
+  "age_requirement",
+  "section_break_ilnt",
+  "benefits"
+ ],
+ "fields": [
+  {
+   "fieldname": "membership_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Membership Type",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "membership_package",
+   "fieldtype": "Link",
+   "label": "Membership Package",
+   "options": "Membership Package"
+  },
+  {
+   "fieldname": "linked_item",
+   "fieldtype": "Link",
+   "label": "Linked Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "column_break_tssr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "billing_cycle",
+   "fieldtype": "Select",
+   "label": "Billing Cycle",
+   "options": "\nMonthly\nYearly\nOne Off"
+  },
+  {
+   "fieldname": "age_requirement",
+   "fieldtype": "Data",
+   "label": "Age Requirement"
+  },
+  {
+   "fieldname": "section_break_ilnt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "benefits",
+   "fieldtype": "Table",
+   "label": "Benefits",
+   "options": "Membership Benefit"
+  }
+ ],
+ "links": [
+  {
+   "group": "Membership",
+   "link_doctype": "Membership",
+   "link_fieldname": "membership_type"
+  }
+ ],
+ "modified": "2025-10-22 10:58:28.755524",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "VM Membership Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

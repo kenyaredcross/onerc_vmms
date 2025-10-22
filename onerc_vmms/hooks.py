@@ -8,7 +8,7 @@ app_license = "gpl-3.0"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext", "lms", "hrms"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -27,7 +27,7 @@ add_to_apps_screen = [
         "logo": "/assets/onerc_vmms/frontend/vmms.png",
         "title": "VMMS",
         "route": "/vmms",
-        "has_permission": "onerc_vmms.api.permission.check_app_permission",
+        "has_permission": "onerc_vmms.volunteer_and_member_management.api.permission.check_app_permission",
     }
 ]
 
@@ -53,7 +53,17 @@ add_to_apps_screen = [
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+    "Project": "volunteer_and_member_management/overrides/client/project.js",
+    "Job Opening": "volunteer_and_member_management/overrides/client/job_opening.js",
+    "Employee Onboarding": "volunteer_and_member_management/overrides/client/employee_onboarding.js",
+    "Employee": "volunteer_and_member_management/overrides/client/employee.js",
+    "Job Applicant": "volunteer_and_member_management/overrides/client/job_applicant.js",
+    "Contract": "volunteer_and_member_management/overrides/client/contract.js",
+    "Interview": "volunteer_and_member_management/overrides/client/interview.js",
+    "Interview Round": "volunteer_and_member_management/overrides/client/interview_round.js",
+}
+
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -147,33 +157,40 @@ add_to_apps_screen = [
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "LMS Enrollment": {
+        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.lms_enrollment.on_update"
+    },
+    "Employee": {
+        "after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.employee.after_insert"
+    },
+    "Employee Onboarding": {
+        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.employee_onboarding.on_update",
+        "on_update_after_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.employee_onboarding.on_update_after_submit",
+    },
+    "Job Opening": {
+        "validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.validate"
+    },
+    "Sales Invoice": {
+        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
+        "on_update_after_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
+    },
+    "GL Entry": {
+        "after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
+        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
+    },
+    "Job Applicant": {
+        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.on_update"
+    },
+}
 
 # Scheduled Tasks
 # ---------------
 
 # scheduler_events = {
-# 	"all": [
-# 		"onerc_vmms.tasks.all"
-# 	],
-# 	"daily": [
-# 		"onerc_vmms.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"onerc_vmms.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"onerc_vmms.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"onerc_vmms.tasks.monthly"
-# 	],
+#     "daily": [
+#         "onerc_vmms.volunteer_and_member_management.doctype.membership.membership.set_expired_status",
+#     ],
 # }
 
 # Testing
