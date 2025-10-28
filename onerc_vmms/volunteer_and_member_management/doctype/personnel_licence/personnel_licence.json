@@ -10,8 +10,8 @@
   "description",
   "attachment",
   "column_break_mxfd",
-  "registration_no",
   "qualification",
+  "registration_no",
   "valid_from",
   "valid_to"
  ],
@@ -25,7 +25,8 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "License Type",
-   "options": "Personnel License Type"
+   "options": "Personnel License Type",
+   "reqd": 1
   },
   {
    "columns": 2,
@@ -35,7 +36,8 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Institution"
+   "label": "Institution",
+   "reqd": 1
   },
   {
    "fieldname": "description",
@@ -57,6 +59,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "columns": 1,
+   "fieldname": "qualification",
+   "fieldtype": "Data",
+   "label": "Qualification",
+   "reqd": 1
+  },
+  {
    "columns": 2,
    "fieldname": "registration_no",
    "fieldtype": "Data",
@@ -68,15 +77,10 @@
   },
   {
    "columns": 1,
-   "fieldname": "qualification",
-   "fieldtype": "Data",
-   "label": "Qualification"
-  },
-  {
-   "columns": 1,
    "fieldname": "valid_from",
    "fieldtype": "Date",
-   "label": "Valid From"
+   "label": "Valid From",
+   "reqd": 1
   },
   {
    "columns": 1,
@@ -89,7 +93,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-16 10:30:16.522360",
+ "modified": "2025-10-28 16:30:31.784459",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Licence",

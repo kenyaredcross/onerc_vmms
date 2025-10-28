@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 
 @frappe.whitelist(allow_guest=True)
@@ -37,9 +38,12 @@ def get_current_membership():
     memberships = frappe.get_all(
         "Membership",
         filters={"member": member.name},
-        fields=[
-            "name",
+        or_filters=[
+            {"status": "Active"},
+            {"status": "Expired"},
+            {"status": "Pending"},
         ],
+        fields=["name"],
         order_by="from_date desc",
     )
 
@@ -70,3 +74,51 @@ def create_member(name):
     member.volunteer = volunteer_details.name
     member.insert(ignore_permissions=True)
     return member.name
+
+
+@frappe.whitelist()
+def membership_certificate_template(membership_type: str) -> str:
+
+    error_message = "Error printing membership certificate"
+    if not membership_type:
+        frappe.throw(error_message)
+
+    try:
+        membership_template = frappe.db.get_value(
+            "Membership Type",
+            {"name": membership_type},
+            "template",
+            as_dict=True,
+        )
+
+        if not membership_template:
+            frappe.throw(error_message)
+    except Exception as e:
+        frappe.log_error(
+            frappe.get_traceback(), "Membership Certificate Template Error"
+        )
+        frappe.throw(error_message)
+
+    return membership_template.name
+
+
+@frappe.whitelist()
+def confirm_payment(invoice_name: str) -> str:
+
+    error_message = "Error confirming payment"
+
+    if not invoice_name:
+        frappe.throw(_(error_message))
+
+    try:
+        invoice = frappe.get_doc("Sales Invoice", invoice_name)
+
+        if invoice.status == "Paid" and invoice.outstanding_amount == 0:
+            return "paid"
+
+        return "unpaid"
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
+        frappe.throw(_("Error confirming payment: {0}").format(str(e)))
+        frappe.throw(_("Error confirming payment: {0}").format(str(e)))

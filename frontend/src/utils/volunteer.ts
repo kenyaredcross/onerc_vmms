@@ -57,6 +57,8 @@ export function resetSignUpForm(form: SignUp) {
 }
 
 export function isValidPhone(phone: string) {
-  const regex = /^\+254\d{9}$/;
-  return regex.test(phone);
+  const internationalRegex = /^\+254\d{9}$/;
+  const nationalRegex = /^0[71]\d{8}$/;
+
+  return internationalRegex.test(phone) || nationalRegex.test(phone);
 }

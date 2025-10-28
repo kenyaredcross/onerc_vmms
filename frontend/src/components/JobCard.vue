@@ -1,136 +1,146 @@
 <template>
-  <div
-    class="flex flex-col bg-gradient-to-br from-white via-red-50 to-red-100 border border-red-200 rounded-2xl p-6 h-full shadow-md hover:shadow-lg transition-all duration-300"
-  >
-    <div class="mb-4">
-      <span class="text-lg font-semibold text-red-700">{{ job.company }}</span>
-      <h2 class="text-2xl font-extrabold text-gray-900 leading-snug pt-4">
-        {{ job.job_title }}
-      </h2>
-      <div class="mt-2 flex flex-col gap-1">
-        <div v-if="job.department" class="flex items-center gap-1">
-          <span
-            class="text-sm text-gray-700 bg-gray-100 px-3 py-1 rounded-full border border-gray-200"
-          >
-            {{ job.department }}
-          </span>
-        </div>
-      </div>
-    </div>
+	<div
+		class="group relative flex flex-col bg-white border border-gray-200 rounded-xl p-4 h-full shadow-sm hover:shadow-xl hover:border-red-300 transition-all duration-300 overflow-hidden"
+	>
+		<div
+			class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-red-400 to-orange-400"
+		></div>
 
-    <div class="flex flex-wrap gap-3 mb-4">
-      <div
-        v-if="job.designation"
-        class="px-3 py-1 rounded-full text-xs font-semibold bg-red-200 text-red-900 border border-red-300"
-      >
-        {{ job.designation }}
-      </div>
-      <div
-        v-if="job.location || job.country"
-        class="flex items-center gap-1 text-sm text-gray-700"
-      >
-        <MapPin class="w-4 h-4 text-red-500" />
-        <span
-          >{{ job.location }}{{ job.country ? `, ${job.country}` : "" }}</span
-        >
-      </div>
-    </div>
+		<div class="mb-3 flex flex-wrap gap-2">
+			<div
+				v-if="job.designation"
+				class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 border border-red-200 rounded-full text-xs font-medium text-red-700"
+			>
+				<User class="w-3 h-3" />
+				<span>{{ job.designation }}</span>
+			</div>
+		</div>
+		<h2
+			class="text-lg font-bold text-gray-900 leading-tight mb-2 group-hover:text-red-600 transition-colors duration-200"
+		>
+			{{ job.job_title }}
+		</h2>
 
-    <p
-      v-if="job.description"
-      class="description text-sm text-gray-800 leading-relaxed mb-5"
-    >
-      {{ job.description }}
-    </p>
+		<div
+			v-if="job.job_location"
+			class="flex items-center gap-2 px-3 py-1 bg-red-100 border-l-4 border-red-500 rounded text-sm font-semibold text-red-800 mb-3"
+		>
+			<MapPin class="w-4 h-4 text-red-600 flex-shrink-0" />
+			<span>{{ job.job_location }}</span>
+		</div>
 
-    <div class="grid grid-cols-2 gap-y-3 text-sm mb-5">
-      <div v-if="job.vacancies" class="flex items-center gap-1">
-        <span class="font-semibold text-gray-900 text-base">{{
-          job.vacancies
-        }}</span>
-        <span class="text-gray-700">
-          {{ job.vacancies > 1 ? __("vacancies") : __("vacancy") }}
-        </span>
-      </div>
-      <div v-if="job.applicants" class="flex items-center gap-1">
-        <span class="font-semibold text-gray-900 text-base">{{
-          job.applicants
-        }}</span>
-        <span class="text-gray-700">
-          {{ job.applicants > 1 ? __("applicants") : __("applicant") }}
-        </span>
-      </div>
-      <div v-if="job.posted_on">
-        <span class="text-gray-600">Posted:</span>
-        <span class="font-medium text-gray-900">
-          {{ dayjs(job.posted_on).fromNow() }}
-        </span>
-      </div>
-      <div v-if="job.closes_on">
-        <span class="text-gray-600">Closes:</span>
-        <span class="font-semibold text-red-700">
-          {{ dayjs(job.closes_on).format("MMM D, YYYY") }}
-        </span>
-      </div>
-      <div v-if="job.closed_on">
-        <span class="text-gray-600">Closed:</span>
-        <span class="font-medium text-gray-900">
-          {{ dayjs(job.closed_on).format("MMM D, YYYY") }}
-        </span>
-      </div>
-    </div>
+		<div class="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-3"></div>
 
-    <div class="flex flex-wrap gap-2 mt-auto">
-      <Badge
-        v-if="job.employment_type"
-        class="bg-red-200 text-red-900 border border-red-300"
-      >
-        {{ job.employment_type }}
-      </Badge>
-      <Badge
-        v-if="job.computed_status"
-        :class="{
-          'bg-green-200 text-green-900 border border-green-300':
-            job.computed_status === 'Open',
-          'bg-gray-200 text-gray-800 border border-gray-300':
-            job.computed_status === 'Closed',
-          'bg-yellow-200 text-yellow-900 border border-yellow-300':
-            job.computed_status === 'Upcoming' ||
-            job.computed_status === 'Ending Soon',
-          'bg-red-300 text-red-900 border border-red-400':
-            job.computed_status === 'Expired',
-        }"
-      >
-        {{ job.computed_status }}
-      </Badge>
-      <Badge class="bg-white/70 text-gray-700 border border-gray-300">
-        {{ dayjs(job.creation).fromNow() }}
-      </Badge>
-    </div>
-  </div>
+		<div class="space-y-3 mb-4 flex-grow">
+			<div class="grid grid-cols-2 gap-3">
+				<div v-if="job.posted_on" class="flex items-center gap-2 min-w-0">
+					<div
+						class="flex-shrink-0 w-7 h-7 bg-green-50 rounded-md flex items-center justify-center"
+					>
+						<Calendar class="w-4 h-4 text-green-600" />
+					</div>
+					<div class="flex-1 min-w-0">
+						<p class="text-xs text-gray-500">
+							Posted On:
+							<span class="font-semibold text-gray-900">{{
+								dayjs(job.posted_on).format("MMM D")
+							}}</span>
+						</p>
+					</div>
+				</div>
+
+				<div v-if="job.closes_on" class="flex items-center gap-2 min-w-0">
+					<div
+						class="flex-shrink-0 w-7 h-7 bg-red-50 rounded-md flex items-center justify-center"
+					>
+						<CalendarX class="w-4 h-4 text-red-600" />
+					</div>
+					<div class="flex-1 min-w-0">
+						<p class="text-xs text-gray-500">
+							Closes On:
+							<span class="font-semibold text-gray-900">{{
+								dayjs(job.closes_on).format("MMM D")
+							}}</span>
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<div v-if="job.duration" class="flex items-center gap-2">
+				<div
+					class="flex-shrink-0 w-7 h-7 bg-blue-50 rounded-md flex items-center justify-center"
+				>
+					<Clock class="w-4 h-4 text-blue-600" />
+				</div>
+				<div class="flex-1 min-w-0">
+					<p class="text-xs text-gray-500">
+						Open For:
+						<span class="text-sm font-semibold text-gray-900">{{
+							formatDuration(job.duration)
+						}}</span>
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="pt-3 border-t border-gray-100 mt-auto">
+			<div class="flex items-center justify-between gap-4">
+				<div v-if="job.creation" class="flex items-center gap-1.5 text-xs text-gray-500">
+					<History class="w-3 h-3" />
+					<span>{{ dayjs().diff(dayjs(job.creation), "day") }}d ago</span>
+				</div>
+
+				<div
+					v-if="job?.publish_applications_received && job.applicants"
+					class="flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 rounded-md text-white shadow-sm"
+				>
+					<Users class="w-3.5 h-3.5" />
+					<span class="text-sm font-bold leading-none">{{ job.applicants }}</span>
+					<span class="text-xs opacity-90 leading-none">applicants</span>
+				</div>
+			</div>
+		</div>
+	</div>
 </template>
 
 <script setup>
+import { Calendar, CalendarX, Clock, History, MapPin, User, Users } from "lucide-vue-next";
 import { inject } from "vue";
-import { Badge } from "frappe-ui";
-import { MapPin } from "lucide-vue-next";
 
 const dayjs = inject("$dayjs");
-const props = defineProps({
-  job: {
-    type: Object,
-    default: null,
-  },
-});
-</script>
+const settings = inject("jobSettings", { showApplicants: true });
 
-<style>
-.description {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.5;
-}
-</style>
+const props = defineProps({
+	job: {
+		type: Object,
+		default: null,
+	},
+});
+
+const formatDuration = (seconds) => {
+	const SECONDS_IN_HOUR = 3600;
+	const SECONDS_IN_DAY = SECONDS_IN_HOUR * 24;
+	const SECONDS_IN_MONTH = SECONDS_IN_DAY * 30.437;
+
+	const months = Math.floor(seconds / SECONDS_IN_MONTH);
+	let remainingSeconds = seconds % SECONDS_IN_MONTH;
+
+	const days = Math.floor(remainingSeconds / SECONDS_IN_DAY);
+	remainingSeconds %= SECONDS_IN_DAY;
+
+	const hours = Math.ceil(remainingSeconds / SECONDS_IN_HOUR);
+
+	let parts = [];
+	if (months > 0) {
+		parts.push(`${months}m`);
+	}
+	if (days > 0) {
+		parts.push(`${days}d`);
+	}
+	if (hours > 0 && months === 0) {
+		parts.push(`${hours}h`);
+	}
+
+	return parts.join(" ");
+};
+</script>

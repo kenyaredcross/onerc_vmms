@@ -11,27 +11,27 @@
   "title_of_mission",
   "company",
   "column_break_ehba",
-  "date_of_visit",
-  "section_break_ozuk",
-  "accompanying_staff",
+  "expected_start_date",
+  "expected_end_date",
   "section_break_calj",
   "mission_background",
+  "stakeholders_section",
+  "stakeholders",
   "section_break_7hzn",
   "amended_from",
   "objectives_approach_tab",
   "specific_objectives_section",
   "objectives",
+  "expected_outputs_section",
+  "expected_outputs",
   "proposed_approach_section",
   "approach_methods",
-  "stakeholders_section",
-  "stakeholders",
   "itinerary_outputs_resources_tab",
   "itinerary_section",
   "itinerary",
-  "expected_outputs_section",
-  "expected_outputs",
   "resources_section",
-  "resources"
+  "resources",
+  "connections_tab"
  ],
  "fields": [
   {
@@ -68,19 +68,16 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "date_of_visit",
+   "fieldname": "expected_start_date",
    "fieldtype": "Date",
-   "label": "Date of Visit"
+   "label": "Expected Start Date",
+   "reqd": 1
   },
   {
-   "fieldname": "section_break_ozuk",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "accompanying_staff",
-   "fieldtype": "Table",
-   "label": "Accompanying Staff",
-   "options": "TOR Accompanying Staff"
+   "fieldname": "expected_end_date",
+   "fieldtype": "Date",
+   "label": "Expected End Date",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_calj",
@@ -92,6 +89,18 @@
    "fieldtype": "Text Editor",
    "in_list_view": 1,
    "label": "Mission Background",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stakeholders_section",
+   "fieldtype": "Section Break",
+   "label": "Stakeholders"
+  },
+  {
+   "fieldname": "stakeholders",
+   "fieldtype": "Table",
+   "label": "Stakeholders",
+   "options": "TOR Stakeholders",
    "reqd": 1
   },
   {
@@ -111,7 +120,7 @@
   {
    "fieldname": "objectives_approach_tab",
    "fieldtype": "Tab Break",
-   "label": "Objectives, Approach & Stakeholders"
+   "label": "Approach, Objectives & Outputs "
   },
   {
    "fieldname": "specific_objectives_section",
@@ -119,48 +128,12 @@
    "label": "Specific Objectives"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "objectives",
    "fieldtype": "Table",
    "label": "Objectives",
-   "options": "TOR Objectives"
-  },
-  {
-   "fieldname": "proposed_approach_section",
-   "fieldtype": "Section Break",
-   "label": "Proposed Approach"
-  },
-  {
-   "fieldname": "approach_methods",
-   "fieldtype": "Table",
-   "label": "Approach Methods",
-   "options": "TOR Approach Methods"
-  },
-  {
-   "fieldname": "stakeholders_section",
-   "fieldtype": "Section Break",
-   "label": "Stakeholders"
-  },
-  {
-   "fieldname": "stakeholders",
-   "fieldtype": "Table",
-   "label": "Stakeholders",
-   "options": "TOR Stakeholders"
-  },
-  {
-   "fieldname": "itinerary_outputs_resources_tab",
-   "fieldtype": "Tab Break",
-   "label": "Itinerary, Outputs & Resources"
-  },
-  {
-   "fieldname": "itinerary_section",
-   "fieldtype": "Section Break",
-   "label": "Itinerary"
-  },
-  {
-   "fieldname": "itinerary",
-   "fieldtype": "Table",
-   "label": "Itinerary",
-   "options": "TOR Itinerary"
+   "options": "TOR Objectives",
+   "reqd": 1
   },
   {
    "fieldname": "expected_outputs_section",
@@ -171,7 +144,37 @@
    "fieldname": "expected_outputs",
    "fieldtype": "Table",
    "label": "Expected Outputs",
-   "options": "TOR Outputs"
+   "options": "TOR Outputs",
+   "reqd": 1
+  },
+  {
+   "fieldname": "proposed_approach_section",
+   "fieldtype": "Section Break",
+   "label": "Proposed Approach"
+  },
+  {
+   "fieldname": "approach_methods",
+   "fieldtype": "Table",
+   "label": "Approach Methodology",
+   "options": "TOR Approach Methods",
+   "reqd": 1
+  },
+  {
+   "fieldname": "itinerary_outputs_resources_tab",
+   "fieldtype": "Tab Break",
+   "label": "Itinerary & Resources"
+  },
+  {
+   "fieldname": "itinerary_section",
+   "fieldtype": "Section Break",
+   "label": "Itinerary"
+  },
+  {
+   "fieldname": "itinerary",
+   "fieldtype": "Table",
+   "label": "Itinerary",
+   "options": "TOR Itinerary",
+   "reqd": 1
   },
   {
    "fieldname": "resources_section",
@@ -182,7 +185,14 @@
    "fieldname": "resources",
    "fieldtype": "Table",
    "label": "Resources",
-   "options": "TOR Resources"
+   "options": "TOR Resources",
+   "reqd": 1
+  },
+  {
+   "fieldname": "connections_tab",
+   "fieldtype": "Tab Break",
+   "label": "Connections",
+   "show_dashboard": 1
   }
  ],
  "grid_page_length": 50,
@@ -190,17 +200,17 @@
  "is_submittable": 1,
  "links": [
   {
-   "group": "Deployment",
-   "link_doctype": "Personnel Deployment Request",
+   "group": "Deployments",
+   "link_doctype": "Deployment Request Tool",
    "link_fieldname": "terms_of_reference"
   },
   {
-   "group": "Deployment",
-   "link_doctype": "Personnel Deployment Assignment",
+   "group": "Projects",
+   "link_doctype": "Project",
    "link_fieldname": "terms_of_reference"
   }
  ],
- "modified": "2025-10-16 10:30:20.208465",
+ "modified": "2025-10-28 16:30:33.173126",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Terms of Reference",

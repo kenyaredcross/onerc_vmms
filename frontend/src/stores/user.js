@@ -4,23 +4,27 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-export const userStore = defineStore("vmms-user", () => {
+export const usersStore = defineStore("vmms-users", () => {
 	let userResource = createResource({
-		url: "onerc_vmms.volunteer_and_member_management.api.get_user_info",
+		url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_info",
 		onError(error) {
-			router.push("/login");
+			if (error && error.exc_type === "AuthenticationError") {
+				router.push("/login");
+			}
 		},
+		auto: true,
 	});
 
 	const roleResource = createResource({
-		url: "onerc_vmms.volunteer_and_member_management.api.get_user_info",
+		url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_info",
 		auto: true,
 		cache: ["roles"],
 	});
 
 	const presentSlots = createResource({
-		url: "onerc_vmms.volunteer_and_member_management.api.get_present_slots",
+		url: "onerc_vmms.volunteer_and_member_management.api.volunteer.get_present_slots",
 		cache: "presentSlots",
+		auto: true,
 	});
 
   return {

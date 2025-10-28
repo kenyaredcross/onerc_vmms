@@ -7,6 +7,7 @@
  "field_order": [
   "course_name",
   "institution",
+  "start_date",
   "date_completed",
   "column_break_jyfw",
   "remarks",
@@ -20,7 +21,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Course Name",
+   "label": "Training / Certification Name",
    "reqd": 1
   },
   {
@@ -30,7 +31,17 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Institution",
+   "label": "Organization / Institution",
+   "reqd": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Start Date",
    "reqd": 1
   },
   {
@@ -40,7 +51,8 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Date Completed"
+   "label": "Date Completed",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_jyfw",
@@ -58,14 +70,14 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Attachment"
+   "label": "Attach Certificate"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-16 10:30:12.823198",
+ "modified": "2025-10-28 16:30:55.821071",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "User External Course",

@@ -55,7 +55,8 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Email"
+   "label": "Email",
+   "reqd": 1
   },
   {
    "fieldname": "phone_number",
@@ -64,7 +65,8 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Phone Number"
+   "label": "Phone Number",
+   "reqd": 1
   },
   {
    "fieldname": "notes",
@@ -76,7 +78,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-16 10:30:12.155099",
+ "modified": "2025-10-28 16:30:41.677880",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Professional Reference",

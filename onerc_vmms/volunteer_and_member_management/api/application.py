@@ -19,12 +19,12 @@ def get_job_openings(filters=None, orFilters=None):
 
     user = frappe.session.user
 
-    employee_exists = frappe.db.exists(
-        "Employee", {"user_id": user, "status": "Active"}
-    )
+    # employee_exists = frappe.db.exists(
+    #     "Employee", {"user_id": user, "status": "Active"}
+    # )
 
-    if not employee_exists:
-        filters["opportunity_type"] = "Guest"
+    # if not employee_exists:
+    #     filters["opportunity_type"] = "Guest"
 
     regions = None
     if "region" in filters:
@@ -81,29 +81,20 @@ def get_job_openings(filters=None, orFilters=None):
     elif companies:
         filters["company"] = ["in", companies]
 
-    jobs = frappe.get_all(
+    job_names = frappe.get_all(
         "Job Opening",
         filters=filters,
         or_filters=or_filters,
-        fields=[
-            "job_title",
-            "posted_on",
-            "closes_on",
-            "closed_on",
-            "designation",
-            "vacancies",
-            "location",
-            "employment_type",
-            "company",
-            "department",
-            "name",
-            "creation",
-            "description",
-            "status",
-            "is_internal",
-        ],
+        fields=["name"],
         order_by="creation desc",
     )
+
+    jobs = []
+    for j in job_names:
+        try:
+            jobs.append(frappe.get_doc("Job Opening", j.name).as_dict())
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Failed to fetch Job Opening doc")
 
     if user != "Guest":
         user_email = frappe.db.get_value("User", user, "email")
@@ -195,14 +186,13 @@ def submit_job_application(id: str = None) -> dict:
 
         application = frappe.get_doc("Job Applicant", id)
 
-        if application.status != "Draft":
-            return {"error": "Only applications with status 'Draft' can be submitted."}
-
-        application.status = "Open"
-        application.save(ignore_permissions=True)
+        application.flags.ignore_permissions = True
+        application.submit()
         frappe.db.commit()
         return {"message": "Application submitted successfully"}
+
     except Exception as e:
+        frappe.log_error("Job Application Submission Error", frappe.get_traceback())
         return {"error": str(e)}
 
 
@@ -258,7 +248,7 @@ def create_job_application(job_opening: str = None, id: str = None, **kwargs) ->
             "applicant_name": name_to_use,
             "email_id": email_id,
             "company": company,
-            "status": "Draft",
+            "status": "Open",
         }
 
         if job_opening:
@@ -302,6 +292,7 @@ def fetch_applications(email: str):
             "designation",
             "job_title",
             "status",
+            "docstatus",
             "company",
             "cover_letter",
             "creation",
@@ -322,42 +313,6 @@ def fetch_applications(email: str):
         app["job_opening_details"] = job_opening
 
     return applicants
-
-
-@frappe.whitelist()
-def can_edit_job_application(applicant_id: str) -> bool:
-    if not applicant_id:
-        return False
-
-    try:
-        applicant = frappe.get_doc(
-            "Job Applicant", applicant_id, ignore_permissions=True
-        )
-
-        if applicant.status and applicant.status.lower() != "draft":
-            return False
-
-        if applicant.job_title:
-            job_opening = frappe.get_doc(
-                "Job Opening", applicant.job_title, ignore_permissions=True
-            )
-            if job_opening.status.lower() != "open":
-                return False
-
-        interview = frappe.db.exists("Interview", {"job_applicant": applicant_id})
-        if interview:
-            return False
-
-        offer = frappe.db.exists("Job Offer", {"job_applicant": applicant_id})
-        if offer:
-            return False
-
-        return True
-    except Exception:
-        frappe.log_error(
-            frappe.get_traceback(), "Error checking job application edit permission"
-        )
-        return False
 
 
 @frappe.whitelist()

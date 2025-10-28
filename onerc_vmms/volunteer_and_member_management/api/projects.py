@@ -4,29 +4,11 @@ from .volunteer import get_current_volunteer
 
 
 @frappe.whitelist()
-def get_projects():
-    return frappe.get_all(
-        "Project",
-        fields=[
-            "name",
-            "project_name",
-            "status",
-            "project_type",
-            "is_active",
-            "percent_complete",
-            "priority",
-            "expected_start_date",
-            "expected_end_date",
-        ],
-    )
-
-
-@frappe.whitelist()
 def fetch_assigned_projects():
     volunteer = get_current_volunteer()
 
     assignees = frappe.get_all(
-        "Personnel Deployment Assignment",
+        "Personnel Deployment Request",
         filters={
             "employee": volunteer,
             "status": "Pending",
@@ -43,7 +25,7 @@ def fetch_assigned_projects():
         deployment_name = assignee.deployment
         assignee_name = assignee.name
 
-        deployment = frappe.get_doc("Personnel Deployment Request", deployment_name)
+        deployment = frappe.get_doc("Deployment Request Tool", deployment_name)
         if not deployment or not deployment.project:
             continue
 
@@ -67,7 +49,6 @@ def fetch_assigned_projects():
         )
         if project:
             project["deployment_name"] = assignee_name
-
             if getattr(deployment, "task", None):
                 task = frappe.db.get_value(
                     "Task",
@@ -93,41 +74,10 @@ def fetch_assigned_projects():
 
 
 @frappe.whitelist()
-def get_project_details(project_name):
-
-    project = frappe.db.get_value(
-        "Project",
-        project_name,
-        [
-            "name",
-            "project_name",
-            "status",
-            "project_type",
-            "is_active",
-            "percent_complete",
-            "priority",
-            "expected_start_date",
-            "expected_end_date",
-            "priority",
-            "notes",
-        ],
-        as_dict=1,
-    )
-
-    project["notes"] = (
-        frappe.utils.strip_html_tags(project["notes"])
-        if project and project.get("notes")
-        else ""
-    )
-
-    return project
-
-
-@frappe.whitelist()
 def get_assignment_details(assignment_name):
 
     assignment = frappe.get_doc(
-        "Personnel Deployment Assignment",
+        "Personnel Deployment Request",
         assignment_name,
     ).as_dict()
 
@@ -145,7 +95,7 @@ def get_assignment_details(assignment_name):
             ).as_dict()
         assignment["contract"] = contract
 
-    deployment = frappe.get_doc("Personnel Deployment Request", assignment.deployment)
+    deployment = frappe.get_doc("Deployment Request Tool", assignment.deployment)
 
     project = frappe.db.get_value(
         "Project",
@@ -193,7 +143,7 @@ def accept_assignment(name, accepted=True, contract_name=None):
             frappe.db.set_value("Contract", contract_name, {"is_signed": 1})
 
         assignee = frappe.get_doc(
-            "Personnel Deployment Assignment", name, ignore_permissions=True
+            "Personnel Deployment Request", name, ignore_permissions=True
         )
         assignee.status = "Accepted" if accepted else "Rejected"
         assignee.save(ignore_permissions=True)

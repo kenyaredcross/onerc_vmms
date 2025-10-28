@@ -74,26 +74,6 @@
 						label="Email"
 						v-model="signUpForm.email"
 					/>
-
-					<Input
-						required
-						type="text"
-						variant="subtle"
-						placeholder="+254123456789"
-						label="Phone Number"
-						v-model="signUpForm.phone"
-					/>
-
-					<div>
-						<label class="text-gray-700 text-sm mb-2 block">Gender</label>
-						<Select
-							required
-							v-model="signUpForm.gender"
-							:options="genderOptions"
-							placeholder="Select Gender"
-							class="focus:ring-2 focus:ring-red-500"
-						/>
-					</div>
 				</template>
 
 				<Button
@@ -140,15 +120,17 @@
 </template>
 
 <script setup lang="ts">
-import { Card, createResource, Input, Select } from "frappe-ui";
+import { createResource } from "frappe-ui";
 import Button from "frappe-ui/src/components/Button/Button.vue";
+import Card from "frappe-ui/src/components/Card.vue";
 import Dialog from "frappe-ui/src/components/Dialog/Dialog.vue";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
+import Input from "frappe-ui/src/components/Input.vue";
 import { Eye, EyeOff } from "lucide-vue-next";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { sessionStore } from "../stores/session";
-import { initialForm, isValidPhone, resetSignUpForm, SignUp } from "../utils/volunteer";
+import { initialForm, resetSignUpForm, SignUp } from "../utils/volunteer";
 
 const route = useRoute();
 const router = useRouter();
@@ -181,12 +163,6 @@ onMounted(() => {
 	}
 });
 
-const genderOptions = [
-	{ label: "Male", value: "Male" },
-	{ label: "Female", value: "Female" },
-	{ label: "Other", value: "Other" },
-];
-
 const createSignUp = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.user.create_user",
 	onSuccess() {
@@ -198,12 +174,20 @@ const createSignUp = createResource({
 
 function submit() {
 	if (isLogin.value) {
-		session.login.submit({ usr: userEmail.value, pwd: password.value });
+		session.login.submit(
+			{ usr: userEmail.value, pwd: password.value },
+			{
+				onSuccess: () => {
+					const redirectTo = route.query["redirect-to"] as string;
+					if (redirectTo) {
+						router.push(redirectTo);
+					} else {
+						router.push({ name: "Dashboard" });
+					}
+				},
+			},
+		);
 	} else {
-		if (!isValidPhone(signUpForm.phone)) {
-			createSignUp.error = "Please enter a valid Kenyan phone number.eg. (+254123456789)";
-			return;
-		}
 		createSignUp.submit({
 			...signUpForm,
 		});

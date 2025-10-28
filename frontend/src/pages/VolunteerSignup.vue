@@ -1,203 +1,235 @@
 <template>
-  <div class="">
-    <h1 class="text-3xl font-bold text-center text-red-700 py-3">
-      {{ __("Volunteer Signup") }}
-    </h1>
-  </div>
+	<div class="">
+		<h1 class="text-3xl font-bold text-center text-red-700 py-3">
+			{{ __("Volunteer Signup") }}
+		</h1>
+	</div>
 
-  <div v-if="!isLoggedIn" class="text-center py-20">
-    <LogIn class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-    <h2 class="text-3xl font-bold text-gray-900 mb-4">Login Required</h2>
-    <p class="text-gray-600 mb-8">
-      Please log in to submit your volunteer application.
-    </p>
-    <Button
-      variant="solid"
-      class="bg-red-600 hover:bg-red-700 text-white"
-      @click="redirectToLogin"
-    >
-      <template #prefix>
-        <LogIn class="w-4 h-4" />
-      </template>
-      {{ __("Login to Continue") }}
-    </Button>
-  </div>
+	<div v-if="!isLoggedIn" class="text-center py-20">
+		<LogIn class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+		<h2 class="text-3xl font-bold text-gray-900 mb-4">Login Required</h2>
+		<p class="text-gray-600 mb-8">Please log in to submit your volunteer application.</p>
+		<Button
+			variant="solid"
+			class="bg-red-600 hover:bg-red-700 text-white"
+			@click="redirectToLogin"
+		>
+			<template #prefix>
+				<LogIn class="w-4 h-4" />
+			</template>
+			{{ __("Login to Continue") }}
+		</Button>
+	</div>
 
-  <div
-    v-else-if="alreadyApplied && applicationStatus !== 'Draft'"
-    class="text-center py-10"
-  >
-    <PendingApproval />
-  </div>
+	<div v-else-if="alreadyApplied && applicationStatus !== 'Draft'" class="text-center py-10">
+		<PendingApproval />
+	</div>
 
-  <div
-    v-else-if="
-      !alreadyApplied || (alreadyApplied && applicationStatus === 'Draft')
-    "
-    class="min-h-screen flex flex-col"
-  >
-    <main class="flex-1 container mx-auto px-4 py-4">
-      <div class="bg-white shadow-lg rounded p-6">
-        <div class="w-full mb-10">
-          <div
-            v-if="alreadyApplied && applicationStatus === 'Draft'"
-            class="text-center mb-6"
-          >
-            <h2 class="text-xl font-semibold text-orange-600">
-              Continue Your Draft Application
-            </h2>
-            <p class="text-gray-600 text-sm">
-              Complete and submit your volunteer application
-            </p>
-          </div>
+	<div
+		v-else-if="!alreadyApplied || (alreadyApplied && applicationStatus === 'Draft')"
+		class="min-h-screen flex flex-col"
+	>
+		<main class="flex-1 container mx-auto px-4 py-4">
+			<div class="bg-white shadow-lg rounded p-6">
+				<div class="w-full mb-10">
+					<div
+						v-if="alreadyApplied && applicationStatus === 'Draft'"
+						class="text-center mb-6"
+					>
+						<h2 class="text-xl font-semibold text-orange-600">
+							Continue Your Draft Application
+						</h2>
+						<p class="text-gray-600 text-sm">
+							Complete and submit your volunteer application
+						</p>
+					</div>
 
-          <div class="flex items-center justify-between relative">
-            <div
-              v-for="(step, i) in steps"
-              :key="i"
-              class="flex-1 flex flex-col items-center text-center relative group cursor-pointer"
-            >
-              <div
-                v-if="i < steps.length"
-                class="absolute top-6 w-full h-1 -translate-y-1/2"
-                :class="i < currentStep ? 'bg-red-600' : 'bg-gray-300'"
-              ></div>
+					<div class="flex items-center justify-between relative">
+						<div
+							v-for="(step, i) in steps"
+							:key="i"
+							class="flex-1 flex flex-col items-center text-center relative group cursor-pointer"
+						>
+							<div
+								v-if="i < steps.length"
+								class="absolute top-6 w-full h-1 -translate-y-1/2"
+								:class="i < currentStep ? 'bg-red-600' : 'bg-gray-300'"
+							></div>
 
-              <div
-                class="relative flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ease-in-out"
-                :class="[
-                  i < currentStep
-                    ? 'bg-red-600 border-red-600 text-white shadow-md hover:shadow-lg'
-                    : i === currentStep
-                      ? 'bg-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
-                      : 'bg-gray-200 border-gray-300 text-gray-500 hover:border-gray-400 hover:bg-gray-300',
-                ]"
-              >
-                <span class="text-lg">{{ i + 1 }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+							<div
+								class="relative flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ease-in-out"
+								:class="[
+									i < currentStep
+										? 'bg-red-600 border-red-600 text-white shadow-md hover:shadow-lg'
+										: i === currentStep
+											? 'bg-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
+											: 'bg-gray-200 border-gray-300 text-gray-500 hover:border-gray-400 hover:bg-gray-300',
+								]"
+							>
+								<span class="text-lg">{{ i + 1 }}</span>
+							</div>
+						</div>
+					</div>
+				</div>
 
-        <section v-if="currentStep === 0">
-          <StepOrganization
-            v-model="form"
-            :errors="errors"
-            @update:errors="handleErrorsUpdate"
-            @change="trackChanges"
-          />
-        </section>
-        <section v-if="currentStep === 1">
-          <StepAdditional
-            v-model="form"
-            :errors="errors"
-            @update:errors="handleErrorsUpdate"
-            @change="trackChanges"
-          />
-        </section>
-        <section v-if="currentStep === 2">
-          <StepDocuments
-            v-model="form"
-            :documents="documents"
-            :errors="errors"
-            @change="trackChanges"
-          />
-        </section>
-        <section v-if="currentStep === 3">
-          <ReviewApplication :form="form" />
-        </section>
+				<section v-if="currentStep === 0">
+					<StepOrganization
+						v-model="form"
+						:errors="errors"
+						@update:errors="handleErrorsUpdate"
+						@change="trackChanges"
+					/>
+				</section>
+				<section v-if="currentStep === 1">
+					<StepAdditional
+						v-model="form"
+						:errors="errors"
+						@update:errors="handleErrorsUpdate"
+						@change="trackChanges"
+					/>
+				</section>
+				<section v-if="currentStep === 2">
+					<StepDocuments
+						v-model="form"
+						:documents="documents"
+						:errors="errors"
+						@change="trackChanges"
+					/>
+				</section>
+				<section v-if="currentStep === 3">
+					<ReviewApplication :form="form" />
+				</section>
 
-        <div class="flex justify-between items-center gap-4 mt-10">
-          <div>
-            <span
-              v-if="hasUnsavedChanges"
-              class="text-sm text-orange-600 font-medium"
-            >
-            </span>
-          </div>
-          <div class="flex gap-4">
-            <Button v-if="currentStep > 0" @click="prevStep">
-              {{ __("Back") }}
-            </Button>
-            <Button
-              v-if="currentStep < steps.length - 1"
-              @click="nextStep"
-              variant="solid"
-              :loading="saveInProgress"
-            >
-              {{ __("Save & Continue") }}
-            </Button>
-            <Button
-              v-if="currentStep === steps.length - 1"
-              class="bg-red-700 text-white"
-              variant="solid"
-              :loading="saveInProgress"
-              @click="showSubmitDialog = true"
-            >
-              {{ __("Submit Application") }}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
+				<div class="flex justify-between items-center gap-4 mt-10">
+					<div>
+						<span v-if="hasUnsavedChanges" class="text-sm text-orange-600 font-medium">
+						</span>
+					</div>
+					<div class="flex gap-4">
+						<Button v-if="currentStep > 0" @click="prevStep">
+							{{ __("Back") }}
+						</Button>
+						<Button
+							v-if="currentStep < steps.length - 1"
+							@click="nextStep"
+							variant="solid"
+							:loading="saveInProgress"
+						>
+							{{ __("Save & Continue") }}
+						</Button>
+						<Button
+							v-if="currentStep === steps.length - 1"
+							class="bg-red-700 text-white"
+							variant="solid"
+							:loading="saveInProgress"
+							@click="showSubmitDialog = true"
+						>
+							{{ __("Submit Application") }}
+						</Button>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
 
-  <!-- Submit Confirmation Dialog -->
-  <Dialog v-model="showSubmitDialog">
-    <template #body-title>
-      <h2 class="text-lg font-bold text-gray-900">
-        {{ __("Confirm Submission") }}
-      </h2>
-    </template>
+	<Dialog v-model="showSubmitDialog">
+		<template #body-title>
+			<h2 class="text-lg font-bold text-gray-900">
+				{{ __("Confirm Submission") }}
+			</h2>
+		</template>
 
-    <template #body-content>
-      <p class="text-gray-700 leading-relaxed">
-        {{ __("Are you sure you want to submit this application?") }}
-      </p>
-      <p class="mt-2 text-sm text-red-600 font-medium">
-        {{ __("You won't be able to make further edits after submission.") }}
-      </p>
-    </template>
+		<template #body-content>
+			<p class="text-gray-700 leading-relaxed">
+				{{ __("Are you sure you want to submit this application?") }}
+			</p>
+			<p class="mt-2 text-sm text-red-600 font-medium">
+				{{ __("You won't be able to make further edits after submission.") }}
+			</p>
+		</template>
 
-    <template #actions>
-      <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button
-          variant="outline"
-          class="w-full sm:w-auto py-3"
-          @click="showSubmitDialog = false"
-        >
-          {{ __("Cancel") }}
-        </Button>
-        <Button
-          variant="solid"
-          class="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-white py-3"
-          @click="confirmSubmit"
-        >
-          <template #prefix>
-            <FeatherIcon name="check-circle" class="w-4" />
-          </template>
-          {{ __("Submit") }}
-        </Button>
-      </div>
-    </template>
-  </Dialog>
+		<template #actions>
+			<div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+				<Button
+					variant="outline"
+					class="w-full sm:w-auto py-3"
+					@click="showSubmitDialog = false"
+				>
+					{{ __("Cancel") }}
+				</Button>
+				<Button
+					variant="solid"
+					class="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-white py-3"
+					@click="confirmSubmit"
+				>
+					<template #prefix>
+						<FeatherIcon name="check-circle" class="w-4" />
+					</template>
+					{{ __("Submit") }}
+				</Button>
+			</div>
+		</template>
+	</Dialog>
 
-  <ErrorModal v-model="showErrorDialog" :errors="flatErrors" />
+	<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
-import { Button, toast, createResource, Dialog } from "frappe-ui";
-import { LogIn, FeatherIcon } from "lucide-vue-next";
 import PendingApproval from "@/components/PendingApproval.vue";
-import StepOrganization from "@/components/Signup/StepOrganization.vue";
 import StepAdditional from "@/components/Signup/StepAdditional.vue";
 import StepDocuments from "@/components/Signup/StepDocuments.vue";
-import { usersStore } from "../stores/user";
-import { sessionStore } from "../stores/session";
+import StepOrganization from "@/components/Signup/StepOrganization.vue";
+import { Button, createResource, Dialog, toast } from "frappe-ui";
+import { FeatherIcon, LogIn } from "lucide-vue-next";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import ReviewApplication from "../components/Signup/ReviewApplication.vue";
 import ErrorModal from "../components/Modals/ErrorModal.vue";
+import ReviewApplication from "../components/Signup/ReviewApplication.vue";
+import { sessionStore } from "../stores/session";
+import { usersStore } from "../stores/user";
+
+const FIELD_MAP = {
+	date_of_birth: "birth_date",
+	mpesa_mobile_phone: "mobile_no",
+	surname: "last_name",
+	other_names: "middle_name",
+	phone_number: "phone",
+};
+
+const NORMAL_FIELDS = [
+	"ward",
+	"first_name",
+	"identification_type",
+	"id_number",
+	"passport_number",
+	"number_of_dependants",
+	"marital_status",
+	"blood_group",
+	"citizenship",
+	"country_of_citizenship",
+	"administrative_location",
+	"sub_county",
+	"county",
+	"access_to_internet",
+	"profession",
+	"reason_to_join_krcs",
+	"gender",
+	"email_id",
+];
+
+const TABLE_FIELDS = [
+	"languages",
+	"education",
+	"disabilities",
+	"driving_licence",
+	"certification",
+	"licences",
+	"additional_skills",
+	"allergies",
+	"work_references",
+	"work_experience",
+	"supporting_documents",
+];
 
 const { userResource } = usersStore();
 const { isLoggedIn } = sessionStore();
@@ -206,10 +238,10 @@ const router = useRouter();
 
 const currentStep = ref(0);
 const steps = [
-  { title: "Organization & Personal Info" },
-  { title: "Additional Info" },
-  { title: "Documents" },
-  { title: "Review & Submit" },
+	{ title: "Organization & Personal Info" },
+	{ title: "Additional Info" },
+	{ title: "Documents" },
+	{ title: "Review & Submit" },
 ];
 
 const applicationId = ref(null);
@@ -219,6 +251,7 @@ const documents = ref([]);
 const saveInProgress = ref(false);
 const showSubmitDialog = ref(false);
 const showErrorDialog = ref(false);
+const loading = ref(true);
 
 const originalFormData = ref({});
 const hasUnsavedChanges = ref(false);
@@ -226,511 +259,511 @@ const changedFields = ref(new Set());
 const flatErrors = ref("");
 
 const form = reactive({
-  company: "",
-  mpesa_mobile_phone: "",
-  date_of_birth: "",
-  id_number: "",
-  passport_number: "",
-  administrative_location: "",
-  sub_county: "",
-  citizenship: "",
-  marital_status: "",
-  education: "",
-  profession: "",
-  access_to_internet: "",
-  citizenship: "",
-  number_of_dependants: null,
-  reason_to_join_krcs: "",
-  disabilities: "",
-  has_insurance: "",
-  languages: [],
-  driving_licence: [],
-  licences: [],
-  blood_group: "",
-  certification: [],
-  supporting_documents: [],
-  courses: [],
-  additional_skills: "",
-  county: "",
-  ward: "",
-  profile_photo: null,
-  _current_step: 0,
-  _current_progress: 0,
+	email_id: "",
+	phone_number: "",
+	company: "",
+	mpesa_mobile_phone: "",
+	date_of_birth: "",
+	id_number: "",
+	passport_number: "",
+	administrative_location: "",
+	sub_county: "",
+	citizenship: "",
+	country_of_citizenship: "",
+	marital_status: "",
+	education: "",
+	profession: "",
+	allergies: [],
+	access_to_internet: "",
+	identification_type: "",
+	number_of_dependants: null,
+	reason_to_join_krcs: "",
+	disabilities: "",
+	has_insurance: "",
+	languages: [],
+	driving_licence: [],
+	licences: [],
+	blood_group: "",
+	certification: [],
+	supporting_documents: [],
+	courses: [],
+	additional_skills: "",
+	county: "",
+	ward: "",
+	profile_photo: null,
+	_current_step: 0,
+	_current_progress: 0,
 });
 
 const errors = reactive({});
 
 const stepFields = {
-  0: [
-    "company",
-    "ward",
-    "date_of_birth",
-    "id_number",
-    "passport_number",
-    "mpesa_mobile_phone",
-    "number_of_dependants",
-    "marital_status",
-    "blood_group",
-    "has_insurance",
-    "citizenship",
-    "administrative_location",
-    "sub_county",
-    "county",
-  ],
-  1: [
-    "access_to_internet",
-    "profession",
-    "languages",
-    "education",
-    "disabilities",
-    "reason_to_join_krcs",
-    "driving_licence",
-    "certification",
-    "licences",
-    "additional_skills",
-    "courses",
-  ],
-  2: ["profile_photo", "supporting_documents"],
+	0: [
+		"email_id",
+		"phone_number",
+		"company",
+		"ward",
+		"date_of_birth",
+		"id_number",
+		"passport_number",
+		"mpesa_mobile_phone",
+		"number_of_dependants",
+		"marital_status",
+		"blood_group",
+		"has_insurance",
+		"citizenship",
+		"country_of_citizenship",
+		"identification_type",
+		"administrative_location",
+		"sub_county",
+		"county",
+	],
+	1: [
+		"access_to_internet",
+		"profession",
+		"allergies",
+		"languages",
+		"education",
+		"disabilities",
+		"reason_to_join_krcs",
+		"driving_licence",
+		"certification",
+		"licences",
+		"additional_skills",
+		"courses",
+	],
+	2: ["profile_photo", "supporting_documents"],
 };
 
 const progressPercentage = computed(() => {
-  const totalSteps = steps.length;
-  const baseProgress = (currentStep.value / totalSteps) * 100;
+	const totalSteps = steps.length;
+	const baseProgress = (currentStep.value / totalSteps) * 100;
 
-  const currentStepFields = stepFields[currentStep.value] || [];
-  let filledFields = 0;
+	const currentStepFields = stepFields[currentStep.value] || [];
+	let filledFields = 0;
 
-  currentStepFields.forEach((field) => {
-    const value = form[field];
-    if (value && (Array.isArray(value) ? value.length > 0 : value !== "")) {
-      filledFields++;
-    }
-  });
+	currentStepFields.forEach((field) => {
+		const value = form[field];
+		if (value && (Array.isArray(value) ? value.length > 0 : value !== "")) {
+			filledFields++;
+		}
+	});
 
-  const currentStepProgress =
-    currentStepFields.length > 0
-      ? (filledFields / currentStepFields.length) * (100 / totalSteps)
-      : 0;
+	const currentStepProgress =
+		currentStepFields.length > 0
+			? (filledFields / currentStepFields.length) * (100 / totalSteps)
+			: 0;
 
-  return Math.min(baseProgress + currentStepProgress, 100);
+	return Math.min(baseProgress + currentStepProgress, 100);
 });
 
 function trackChanges(field) {
-  const currentValue = JSON.stringify(form[field]);
-  const originalValue = JSON.stringify(originalFormData.value[field]);
+	const currentValue = JSON.stringify(form[field]);
+	const originalValue = JSON.stringify(originalFormData.value[field]);
 
-  if (currentValue !== originalValue) {
-    changedFields.value.add(field);
-    hasUnsavedChanges.value = true;
-  } else {
-    changedFields.value.delete(field);
-    hasUnsavedChanges.value = changedFields.value.size > 0;
-  }
+	if (currentValue !== originalValue) {
+		changedFields.value.add(field);
+		hasUnsavedChanges.value = true;
+	} else {
+		changedFields.value.delete(field);
+		hasUnsavedChanges.value = changedFields.value.size > 0;
+	}
 }
 
 watch(
-  form,
-  () => {
-    Object.keys(form).forEach((key) => {
-      if (!key.startsWith("_")) {
-        trackChanges(key);
-      }
-    });
-  },
-  { deep: true }
+	form,
+	() => {
+		Object.keys(form).forEach((key) => {
+			if (!key.startsWith("_")) {
+				trackChanges(key);
+			}
+		});
+	},
+	{ deep: true },
 );
 
+function populateFormFromUser(userData) {
+	const allFields = [...new Set([...NORMAL_FIELDS, ...Object.keys(FIELD_MAP)])];
+
+	allFields.forEach((formField) => {
+		const userField = FIELD_MAP[formField] || formField;
+		let userValue = userData[userField];
+
+		if (formField === "email_id" && user.data?.email) {
+			userValue = user.data.email;
+		} else if (formField === "phone_number" && user.data?.phone) {
+			userValue = user.data.phone;
+		}
+
+		const formValue = form[formField];
+		const formIsEmpty =
+			formValue === null ||
+			formValue === undefined ||
+			formValue === "" ||
+			(Array.isArray(formValue) && formValue.length === 0);
+
+		const userValueExists =
+			userValue !== null &&
+			userValue !== undefined &&
+			userValue !== "" &&
+			(!Array.isArray(userValue) || userValue.length > 0);
+
+		if (formIsEmpty && userValueExists) {
+			if (form[formField] !== userValue) {
+				form[formField] = userValue;
+			}
+		}
+	});
+
+	updateOriginalData();
+	hasUnsavedChanges.value = false;
+	changedFields.value.clear();
+}
+
+const userDetailsResource = createResource({
+	url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_details",
+	onSuccess(data) {
+		if (data) populateFormFromUser(data);
+		loading.value = false;
+	},
+	onError(err) {
+		toast.error(err.message || "Failed to fetch user details");
+		loading.value = false;
+	},
+});
+
 function getCurrentStepData(onlyChanges = false) {
-  const currentStepData = {};
-  const currentStepFieldList = stepFields[currentStep.value] || [];
+	const currentStepData = {};
+	const currentStepFieldList = stepFields[currentStep.value] || [];
 
-  currentStepFieldList.forEach((field) => {
-    if (onlyChanges && !changedFields.value.has(field)) {
-      return;
-    }
+	currentStepFieldList.forEach((field) => {
+		if (onlyChanges && !changedFields.value.has(field)) {
+			return;
+		}
 
-    if (field === "documents") {
-      currentStepData.documents = documents.value;
-    } else {
-      currentStepData[field] = form[field];
-    }
-  });
+		if (field === "documents") {
+			currentStepData.documents = documents.value;
+		} else {
+			currentStepData[field] = form[field];
+		}
+	});
 
-  currentStepData.is_volunteer = true;
-  currentStepData._current_step = currentStep.value;
-  currentStepData._current_progress = Math.round(progressPercentage.value);
+	currentStepData.is_volunteer = true;
+	currentStepData._current_step = currentStep.value;
+	currentStepData._current_progress = Math.round(progressPercentage.value);
 
-  if (user.data?.email) {
-    currentStepData.email_id = user.data.email;
-  }
+	if (user.data?.email) {
+		currentStepData.email_id = user.data.email;
+	}
+	if (user.data?.phone) {
+		currentStepData.phone_number = user.data.phone;
+	}
 
-  return currentStepData;
+	return currentStepData;
 }
 
 const jobApplication = createResource({
-  url: "non_profit.non_profit.api.search_doctype",
-  makeParams() {
-    return {
-      doctype: "Job Applicant",
-      filters: {
-        email_id: user.data?.email,
-        is_volunteer: true,
-      },
-      first: true,
-    };
-  },
-  auto: true,
-  reloadOn: () => !!user.data?.email,
-  onSuccess(data) {
-    if (data?.name) {
-      const application = data;
+	url: "onerc_vmms.volunteer_and_member_management.api.doc.search_doctype",
+	makeParams() {
+		return {
+			doctype: "Job Applicant",
+			filters: {
+				email_id: user.data?.email,
+				is_volunteer: true,
+			},
+			first: true,
+		};
+	},
+	auto: true,
+	reloadOn: () => !!user.data?.email,
+	onSuccess(data) {
+		if (data?.name) {
+			const application = data;
 
-      alreadyApplied.value = true;
-      applicationStatus.value =
-        application.status || application.workflow_state;
-      applicationId.value = application.name;
+			alreadyApplied.value = true;
+			applicationStatus.value = application.docstatus == 0 ? "Draft" : application.name;
+			applicationId.value = application.name;
 
-      if (applicationStatus.value === "Draft") {
-        populateForm(application);
-      }
-    } else {
-      form.email_id = user.data?.email || "";
-    }
-  },
+			if (applicationStatus.value === "Draft") {
+				populateForm(application);
+			}
+		} else {
+			form.email_id = user.data?.email || "";
+		}
+
+		// Fetch user details to fill missing fields
+		userDetailsResource.submit();
+	},
 });
 
 const submitApplicationResource = createResource({
-  url: "non_profit.non_profit.api.submit_job_application",
-  makeParams() {
-    return {
-      id: applicationId.value,
-    };
-  },
+	url: "onerc_vmms.volunteer_and_member_management.api.application.submit_job_application",
+	makeParams() {
+		return {
+			id: applicationId.value,
+		};
+	},
 });
 
 const confirmSubmit = async () => {
-  submitApplicationResource.submit(
-    {},
-    {
-      onSuccess: () => {
-        toast.success("Application submitted successfully");
-        showSubmitDialog.value = false;
-        alreadyApplied.value = true;
-        hasUnsavedChanges.value = false;
-        changedFields.value.clear();
-        window.location.hash = "";
-      },
-      onError: (err) => {
-        toast.error(err.messages?.[0] || "Submission failed");
-      },
-    }
-  );
+	submitApplicationResource.submit(
+		{},
+		{
+			onSuccess: () => {
+				toast.success("Application submitted successfully");
+				showSubmitDialog.value = false;
+				alreadyApplied.value = true;
+				hasUnsavedChanges.value = false;
+				changedFields.value.clear();
+				window.location.reload();
+			},
+			onError: (err) => {
+				toast.error(err.messages?.[0] || "Submission failed");
+			},
+		},
+	);
 };
 
 const createApplication = createResource({
-  url: "non_profit.non_profit.api.create_job_application",
-  makeParams() {
-    return getCurrentStepData(false);
-  },
-  onSuccess(data) {
-    applicationId.value = data.name;
-    toast.success("Application saved successfully");
-    saveInProgress.value = false;
+	url: "onerc_vmms.volunteer_and_member_management.api.application.create_job_application",
+	makeParams() {
+		return getCurrentStepData(false);
+	},
+	onSuccess(data) {
+		applicationId.value = data.name;
+		toast.success("Application saved successfully");
+		saveInProgress.value = false;
 
-    updateOriginalData();
-    hasUnsavedChanges.value = false;
-    changedFields.value.clear();
-  },
-  onError(error) {
-    console.error("Create application error:", error);
-    toast.error("Failed to save application");
-    saveInProgress.value = false;
-  },
+		updateOriginalData();
+		hasUnsavedChanges.value = false;
+		changedFields.value.clear();
+	},
+	onError(error) {
+		console.error("Create application error:", error);
+		toast.error("Failed to save application");
+		saveInProgress.value = false;
+	},
 });
 
 const updateApplication = createResource({
-  url: "non_profit.non_profit.api.update_job_application",
-  makeParams() {
-    const stepData = getCurrentStepData(true);
-    return {
-      id: applicationId.value,
-      ...stepData,
-    };
-  },
-  onSuccess(data) {
-    toast.success("Application updated successfully");
-    saveInProgress.value = false;
+	url: "onerc_vmms.volunteer_and_member_management.api.application.update_job_application",
+	makeParams() {
+		const stepData = getCurrentStepData(true);
+		return {
+			id: applicationId.value,
+			...stepData,
+		};
+	},
+	onSuccess(data) {
+		toast.success("Application updated successfully");
+		saveInProgress.value = false;
 
-    updateOriginalData();
-    hasUnsavedChanges.value = false;
-    changedFields.value.clear();
-  },
-  onError(error) {
-    console.error("Update application error:", error);
-    toast.error("Failed to update application");
-    saveInProgress.value = false;
-  },
+		updateOriginalData();
+		hasUnsavedChanges.value = false;
+		changedFields.value.clear();
+	},
+	onError(error) {
+		console.error("Update application error:", error);
+		toast.error("Failed to update application");
+		saveInProgress.value = false;
+	},
 });
 
 function populateForm(data) {
-  Object.keys(form).forEach((key) => {
-    if (data[key] !== undefined && data[key] !== null) {
-      form[key] = data[key];
-    }
-  });
+	Object.keys(form).forEach((key) => {
+		if (data[key] !== undefined && data[key] !== null) {
+			form[key] = data[key];
+		}
+	});
 
-  if (data.languages && Array.isArray(data.languages)) {
-    form.languages = data.languages;
-  }
-  if (data.driving_licence && Array.isArray(data.driving_licence)) {
-    form.driving_licence = data.driving_licence;
-  }
-  if (data.licences && Array.isArray(data.licences)) {
-    form.licences = data.licences;
-  }
+	if (data.languages && Array.isArray(data.languages)) {
+		form.languages = data.languages;
+	}
+	if (data.driving_licence && Array.isArray(data.driving_licence)) {
+		form.driving_licence = data.driving_licence;
+	}
+	if (data.licences && Array.isArray(data.licences)) {
+		form.licences = data.licences;
+	}
+	if (data.certification && Array.isArray(data.certification)) {
+		form.certification = data.certification;
+	}
+	if (data.allergies && Array.isArray(data.allergies)) {
+		form.allergies = data.allergies;
+	}
+	if (data.disabilities && Array.isArray(data.disabilities)) {
+		form.disabilities = data.disabilities;
+	}
+	if (data.supporting_documents && Array.isArray(data.supporting_documents)) {
+		form.supporting_documents = data.supporting_documents;
+	}
+	if (data.education) {
+		form.education = data.education;
+	}
+	if (data.additional_skills) {
+		form.additional_skills = data.additional_skills;
+	}
+	if (data.work_references) {
+		form.work_references = data.work_references;
+	}
+	if (data.work_experience) {
+		form.work_experience = data.work_experience;
+	}
 
-  if (data.documents && Array.isArray(data.documents)) {
-    documents.value = data.documents;
-  }
+	if (data.documents && Array.isArray(data.documents)) {
+		documents.value = data.documents;
+	}
 
-  updateOriginalData();
+	updateOriginalData();
 }
 
 function updateOriginalData() {
-  originalFormData.value = JSON.parse(JSON.stringify(form));
+	originalFormData.value = JSON.parse(JSON.stringify(form));
 }
 
 function redirectToLogin() {
-  router.push("/login");
+	router.push("/login");
 }
 
 function handleErrorsUpdate(newErrors = {}) {
-  Object.keys(errors).forEach((k) => delete errors[k]);
+	Object.keys(errors).forEach((k) => delete errors[k]);
 
-  Object.entries(newErrors || {}).forEach(([k, v]) => {
-    let normalized;
+	Object.entries(newErrors || {}).forEach(([k, v]) => {
+		let normalized;
 
-    if (v instanceof Map) {
-      normalized = Object.fromEntries(v);
-    } else if (typeof v === "object" && v !== null) {
-      normalized = JSON.parse(JSON.stringify(v));
-    } else {
-      normalized = v;
-    }
+		if (v instanceof Map) {
+			normalized = Object.fromEntries(v);
+		} else if (typeof v === "object" && v !== null) {
+			normalized = JSON.parse(JSON.stringify(v));
+		} else {
+			normalized = v;
+		}
 
-    if (
-      normalized &&
-      (typeof normalized !== "object" || Object.keys(normalized).length > 0)
-    ) {
-      errors[k] = normalized;
-    }
-  });
+		if (normalized && (typeof normalized !== "object" || Object.keys(normalized).length > 0)) {
+			errors[k] = normalized;
+		}
+	});
 }
 
 function validateStep(stepIndex) {
-  let valid = true;
+	let valid = true;
 
-  if (flatErrors.value) {
-    console.log("Validation failed due to existing errors:", flatErrors.value);
+	if (flatErrors.value) {
+		return false;
+	}
 
-    return false;
-  }
-
-  // Object.keys(errors).forEach((k) => (errors[k] = ""));
-
-  // if (stepIndex === 0) {
-  //   if (!form.company) {
-  //     errors.company = __("Branch is required");
-  //     valid = false;
-  //   }
-
-  //   if (form.mpesa_mobile_phone) {
-  //     const phone = form.mpesa_mobile_phone.toString().replace(/\s+/g, "");
-  //     const phoneRegex = /^(?:\+254|0)(7\d{8}|1\d{8})$/;
-  //     if (!phoneRegex.test(phone)) {
-  //       errors.mpesa_mobile_phone = __("Enter a valid phone number");
-  //       valid = false;
-  //     }
-  //   }
-
-  //   if (!form.administrative_location) {
-  //     errors.administrative_location = __("This field is required");
-  //     valid = false;
-  //   }
-  //   if (!form.sub_county) {
-  //     errors.sub_county = __("This field is required");
-  //     valid = false;
-  //   }
-  //   if (!form.citizenship) {
-  //     errors.citizenship = __("This field is required");
-  //     valid = false;
-  //   }
-
-  //   if (!form.date_of_birth) {
-  //     errors.date_of_birth = __("Date of birth is required");
-  //     valid = false;
-  //   } else {
-  //     const dob = new Date(form.date_of_birth);
-  //     const today = new Date();
-  //     let age = today.getFullYear() - dob.getFullYear();
-  //     const m = today.getMonth() - dob.getMonth();
-  //     if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-  //       age--;
-  //     }
-
-  //     if (age < 7 || age > 100) {
-  //       errors.date_of_birth = __("Age must be between 7 and 100 years");
-  //       valid = false;
-  //     }
-  //   }
-
-  //   if (!form.id_number && !form.passport_number) {
-  //     errors.id_number = __("Passport or ID number is required");
-  //     valid = false;
-  //   }
-
-  //   if (form.id_number && !/^\d{7,9}$/.test(form.id_number)) {
-  //     errors.id_number = __("ID number must be 7–9 digits");
-  //     valid = false;
-  //   }
-
-  //   if (
-  //     form.passport_number &&
-  //     !/^[A-Z0-9]{6,9}$/i.test(form.passport_number)
-  //   ) {
-  //     errors.passport_number = __("Invalid passport number format");
-  //     valid = false;
-  //   }
-  // }
-
-  // if (stepIndex === 1) {
-  //   if (!form.reason_to_join_krcs) {
-  //     errors.reason_to_join_krcs = __("This field is required");
-  //     valid = false;
-  //   }
-  //   if (!form.profession) {
-  //     errors.profession = __("This field is required");
-  //     valid = false;
-  //   }
-  //   if (!form.access_to_internet) {
-  //     errors.access_to_internet = __("This field is required");
-  //     valid = false;
-  //   }
-  // }
-
-  return valid;
+	return valid;
 }
 
 async function saveApplication() {
-  if (!hasUnsavedChanges.value && applicationId.value) {
-    return;
-  }
+	if (!hasUnsavedChanges.value && applicationId.value) {
+		return;
+	}
 
-  saveInProgress.value = true;
+	saveInProgress.value = true;
 
-  try {
-    if (!applicationId.value) {
-      await createApplication.submit();
-    } else {
-      await updateApplication.submit();
-    }
-  } catch (error) {
-    console.error("Save error:", error);
-    saveInProgress.value = false;
-  }
+	try {
+		if (!applicationId.value) {
+			await createApplication.submit();
+		} else {
+			await updateApplication.submit();
+		}
+	} catch (error) {
+		saveInProgress.value = false;
+	}
 }
 
 function updateHash(step) {
-  window.location.hash = `step-${step + 1}`;
+	window.location.hash = `step-${step + 1}`;
 }
 
 function readHashAndNavigate() {
-  const hash = window.location.hash.slice(1);
-  const match = hash.match(/step-(\d+)/);
+	const hash = window.location.hash.slice(1);
+	const match = hash.match(/step-(\d+)/);
 
-  if (match) {
-    const step = parseInt(match[1]) - 1;
-    if (step >= 0 && step < steps.length) {
-      currentStep.value = step;
-    }
-  }
+	if (match) {
+		const step = parseInt(match[1]) - 1;
+		if (step >= 0 && step < steps.length) {
+			currentStep.value = step;
+		}
+	}
 }
 
 function goToStep(stepIndex) {
-  if (stepIndex === currentStep.value) return;
+	if (stepIndex === currentStep.value) return;
 
-  if (stepIndex < currentStep.value) {
-    currentStep.value = stepIndex;
-    updateHash(stepIndex);
-    return;
-  }
+	if (stepIndex < currentStep.value) {
+		currentStep.value = stepIndex;
+		updateHash(stepIndex);
+		return;
+	}
 
-  if (!validateStep(currentStep.value)) {
-    showErrorDialog.value = true;
-    return;
-  }
+	if (!validateStep(currentStep.value)) {
+		showErrorDialog.value = true;
+		return;
+	}
 
-  let canProceed = true;
-  for (let i = currentStep.value; i < stepIndex; i++) {
-    if (!validateStep(i)) {
-      canProceed = false;
-      showErrorDialog.value = true;
-      break;
-    }
-  }
+	let canProceed = true;
+	for (let i = currentStep.value; i < stepIndex; i++) {
+		if (!validateStep(i)) {
+			canProceed = false;
+			showErrorDialog.value = true;
+			break;
+		}
+	}
 
-  if (canProceed) {
-    currentStep.value = stepIndex;
-    updateHash(stepIndex);
-  }
+	if (canProceed) {
+		currentStep.value = stepIndex;
+		updateHash(stepIndex);
+	}
 }
 
 async function nextStep() {
-  if (!validateStep(currentStep.value)) {
-    showErrorDialog.value = true;
-    return;
-  }
+	if (!validateStep(currentStep.value)) {
+		showErrorDialog.value = true;
+		return;
+	}
 
-  await saveApplication();
+	await saveApplication();
 
-  if (!saveInProgress.value && currentStep.value < steps.length - 1) {
-    currentStep.value++;
-    updateHash(currentStep.value);
-  }
+	if (!saveInProgress.value && currentStep.value < steps.length - 1) {
+		currentStep.value++;
+		updateHash(currentStep.value);
+	}
 }
 
 function prevStep() {
-  if (currentStep.value > 0) {
-    currentStep.value--;
-    updateHash(currentStep.value);
-  }
+	if (currentStep.value > 0) {
+		currentStep.value--;
+		updateHash(currentStep.value);
+	}
 }
 
 function handleHashChange() {
-  readHashAndNavigate();
+	readHashAndNavigate();
 }
 
 onMounted(() => {
-  readHashAndNavigate();
-  window.addEventListener("hashchange", handleHashChange);
-  updateOriginalData();
+	readHashAndNavigate();
+	window.addEventListener("hashchange", handleHashChange);
+	updateOriginalData();
 });
 
 onUnmounted(() => {
-  window.removeEventListener("hashchange", handleHashChange);
+	window.removeEventListener("hashchange", handleHashChange);
 });
 
 watch(currentStep, (newStep) => {
-  form._current_step = newStep;
-  form._current_progress = Math.round(progressPercentage.value);
+	form._current_step = newStep;
+	form._current_progress = Math.round(progressPercentage.value);
 });
-
 watch(
-  errors,
-  (newErrors) => {
-    const stepErrors = newErrors[currentStep.value] || {};
-    flatErrors.value = Object.keys(stepErrors).length > 0 ? stepErrors : null;
-  },
-  { deep: true, immediate: true }
+	[errors, currentStep],
+	([newErrors, newStep]) => {
+		const stepErrors = newErrors[newStep] || {};
+
+		flatErrors.value = Object.keys(stepErrors).length > 0 ? stepErrors : null;
+	},
+	{ deep: true, immediate: true },
 );
 </script>

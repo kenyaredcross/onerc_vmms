@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class VolunteerSkill(Document):
+class AdministrativeLocationTable(Document):
 	pass
