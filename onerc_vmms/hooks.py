@@ -187,11 +187,11 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-#     "daily": [
-#         "onerc_vmms.volunteer_and_member_management.doctype.membership.membership.set_expired_status",
-#     ],
-# }
+scheduler_events = {
+    "daily": [
+        "onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership.set_expired_status",
+    ],
+}
 
 # Testing
 # -------

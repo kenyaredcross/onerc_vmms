@@ -8,7 +8,8 @@ from .user import create_user, get_user_info
 
 
 @frappe.whitelist(allow_guest=True)
-def get_events():
+def get_events(search=None):
+
     user_info = get_user_info()
 
     fields = [
@@ -23,6 +24,12 @@ def get_events():
         "route",
     ]
 
+    if search:
+        search_filters = {
+            "venue": ["like", f"%{search}%"],
+            "title": ["like", f"%{search}%"],
+        }
+
     base_filters = {"start_date": [">=", datetime.now().date()], "is_published": 1}
 
     if user_info == "Guest":
@@ -33,7 +40,13 @@ def get_events():
     elif user_info.get("is_volunteer"):
         base_filters["event_access"] = ["in", ["Public", "Private"]]
 
-    events = frappe.get_all("FE Event", fields=fields, filters=base_filters)
+    events = frappe.get_all(
+        "FE Event",
+        fields=fields,
+        filters=base_filters,
+        or_filters=search_filters if search else None,
+        order_by="start_date asc, start_time asc",
+    )
 
     for event in events:
         event.short_description = (
@@ -46,47 +59,38 @@ def get_events():
 
 
 @frappe.whitelist(allow_guest=True)
-def register_event(event_name, user):
+def register_event(event_name: str | int, user: dict[str, any]) -> None:
+
+    if not event_name or not frappe.db.exists("FE Event", event_name):
+        frappe.throw("This event does not exist.")
+    if not frappe.db.exists("Event Ticket Type", {"event": event_name}):
+        frappe.throw("No ticket types available for this event.")
+
+    event = frappe.db.get_value("FE Event", event_name, ["is_ticketed"], as_dict=True)
+    if event and not event.is_ticketed:
+        ticket = frappe.db.get_value(
+            "Event Ticket Type", {"event": event_name}, as_dict=True
+        )
+
     try:
-        user_info = get_user_info()
-
-        if not frappe.db.exists("FE Event", event_name):
-            frappe.throw("Event does not exist")
-
-        attendee_registration = frappe.db.get_value(
-            "Attendee Registration", {"event": event_name}, "name"
-        )
-        if not attendee_registration:
-            frappe.throw("Attendee Registration not set up for this event")
-
-        if frappe.db.exists(
-            "Event Attendee Registration",
-            {"parent": event_name, "email": user.get("email")},
-        ):
-            frappe.throw("This email has already been registered for the event")
-
-        EAR = frappe.new_doc("Event Attendee Registration")
-        EAR.parent = event_name
-        EAR.parenttype = "Attendee Registration"
-        EAR.parentfield = "event_attendees"
-        EAR.email = user.get("email")
-        EAR.full_name = user.get("full_name")
-        EAR.phone_number = user.get("phone")
-        EAR.personnel_type = (
-            "Guest"
-            if user_info == "Guest"
-            else (
-                "Volunteer"
-                if user_info.get("is_volunteer")
-                else (
-                    "Member"
-                    if user_info.get("is_member")
-                    else "Employee" if user_info.get("employee") else "Other"
-                )
-            )
+        event_booking = frappe.get_doc(
+            {
+                "doctype": "Event Booking",
+                "event": event_name,
+                "user": "eventattendee@mail.com",
+                "attendees": [
+                    {
+                        "full_name": user.get("full_name"),
+                        "email": user.get("email"),
+                        "ticket_type": ticket.name,
+                    }
+                ],
+            }
         )
 
-        EAR.insert(ignore_permissions=True)
+        event_booking.insert(ignore_permissions=True)
+        event_booking.submit()
+        frappe.db.commit()
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Event Registration Error")

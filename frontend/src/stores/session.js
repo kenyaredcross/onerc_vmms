@@ -1,12 +1,11 @@
-import { defineStore } from "pinia";
-import { createResource } from "frappe-ui";
-import { userStore } from "./user";
 import router from "@/router";
+import { createResource } from "frappe-ui";
+import { defineStore } from "pinia";
 import { computed, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
+import { usersStore } from "./user";
 
 export const sessionStore = defineStore("vmms-session", () => {
-	let { userResource } = userStore();
+	let { userResource } = usersStore();
 	const brand = reactive({});
 
 	function sessionUser() {
@@ -20,7 +19,6 @@ export const sessionStore = defineStore("vmms-session", () => {
 
 	let user = ref(sessionUser());
 	const isLoggedIn = computed(() => !!user.value);
-	const route = useRoute();
 
 	const login = createResource({
 		url: "login",
@@ -31,13 +29,7 @@ export const sessionStore = defineStore("vmms-session", () => {
 			userResource.reload();
 			user.value = sessionUser();
 			login.reset();
-
-			const redirectTo = route.query["redirect-to"];
-			if (redirectTo) {
-				router.push(redirectTo);
-			} else {
-				router.push({ name: "Dashboard" });
-			}
+			router.replace({ path: "/" });
 		},
 	});
 
@@ -50,11 +42,23 @@ export const sessionStore = defineStore("vmms-session", () => {
 		},
 	});
 
+	const branding = createResource({
+		url: "onerc_vmms.volunteer_and_member_management.utils.get_branding",
+		cache: "brand",
+		auto: true,
+		onSuccess(data) {
+			brand.name = data.app_name;
+			brand.logo = data.app_logo;
+			brand.favicon = data.favicon?.file_url || "/assets/non_profit/frontend/favicon.png";
+		},
+	});
+
 	return {
 		user,
 		isLoggedIn,
 		login,
 		logout,
 		brand,
+		branding,
 	};
 });

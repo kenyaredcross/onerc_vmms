@@ -1,6 +1,18 @@
 from datetime import timedelta
 
 import frappe
+from frappe.utils.nestedset import get_descendants_of
+
+
+def get_company():
+    company = frappe.defaults.get_defaults().company
+    if company:
+        return company
+    else:
+        company = frappe.get_list("Company", limit=1)
+        if company:
+            return company[0].name
+    return None
 
 
 def get_current_fiscal_year():
@@ -108,41 +120,40 @@ def check_and_renew_membership(invoice_id: str) -> None:
     membership.validate_membership_period()
 
 
-@frappe.whitelist(allow_guest=True)
-def get_translations():
-    if frappe.session.user != "Guest":
-        language = frappe.db.get_value("User", frappe.session.user, "language")
-    else:
-        language = frappe.db.get_single_value("System Settings", "language")
-    return get_all_translations(language)
+@frappe.whitelist()
+def get_company_descendants(company=None, company_list=None, include_parent=True):
+    """
+    Retrieves the name of all descendants (children, grandchildren, etc.)
+    of one or more given Company names.
 
+    :param company: The name (string) of a parent Company or a list of company names.
+    :param company_list: Optional list of company names (alternative to `company`).
+    :param include_parent: If True, each parent company's name is included in the list.
+    :returns: A list of strings, where each string is the name of a descendant Company.
+    """
+    companies = company_list if company_list is not None else company
+    if not companies:
+        return []
 
-@frappe.whitelist(allow_guest=True)
-def get_branding():
-    """Get branding details."""
-    website_settings = frappe.get_single("Website Settings")
-    image_fields = ["banner_image", "footer_logo", "favicon"]
+    if not isinstance(companies, (list, tuple)):
+        companies = [companies]
 
-    for field in image_fields:
-        if website_settings.get(field):
-            file_info = get_file_info(website_settings.get(field))
-            website_settings.update({field: json.loads(json.dumps(file_info))})
-        else:
-            website_settings.update({field: None})
+    descendants_set = set()
+    for comp in companies:
+        if not comp:
+            continue
+        desc = get_descendants_of("Company", comp) or []
+        for d in desc:
+            descendants_set.add(d)
+        if include_parent:
+            descendants_set.add(comp)
 
-    return website_settings
+    return sorted(descendants_set)
 
 
 @frappe.whitelist()
-def get_file_info(file_url):
-    """Get file info for the given file URL."""
-    file_info = frappe.db.get_value(
-        "File",
-        {"file_url": file_url},
-        ["file_name", "file_size", "file_url"],
-        as_dict=1,
-    )
-    return file_info
+def get_companies():
+    return frappe.get_all("Company", filters={"is_group": 0}, fields=["name"])
 
 
 @frappe.whitelist()
@@ -210,8 +221,40 @@ def update_meta_info(type, route, meta_tags):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_branches():
-    return frappe.get_all("Company", filters={"is_group": 0})
+def get_translations():
+    if frappe.session.user != "Guest":
+        language = frappe.db.get_value("User", frappe.session.user, "language")
+    else:
+        language = frappe.db.get_single_value("System Settings", "language")
+    return get_all_translations(language)
+
+
+@frappe.whitelist(allow_guest=True)
+def get_branding():
+    """Get branding details."""
+    website_settings = frappe.get_single("Website Settings")
+    image_fields = ["banner_image", "footer_logo", "favicon"]
+
+    for field in image_fields:
+        if website_settings.get(field):
+            file_info = get_file_info(website_settings.get(field))
+            website_settings.update({field: json.loads(json.dumps(file_info))})
+        else:
+            website_settings.update({field: None})
+
+    return website_settings
+
+
+@frappe.whitelist()
+def get_file_info(file_url):
+    """Get file info for the given file URL."""
+    file_info = frappe.db.get_value(
+        "File",
+        {"file_url": file_url},
+        ["file_name", "file_size", "file_url"],
+        as_dict=1,
+    )
+    return file_info
 
 
 def set_field_value(doc, fieldname, value, fieldtype=None):

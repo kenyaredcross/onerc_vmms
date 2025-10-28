@@ -1,15 +1,15 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "field:membership_type",
- "creation": "2025-10-16 10:45:33.478337",
- "default_view": "List",
+ "creation": "2025-10-28 18:48:34.372205",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "membership_type",
   "membership_package",
   "linked_item",
+  "template",
   "column_break_tssr",
   "amount",
   "currency",
@@ -29,10 +29,11 @@
    "unique": 1
   },
   {
-   "fieldname": "membership_package",
-   "fieldtype": "Link",
-   "label": "Membership Package",
-   "options": "Membership Package"
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Amount",
+   "reqd": 1
   },
   {
    "fieldname": "linked_item",
@@ -45,28 +46,16 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "amount",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "label": "Amount",
-   "reqd": 1
-  },
-  {
-   "fieldname": "currency",
+   "fieldname": "membership_package",
    "fieldtype": "Link",
-   "label": "Currency",
-   "options": "Currency"
+   "label": "Membership Package",
+   "options": "Membership Package"
   },
   {
    "fieldname": "billing_cycle",
    "fieldtype": "Select",
    "label": "Billing Cycle",
    "options": "\nMonthly\nYearly\nOne Off"
-  },
-  {
-   "fieldname": "age_requirement",
-   "fieldtype": "Data",
-   "label": "Age Requirement"
   },
   {
    "fieldname": "section_break_ilnt",
@@ -77,25 +66,61 @@
    "fieldtype": "Table",
    "label": "Benefits",
    "options": "Membership Benefit"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "age_requirement",
+   "fieldtype": "Data",
+   "label": "Age Requirement"
+  },
+  {
+   "fieldname": "template",
+   "fieldtype": "Link",
+   "label": "Template",
+   "link_filters": "[[\"Print Format\",\"doc_type\",\"=\",\"VM Membership\"]]",
+   "options": "Print Format"
   }
  ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
  "links": [
   {
    "group": "Membership",
-   "link_doctype": "Membership",
+   "link_doctype": "VM Membership",
    "link_fieldname": "membership_type"
   }
  ],
- "modified": "2025-10-22 10:58:28.755524",
+ "modified": "2025-10-28 18:52:20.587876",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Membership Type",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
  "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "track_changes": 1
+ "title_field": "membership_type",
+ "translated_doctype": 1
 }

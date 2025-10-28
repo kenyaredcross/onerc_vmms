@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:email",
+ "creation": "2025-10-28 16:57:57.992326",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "email",
+  "donor_name",
+  "column_break_ccek",
+  "donor_type"
+ ],
+ "fields": [
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "options": "Email",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "donor_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Donor Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ccek",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "donor_type",
+   "fieldtype": "Link",
+   "label": "Donor Type",
+   "options": "VM Donor Type",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-28 17:02:14.076065",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "VM Donor",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "donor_name",
+ "translated_doctype": 1
+}

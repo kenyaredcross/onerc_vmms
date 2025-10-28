@@ -8,6 +8,7 @@
   "question_type",
   "question_id",
   "is_required",
+  "is_knock_off",
   "help_text",
   "column_break_mjrj",
   "question",
@@ -55,6 +56,16 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Is Required"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_knock_off",
+   "fieldtype": "Check",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Is Knock Off"
   },
   {
    "description": "Guidance for applicants on how to answer.",
@@ -141,7 +152,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-16 10:30:08.243449",
+ "modified": "2025-10-28 16:30:32.638464",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Job Application Screening Questions",

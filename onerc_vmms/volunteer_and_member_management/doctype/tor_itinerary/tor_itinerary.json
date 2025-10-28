@@ -3,7 +3,6 @@
  "allow_rename": 1,
  "creation": "2025-09-30 07:41:53.615999",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "date",
@@ -30,17 +29,18 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Time"
+   "label": "Time",
+   "reqd": 1
   },
   {
    "fieldname": "person_responsible",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_filter": 1,
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Person Responsible",
-   "options": "Employee"
+   "reqd": 1
   },
   {
    "fieldname": "column_break_mjcg",
@@ -53,14 +53,15 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Activity"
+   "label": "Activity",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-16 10:30:20.992993",
+ "modified": "2025-10-28 16:30:57.002269",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "TOR Itinerary",

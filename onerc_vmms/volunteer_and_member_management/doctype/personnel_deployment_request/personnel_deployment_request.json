@@ -1,48 +1,34 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:PDR-{YYYY}-{MM}-{####}",
- "creation": "2025-09-18 14:01:42.591353",
+ "autoname": "format:PDA-{YYYY}-{MM}-{####}",
+ "creation": "2025-09-18 13:32:25.091012",
  "doctype": "DocType",
+ "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "details_tab",
   "details_section",
+  "employee",
+  "employee_name",
+  "column_break_qbmp",
   "project",
   "task",
   "location",
-  "column_break_qbmp",
+  "column_break_qlbs",
+  "status",
+  "deployment",
+  "date",
+  "dates__reason_section",
   "expected_start_date",
   "expected_end_date",
-  "column_break_qlgy",
-  "company",
-  "number_of_volunteers_required",
-  "notification_channels",
-  "require_contract_before_deployment",
+  "column_break_hmmj",
+  "notes",
   "terms_section",
   "terms_of_reference",
-  "term_details",
-  "approvers_section",
-  "deployment_approver",
-  "column_break_lfwy",
-  "advance_approver",
-  "expense_approver",
-  "section_break_rmvn",
-  "notes",
-  "quick_filters_section",
-  "companies",
-  "department",
-  "employment_type",
-  "designation",
-  "column_break_jhih",
-  "courses",
-  "skills",
-  "licences",
-  "filter_criteria",
-  "advanced_filters_section",
-  "filter_list",
-  "select_employees_section",
-  "employee_list"
+  "tor_url",
+  "tor",
+  "amended_from"
  ],
  "fields": [
   {
@@ -53,7 +39,31 @@
   },
   {
    "fieldname": "details_section",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "bold": 1,
+   "fetch_from": "employee.first_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name"
+  },
+  {
+   "fieldname": "column_break_qbmp",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "project",
@@ -75,76 +85,76 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Task",
-   "options": "Task",
-   "search_index": 1
+   "options": "Task"
   },
   {
    "fieldname": "location",
    "fieldtype": "Link",
-   "label": "Location",
-   "options": "Location",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_qbmp",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "expected_start_date",
-   "fieldtype": "Datetime",
    "in_filter": 1,
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
+   "label": "Location",
+   "options": "Location"
+  },
+  {
+   "fieldname": "column_break_qlbs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nAccepted\nRejected\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "deployment",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Deployment",
+   "options": "Deployment Request Tool",
+   "search_index": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "dates__reason_section",
+   "fieldtype": "Section Break",
+   "label": "Dates & Reason"
+  },
+  {
+   "fieldname": "expected_start_date",
+   "fieldtype": "Datetime",
    "label": "Expected Start Date",
    "reqd": 1
   },
   {
    "fieldname": "expected_end_date",
    "fieldtype": "Datetime",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_preview": 1,
-   "in_standard_filter": 1,
-   "label": "Expected End Date",
-   "reqd": 1
+   "label": "Expected End Date"
   },
   {
-   "fieldname": "column_break_qlgy",
+   "fieldname": "column_break_hmmj",
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "project.company",
-   "fieldname": "company",
-   "fieldtype": "Link",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_preview": 1,
-   "in_standard_filter": 1,
-   "label": "Company / Branch",
-   "options": "Company",
-   "reqd": 1
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
   },
   {
-   "fieldname": "number_of_volunteers_required",
-   "fieldtype": "Int",
-   "label": "Number of Volunteers Required",
-   "non_negative": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "notification_channels",
-   "fieldtype": "Table MultiSelect",
-   "label": "Notification Channels",
-   "options": "Notification Channel Item"
-  },
-  {
-   "default": "1",
-   "fieldname": "require_contract_before_deployment",
-   "fieldtype": "Check",
-   "label": "Require Contract Before Deployment"
-  },
-  {
+   "collapsible": 1,
    "fieldname": "terms_section",
    "fieldtype": "Section Break",
    "label": "Terms"
@@ -162,170 +172,70 @@
    "search_index": 1
   },
   {
-   "fieldname": "term_details",
-   "fieldtype": "Text Editor",
+   "fieldname": "tor_url",
+   "fieldtype": "Small Text",
    "hidden": 1,
-   "label": "Term Details"
+   "label": "TOR Url",
+   "options": "URL"
   },
   {
-   "collapsible": 1,
-   "fieldname": "approvers_section",
-   "fieldtype": "Section Break",
-   "label": "Approvers"
-  },
-  {
-   "fieldname": "deployment_approver",
-   "fieldtype": "Link",
-   "label": "Deployment Approver",
-   "options": "User"
-  },
-  {
-   "fieldname": "column_break_lfwy",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "advance_approver",
-   "fieldtype": "Link",
-   "label": "Advance Approver",
-   "options": "User"
-  },
-  {
-   "fieldname": "expense_approver",
-   "fieldtype": "Link",
-   "label": "Expense Approver",
-   "options": "User"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "section_break_rmvn",
-   "fieldtype": "Section Break",
-   "label": "Notes"
-  },
-  {
-   "fieldname": "notes",
-   "fieldtype": "Text Editor",
-   "label": "Notes"
-  },
-  {
-   "fieldname": "quick_filters_section",
-   "fieldtype": "Section Break",
-   "label": "Quick Filters"
-  },
-  {
-   "fieldname": "companies",
-   "fieldtype": "Table MultiSelect",
-   "label": "Companies",
-   "options": "Company Item"
-  },
-  {
-   "fieldname": "department",
-   "fieldtype": "Table MultiSelect",
-   "hidden": 1,
-   "label": "Department",
-   "options": "Department Item"
-  },
-  {
-   "fieldname": "employment_type",
-   "fieldtype": "Table MultiSelect",
-   "label": "Personnel Type",
-   "options": "Employment Type Item"
-  },
-  {
-   "fieldname": "designation",
-   "fieldtype": "Table MultiSelect",
-   "label": "Designation",
-   "options": "Designation Item"
-  },
-  {
-   "fieldname": "column_break_jhih",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "courses",
-   "fieldtype": "Table MultiSelect",
-   "label": "Courses",
-   "options": "Related Courses"
-  },
-  {
-   "fieldname": "skills",
-   "fieldtype": "Table MultiSelect",
-   "label": "Skills",
-   "options": "Volunteer Skill"
-  },
-  {
-   "fieldname": "licences",
-   "fieldtype": "Table MultiSelect",
-   "label": "Licences",
-   "options": "Personnel Licence Item"
-  },
-  {
-   "default": "Availability",
-   "fieldname": "filter_criteria",
-   "fieldtype": "Link",
-   "label": "Filter Criteria",
-   "options": "Volunteer Deployment Criteria"
-  },
-  {
-   "fieldname": "advanced_filters_section",
-   "fieldtype": "Section Break",
-   "label": "Advanced Filters"
-  },
-  {
-   "fieldname": "filter_list",
+   "fieldname": "tor",
    "fieldtype": "HTML",
-   "label": "Filter List"
+   "label": "TOR"
   },
   {
-   "fieldname": "select_employees_section",
-   "fieldtype": "Section Break",
-   "label": "Select Employees"
-  },
-  {
-   "fieldname": "employee_list",
-   "fieldtype": "HTML",
-   "label": "Employee List"
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Personnel Deployment Request",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_calendar_and_gantt": 1,
+ "is_submittable": 1,
  "links": [
-  {
-   "group": "Deployment",
-   "link_doctype": "Personnel Deployment Assignment",
-   "link_fieldname": "deployment"
-  },
   {
    "group": "Support",
    "link_doctype": "Issue",
-   "link_fieldname": "personnel_deployment_request"
-  },
-  {
-   "group": "Material",
-   "link_doctype": "Material Request",
-   "link_fieldname": "personnel_deployment_request"
-  },
-  {
-   "group": "Claims",
-   "link_doctype": "Expense Claim",
-   "link_fieldname": "personnel_deployment_request"
-  },
-  {
-   "group": "Claims",
-   "link_doctype": "Employee Advance",
-   "link_fieldname": "personnel_deployment_request"
+   "link_fieldname": "personnel_deployment_assignment"
   },
   {
    "group": "Activity",
    "link_doctype": "Timesheet",
+   "link_fieldname": "personnel_deployment_assignment"
+  },
+  {
+   "group": "Material",
+   "link_doctype": "Material Request",
+   "link_fieldname": "personnel_deployment_assignment"
+  },
+  {
+   "group": "Claims",
+   "link_doctype": "Expense Claim",
+   "link_fieldname": "personnel_deployment_assignment"
+  },
+  {
+   "group": "Claims",
+   "link_doctype": "Employee Advance",
+   "link_fieldname": "personnel_deployment_assignment"
+  },
+  {
+   "group": "Attendance",
+   "link_doctype": "Attendance",
    "link_fieldname": "personnel_deployment_request"
   },
   {
    "group": "Contract",
    "link_doctype": "Contract",
-   "link_fieldname": "personnel_deployment_request"
+   "link_fieldname": "personnel_deployment_assignment"
   }
  ],
- "modified": "2025-10-16 10:30:19.290287",
+ "modified": "2025-10-28 16:30:33.743787",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Deployment Request",
@@ -348,5 +258,22 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Yellow",
+   "title": "Pending"
+  },
+  {
+   "color": "Green",
+   "title": "Accepted"
+  },
+  {
+   "color": "Red",
+   "title": "Rejected"
+  },
+  {
+   "color": "Orange",
+   "title": "Cancelled"
+  }
+ ]
 }

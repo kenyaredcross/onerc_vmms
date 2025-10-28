@@ -3,7 +3,6 @@
  "allow_rename": 1,
  "creation": "2025-09-30 08:12:54.504304",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "person"
@@ -11,10 +10,9 @@
  "fields": [
   {
    "fieldname": "person",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Person",
-   "options": "Employee",
    "reqd": 1
   }
  ],
@@ -22,7 +20,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-16 10:30:21.407203",
+ "modified": "2025-10-28 16:30:42.531958",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "TOR Person Responsible",

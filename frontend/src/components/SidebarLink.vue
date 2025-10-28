@@ -29,7 +29,7 @@
             : 'ml-2 w-auto opacity-100'
         "
       >
-        {{(link.label) }}
+        {{ __(link.label) }}
       </span>
       <span
         v-if="link.count"

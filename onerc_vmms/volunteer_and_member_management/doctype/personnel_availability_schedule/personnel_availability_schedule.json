@@ -15,6 +15,7 @@
   "column_break_phbe",
   "fiscal_year",
   "section_break_ylly",
+  "available_on_holidays",
   "schedules",
   "tab_break_pdfh",
   "available_days_section",
@@ -82,6 +83,12 @@
    "fieldtype": "Section Break"
   },
   {
+   "default": "0",
+   "fieldname": "available_on_holidays",
+   "fieldtype": "Check",
+   "label": "Available on Holidays"
+  },
+  {
    "fieldname": "schedules",
    "fieldtype": "Table",
    "label": "Schedules",
@@ -106,7 +113,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-16 10:30:17.886292",
+ "modified": "2025-10-28 16:30:35.466709",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Availability Schedule",

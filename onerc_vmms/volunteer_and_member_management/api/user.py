@@ -105,7 +105,7 @@ def create_membership(**kwargs):
                     "member": member.name,
                     "membership_type": doc_name,
                     "company": kwargs.get("branch"),
-                    "membership_status": "Pending",
+                    "status": "Pending",
                     "from_date": from_date,
                     "to_date": to_date,
                     "member_since_date": from_date,
@@ -139,6 +139,25 @@ def get_user_info():
             "user_type",
             "username",
             "phone",
+            "ward",
+            "first_name",
+            "last_name",
+            "middle_name",
+            "birth_date",
+            "identification_type",
+            "id_number",
+            "passport_number",
+            "number_of_dependants",
+            "marital_status",
+            "blood_group",
+            "citizenship",
+            "country_of_citizenship",
+            "administrative_location",
+            "sub_county",
+            "county",
+            "access_to_internet",
+            "profession",
+            "gender",
         ],
         as_dict=1,
     )
@@ -153,7 +172,7 @@ def get_user_info():
         as_dict=True,
     )
 
-    if job_applicant and job_applicant.get("status") == "Open":
+    if job_applicant and job_applicant.get("docstatus") == 1:
         user["is_pending_approval"] = True
     else:
         user["is_pending_approval"] = False
@@ -184,12 +203,11 @@ def get_user_info():
         member = frappe.db.get_value(
             "Member",
             {"email_id": user.email},
-            ["name", "membership_type"],
+            ["name"],
             as_dict=True,
         )
         if member:
             user["member"] = member.get("name")
-            user["membership_type"] = member.get("membership_type")
             user["is_member"] = True
 
     if frappe.db.exists("Job Applicant", {"email_id": user.email}):

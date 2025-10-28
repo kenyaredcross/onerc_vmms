@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-01 13:26:19.469081",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "training_program"
+ ],
+ "fields": [
+  {
+   "fieldname": "training_program",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Training Program",
+   "options": "Training Program",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-10-28 16:30:43.760114",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "Training",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
