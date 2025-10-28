@@ -5,13 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/assets/onerc_vmms/frontend/ && yarn copy-html-entry",
+    "build": "vite build --base=/assets/non_profit/frontend/ && yarn copy-html-entry",
     "preview": "vite preview",
     "lint": "biome check --write .",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "copy-html-entry": "cp ../onerc_vmms/public/frontend/index.html ../onerc_vmms/www/vmms.html"
+    "copy-html-entry": "cp ../non_profit/public/frontend/index.html ../non_profit/www/vmms-portal.html"
   },
   "dependencies": {
     "@codemirror/lang-html": "^6.4.9",
