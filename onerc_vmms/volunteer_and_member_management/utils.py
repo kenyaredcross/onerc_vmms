@@ -1,6 +1,9 @@
+import json
 from datetime import timedelta
 
 import frappe
+from frappe import _
+from frappe.translate import get_all_translations
 from frappe.utils.nestedset import get_descendants_of
 
 
@@ -116,7 +119,7 @@ def check_and_renew_membership(invoice_id: str) -> None:
     invoice = frappe.get_doc("Sales Invoice", invoice_id)
     if not invoice.membership:
         return
-    membership = frappe.get_doc("Membership", invoice.membership)
+    membership = frappe.get_doc("VM Membership", invoice.membership)
     membership.validate_membership_period()
 
 
@@ -215,9 +218,7 @@ def update_meta_info(type, route, meta_tags):
             else:
                 new_tag = frappe.new_doc("Website Meta Tag")
                 new_tag.update(tag_properties)
-                print(new_tag)
                 new_tag.insert()
-                print(new_tag.as_dict())
 
 
 @frappe.whitelist(allow_guest=True)

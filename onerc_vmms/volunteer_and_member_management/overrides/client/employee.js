@@ -11,22 +11,24 @@ frappe.ui.form.on("Employee", {
 			frm.set_value("date_of_joining", frappe.datetime.get_today());
 		}
 
-		frappe.db.get_value("Member", { email_id: frm.doc.personal_email }, "name").then((r) => {
-			if (!(r && r.message && r.message.name)) {
-				frm.add_custom_button(__("Create Member"), () => {
-					frm.call({
-						method: "onerc_vmms.volunteer_and_member_management.api.membership.create_member",
-						args: { name: frm.doc.name },
-					}).then(() => {
-						frappe.show_alert({
-							message: __("Member created successfully"),
-							indicator: "green",
+		frappe.db
+			.get_value("VM Member", { email_id: frm.doc.personal_email }, "name")
+			.then((r) => {
+				if (!(r && r.message && r.message.name)) {
+					frm.add_custom_button(__("Create Member"), () => {
+						frm.call({
+							method: "onerc_vmms.volunteer_and_member_management.api.membership.create_member",
+							args: { name: frm.doc.name },
+						}).then(() => {
+							frappe.show_alert({
+								message: __("Member created successfully"),
+								indicator: "green",
+							});
+							frm.reload_doc();
 						});
-						frm.reload_doc();
 					});
-				});
-			}
-		});
+				}
+			});
 	},
 
 	job_applicant(frm) {

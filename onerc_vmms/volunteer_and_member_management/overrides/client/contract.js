@@ -29,7 +29,7 @@ frappe.ui.form.on("Contract", {
   personnel_deployment_assignment(frm) {
     if (frm.doc.personnel_deployment_assignment) {
       frappe.db.get_value(
-        "Personnel Deployment Assignment",
+        "Personnel Deployment Request",
         frm.doc.personnel_deployment_assignment,
         ["project", "task"],
         (r) => {

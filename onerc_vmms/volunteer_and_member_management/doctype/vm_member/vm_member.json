@@ -110,8 +110,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Email Address",
-   "options": "User",
-   "reqd": 1
+   "options": "User"
   },
   {
    "collapsible": 1,
@@ -129,8 +128,14 @@
  "grid_page_length": 50,
  "image_field": "image",
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-10-28 18:34:24.725299",
+ "links": [
+  {
+   "group": "Membership",
+   "link_doctype": "VM Membership",
+   "link_fieldname": "member"
+  }
+ ],
+ "modified": "2025-10-29 08:35:16.361377",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Member",

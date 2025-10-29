@@ -201,7 +201,7 @@ const membershipList = createResource<Membership[]>({
 });
 
 const renewMembership = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.user.renew_membership",
+	url: "onerc_vmms.volunteer_and_member_management.api.user.renew_membership",
 	makeParams() {
 		return {
 			id: selectedMembershipId.value,

@@ -96,7 +96,7 @@ def create_user_for_employee(doc: Document) -> str:
                 "enabled": 1,
                 "user_type": "System User",
                 "send_welcome_email": 0,
-                "default_app": "onerc_vmms",
+                "default_app": "non_profit",
             }
         )
         user.insert(ignore_permissions=True)

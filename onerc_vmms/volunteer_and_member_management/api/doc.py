@@ -79,7 +79,8 @@ def search_doctype(
 
     if first:
         data = frappe.get_doc(doctype, results[0].name) if results else None
-        return _convert_table_multiselect(data)
+        if data:
+            return _convert_table_multiselect(data)
 
     return results
 
@@ -315,6 +316,9 @@ def get_doc_info(doctype: str):
 
 
 def _convert_table_multiselect(doc):
+    if not doc:
+        return {}
+
     meta = frappe.get_meta(doc.doctype)
     doc_dict = doc.as_dict()
 

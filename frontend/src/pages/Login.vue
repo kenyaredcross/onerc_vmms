@@ -164,7 +164,7 @@ onMounted(() => {
 });
 
 const createSignUp = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.user.create_user",
+	url: "onerc_vmms.volunteer_and_member_management.api.user.create_user",
 	onSuccess() {
 		signInState.value = true;
 		resetSignUpForm(signUpForm);

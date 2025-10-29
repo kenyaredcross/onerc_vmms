@@ -60,6 +60,7 @@ declare module 'vue' {
     ProjectCard: typeof import('./src/components/ProjectCard.vue')['default']
     QualificationsSkills: typeof import('./src/components/Profile/QualificationsSkills.vue')['default']
     Rating: typeof import('./src/components/Controls/Rating.vue')['default']
+    RegisterMembership: typeof import('./src/components/Modals/RegisterMembership.vue')['default']
     ReviewApplication: typeof import('./src/components/Signup/ReviewApplication.vue')['default']
     ReviewField: typeof import('./src/components/Signup/ReviewField.vue')['default']
     ReviewList: typeof import('./src/components/Signup/ReviewList.vue')['default']
