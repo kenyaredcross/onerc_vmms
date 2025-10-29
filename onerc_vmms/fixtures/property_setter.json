@@ -1,0 +1,50 @@
+[
+  {
+    "default_value": null,
+    "doc_type": "Job Offer",
+    "docstatus": 0,
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "job_applicant",
+    "is_system_generated": 0,
+    "modified": "2025-09-25 14:16:20.414858",
+    "module": "Volunteer and Member Management",
+    "name": "Job Offer-job_applicant-link_filters",
+    "property": "link_filters",
+    "property_type": "JSON",
+    "row_name": null,
+    "value": "[[\"Job Applicant\",\"status\",\"=\",\"Accepted\"]]"
+  },
+  {
+    "default_value": null,
+    "doc_type": "Journal Entry Account",
+    "docstatus": 0,
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "reference_type",
+    "is_system_generated": 0,
+    "modified": "2025-08-26 10:01:22.152227",
+    "module": "Volunteer and Member Management",
+    "name": "Journal Entry Account-reference_type-options",
+    "property": "options",
+    "property_type": null,
+    "row_name": null,
+    "value": "\nSales Invoice\nPurchase Invoice\nJournal Entry\nSales Order\nPurchase Order\nExpense Claim\nAsset\nLoan\nPayroll Entry\nEmployee Advance\nExchange Rate Revaluation\nInvoice Discounting\nFees\nFull and Final Statement\nPayment Entry\nLoan Interest Accrual\nDonation\nVM Membership"
+  },
+  {
+    "default_value": null,
+    "doc_type": "Payment Entry Reference",
+    "docstatus": 0,
+    "doctype": "Property Setter",
+    "doctype_or_field": "DocField",
+    "field_name": "reference_doctype",
+    "is_system_generated": 0,
+    "modified": "2025-09-03 14:01:09.057972",
+    "module": "Volunteer and Member Management",
+    "name": "Payment Entry Reference-reference_doctype-link_filters",
+    "property": "link_filters",
+    "property_type": "JSON",
+    "row_name": null,
+    "value": "[[\"DocType\",\"name\",\"in\",[\"Sales Invoice\",\"Journal Entry\",\"Sales Order\",\"Donation\",\"VM Membership\"]]]"
+  }
+]

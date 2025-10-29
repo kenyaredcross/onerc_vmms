@@ -180,7 +180,8 @@ doc_events = {
         "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
     },
     "Job Applicant": {
-        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.on_update"
+        "before_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.before_submit",
+        "on_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.on_submit",
     },
 }
 

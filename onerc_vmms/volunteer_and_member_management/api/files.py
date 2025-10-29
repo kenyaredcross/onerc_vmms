@@ -1,6 +1,6 @@
 import frappe
-from frappe.core.doctype.file.file import save_file
-from frappe.utils import _, cint
+from frappe import _, cint
+from frappe.utils.file_manager import save_file
 
 
 @frappe.whitelist(allow_guest=True)

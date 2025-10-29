@@ -1,11 +1,14 @@
+from datetime import datetime
+
 import frappe
 from frappe import _
+from frappe.utils import add_to_date
 
 
 @frappe.whitelist(allow_guest=True)
 def get_membership_types():
     memberships = frappe.get_all(
-        "Membership Type",
+        "VM Membership Type",
         fields=["name", "membership_type", "amount"],
         order_by="amount asc",
     )
@@ -26,7 +29,7 @@ def get_current_membership():
         return []
 
     member = frappe.db.get_value(
-        "Member",
+        "VM Member",
         {"email_id": frappe.session.user},
         ["name"],
         as_dict=True,
@@ -36,7 +39,7 @@ def get_current_membership():
         return []
 
     memberships = frappe.get_all(
-        "Membership",
+        "VM Membership",
         filters={"member": member.name},
         or_filters=[
             {"status": "Active"},
@@ -52,12 +55,12 @@ def get_current_membership():
 
     result = []
     for membership_item in memberships:
-        membership = frappe.get_doc("Membership", membership_item.name)
+        membership = frappe.get_doc("VM Membership", membership_item.name)
         membership_data = membership.as_dict()
 
         if membership.membership_type:
             membership_type_doc = frappe.get_doc(
-                "Membership Type", membership.membership_type
+                "VM Membership Type", membership.membership_type
             )
             membership_data["type_details"] = membership_type_doc.as_dict()
 
@@ -68,7 +71,7 @@ def get_current_membership():
 @frappe.whitelist()
 def create_member(name):
     volunteer_details = frappe.get_doc("Employee", name)
-    member = frappe.new_doc("Member")
+    member = frappe.new_doc("VM Member")
     member.member_name = volunteer_details.employee_name
     member.email_id = volunteer_details.personal_email
     member.volunteer = volunteer_details.name
@@ -85,7 +88,7 @@ def membership_certificate_template(membership_type: str) -> str:
 
     try:
         membership_template = frappe.db.get_value(
-            "Membership Type",
+            "VM Membership Type",
             {"name": membership_type},
             "template",
             as_dict=True,
@@ -122,3 +125,87 @@ def confirm_payment(invoice_name: str) -> str:
         frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
         frappe.throw(_("Error confirming payment: {0}").format(str(e)))
         frappe.throw(_("Error confirming payment: {0}").format(str(e)))
+
+
+@frappe.whitelist(allow_guest=True)
+def create_membership(
+    phone: str,
+    amount: float,
+    membership_type: str,
+    branch: str,
+) -> None:
+
+    if not phone or not amount or not membership_type or not branch:
+        frappe.throw("All fields are required")
+
+    user = frappe.db.get_value(
+        "User", frappe.session.user, ["full_name"], as_dict=1
+    ).full_name
+
+    try:
+        frappe.db.begin()
+
+        member = frappe.db.exists("VM Member", {"email_id": frappe.session.user})
+        if not member:
+            member = frappe.get_doc(
+                {
+                    "doctype": "VM Member",
+                    "member_name": user,
+                    "email_id": frappe.session.user,
+                    "phone_number": phone,
+                }
+            )
+            member.insert(ignore_permissions=True)
+
+        else:
+            member = frappe.get_doc("VM Member", member)
+
+        if frappe.db.exists(
+            "VM Membership",
+            {"member": member.name, "membership_status": "Active", "company": branch},
+        ):
+            frappe.throw("You already have an active membership for this branch")
+
+        from_date = datetime.today().date()
+
+        membership = frappe.get_doc(
+            {
+                "doctype": "VM Membership",
+                "member": member.name,
+                "membership_type": membership_type,
+                "amount": amount,
+                "company": branch,
+                "membership_status": "Draft",
+                "from_date": from_date,
+                "to_date": add_to_date(from_date, years=1, days=-1),
+                "member_since_date": from_date,
+            }
+        )
+
+        membership.insert(ignore_permissions=True)
+
+        invoice = renew_membership(id=membership.name, phone_number=phone)
+
+        frappe.db.commit()
+
+        return invoice.name
+
+    except Exception:
+        frappe.db.rollback()
+        frappe.log_error(frappe.get_traceback(), "Error creating membership")
+        frappe.throw("Error creating membership")
+
+
+@frappe.whitelist(allow_guest=True)
+def renew_membership(**kwargs):
+    try:
+        membership = frappe.get_doc("VM Membership", kwargs.get("id"))
+        _, invoice = membership.initiate_payment(
+            phone_number=kwargs.get("phone_number")
+        )
+
+        return invoice
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Error renewing membership")
+        frappe.throw("Error creating membership")
+        frappe.throw("Error creating membership")

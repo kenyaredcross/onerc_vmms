@@ -1,6 +1,5 @@
 import frappe
 from frappe import _
-from frappe.utils import add_to_date
 
 from ..utils import set_field_value
 
@@ -38,6 +37,11 @@ def create_user(**kwargs):
 
         user.insert(ignore_permissions=True)
 
+        if not frappe.db.exists("Role", "Vmms Guest"):
+            frappe.get_doc({"doctype": "Role", "role_name": "Vmms Guest"}).insert(
+                ignore_permissions=True
+            )
+
         user.add_roles("Vmms Guest")
 
         user_permission = frappe.get_doc(
@@ -58,68 +62,6 @@ def create_user(**kwargs):
         frappe.db.rollback()
         frappe.log_error(frappe.get_traceback(), "Error signing up")
         frappe.throw("Error signing up")
-
-
-@frappe.whitelist(allow_guest=True)
-def create_membership(**kwargs):
-
-    try:
-        frappe.db.begin()
-
-        member = None
-        membership = None
-        branch = kwargs.get("branch")
-
-        if frappe.db.exists("Member", {"email_id": kwargs.get("email_id")}):
-            member = frappe.db.get_value(
-                "Member", {"email_id": kwargs.get("email_id")}, "name"
-            )
-
-            membership = frappe.db.exists(
-                "Membership", {"member": member, "company": branch}
-            )
-        if member and membership:
-            frappe.throw("Membership already exists for this member")
-
-        if not member:
-            member = frappe.get_doc(
-                {
-                    "doctype": "Member",
-                    "member_name": kwargs.get("member_name"),
-                    "email_id": kwargs.get("email_id"),
-                    "membership_type": kwargs.get("membership_type"),
-                }
-            )
-            member.insert(ignore_permissions=True)
-        else:
-            member = frappe.get_doc("Member", member)
-
-        if kwargs.get("membership_type"):
-            doc_name = kwargs.get("membership_type")
-            from_date = frappe.utils.today()
-            to_date = add_to_date(from_date, years=1)
-
-            membership = frappe.get_doc(
-                {
-                    "doctype": "Membership",
-                    "member": member.name,
-                    "membership_type": doc_name,
-                    "company": kwargs.get("branch"),
-                    "status": "Pending",
-                    "from_date": from_date,
-                    "to_date": to_date,
-                    "member_since_date": from_date,
-                }
-            )
-
-            membership.insert(ignore_permissions=True)
-
-        frappe.db.commit()
-
-    except Exception as e:
-        frappe.db.rollback()
-        frappe.log_error(frappe.get_traceback(), "Error creating membership")
-        frappe.throw("Error creating membership")
 
 
 @frappe.whitelist(allow_guest=True)
@@ -199,9 +141,9 @@ def get_user_info():
         user["company"] = employee_company
         user["is_volunteer"] = employee_is_volunteer
 
-    if frappe.db.exists("Member", {"email_id": user.email}):
+    if frappe.db.exists("VM Member", {"email_id": user.email}):
         member = frappe.db.get_value(
-            "Member",
+            "VM Member",
             {"email_id": user.email},
             ["name"],
             as_dict=True,
