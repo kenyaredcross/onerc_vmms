@@ -74,9 +74,15 @@ frappe.ui.form.on("VM Membership", {
 			frappe.db.get_value(
 				"VM Membership Type",
 				frm.doc.membership_type,
-				["amount", "currency"],
+				["amount", "currency", "billing_cycle"],
 				(r) => {
 					if (r) {
+						r.billing_cycle === "One Off"
+							? (frm.set_df_property("to_date", "reqd", 0),
+							  frm.set_df_property("to_date", "hidden", 1))
+							: (frm.set_df_property("to_date", "reqd", 1),
+							  frm.set_df_property("to_date", "hidden", 0));
+
 						frm.set_value("amount", r.amount);
 						frm.set_value("currency", r.currency);
 					}
