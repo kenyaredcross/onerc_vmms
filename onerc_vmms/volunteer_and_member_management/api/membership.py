@@ -162,7 +162,7 @@ def create_membership(
 
         if frappe.db.exists(
             "VM Membership",
-            {"member": member.name, "membership_status": "Active", "company": branch},
+            {"member": member.name, "status": "Active", "company": branch},
         ):
             frappe.throw("You already have an active membership for this branch")
 
@@ -175,7 +175,7 @@ def create_membership(
                 "membership_type": membership_type,
                 "amount": amount,
                 "company": branch,
-                "membership_status": "Draft",
+                "status": "Draft",
                 "from_date": from_date,
                 "to_date": add_to_date(from_date, years=1, days=-1),
                 "member_since_date": from_date,
