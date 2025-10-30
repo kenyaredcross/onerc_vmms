@@ -28,7 +28,6 @@
 			</div>
 
 			<div
-				v-if="sidebarSettings.data"
 				class="fixed bottom-0 left-0 w-full flex items-center justify-between border-t border-outline-gray-2 bg-surface-white standalone:pb-4 z-10"
 			>
 				<button
@@ -69,25 +68,12 @@ import { useRouter } from "vue-router";
 
 const { logout, user } = sessionStore();
 let { isLoggedIn } = sessionStore();
-const { sidebarSettings } = useSettings();
 const router = useRouter();
 let { userResource } = usersStore();
 const sidebarLinks = ref(getSidebarLinks());
 const otherLinks = ref([]);
 const showMenu = ref(false);
 const menu = ref(null);
-
-onMounted(() => {
-	sidebarSettings.reload(
-		{},
-		{
-			onSuccess(data) {
-				filterLinksToShow(data);
-				addOtherLinks();
-			},
-		},
-	);
-});
 
 const handleOutsideClick = (e) => {
 	if (menu.value && !menu.value.contains(e.target)) {

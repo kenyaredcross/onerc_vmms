@@ -41,7 +41,7 @@ def get_events(search=None):
         base_filters["event_access"] = ["in", ["Public", "Private"]]
 
     events = frappe.get_all(
-        "FE Event",
+        "Buzz Event",
         fields=fields,
         filters=base_filters,
         or_filters=search_filters if search else None,
@@ -61,12 +61,12 @@ def get_events(search=None):
 @frappe.whitelist(allow_guest=True)
 def register_event(event_name: str | int, user: dict[str, any]) -> None:
 
-    if not event_name or not frappe.db.exists("FE Event", event_name):
+    if not event_name or not frappe.db.exists("Buzz Event", event_name):
         frappe.throw("This event does not exist.")
     if not frappe.db.exists("Event Ticket Type", {"event": event_name}):
         frappe.throw("No ticket types available for this event.")
 
-    event = frappe.db.get_value("FE Event", event_name, ["is_ticketed"], as_dict=True)
+    event = frappe.db.get_value("Buzz Event", event_name, ["is_ticketed"], as_dict=True)
     if event and not event.is_ticketed:
         ticket = frappe.db.get_value(
             "Event Ticket Type", {"event": event_name}, as_dict=True
@@ -100,7 +100,7 @@ def register_event(event_name: str | int, user: dict[str, any]) -> None:
 @frappe.whitelist(allow_guest=True)
 def get_event_details(event_name):
     try:
-        event = frappe.get_doc("FE Event", {"route": event_name}).as_dict()
+        event = frappe.get_doc("Buzz Event", {"route": event_name}).as_dict()
         event_name = event.name
 
         event["description"] = (
@@ -207,8 +207,8 @@ def handle_ticket_payment(phone, event_name, ticket_name, email, first_name, las
         event_ticket_price = frappe.db.get_value(
             "Event Ticket Type", ticket_name, "price"
         )
-        company = frappe.db.get_value("FE Event", event_name, "company")
-        mode_of_payment = frappe.db.get_value("FE Event", event_name, "mode_of_payment")
+        company = frappe.db.get_value("Buzz Event", event_name, "company")
+        mode_of_payment = frappe.db.get_value("Buzz Event", event_name, "mode_of_payment")
         currency = frappe.db.get_value("Company", company, "default_currency")
 
         existing_booking = frappe.db.exists(

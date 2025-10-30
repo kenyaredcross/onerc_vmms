@@ -13,14 +13,18 @@
 						class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6"
 					>
 						<div class="flex items-center gap-5 flex-1">
-							<div
-								class="w-3 h-3 rounded-full"
-								:class="{
-									'bg-green-500': membership.status === 'Active',
-									'bg-red-500': membership.status === 'Expired',
-									'bg-yellow-500': membership.status === 'Pending',
-								}"
-							></div>
+							<Badge
+								variant="outline"
+								:theme="
+									membership.status === 'Active'
+										? 'green'
+										: membership.status === 'Pending'
+											? 'orange'
+											: 'red'
+								"
+							>
+								{{ membership.status }}
+							</Badge>
 							<div>
 								<h3 class="text-lg font-semibold text-gray-900">
 									{{ membership.membership_type }}
@@ -42,7 +46,7 @@
 									{{ formatDate(membership.from_date) }}
 								</p>
 							</div>
-							<div>
+							<div v-if="membership.type_details?.billing_cycle !== 'One Off'">
 								<p
 									class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1"
 								>
@@ -62,6 +66,10 @@
 								<div class="text-xs text-gray-700">KES</div>
 							</div>
 							<Button
+								v-if="
+									membership.status === 'Active' ||
+									membership.status === 'Expired'
+								"
 								variant="solid"
 								theme="red"
 								size="sm"
@@ -76,9 +84,24 @@
 								"
 							>
 								{{
-									membership.status === "Active" ? "Print Certificate" : "Renew"
+									membership.status === "Active" ||
+									membership.type_details?.billing_cycle === "One Off"
+										? "Print Certificate"
+										: "Renew Now"
 								}}
 							</Button>
+							<Popover v-else trigger="hover" :hoverDelay="0.5">
+								<template #target>
+									<Button variant="outline" theme="red">Under Review</Button>
+								</template>
+								<template #body-main>
+									<div class="p-2 text-ink-gray-9">
+										We're reviewing your application.
+										<br />
+										You'll be notified when approved.
+									</div>
+								</template>
+							</Popover>
 						</div>
 					</div>
 					<ErrorMessage :message="certificate.error" class="text-center mt-2" />
@@ -168,7 +191,16 @@
 </template>
 
 <script lang="ts" setup>
-import { Button, createResource, Dialog, ErrorMessage, Input, toast } from "frappe-ui";
+import {
+	Badge,
+	Button,
+	createResource,
+	Dialog,
+	ErrorMessage,
+	Input,
+	toast,
+	Popover,
+} from "frappe-ui";
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
 import { usersStore } from "../stores/user";
@@ -198,6 +230,9 @@ const membershipList = createResource<Membership[]>({
 	url: "onerc_vmms.volunteer_and_member_management.api.membership.get_current_membership",
 	auto: true,
 	cache: ["currentMembership"],
+	onSuccess: (data: any) => {
+		console.log("dddd", data);
+	},
 });
 
 const renewMembership = createResource({
@@ -267,7 +302,7 @@ function getCertificate(membershipId?: string) {
 			onSuccess() {
 				loadCertificate.value = null;
 				window.open(
-					`/api/method/frappe.utils.print_format.download_pdf?doctype=Membership&name=${membershipId}&format=${membershipTypeCert.value}`,
+					`/api/method/frappe.utils.print_format.download_pdf?doctype=VM Membership&name=${membershipId}&format=${membershipTypeCert.value}`,
 					"_blank",
 				);
 			},
