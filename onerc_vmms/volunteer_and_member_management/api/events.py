@@ -59,7 +59,7 @@ def get_events(search=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def register_event(event_name: str | int, user: dict[str, any]) -> None:
+def register_event(event_name: str | int, attendee: dict[str, any]) -> None:
 
     if not event_name or not frappe.db.exists("Buzz Event", event_name):
         frappe.throw("This event does not exist.")
@@ -77,11 +77,11 @@ def register_event(event_name: str | int, user: dict[str, any]) -> None:
             {
                 "doctype": "Event Booking",
                 "event": event_name,
-                "user": "eventattendee@mail.com",
+                "primary_contact": attendee.get("email"),
                 "attendees": [
                     {
-                        "full_name": user.get("full_name"),
-                        "email": user.get("email"),
+                        "full_name": attendee.get("full_name"),
+                        "email": attendee.get("email"),
                         "ticket_type": ticket.name,
                     }
                 ],
