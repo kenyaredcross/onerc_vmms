@@ -134,7 +134,7 @@ const confirmEvent = createResource({
 	makeParams() {
 		return {
 			event_name: props.eventId,
-			user: { ...attendData },
+			attendee: { ...attendData },
 		};
 	},
 });
