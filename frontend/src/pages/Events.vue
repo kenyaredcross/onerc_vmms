@@ -43,6 +43,7 @@ import { ref, watch } from "vue";
 import ProgressSpinner from "../components/Common/ProgressSpinner.vue";
 import EmptyState from "../components/EmptyState.vue";
 import EventCard from "../components/EventCard.vue";
+import { watchDebounced } from "@vueuse/core";
 
 const searchTerm = ref("");
 
@@ -57,13 +58,17 @@ const events = createResource({
 	},
 });
 
+watchDebounced(
+	searchTerm,
+	() => {
+		events.reload();
+	},
+	{ debounce: 500, maxWait: 1000 },
+);
+
 const toggleEventView = ref(false);
 
 function toggleEventViews() {
 	toggleEventView.value = !toggleEventView.value;
 }
-
-watch(searchTerm, () => {
-	events.reload();
-});
 </script>
