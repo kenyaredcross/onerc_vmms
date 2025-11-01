@@ -20,14 +20,14 @@
 			<div
 				class="grid grid-cols-3 justify-between mx-3 p-2 rounded-lg border border-gray-100 bg-surface-white shadow-xl"
 			>
-				<div v-for="app in apps.data" key="name">
+				<div v-for="app in apps.data" :key="app.name">
 					<a
 						:href="app.route"
 						class="flex flex-col gap-1.5 rounded justify-center items-center py-2 px-3 hover:bg-surface-gray-2"
 					>
 						<img class="size-8" :src="app.logo" />
 						<div class="text-sm text-ink-gray-7" @click="app.onClick">
-							{{ app.title }}
+							{{ __(app.title) }}
 						</div>
 					</a>
 				</div>
@@ -35,6 +35,7 @@
 		</template>
 	</Popover>
 </template>
+
 <script setup>
 import { Popover, createResource } from "frappe-ui";
 import { ChevronRight, LayoutGrid } from "lucide-vue-next";

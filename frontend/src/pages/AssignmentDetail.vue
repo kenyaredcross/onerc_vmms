@@ -3,7 +3,7 @@
 		<div v-if="projectDetail.loading" class="flex items-center justify-center min-h-screen">
 			<div class="flex flex-col justify-center items-center text-center text-red-800">
 				<Spinner class="w-12" />
-				<p class="text-gray-600">Loading project details...</p>
+				<p class="text-gray-600">{{ __("Loading project details...") }}</p>
 			</div>
 		</div>
 
@@ -26,8 +26,10 @@
 						/>
 					</svg>
 				</div>
-				<h3 class="text-lg font-medium text-gray-900 mb-2">Error loading project</h3>
-				<Button theme="red" @click="projectDetail.reload()">Try Again</Button>
+				<h3 class="text-lg font-medium text-gray-900 mb-2">
+					{{ __("Error loading project") }}
+				</h3>
+				<Button theme="red" @click="projectDetail.reload()">{{ __("Try Again") }}</Button>
 			</div>
 		</div>
 
@@ -82,7 +84,8 @@
 										d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
 									/>
 								</svg>
-								{{ formatDate(projectDetail.data.expected_start_date) }} -
+								{{ formatDate(projectDetail.data.expected_start_date) }}
+								{{ __("-") }}
 								{{ formatDate(projectDetail.data.expected_end_date) }}
 							</span>
 
@@ -99,7 +102,7 @@
 								class="px-3 py-1"
 								size="lg"
 							>
-								Assignment {{ projectDetail.data.status }}
+								{{ __("Assignment") }} {{ projectDetail.data.status }}
 							</Badge>
 						</div>
 					</div>
@@ -108,7 +111,7 @@
 							:theme="getPriorityTheme(projectDetail.data.project.priority)"
 							class="px-3 py-1"
 						>
-							{{ projectDetail.data.project.priority }} Priority
+							{{ projectDetail.data.project.priority }} {{ __("Priority") }}
 						</Badge>
 					</div>
 				</div>
@@ -117,10 +120,12 @@
 			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<div class="lg:col-span-2 space-y-6">
 					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-						<h2 class="text-lg font-semibold text-gray-900 mb-4">Project Progress</h2>
+						<h2 class="text-lg font-semibold text-gray-900 mb-4">
+							{{ __("Project Progress") }}
+						</h2>
 						<div class="space-y-4">
 							<div class="flex items-center justify-between text-sm">
-								<span class="text-gray-600">Completion</span>
+								<span class="text-gray-600">{{ __("Completion") }}</span>
 								<span class="font-medium text-gray-900"
 									>{{ projectDetail.data.project.percent_complete }}%</span
 								>
@@ -137,7 +142,7 @@
 					</div>
 
 					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-						<h2 class="text-lg font-semibold text-gray-900 mb-4">Notes</h2>
+						<h2 class="text-lg font-semibold text-gray-900 mb-4">{{ __("Notes") }}</h2>
 						<div
 							v-if="projectDetail.data.notes"
 							class="prose prose-sm max-w-none text-gray-700"
@@ -145,11 +150,13 @@
 							{{ projectDetail.data.project.notes }}
 						</div>
 						<div v-else class="text-gray-500 italic">
-							No notes available for this project.
+							{{ __("No notes available for this project.") }}
 						</div>
 					</div>
 					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-						<h2 class="text-lg font-semibold text-gray-900 mb-4">Term Details</h2>
+						<h2 class="text-lg font-semibold text-gray-900 mb-4">
+							{{ __("Term Details") }}
+						</h2>
 						<div
 							v-if="projectDetail.data.term_details"
 							class="prose prose-sm max-w-none text-gray-700"
@@ -157,18 +164,20 @@
 							{{ projectDetail.data.term_details }}
 						</div>
 						<div v-else class="text-gray-500 italic">
-							No term details available for this project.
+							{{ __("No term details available for this project.") }}
 						</div>
 					</div>
 				</div>
 				<div class="space-y-6">
 					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
 						<h2 class="text-lg font-semibold text-gray-900 mb-4">
-							Project Information
+							{{ __("Project Information") }}
 						</h2>
 						<div class="space-y-4">
 							<div>
-								<label class="text-sm font-medium text-gray-600">Status</label>
+								<label class="text-sm font-medium text-gray-600">{{
+									__("Status")
+								}}</label>
 								<p class="text-sm text-gray-900 mt-1 flex items-center gap-2">
 									<span
 										class="w-2 h-2 rounded-full"
@@ -178,13 +187,17 @@
 								</p>
 							</div>
 							<div>
-								<label class="text-sm font-medium text-gray-600">Active</label>
+								<label class="text-sm font-medium text-gray-600">{{
+									__("Active")
+								}}</label>
 								<p class="text-sm text-gray-900 mt-1">
 									{{ projectDetail.data.project.is_active }}
 								</p>
 							</div>
 							<div>
-								<label class="text-sm font-medium text-gray-600">Location</label>
+								<label class="text-sm font-medium text-gray-600">{{
+									__("Location")
+								}}</label>
 								<p class="text-sm text-gray-900 mt-1">
 									{{ projectDetail.data.location }}
 								</p>
@@ -215,11 +228,14 @@
 						</svg>
 						<div class="flex-1">
 							<h3 class="text-sm font-semibold text-yellow-800 mb-1">
-								Contract Pending
+								{{ __("Contract Pending") }}
 							</h3>
 							<p class="text-sm text-yellow-700">
-								A signed contract is required before you can accept this project.
-								Please wait, or contact the project manager for assistance.
+								{{
+									__(
+										"A signed contract is required before you can accept this project. Please wait, or contact the project manager for assistance.",
+									)
+								}}
 							</p>
 						</div>
 					</div>
@@ -231,14 +247,19 @@
 						<h2
 							class="flex flex-row items-center gap-2 text-2xl font-bold text-red-700 mb-4"
 						>
-							<Badge variant="subtle" theme="red">Action Required:</Badge>
-							<span>Project Decision</span>
+							<Badge variant="subtle" theme="red">{{
+								__("Action Required:")
+							}}</Badge>
+							<span>{{ __("Project Decision") }}</span>
 						</h2>
 
 						<div class="mb-6">
 							<p class="text-sm text-gray-700 font-medium mb-2">
-								Important: Please review the official project documents before you
-								decide.
+								{{
+									__(
+										"Important: Please review the official project documents before you decide.",
+									)
+								}}
 							</p>
 
 							<div
@@ -251,19 +272,22 @@
 									theme="red"
 									variant="solid"
 								>
-									Download Contract
+									{{ __("Download Contract") }}
 								</Button>
 							</div>
 						</div>
 
 						<p class="text-sm text-gray-500 italic mb-6">
-							Your decision to accept this project confirms your agreement to the
-							terms outlined in both documents.
+							{{
+								__(
+									"Your decision to accept this project confirms your agreement to the terms outlined in both documents.",
+								)
+							}}
 						</p>
 
 						<div class="flex gap-3">
 							<Button theme="green" class="flex-1" @click="acceptDialog = true">
-								Accept Project
+								{{ __("Accept Project") }}
 							</Button>
 							<Button
 								theme="red"
@@ -272,7 +296,7 @@
 								@click="rejectAssignment(projectDetail.data.name)"
 								:loading="assignmentDecision.loading"
 							>
-								Reject Project
+								{{ __("Reject Project") }}
 							</Button>
 						</div>
 
@@ -284,20 +308,22 @@
 		</div>
 	</div>
 
-	<!-- Confirmation Dialog -->
 	<Dialog v-model="acceptDialog">
 		<template #body-title>
-			<h3 class="text-2xl font-semibold text-gray-900">Confirm Action</h3>
+			<h3 class="text-2xl font-semibold text-gray-900">{{ __("Confirm Action") }}</h3>
 		</template>
 
 		<template #body-content>
 			<div class="space-y-4 text-gray-700">
 				<p>
-					By confirming, you acknowledge that you have read the contract details and
-					terms of reference, and that you accept the project.
+					{{
+						__(
+							"By confirming, you acknowledge that you have read the contract details and terms of reference, and that you accept the project.",
+						)
+					}}
 				</p>
 				<p class="text-sm text-gray-500 italic">
-					Accepting means you agree to the documents provided.
+					{{ __("Accepting means you agree to the documents provided.") }}
 				</p>
 			</div>
 		</template>
@@ -315,22 +341,21 @@
 						)
 					"
 				>
-					Confirm
+					{{ __("Confirm") }}
 				</Button>
-				<Button variant="outline" @click="close()">Cancel</Button>
+				<Button variant="outline" @click="close()">{{ __("Cancel") }}</Button>
 			</div>
 		</template>
 	</Dialog>
 </template>
-
-<script lang="ts" setup>
+<script setup>
 import { Badge, Button, createResource, Dialog, ErrorMessage, Spinner, toast } from "frappe-ui";
 import { computed, inject, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import router from "../router";
 
 const route = useRoute();
-const user = inject<any>("$user");
+const user = inject < any > "$user";
 const acceptDialog = ref(false);
 const downloadError = ref("");
 const loading = ref(false);
@@ -357,10 +382,8 @@ const projectDetail = createResource({
 	},
 });
 
-type BadgeTheme = "gray" | "blue" | "green" | "orange" | "red";
-
-const getStatusTheme = (status: string): BadgeTheme | undefined => {
-	const statusMap: Record<string, BadgeTheme> = {
+const getStatusTheme = (status) => {
+	const statusMap = {
 		Open: "blue",
 		Working: "orange",
 		Completed: "green",
@@ -369,8 +392,8 @@ const getStatusTheme = (status: string): BadgeTheme | undefined => {
 	return statusMap[status] || "gray";
 };
 
-const getPriorityTheme = (priority: string): BadgeTheme | undefined => {
-	const priorityMap: Record<string, BadgeTheme> = {
+const getPriorityTheme = (priority) => {
+	const priorityMap = {
 		High: "red",
 		Medium: "orange",
 		Low: "green",
@@ -378,8 +401,8 @@ const getPriorityTheme = (priority: string): BadgeTheme | undefined => {
 	return priorityMap[priority] || "gray";
 };
 
-const getStatusColor = (status: string) => {
-	const colorMap: Record<string, string> = {
+const getStatusColor = (status) => {
+	const colorMap = {
 		Open: "bg-blue-500",
 		Working: "bg-orange-500",
 		Completed: "bg-green-500",
@@ -389,7 +412,7 @@ const getStatusColor = (status: string) => {
 	return colorMap[status] || "bg-gray-500";
 };
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString) => {
 	if (!dateString) return "Not set";
 	return new Date(dateString).toLocaleDateString("en-US", {
 		year: "numeric",
@@ -398,7 +421,7 @@ const formatDate = (dateString: string) => {
 	});
 };
 
-const acceptAssignment = (deploymentAssignment: string, contractName: string) => {
+const acceptAssignment = (deploymentAssignment, contractName) => {
 	assignmentDecision.submit({
 		name: deploymentAssignment,
 		accepted: true,
@@ -406,7 +429,7 @@ const acceptAssignment = (deploymentAssignment: string, contractName: string) =>
 	});
 };
 
-const rejectAssignment = (deploymentAssignment: string) => {
+const rejectAssignment = (deploymentAssignment) => {
 	assignmentDecision.submit({ name: deploymentAssignment, accepted: false });
 };
 
@@ -422,7 +445,7 @@ const assignmentDecision = createResource({
 	},
 });
 
-const downloadContract = (contractName: string) => {
+const downloadContract = (contractName) => {
 	loading.value = true;
 
 	let headers = { "X-Frappe-Site-Name": window.location.hostname };

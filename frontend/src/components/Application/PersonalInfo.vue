@@ -1,15 +1,20 @@
 <template>
 	<div class="space-y-6">
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-			<FormControl v-model="form.phone_number" label="Phone Number" type="tel" required />
+			<FormControl
+				v-model="form.phone_number"
+				:label="__('Phone Number')"
+				type="tel"
+				required
+			/>
 
-			<FormControl v-model="form.email_id" label="Email Address" required />
+			<FormControl v-model="form.email_id" :label="__('Email Address')" required />
 
 			<FormControl
 				v-model="form.citizenship"
 				:label="__('Citizenship')"
 				type="select"
-				:options="citizenshipOptions"
+				:options="citizenshipOptions.map((opt) => ({ ...opt, label: __(opt.label) }))"
 				required
 			/>
 
@@ -31,60 +36,39 @@
 				:required="true"
 			/>
 
-			<FormControl v-model="form.id_number" label="ID Number" />
+			<FormControl v-model="form.id_number" :label="__('ID Number')" />
 			<Link v-model="form.gender" :label="__('Gender')" doctype="Gender" :required="true" />
-			<!-- <FormControl
-        v-model="form.date_of_birth"
-        label="Date of Birth"
-        type="date"
-      />
-      <FormControl
-        v-model="form.marital_status"
-        label="Marital Status"
-        type="select"
-        :options="maritalOptions"
-      />
-      <FormControl
-        v-model="form.number_of_dependants"
-        label="Number of Dependants"
-      />
-
-      <MultiSelect
-        v-model="form.languages"
-        doctype="Volunteer Language"
-        label="Languages"
-      /> -->
 		</div>
 
-		<h2 class="text-xl font-semibold border-t pt-6 mt-6">Contact & Location</h2>
+		<h2 class="text-xl font-semibold border-t pt-6 mt-6">{{ __("Contact & Location") }}</h2>
 
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-			<Link doctype="County" v-model="form.county" label="County" />
+			<Link doctype="County" v-model="form.county" :label="__('County')" />
 			<Link
 				v-if="form.county"
 				doctype="Sub County"
 				v-model="form.sub_county"
-				label="Sub County"
+				:label="__('Sub County')"
 				:filters="{ county: form.county }"
 			/>
 			<Link
 				doctype="Ward"
 				v-model="form.ward"
-				label="Ward"
+				:label="__('Ward')"
 				:filters="{ county: form.county }"
 			/>
 			<Link
 				v-if="form.sub_county"
 				doctype="Administrative Location"
 				v-model="form.administrative_location"
-				label="Location"
+				:label="__('Location')"
 				:filters="{ sub_county: form.sub_county }"
 			/>
 			<FormControl
 				v-model="form.access_to_internet"
-				label="Access to Internet"
+				:label="__('Access to Internet')"
 				type="select"
-				:options="internetOptions"
+				:options="internetOptions.map((opt) => ({ ...opt, label: __(opt.label) }))"
 			/>
 		</div>
 	</div>

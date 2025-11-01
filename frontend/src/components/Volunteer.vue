@@ -10,7 +10,7 @@
 				<p
 					class="text-sm text-center border border-blue-600 px-2 py-1 bg-blue-100 rounded-lg text-blue-600 font-medium"
 				>
-					Action Required: Please set your availability.
+					{{ __("Action Required: Please set your availability.") }}
 				</p>
 			</div>
 
@@ -24,7 +24,7 @@
 					@click="setAvailability = true"
 					class="rounded-xl shadow-md w-full sm:w-auto"
 				>
-					Set Availability
+					{{ __("Set Availability") }}
 				</Button>
 
 				<div class="relative cursor-pointer" @click="showNotificationDialog = true">
@@ -51,11 +51,11 @@
 						>
 							<Bell class="h-5 w-5 text-red-600" />
 						</div>
-						New Assignment
+						{{ __("New Assignment") }}
 					</h3>
 
 					<Badge variant="outline" theme="red" class="ml-2">
-						{{ assignedProjects.length }} new
+						{{ __(assignedProjects.length) }} {{ __("new") }}
 					</Badge>
 				</div>
 			</template>
@@ -71,19 +71,19 @@
 							<div class="flex-1">
 								<div class="flex items-center gap-3 mb-2">
 									<h4 class="text-lg font-semibold text-gray-900">
-										{{ project.project_name }}
+										{{ __(project.project_name) }}
 									</h4>
 									<Badge
 										:theme="priorityTheme(project.priority)"
 										class="px-2.5 py-0.5 text-xs rounded-full font-medium"
 									>
-										{{ project.priority }}
+										{{ __(project.priority) }}
 									</Badge>
 								</div>
 								<p
 									class="text-sm text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded inline-block"
 								>
-									{{ project.name }}
+									{{ __(project.name) }}
 								</p>
 							</div>
 
@@ -94,7 +94,9 @@
 								}"
 								class="ml-4"
 							>
-								<Button variant="solid" theme="red"> View Details </Button>
+								<Button variant="solid" theme="red">
+									{{ __("View Details") }}
+								</Button>
 							</router-link>
 						</div>
 					</div>
@@ -106,10 +108,15 @@
 					>
 						<Bell class="h-8 w-8 text-gray-400" />
 					</div>
-					<h4 class="text-lg font-medium text-gray-900 mb-2">All caught up!</h4>
+					<h4 class="text-lg font-medium text-gray-900 mb-2">
+						{{ __("All caught up!") }}
+					</h4>
 					<p class="text-sm text-gray-500 max-w-sm">
-						No new project assignments at the moment. We'll notify you when new ones
-						arrive.
+						{{
+							__(
+								"No new project assignments at the moment. We'll notify you when new ones arrive.",
+							)
+						}}
 					</p>
 				</div>
 			</template>
@@ -122,12 +129,12 @@
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
-					Total Assignments
+					{{ __("Total Assignments") }}
 				</h4>
 				<div class="text-3xl font-bold text-gray-900 mb-1">
-					{{ props.total_projects_deployed || 0 }}
+					{{ __(props.total_projects_deployed || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">All assignments</div>
+				<div class="text-xs text-gray-500">{{ __("All assignments") }}</div>
 			</div>
 
 			<div
@@ -135,36 +142,36 @@
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
-					Pending
+					{{ __("Pending") }}
 				</h4>
 				<div class="text-3xl font-bold text-amber-600 mb-1">
-					{{ props.pending_projects || 0 }}
+					{{ __(props.pending_projects || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">Awaiting response</div>
+				<div class="text-xs text-gray-500">{{ __("Awaiting response") }}</div>
 			</div>
 
 			<div
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
-					Accepted
+					{{ __("Accepted") }}
 				</h4>
 				<div class="text-3xl font-bold text-green-600 mb-1">
-					{{ props.accepted_projects || 0 }}
+					{{ __(props.accepted_projects || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">Ongoing assignments</div>
+				<div class="text-xs text-gray-500">{{ __("Ongoing assignments") }}</div>
 			</div>
 
 			<div
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
-					Rejected
+					{{ __("Rejected") }}
 				</h4>
 				<div class="text-3xl font-bold text-red-600 mb-1">
-					{{ props.rejected_projects || 0 }}
+					{{ __(props.rejected_projects || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">Declined assignments</div>
+				<div class="text-xs text-gray-500">{{ __("Declined assignments") }}</div>
 			</div>
 		</div>
 	</div>

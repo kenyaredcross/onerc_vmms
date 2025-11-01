@@ -1,7 +1,7 @@
 <template>
 	<div class="flex min-h-screen items-center justify-center bg-gray-50">
 		<Card
-			:title="isLogin ? 'Login VMMS Portal' : 'Sign Up VMMS Portal'"
+			:title="isLogin ? __('Login VMMS Portal') : __('Sign Up VMMS Portal')"
 			:class="isLogin ? 'w-full max-w-md' : 'w-full max-w-2xl'"
 			class="border-2 border-gray-100 shadow-md rounded-2xl"
 		>
@@ -11,8 +11,8 @@
 						required
 						name="email"
 						type="text"
-						placeholder="johndoe@email.com"
-						label="Email"
+						:placeholder="__('johndoe@email.com')"
+						:label="__('Email')"
 						v-model="userEmail"
 					/>
 
@@ -22,8 +22,8 @@
 							required
 							name="password"
 							:type="passWordVisible ? 'text' : 'password'"
-							placeholder="••••••"
-							label="Password"
+							:placeholder="__('••••••')"
+							:label="__('Password')"
 							v-model="password"
 						/>
 
@@ -40,9 +40,9 @@
 						/>
 					</div>
 					<button type="button" @click="forgotPassword">
-						<span class="text-sm text-right text-red-600 hover:underline"
-							>Forgot Password?</span
-						>
+						<span class="text-sm text-right text-red-600 hover:underline">{{
+							__("Forgot Password?")
+						}}</span>
 					</button>
 				</template>
 
@@ -52,16 +52,16 @@
 							required
 							name="firstname"
 							type="text"
-							placeholder="John"
-							label="First Name"
+							:placeholder="__('John')"
+							:label="__('First Name')"
 							v-model="signUpForm.first_name"
 						/>
 						<Input
 							required
 							name="lastname"
 							type="text"
-							placeholder="Doe"
-							label="Last Name"
+							:placeholder="__('Doe')"
+							:label="__('Last Name')"
 							v-model="signUpForm.last_name"
 						/>
 					</div>
@@ -70,8 +70,8 @@
 						required
 						name="email"
 						type="text"
-						placeholder="johndoe@email.com"
-						label="Email"
+						:placeholder="__('johndoe@email.com')"
+						:label="__('Email')"
 						v-model="signUpForm.email"
 					/>
 				</template>
@@ -82,7 +82,7 @@
 					type="submit"
 					theme="red"
 				>
-					{{ isLogin ? "Login" : "Sign Up" }}
+					{{ isLogin ? __("Login") : __("Sign Up") }}
 				</Button>
 			</form>
 
@@ -91,14 +91,14 @@
 			</div>
 
 			<div class="mt-4 text-center text-sm">
-				<span v-if="isLogin">Don’t have an account? </span>
-				<span v-else>Already have an account? </span>
+				<span v-if="isLogin">{{ __("Don’t have an account?") }} </span>
+				<span v-else>{{ __("Already have an account?") }} </span>
 				<Button
 					class="text-red-600 hover:underline font-medium"
 					@click="toggleForm"
 					type="button"
 				>
-					{{ isLogin ? "Sign up" : "Login" }}
+					{{ isLogin ? __("Sign up") : __("Login") }}
 				</Button>
 			</div>
 		</Card>
@@ -106,9 +106,10 @@
 
 	<Dialog
 		:options="{
-			title: 'Successfully Registered',
-			message:
+			title: __('Successfully Registered'),
+			message: __(
 				'We have sent you an email with a link to set your password. Please check your inbox (and spam folder) to complete your registration.',
+			),
 			size: 'lg',
 			icon: {
 				name: 'check-circle',

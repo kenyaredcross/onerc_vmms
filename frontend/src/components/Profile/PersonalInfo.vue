@@ -1,27 +1,39 @@
 <template>
 	<div class="space-y-6">
 		<div class="flex justify-end">
-			<Button
+			<button
 				@click="handleEditToggle"
 				variant="solid"
-				class="px-8"
+				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
 				:loading="saveInProgress"
 			>
-				{{ editing ? "Save" : "Edit" }}
-			</Button>
+				{{ editing ? __("Save") : __("Edit") }}
+			</button>
 		</div>
 
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-			<FormControl v-model="localForm.first_name" label="First Name" :readOnly="!editing" />
 			<FormControl
-				v-model="localForm.middle_name"
-				label="Other Names"
+				v-model="localForm.first_name"
+				:label="__('First Name')"
 				:readOnly="!editing"
 			/>
-			<FormControl v-model="localForm.last_name" label="Last Name" :readOnly="!editing" />
-			<FormControl v-model="localForm.full_name" label="Full Name" :readOnly="!editing" />
-			<FormControl v-model="localForm.email" label="Email" :readOnly="!editing" />
-			<FormControl v-model="localForm.phone" label="Phone" :readOnly="!editing" />
+			<FormControl
+				v-model="localForm.middle_name"
+				:label="__('Other Names')"
+				:readOnly="!editing"
+			/>
+			<FormControl
+				v-model="localForm.last_name"
+				:label="__('Last Name')"
+				:readOnly="!editing"
+			/>
+			<FormControl
+				v-model="localForm.full_name"
+				:label="__('Full Name')"
+				:readOnly="!editing"
+			/>
+			<FormControl v-model="localForm.email" :label="__('Email')" :readOnly="!editing" />
+			<FormControl v-model="localForm.phone" :label="__('Phone')" :readOnly="!editing" />
 
 			<FormControl
 				v-if="!editing"
@@ -43,7 +55,7 @@
 			<FormControl
 				v-if="localForm.citizenship === 'Citizen'"
 				v-model="localForm.id_number"
-				label="ID Number"
+				:label="__('ID Number')"
 				:readOnly="!editing"
 			/>
 			<Link
@@ -56,81 +68,86 @@
 			<FormControl
 				v-if="localForm.citizenship !== 'Citizen'"
 				v-model="localForm.passport_number"
-				label="Passport Number"
+				:label="__('Passport Number')"
 				:readOnly="!editing"
 			/>
 
 			<FormControl
 				v-model="localForm.birth_date"
-				label="Date of Birth"
+				:label="__('Date of Birth')"
 				type="date"
 				:readOnly="!editing"
 			/>
 			<FormControl
 				v-if="!editing"
 				v-model="localForm.marital_status"
-				label="Marital Status"
+				:label="__('Marital Status')"
 				type="text"
 				:readOnly="true"
 			/>
 			<FormControl
 				v-if="editing"
 				v-model="localForm.marital_status"
-				label="Marital Status"
+				:label="__('Marital Status')"
 				:readOnly="!editing"
 				type="select"
 				:options="maritalOptions"
 			/>
 			<FormControl
 				v-model="localForm.number_of_dependants"
-				label="Number of Dependants"
+				:label="__('Number of Dependants')"
 				:readOnly="!editing"
 			/>
 
 			<MultiSelect
 				v-model="localForm.languages"
 				doctype="Volunteer Language"
-				label="Languages"
+				:label="__('Languages')"
 				:readOnly="!editing"
 			/>
 		</div>
 
-		<h2 class="text-xl font-semibold border-t pt-6 mt-6">Contact & Location</h2>
+		<h2 class="text-xl font-semibold border-t pt-6 mt-6">{{ __("Contact & Location") }}</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 			<Link
 				doctype="County"
 				v-model="localForm.county"
-				label="County"
+				:label="__('County')"
 				:readOnly="!editing"
 			/>
 			<Link
 				v-if="localForm.county"
 				doctype="Sub County"
 				v-model="localForm.sub_county"
-				label="Sub County"
+				:label="__('Sub County')"
 				:readOnly="!editing"
 				:filters="{ county: localForm.county }"
 			/>
-			<FormControl v-model="localForm.ward" label="Ward" :readOnly="!editing" type="text" />
+			<FormControl
+				v-model="localForm.ward"
+				:label="__('Ward')"
+				:readOnly="!editing"
+				type="text"
+			/>
 			<Link
 				v-if="localForm.sub_county"
 				doctype="Administrative Location"
 				v-model="localForm.administrative_location"
-				label="Location"
+				:label="__('Location')"
 				:readOnly="!editing"
 				:filters="{ sub_county: localForm.sub_county }"
 			/>
 			<FormControl
 				v-if="!editing"
 				v-model="localForm.access_to_internet"
-				label="Access to Internet"
+				:label="__('Access to Internet')"
 				type="text"
 				:readOnly="true"
 			/>
 			<FormControl
 				v-if="editing"
 				v-model="localForm.access_to_internet"
-				label="Access to Internet"
+				:label="__('Access to Internet')"
 				type="select"
 				:options="internetOptions"
 				:readOnly="!editing"
@@ -142,7 +159,7 @@
 <script setup>
 import Link from "@/components/Controls/Link.vue";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
-import { Button, FormControl, createResource, toast } from "frappe-ui";
+import { FormControl, createResource, toast } from "frappe-ui";
 import { reactive, ref, watch } from "vue";
 
 const props = defineProps({

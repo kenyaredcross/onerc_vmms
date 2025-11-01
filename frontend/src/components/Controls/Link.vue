@@ -1,7 +1,7 @@
 <template>
 	<div class="space-y-1.5 relative">
 		<label class="block" :class="labelClasses" v-if="attrs.label">
-			{{ attrs.label }}
+			{{ __(attrs.label) }}
 			<span class="text-ink-red-3" v-if="attrs.required">*</span>
 		</label>
 
@@ -12,7 +12,7 @@
 				v-model="value"
 				:size="attrs.size || 'sm'"
 				:variant="attrs.variant"
-				:placeholder="attrs.placeholder"
+				:placeholder="__(attrs.placeholder)"
 				:filterable="false"
 				:readonly="attrs.readonly || props.readOnly"
 				class="relative !z-100"
@@ -62,7 +62,7 @@
 			</Autocomplete>
 		</div>
 
-		<p v-if="description" class="text-sm text-ink-gray-5">{{ description }}</p>
+		<p v-if="description" class="text-sm text-ink-gray-5">{{ __(description) }}</p>
 	</div>
 </template>
 

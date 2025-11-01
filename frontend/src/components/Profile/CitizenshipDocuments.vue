@@ -1,14 +1,14 @@
 <template>
 	<div class="space-y-6">
 		<div class="flex justify-end">
-			<Button
+			<button
 				@click="handleEditToggle"
 				variant="solid"
-				class="px-8"
+				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
 				:loading="saveInProgress"
 			>
-				{{ editing ? "Save" : "Edit" }}
-			</Button>
+				{{ editing ? __("Save") : __("Edit") }}
+			</button>
 		</div>
 
 		<div class="border rounded-lg shadow-sm">
@@ -16,7 +16,9 @@
 				class="flex justify-between items-center p-4 cursor-pointer"
 				@click="toggleCollapse('docs')"
 			>
-				<h2 class="text-lg font-semibold">Supporting Documents & Attachments</h2>
+				<h2 class="text-lg font-semibold">
+					{{ __("Supporting Documents & Attachments") }}
+				</h2>
 				<svg
 					:class="{ 'rotate-180': !isCollapsed.docs }"
 					class="w-5 h-5 text-gray-500 transition-transform duration-200"
@@ -37,7 +39,7 @@
 				<ChildTable
 					v-model="localForm.supporting_documents"
 					doctype="Supporting Document"
-					label="Supporting Documents"
+					:label="__('Supporting Documents')"
 					:autoEditGrid="false"
 					:readOnly="!editing"
 				/>
@@ -48,7 +50,7 @@
 
 <script setup>
 import ChildTable from "@/components/Controls/ChildTable.vue";
-import { Button, createResource, toast } from "frappe-ui";
+import { createResource, toast } from "frappe-ui";
 import { reactive, ref, watch } from "vue";
 
 const props = defineProps({

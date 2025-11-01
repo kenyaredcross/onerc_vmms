@@ -23,7 +23,7 @@
 						:src="link.logo"
 						class="h-4 w-4 object-contain"
 					/>
-					<div class="">{{ link.label }}</div>
+					<div class="">{{ __(link.label) }}</div>
 				</div>
 			</div>
 
@@ -42,7 +42,7 @@
 						class="h-6 w-6 stroke-1.5"
 						:class="[isActive(tab) ? 'text-ink-red-4' : 'text-ink-gray-5']"
 					/>
-					<span class="text-xs">{{ tab.label }}</span>
+					<span class="text-xs">{{ __(tab.label) }}</span>
 				</button>
 
 				<button
@@ -50,20 +50,20 @@
 					class="py-4 px-3 flex flex-col items-center justify-center"
 				>
 					<component :is="icons['List']" class="h-6 w-6 stroke-1.5 text-ink-gray-5" />
-					<span class="text-xs">More</span>
+					<span class="text-xs">{{ __("More") }}</span>
 				</button>
 			</div>
 		</div>
 	</div>
 </template>
+
 <script setup>
 import { sessionStore } from "@/stores/session";
-import { useSettings } from "@/stores/settings";
 import { usersStore } from "@/stores/user";
 import { getSidebarLinks } from "@/utils";
 import { createResource } from "frappe-ui";
 import * as icons from "lucide-vue-next";
-import { onMounted, ref, toRaw, watch } from "vue";
+import { ref, toRaw, watch } from "vue";
 import { useRouter } from "vue-router";
 
 const { logout, user } = sessionStore();

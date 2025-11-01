@@ -6,21 +6,26 @@
 		<div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 p-10">
 			<div class="flex flex-col justify-center space-y-6 text-left">
 				<h1 class="text-3xl md:text-6xl font-extrabold text-red-600 leading-tight">
-					Kenya Red Cross <br />
-					<span class="text-gray-800">Society</span>
+					{{ __("Kenya Red Cross") }} <br />
+					<span class="text-gray-800">{{ __("Society") }}</span>
 				</h1>
 				<p class="text-lg text-gray-700 max-w-lg">
-					Together, we can
-					<span class="font-semibold text-red-500">save lives</span>, support
-					communities, and make a
-					<span class="font-semibold text-red-500">real difference</span>. Come be part
-					of our mission as a
-					<span class="font-semibold text-red-500">volunteer</span> or a
-					<span class="font-semibold text-red-500">member</span> !
+					{{ __("Together, we can") }}
+					<span class="font-semibold text-red-500">{{ __("save lives") }}</span
+					>, {{ __("support") }}
+					{{ __("communities, and make a") }}
+					<span class="font-semibold text-red-500">{{ __("real difference") }}</span
+					>. {{ __("Come be part of our mission as a") }}
+					<span class="font-semibold text-red-500">{{ __("volunteer") }}</span>
+					{{ __("or a") }}
+					<span class="font-semibold text-red-500">{{ __("member") }}</span> !
 				</p>
 				<p class="text-gray-600 max-w-md">
-					Your time and passion can help change lives. Join us today and help build
-					stronger, safer communities for everyone.
+					{{
+						__(
+							"Your time and passion can help change lives. Join us today and help build stronger, safer communities for everyone.",
+						)
+					}}
 				</p>
 			</div>
 
@@ -33,7 +38,7 @@
 						class="w-full py-4 rounded-xl shadow-lg text-lg font-medium"
 						@click="navigateTo('volunteer/signup')"
 					>
-						Join as Volunteer
+						{{ __("Join as Volunteer") }}
 					</Button>
 					<Button
 						variant="outline"
@@ -42,7 +47,7 @@
 						class="w-full py-4 rounded-xl shadow-md text-lg font-medium"
 						@click="navigateTo('membership')"
 					>
-						Join as Member
+						{{ __("Join as Member") }}
 					</Button>
 				</div>
 			</div>

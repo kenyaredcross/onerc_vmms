@@ -10,36 +10,40 @@
 						v-if="job.data.company_logo"
 						:src="job.data.company_logo"
 						class="w-16 h-16 rounded-lg object-contain cursor-pointer bg-gray-50 border"
-						:alt="job.data.company"
+						:alt="__(job.data.company)"
 						@click="redirectToWebsite(job.data.company_website)"
 					/>
 					<div
 						v-else
 						class="w-16 h-16 flex items-center justify-center rounded-lg bg-red-100 text-red-700 font-semibold text-xl cursor-default"
 					>
-						{{ getCompanyAbbr(job.data.company) }}
+						{{ __(getCompanyAbbr(job.data.company)) }}
 					</div>
 				</div>
 				<div>
 					<h1 class="text-3xl font-bold text-gray-900 mb-1">
-						{{ job.data.job_title }}
+						{{ __(job.data.job_title) }}
 					</h1>
 					<div class="text-lg font-medium text-red-600">
-						{{ job.data.company }}
+						{{ __(job.data.company) }}
 					</div>
 					<div
 						v-if="job.data.location || job.data.country"
 						class="text-sm text-gray-500 mt-1"
 					>
-						{{ job.data.location
-						}}<span v-if="job.data.country">, {{ job.data.country }}</span>
+						{{ __(job.data.location)
+						}}<span v-if="job.data.country"
+							>{{ __(", ") }}{{ __(job.data.country) }}</span
+						>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<div v-if="!loading" class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-			<h2 class="text-2xl font-bold text-red-700 mb-6">Apply for this Opportunity</h2>
+			<h2 class="text-2xl font-bold text-red-700 mb-6">
+				{{ __("Apply for this Opportunity") }}
+			</h2>
 
 			<div
 				class="flex overflow-x-auto border-b border-gray-200 whitespace-nowrap mb-8 -mx-6 px-6 sm:mx-0 sm:px-0"
@@ -74,7 +78,7 @@
 							d="M5 13l4 4L19 7"
 						></path>
 					</svg>
-					{{ step.title }}
+					{{ __(step.title) }}
 				</button>
 			</div>
 
@@ -101,7 +105,7 @@
 					@click="prevStep"
 					class="text-gray-700 hover:bg-gray-100"
 				>
-					&larr; Back
+					{{ __("&larr; Back") }}
 				</Button>
 
 				<div class="flex-grow"></div>
@@ -112,7 +116,11 @@
 					@click="handleStepAction"
 					class="!bg-red-700 hover:bg-red-800 text-white px-6 py-3 rounded-lg ml-auto"
 				>
-					{{ currentStep < steps.length - 1 ? "Save & Continue" : "Submit Application" }}
+					{{
+						currentStep < steps.length - 1
+							? __("Save & Continue")
+							: __("Submit Application")
+					}}
 				</Button>
 			</div>
 
@@ -137,16 +145,22 @@
 								d="M5 13l4 4L19 7"
 							></path>
 						</svg>
-						Application Successfully Submitted
+						{{ __("Application Successfully Submitted") }}
 					</div>
 					<p class="text-gray-600">
-						Thank you for your application. You can review your submitted details here.
+						{{
+							__(
+								"Thank you for your application. You can review your submitted details here.",
+							)
+						}}
 					</p>
 				</div>
 			</div>
 		</div>
 
-		<div v-else class="text-center py-20 text-gray-500">Loading application details...</div>
+		<div v-else class="text-center py-20 text-gray-500">
+			{{ __("Loading application details...") }}
+		</div>
 		<Dialog v-model="showSubmitDialog">
 			<template #body-title>
 				<h2 class="text-lg font-bold text-gray-900">
