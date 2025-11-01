@@ -2,7 +2,7 @@
 	<div class="p-5"></div>
 
 	<div class="md:p-6 mx-auto w-3/4">
-		<h1 class="text-3xl font-semibold">Projects</h1>
+		<h1 class="text-3xl font-semibold">{{ __("Projects") }}</h1>
 		<Badge></Badge>
 	</div>
 

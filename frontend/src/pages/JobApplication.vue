@@ -2,29 +2,36 @@
 	<div class="w-full mx-auto py-2 px-1">
 		<div v-if="!isLoggedIn" class="text-center py-20">
 			<LogIn class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-			<h2 class="text-3xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+			<h2 class="text-3xl font-bold text-gray-900 mb-4">
+				{{ __("Authentication Required") }}
+			</h2>
 			<p class="text-gray-600 mb-8">
-				Please log in to access your job application details. Your application information
-				is protected and only available to authenticated users.
+				{{
+					__(
+						"Please log in to access your opportunity application details. Your application information is protected and only available to authenticated users.",
+					)
+				}}
 			</p>
 			<Button
 				variant="solid"
 				class="bg-red-700 hover:bg-red-800 text-white px-6 py-3 rounded-lg"
 				@click="redirectToLogin"
 			>
-				Log In
+				{{ __("Log In") }}
 			</Button>
 		</div>
 
 		<div v-else>
-			<h1 class="text-3xl font-bold text-gray-900 mb-8">My Applications</h1>
+			<h1 class="text-3xl font-bold text-gray-900 mb-8">{{ __("My Applications") }}</h1>
 
 			<div v-if="applications.loading" class="text-center py-20">
-				<p class="text-gray-500">Loading applications...</p>
+				<p class="text-gray-500">{{ __("Loading applications...") }}</p>
 			</div>
 
 			<div v-else-if="!applications.data?.length" class="text-center py-20">
-				<p class="text-gray-500">You haven’t applied for any jobs yet.</p>
+				<p class="text-gray-500">
+					{{ __("You haven't applied for any opportunities yet.") }}
+				</p>
 			</div>
 
 			<div v-else>
@@ -59,14 +66,19 @@
 									v-else
 									class="w-14 h-14 flex items-center justify-center rounded-lg bg-red-100 text-red-700 font-bold"
 								>
-									{{ getCompanyAbbr(app.company) }}
+									{{ __(getCompanyAbbr(app.company)) }}
 								</div>
 							</div>
 
 							<div class="flex-1">
 								<div class="flex justify-between items-start">
 									<h2 class="text-xl font-bold text-gray-900">
-										{{ app?.job_opening_details?.job_title || app.job_title }}
+										{{
+											__(
+												app?.job_opening_details?.job_title ||
+													app.job_title,
+											)
+										}}
 									</h2>
 									<span
 										class="px-3 py-1 text-xs font-semibold rounded-full"
@@ -74,26 +86,27 @@
 									>
 										{{
 											app.docstatus === 2
-												? "Cancelled"
+												? __("Cancelled")
 												: app.docstatus === 0
-													? "Draft"
-													: app.status
+													? __("Draft")
+													: __(app.status)
 										}}
 									</span>
 								</div>
-								<p class="text-red-700 font-medium">{{ app.company }}</p>
+								<p class="text-red-700 font-medium">{{ __(app.company) }}</p>
 								<p v-if="app.designation" class="text-gray-500 text-sm">
-									<strong>Designation:</strong> {{ app.designation }}
+									<strong>{{ __("Designation") }}:</strong>
+									{{ __(app.designation) }}
 								</p>
 							</div>
 						</div>
 
 						<div class="mt-4 text-sm text-gray-600">
-							Applied
+							{{ __("Applied") }}
 							{{ formatDistanceToNow(parseISO(app.creation), { addSuffix: true }) }}
 						</div>
 						<div class="mt-1 text-sm text-gray-600">
-							Modified
+							{{ __("Modified") }}
 							{{ formatDistanceToNow(parseISO(app.modified), { addSuffix: true }) }}
 						</div>
 
@@ -101,7 +114,7 @@
 							v-if="app.cover_letter"
 							class="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700"
 						>
-							<strong>Cover Letter:</strong>
+							<strong>{{ __("Cover Letter") }}:</strong>
 							<div
 								v-html="
 									app.cover_letter.substring(0, 150) +
@@ -115,27 +128,28 @@
 							class="mt-4 border-t pt-4 text-sm text-gray-700"
 						>
 							<p v-if="app.job_opening_details.job_status">
-								<strong>Job Status:</strong>
-								{{ app.job_opening_details.job_status }}
+								<strong>{{ __("Opportunity Status") }}:</strong>
+								{{ __(app.job_opening_details.job_status) }}
 							</p>
 							<p v-if="app.job_opening_details.posted_on">
-								<strong>Posted On:</strong>
+								<strong>{{ __("Posted On") }}:</strong>
 								{{ formatDate(app.job_opening_details.posted_on) }}
 							</p>
 							<p v-if="app.job_opening_details.closes_on">
-								<strong>Closes On:</strong>
+								<strong>{{ __("Closes On") }}:</strong>
 								{{ formatDate(app.job_opening_details.closes_on) }}
 							</p>
 							<p v-if="app.job_opening_details.job_description" class="mt-2">
-								<strong>Description:</strong>
-								{{ app.job_opening_details.job_description }}
+								<strong>{{ __("Description") }}:</strong>
+								{{ __(app.job_opening_details.job_description) }}
 							</p>
 						</div>
 					</router-link>
 				</div>
 
 				<div v-else class="text-center py-20 text-gray-500">
-					No applications found under "{{ currentTab }}" status.
+					{{ __("No applications found under") }} "{{ __(currentTab) }}"
+					{{ __("status.") }}
 				</div>
 			</div>
 		</div>

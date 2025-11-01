@@ -7,8 +7,10 @@
 
 	<div v-if="!isLoggedIn" class="text-center py-20">
 		<LogIn class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-		<h2 class="text-3xl font-bold text-gray-900 mb-4">Login Required</h2>
-		<p class="text-gray-600 mb-8">Please log in to submit your volunteer application.</p>
+		<h2 class="text-3xl font-bold text-gray-900 mb-4">{{ __("Login Required") }}</h2>
+		<p class="text-gray-600 mb-8">
+			{{ __("Please log in to submit your volunteer application.") }}
+		</p>
 		<Button
 			variant="solid"
 			class="bg-red-600 hover:bg-red-700 text-white"
@@ -37,10 +39,10 @@
 						class="text-center mb-6"
 					>
 						<h2 class="text-xl font-semibold text-orange-600">
-							Continue Your Draft Application
+							{{ __("Continue Your Draft Application") }}
 						</h2>
 						<p class="text-gray-600 text-sm">
-							Complete and submit your volunteer application
+							{{ __("Complete and submit your volunteer application") }}
 						</p>
 					</div>
 

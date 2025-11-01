@@ -1,20 +1,20 @@
 <template>
 	<div class="space-y-6">
 		<div class="flex justify-end">
-			<Button
+			<button
 				@click="handleEditToggle"
 				variant="solid"
-				class="px-8"
+				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
 				:loading="saveInProgress"
 			>
-				{{ editing ? "Save" : "Edit" }}
-			</Button>
+				{{ editing ? __("Save") : __("Edit") }}
+			</button>
 		</div>
 
 		<Link
 			doctype="Profession"
 			v-model="localForm.profession"
-			label="Profession"
+			:label="__('Profession')"
 			:readOnly="!editing"
 			class="mt-4"
 		/>
@@ -24,7 +24,7 @@
 				class="flex justify-between items-center p-4 cursor-pointer"
 				@click="toggleCollapse('education')"
 			>
-				<h2 class="text-lg font-semibold">Education & Work History</h2>
+				<h2 class="text-lg font-semibold">{{ __("Education & Work History") }}</h2>
 				<svg
 					:class="{ 'rotate-180': !isCollapsed.education }"
 					class="w-5 h-5 text-gray-500 transition-transform duration-200"
@@ -45,28 +45,28 @@
 				<ChildTable
 					v-model="localForm.education"
 					doctype="Employee Education"
-					label="Education History"
+					:label="__('Education History')"
 					:autoEditGrid="false"
 					:readOnly="!editing"
 				/>
 				<ChildTable
 					v-model="localForm.work_experience"
 					doctype="Work Experience"
-					label="Work Experience"
+					:label="__('Work Experience')"
 					:autoEditGrid="false"
 					:readOnly="!editing"
 				/>
 				<ChildTable
 					v-model="localForm.work_references"
 					doctype="Professional Reference"
-					label="Work References"
+					:label="__('Work References')"
 					:autoEditGrid="false"
 					:readOnly="!editing"
 				/>
 				<ChildTable
 					v-model="localForm.certification"
 					doctype="Certification"
-					label="Certifications"
+					:label="__('Certifications')"
 					:autoEditGrid="false"
 					:readOnly="!editing"
 				/>
@@ -78,7 +78,7 @@
 				class="flex justify-between items-center p-4 cursor-pointer"
 				@click="toggleCollapse('skills')"
 			>
-				<h2 class="text-lg font-semibold">Skills & Courses</h2>
+				<h2 class="text-lg font-semibold">{{ __("Skills & Courses") }}</h2>
 				<svg
 					:class="{ 'rotate-180': !isCollapsed.skills }"
 					class="w-5 h-5 text-gray-500 transition-transform duration-200"
@@ -99,14 +99,14 @@
 				<ChildTable
 					v-model="localForm.additional_skills"
 					doctype="Additional Skill"
-					label="Skills"
+					:label="__('Skills')"
 					:autoEditGrid="false"
 					:readOnly="!editing"
 				/>
 				<ChildTable
 					v-model="localForm.courses"
 					doctype="User External Course"
-					label="Courses"
+					:label="__('Courses')"
 					:autoEditGrid="false"
 					:readOnly="!editing"
 				/>
@@ -118,7 +118,7 @@
 				class="flex justify-between items-center p-4 cursor-pointer"
 				@click="toggleCollapse('licences')"
 			>
-				<h2 class="text-lg font-semibold">Licences & Driving</h2>
+				<h2 class="text-lg font-semibold">{{ __("Licences & Driving") }}</h2>
 				<svg
 					:class="{ 'rotate-180': !isCollapsed.licences }"
 					class="w-5 h-5 text-gray-500 transition-transform duration-200"
@@ -139,13 +139,13 @@
 				<MultiSelect
 					v-model="localForm.driving_licence"
 					doctype="Driving Licences"
-					label="Driving Licence Classes"
+					:label="__('Driving Licence Classes')"
 					:readOnly="!editing"
 				/>
 				<ChildTable
 					v-model="localForm.licences"
 					doctype="Personnel Licence"
-					label="Professional Licences"
+					:label="__('Professional Licences')"
 					:autoEditGrid="false"
 					:readOnly="!editing"
 				/>
@@ -158,7 +158,7 @@
 import ChildTable from "@/components/Controls/ChildTable.vue";
 import Link from "@/components/Controls/Link.vue";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
-import { Button, createResource, toast } from "frappe-ui";
+import { createResource, toast } from "frappe-ui";
 import { reactive, ref, watch } from "vue";
 
 const props = defineProps({

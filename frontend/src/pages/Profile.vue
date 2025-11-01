@@ -24,7 +24,7 @@
 						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 					></path>
 				</svg>
-				<p class="text-gray-600 font-medium">Loading user details...</p>
+				<p class="text-gray-600 font-medium">{{ __("Loading user details...") }}</p>
 			</div>
 		</div>
 
@@ -39,11 +39,11 @@
 					:class="[
 						'py-3 px-3 sm:px-5 text-sm sm:text-base font-semibold transition-all duration-200 ease-in-out flex-shrink-0',
 						currentTab === i
-							? 'border-b-4 border-red-600 text-red-700 bg-red-50/50' // Active Tab Styles
-							: 'text-gray-600 hover:text-red-500 hover:border-b-4 hover:border-red-100', // Inactive Tab Styles
+							? 'border-b-4 border-red-600 text-red-700 bg-red-50/50'
+							: 'text-gray-600 hover:text-red-500 hover:border-b-4 hover:border-red-100',
 					]"
 				>
-					{{ tab.title }}
+					{{ __(tab.title) }}
 				</button>
 			</div>
 
@@ -51,7 +51,7 @@
 				<component :is="tabs[currentTab].component" :form="form" @saved="handleSaved" />
 			</div>
 
-			<div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+			<!-- <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
 				<button
 					v-if="currentTab > 0"
 					class="flex items-center gap-1 px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg transition-colors hover:bg-gray-200 active:scale-95"
@@ -71,14 +71,14 @@
 							d="M10 19l-7-7m0 0l7-7m-7 7h18"
 						></path>
 					</svg>
-					Back
+					{{ __("Back") }}
 				</button>
 				<button
 					v-if="currentTab < tabs.length - 1"
 					class="flex items-center gap-1 px-4 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
 					@click="nextTab"
 				>
-					Next
+					{{ __("Next") }}
 					<svg
 						class="w-4 h-4"
 						fill="none"
@@ -94,7 +94,7 @@
 						></path>
 					</svg>
 				</button>
-			</div>
+			</div> -->
 		</div>
 
 		<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />

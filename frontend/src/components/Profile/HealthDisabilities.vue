@@ -1,27 +1,27 @@
 <template>
 	<div class="space-y-6">
 		<div class="flex justify-end">
-			<Button
+			<button
 				@click="handleEditToggle"
 				variant="solid"
-				class="px-8"
+				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
 				:loading="saveInProgress"
 			>
-				{{ editing ? "Save" : "Edit" }}
-			</Button>
+				{{ editing ? __("Save") : __("Edit") }}
+			</button>
 		</div>
 
 		<FormControl
 			v-if="!editing"
 			v-model="localForm.blood_group"
-			label="Blood Group"
+			:label="__('Blood Group')"
 			type="text"
 			:readOnly="true"
 		/>
 		<FormControl
 			v-if="editing"
 			v-model="localForm.blood_group"
-			label="Blood Group"
+			:label="__('Blood Group')"
 			:readOnly="!editing"
 			type="select"
 			:options="bloodGroupOptions"
@@ -30,7 +30,7 @@
 		<ChildTable
 			v-model="localForm.allergies"
 			doctype="Allergy Table"
-			label="Allergies"
+			:label="__('Allergies')"
 			:autoEditGrid="false"
 			:readOnly="!editing"
 		/>
@@ -38,7 +38,7 @@
 		<ChildTable
 			v-model="localForm.disabilities"
 			doctype="Employee Disability"
-			label="Disabilities"
+			:label="__('Disabilities')"
 			:autoEditGrid="false"
 			:readOnly="!editing"
 		/>
@@ -47,7 +47,7 @@
 
 <script setup>
 import ChildTable from "@/components/Controls/ChildTable.vue";
-import { Button, FormControl, createResource, toast } from "frappe-ui";
+import { FormControl, createResource, toast } from "frappe-ui";
 import { reactive, ref, watch } from "vue";
 
 const props = defineProps({

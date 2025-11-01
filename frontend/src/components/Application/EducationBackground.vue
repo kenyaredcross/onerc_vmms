@@ -4,34 +4,34 @@
 			<Link
 				doctype="Profession"
 				v-model="form.profession"
-				label="Profession"
+				:label="__('Profession')"
 				class="mt-4"
 				:required="true"
 			/>
 			<ChildTable
 				v-model="form.education"
 				doctype="Employee Education"
-				label="Education History"
+				:label="__('Education History')"
 				required
 				:autoEditGrid="false"
 			/>
 			<ChildTable
 				v-model="form.courses"
 				doctype="User External Course"
-				label="Certifications and Trainings"
+				:label="__('Certifications and Trainings')"
 				:autoEditGrid="false"
 			/>
 			<ChildTable
 				v-model="form.additional_skills"
 				doctype="Additional Skill"
-				label="Skills"
+				:label="__('Skills')"
 				:autoEditGrid="false"
 			/>
 
 			<ChildTable
 				v-model="form.licences"
 				doctype="Personnel Licence"
-				label="Professional Licences"
+				:label="__('Professional Licences')"
 				:autoEditGrid="false"
 			/>
 		</div>

@@ -6,12 +6,12 @@
 			<div class="flex items-center space-x-4">
 				<Breadcrumbs
 					class="h-7 text-sm sm:text-base text-gray-600"
-					:items="[{ label: 'Jobs', route: { name: 'Jobs' } }]"
+					:items="[{ label: __('Opportunities'), route: { name: 'Jobs' } }]"
 				/>
 				<div class="hidden sm:block text-xl font-bold text-red-600">
 					{{
-						currentTab === "Open"
-							? __("{0} Open Jobs").format(jobCount)
+						__(currentTab) === __("Open")
+							? __("{0} Open Opportunities").format(jobCount)
 							: __("{0} My Applications").format(jobCount)
 					}}
 				</div>
@@ -37,7 +37,7 @@
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						<FormControl
 							type="text"
-							:placeholder="__('Search jobs...')"
+							:placeholder="__('Search opportunities...')"
 							v-model="searchQuery"
 							class="w-full"
 							@input="updateJobs"
@@ -109,7 +109,7 @@
 						<JobCard :job="job" />
 					</router-link>
 				</div>
-				<EmptyState v-else type="Job Openings" />
+				<EmptyState v-else :type="__('Job Openings')" />
 			</div>
 
 			<div v-else-if="currentTab === 'My Applications'">

@@ -1,7 +1,7 @@
 <template>
 	<div class="flex flex-col lg:flex-row gap-10 md:gap-12 px-4 md:px-8 py-6 bg-gray-50 max-w-6xl">
 		<div class="flex-1 space-y-2 md:space-y-6">
-			<h1 class="text-lg md:text-3xl text-gray-900">Your Membership(s)</h1>
+			<h1 class="text-lg md:text-3xl text-gray-900">{{ __("Your Membership(s)") }}</h1>
 
 			<div v-if="membershipList.data && membershipList.data.length > 0" class="space-y-5">
 				<div
@@ -23,14 +23,14 @@
 											: 'red'
 								"
 							>
-								{{ membership.status }}
+								{{ __(membership.status) }}
 							</Badge>
 							<div>
 								<h3 class="text-lg font-semibold text-gray-900">
-									{{ membership.membership_type }}
+									{{ __(membership.membership_type) }}
 								</h3>
 								<p class="text-sm text-gray-700">
-									{{ membership.company }}
+									{{ __(membership.company) }}
 								</p>
 							</div>
 						</div>
@@ -40,20 +40,20 @@
 								<p
 									class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1"
 								>
-									Started
+									{{ __("Started") }}
 								</p>
 								<p class="text-sm font-semibold">
-									{{ formatDate(membership.from_date) }}
+									{{ __(formatDate(membership.from_date)) }}
 								</p>
 							</div>
 							<div v-if="membership.type_details?.billing_cycle !== 'One Off'">
 								<p
 									class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1"
 								>
-									Renewal
+									{{ __("Renewal") }}
 								</p>
 								<p class="text-sm font-semibold">
-									{{ formatDate(membership.to_date) }}
+									{{ __(formatDate(membership.to_date)) }}
 								</p>
 							</div>
 						</div>
@@ -61,9 +61,9 @@
 						<div class="flex items-center justify-end gap-5">
 							<div class="text-right">
 								<div class="text-2xl font-bold text-gray-900">
-									{{ membership.amount }}
+									{{ __(membership.amount) }}
 								</div>
-								<div class="text-xs text-gray-700">KES</div>
+								<div class="text-xs text-gray-700">{{ __("KES") }}</div>
 							</div>
 							<Button
 								v-if="
@@ -86,19 +86,21 @@
 								{{
 									membership.status === "Active" ||
 									membership.type_details?.billing_cycle === "One Off"
-										? "Print Certificate"
-										: "Renew Now"
+										? __("Print Certificate")
+										: __("Renew Now")
 								}}
 							</Button>
 							<Popover v-else trigger="hover" :hoverDelay="0.5">
 								<template #target>
-									<Button variant="outline" theme="red">Under Review</Button>
+									<Button variant="outline" theme="red">{{
+										__("Under Review")
+									}}</Button>
 								</template>
 								<template #body-main>
 									<div class="p-2 text-ink-gray-9">
-										We're reviewing your application.
+										{{ __("We're reviewing your application.") }}
 										<br />
-										You'll be notified when approved.
+										{{ __("You'll be notified when approved.") }}
 									</div>
 								</template>
 							</Popover>
@@ -108,7 +110,7 @@
 				</div>
 			</div>
 
-			<div v-else class="text-center text-gray-700">No memberships found.</div>
+			<div v-else class="text-center text-gray-700">{{ __("No memberships found.") }}</div>
 		</div>
 
 		<aside
@@ -132,10 +134,13 @@
 
 				<div class="relative flex flex-col gap-5">
 					<div>
-						<h2 class="text-2xl font-bold mb-2">Become a Volunteer</h2>
+						<h2 class="text-2xl font-bold mb-2">{{ __("Become a Volunteer") }}</h2>
 						<p class="text-red-50 leading-relaxed opacity-90 text-sm">
-							Join Kenya Red Cross Society and support your community through
-							life-saving services while gaining valuable skills.
+							{{
+								__(
+									"Join Kenya Red Cross Society and support your community through life-saving services while gaining valuable skills.",
+								)
+							}}
 						</p>
 					</div>
 
@@ -145,7 +150,7 @@
 							class="w-full bg-white text-red-600 hover:bg-gray-100 rounded-lg font-semibold h-12"
 							icon-right="arrow-right"
 						>
-							Register Now
+							{{ __("Register Now") }}
 						</Button>
 					</RouterLink>
 				</div>
@@ -155,14 +160,14 @@
 
 	<Dialog v-model="payNow">
 		<template #body-title>
-			<h3 class="text-2xl font-bold text-gray-900">Renew Membership</h3>
+			<h3 class="text-2xl font-bold text-gray-900">{{ __("Renew Membership") }}</h3>
 		</template>
 
 		<template #body-content>
 			<form @submit.prevent="payMembership" class="space-y-5">
 				<div>
 					<label class="block text-sm font-medium text-gray-800 mb-2">
-						M-Pesa Phone Number
+						{{ __("M-Pesa Phone Number") }}
 					</label>
 					<Input
 						required
@@ -170,7 +175,7 @@
 						size="md"
 						variant="subtle"
 						:disabled="renewMembership.loading"
-						placeholder="+254 712 345 678"
+						:placeholder="__('+254 712 345 678')"
 						v-model="phoneNumber"
 					/>
 				</div>
@@ -183,7 +188,7 @@
 					@click="payMembership"
 					:loading="renewMembership.loading"
 				>
-					Pay Now
+					{{ __("Pay Now") }}
 				</Button>
 			</form>
 		</template>
@@ -198,8 +203,8 @@ import {
 	Dialog,
 	ErrorMessage,
 	Input,
-	toast,
 	Popover,
+	toast,
 } from "frappe-ui";
 import { ref } from "vue";
 import { RouterLink } from "vue-router";

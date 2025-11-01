@@ -1,6 +1,6 @@
 <template>
 	<div ref="tableRef" class="w-full">
-		<div v-if="label" class="text-xs text-ink-gray-5 mb-2">{{ label }}</div>
+		<div v-if="label" class="text-xs text-ink-gray-5 mb-2">{{ __(label) }}</div>
 
 		<div class="block lg:hidden">
 			<div class="flex items-center justify-between mb-3 p-2 bg-surface-gray-1 rounded-lg">
@@ -14,7 +14,9 @@
 					/>
 					<span class="text-sm font-medium text-ink-gray-6">
 						{{
-							selectedRows.size > 0 ? `${selectedRows.size} selected` : "Select All"
+							selectedRows.size > 0
+								? `${selectedRows.size} ${__("selected")}`
+								: __("Select All")
 						}}
 					</span>
 				</div>
@@ -26,7 +28,7 @@
 						variant="ghost"
 						size="sm"
 						class="!p-1"
-						title="Duplicate"
+						:title="__('Duplicate')"
 					>
 						<Copy class="size-3" />
 					</Button>
@@ -36,7 +38,7 @@
 						variant="ghost"
 						size="sm"
 						class="!p-1"
-						title="Delete"
+						:title="__('Delete')"
 					>
 						<Trash2 class="size-3 text-red-600" />
 					</Button>
@@ -46,7 +48,7 @@
 						size="sm"
 						class="inline-flex items-center !px-2 !py-1 text-xs gap-1"
 					>
-						+ Add
+						+ {{ __("Add") }}
 					</Button>
 				</div>
 			</div>
@@ -74,7 +76,7 @@
 								class="cursor-pointer"
 							/>
 							<span class="text-xs font-medium text-ink-gray-6">
-								Row {{ rowIndex + 1 }}
+								{{ __("Row") }} {{ rowIndex + 1 }}
 							</span>
 						</div>
 						<Button
@@ -105,7 +107,7 @@
 							class="flex flex-col gap-1"
 						>
 							<label class="text-xs text-ink-gray-5 font-medium">
-								{{ field.label }}
+								{{ __(field.label) }}
 								<span v-if="field.reqd" class="text-red-500">*</span>
 							</label>
 
@@ -150,16 +152,19 @@
 									>
 										<span class="text-blue-600 truncate text-xs">
 											{{
-												row[field.fieldname]?.file_name ||
-												row[field.fieldname]?.name ||
-												row[field.fieldname] ||
+												__(row[field.fieldname]?.file_name) ||
+												__(row[field.fieldname]?.name) ||
+												__(row[field.fieldname]) ||
 												"-"
 											}}
 										</span>
 									</template>
 
 									<template v-else>
-										{{ formatFieldValue(row[field.fieldname], field) || "-" }}
+										{{
+											__(formatFieldValue(row[field.fieldname], field)) ||
+											"-"
+										}}
 									</template>
 								</div>
 							</div>
@@ -167,7 +172,7 @@
 								v-if="validationErrors.get(rowIndex)?.[field.fieldname]"
 								class="text-xs text-red-500 mt-1"
 							>
-								{{ validationErrors.get(rowIndex)?.[field.fieldname] }}
+								{{ __(validationErrors.get(rowIndex)?.[field.fieldname]) }}
 							</p>
 						</div>
 
@@ -176,7 +181,10 @@
 								@click="openEditModal(rowIndex)"
 								class="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
 							>
-								<span>View all {{ visibleFields.length }} fields</span>
+								<span
+									>{{ __("View all") }} {{ visibleFields.length }}
+									{{ __("fields") }}</span
+								>
 								<svg
 									class="size-3"
 									fill="none"
@@ -224,10 +232,10 @@
 						d="M3 15c0 1.657 4.03 3 9 3s9-1.343 9-3"
 					/>
 				</svg>
-				<div class="text-sm">No Data</div>
+				<div class="text-sm">{{ __("No Data") }}</div>
 				<Button @click="addRow" variant="solid" size="sm" class="mt-3">
 					<template #prefix><Plus class="size-3" /></template>
-					Add First Row
+					{{ __("Add First Row") }}
 				</Button>
 			</div>
 		</div>
@@ -253,7 +261,7 @@
 						class="font-medium text-ink-gray-6 truncate"
 						:title="field.label"
 					>
-						{{ field.label }}
+						{{ __(field.label) }}
 						<span v-if="field.reqd" class="text-red-500">*</span>
 					</div>
 					<div class="w-8"></div>
@@ -334,23 +342,23 @@
 								>
 									<span class="text-blue-600 truncate">
 										{{
-											row[field.fieldname]?.file_name ||
-											row[field.fieldname]?.name ||
-											row[field.fieldname] ||
+											__(row[field.fieldname]?.file_name) ||
+											__(row[field.fieldname]?.name) ||
+											__(row[field.fieldname]) ||
 											"-"
 										}}
 									</span>
 								</template>
 
 								<template v-else>
-									{{ formatFieldValue(row[field.fieldname], field) || "-" }}
+									{{ __(formatFieldValue(row[field.fieldname], field)) || "-" }}
 								</template>
 							</div>
 							<p
 								v-if="validationErrors.get(rowIndex)?.[field.fieldname]"
 								class="text-xs text-red-500 mt-1"
 							>
-								{{ validationErrors.get(rowIndex)?.[field.fieldname] }}
+								{{ __(validationErrors.get(rowIndex)?.[field.fieldname]) }}
 							</p>
 						</div>
 					</template>
@@ -389,24 +397,26 @@
 							d="M3 15c0 1.657 4.03 3 9 3s9-1.343 9-3"
 						/>
 					</svg>
-					<div class="text-sm">No Data</div>
+					<div class="text-sm">{{ __("No Data") }}</div>
 				</div>
 			</div>
 
 			<div class="mt-3 flex items-center justify-between">
 				<Button v-if="!props.readOnly" @click="addRow" variant="solid" size="sm">
 					<template #prefix><Plus class="size-4" /></template>
-					Add Row
+					{{ __("Add Row") }}
 				</Button>
 
 				<div v-if="selectedRows.size > 0" class="flex items-center gap-2">
-					<span class="text-xs text-ink-gray-6">{{ selectedRows.size }} selected</span>
+					<span class="text-xs text-ink-gray-6"
+						>{{ selectedRows.size }} {{ __("selected") }}</span
+					>
 					<Button
 						v-if="!props.readOnly && selectedRows.size > 0"
 						@click="duplicateSelected"
 						variant="ghost"
 						size="sm"
-						title="Duplicate"
+						:title="__('Duplicate')"
 					>
 						<Copy class="size-4 text-ink-gray-7" />
 					</Button>
@@ -416,7 +426,7 @@
 						@click="deleteSelected"
 						variant="ghost"
 						size="sm"
-						title="Delete"
+						:title="__('Delete')"
 					>
 						<Trash2 class="size-4 text-red-600" />
 					</Button>
@@ -436,7 +446,7 @@
 					class="flex items-center justify-between p-3 sm:p-4 border-b bg-surface-gray-1"
 				>
 					<h3 class="text-base sm:text-lg font-semibold text-ink-gray-7">
-						Edit Row {{ (editModalRowIndex || 0) + 1 }}
+						{{ __("Edit Row") }} {{ (editModalRowIndex || 0) + 1 }}
 					</h3>
 					<button
 						@click="cancelEditModal"
@@ -455,7 +465,7 @@
 								v-if="section.label"
 								class="text-sm sm:text-base font-semibold text-ink-gray-7 mb-3 sm:mb-4"
 							>
-								{{ section.label }}
+								{{ __(section.label) }}
 							</h4>
 
 							<div class="flex flex-col md:flex-row -mx-1 sm:-mx-2">
@@ -486,7 +496,7 @@
 													"
 												/>
 												<label class="text-sm text-ink-gray-7">
-													{{ field.label }}
+													{{ __(field.label) }}
 													<span v-if="field.reqd" class="text-red-500"
 														>*</span
 													>
@@ -496,7 +506,7 @@
 
 										<template v-else>
 											<label class="block text-sm text-ink-gray-7 mb-1">
-												{{ field.label }}
+												{{ __(field.label) }}
 												<span v-if="field.reqd" class="text-red-500"
 													>*</span
 												>
@@ -532,9 +542,11 @@
 												class="text-xs text-red-500 mt-1"
 											>
 												{{
-													validationErrors.get(
-														editModalRowIndex || -1,
-													)?.[field.fieldname]
+													__(
+														validationErrors.get(
+															editModalRowIndex || -1,
+														)?.[field.fieldname],
+													)
 												}}
 											</p>
 										</template>
@@ -554,7 +566,7 @@
 						size="sm"
 						class="flex-1 sm:flex-none"
 					>
-						Cancel
+						{{ __("Cancel") }}
 					</Button>
 					<Button
 						v-if="!props.readOnly"
@@ -562,7 +574,7 @@
 						variant="solid"
 						size="sm"
 					>
-						Save Changes
+						{{ __("Save Changes") }}
 					</Button>
 				</div>
 			</div>

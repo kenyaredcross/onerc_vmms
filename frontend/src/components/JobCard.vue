@@ -12,13 +12,13 @@
 				class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 border border-red-200 rounded-full text-xs font-medium text-red-700"
 			>
 				<User class="w-3 h-3" />
-				<span>{{ job.designation }}</span>
+				<span>{{ __(job.designation) }}</span>
 			</div>
 		</div>
 		<h2
 			class="text-lg font-bold text-gray-900 leading-tight mb-2 group-hover:text-red-600 transition-colors duration-200"
 		>
-			{{ job.job_title }}
+			{{ __(job.job_title) }}
 		</h2>
 
 		<div
@@ -26,7 +26,7 @@
 			class="flex items-center gap-2 px-3 py-1 bg-red-100 border-l-4 border-red-500 rounded text-sm font-semibold text-red-800 mb-3"
 		>
 			<MapPin class="w-4 h-4 text-red-600 flex-shrink-0" />
-			<span>{{ job.job_location }}</span>
+			<span>{{ __(job.job_location) }}</span>
 		</div>
 
 		<div class="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-3"></div>
@@ -41,9 +41,9 @@
 					</div>
 					<div class="flex-1 min-w-0">
 						<p class="text-xs text-gray-500">
-							Posted On:
+							{{ __("Posted On:") }}
 							<span class="font-semibold text-gray-900">{{
-								dayjs(job.posted_on).format("MMM D")
+								__(dayjs(job.posted_on).format("MMM D"))
 							}}</span>
 						</p>
 					</div>
@@ -57,9 +57,9 @@
 					</div>
 					<div class="flex-1 min-w-0">
 						<p class="text-xs text-gray-500">
-							Closes On:
+							{{ __("Closes On:") }}
 							<span class="font-semibold text-gray-900">{{
-								dayjs(job.closes_on).format("MMM D")
+								__(dayjs(job.closes_on).format("MMM D"))
 							}}</span>
 						</p>
 					</div>
@@ -74,9 +74,9 @@
 				</div>
 				<div class="flex-1 min-w-0">
 					<p class="text-xs text-gray-500">
-						Open For:
+						{{ __("Open For:") }}
 						<span class="text-sm font-semibold text-gray-900">{{
-							formatDuration(job.duration)
+							__(formatDuration(job.duration))
 						}}</span>
 					</p>
 				</div>
@@ -87,7 +87,9 @@
 			<div class="flex items-center justify-between gap-4">
 				<div v-if="job.creation" class="flex items-center gap-1.5 text-xs text-gray-500">
 					<History class="w-3 h-3" />
-					<span>{{ dayjs().diff(dayjs(job.creation), "day") }}d ago</span>
+					<span
+						>{{ __(dayjs().diff(dayjs(job.creation), "day")) }}{{ __("d ago") }}</span
+					>
 				</div>
 
 				<div
@@ -95,8 +97,8 @@
 					class="flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 rounded-md text-white shadow-sm"
 				>
 					<Users class="w-3.5 h-3.5" />
-					<span class="text-sm font-bold leading-none">{{ job.applicants }}</span>
-					<span class="text-xs opacity-90 leading-none">applicants</span>
+					<span class="text-sm font-bold leading-none">{{ __(job.applicants) }}</span>
+					<span class="text-xs opacity-90 leading-none">{{ __("applicants") }}</span>
 				</div>
 			</div>
 		</div>
