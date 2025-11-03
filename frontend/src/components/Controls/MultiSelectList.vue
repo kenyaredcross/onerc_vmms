@@ -1,17 +1,9 @@
 <template>
 	<div class="space-y-2">
-		<!-- <label
-      v-if="label"
-      :class="labelClasses"
-      class="block font-medium text-gray-700"
-    >
-      {{ label }} <span v-if="required" class="text-red-600">*</span>
-    </label> -->
-
 		<input
 			v-model="query"
 			type="text"
-			:placeholder="props.label || 'Select...'"
+			:placeholder="__(props.label) || __('Select...')"
 			autocomplete="off"
 			class="form-input w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:ring focus:ring-red-200"
 		/>
@@ -39,7 +31,7 @@
 					:for="option.value"
 					class="flex-1 text-sm font-medium text-gray-800 cursor-pointer"
 				>
-					{{ option.label || option.value }}
+					{{ __(option.label) || __(option.value) }}
 				</label>
 			</div>
 		</div>
@@ -48,7 +40,7 @@
 			<Button
 				variant="outline"
 				class="w-full justify-center text-sm"
-				:label="`+ Add New`"
+				:label="__('+ Add New')"
 				@click="showCreateDialog = true"
 			/>
 		</div>

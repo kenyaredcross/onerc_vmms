@@ -1,5 +1,5 @@
 <template>
-	<NoPermission v-if="user?.data == 'Guest'" :page="'Dashboard'" />
+	<NoPermission v-if="user?.data == 'Guest'" :page="__('Dashboard')" />
 	<div v-if="user?.data && user?.data !== 'Guest'" class="max-w-7xl mx-auto">
 		<div class="flex flex-col gap-2 my-6">
 			<h1 class="text-lg md:text-4xl font-bold text-gray-900 ml-7">
@@ -8,7 +8,7 @@
 		</div>
 
 		<div v-if="roleResource?.loading" class="text-center py-20">
-			<p>Setting Up Dashboard...</p>
+			<p>{{ __("Setting Up Dashboard...") }}</p>
 			<ProgressSpinner />
 		</div>
 
@@ -31,12 +31,14 @@
 				class="flex flex-col gap-4 md:p-6 bg-white shadow"
 			>
 				<div class="flex items-center justify-between">
-					<h2 class="text-2xl font-semibold text-gray-900">Upcoming Events</h2>
+					<h2 class="text-2xl font-semibold text-gray-900">
+						{{ __("Upcoming Events") }}
+					</h2>
 					<router-link to="/events">
 						<button
 							class="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
 						>
-							View All
+							{{ __("View All") }}
 							<ChevronRight class="w-4 h-4" />
 						</button>
 					</router-link>
@@ -55,13 +57,16 @@
 
 				<EventCalendar v-if="toggleEventView" :event="events?.data" />
 
-				<EmptyState v-if="events?.data && events?.data.length === 0" type="Events" />
+				<EmptyState
+					v-if="events?.data && events?.data.length === 0"
+					:type="__('Events')"
+				/>
 			</section>
 		</div>
 	</div>
 </template>
 
-<script lang="ts" setup>
+<script setup>
 import { createResource } from "frappe-ui";
 import { ChevronRight } from "lucide-vue-next";
 import { onMounted, ref } from "vue";

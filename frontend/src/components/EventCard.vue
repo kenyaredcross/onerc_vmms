@@ -63,8 +63,8 @@
 import { Badge, Button, Dialog } from "frappe-ui";
 import { Calendar, Clock, MapPin } from "lucide-vue-next";
 import { onMounted, ref } from "vue";
-import { usersStore } from "../stores/user";
 import router from "../router";
+import { usersStore } from "../stores/user";
 import PrivateEvent from "./Modals/PrivateEvent.vue";
 
 const dialog = ref(false);

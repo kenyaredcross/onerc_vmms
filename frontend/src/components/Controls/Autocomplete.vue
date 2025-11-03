@@ -24,10 +24,10 @@
 										class="overflow-hidden text-ellipsis whitespace-nowrap text-base leading-5"
 										v-if="selectedValue"
 									>
-										{{ displayValue(selectedValue) }}
+										{{ __(displayValue(selectedValue)) }}
 									</span>
 									<span class="text-base leading-5 text-ink-gray-4" v-else>
-										{{ placeholder || "" }}
+										{{ __(placeholder) || "" }}
 									</span>
 								</div>
 								<ChevronDown class="h-4 w-4 stroke-1.5" />
@@ -56,7 +56,7 @@
 							"
 							:value="query"
 							autocomplete="off"
-							placeholder="Search"
+							:placeholder="__('Search')"
 						/>
 						<button
 							class="absolute right-1.5 inline-flex h-7 w-7 items-center justify-center"
@@ -76,7 +76,7 @@
 								v-if="group.group && !group.hideLabel"
 								class="px-2.5 py-1.5 text-sm font-medium text-ink-gray-4"
 							>
-								{{ group.group }}
+								{{ __(group.group) }}
 							</div>
 							<ComboboxOption
 								as="template"
@@ -98,7 +98,7 @@
 									<slot name="item-label" v-bind="{ active, selected, option }">
 										<div class="flex flex-col space-y-1 text-ink-gray-8">
 											<div>
-												{{ option.label }}
+												{{ __(option.label) }}
 											</div>
 											<div
 												v-if="
@@ -106,7 +106,7 @@
 													option.description != option.label
 												"
 												class="text-xs text-ink-gray-7"
-												v-html="option.description"
+												v-html="__(option.description)"
 											></div>
 										</div>
 									</slot>
@@ -117,7 +117,7 @@
 							v-if="groups.length == 0"
 							class="mt-1.5 rounded-md px-2.5 py-1.5 text-base text-ink-gray-5"
 						>
-							No results found
+							{{ __("No results found") }}
 						</li>
 					</ComboboxOptions>
 					<div v-if="slots.footer" class="border-t p-1.5 pb-0.5">

@@ -28,7 +28,7 @@
 								}
 							"
 							@keydown.delete.capture.stop="removeLastValue"
-							:placeholder="props.label || 'Select...'"
+							:placeholder="__(props.label) || __('Select...')"
 						/>
 
 						<div
@@ -36,7 +36,7 @@
 							class="w-full min-h-[2.5rem] border border-gray-300 rounded px-3 py-2 bg-gray-100 text-gray-700 flex items-center"
 						>
 							<span class="text-ink-gray-5">
-								{{ props.label }}
+								{{ __(props.label) }}
 							</span>
 						</div>
 					</template>
@@ -68,13 +68,13 @@
 										>
 											<div class="flex flex-col gap-1 p-1 min-w-32">
 												<div class="text-base font-medium text-ink-gray-8">
-													{{ option.label || option.value }}
+													{{ __(option.label) || __(option.value) }}
 												</div>
 												<div
 													v-if="option.value !== option.label"
 													class="text-sm text-ink-gray-5"
 												>
-													{{ option.value }}
+													{{ __(option.value) }}
 												</div>
 											</div>
 										</li>
@@ -88,7 +88,7 @@
 										<Button
 											variant="ghost"
 											class="w-full !justify-start"
-											:label="`Add New`"
+											:label="__('Add New')"
 											@click="
 												() => {
 													close();
@@ -115,7 +115,7 @@
 				:key="`${props.label}-${item[linkFieldName] || index}`"
 				class="flex items-center justify-between break-all bg-surface-gray-2 text-ink-gray-7 word-wrap p-2 rounded-md mr-2"
 			>
-				<span class="break-all">{{ item.__label || item.label }}</span>
+				<span class="break-all">{{ __(item.__label) || __(item.label) }}</span>
 				<X
 					v-if="!props.readOnly"
 					class="size-4 stroke-1.5 cursor-pointer"

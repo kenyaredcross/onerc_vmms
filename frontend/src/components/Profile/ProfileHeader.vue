@@ -1,10 +1,10 @@
 <template>
-	<div class="relative bg-white rounded-2xl shadow-lg overflow-hidden">
-		<div class="relative w-full h-48 sm:h-64 bg-gray-100">
+	<div class="relative z-1 bg-white rounded-2xl shadow-lg overflow-hidden">
+		<div class="relative z-1 w-full h-48 sm:h-64 bg-gray-100">
 			<img
 				v-if="form?.cover_image"
 				:src="form.cover_image"
-				alt="Cover Image"
+				:alt="__('Cover Image')"
 				class="object-cover w-full h-full"
 			/>
 			<div
@@ -25,13 +25,13 @@
 						d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
 					></path>
 				</svg>
-				<span class="text-sm font-medium">No Cover Image</span>
+				<span class="text-sm font-medium">{{ __("No Cover Image") }}</span>
 			</div>
 
 			<button
 				@click="openCoverUploader"
 				class="absolute top-3 right-3 bg-white/90 hover:bg-white text-gray-700 p-2 rounded-full shadow transition"
-				aria-label="Edit cover image"
+				:aria-label="__('Edit cover image')"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -51,7 +51,7 @@
 		</div>
 
 		<div
-			class="flex flex-col sm:flex-row items-center sm:items-end justify-between px-6 pb-6 -mt-16 sm:-mt-20 relative z-10"
+			class="flex flex-col sm:flex-row items-center sm:items-end justify-between px-6 pb-6 -mt-16 sm:-mt-20 relative z-1"
 		>
 			<div class="flex items-end space-x-4">
 				<div class="relative">
@@ -61,7 +61,7 @@
 						<img
 							v-if="form?.user_image"
 							:src="form.user_image"
-							alt="Profile Image"
+							:alt="__('Profile Image')"
 							class="object-cover w-full h-full"
 						/>
 						<div
@@ -86,7 +86,7 @@
 					<button
 						@click="openProfileUploader"
 						class="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow-md hover:bg-gray-50 text-gray-700 transition"
-						aria-label="Edit profile photo"
+						:aria-label="__('Edit profile photo')"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -107,10 +107,10 @@
 
 				<div>
 					<h1 class="text-2xl sm:text-3xl font-bold text-red-600 leading-tight">
-						{{ form?.full_name || "Volunteer Name" }}
+						{{ __(form?.full_name || "Volunteer Name") }}
 					</h1>
 					<p class="text-sm sm:text-base text-gray-500 font-medium">
-						{{ form?.email }}
+						{{ __(form?.email) }}
 					</p>
 				</div>
 			</div>
@@ -125,7 +125,9 @@
 				class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
 			>
 				<div class="flex items-center justify-between p-4 border-b">
-					<h2 class="text-lg font-semibold text-gray-900">Edit Cover Image</h2>
+					<h2 class="text-lg font-semibold text-gray-900">
+						{{ __("Edit Cover Image") }}
+					</h2>
 					<button
 						@click="closeCoverUploader"
 						class="text-gray-400 hover:text-gray-600 transition"
@@ -147,7 +149,7 @@
 						<div>
 							<div class="flex items-center justify-between mb-3">
 								<label class="block text-sm font-medium text-gray-700">
-									Current Cover Image
+									{{ __("Current Cover Image") }}
 								</label>
 							</div>
 							<div
@@ -156,7 +158,7 @@
 								<img
 									v-if="form?.cover_image"
 									:src="form.cover_image"
-									alt="Current Cover"
+									:alt="__('Current Cover')"
 									class="w-full h-full object-cover"
 								/>
 								<div
@@ -176,14 +178,14 @@
 											d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
 										></path>
 									</svg>
-									<span class="text-sm">No current image</span>
+									<span class="text-sm">{{ __("No current image") }}</span>
 								</div>
 							</div>
 						</div>
 
 						<div>
 							<label class="block text-sm font-medium text-gray-700 mb-3">
-								New Cover Image
+								{{ __("New Cover Image") }}
 							</label>
 							<div
 								class="relative bg-gray-100 rounded-lg overflow-hidden w-full h-48"
@@ -191,7 +193,7 @@
 								<img
 									v-if="coverImageModel"
 									:src="getCoverPreviewUrl()"
-									alt="New Cover Preview"
+									:alt="__('New Cover Preview')"
 									class="w-full h-full object-cover"
 								/>
 								<div
@@ -211,7 +213,7 @@
 											d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
 										></path>
 									</svg>
-									<span class="text-sm">Upload to preview</span>
+									<span class="text-sm">{{ __("Upload to preview") }}</span>
 								</div>
 							</div>
 						</div>
@@ -220,12 +222,14 @@
 						<Uploader
 							:model-value="coverImageModel"
 							@update:model-value="handleCoverImageUpdate"
-							:file-types="['image/*']"
+							:file-types="['.pdf', '.jpg', '.jpeg', '.png']"
 							:multi="false"
 							:show-file-name="false"
 							:show-length="false"
-							label="Upload New Cover Image"
-							description="Recommended size: 1200x300 pixels. PNG, JPG, GIF up to 10MB"
+							:label="__('Upload New Cover Image')"
+							:description="
+								__('Recommended size: 1200x300 pixels. PNG, JPG, GIF up to 10MB')
+							"
 						/>
 					</div>
 				</div>
@@ -245,7 +249,7 @@
 								d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
 							></path>
 						</svg>
-						Delete Current Image
+						{{ __("Delete Current Image") }}
 					</button>
 					<div v-else></div>
 
@@ -255,7 +259,7 @@
 							:disabled="saveInProgress"
 							class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							Cancel
+							{{ __("Cancel") }}
 						</button>
 						<button
 							@click="saveCoverImage"
@@ -266,9 +270,9 @@
 								<div
 									class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
 								></div>
-								Saving...
+								{{ __("Saving...") }}
 							</template>
-							<template v-else> Save Cover Image </template>
+							<template v-else> {{ __("Save Cover Image") }} </template>
 						</button>
 					</div>
 				</div>
@@ -284,7 +288,9 @@
 				class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
 			>
 				<div class="flex items-center justify-between p-4 border-b">
-					<h2 class="text-lg font-semibold text-gray-900">Edit Profile Image</h2>
+					<h2 class="text-lg font-semibold text-gray-900">
+						{{ __("Edit Profile Image") }}
+					</h2>
 					<button
 						@click="closeProfileUploader"
 						class="text-gray-400 hover:text-gray-600 transition"
@@ -306,7 +312,7 @@
 						<div class="flex flex-col items-center">
 							<div class="flex items-center justify-between w-full mb-3">
 								<label class="block text-sm font-medium text-gray-700">
-									Current Profile Image
+									{{ __("Current Profile Image") }}
 								</label>
 							</div>
 							<div
@@ -315,7 +321,7 @@
 								<img
 									v-if="form?.user_image"
 									:src="form.user_image"
-									alt="Current Profile"
+									:alt="__('Current Profile')"
 									class="object-cover w-full h-full"
 								/>
 								<div
@@ -340,7 +346,7 @@
 
 						<div class="flex flex-col items-center">
 							<label class="block text-sm font-medium text-gray-700 mb-3 w-full">
-								New Profile Image
+								{{ __("New Profile Image") }}
 							</label>
 							<div
 								class="w-48 h-48 rounded-full border-4 border-white shadow-lg bg-gray-100 overflow-hidden"
@@ -348,7 +354,7 @@
 								<img
 									v-if="profileImageModel"
 									:src="getProfilePreviewUrl()"
-									alt="New Profile Preview"
+									:alt="__('New Profile Preview')"
 									class="object-cover w-full h-full"
 								/>
 								<div
@@ -368,7 +374,9 @@
 											d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
 										></path>
 									</svg>
-									<span class="text-sm text-center">Upload to preview</span>
+									<span class="text-sm text-center">{{
+										__("Upload to preview")
+									}}</span>
 								</div>
 							</div>
 						</div>
@@ -378,12 +386,16 @@
 						<Uploader
 							:model-value="profileImageModel"
 							@update:model-value="handleProfileImageUpdate"
-							:file-types="['image/*']"
+							:file-types="['.pdf', '.jpg', '.jpeg', '.png']"
 							:multi="false"
 							:show-file-name="false"
 							:show-length="false"
-							label="Upload New Profile Image"
-							description="Recommended: Square image, minimum 200x200 pixels. PNG, JPG, GIF up to 10MB"
+							:label="__('Upload New Profile Image')"
+							:description="
+								__(
+									'Recommended: Square image, minimum 200x200 pixels. PNG, JPG, GIF up to 10MB',
+								)
+							"
 						/>
 					</div>
 				</div>
@@ -403,7 +415,7 @@
 								d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
 							></path>
 						</svg>
-						Delete Current Image
+						{{ __("Delete Current Image") }}
 					</button>
 					<div v-else></div>
 
@@ -413,7 +425,7 @@
 							:disabled="saveInProgress"
 							class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							Cancel
+							{{ __("Cancel") }}
 						</button>
 						<button
 							@click="saveProfileImage"
@@ -424,9 +436,9 @@
 								<div
 									class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
 								></div>
-								Saving...
+								{{ __("Saving...") }}
 							</template>
-							<template v-else> Save Profile Image </template>
+							<template v-else> {{ __("Save Profile Image") }} </template>
 						</button>
 					</div>
 				</div>
@@ -453,11 +465,13 @@
 							d="M12 9v2m0 4h.01m-6.938 4h13.856a2 2 0 001.995-1.858L21 5H3l.012 13.142A2 2 0 004.062 19z"
 						></path>
 					</svg>
-					<h3 class="mt-4 text-lg font-medium text-gray-900">Confirm Deletion</h3>
+					<h3 class="mt-4 text-lg font-medium text-gray-900">
+						{{ __("Confirm Deletion") }}
+					</h3>
 					<p class="mt-2 text-sm text-gray-500">
-						Are you sure you want to delete your
-						<span class="font-semibold">{{ deleteConfirm.type }}</span> image? This
-						action cannot be undone.
+						{{ __("Are you sure you want to delete your") }}
+						<span class="font-semibold">{{ __(deleteConfirm.type) }}</span>
+						{{ __("image? This action cannot be undone.") }}
 					</p>
 				</div>
 
@@ -467,7 +481,7 @@
 						:disabled="saveInProgress"
 						class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
 					>
-						Cancel
+						{{ __("Cancel") }}
 					</button>
 					<button
 						@click="executeDelete"
@@ -478,9 +492,9 @@
 							<div
 								class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
 							></div>
-							Deleting...
+							{{ __("Deleting...") }}
 						</template>
-						<template v-else> Delete </template>
+						<template v-else> {{ __("Delete") }} </template>
 					</button>
 				</div>
 			</div>

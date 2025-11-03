@@ -109,7 +109,17 @@
 					:label="__('KRCS Insurance')"
 					type="select"
 					:options="yesNoOptions"
+					title="Select 'Yes' if you are insured through KRCS"
+					aria-describedby="krcs-insurance-desc"
 				/>
+				<p id="krcs-insurance-desc" class="text-sm text-gray-600 mt-1">
+					<span title="KRCS = Kenya Red Cross Society" class="mr-2 text-xs">ⓘ</span>
+					{{
+						__(
+							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS).",
+						)
+					}}
+				</p>
 				<p v-if="errors[0]?.['KRCS Insurance']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["KRCS Insurance"] }}
 				</p>
@@ -120,16 +130,6 @@
 			{{ __("Location Info") }}
 		</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-			<div>
-				<Link
-					v-model="localModel.county"
-					:label="__('County of Residence')"
-					doctype="Company"
-					:required="true"
-					:readonly="true"
-					:filters="{ is_group: 0 }"
-				/>
-			</div>
 			<div v-if="localModel.county">
 				<Link
 					v-model="localModel.sub_county"
@@ -156,7 +156,7 @@
 				</p>
 			</div>
 
-			<div>
+			<div v-if="localModel.county">
 				<Link
 					v-model="localModel.ward"
 					:label="__('Ward')"
@@ -167,6 +167,16 @@
 				<p v-if="errors[0]?.['Ward']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Ward"] }}
 				</p>
+			</div>
+			<div>
+				<Link
+					v-model="localModel.county"
+					:label="__('County of Residence')"
+					doctype="Company"
+					:hidden="true"
+					:readonly="true"
+					:filters="{ is_group: 0 }"
+				/>
 			</div>
 		</div>
 		<h2 class="text-xl font-bold text-red-700 mb-4">
@@ -355,13 +365,18 @@ function validateForm() {
 				break;
 		}
 	}
+	const phoneRegex = /^(?:\+254|0)(?:7\d{8}|1\d{8})$/;
 
 	if (form.mpesa_mobile_phone) {
 		const phone = form.mpesa_mobile_phone.toString().replace(/\s+/g, "");
-		const phoneRegex = /^(?:\+254|0)(7\d{8}|1\d{8})$/;
 		if (!phoneRegex.test(phone))
 			stepErrors[0]["Mobile Money (M-Pesa) phone if different"] =
 				"Enter a valid phone number";
+	}
+
+	if (form.phone_number) {
+		const phone = form.phone_number.toString().replace(/\s+/g, "");
+		if (!phoneRegex.test(phone)) stepErrors[0]["Phone Number"] = "Enter a valid phone number";
 	}
 
 	emit("update:errors", stepErrors);
@@ -375,7 +390,7 @@ const ready = ref(false);
 onMounted(() => {
 	setTimeout(() => {
 		ready.value = true;
-	}, 5000); // 5 seconds delay
+	}, 5000);
 });
 
 watch(

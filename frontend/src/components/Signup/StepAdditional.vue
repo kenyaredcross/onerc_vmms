@@ -40,6 +40,22 @@
 				</p>
 			</div>
 			<div>
+				<FormControl
+					v-model="localModel.consent_to_use_of_bio_data"
+					:label="__('Consent to Use of Bio Data')"
+					type="checkbox"
+					:required="true"
+					:options="reasonsOptions"
+				/>
+				<p class="italic text-sm">
+					{{
+						__(
+							"I consent to the use of my biometric data for identification and verification purposes as per the organization's data protection policy.",
+						)
+					}}
+				</p>
+			</div>
+			<div>
 				<MultiSelect
 					v-model="localModel.languages"
 					doctype="Volunteer Language"
@@ -118,6 +134,12 @@
 <script setup>
 import Link from "@/components/Controls/Link.vue";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
+import {
+	isDateValid,
+	isEmailValid,
+	isPastDate,
+	isPhoneNumberValid,
+} from "@/utils/validationUtils.js";
 import { FormControl } from "frappe-ui";
 import { computed, onMounted, watch } from "vue";
 import ChildTable from "../Controls/ChildTable.vue";
@@ -134,7 +156,7 @@ const localModel = computed({
 	set: (val) => emit("update:modelValue", val),
 });
 
-const requiredFields = ["access_to_internet", "profession", "reason_to_join_krcs"];
+const requiredSimpleFields = ["access_to_internet", "profession", "reason_to_join_krcs"];
 
 const disabilityQueries = {
 	disability: (row, allRows, formData) => {
@@ -144,24 +166,168 @@ const disabilityQueries = {
 	},
 };
 
+const reasonsOptions = [
+	{ label: "Humanitarian", value: "Humanitarian" },
+	{ label: "Social Cohesion", value: "Social Cohesion" },
+	{ label: "Personal", value: "Personal" },
+];
+
+const internetOptions = [
+	{ label: "Yes", value: "Yes" },
+	{ label: "No", value: "No" },
+	{ label: "Sometimes", value: "Sometimes" },
+];
+
 function formatLabel(key) {
 	return key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
-function validateField(fieldName) {
-	const newErrors = { ...props.errors };
-	if (!newErrors[1]) newErrors[1] = {};
-	const label = formatLabel(fieldName);
+function validateChildTableRows(rows, config, tableLabel) {
+	const tableErrors = new Map();
+	if (!Array.isArray(rows)) return tableErrors;
 
-	if (!localModel.value[fieldName] || localModel.value[fieldName].length === 0) {
-		newErrors[1][label] = `${label} is required.`;
-	} else {
-		delete newErrors[1][label];
-		if (Object.keys(newErrors[1]).length === 0) delete newErrors[1];
-	}
+	rows.forEach((row, rowIndex) => {
+		const rowErrors = new Map();
 
-	emit("update:errors", newErrors);
+		if (config.requiredFields) {
+			config.requiredFields.forEach((req) => {
+				const fieldName = typeof req === "string" ? req : req.field;
+				const condition =
+					typeof req === "string" ? true : req.condition ? req.condition(row) : true;
+
+				if (
+					condition &&
+					(!row[fieldName] ||
+						(typeof row[fieldName] === "string" && row[fieldName].trim() === ""))
+				) {
+					rowErrors.set(fieldName, `${formatLabel(fieldName)} is required.`);
+				}
+			});
+		}
+
+		if (config.dateChecks) {
+			config.dateChecks.forEach((check) => {
+				const condition = check.condition ? check.condition(row) : true;
+				if (condition) {
+					const value = row[check.field];
+					let errorMsg =
+						typeof check.error === "function" ? check.error(row) : check.error;
+
+					if (value && !check.validation(value, row)) {
+						rowErrors.set(check.field, `${formatLabel(check.field)} ${errorMsg}`);
+					}
+				}
+			});
+		}
+
+		if (config.emailChecks) {
+			config.emailChecks.forEach((check) => {
+				if (row[check.field] && !isEmailValid(row[check.field])) {
+					rowErrors.set(check.field, `${formatLabel(check.field)} ${check.error}`);
+				}
+			});
+		}
+
+		if (config.phoneChecks) {
+			config.phoneChecks.forEach((check) => {
+				if (row[check.field] && !isPhoneNumberValid(row[check.field])) {
+					rowErrors.set(check.field, `${formatLabel(check.field)} ${check.error}`);
+				}
+			});
+		}
+
+		if (rowErrors.size > 0) {
+			tableErrors.set(rowIndex, Object.fromEntries(rowErrors));
+		}
+	});
+
+	return tableErrors;
 }
+
+const componentValidationConfig = [
+	{ field: "access_to_internet", label: "Access To Internet", type: "simple" },
+	{ field: "profession", label: "Profession", type: "simple" },
+	{ field: "reason_to_join_krcs", label: "Reason To Join Krcs", type: "simple" },
+	{ field: "languages", label: "Languages", type: "multiselect" },
+	{ field: "driving_licence", label: "Driving Licence", type: "multiselect" },
+
+	{
+		field: "education",
+		label: "Education",
+		type: "child",
+		requiredFields: ["school_univ", "level", "year_of_passing"],
+		dateChecks: [
+			{
+				field: "year_of_passing",
+				validation: (date) => isPastDate(date),
+				error: "must be a past date.",
+			},
+		],
+	},
+	{
+		field: "courses",
+		label: "Trainings & Certifications",
+		type: "child",
+		requiredFields: ["course_name", "institution", "start_date", "date_completed"],
+		dateChecks: [
+			{
+				field: "start_date",
+				validation: (date) => isPastDate(date),
+				error: "must be a past date.",
+			},
+			{
+				field: "date_completed",
+				validation: (date) => isPastDate(date),
+				error: "must be a past date.",
+				condition: (row) => row.date_completed,
+			},
+			{
+				field: "date_completed",
+				validation: (date, row) => new Date(date) >= new Date(row.start_date),
+				error: (row) => `cannot be before Start Date (${row.start_date}).`,
+				condition: (row) => row.start_date && row.date_completed,
+			},
+		],
+	},
+	{
+		field: "additional_skills",
+		label: "Additional Skills",
+		type: "child",
+		requiredFields: ["additional_skill"],
+	},
+	{
+		field: "licences",
+		label: "Licences",
+		type: "child",
+		requiredFields: [
+			"license_type",
+			"institution",
+			"qualification",
+			"valid_from",
+			{ field: "license_name", condition: (row) => row.license_type === "Other" },
+			{ field: "valid_to", condition: (row) => row.does_not_expire !== 1 },
+		],
+		dateChecks: [
+			{
+				field: "valid_from",
+				validation: (date) => isDateValid(date),
+				error: "is not a valid date.",
+			},
+			{
+				field: "valid_to",
+				validation: (date) => isDateValid(date),
+				error: "is not a valid date.",
+				condition: (row) => row.valid_to && row.does_not_expire !== 1,
+			},
+			{
+				field: "valid_to",
+				validation: (date, row) => new Date(date) > new Date(row.valid_from),
+				error: (row) => `must be after Valid From (${row.valid_from}).`,
+				condition: (row) => row.valid_from && row.valid_to && row.does_not_expire !== 1,
+			},
+		],
+	},
+];
 
 function onChildErrors(tableName, errMap) {
 	const newErrors = { ...props.errors };
@@ -184,17 +350,39 @@ function onChildErrors(tableName, errMap) {
 }
 
 function validateComponentFields() {
-	const clearedErrors = { ...props.errors };
-	if (!clearedErrors[1]) clearedErrors[1] = {};
+	let newErrors = { ...props.errors };
+	if (!newErrors[1]) newErrors[1] = {};
 
-	requiredFields.forEach((field) => {
-		const label = formatLabel(field);
-		delete clearedErrors[1][label];
+	componentValidationConfig.forEach((config) => {
+		delete newErrors[1][config.label];
 	});
 
-	emit("update:errors", clearedErrors);
+	componentValidationConfig.forEach((config) => {
+		const value = localModel.value[config.field];
+		const label = config.label;
 
-	requiredFields.forEach(validateField);
+		if (config.type === "simple" || config.type === "multiselect") {
+			if (
+				requiredSimpleFields.includes(config.field) &&
+				(!value ||
+					(Array.isArray(value) && value.length === 0) ||
+					(typeof value === "string" && value.length === 0))
+			) {
+				newErrors[1][label] = `${label} is required.`;
+			}
+		} else if (config.type === "child") {
+			const tableErrors = validateChildTableRows(value, config, label);
+			if (tableErrors.size > 0) {
+				newErrors[1][label] = Object.fromEntries(tableErrors);
+			}
+		}
+	});
+
+	if (newErrors[1] && Object.keys(newErrors[1]).length === 0) {
+		delete newErrors[1];
+	}
+
+	emit("update:errors", newErrors);
 }
 
 onMounted(() => {
@@ -204,20 +392,8 @@ onMounted(() => {
 watch(
 	localModel,
 	() => {
-		requiredFields.forEach(validateField);
+		validateComponentFields();
 	},
 	{ deep: true },
 );
-
-const reasonsOptions = [
-	{ label: "Humanitarian", value: "Humanitarian" },
-	{ label: "Social Cohesion", value: "Social Cohesion" },
-	{ label: "Personal", value: "Personal" },
-];
-
-const internetOptions = [
-	{ label: "Yes", value: "Yes" },
-	{ label: "No", value: "No" },
-	{ label: "Sometimes", value: "Sometimes" },
-];
 </script>

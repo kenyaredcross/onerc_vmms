@@ -29,15 +29,15 @@
 						<span
 							v-if="branding.data?.app_name && branding.data?.app_name != 'Frappe'"
 						>
-							{{ branding.data?.app_name }}
+							{{ __(branding.data?.app_name) }}
 						</span>
-						<span v-else> {{ "VMMS Portal" }} </span>
+						<span v-else> {{ __("VMMS Portal") }} </span>
 					</div>
 					<div
 						v-if="userResource.data"
 						class="mt-1 text-sm text-ink-gray-7 leading-none"
 					>
-						{{ convertToTitleCase(userResource.data?.full_name) }}
+						{{ __(convertToTitleCase(userResource.data?.full_name)) }}
 					</div>
 				</div>
 				<div

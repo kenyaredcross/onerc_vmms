@@ -1,6 +1,6 @@
 <template>
 	<div ref="tableRef" class="w-full">
-		<div v-if="label" class="text-xs text-ink-gray-5 mb-2">{{ label }}</div>
+		<div v-if="label" class="text-xs text-ink-gray-5 mb-2">{{ __(label) }}</div>
 
 		<div class="block lg:hidden">
 			<div class="flex items-center justify-between mb-3 p-2 bg-surface-gray-1 rounded-lg">
@@ -14,7 +14,9 @@
 					/>
 					<span class="text-sm font-medium text-ink-gray-6">
 						{{
-							selectedRows.size > 0 ? `${selectedRows.size} selected` : "Select All"
+							selectedRows.size > 0
+								? `${selectedRows.size} ${__("selected")}`
+								: __("Select All")
 						}}
 					</span>
 				</div>
@@ -26,7 +28,7 @@
 						variant="ghost"
 						size="sm"
 						class="!p-1"
-						title="Duplicate"
+						:title="__('Duplicate')"
 					>
 						<Copy class="size-3" />
 					</Button>
@@ -36,7 +38,7 @@
 						variant="ghost"
 						size="sm"
 						class="!p-1"
-						title="Delete"
+						:title="__('Delete')"
 					>
 						<Trash2 class="size-3 text-red-600" />
 					</Button>
@@ -46,7 +48,7 @@
 						size="sm"
 						class="inline-flex items-center !px-2 !py-1 text-xs gap-1"
 					>
-						+ Add
+						+ {{ __("Add") }}
 					</Button>
 				</div>
 			</div>
@@ -74,7 +76,7 @@
 								class="cursor-pointer"
 							/>
 							<span class="text-xs font-medium text-ink-gray-6">
-								Row {{ rowIndex + 1 }}
+								{{ __("Row") }} {{ rowIndex + 1 }}
 							</span>
 						</div>
 						<Button
@@ -99,14 +101,16 @@
 
 					<div class="space-y-2">
 						<div
-							v-for="field in visibleFields.slice(0, 3)"
+							v-for="field in getVisibleFieldsForRow(row, rowIndex).slice(0, 3)"
 							:key="field.fieldname"
-							v-show="!field.hidden"
+							v-show="!isFieldHidden(field, row)"
 							class="flex flex-col gap-1"
 						>
 							<label class="text-xs text-ink-gray-5 font-medium">
-								{{ field.label }}
-								<span v-if="field.reqd" class="text-red-500">*</span>
+								{{ __(field.label) }}
+								<span v-if="isFieldRequired(field, row)" class="text-red-500"
+									>*</span
+								>
 							</label>
 
 							<div
@@ -150,16 +154,19 @@
 									>
 										<span class="text-blue-600 truncate text-xs">
 											{{
-												row[field.fieldname]?.file_name ||
-												row[field.fieldname]?.name ||
-												row[field.fieldname] ||
+												__(row[field.fieldname]?.file_name) ||
+												__(row[field.fieldname]?.name) ||
+												__(row[field.fieldname]) ||
 												"-"
 											}}
 										</span>
 									</template>
 
 									<template v-else>
-										{{ formatFieldValue(row[field.fieldname], field) || "-" }}
+										{{
+											__(formatFieldValue(row[field.fieldname], field)) ||
+											"-"
+										}}
 									</template>
 								</div>
 							</div>
@@ -167,16 +174,20 @@
 								v-if="validationErrors.get(rowIndex)?.[field.fieldname]"
 								class="text-xs text-red-500 mt-1"
 							>
-								{{ validationErrors.get(rowIndex)?.[field.fieldname] }}
+								{{ __(validationErrors.get(rowIndex)?.[field.fieldname]) }}
 							</p>
 						</div>
 
-						<div v-if="visibleFields.length > 3" class="pt-1">
+						<div v-if="getVisibleFieldsForRow(row, rowIndex).length > 3" class="pt-1">
 							<button
 								@click="openEditModal(rowIndex)"
 								class="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
 							>
-								<span>View all {{ visibleFields.length }} fields</span>
+								<span
+									>{{ __("View all") }}
+									{{ getVisibleFieldsForRow(row, rowIndex).length }}
+									{{ __("fields") }}</span
+								>
 								<svg
 									class="size-3"
 									fill="none"
@@ -224,10 +235,10 @@
 						d="M3 15c0 1.657 4.03 3 9 3s9-1.343 9-3"
 					/>
 				</svg>
-				<div class="text-sm">No Data</div>
+				<div class="text-sm">{{ __("No Data") }}</div>
 				<Button @click="addRow" variant="solid" size="sm" class="mt-3">
 					<template #prefix><Plus class="size-3" /></template>
-					Add First Row
+					{{ __("Add First Row") }}
 				</Button>
 			</div>
 		</div>
@@ -253,7 +264,7 @@
 						class="font-medium text-ink-gray-6 truncate"
 						:title="field.label"
 					>
-						{{ field.label }}
+						{{ __(field.label) }}
 						<span v-if="field.reqd" class="text-red-500">*</span>
 					</div>
 					<div class="w-8"></div>
@@ -285,6 +296,7 @@
 
 					<template v-for="field in visibleFields" :key="field.fieldname">
 						<div
+							v-show="!isFieldHidden(field, row)"
 							class="w-full"
 							:class="{ 'cursor-pointer': !field.read_only }"
 							@click="
@@ -299,7 +311,7 @@
 								@blur="stopEditingAndValidate(rowIndex, field.fieldname)"
 								ref="editInputRef"
 								:readonly="!!field.read_only"
-								:required="!!field.reqd"
+								:required="isFieldRequired(field, row)"
 								@update:model-value="handleLinkedFieldChange(rowIndex, field)"
 								:class="{
 									'border-red-500':
@@ -334,23 +346,23 @@
 								>
 									<span class="text-blue-600 truncate">
 										{{
-											row[field.fieldname]?.file_name ||
-											row[field.fieldname]?.name ||
-											row[field.fieldname] ||
+											__(row[field.fieldname]?.file_name) ||
+											__(row[field.fieldname]?.name) ||
+											__(row[field.fieldname]) ||
 											"-"
 										}}
 									</span>
 								</template>
 
 								<template v-else>
-									{{ formatFieldValue(row[field.fieldname], field) || "-" }}
+									{{ __(formatFieldValue(row[field.fieldname], field)) || "-" }}
 								</template>
 							</div>
 							<p
 								v-if="validationErrors.get(rowIndex)?.[field.fieldname]"
 								class="text-xs text-red-500 mt-1"
 							>
-								{{ validationErrors.get(rowIndex)?.[field.fieldname] }}
+								{{ __(validationErrors.get(rowIndex)?.[field.fieldname]) }}
 							</p>
 						</div>
 					</template>
@@ -389,24 +401,26 @@
 							d="M3 15c0 1.657 4.03 3 9 3s9-1.343 9-3"
 						/>
 					</svg>
-					<div class="text-sm">No Data</div>
+					<div class="text-sm">{{ __("No Data") }}</div>
 				</div>
 			</div>
 
 			<div class="mt-3 flex items-center justify-between">
 				<Button v-if="!props.readOnly" @click="addRow" variant="solid" size="sm">
 					<template #prefix><Plus class="size-4" /></template>
-					Add Row
+					{{ __("Add Row") }}
 				</Button>
 
 				<div v-if="selectedRows.size > 0" class="flex items-center gap-2">
-					<span class="text-xs text-ink-gray-6">{{ selectedRows.size }} selected</span>
+					<span class="text-xs text-ink-gray-6"
+						>{{ selectedRows.size }} {{ __("selected") }}</span
+					>
 					<Button
 						v-if="!props.readOnly && selectedRows.size > 0"
 						@click="duplicateSelected"
 						variant="ghost"
 						size="sm"
-						title="Duplicate"
+						:title="__('Duplicate')"
 					>
 						<Copy class="size-4 text-ink-gray-7" />
 					</Button>
@@ -416,7 +430,7 @@
 						@click="deleteSelected"
 						variant="ghost"
 						size="sm"
-						title="Delete"
+						:title="__('Delete')"
 					>
 						<Trash2 class="size-4 text-red-600" />
 					</Button>
@@ -436,7 +450,7 @@
 					class="flex items-center justify-between p-3 sm:p-4 border-b bg-surface-gray-1"
 				>
 					<h3 class="text-base sm:text-lg font-semibold text-ink-gray-7">
-						Edit Row {{ (editModalRowIndex || 0) + 1 }}
+						{{ __("Edit Row") }} {{ (editModalRowIndex || 0) + 1 }}
 					</h3>
 					<button
 						@click="cancelEditModal"
@@ -447,7 +461,10 @@
 				</div>
 
 				<div class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
-					<template v-for="(section, sIndex) in modalLayout" :key="sIndex">
+					<template
+						v-for="(section, sIndex) in getModalLayoutForRow(editModalData)"
+						:key="sIndex"
+					>
 						<div
 							class="border-t pt-4 sm:pt-6 mt-4 sm:mt-6 first:border-t-0 first:pt-0 first:mt-0"
 						>
@@ -455,7 +472,7 @@
 								v-if="section.label"
 								class="text-sm sm:text-base font-semibold text-ink-gray-7 mb-3 sm:mb-4"
 							>
-								{{ section.label }}
+								{{ __(section.label) }}
 							</h4>
 
 							<div class="flex flex-col md:flex-row -mx-1 sm:-mx-2">
@@ -467,7 +484,7 @@
 									<div
 										v-for="field in col"
 										:key="field.fieldname"
-										v-show="!field.hidden"
+										v-show="!isFieldHidden(field, editModalData)"
 										class="mb-3 sm:mb-4"
 									>
 										<template v-if="field.fieldtype === 'Check'">
@@ -486,8 +503,12 @@
 													"
 												/>
 												<label class="text-sm text-ink-gray-7">
-													{{ field.label }}
-													<span v-if="field.reqd" class="text-red-500"
+													{{ __(field.label) }}
+													<span
+														v-if="
+															isFieldRequired(field, editModalData)
+														"
+														class="text-red-500"
 														>*</span
 													>
 												</label>
@@ -496,8 +517,10 @@
 
 										<template v-else>
 											<label class="block text-sm text-ink-gray-7 mb-1">
-												{{ field.label }}
-												<span v-if="field.reqd" class="text-red-500"
+												{{ __(field.label) }}
+												<span
+													v-if="isFieldRequired(field, editModalData)"
+													class="text-red-500"
 													>*</span
 												>
 											</label>
@@ -507,7 +530,7 @@
 												v-model="editModalData[field.fieldname]"
 												v-bind="getFieldProps(field)"
 												:rows="field.fieldtype === 'Long Text' ? 8 : 4"
-												:required="field.reqd"
+												:required="isFieldRequired(field, editModalData)"
 												:readonly="!!field.read_only"
 												class="text-sm"
 												@update:model-value="
@@ -532,9 +555,11 @@
 												class="text-xs text-red-500 mt-1"
 											>
 												{{
-													validationErrors.get(
-														editModalRowIndex || -1,
-													)?.[field.fieldname]
+													__(
+														validationErrors.get(
+															editModalRowIndex || -1,
+														)?.[field.fieldname],
+													)
 												}}
 											</p>
 										</template>
@@ -554,7 +579,7 @@
 						size="sm"
 						class="flex-1 sm:flex-none"
 					>
-						Cancel
+						{{ __("Cancel") }}
 					</Button>
 					<Button
 						v-if="!props.readOnly"
@@ -562,7 +587,7 @@
 						variant="solid"
 						size="sm"
 					>
-						Save Changes
+						{{ __("Save Changes") }}
 					</Button>
 				</div>
 			</div>
@@ -570,69 +595,44 @@
 	</div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { Button, createResource, FormControl, Textarea, TextEditor, TextInput } from "frappe-ui";
 import { Copy, Edit, Plus, Trash2, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import LinkControl from "./Link.vue";
 import Uploader from "./Uploader.vue";
 
-interface DocField {
-	fieldname: string;
-	fieldtype: string;
-	label: string;
-	options?: string;
-	description?: string;
-	get_query?: any;
-	in_list_view: number | boolean;
-	idx: number;
+const props = defineProps({
+	modelValue: { type: Array, default: () => [] },
+	doctype: { type: String, required: true },
+	label: { type: String, default: "" },
+	fieldQueries: { type: Object, default: () => ({}) },
+	formData: { type: Object, default: () => ({}) },
+	autoEditGrid: { type: Boolean, default: false },
+	readOnly: { type: Boolean, default: false },
+});
 
-	read_only?: number | boolean;
-	hidden?: number | boolean;
-	reqd?: number | boolean;
-	fetch_from?: string;
-	default?: any;
-}
+const emit = defineEmits(["update:modelValue", "validationErrors"]);
 
-type RowData = Record<string, any>;
-
-const props = withDefaults(
-	defineProps<{
-		modelValue?: RowData[];
-		doctype: string;
-		label?: string;
-		fieldQueries?: Record<string, (row: RowData, allRows: RowData[], formData?: any) => any>;
-		formData?: RowData;
-		autoEditGrid?: boolean;
-		readOnly?: boolean;
-	}>(),
-	{ modelValue: () => [], label: "", fieldQueries: () => ({}), readOnly: false },
-);
-
-const emit = defineEmits<{
-	(e: "update:modelValue", value: RowData[]): void;
-	(e: "validationErrors", errors: Map<number, Record<string, string>>): void;
-}>();
-
-const rowsRef = ref<RowData[]>([]);
-const tableRef = ref<HTMLElement | null>(null);
-const selectedRows = ref(new Set<number>());
-const editingRow = ref<number | null>(null);
-const editingField = ref<string | null>(null);
-const editInputRef = ref<any>(null);
+const rowsRef = ref([]);
+const tableRef = ref(null);
+const selectedRows = ref(new Set());
+const editingRow = ref(null);
+const editingField = ref(null);
+const editInputRef = ref(null);
 const editModalOpen = ref(false);
-const editModalRowIndex = ref<number | null>(null);
-const editModalData = ref<RowData>({});
+const editModalRowIndex = ref(null);
+const editModalData = ref({});
 const isUpdating = ref(false);
 const editableGrid = ref(false);
 
-const validationErrors = ref(new Map<number, Record<string, string>>());
+const validationErrors = ref(new Map());
 
 defineExpose({
 	validateBeforeSave,
 });
 
-const fieldComponentMap: Record<string, any> = {
+const fieldComponentMap = {
 	Attach: Uploader,
 	"Attach Image": Uploader,
 	Image: Uploader,
@@ -674,7 +674,7 @@ const fieldComponentMap: Record<string, any> = {
 	Time: "time",
 };
 
-function getFieldComponent(field: DocField) {
+function getFieldComponent(field) {
 	const comp = fieldComponentMap[field.fieldtype];
 
 	const formControlTypes = [
@@ -699,11 +699,81 @@ function getFieldComponent(field: DocField) {
 	return comp || FormControl;
 }
 
-function getFieldProps(field: DocField, rowIndex?: number) {
-	const props: Record<string, any> = {
+function evaluateExpression(expression, doc) {
+	if (!expression) return false;
+
+	try {
+		let cleanExpression = expression.trim();
+		if (cleanExpression.startsWith("eval:")) {
+			cleanExpression = cleanExpression.substring(5).trim();
+		}
+
+		const evalFunc = new Function("doc", `with(doc) { return ${cleanExpression}; }`);
+		return evalFunc(doc);
+	} catch (error) {
+		console.error("Error evaluating expression:", expression, error);
+		return false;
+	}
+}
+
+function isFieldHidden(field, rowData) {
+	if (field.hidden) return true;
+
+	if (field.depends_on) {
+		return !evaluateExpression(field.depends_on, rowData);
+	}
+
+	return false;
+}
+
+function isFieldRequired(field, rowData) {
+	if (field.reqd) return true;
+
+	if (field.mandatory_depends_on) {
+		return evaluateExpression(field.mandatory_depends_on, rowData);
+	}
+
+	return false;
+}
+
+function getVisibleFieldsForRow(rowData, rowIndex) {
+	return visibleFields.value.filter((field) => !isFieldHidden(field, rowData));
+}
+
+function getModalLayoutForRow(rowData) {
+	const layout = [];
+	let currentSection = { type: "section", columns: [[]] };
+
+	for (const field of doctypeFields.value) {
+		if (field.fieldtype === "Section Break") {
+			if (currentSection.columns.some((col) => col.length > 0)) {
+				layout.push(currentSection);
+			}
+
+			currentSection = { type: "section", label: field.label, columns: [[]] };
+		} else if (field.fieldtype === "Column Break") {
+			currentSection.columns.push([]);
+		} else if (!isFieldHidden(field, rowData)) {
+			currentSection.columns[currentSection.columns.length - 1].push(field);
+		}
+	}
+
+	if (currentSection.columns.some((col) => col.length > 0)) {
+		layout.push(currentSection);
+	}
+
+	return layout;
+}
+
+function getFieldProps(field, rowIndex) {
+	const props = {
 		readonly: !!field.read_only,
-		required: !!field.reqd,
+		required: false,
 	};
+
+	if (rowIndex !== undefined && rowsRef.value[rowIndex]) {
+		props.required = isFieldRequired(field, rowsRef.value[rowIndex]);
+	}
 
 	switch (field.fieldtype) {
 		case "Data":
@@ -780,7 +850,7 @@ function getFieldProps(field: DocField, rowIndex?: number) {
 			props.fileTypes = [".pdf", ".jpg", ".jpeg", ".png"];
 			props.multi = false;
 			props.maxFileSize = 10;
-			props.success = (file: any) => {
+			props.success = (file) => {
 				if (rowIndex !== undefined) handleUploadSuccess(rowIndex, field.fieldname, file);
 			};
 			break;
@@ -789,7 +859,7 @@ function getFieldProps(field: DocField, rowIndex?: number) {
 	return props;
 }
 
-function getSelectOptions(field: DocField) {
+function getSelectOptions(field) {
 	if (field.options) {
 		return field.options
 			.split("\n")
@@ -799,23 +869,19 @@ function getSelectOptions(field: DocField) {
 	return [];
 }
 
-function formatFieldValue(value: any, field: DocField) {
+function formatFieldValue(value, field) {
 	if (field.fieldtype === "Check") return value ? "Yes" : "No";
 	return value;
 }
-function handleUploadSuccess(rowIndex: number, fieldname: string, file: any) {
+
+function handleUploadSuccess(rowIndex, fieldname, file) {
 	if (rowIndex !== undefined && rowsRef.value[rowIndex]) {
 		rowsRef.value[rowIndex][fieldname] = file;
-
 		validateRow(rowIndex);
 	}
 }
 
-async function fetchLinkedFieldData(
-	linkDoctype: string,
-	linkName: string,
-	targetField: string,
-): Promise<any> {
+async function fetchLinkedFieldData(linkDoctype, linkName, targetField) {
 	if (!linkName) return null;
 
 	const linkedDoc = createResource({
@@ -850,11 +916,7 @@ async function fetchLinkedFieldData(
 	}
 }
 
-async function handleLinkedFieldChange(
-	rowIndex: number | null,
-	changedField: DocField,
-	dataRef?: RowData,
-) {
+async function handleLinkedFieldChange(rowIndex, changedField, dataRef) {
 	if (rowIndex === null) return;
 
 	const currentRow = dataRef || rowsRef.value[rowIndex];
@@ -864,10 +926,10 @@ async function handleLinkedFieldChange(
 	);
 
 	for (const field of fieldsToUpdate) {
-		const [sourceLinkField, targetField] = field.fetch_from!.split(".");
+		const [sourceLinkField, targetField] = field.fetch_from.split(".");
 
 		if (sourceLinkField === changedField.fieldname && currentRow[changedField.fieldname]) {
-			const linkDoctype = changedField.options as string;
+			const linkDoctype = changedField.options;
 			const linkName = currentRow[changedField.fieldname];
 
 			if (linkDoctype && linkName) {
@@ -893,9 +955,9 @@ async function handleLinkedFieldChange(
 	}
 
 	if (changedField.fetch_from && changedField.fieldtype === "Link") {
-		const [sourceLinkField, targetField] = changedField.fetch_from!.split(".");
+		const [sourceLinkField, targetField] = changedField.fetch_from.split(".");
 		if (sourceLinkField === changedField.fieldname) {
-			const linkDoctype = changedField.options as string;
+			const linkDoctype = changedField.options;
 			const linkName = currentRow[changedField.fieldname];
 
 			if (linkDoctype && linkName) {
@@ -920,15 +982,14 @@ const doctypeMeta = createResource({
 	auto: true,
 });
 
-const doctypeFields = computed<DocField[]>(() => {
+const doctypeFields = computed(() => {
 	if (!doctypeMeta.data?.docs) return [];
 
-	const targetDoc = doctypeMeta.data.docs.find((d: any) => d.name === props.doctype);
+	const targetDoc = doctypeMeta.data.docs.find((d) => d.name === props.doctype);
 	if (!targetDoc?.fields) return [];
 
-	const fields: DocField[] = targetDoc.fields.map((f: any) => ({
+	const fields = targetDoc.fields.map((f) => ({
 		...f,
-
 		read_only: f.read_only == 1,
 		hidden: f.hidden == 1,
 		reqd: f.reqd == 1,
@@ -940,7 +1001,7 @@ const doctypeFields = computed<DocField[]>(() => {
 	editableGrid.value = editableGridVal === 1 || editableGridVal === "1";
 
 	const fieldOrder = targetDoc.field_order
-		? targetDoc.field_order.split("\n").map((f: string) => f.trim())
+		? targetDoc.field_order.split("\n").map((f) => f.trim())
 		: [];
 
 	if (fieldOrder.length > 0) {
@@ -963,23 +1024,29 @@ const doctypeFields = computed<DocField[]>(() => {
 });
 
 const visibleFields = computed(() => {
-	const vf = doctypeFields.value.filter(
-		(f) => f.in_list_view && !["Section Break", "Column Break"].includes(f.fieldtype),
+	const baseFields = doctypeFields.value.filter(
+		(f) => !["Section Break", "Column Break"].includes(f.fieldtype),
 	);
-	return vf.length > 0
-		? vf
-		: doctypeFields.value
-				.filter((f) => !["Section Break", "Column Break"].includes(f.fieldtype))
-				.slice(0, 5);
+
+	const listViewFields = baseFields.filter((field) => {
+		if (!field.depends_on) return true;
+
+		const simpleConditions = [/^eval:\s*["']?[^"']*["']?\s*$/, /^["']?[^"']*["']?\s*$/];
+
+		return simpleConditions.some((pattern) => pattern.test(field.depends_on.trim()));
+	});
+
+	const vf = listViewFields.filter((f) => f.in_list_view);
+	return vf.length > 0 ? vf : listViewFields.slice(0, 5);
 });
 
 const modalLayout = computed(() => {
-	const layout: any[] = [];
-	let currentSection: any = { type: "section", columns: [[]] };
+	const layout = [];
+	let currentSection = { type: "section", columns: [[]] };
 
 	for (const field of doctypeFields.value) {
 		if (field.fieldtype === "Section Break") {
-			if (currentSection.columns.some((col: any) => col.length > 0)) {
+			if (currentSection.columns.some((col) => col.length > 0)) {
 				layout.push(currentSection);
 			}
 
@@ -991,7 +1058,7 @@ const modalLayout = computed(() => {
 		}
 	}
 
-	if (currentSection.columns.some((col: any) => col.length > 0)) {
+	if (currentSection.columns.some((col) => col.length > 0)) {
 		layout.push(currentSection);
 	}
 
@@ -1010,8 +1077,8 @@ function initializeRows() {
 	validateAllRows();
 }
 
-function ensureRowShape(row: RowData): RowData {
-	const shaped: RowData = { ...(row || {}) };
+function ensureRowShape(row) {
+	const shaped = { ...(row || {}) };
 	doctypeFields.value.forEach((field) => {
 		if (
 			!["Section Break", "Column Break"].includes(field.fieldtype) &&
@@ -1023,7 +1090,7 @@ function ensureRowShape(row: RowData): RowData {
 	return shaped;
 }
 
-function getDefaultValue(field: DocField) {
+function getDefaultValue(field) {
 	if (field.fieldtype === "Check") return 0;
 	if (["Int", "Float", "Currency"].includes(field.fieldtype)) return 0;
 
@@ -1056,7 +1123,7 @@ watch(
 	(nv) => {
 		if (isUpdating.value) return;
 		if (nv && Array.isArray(nv) && doctypeFields.value.length > 0) {
-			const newRows = nv.map((r: any) => ensureRowShape(r));
+			const newRows = nv.map((r) => ensureRowShape(r));
 			if (JSON.stringify(newRows) !== JSON.stringify(rowsRef.value)) {
 				rowsRef.value = newRows;
 				validateAllRows();
@@ -1073,7 +1140,7 @@ watch(
 		isUpdating.value = true;
 		nextTick(() => {
 			const cleanedRows = nv.map((r) => {
-				const cleaned: RowData = { ...r };
+				const cleaned = { ...r };
 				delete cleaned.__is_editing;
 				return cleaned;
 			});
@@ -1087,14 +1154,18 @@ watch(
 	{ deep: true },
 );
 
-function validateRow(rowIndex: number): Record<string, string> {
+function validateRow(rowIndex) {
 	const row = rowsRef.value[rowIndex];
 	if (!row) return {};
 
-	const errors: Record<string, string> = {};
+	const errors = {};
 
 	for (const field of doctypeFields.value) {
-		if (field.reqd) {
+		if (isFieldHidden(field, row)) {
+			continue;
+		}
+
+		if (isFieldRequired(field, row)) {
 			const value = row[field.fieldname];
 			const isEmpty = value === null || value === undefined || value === "";
 
@@ -1119,7 +1190,7 @@ function validateRow(rowIndex: number): Record<string, string> {
 	return errors;
 }
 
-function validateAllRows(): boolean {
+function validateAllRows() {
 	validationErrors.value.clear();
 	let allValid = true;
 
@@ -1137,13 +1208,13 @@ function validateAllRows(): boolean {
 	return allValid;
 }
 
-function validateBeforeSave(): boolean {
+function validateBeforeSave() {
 	const result = validateAllRows();
 	emit("validationErrors", new Map(validationErrors.value));
 	return result;
 }
 
-function stopEditingAndValidate(rowIndex: number, fieldname: string) {
+function stopEditingAndValidate(rowIndex, fieldname) {
 	setTimeout(() => {
 		editingRow.value = null;
 		editingField.value = null;
@@ -1153,7 +1224,7 @@ function stopEditingAndValidate(rowIndex: number, fieldname: string) {
 }
 
 function addRow() {
-	const newRow: RowData = {};
+	const newRow = {};
 	doctypeFields.value.forEach((field) => {
 		if (!["Section Break", "Column Break"].includes(field.fieldtype)) {
 			newRow[field.fieldname] = getDefaultValue(field);
@@ -1165,15 +1236,11 @@ function addRow() {
 
 	validateRow(newIndex);
 	openEditModal(newIndex);
-
-	// if (!editableGrid.value || props.autoEditGrid) {
-	//   openEditModal(newIndex);
-	// }
 }
 
 function duplicateSelected() {
 	const indices = Array.from(selectedRows.value).sort((a, b) => b - a);
-	const newIndices: number[] = [];
+	const newIndices = [];
 
 	indices.forEach((idx) => {
 		const duplicate = { ...rowsRef.value[idx] };
@@ -1197,7 +1264,7 @@ function deleteSelected() {
 	validateAllRows();
 }
 
-function toggleRowSelection(idx: number) {
+function toggleRowSelection(idx) {
 	if (selectedRows.value.has(idx)) {
 		selectedRows.value.delete(idx);
 	} else {
@@ -1217,7 +1284,7 @@ function toggleSelectAll() {
 	}
 }
 
-function startEditing(rowIndex: number, fieldname: string) {
+function startEditing(rowIndex, fieldname) {
 	const field = doctypeFields.value.find((f) => f.fieldname === fieldname);
 	if (field?.read_only) return;
 
@@ -1230,7 +1297,7 @@ function startEditing(rowIndex: number, fieldname: string) {
 	});
 }
 
-function openEditModal(idx: number) {
+function openEditModal(idx) {
 	editModalRowIndex.value = idx;
 
 	editModalData.value = JSON.parse(JSON.stringify(rowsRef.value[idx]));
@@ -1247,7 +1314,7 @@ function cancelEditModal() {
 	const rowIndex = editModalRowIndex.value;
 	if (rowIndex === null) return;
 
-	const errors = validateModalData(rowIndex, editModalData.value);
+	validateModalData(rowIndex, editModalData.value);
 
 	rowsRef.value[rowIndex] = {
 		...rowsRef.value[rowIndex],
@@ -1256,6 +1323,7 @@ function cancelEditModal() {
 
 	closeEditModal();
 }
+
 function saveEditModal() {
 	const rowIndex = editModalRowIndex.value;
 	if (rowIndex === null) return;
@@ -1276,11 +1344,15 @@ function saveEditModal() {
 	closeEditModal();
 }
 
-function validateModalData(rowIndex: number, data: RowData): Record<string, string> {
-	const errors: Record<string, string> = {};
+function validateModalData(rowIndex, data) {
+	const errors = {};
 
 	for (const field of doctypeFields.value) {
-		if (field.reqd) {
+		if (isFieldHidden(field, data)) {
+			continue;
+		}
+
+		if (isFieldRequired(field, data)) {
 			const value = data[field.fieldname];
 			const isEmpty = value === null || value === undefined || value === "";
 
@@ -1303,4 +1375,34 @@ function validateModalData(rowIndex: number, data: RowData): Record<string, stri
 
 	return errors;
 }
+
+// Add this watch after the existing watches
+watch(
+	() => rowsRef.value.map((row) => ({ ...row })),
+	(newRows, oldRows) => {
+		// Re-evaluate depends_on and mandatory_depends_on for all rows
+		newRows.forEach((row, rowIndex) => {
+			// Trigger re-validation to update required fields
+			validateRow(rowIndex);
+
+			// Force reactivity update for modal if it's open
+			if (editModalOpen.value && editModalRowIndex.value === rowIndex) {
+				editModalData.value = { ...editModalData.value };
+			}
+		});
+	},
+	{ deep: true },
+);
+
+// Add this watch specifically for modal data changes
+watch(
+	() => ({ ...editModalData.value }),
+	(newData) => {
+		if (editModalOpen.value && editModalRowIndex.value !== null) {
+			// Re-validate modal data when any field changes
+			validateModalData(editModalRowIndex.value, newData);
+		}
+	},
+	{ deep: true },
+);
 </script>

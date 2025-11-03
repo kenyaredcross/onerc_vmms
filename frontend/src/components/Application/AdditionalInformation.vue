@@ -18,10 +18,15 @@
 					d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
 				/>
 			</svg>
-			<h3 class="text-xl font-semibold mb-1">No Additional Information Required</h3>
+			<h3 class="text-xl font-semibold mb-1">
+				{{ __("No Additional Information Required") }}
+			</h3>
 			<p class="text-sm">
-				This opportunity does not require any supplementary information at this time. Click
-				'Save & Continue' to proceed to the review step.
+				{{
+					__(
+						"This opportunity does not require any supplementary information at this time. Click 'Save & Continue' to proceed to the review step.",
+					)
+				}}
 			</p>
 		</div>
 
@@ -35,13 +40,13 @@
 		>
 			<div class="flex justify-between items-start mb-2">
 				<label class="font-medium text-gray-800">
-					{{ index + 1 }}. {{ q.question }}
+					{{ index + 1 }}. {{ __(q.question) }}
 					<span v-if="q.is_required" class="text-red-500">*</span>
 				</label>
 			</div>
 
 			<p v-if="q.help_text" class="text-sm text-gray-500 mb-2">
-				{{ q.help_text }}
+				{{ __(q.help_text) }}
 			</p>
 
 			<div class="mt-2">
@@ -50,8 +55,8 @@
 					v-model="responses[q.question_id].answer"
 					type="select"
 					:options="[
-						{ label: 'Yes', value: 'Yes' },
-						{ label: 'No', value: 'No' },
+						{ label: __('Yes'), value: 'Yes' },
+						{ label: __('No'), value: 'No' },
 					]"
 				/>
 
@@ -92,7 +97,7 @@
 							}"
 							@click="responses[q.question_id].answer = n"
 						>
-							{{ n }}
+							{{ __(n) }}
 						</button>
 					</template>
 				</div>
@@ -100,11 +105,16 @@
 				<CheckableListSelect
 					v-else-if="q.question_type === 'MultiSelect'"
 					v-model="responses[q.question_id].answer"
-					:options="parseOptions(q.options)"
+					:options="
+						parseOptions(q.options).map((opt) => ({ ...opt, label: __(opt.label) }))
+					"
 				/>
 
 				<div v-else-if="q.question_type === 'Upload'">
-					<Uploader v-model="responses[q.question_id].attachment" label="Upload File" />
+					<Uploader
+						v-model="responses[q.question_id].attachment"
+						:label="__('Upload File')"
+					/>
 				</div>
 
 				<FormControl v-else v-model="responses[q.question_id].answer" type="text" />

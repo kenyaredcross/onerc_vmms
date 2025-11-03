@@ -30,7 +30,6 @@ declare module 'vue' {
     EducationBackground: typeof import('./src/components/Application/EducationBackground.vue')['default']
     EmptyState: typeof import('./src/components/EmptyState.vue')['default']
     ErrorModal: typeof import('./src/components/Modals/ErrorModal.vue')['default']
-    Event: typeof import('./src/components/Modals/Event.vue')['default']
     EventCalendar: typeof import('./src/components/EventCalendar.vue')['default']
     EventCard: typeof import('./src/components/EventCard.vue')['default']
     FrappeCloudIcon: typeof import('./src/components/Icons/FrappeCloudIcon.vue')['default']

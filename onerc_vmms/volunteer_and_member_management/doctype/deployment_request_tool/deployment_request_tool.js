@@ -327,14 +327,14 @@ frappe.ui.form.on("Deployment Request Tool", {
 				checkboxColumn: true,
 				layout: "fluid",
 				cellHeight: 40,
-				noDataMessage: __("No employees found matching the criteria"),
+				noDataMessage: __("No personnel found matching the criteria"),
 			});
 		} else {
 			wrapper.html(`
         <div class="text-muted text-center" style="padding: 40px;">
           <i class="fa fa-users fa-3x" style="opacity: 0.3; margin-bottom: 15px;"></i>
-          <p>${__("No employees found matching the criteria")}</p>
-          <small>${__("Adjust your filters to find eligible employees")}</small>
+          <p>${__("No personnel found matching the criteria")}</p>
+          <small>${__("Adjust your filters to find eligible personnel")}</small>
         </div>
       `);
 		}
@@ -345,7 +345,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 			{
 				name: "employee",
 				id: "employee",
-				content: __("Employee ID"),
+				content: __("Personnel ID"),
 				width: 120,
 				format: (value, row, column, data) => {
 					return value
@@ -356,7 +356,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 			{
 				name: "employee_name",
 				id: "employee_name",
-				content: __("Employee Name"),
+				content: __("Personnel Name"),
 				width: 180,
 				format: (value, row, column, data) => {
 					return value
@@ -400,7 +400,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 			{
 				name: "employment_type",
 				id: "employment_type",
-				content: __("Employment Type"),
+				content: __("Personnel Type"),
 				width: 130,
 				format: (value) => {
 					return value || "";
@@ -417,7 +417,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 
 	deploy_employees: function (frm) {
 		if (!frm.employees_datatable || !frm.employees_datatable.rowmanager.checkMap) {
-			frappe.msgprint(__("Please select employees to deploy"));
+			frappe.msgprint(__("Please select personnel to deploy"));
 			return;
 		}
 
@@ -431,7 +431,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 		});
 
 		if (selected_employees.length === 0) {
-			frappe.msgprint(__("Please select at least one employee to deploy"));
+			frappe.msgprint(__("Please select at least one personnel to deploy"));
 			return;
 		}
 

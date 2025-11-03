@@ -1,9 +1,11 @@
 <template>
 	<div class="w-full space-y-8">
 		<div v-if="!user.data?.name" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-			<h3 class="text-xl font-semibold text-gray-800 mb-6">Authentication Required</h3>
+			<h3 class="text-xl font-semibold text-gray-800 mb-6">
+				{{ __("Authentication Required") }}
+			</h3>
 			<p class="text-gray-600 mb-8 max-w-md">
-				Please create an account to submit your application
+				{{ __("Please create an account to submit your application") }}
 			</p>
 
 			<div
@@ -12,7 +14,7 @@
 				@click="redirectToLogin"
 			>
 				<LogIn class="w-5 h-5" />
-				Sign Up
+				{{ __("Sign Up") }}
 			</div>
 		</div>
 		<div
@@ -20,7 +22,7 @@
 			class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center"
 		>
 			<h2 class="text-xl font-semibold text-yellow-800 mb-4">
-				You’ve already applied for this job.
+				{{ __("You’ve already applied for this job.") }}
 			</h2>
 			<Button
 				variant="solid"
@@ -32,7 +34,7 @@
 					})
 				"
 			>
-				View Your Application
+				{{ __("View Your Application") }}
 			</Button>
 		</div>
 
@@ -46,19 +48,21 @@
 			class="bg-red-50 border border-red-200 rounded-xl p-6 text-center"
 		>
 			<h2 class="text-xl font-semibold text-red-800 mb-4">
-				This opportunity is available for volunteers only.
+				{{ __("This opportunity is available for volunteers only.") }}
 			</h2>
 			<Button
 				variant="solid"
 				class="bg-red-700 hover:bg-red-800 text-white"
 				@click="router.push({ name: 'VolunteerSignup' })"
 			>
-				Register as Volunteer
+				{{ __("Register as Volunteer") }}
 			</Button>
 		</div>
 
 		<div v-else class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-			<h2 class="text-2xl font-bold text-red-700 mb-6">Apply for this Opportunity</h2>
+			<h2 class="text-2xl font-bold text-red-700 mb-6">
+				{{ __("Apply for this Opportunity") }}
+			</h2>
 
 			<form class="space-y-10" @submit.prevent="submitApplication">
 				<div class="flex justify-start">
@@ -67,7 +71,7 @@
 						variant="solid"
 						class="bg-red-700 hover:bg-red-800 text-white px-6 py-3 rounded-lg"
 					>
-						Start Application
+						{{ __("Start Application") }}
 					</Button>
 				</div>
 			</form>

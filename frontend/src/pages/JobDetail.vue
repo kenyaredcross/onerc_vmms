@@ -6,9 +6,9 @@
 			<Breadcrumbs
 				class="h-7"
 				:items="[
-					{ label: __('Jobs'), route: { name: 'Jobs' } },
+					{ label: __('Opportunities'), route: { name: 'Jobs' } },
 					{
-						label: job.data?.job_title,
+						label: __(job.data?.job_title),
 						route: { name: 'JobDetail', params: { job: job.data?.name } },
 					},
 				]"
@@ -34,7 +34,6 @@ const dayjs = inject("$dayjs");
 const { brand } = sessionStore();
 const props = defineProps({
 	job: {
-		type: String,
 		required: true,
 	},
 });
@@ -72,35 +71,6 @@ const redirectToLogin = () => {
 		query: { "redirect-to": currentPath },
 	});
 };
-
-const goToNewApplication = () => {
-	router.push({
-		name: "NewJobApplication",
-	});
-};
-
-const goToApplicationDetail = () => {
-	if (applicationId.value) {
-		router.push({
-			name: "JobApplicationDetail",
-			params: { id: applicationId.value },
-		});
-	}
-};
-
-const redirectToWebsite = (url) => {
-	window.open(url, "_blank");
-};
-
-const getCompanyAbbr = (name) =>
-	name
-		? name
-				.split(" ")
-				.map((word) => word[0])
-				.join("")
-				.slice(0, 2)
-				.toUpperCase()
-		: "NA";
 
 usePageMeta(() => ({
 	title: job.data?.job_title,

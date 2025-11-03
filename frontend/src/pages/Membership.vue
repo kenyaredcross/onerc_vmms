@@ -1,10 +1,10 @@
 <template>
-	<NoPermission v-if="user?.data == 'Guest'" :page="'Membership'" />
+	<NoPermission v-if="user?.data == 'Guest'" :page="__('Membership')" />
 	<div class="space-y-4 mx-auto px-4" v-if="user?.data && user?.data !== 'Guest'">
 		<ErrorMessage
 			v-if="currentMembership.error || membershipTypes.error"
 			class="text-center border rounded-md p-2 border-red-500 bg-red-50 text-sm my-auto mt-20"
-			message="Failed to get Membership Details"
+			:message="__('Failed to get Membership Details')"
 		/>
 
 		<div v-else-if="currentMembership.data" class="w-full flex flex-col items-center">
@@ -12,14 +12,14 @@
 				v-if="currentMembership.data.length > 0"
 				:membershipStatus="currentMembership.data"
 			/>
-			<EmptyState v-else type="Membership" class="mt-6" />
+			<EmptyState v-else :type="__('Membership')" class="mt-6" />
 		</div>
 
 		<div
 			v-if="currentMembership.data"
 			class="p-2 pt-2 md:p-8 bg-gray-50 rounded-2xl shadow-md text-center mb-20 max-w-7xl mx-auto"
 		>
-			<h1 class="text-lg md:text-3xl text-gray-900">Select a New Plan</h1>
+			<h1 class="text-lg md:text-3xl text-gray-900">{{ __("Select a New Plan") }}</h1>
 
 			<div v-if="membershipTypes.data?.length > 0" class="mt-10">
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -37,7 +37,7 @@
 				</div>
 			</div>
 
-			<EmptyState v-else type="Membership Type" class="mt-10" />
+			<EmptyState v-else :type="__('Membership Type')" class="mt-10" />
 		</div>
 	</div>
 

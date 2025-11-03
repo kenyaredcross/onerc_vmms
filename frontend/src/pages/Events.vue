@@ -36,9 +36,8 @@
 	</div>
 </template>
 
-<script lang="ts" setup>
+<script setup>
 import { createResource, TextInput } from "frappe-ui";
-import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
 import { ref, watch } from "vue";
 import ProgressSpinner from "../components/Common/ProgressSpinner.vue";
 import EmptyState from "../components/EmptyState.vue";

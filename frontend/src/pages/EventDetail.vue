@@ -4,7 +4,7 @@
 		<ErrorMessage
 			v-else-if="eventDetail.error"
 			class="text-center border rounded-md p-2 border-red-500 bg-red-50 text-sm my-auto mt-20"
-			message="Failed to load Event Details"
+			:message="__('Failed to load Event Details')"
 		/>
 		<div v-else-if="eventDetail.data">
 			<div class="relative overflow-hidden bg-white">
@@ -16,24 +16,24 @@
 						<h1
 							class="text-3xl lg:text-[2.0rem] font-bold text-gray-800 mb-4 leading-tight"
 						>
-							{{ eventDetail.data?.title }}
+							{{ __(eventDetail.data?.title) }}
 						</h1>
 
 						<div class="flex flex-wrap gap-4 sm:gap-6 text-gray-700 mb-4 sm:mb-6">
 							<div class="flex items-center gap-2 text-sm sm:text-base">
 								<CalendarDays class="w-5 h-5 text-red-500" />
 								<span
-									>{{ formatDate(eventDetail.data?.start_date) }} -
+									>{{ formatDate(eventDetail.data?.start_date) }} {{ __("-") }}
 									{{ formatDate(eventDetail.data?.end_date) }}</span
 								>
 							</div>
 							<div class="flex items-center gap-2 text-sm sm:text-base">
 								<Clock class="w-5 h-5 text-red-500" />
-								<span>{{ eventDetail.data?.start_time }}</span>
+								<span>{{ __(eventDetail.data?.start_time) }}</span>
 							</div>
 							<div class="flex items-center gap-2 text-sm sm:text-base">
 								<MapPin class="w-5 h-5 text-red-500" />
-								<span>{{ eventDetail.data?.venue }}</span>
+								<span>{{ __(eventDetail.data?.venue) }}</span>
 							</div>
 						</div>
 
@@ -46,7 +46,7 @@
 									size="lg"
 									@click="handleRegister(true)"
 								>
-									Get Ticket
+									{{ __("Get Ticket") }}
 								</Button>
 							</div>
 							<div v-else>
@@ -56,7 +56,7 @@
 									size="lg"
 									@click="handleRegister(false)"
 								>
-									Register
+									{{ __("Register") }}
 								</Button>
 							</div>
 						</div>
@@ -80,7 +80,7 @@
 					<div class="w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 flex-shrink-0">
 						<img
 							:src="eventDetail.data?.banner_image"
-							alt="Event Image"
+							:alt="__('Event Image')"
 							class="w-full h-full object-cover rounded-lg shadow-xl"
 						/>
 					</div>
@@ -95,14 +95,14 @@
 			<div class="max-w-7xl mx-auto md:px-4 px-1 lg:px-8 py-6 lg:py-8">
 				<div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-12 shadow-sm">
 					<h2 class="text-xl md:text-3xl font-extrabold text-red-500 mb-3">
-						Why attend?
+						{{ __("Why attend?") }}
 					</h2>
 					<p class="text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
-						{{ eventDetail.data?.short_description }}
+						{{ __(eventDetail.data?.short_description) }}
 					</p>
 					<hr class="my-4" />
 					<p class="text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
-						{{ eventDetail.data?.about }}
+						{{ __(eventDetail.data?.about) }}
 					</p>
 				</div>
 			</div>
@@ -120,7 +120,7 @@
 								<Users class="w-5 h-5 text-red-500" />
 							</div>
 							<h3 class="text-xl md:text-3xl font-extrabold text-gray-900">
-								Featured Speakers
+								{{ __("Featured Speakers") }}
 							</h3>
 						</div>
 
@@ -133,24 +133,24 @@
 								<div class="flex items-center gap-4">
 									<img
 										:src="speaker.display_image"
-										alt="Speaker Image"
+										:alt="__('Speaker Image')"
 										class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-gray-200"
 									/>
 									<div>
 										<h4 class="text-lg font-semibold text-gray-800">
-											{{ speaker.full_name }}
+											{{ __(speaker.full_name) }}
 										</h4>
 										<p class="text-sm text-gray-600">
-											{{ speaker.designation }}
+											{{ __(speaker.designation) }}
 										</p>
 										<p class="text-red-500 font-bold" v-if="speaker.company">
-											{{ speaker.company }}
+											{{ __(speaker.company) }}
 										</p>
 									</div>
 								</div>
 
 								<div>
-									<span class="">Social Links:</span>
+									<span class="">{{ __("Social Links:") }}</span>
 									<div class="flex items-center gap-3 sm:justify-end">
 										<a
 											v-for="link in speaker.social_media_links"
@@ -178,7 +178,7 @@
 						<h3
 							class="text-xl md:text-2xl font-bold text-gray-800 mb-6 border-b border-gray-200 pb-3"
 						>
-							Event Details
+							{{ __("Event Details") }}
 						</h3>
 
 						<div class="space-y-4 divide-y divide-gray-100">
@@ -216,9 +216,9 @@
 									<component :is="detail.icon" class="w-5 h-5 text-red-500" />
 								</div>
 								<div>
-									<div class="text-sm text-gray-500">{{ detail.label }}</div>
+									<div class="text-sm text-gray-500">{{ __(detail.label) }}</div>
 									<div class="text-base font-medium text-gray-800">
-										{{ detail.value }}
+										{{ __(detail.value) }}
 									</div>
 								</div>
 							</div>
@@ -240,6 +240,7 @@
 		:event="eventDetail.data?.name"
 	/>
 </template>
+
 <script setup>
 import { Button, createResource, toast } from "frappe-ui";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
