@@ -47,7 +47,7 @@ export const sessionStore = defineStore("vmms-session", () => {
 		cache: "brand",
 		auto: true,
 		onSuccess(data) {
-			brand.name = data.app_name;
+			brand.name = data.brand_name;
 			brand.logo = data.app_logo;
 			brand.favicon = data.favicon?.file_url || "/assets/non_profit/frontend/favicon.png";
 		},
