@@ -16,6 +16,16 @@
 					class="mx-2 my-0.5"
 				/>
 			</div>
+
+			<div v-if="isLoggedIn">
+				<AppsNavigation
+					v-for="app in apps.data"
+					:key="app?.name"
+					:isCollapsed="sidebarStore.sidebarCollapsed"
+					:app="app"
+					class="mx-2 my-0.5 w-full"
+				/>
+			</div>
 		</div>
 		<div class="m-2 flex flex-col gap-1">
 			<div
@@ -80,13 +90,16 @@ import SidebarLink from "@/components/SidebarLink.vue";
 import UserDropdown from "@/components/UserDropdown.vue";
 import { useSidebar } from "@/stores/sidebar";
 import { getSidebarLinks } from "@/utils";
-import { Tooltip } from "frappe-ui";
+import { createResource, Tooltip } from "frappe-ui";
 import { CircleAlert, Zap } from "lucide-vue-next";
 import { ref } from "vue";
+import AppsNavigation from "./AppsNavigation.vue";
+import { sessionStore } from "../stores/session";
 
 let sidebarStore = useSidebar();
 const sidebarLinks = ref(getSidebarLinks());
 const readOnlyMode = window.read_only_mode;
+const { isLoggedIn } = sessionStore();
 
 const toggleSidebar = () => {
 	sidebarStore.sidebarCollapsed = !sidebarStore.sidebarCollapsed;
@@ -96,4 +109,24 @@ const toggleSidebar = () => {
 const redirectToWebsite = () => {
 	window.open("https://github.com/navariltd/onerc_vmms.git", "_blank");
 };
+
+const apps = createResource({
+	url: "frappe.apps.get_apps",
+	cache: "apps",
+	auto: true,
+
+	transform: (data) => {
+		let _apps = [];
+		data.map((app) => {
+			if (app.name === "onerc_vmms") return;
+			_apps.push({
+				name: app.name,
+				logo: app.logo,
+				title: __(app.title),
+				route: app.route,
+			});
+		});
+		return _apps;
+	},
+});
 </script>
