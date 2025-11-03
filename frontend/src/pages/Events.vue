@@ -5,7 +5,7 @@
 		</header>
 	</div>
 	<div class="md:max-w- md:mx-auto">
-		<div class="flex justify-center mb-2 px-2">
+		<div class="flex justify-center mb-2 px-4">
 			<TextInput
 				type="search"
 				size="lg"

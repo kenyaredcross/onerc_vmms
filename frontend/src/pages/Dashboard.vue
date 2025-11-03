@@ -2,8 +2,8 @@
 	<NoPermission v-if="user?.data == 'Guest'" :page="'Dashboard'" />
 	<div v-if="user?.data && user?.data !== 'Guest'" class="max-w-7xl mx-auto">
 		<div class="flex flex-col gap-2 my-6">
-			<h1 class="text-3xl md:text-4xl font-bold text-gray-900">
-				👋 Welcome back, {{ user?.data?.full_name }}!
+			<h1 class="text-lg md:text-4xl font-bold text-gray-900 ml-7">
+				Welcome back, {{ user?.data?.full_name }}!
 			</h1>
 		</div>
 
