@@ -29,7 +29,10 @@
   "column_break_yxvn",
   "minimum_pass_score",
   "section_break_27",
-  "creation_user"
+  "creation_user",
+  "branding_tab",
+  "brand_name",
+  "logo"
  ],
  "fields": [
   {
@@ -174,6 +177,20 @@
    "options": "Mode of Payment"
   },
   {
+   "fieldname": "branding_tab",
+   "fieldtype": "Tab Break",
+   "label": "Branding"
+  },
+  {
+   "fieldname": "brand_name",
+   "fieldtype": "Data",
+   "label": "Brand Name"
+  },
+  {
+   "description": "Appears in the top left corner of the application to represent your brand.",
+   "fieldname": "logo",
+   "fieldtype": "Attach Image",
+   "label": "Logo"
    "fieldname": "column_break_bvtq",
    "fieldtype": "Column Break"
   },
@@ -188,10 +205,11 @@
    "label": "Minimum Pass Score"
   }
  ],
+ "image_field": "logo",
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-11-03 12:20:55.120346",
+ "modified": "2025-11-03 09:11:22.643342",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Settings",

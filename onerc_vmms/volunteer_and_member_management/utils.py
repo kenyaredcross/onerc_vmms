@@ -233,17 +233,18 @@ def get_translations():
 @frappe.whitelist(allow_guest=True)
 def get_branding():
     """Get branding details."""
-    website_settings = frappe.get_single("Website Settings")
-    image_fields = ["banner_image", "footer_logo", "favicon"]
+    branding_settings = frappe.get_single("VM Settings")
 
-    for field in image_fields:
-        if website_settings.get(field):
-            file_info = get_file_info(website_settings.get(field))
-            website_settings.update({field: json.loads(json.dumps(file_info))})
+    if branding_settings:
+        if branding_settings.get("app_logo"):
+            file_info = get_file_info(branding_settings.get("app_logo"))
+            branding_settings.update(
+                {"app_logo": json.loads(json.dumps(file_info))}
+            )
         else:
-            website_settings.update({field: None})
+            branding_settings.update({"app_logo": None})
 
-    return website_settings
+        return branding_settings
 
 
 @frappe.whitelist()
