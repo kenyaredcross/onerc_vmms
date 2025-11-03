@@ -2,27 +2,35 @@
 	<div class="space-y-6">
 		<div class="flex justify-end">
 			<button
-				@click="handleEditToggle"
+				v-if="hasChanges"
+				@click="handleSave"
 				variant="solid"
 				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
 				:loading="saveInProgress"
 			>
-				{{ editing ? __("Save") : __("Edit") }}
+				<span>{{ __("Save") }}</span>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="w-4 h-4"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					stroke-width="2"
+					aria-hidden="true"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M5 5v14a2 2 0 002 2h10a2 2 0 002-2V7l-4-4H7a2 2 0 00-2 2z"
+					/>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 9h6v6H9z" />
+				</svg>
 			</button>
 		</div>
 
 		<FormControl
-			v-if="!editing"
 			v-model="localForm.blood_group"
 			:label="__('Blood Group')"
-			type="text"
-			:readOnly="true"
-		/>
-		<FormControl
-			v-if="editing"
-			v-model="localForm.blood_group"
-			:label="__('Blood Group')"
-			:readOnly="!editing"
 			type="select"
 			:options="bloodGroupOptions"
 		/>
@@ -32,7 +40,6 @@
 			doctype="Allergy Table"
 			:label="__('Allergies')"
 			:autoEditGrid="false"
-			:readOnly="!editing"
 		/>
 
 		<ChildTable
@@ -40,15 +47,18 @@
 			doctype="Employee Disability"
 			:label="__('Disabilities')"
 			:autoEditGrid="false"
-			:readOnly="!editing"
 		/>
 	</div>
+	<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />
 </template>
 
 <script setup>
 import ChildTable from "@/components/Controls/ChildTable.vue";
 import { FormControl, createResource, toast } from "frappe-ui";
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
+import ErrorModal from "../Modals/ErrorModal.vue";
+
+import { validateForm } from "@/utils/validationUtils.js";
 
 const props = defineProps({
 	form: {
@@ -71,9 +81,10 @@ const bloodGroupOptions = [
 	{ label: "Don't Know", value: "Don't Know" },
 ];
 
-const editing = ref(false);
 const saveInProgress = ref(false);
 const originalFormData = ref({});
+const showErrorDialog = ref(false);
+const flatErrors = ref([]);
 
 const localForm = reactive({
 	blood_group: "",
@@ -82,65 +93,91 @@ const localForm = reactive({
 	health_information: "",
 });
 
+const healthValidationConfig = [
+	{
+		field: "allergies",
+		label: "Allergies",
+		requiredFields: ["allergy"],
+	},
+	{
+		field: "disabilities",
+		label: "Disabilities",
+		requiredFields: ["disability"],
+	},
+];
+
+function syncLocalForm(newForm) {
+	Object.keys(localForm).forEach((key) => {
+		if (newForm[key] !== undefined) {
+			localForm[key] = newForm[key];
+		}
+	});
+	originalFormData.value = JSON.parse(JSON.stringify(localForm));
+}
+
 watch(
 	() => props.form,
 	(newForm) => {
-		Object.keys(localForm).forEach((key) => {
-			if (newForm[key] !== undefined) {
-				localForm[key] = newForm[key];
-			}
-		});
-
-		if (!editing.value) {
-			originalFormData.value = JSON.parse(JSON.stringify(localForm));
-		}
+		syncLocalForm(newForm);
 	},
 	{ immediate: true, deep: true },
 );
 
-function hasChanges() {
-	const current = JSON.stringify(localForm);
-	const original = JSON.stringify(originalFormData.value);
-	return current !== original;
+function getChangedFields() {
+	const changed = {};
+	for (const key in localForm) {
+		const currentValue = JSON.stringify(localForm[key]);
+		const originalValue = JSON.stringify(originalFormData.value[key]);
+		if (currentValue !== originalValue) {
+			changed[key] = localForm[key];
+		}
+	}
+	return changed;
 }
+
+const hasChanges = computed(() => {
+	return Object.keys(getChangedFields()).length > 0;
+});
 
 const saveUserResource = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.update_user_details",
 	makeParams() {
-		const payload = JSON.parse(JSON.stringify(localForm));
-
-		return payload;
+		return getChangedFields();
 	},
 	onSuccess(data) {
 		toast.success("Health and disability information saved successfully");
 
 		originalFormData.value = JSON.parse(JSON.stringify(localForm));
-		editing.value = false;
 		saveInProgress.value = false;
+		showErrorDialog.value = false;
 
 		emit("saved", localForm);
 	},
 	onError(err) {
 		console.error("Save error:", err);
-		toast.error(err.message || "Failed to save health and disability information");
+		flatErrors.value = [err.message || "Failed to save health and disability information"];
+		showErrorDialog.value = true;
 		saveInProgress.value = false;
 	},
 });
 
-async function handleEditToggle() {
-	if (editing.value) {
-		if (!hasChanges()) {
-			toast.info("No changes to save");
-			editing.value = false;
-			return;
-		}
+async function handleSave() {
+	const changes = getChangedFields();
 
-		saveInProgress.value = true;
-		await saveUserResource.submit();
-	} else {
-		editing.value = true;
-
-		originalFormData.value = JSON.parse(JSON.stringify(localForm));
+	if (Object.keys(changes).length === 0) {
+		toast.info("No changes to save");
+		return;
 	}
+
+	const validationErrors = validateForm(localForm, healthValidationConfig);
+
+	if (validationErrors.length > 0) {
+		flatErrors.value = validationErrors;
+		showErrorDialog.value = true;
+		return;
+	}
+
+	saveInProgress.value = true;
+	await saveUserResource.submit();
 }
 </script>

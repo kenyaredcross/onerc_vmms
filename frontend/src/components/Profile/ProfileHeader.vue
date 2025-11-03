@@ -1,6 +1,6 @@
 <template>
-	<div class="relative bg-white rounded-2xl shadow-lg overflow-hidden">
-		<div class="relative w-full h-48 sm:h-64 bg-gray-100">
+	<div class="relative z-1 bg-white rounded-2xl shadow-lg overflow-hidden">
+		<div class="relative z-1 w-full h-48 sm:h-64 bg-gray-100">
 			<img
 				v-if="form?.cover_image"
 				:src="form.cover_image"
@@ -51,7 +51,7 @@
 		</div>
 
 		<div
-			class="flex flex-col sm:flex-row items-center sm:items-end justify-between px-6 pb-6 -mt-16 sm:-mt-20 relative z-10"
+			class="flex flex-col sm:flex-row items-center sm:items-end justify-between px-6 pb-6 -mt-16 sm:-mt-20 relative z-1"
 		>
 			<div class="flex items-end space-x-4">
 				<div class="relative">
@@ -222,7 +222,7 @@
 						<Uploader
 							:model-value="coverImageModel"
 							@update:model-value="handleCoverImageUpdate"
-							:file-types="['image/*']"
+							:file-types="['.pdf', '.jpg', '.jpeg', '.png']"
 							:multi="false"
 							:show-file-name="false"
 							:show-length="false"
@@ -386,7 +386,7 @@
 						<Uploader
 							:model-value="profileImageModel"
 							@update:model-value="handleProfileImageUpdate"
-							:file-types="['image/*']"
+							:file-types="['.pdf', '.jpg', '.jpeg', '.png']"
 							:multi="false"
 							:show-file-name="false"
 							:show-length="false"

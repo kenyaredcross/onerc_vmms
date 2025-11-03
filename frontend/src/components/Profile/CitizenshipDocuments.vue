@@ -2,12 +2,13 @@
 	<div class="space-y-6">
 		<div class="flex justify-end">
 			<button
-				@click="handleEditToggle"
+				v-if="hasChanges"
+				@click="handleSave"
 				variant="solid"
 				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
 				:loading="saveInProgress"
 			>
-				{{ editing ? __("Save") : __("Edit") }}
+				{{ __("Save") }}
 			</button>
 		</div>
 
@@ -41,17 +42,19 @@
 					doctype="Supporting Document"
 					:label="__('Supporting Documents')"
 					:autoEditGrid="false"
-					:readOnly="!editing"
 				/>
 			</div>
 		</div>
 	</div>
+	<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />
 </template>
 
 <script setup>
 import ChildTable from "@/components/Controls/ChildTable.vue";
+import { validateForm } from "@/utils/validationUtils.js";
 import { createResource, toast } from "frappe-ui";
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
+import ErrorModal from "../Modals/ErrorModal.vue";
 
 const props = defineProps({
 	form: {
@@ -62,9 +65,10 @@ const props = defineProps({
 
 const emit = defineEmits(["saved"]);
 
-const editing = ref(false);
 const saveInProgress = ref(false);
 const originalFormData = ref({});
+const showErrorDialog = ref(false);
+const flatErrors = ref([]);
 
 const isCollapsed = reactive({
 	docs: false,
@@ -75,24 +79,51 @@ const localForm = reactive({
 	attachments: [],
 });
 
+const documentValidationConfig = [
+	{
+		field: "supporting_documents",
+		label: "Supporting Documents",
+		requiredFields: [
+			"type",
+			"attachment",
+
+			{ field: "document_name", condition: (row) => row.type === "Other" },
+		],
+	},
+];
+
+function syncLocalForm(newForm) {
+	Object.keys(localForm).forEach((key) => {
+		if (newForm[key] !== undefined) {
+			localForm[key] = newForm[key];
+		}
+	});
+	originalFormData.value = JSON.parse(JSON.stringify(localForm));
+}
+
 watch(
 	() => props.form,
 	(newForm) => {
-		Object.keys(localForm).forEach((key) => {
-			if (newForm[key] !== undefined) {
-				localForm[key] = newForm[key];
-			}
-		});
-		if (!editing.value) {
-			originalFormData.value = JSON.parse(JSON.stringify(localForm));
-		}
+		syncLocalForm(newForm);
 	},
 	{ immediate: true, deep: true },
 );
 
-function hasChanges() {
-	return JSON.stringify(localForm) !== JSON.stringify(originalFormData.value);
+function getChangedFields() {
+	const changed = {};
+	for (const key in localForm) {
+		const currentValue = JSON.stringify(localForm[key]);
+		const originalValue = JSON.stringify(originalFormData.value[key]);
+		if (currentValue !== originalValue) {
+			changed[key] = localForm[key];
+		}
+	}
+	return changed;
 }
+
+const hasChanges = computed(() => {
+	return Object.keys(getChangedFields()).length > 0;
+});
 
 function toggleCollapse(section) {
 	isCollapsed[section] = !isCollapsed[section];
@@ -101,34 +132,40 @@ function toggleCollapse(section) {
 const saveDocsResource = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.update_user_details",
 	makeParams() {
-		return JSON.parse(JSON.stringify(localForm));
+		return getChangedFields();
 	},
 	onSuccess() {
 		toast.success("Documents saved successfully");
 		originalFormData.value = JSON.parse(JSON.stringify(localForm));
-		editing.value = false;
 		saveInProgress.value = false;
+		showErrorDialog.value = false;
 		emit("saved", localForm);
 	},
 	onError(err) {
 		console.error("Save error:", err);
-		toast.error(err.message || "Failed to save documents");
+		flatErrors.value = [err.message || "Failed to save documents"];
+		showErrorDialog.value = true;
 		saveInProgress.value = false;
 	},
 });
 
-async function handleEditToggle() {
-	if (editing.value) {
-		if (!hasChanges()) {
-			toast.info("No changes to save");
-			editing.value = false;
-			return;
-		}
-		saveInProgress.value = true;
-		await saveDocsResource.submit();
-	} else {
-		editing.value = true;
-		originalFormData.value = JSON.parse(JSON.stringify(localForm));
+async function handleSave() {
+	const changes = getChangedFields();
+
+	if (Object.keys(changes).length === 0) {
+		toast.info("No changes to save");
+		return;
 	}
+
+	const validationErrors = validateForm(localForm, documentValidationConfig);
+
+	if (validationErrors.length > 0) {
+		flatErrors.value = validationErrors;
+		showErrorDialog.value = true;
+		return;
+	}
+
+	saveInProgress.value = true;
+	await saveDocsResource.submit();
 }
 </script>
