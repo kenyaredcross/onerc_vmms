@@ -10,33 +10,37 @@
 					alt="Event Banner"
 					class="w-full h-full object-cover rounded-2xl"
 				/>
+				<span class="absolute top-2 bg-red-500 p-1 rounded-md text-sm text-white ml-1">{{
+					event.event_access
+				}}</span>
 			</div>
 
 			<div
 				class="flex border-b rounded-2xl border-b-red-500 flex-col bg-white rounded-b-3xl px-5 py-6 space-y-3"
 			>
-				<div class="flex items-center justify-between text-gray-700 text-sm">
-					<div
-						class="flex flex-col items-center justify-center text-red-600 font-semibold leading-tight"
-					>
-						<span class="uppercase text-xs">
-							{{
-								new Date(event.start_date).toLocaleDateString(undefined, {
-									month: "short",
-								})
-							}}
-						</span>
-						<span class="text-2xl font-bold">
-							{{ new Date(event.start_date).getDate() }}
-						</span>
-					</div>
-					<div class="border-r-2 rounded-md border-red-500 h-12"></div>
-					<div class="flex gap-2">
-						<div class="flex items-center gap-1 text-sm">
-							<MapPin class="w-4 h-4 text-red-500" />
-							{{ event.venue }}
+				<div
+					class="grid grid-cols-12 items-center justify-between text-gray-700 text-sm gap-2"
+				>
+					<div class="col-span-3">
+						<div
+							class="flex flex-col items-center justify-center text-red-600 font-semibold leading-tight"
+						>
+							<span class="uppercase text-xs">
+								{{
+									new Date(event.start_date).toLocaleDateString(undefined, {
+										month: "short",
+									})
+								}}
+							</span>
+							<span class="text-2xl font-bold">
+								{{ new Date(event.start_date).getDate() }}
+							</span>
 						</div>
-						<Badge variant="outline" theme="orange">{{ event.event_access }}</Badge>
+					</div>
+					<div class="border-r-2 border-red-500 h-12"></div>
+					<div class="flex items-center gap-1 col-span-8 font-bold">
+						<MapPin class="w-4 h-4 text-red-500" />
+						{{ event.venue }}
 					</div>
 				</div>
 
