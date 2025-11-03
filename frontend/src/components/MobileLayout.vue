@@ -74,6 +74,7 @@ const sidebarLinks = ref(getSidebarLinks());
 const otherLinks = ref([]);
 const showMenu = ref(false);
 const menu = ref(null);
+let appsLoaded = false;
 
 const handleOutsideClick = (e) => {
 	if (menu.value && !menu.value.contains(e.target)) {
@@ -128,14 +129,7 @@ const apps = createResource({
 	cache: "apps",
 	auto: true,
 	transform: (data) => {
-		let _apps = [
-			{
-				name: "frappe",
-				logo: "/assets/onerc_vmms/frontend/vmms.png",
-				title: __("Desk"),
-				route: "/app",
-			},
-		];
+		let _apps = [];
 		data.map((app) => {
 			if (app.name === "onerc_vmms") return;
 			_apps.push({
@@ -157,7 +151,7 @@ const handleClick = (tabLink) => {
 	let tab = toRaw(tabLink);
 
 	if (tab.label === "Log in") {
-		window.location.href = "/login";
+		window.location.href = "/vmms/login";
 	} else if (tab.label === "Log out") {
 		logout.submit().then(() => {
 			isLoggedIn = false;
@@ -178,4 +172,15 @@ const isVisible = (tab) => {
 const toggleMenu = () => {
 	showMenu.value = !showMenu.value;
 };
+
+watch(
+	() => apps.data,
+	(val) => {
+		if (val && val.length > 0 && !appsLoaded) {
+			addOtherLinks();
+			appsLoaded = true;
+		}
+	},
+	{ immediate: true },
+);
 </script>
