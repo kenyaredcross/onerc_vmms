@@ -40,22 +40,6 @@
 				</p>
 			</div>
 			<div>
-				<FormControl
-					v-model="localModel.consent_to_use_of_bio_data"
-					:label="__('Consent to Use of Bio Data')"
-					type="checkbox"
-					:required="true"
-					:options="reasonsOptions"
-				/>
-				<p class="italic text-sm">
-					{{
-						__(
-							"I consent to the use of my biometric data for identification and verification purposes as per the organization's data protection policy.",
-						)
-					}}
-				</p>
-			</div>
-			<div>
 				<MultiSelect
 					v-model="localModel.languages"
 					doctype="Volunteer Language"
@@ -305,7 +289,7 @@ const componentValidationConfig = [
 			"qualification",
 			"valid_from",
 			{ field: "license_name", condition: (row) => row.license_type === "Other" },
-			{ field: "valid_to", condition: (row) => row.does_not_expire !== 1 },
+			{ field: "valid_to", condition: (row) => !row.does_not_expire },
 		],
 		dateChecks: [
 			{
