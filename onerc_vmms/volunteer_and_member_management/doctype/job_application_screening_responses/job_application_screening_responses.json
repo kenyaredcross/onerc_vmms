@@ -51,8 +51,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Answer",
-   "reqd": 1
+   "label": "Answer"
   },
   {
    "fieldname": "attachment",
@@ -93,7 +92,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-28 16:30:54.597452",
+ "modified": "2025-11-03 11:03:52.810180",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Job Application Screening Responses",

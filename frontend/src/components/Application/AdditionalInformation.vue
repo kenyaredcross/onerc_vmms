@@ -106,7 +106,15 @@
 					v-else-if="q.question_type === 'MultiSelect'"
 					v-model="responses[q.question_id].answer"
 					:options="
-						parseOptions(q.options).map((opt) => ({ ...opt, label: __(opt.label) }))
+						parseOptions(q.options).map((opt) => ({ label: __(opt), value: opt }))
+					"
+				/>
+
+				<Select
+					v-else-if="q.question_type === 'Select'"
+					v-model="responses[q.question_id].answer"
+					:options="
+						parseOptions(q.options).map((opt) => ({ label: __(opt), value: opt }))
 					"
 				/>
 
@@ -127,6 +135,7 @@
 import CheckableListSelect from "@/components/Controls/CheckableListSelect.vue";
 import Uploader from "@/components/Controls/Uploader.vue";
 import { FormControl } from "frappe-ui";
+import Select from "frappe-ui/src/components/Select/Select.vue";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps({
@@ -138,6 +147,7 @@ const responses = ref({});
 
 function parseOptions(optStr) {
 	if (!optStr) return [];
+
 	return optStr
 		.split(/\r?\n|,/)
 		.map((o) => o.trim())

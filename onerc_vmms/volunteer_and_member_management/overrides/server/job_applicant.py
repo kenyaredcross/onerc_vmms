@@ -162,12 +162,24 @@ def update_screening_scores(doc: Document):
         doc.total_score = total_score
         doc.screening_score_percent = screening_score_percent
 
+        minimum_pass_score = frappe.get_value(
+            "Job Opening",
+            doc.job_title,
+            "minimum_pass_score",
+        ) or frappe.get_value(
+            "VM Settings",
+            None,
+            "minimum_pass_score",
+        )
+
         if knock_off_failed:
             doc.eligibility_status = "Not Eligible"
             doc.status = "Rejected"
         else:
             doc.eligibility_status = (
-                "Eligible" if screening_score_percent >= 70 else "Pending Review"
+                "Eligible"
+                if screening_score_percent >= minimum_pass_score
+                else "Pending Review"
             )
 
     except Exception:
