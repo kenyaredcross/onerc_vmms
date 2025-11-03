@@ -26,7 +26,10 @@
   "hiring_settings_section",
   "interview_roles",
   "section_break_27",
-  "creation_user"
+  "creation_user",
+  "branding_tab",
+  "brand_name",
+  "logo"
  ],
  "fields": [
   {
@@ -169,12 +172,29 @@
    "fieldtype": "Link",
    "label": "Membership Mode of Payment",
    "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "branding_tab",
+   "fieldtype": "Tab Break",
+   "label": "Branding"
+  },
+  {
+   "fieldname": "brand_name",
+   "fieldtype": "Data",
+   "label": "Brand Name"
+  },
+  {
+   "description": "Appears in the top left corner of the application to represent your brand.",
+   "fieldname": "logo",
+   "fieldtype": "Attach Image",
+   "label": "Logo"
   }
  ],
+ "image_field": "logo",
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-29 08:44:17.385583",
+ "modified": "2025-11-03 09:11:22.643342",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Settings",
