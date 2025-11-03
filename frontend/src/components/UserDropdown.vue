@@ -12,8 +12,8 @@
 				"
 			>
 				<img
-					v-if="branding.data?.banner_image"
-					:src="branding.data?.banner_image.file_url"
+					v-if="branding.data?.logo"
+					:src="branding.data?.logo"
 					class="w-8 h-8 rounded flex-shrink-0"
 				/>
 				<VMMSLogo v-else class="w-8 h-8 rounded flex-shrink-0" />
@@ -27,9 +27,9 @@
 				>
 					<div class="text-base font-medium text-ink-gray-9 leading-none">
 						<span
-							v-if="branding.data?.app_name && branding.data?.app_name != 'Frappe'"
+							v-if="branding.data?.brand_name && branding.data?.app_name != 'Frappe'"
 						>
-							{{ __(branding.data?.app_name) }}
+							{{ __(branding.data?.brand_name) }}
 						</span>
 						<span v-else> {{ __("VMMS Portal") }} </span>
 					</div>
