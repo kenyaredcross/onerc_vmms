@@ -355,7 +355,7 @@ import { useRoute } from "vue-router";
 import router from "../router";
 
 const route = useRoute();
-const user = inject < any > "$user";
+const user = inject("$user");
 const acceptDialog = ref(false);
 const downloadError = ref("");
 const loading = ref(false);
