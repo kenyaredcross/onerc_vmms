@@ -8,6 +8,7 @@
  "field_order": [
   "settings_section",
   "billing_cycle",
+  "column_break_bvtq",
   "billing_frequency",
   "column_break_6",
   "allow_invoicing",
@@ -25,6 +26,8 @@
   "email_template",
   "hiring_settings_section",
   "interview_roles",
+  "column_break_yxvn",
+  "minimum_pass_score",
   "section_break_27",
   "creation_user",
   "branding_tab",
@@ -188,6 +191,18 @@
    "fieldname": "logo",
    "fieldtype": "Attach Image",
    "label": "Logo"
+   "fieldname": "column_break_bvtq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_yxvn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "70",
+   "fieldname": "minimum_pass_score",
+   "fieldtype": "Percent",
+   "label": "Minimum Pass Score"
   }
  ],
  "image_field": "logo",

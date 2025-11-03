@@ -358,3 +358,43 @@ def set_field_value(doc, fieldname, value, fieldtype=None):
 
     else:
         doc.set(fieldname, value)
+
+
+@frappe.whitelist()
+def create_or_update_skill_map(employee, skills):
+    import json
+
+    if isinstance(skills, str):
+        skills = json.loads(skills)
+
+    if isinstance(skills, dict):
+        skills = [{"skill": k, "rating": v} for k, v in skills.items()]
+
+    existing = frappe.db.get_value("Employee Skill Map", {"employee": employee}, "name")
+
+    if existing:
+        doc = frappe.get_doc("Employee Skill Map", existing)
+    else:
+        doc = frappe.new_doc("Employee Skill Map")
+        doc.employee = employee
+
+    existing_rows = {r.skill: r for r in doc.employee_skills}
+    processed = set()
+    for s in skills:
+        skill_name = s.get("skill") if isinstance(s, dict) else s
+        rating = s.get("rating") if isinstance(s, dict) else None
+
+        if not skill_name or skill_name in processed:
+            continue
+
+        processed.add(skill_name)
+
+        if skill_name in existing_rows:
+            existing_rows[skill_name].set("proficiency", rating)
+        else:
+            doc.append("employee_skills", {"skill": skill_name, "proficiency": rating})
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return doc.name

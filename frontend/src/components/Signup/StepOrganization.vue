@@ -130,59 +130,59 @@
 			{{ __("Location Info") }}
 		</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-			<div v-if="localModel.county">
+			<div>
 				<Link
 					v-model="localModel.sub_county"
 					:label="__('Sub County')"
 					doctype="Sub County"
 					:required="true"
-					:filters="{ county: localModel.county }"
+					:filters="localModel.county ? { county: localModel.county } : {}"
 				/>
 				<p v-if="errors[0]?.['Sub County']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Sub County"] }}
 				</p>
 			</div>
 
-			<div v-if="localModel.sub_county">
+			<div>
 				<Link
 					v-model="localModel.administrative_location"
 					:label="__('Location')"
 					doctype="Administrative Location"
 					:required="true"
-					:filters="{ sub_county: localModel.sub_county }"
+					:filters="localModel.sub_county ? { sub_county: localModel.sub_county } : {}"
 				/>
 				<p v-if="errors[0]?.['Location']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Location"] }}
 				</p>
 			</div>
 
-			<div v-if="localModel.county">
+			<div>
 				<Link
 					v-model="localModel.ward"
 					:label="__('Ward')"
 					doctype="Ward"
 					:required="true"
-					:filters="{ county: localModel.county }"
+					:filters="localModel.county ? { county: localModel.county } : {}"
 				/>
 				<p v-if="errors[0]?.['Ward']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Ward"] }}
 				</p>
 			</div>
-			<div>
+
+			<div class="hidden">
 				<Link
 					v-model="localModel.county"
 					:label="__('County of Residence')"
 					doctype="Company"
-					:hidden="true"
-					:readonly="true"
 					:filters="{ is_group: 0 }"
+					:readonly="true"
 				/>
 			</div>
 		</div>
 		<h2 class="text-xl font-bold text-red-700 mb-4">
 			{{ __("Identification") }}
 		</h2>
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-40">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 			<div>
 				<FormControl
 					v-model="localModel.citizenship"
@@ -238,6 +238,23 @@
 					{{ errors[0]?.["Country of Citizenship"] }}
 				</p>
 			</div>
+		</div>
+
+		<div class="mb-40 mt-8">
+			<FormControl
+				v-model="localModel.consent_to_use_of_bio_data"
+				:label="__('Consent to Use of Bio Data')"
+				type="checkbox"
+				:required="true"
+				:options="reasonsOptions"
+			/>
+			<p class="italic text-sm">
+				{{
+					__(
+						"I consent to the use of my biometric data for identification and verification purposes as per the organization's data protection policy.",
+					)
+				}}
+			</p>
 		</div>
 	</section>
 </template>
@@ -390,7 +407,7 @@ const ready = ref(false);
 onMounted(() => {
 	setTimeout(() => {
 		ready.value = true;
-	}, 5000);
+	}, 500);
 });
 
 watch(
