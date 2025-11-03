@@ -72,8 +72,6 @@ const router = useRouter();
 const { logout, branding } = sessionStore();
 let { userResource } = usersStore();
 let { isLoggedIn } = sessionStore();
-const showSettingsModal = ref(false);
-const theme = ref("light");
 const frappeCloudBaseEndpoint = "https://frappecloud.com";
 const $dialog = createDialog;
 
