@@ -292,6 +292,7 @@ const form = reactive({
 	additional_skills: "",
 	county: "",
 	ward: "",
+	consent_to_use_of_bio_data: false,
 	profile_photo: null,
 	_current_step: 0,
 	_current_progress: 0,
@@ -322,6 +323,7 @@ const stepFields = {
 	],
 	1: [
 		"access_to_internet",
+		"consent_to_use_of_bio_data",
 		"profession",
 		"allergies",
 		"languages",

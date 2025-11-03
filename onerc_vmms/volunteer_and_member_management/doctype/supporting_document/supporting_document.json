@@ -23,13 +23,15 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval:doc.type == \"Other\"",
    "fieldname": "document_name",
    "fieldtype": "Data",
    "in_filter": 1,
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Document Name"
+   "label": "Document Name",
+   "mandatory_depends_on": "eval:doc.type == \"Other\""
   },
   {
    "fieldname": "column_break_uwcf",
@@ -46,7 +48,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-28 16:30:53.828536",
+ "modified": "2025-11-02 12:08:05.435164",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Supporting Document",

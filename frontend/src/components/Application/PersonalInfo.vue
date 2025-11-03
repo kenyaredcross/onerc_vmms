@@ -112,7 +112,7 @@ const internetOptions = [
 
 watch(
 	() => form.county,
-	(newValue) => {
+	() => {
 		form.sub_county = null;
 		form.administrative_location = null;
 	},
@@ -120,10 +120,18 @@ watch(
 
 watch(
 	() => form.sub_county,
-	(newValue) => {
+	() => {
 		form.administrative_location = null;
 	},
 );
+
+watch(
+	() => form.citizenship,
+	() => {
+		form.country_of_citizenship = null;
+	},
+);
+
 onMounted(async () => {
 	await nextTick();
 	if (form.county) form.county = form.county;

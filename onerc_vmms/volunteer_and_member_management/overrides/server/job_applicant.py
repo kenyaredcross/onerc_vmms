@@ -41,6 +41,7 @@ NORMAL_FIELDS = [
     "profession",
     "reason_to_join_krcs",
     "gender",
+    "consent_to_use_of_bio_data",
 ]
 
 TABLE_FIELDS = [
