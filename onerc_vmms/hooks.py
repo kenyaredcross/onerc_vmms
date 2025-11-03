@@ -10,16 +10,6 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "lms", "hrms"]
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-#     {
-#         "name": "vmms",
-#         "logo": "/assets/onerc_vmms/frontend/vmms.png",
-#         "title": "VMMS",
-#         "route": "/vmms",
-#         "has_permission": "onerc_vmms.api.permission.has_app_permission",
-#     }
-# ]
 
 add_to_apps_screen = [
     {

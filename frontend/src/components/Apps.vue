@@ -48,7 +48,7 @@ const apps = createResource({
 		let _apps = [
 			{
 				name: "frappe",
-				logo: "/assets/onerc_vmms/frontend/vmms.png",
+				logo: "/assets/lms/images/desk.png",
 				title: __("Desk"),
 				route: "/app",
 			},
