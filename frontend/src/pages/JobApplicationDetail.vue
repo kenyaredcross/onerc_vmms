@@ -216,6 +216,8 @@ import WorkExperience from "@/components/Application/WorkExperience.vue";
 
 import ErrorModal from "../components/Modals/ErrorModal.vue";
 
+import { isDateValid, isPastDate, validateForm } from "@/utils/validationUtils.js";
+
 const route = useRoute();
 const router = useRouter();
 const user = inject("$user");
@@ -237,19 +239,169 @@ const flatErrors = computed(() => {
 	);
 });
 
+const applicationValidationConfig = [
+	{
+		step: 0,
+		fields: ["surname", "other_names"],
+		customChecks: [
+			(form) => {
+				const errors = [];
+				if (form.identification_type && !form.id_number) {
+					errors.push("ID Number is required when Identification Type is selected.");
+				}
+				if (!form.surname || !form.other_names) {
+					errors.push("Surname and Other Names are required.");
+				}
+				return errors;
+			},
+		],
+	},
+	{
+		step: 1,
+		customChecks: [
+			(form) => {
+				const errors = [];
+				if (!form.profession) {
+					errors.push("Profession is required.");
+				}
+				if (!form.education || form.education.length === 0) {
+					errors.push("Education History is required.");
+				}
+				return errors;
+			},
+		],
+	},
+	{
+		step: 1,
+		field: "education",
+		label: "Education History",
+		requiredFields: ["school_univ", "level", "year_of_passing"],
+		dateChecks: [
+			{
+				field: "year_of_passing",
+				validation: (date) => isPastDate(date),
+				error: "must be a past date.",
+			},
+		],
+	},
+	{
+		step: 1,
+		field: "additional_skills",
+		label: "Skills",
+		requiredFields: ["additional_skill"],
+	},
+	{
+		step: 1,
+		field: "courses",
+		label: "Certifications and Trainings",
+		requiredFields: ["course_name", "institution", "start_date", "date_completed"],
+		dateChecks: [
+			{
+				field: "start_date",
+				validation: (date) => isPastDate(date),
+				error: "must be a past date.",
+			},
+			{
+				field: "date_completed",
+				validation: (date) => isPastDate(date),
+				error: "must be a past date.",
+				condition: (row) => row.date_completed,
+			},
+			{
+				field: "date_completed",
+				validation: (date, row) => new Date(date) >= new Date(row.start_date),
+				error: (row) => `cannot be before Start Date (${row.start_date}).`,
+				condition: (row) => row.start_date && row.date_completed,
+			},
+		],
+	},
+	{
+		step: 1,
+		field: "licences",
+		label: "Professional Licences",
+		requiredFields: [
+			"license_type",
+			"institution",
+			"qualification",
+			"valid_from",
+			{ field: "license_name", condition: (row) => row.license_type === "Other" },
+			{ field: "valid_to", condition: (row) => !row.does_not_expire },
+		],
+		dateChecks: [
+			{
+				field: "valid_from",
+				validation: (date) => isDateValid(date),
+				error: "is not a valid date.",
+			},
+			{
+				field: "valid_to",
+				validation: (date) => isDateValid(date),
+				error: "is not a valid date.",
+				condition: (row) => row.valid_to && row.does_not_expire !== 1,
+			},
+			{
+				field: "valid_to",
+				validation: (date, row) => new Date(date) > new Date(row.valid_from),
+				error: (row) => `must be after Valid From (${row.valid_from}).`,
+				condition: (row) => row.valid_from && row.valid_to && row.does_not_expire !== 1,
+			},
+		],
+	},
+	{
+		step: 2,
+		field: "work_experience",
+		label: "Work Experience",
+		requiredFields: [
+			"title",
+			"company",
+			"location",
+			"from_date",
+			{ field: "to_date", condition: (row) => !row.current },
+		],
+		dateChecks: [
+			{
+				field: "from_date",
+				validation: (date) => isPastDate(date),
+				error: "must be a past date.",
+			},
+			{
+				field: "to_date",
+				validation: (date) => isPastDate(date),
+				error: "must be a past date.",
+				condition: (row) => row.to_date && !row.current,
+			},
+			{
+				field: "to_date",
+				validation: (date, row) => new Date(date) >= new Date(row.from_date),
+				error: (row) => `cannot be before From Date (${row.from_date}).`,
+				condition: (row) => row.from_date && row.to_date && !row.current,
+			},
+		],
+	},
+	{
+		step: 2,
+		field: "work_references",
+		label: "Work References",
+		requiredFields: ["reference_name", "position", "organization", "email", "phone_number"],
+		emailChecks: [{ field: "email", error: "is not a valid email address." }],
+		phoneChecks: [{ field: "phone_number", error: "is not a valid phone number." }],
+	},
+	{ step: 3, validate: (form) => true },
+];
+
+const getStepValidationConfig = (stepIndex) => {
+	return applicationValidationConfig.filter((config) => config.step === stepIndex);
+};
+
 const steps = [
 	{
 		hash: "#info",
 		title: "Personal Info",
 		component: markRaw(PersonalInfo),
 		validate: (form) => {
-			const errors = [];
-
-			if (form.identification_type && !form.id_number) {
-				errors.push("ID Number is required.");
-			}
-
-			return errors.length ? errors : true;
+			const config = getStepValidationConfig(0);
+			const validationErrors = validateForm(form, config);
+			return validationErrors.length ? validationErrors : true;
 		},
 	},
 	{
@@ -257,76 +409,9 @@ const steps = [
 		title: "Education & Qualifications",
 		component: markRaw(EducationBackground),
 		validate: (form) => {
-			const errors = [];
-
-			if (!form.profession) {
-				errors.push("Profession is required.");
-			}
-
-			if (!form.education || form.education.length === 0) {
-				errors.push("Education History is required.");
-			}
-
-			const childTableChecks = [
-				{
-					field: "education",
-					label: "Education History",
-					requiredFields: ["school_univ", "level", "year_of_passing"],
-				},
-				{
-					field: "additional_skills",
-					label: "Skills",
-					requiredFields: ["additional_skill"],
-				},
-				{
-					field: "courses",
-					label: "Certifications and Trainings",
-					requiredFields: ["course_name", "start_date", "date_completed", "institution"],
-				},
-				{
-					field: "licences",
-					label: "Professional Licences",
-					requiredFields: [],
-				},
-			];
-
-			const isRowEffectivelyEmpty = (row) => {
-				if (!row || typeof row !== "object") return true;
-
-				const keys = Object.keys(row);
-				if (keys.length === 0) return true;
-
-				return keys.every(
-					(key) => row[key] === null || row[key] === undefined || row[key] === "",
-				);
-			};
-
-			for (const table of childTableChecks) {
-				const rows = form[table.field];
-
-				if (!rows || rows.length === 0) continue;
-
-				rows.forEach((row, index) => {
-					if (isRowEffectivelyEmpty(row)) {
-						errors.push(
-							`${table.label}: Row ${index + 1} appears to be empty. Please either complete it or remove it.`,
-						);
-					}
-
-					table.requiredFields.forEach((f) => {
-						if (!row[f] || row[f] === null || row[f] === "") {
-							errors.push(
-								`${table.label}: Row ${index + 1} is missing "${f.replace(
-									/_/g,
-									" ",
-								)}".`,
-							);
-						}
-					});
-				});
-			}
-
-			return errors.length ? errors : true;
+			const config = getStepValidationConfig(1);
+			const validationErrors = validateForm(form, config);
+			return validationErrors.length ? validationErrors : true;
 		},
 	},
 	{
@@ -334,65 +419,20 @@ const steps = [
 		title: "Work Experience",
 		component: markRaw(WorkExperience),
 		validate: (form) => {
-			const errors = [];
-
-			const childTableChecks = [
-				{
-					field: "work_experience",
-					label: "Work Experience",
-					requiredFields: ["title", "company", "location", "from_date"],
-				},
-				{
-					field: "work_references",
-					label: "Work References",
-					requiredFields: ["reference_name", "position", "organization"],
-				},
-			];
-
-			const isRowEffectivelyEmpty = (row) => {
-				if (!row || typeof row !== "object") return true;
-
-				const keys = Object.keys(row);
-				if (keys.length === 0) return true;
-
-				return keys.every(
-					(key) => row[key] === null || row[key] === undefined || row[key] === "",
-				);
-			};
-
-			for (const table of childTableChecks) {
-				const rows = form[table.field];
-
-				if (!rows || rows.length === 0) continue;
-
-				rows.forEach((row, index) => {
-					if (isRowEffectivelyEmpty(row)) {
-						errors.push(
-							`${table.label}: Row ${index + 1} appears to be empty. Please either complete it or remove it.`,
-						);
-					}
-
-					table.requiredFields.forEach((f) => {
-						if (!row[f] || row[f] === null || row[f] === "") {
-							errors.push(
-								`${table.label}: Row ${index + 1} is missing "${f.replace(
-									/_/g,
-									" ",
-								)}".`,
-							);
-						}
-					});
-				});
-			}
-
-			return errors.length ? errors : true;
+			const config = getStepValidationConfig(2);
+			const validationErrors = validateForm(form, config);
+			return validationErrors.length ? validationErrors : true;
 		},
 	},
 	{
 		hash: "#additional",
 		title: "Additional Information",
 		component: markRaw(AdditionalInformation),
-		validate: (form) => true,
+		validate: (form) => {
+			const config = getStepValidationConfig(3);
+			const validationErrors = validateForm(form, config);
+			return validationErrors.length ? validationErrors : true;
+		},
 	},
 	{
 		hash: "#review",
@@ -400,14 +440,12 @@ const steps = [
 		component: markRaw(ApplicationReview),
 		validate: (form) => {
 			const allErrors = [];
-
-			for (const step of steps.slice(0, -1)) {
-				const result = step.validate(form);
-				if (Array.isArray(result) && result.length) {
-					allErrors.push(...result.map((err) => `[${step.title}] ${err}`));
+			for (let i = 0; i < steps.length - 1; i++) {
+				const stepErrors = steps[i].validate(form);
+				if (Array.isArray(stepErrors)) {
+					allErrors.push(...stepErrors.map((err) => `[${steps[i].title}] ${err}`));
 				}
 			}
-
 			return allErrors.length ? allErrors : true;
 		},
 	},

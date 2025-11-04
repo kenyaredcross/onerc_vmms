@@ -224,7 +224,7 @@ const TABLE_FIELDS = [
 	"education",
 	"disabilities",
 	"driving_licence",
-	"certification",
+	"courses",
 	"licences",
 	"additional_skills",
 	"allergies",
@@ -286,7 +286,7 @@ const form = reactive({
 	driving_licence: [],
 	licences: [],
 	blood_group: "",
-	certification: [],
+	courses: [],
 	supporting_documents: [],
 	courses: [],
 	additional_skills: "",
@@ -333,10 +333,9 @@ const stepFields = {
 		"disabilities",
 		"reason_to_join_krcs",
 		"driving_licence",
-		"certification",
+		"courses",
 		"licences",
 		"additional_skills",
-		"courses",
 	],
 	2: ["profile_photo", "supporting_documents"],
 };
@@ -390,6 +389,12 @@ watch(
 
 function populateFormFromUser(userData) {
 	const allFields = [...new Set([...NORMAL_FIELDS, ...Object.keys(FIELD_MAP)])];
+	TABLE_FIELDS.forEach((tableField) => {
+		const userValue = userData[tableField];
+		if (Array.isArray(userValue) && userValue.length > 0) {
+			form[tableField] = JSON.parse(JSON.stringify(userValue));
+		}
+	});
 
 	allFields.forEach((formField) => {
 		const userField = FIELD_MAP[formField] || formField;
@@ -591,8 +596,8 @@ function populateForm(data) {
 	if (data.licences && Array.isArray(data.licences)) {
 		form.licences = data.licences;
 	}
-	if (data.certification && Array.isArray(data.certification)) {
-		form.certification = data.certification;
+	if (data.courses && Array.isArray(data.courses)) {
+		form.courses = data.courses;
 	}
 	if (data.allergies && Array.isArray(data.allergies)) {
 		form.allergies = data.allergies;

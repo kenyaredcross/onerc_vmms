@@ -116,7 +116,7 @@
 				<ChildTable
 					v-model="localForm.courses"
 					doctype="User External Course"
-					:label="__('Courses')"
+					:label="__('Certifications and Trainings')"
 					:autoEditGrid="false"
 				/>
 				<ChildTable
@@ -166,7 +166,6 @@ const localForm = reactive({
 	education: [],
 	work_experience: [],
 	work_references: [],
-	certification: [],
 	additional_skills: [],
 	courses: [],
 	languages: [],
@@ -225,7 +224,7 @@ const userProfileValidationConfig = [
 			"qualification",
 			"valid_from",
 			{ field: "license_name", condition: (row) => row.license_type === "Other" },
-			{ field: "valid_to", condition: (row) => row.does_not_expire !== 1 },
+			{ field: "valid_to", condition: (row) => !row.does_not_expire },
 		],
 		dateChecks: [
 			{
