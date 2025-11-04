@@ -49,7 +49,7 @@
 					/>
 					<FormControl v-model="localForm.phone" :label="__('Phone')" />
 					<FormControl
-						v-model="localForm.mpesa_mobile_phone"
+						v-model="localForm.mobile_no"
 						:label="__('Mobile Money (M-Pesa) phone if different')"
 					/>
 				</div>
@@ -61,6 +61,12 @@
 					{{ __("Identification") }}
 				</h2>
 				<div class="space-y-4">
+					<Link
+						doctype="Gender"
+						v-model="localForm.gender"
+						:label="__('Gender')"
+						:required="true"
+					/>
 					<FormControl
 						v-model="localForm.marital_status"
 						:label="__('Marital Status')"
@@ -206,7 +212,8 @@ const localForm = reactive({
 	ward: "",
 	administrative_location: "",
 	access_to_internet: "",
-	mpesa_mobile_phone: "",
+	mobile_no: "",
+	gender: "",
 });
 
 function syncLocalForm(newForm) {
@@ -328,7 +335,7 @@ function validateForm(form) {
 				"ID Number is required if Identification Document Type is provided.";
 	}
 
-	if (form.mpesa_mobile_phone && !isKenyanPhoneNumberValid(form.mpesa_mobile_phone)) {
+	if (form.mobile_no && !isKenyanPhoneNumberValid(form.mobile_no)) {
 		errors["Mobile Money (M-Pesa) Phone"] =
 			"Enter a valid Kenyan phone number (e.g., 07xx/01xx or +254).";
 	}

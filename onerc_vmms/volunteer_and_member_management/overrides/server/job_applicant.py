@@ -176,11 +176,27 @@ def update_screening_scores(doc: Document):
             doc.eligibility_status = "Not Eligible"
             doc.status = "Rejected"
         else:
-            doc.eligibility_status = (
-                "Eligible"
-                if screening_score_percent >= minimum_pass_score
-                else "Pending Review"
-            )
+            try:
+                min_pass = (
+                    float(minimum_pass_score)
+                    if minimum_pass_score is not None
+                    else None
+                )
+                score = (
+                    float(screening_score_percent)
+                    if screening_score_percent is not None
+                    else None
+                )
+            except (TypeError, ValueError):
+                min_pass = None
+                score = None
+
+            if score is not None and min_pass is not None:
+                doc.eligibility_status = (
+                    "Eligible" if score >= min_pass else "Pending Review"
+                )
+            else:
+                doc.eligibility_status = "Pending Review"
 
     except Exception:
         frappe.log_error(
@@ -190,7 +206,8 @@ def update_screening_scores(doc: Document):
 
 def before_submit(doc, method):
     """Run before submit: handle scoring and eligibility."""
-    update_screening_scores(doc)
+    if not doc.is_volunteer:
+        update_screening_scores(doc)
 
 
 def on_submit(doc, method):
