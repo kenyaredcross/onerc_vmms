@@ -2,7 +2,8 @@
 	<Dialog v-model="registerDialog">
 		<template #body-title>
 			<h3 class="text-2xl font-bold text-gray-900" id="modal-title">
-				Register as a <span class="text-red-600">Member</span>
+				{{ props.is_renew ? "Renew" : "Register" }} as a
+				<span class="text-red-600">Member</span>
 			</h3>
 		</template>
 
@@ -38,6 +39,7 @@
 					</div>
 
 					<FormControl
+						v-if="!is_renew"
 						type="autocomplete"
 						label="Branch / County"
 						placeholder="Select branch or county to register with"
@@ -45,6 +47,18 @@
 						:options="branches.data"
 						v-model="branch"
 					/>
+
+					<FormControl
+						v-if="is_renew"
+						type="text"
+						label="Branch / County"
+						placeholder="Select branch or county to register with"
+						class="w-full mb-4"
+						:value="props.renew_branch"
+						v-model="branch"
+						readonly
+					/>
+
 					<FormControl
 						type="text"
 						label="Phone Number (MPesa Phone Number to be used for payment)"
@@ -67,7 +81,7 @@
 							:loading="createMembership.loading"
 							class="rounded-lg px-6"
 						>
-							Register
+							{{ props.is_renew ? "Renew" : "Register" }}
 						</Button>
 					</div>
 				</form>
@@ -85,56 +99,16 @@
 				</div>
 			</div>
 
-			<div v-if="paymentStatus">
-				<div class="text-center py-8">
-					<div class="mb-4">
-						<svg
-							class="mx-auto h-16 w-16 text-green-500"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-					</div>
-					<h3 class="text-xl font-semibold text-gray-900 mb-2">
-						Membership Successful!
-					</h3>
-					<p class="text-gray-600 mb-6">
-						Your membership registration has been completed successfully. Welcome to
-						our community!
-					</p>
-					<Button
-						variant="solid"
-						theme="green"
-						class="rounded-lg px-6"
-						@click="registerDialog = false"
-					>
-						Close
-					</Button>
-				</div>
-			</div>
+			<PaymentStatus v-if="paymentStatus" @close="registerDialog = false" />
 		</template>
 	</Dialog>
 </template>
 <script setup>
-import {
-	createListResource,
-	Dialog,
-	FormControl,
-	Button,
-	createResource,
-	ErrorMessage,
-	toast,
-} from "frappe-ui";
+import { Dialog, FormControl, Button, createResource, ErrorMessage, toast } from "frappe-ui";
 import { reactive, ref, toRaw, watch, watchEffect } from "vue";
 import { isValidPhone } from "../../utils/volunteer";
 import { membershipStore } from "../../stores/membership";
+import PaymentStatus from "../PaymentStatus.vue";
 
 const registerDialog = defineModel();
 const branch = ref("");
@@ -147,6 +121,7 @@ const membershipForm = reactive({
 	phone: "",
 	amount: 0,
 	membership_type: "",
+	branch: "",
 });
 
 const { currentMembership } = membershipStore();
@@ -154,11 +129,17 @@ const { currentMembership } = membershipStore();
 const props = defineProps({
 	membership_type: String,
 	amount: Number,
+	renew_branch: String,
+	is_renew: {
+		type: Boolean,
+		default: false,
+	},
 });
 
 watchEffect(() => {
 	membershipForm.membership_type = props.membership_type;
 	membershipForm.amount = props.amount;
+	membershipForm.branch = props.renew_branch || "";
 });
 
 watch(branch, (newValue) => {
@@ -185,7 +166,7 @@ const createMembership = createResource({
 });
 
 function submit() {
-	if (!branch.value || !membershipForm.phone) {
+	if ((!props.is_renew && !branch.value) || !membershipForm.phone) {
 		createMembership.error = "Please fill in all required fields before submitting.";
 		return;
 	}
@@ -200,7 +181,7 @@ function submit() {
 		{
 			onSuccess(data) {
 				toast.success(
-					"Membership registered successfully! You will receive a payment prompt shortly.",
+					"Payment initiated Successfully! You will receive a payment prompt shortly on your phone.",
 				);
 				currentMembership.reload();
 				createMembership.error = "";
@@ -220,6 +201,7 @@ watch(registerDialog, (isOpen) => {
 		confirmPayment.value = false;
 		paymentStatus.value = false;
 		invoice.value = "";
+		props.is_renew = false;
 	}
 });
 
