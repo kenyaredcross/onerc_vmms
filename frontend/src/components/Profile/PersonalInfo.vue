@@ -1,6 +1,5 @@
 <template>
 	<div class="space-y-8">
-		<!-- Save Button -->
 		<div class="flex justify-end">
 			<button
 				v-if="hasChanges"
@@ -29,23 +28,30 @@
 			</button>
 		</div>
 
-		<!-- Responsive Grid Layout -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-			<!-- Column 1: Personal Information -->
 			<div>
 				<h2 class="text-lg font-semibold mb-4 border-b pb-2">
 					{{ __("Personal Information") }}
 				</h2>
 				<div class="space-y-4">
-					<FormControl v-model="localForm.first_name" :label="__('First Name')" />
+					<FormControl
+						v-model="localForm.first_name"
+						:label="__('First Name')"
+						:required="true"
+					/>
 					<FormControl v-model="localForm.middle_name" :label="__('Other Names')" />
-					<FormControl v-model="localForm.last_name" :label="__('Last Name')" />
-					<FormControl v-model="localForm.full_name" :label="__('Full Name')" />
-					<FormControl v-model="localForm.email" :label="__('Email')" />
+					<FormControl
+						v-model="localForm.last_name"
+						:label="__('Last Name')"
+						:required="true"
+					/>
+
+					<FormControl v-model="localForm.email" :label="__('Email')" :required="true" />
 					<FormControl
 						v-model="localForm.birth_date"
 						:label="__('Date of Birth')"
 						type="date"
+						:required="true"
 					/>
 					<FormControl v-model="localForm.phone" :label="__('Phone')" />
 					<FormControl
@@ -55,7 +61,6 @@
 				</div>
 			</div>
 
-			<!-- Column 2: Identification -->
 			<div>
 				<h2 class="text-lg font-semibold mb-4 border-b pb-2">
 					{{ __("Identification") }}
@@ -109,7 +114,6 @@
 				</div>
 			</div>
 
-			<!-- Column 3: Contact & Location -->
 			<div>
 				<h2 class="text-lg font-semibold mb-4 border-b pb-2">
 					{{ __("Contact & Location") }}
@@ -139,6 +143,21 @@
 					/>
 				</div>
 			</div>
+		</div>
+		<div class="mb-40 mt-8">
+			<FormControl
+				v-model="localForm.consent_to_use_of_bio_data"
+				:label="__('Consent to Use of Bio Data')"
+				type="checkbox"
+				:required="true"
+			/>
+			<p class="italic text-sm">
+				{{
+					__(
+						"I consent to the use of my biometric data for identification and verification purposes as per the organization's data protection policy.",
+					)
+				}}
+			</p>
 		</div>
 
 		<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />
@@ -193,7 +212,6 @@ const localForm = reactive({
 	first_name: "",
 	middle_name: "",
 	last_name: "",
-	full_name: "",
 	email: "",
 	phone: "",
 	id_number: "",
@@ -214,6 +232,7 @@ const localForm = reactive({
 	access_to_internet: "",
 	mobile_no: "",
 	gender: "",
+	consent_to_use_of_bio_data: false,
 });
 
 function syncLocalForm(newForm) {

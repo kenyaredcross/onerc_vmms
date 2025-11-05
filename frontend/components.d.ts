@@ -12,6 +12,7 @@ declare module 'vue' {
     ApplicationReview: typeof import('./src/components/Application/ApplicationReview.vue')['default']
     Apps: typeof import('./src/components/Apps.vue')['default']
     AppSidebar: typeof import('./src/components/AppSidebar.vue')['default']
+    AppsNavigation: typeof import('./src/components/AppsNavigation.vue')['default']
     AttendEventModal: typeof import('./src/components/Modals/AttendEventModal.vue')['default']
     Autocomplete: typeof import('./src/components/Controls/Autocomplete.vue')['default']
     Availability: typeof import('./src/components/Modals/Availability.vue')['default']

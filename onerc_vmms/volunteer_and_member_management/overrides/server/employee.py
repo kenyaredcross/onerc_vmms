@@ -29,6 +29,8 @@ def after_insert(doc: Document, method: str) -> None:
             doc.save(ignore_permissions=True)
             frappe.db.commit()
 
+        restrict_user_access(doc)
+
     except Exception as e:
         frappe.log_error(f"Error in Employee after_insert for {doc.name}", f"{str(e)}")
         frappe.throw(_("Error processing employee creation: {0}").format(str(e)))
@@ -153,3 +155,46 @@ def update_fields_from_applicant(doc: Document) -> bool:
             f"Error updating from job applicant {doc.job_applicant}", f"{str(e)}"
         )
         return False
+
+
+def restrict_user_access(doc: Document) -> None:
+    try:
+        if not doc.user_id or not doc.company:
+            return
+
+        if not frappe.db.exists(
+            "User Permission",
+            {"user": doc.user_id, "allow": "Employee", "for_value": doc.name},
+        ):
+            employee_permission = frappe.get_doc(
+                {
+                    "doctype": "User Permission",
+                    "user": doc.user_id,
+                    "allow": "Employee",
+                    "for_value": doc.name,
+                    "apply_to_all_doctypes": 0,
+                    "is_default": 1,
+                }
+            )
+            employee_permission.insert(ignore_permissions=True)
+
+        if not frappe.db.exists(
+            "User Permission",
+            {"user": doc.user_id, "allow": "Company", "for_value": doc.company},
+        ):
+            company_permission = frappe.get_doc(
+                {
+                    "doctype": "User Permission",
+                    "user": doc.user_id,
+                    "allow": "Company",
+                    "for_value": doc.company,
+                    "apply_to_all_doctypes": 0,
+                    "is_default": 1,
+                }
+            )
+            company_permission.insert(ignore_permissions=True)
+
+        frappe.db.commit()
+
+    except Exception as e:
+        frappe.log_error(f"Error restricting access for {doc.user_id}", f"{str(e)}")

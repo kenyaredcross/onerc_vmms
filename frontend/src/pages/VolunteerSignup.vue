@@ -459,6 +459,10 @@ function getCurrentStepData(onlyChanges = false) {
 		}
 	});
 
+	if (form.company) {
+		currentStepData.county = form.company;
+	}
+
 	currentStepData.is_volunteer = true;
 	currentStepData._current_step = currentStep.value;
 	currentStepData._current_progress = Math.round(progressPercentage.value);
