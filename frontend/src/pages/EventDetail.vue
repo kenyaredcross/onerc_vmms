@@ -87,142 +87,132 @@
 				</div>
 			</div>
 
-			<BookedTickets
-				v-if="eventDetail.data?.booked_tickets?.length"
-				:tickets="eventDetail.data.booked_tickets"
-			/>
-
-			<div class="max-w-7xl mx-auto md:px-4 px-1 lg:px-8 py-6 lg:py-8">
-				<div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-12 shadow-sm">
-					<h2 class="text-xl md:text-3xl font-extrabold text-red-500 mb-3">
-						{{ __("Why attend?") }}
-					</h2>
-					<p class="text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
-						{{ __(eventDetail.data?.short_description) }}
-					</p>
-					<hr class="my-4" />
-					<p class="text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
-						{{ __(eventDetail.data?.about) }}
-					</p>
-				</div>
-			</div>
-
-			<div class="max-w-7xl mx-auto md:px-4 px-2 lg:px-8 py-4 lg:py-8">
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-					<div
-						v-if="speakerProfiles.data?.length"
-						class="md:col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm"
-					>
-						<div class="mb-6 flex items-center gap-3">
-							<div
-								class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 border border-red-100"
-							>
-								<Users class="w-5 h-5 text-red-500" />
-							</div>
-							<h3 class="text-xl md:text-3xl font-extrabold text-gray-900">
-								{{ __("Featured Speakers") }}
-							</h3>
-						</div>
-
-						<ul class="space-y-4">
-							<li
-								v-for="speaker in speakerProfiles.data"
-								:key="speaker.name"
-								class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4"
-							>
-								<div class="flex items-center gap-4">
-									<img
-										:src="speaker.display_image"
-										:alt="__('Speaker Image')"
-										class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-gray-200"
-									/>
-									<div>
-										<h4 class="text-lg font-semibold text-gray-800">
-											{{ __(speaker.full_name) }}
-										</h4>
-										<p class="text-sm text-gray-600">
-											{{ __(speaker.designation) }}
-										</p>
-										<p class="text-red-500 font-bold" v-if="speaker.company">
-											{{ __(speaker.company) }}
-										</p>
-									</div>
-								</div>
-
-								<div>
-									<span class="">{{ __("Social Links:") }}</span>
-									<div class="flex items-center gap-3 sm:justify-end">
-										<a
-											v-for="link in speaker.social_media_links"
-											:key="link.name"
-											:href="link.url"
-											target="_blank"
-											class="text-gray-500 hover:text-red-500 transition"
-										>
-											<component
-												:is="getSocialMediaIcon(link.platform)"
-												class="w-5 h-5"
-											/>
-										</a>
-									</div>
-								</div>
-							</li>
-						</ul>
+			<div class="max-w-7xl mx-auto md:px-4 px-1 lg:px-8 p-2 flex flex-col gap-2">
+				<div v-if="eventDetail.data?.short_description">
+					<div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-12 shadow-sm">
+						<h2 class="text-xl md:text-3xl font-extrabold text-red-500 mb-3">
+							{{ __("Why attend?") }}
+						</h2>
+						<p class="text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
+							{{ __(eventDetail.data?.short_description) }}
+						</p>
+						<hr class="my-4" />
+						<p class="text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
+							{{ __(eventDetail.data?.about) }}
+						</p>
 					</div>
 				</div>
-			</div>
 
-			<div class="max-w-7xl mx-auto px-1 lg:px-8 pb-8 lg:pb-12">
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
-						<h3
-							class="text-xl md:text-2xl font-bold text-gray-800 mb-6 border-b border-gray-200 pb-3"
+				<div>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+						<div
+							v-if="eventDetail.data?.speakers?.length"
+							class="md:col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm"
 						>
-							{{ __("Event Details") }}
-						</h3>
-
-						<div class="space-y-4 divide-y divide-gray-100">
-							<div
-								class="flex items-start gap-3 pt-1 first:pt-0"
-								v-for="detail in [
-									{
-										icon: CalendarDays,
-										label: 'Date',
-										value:
-											formatDate(eventDetail.data?.start_date) +
-											' - ' +
-											formatDate(eventDetail.data?.end_date),
-									},
-									{
-										icon: Clock,
-										label: 'Time',
-										value:
-											eventDetail.data?.start_time +
-											' - ' +
-											eventDetail.data?.end_time,
-									},
-									{
-										icon: MapPin,
-										label: 'Venue',
-										value: eventDetail.data?.venue,
-									},
-									{ icon: Users, label: 'Host', value: eventDetail.data?.host },
-								]"
-								:key="detail.label"
-							>
+							<div class="mb-6 flex items-center gap-3">
 								<div
 									class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 border border-red-100"
 								>
-									<component :is="detail.icon" class="w-5 h-5 text-red-500" />
+									<Users class="w-5 h-5 text-red-500" />
 								</div>
-								<div>
-									<div class="text-sm text-gray-500">{{ __(detail.label) }}</div>
-									<div class="text-base font-medium text-gray-800">
-										{{ __(detail.value) }}
-									</div>
-								</div>
+								<h3 class="text-xl md:text-3xl font-extrabold text-gray-900">
+									{{ __("Featured Speakers") }}
+								</h3>
 							</div>
+
+							<ul class="space-y-4">
+								<li
+									v-for="speaker in eventDetail.data?.speakers"
+									:key="speaker.name"
+									class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4"
+								>
+									<div class="flex items-center gap-4">
+										<img
+											:src="speaker.display_image"
+											:alt="__('Speaker Image')"
+											class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-gray-200"
+										/>
+										<div class="flex flex-col gap-1">
+											<h4 class="text-lg font-semibold text-gray-800">
+												{{ __(speaker.display_name) }}
+											</h4>
+											<p class="text-sm text-gray-600">
+												{{ __(speaker.designation) }}
+											</p>
+											<p
+												class="text-red-500 font-bold"
+												v-if="speaker.company"
+											>
+												{{ __(speaker.company) }}
+											</p>
+										</div>
+									</div>
+								</li>
+							</ul>
 						</div>
+					</div>
+				</div>
+
+				<div
+					v-if="eventDetail.data?.host"
+					class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm"
+				>
+					<div class="mb-6 flex items-center gap-3">
+						<div
+							class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 border border-red-100"
+						>
+							<Users class="w-5 h-5 text-red-500" />
+						</div>
+						<h3 class="text-xl md:text-3xl font-extrabold text-gray-900">
+							{{ __("Meet The Host") }}
+						</h3>
+					</div>
+
+					<div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+						<div class="flex flex-row px-4 items-center gap-4 mb-2">
+							<img
+								:src="eventDetail.data.host.logo"
+								alt=""
+								class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-gray-200"
+							/>
+							<h4 class="text-3xl font-semibold text-red-500 mb-3">
+								{{ __(eventDetail.data.host.name) }}
+							</h4>
+						</div>
+						<p class="text-base text-gray-700 leading-relaxed mb-4">
+							{{ __(eventDetail.data.host.about) }}
+						</p>
+						<div
+							v-if="eventDetail.data.host.address"
+							class="flex items-center gap-2 text-sm text-gray-600"
+						>
+							<MapPin class="w-4 h-4 text-red-500" />
+							<span>{{ __(eventDetail.data.host.address) }}</span>
+						</div>
+					</div>
+				</div>
+
+				<div
+					v-if="eventDetail.data?.host"
+					class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm"
+				>
+					<div class="mb-6 flex items-center gap-3">
+						<h3 class="text-xl md:text-3xl font-extrabold text-gray-900">
+							{{ __("Our Sponsors") }}
+						</h3>
+					</div>
+					<div
+						v-if="eventDetail.data?.sponsors"
+						class="bg-gray-50 border border-gray-200 rounded-lg p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+					>
+						<a
+							:href="sponsor.website"
+							v-for="sponsor in eventDetail.data.sponsors"
+							:key="sponsor.name"
+							class="flex items-center gap-2 text-sm text-gray-600"
+						>
+							<img :src="sponsor.company_logo" :alt="__('Sponsor Logo')" />
+						</a>
 					</div>
 				</div>
 			</div>
@@ -244,31 +234,13 @@
 <script setup>
 import { Button, createResource, toast } from "frappe-ui";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
-import {
-	CalendarDays,
-	Clock,
-	Facebook,
-	Github,
-	Globe,
-	Instagram,
-	Linkedin,
-	MapPin,
-	Twitter,
-	Users,
-	Youtube,
-} from "lucide-vue-next";
+import { CalendarDays, Clock, MapPin, Users } from "lucide-vue-next";
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import BookedTickets from "../components/BookedTickets.vue";
 import ProgressSpinner from "../components/Common/ProgressSpinner.vue";
 import AttendEventModal from "../components/Modals/AttendEventModal.vue";
 import Ticket from "../components/Modals/Ticket.vue";
 import router from "../router";
-
-const showTickets = ref(false);
-const toggleTickets = () => {
-	showTickets.value = !showTickets.value;
-};
 
 const hasBookedTickets = computed(() => {
 	return eventDetail.data?.booked_tickets && eventDetail.data.booked_tickets.length > 0;
@@ -300,7 +272,6 @@ const eventDetail = createResource({
 				router.push({ name: "Login" });
 			}, 3000);
 		}
-		speakerProfiles.reload();
 	},
 });
 
@@ -403,39 +374,4 @@ onUnmounted(() => {
 		clearInterval(timerInterval);
 	}
 });
-
-const speakerProfiles = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.events.get_speaker_profiles",
-	auto: true,
-	cache: ["speakers", eventName.value],
-	makeParams() {
-		const speakers = eventDetail.data?.featured_speakers || [];
-		return {
-			event_speakers: JSON.stringify(speakers),
-		};
-	},
-});
-
-function getSocialMediaIcon(platform) {
-	switch (platform.toLowerCase()) {
-		case "instagram":
-			return Instagram;
-		case "twitter":
-		case "x":
-			return Twitter;
-		case "linkedin":
-			return Linkedin;
-		case "github":
-			return Github;
-		case "facebook":
-			return Facebook;
-
-		case "youtube":
-			return Youtube;
-		case "website":
-			return Globe;
-		default:
-			return Globe;
-	}
-}
 </script>

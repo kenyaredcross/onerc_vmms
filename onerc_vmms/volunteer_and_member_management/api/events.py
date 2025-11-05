@@ -30,7 +30,7 @@ def get_events(search=None):
             "title": ["like", f"%{search}%"],
         }
 
-    base_filters = {"start_date": [">=", datetime.now().date()], "is_published": 1}
+    base_filters = {"end_date": [">=", datetime.now().date()], "is_published": 1}
 
     if user_info == "Guest":
         base_filters["event_access"] = ["in", ["Public", "Private"]]
@@ -113,6 +113,11 @@ def get_event_details(event_name):
             frappe.utils.strip_html_tags(event["about"]) if event.get("about") else ""
         )
 
+        event["host"] = frappe.get_doc("Event Host", event.host).as_dict()
+        event["host"]["about"] = frappe.utils.strip_html_tags(
+            event["host"].get("about") if event["host"].get("about") else ""
+        )
+
         event_tickets = frappe.get_all(
             "Event Ticket Type",
             filters={"event": event.name},
@@ -121,43 +126,29 @@ def get_event_details(event_name):
         )
         event["tickets"] = event_tickets or []
 
-        event["booked_tickets"] = []
+        for sched in event.schedule:
+            talk = frappe.get_doc("Event Talk", sched.talk)
 
-        if frappe.session.user and frappe.session.user != "Guest":
-            booking = frappe.get_all(
-                "Event Booking",
-                filters={
-                    "user": frappe.session.user,
-                    "event": event_name,
-                },
-                fields=["name"],
-                limit=1,
-            )
+            speakers = []
 
-            if booking:
-                booking_name = booking[0].name
-                booked_tickets = []
-                tickets = frappe.get_all(
-                    "Event Ticket",
-                    filters={"booking": booking_name},
-                    fields=[
-                        "name",
-                        "ticket_type",
-                        "attendee_name",
-                        "attendee_email",
-                        "qr_code",
-                    ],
-                )
+            for talk in talk.speakers:
+                speaker = frappe.get_doc("Speaker Profile", talk.speaker)
+                speakers.append(speaker.as_dict())
 
-                for ticket in tickets:
-                    ticket_title = frappe.db.get_value(
-                        "Event Ticket Type", ticket.ticket_type, "title"
-                    )
-                    ticket_dict = ticket.copy()
-                    ticket_dict["ticket_type_title"] = ticket_title
-                    booked_tickets.append(ticket_dict)
+            event["speakers"] = speakers
 
-                event["booked_tickets"] = booked_tickets or []
+        sponsors = []
+
+        event_sponsors = frappe.get_all(
+            "Event Sponsor",
+            filters={"event": event.name},
+            fields=["company_name", "company_logo", "website"],
+        )
+
+        for sponsor in event_sponsors:
+            sponsors.append(sponsor)
+
+        event["sponsors"] = sponsors
 
         return event
 
@@ -208,7 +199,9 @@ def handle_ticket_payment(phone, event_name, ticket_name, email, first_name, las
             "Event Ticket Type", ticket_name, "price"
         )
         company = frappe.db.get_value("Buzz Event", event_name, "company")
-        mode_of_payment = frappe.db.get_value("Buzz Event", event_name, "mode_of_payment")
+        mode_of_payment = frappe.db.get_value(
+            "Buzz Event", event_name, "mode_of_payment"
+        )
         currency = frappe.db.get_value("Company", company, "default_currency")
 
         existing_booking = frappe.db.exists(
