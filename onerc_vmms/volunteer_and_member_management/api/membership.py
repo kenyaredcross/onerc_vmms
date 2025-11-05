@@ -46,15 +46,31 @@ def get_current_membership():
             {"status": "Expired"},
             {"status": "Pending"},
         ],
-        fields=["name"],
+        fields=["name", "membership_type", "company", "status"],
         order_by="from_date desc",
     )
 
     if not memberships:
         return []
 
-    result = []
+    membership_groups = {}
     for membership_item in memberships:
+        key = (membership_item.membership_type, membership_item.company)
+        if key not in membership_groups:
+            membership_groups[key] = []
+        membership_groups[key].append(membership_item)
+
+    filtered_memberships = []
+    for key, group in membership_groups.items():
+        statuses = [m.status for m in group]
+
+        if "Active" in statuses or "Pending" in statuses:
+            filtered_memberships.extend([m for m in group if m.status != "Expired"])
+        else:
+            filtered_memberships.extend(group)
+
+    result = []
+    for membership_item in filtered_memberships:
         membership = frappe.get_doc("VM Membership", membership_item.name)
         membership_data = membership.as_dict()
 
@@ -65,6 +81,7 @@ def get_current_membership():
             membership_data["type_details"] = membership_type_doc.as_dict()
 
         result.append(membership_data)
+
     return result
 
 
@@ -165,6 +182,18 @@ def create_membership(
             {"member": member.name, "status": "Active", "company": branch},
         ):
             frappe.throw("You already have an active membership for this branch")
+
+        if frappe.db.exists(
+            "VM Membership",
+            {
+                "member": member.name,
+                "status": "Pending",
+                "company": branch,
+            },
+        ):
+            frappe.throw(
+                "You have a pending membership for this branch. Please await approval."
+            )
 
         from_date = datetime.today().date()
 
