@@ -75,19 +75,13 @@
 								size="sm"
 								class="rounded-lg px-5 py-2"
 								:loading="loadCertificate === membership.name"
-								@click="
-									openRenewDialog(
-										membership.status,
-										membership.name,
-										membership.membership_type,
-									)
-								"
+								@click="openRenewDialog(membership)"
 							>
 								{{
 									membership.status === "Active" ||
 									membership.type_details?.billing_cycle === "One Off"
 										? __("Print Certificate")
-										: __("Renew Now")
+										: __("Renew ")
 								}}
 							</Button>
 							<Popover v-else trigger="hover" :hoverDelay="0.5">
@@ -158,41 +152,13 @@
 		</aside>
 	</div>
 
-	<Dialog v-model="payNow">
-		<template #body-title>
-			<h3 class="text-2xl font-bold text-gray-900">{{ __("Renew Membership") }}</h3>
-		</template>
-
-		<template #body-content>
-			<form @submit.prevent="payMembership" class="space-y-5">
-				<div>
-					<label class="block text-sm font-medium text-gray-800 mb-2">
-						{{ __("M-Pesa Phone Number") }}
-					</label>
-					<Input
-						required
-						:type="'text'"
-						size="md"
-						variant="subtle"
-						:disabled="renewMembership.loading"
-						:placeholder="__('+254 712 345 678')"
-						v-model="phoneNumber"
-					/>
-				</div>
-				<ErrorMessage v-if="errorMessage" :message="errorMessage" />
-				<Button
-					type="button"
-					variant="solid"
-					theme="red"
-					class="w-full rounded-lg h-12"
-					@click="payMembership"
-					:loading="renewMembership.loading"
-				>
-					{{ __("Pay Now") }}
-				</Button>
-			</form>
-		</template>
-	</Dialog>
+	<RegisterMembership
+		v-model="renew"
+		:is_renew="true"
+		:membership_type="selectedMembership.membership_type"
+		:amount="selectedMembership.amount"
+		:renew_branch="selectedMembership.company"
+	/>
 </template>
 
 <script lang="ts" setup>
@@ -206,17 +172,16 @@ import {
 	Popover,
 	toast,
 } from "frappe-ui";
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { usersStore } from "../stores/user";
 import { isValidPhone } from "../utils/volunteer";
+import RegisterMembership from "./Modals/RegisterMembership.vue";
 
 const { roleResource } = usersStore();
 
-const payNow = ref(false);
-const phoneNumber = ref("");
+const renew = ref(false);
 const errorMessage = ref("");
-const selectedMembershipId = ref<string | undefined>(undefined);
 const loadCertificate = ref<string | null>(null);
 
 interface Membership {
@@ -230,34 +195,18 @@ interface Membership {
 	type_details?: Record<string, any>;
 }
 
+const selectedMembership = reactive({
+	name: "",
+	membership_type: "",
+	amount: 0,
+	company: "",
+});
+
 const membershipTypeCert = ref("");
 const membershipList = createResource<Membership[]>({
 	url: "onerc_vmms.volunteer_and_member_management.api.membership.get_current_membership",
 	auto: true,
 	cache: ["currentMembership"],
-	onSuccess: (data: any) => {
-		console.log("dddd", data);
-	},
-});
-
-const renewMembership = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.user.renew_membership",
-	makeParams() {
-		return {
-			id: selectedMembershipId.value,
-			phone_number: phoneNumber.value,
-		};
-	},
-	onSuccess() {
-		toast.success("Payment initiated successfully! Check your phone for a prompt.");
-		payNow.value = false;
-		phoneNumber.value = "";
-		selectedMembershipId.value = undefined;
-		membershipList.reload();
-	},
-	onError(error: any) {
-		errorMessage.value = error.message || "Failed to initiate membership renewal.";
-	},
 });
 
 function formatDate(dateStr?: string): string {
@@ -279,23 +228,22 @@ const certificate = createResource({
 	},
 });
 
-function openRenewDialog(
-	membershipStatus?: string,
-	membershipId?: string,
-	membershipType?: string,
-) {
-	if (membershipStatus === "Active") {
-		membershipTypeCert.value = membershipType || "";
+function openRenewDialog(membership: Membership) {
+	if (membership.status === "Active") {
+		membershipTypeCert.value = membership.membership_type || "";
 
-		getCertificate(membershipId);
+		getCertificate(membership.name);
 
 		return;
 	}
 
-	if (membershipId) {
-		selectedMembershipId.value = membershipId;
+	if (membership.name) {
+		selectedMembership.name = membership.name;
+		selectedMembership.membership_type = membership.membership_type || "";
+		selectedMembership.amount = membership.amount || 0;
+		selectedMembership.company = membership.company || "";
 		errorMessage.value = "";
-		payNow.value = true;
+		renew.value = true;
 	}
 }
 
@@ -313,28 +261,5 @@ function getCertificate(membershipId?: string) {
 			},
 		},
 	);
-}
-
-function payMembership() {
-	if (!phoneNumber.value) {
-		errorMessage.value = "Please enter your phone number";
-		return;
-	}
-
-	if (!isValidPhone(phoneNumber.value)) {
-		errorMessage.value = "Please enter a valid Kenyan phone number. eg. (+254123456789)";
-		return;
-	}
-
-	if (!selectedMembershipId.value) {
-		errorMessage.value = "Error: Membership ID is missing.";
-		return;
-	}
-
-	errorMessage.value = "";
-	renewMembership.submit({
-		membership: selectedMembershipId.value,
-		phone_number: phoneNumber.value,
-	});
 }
 </script>
