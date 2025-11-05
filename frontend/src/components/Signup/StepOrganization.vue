@@ -136,10 +136,23 @@
 					:label="__('Sub County')"
 					doctype="Sub County"
 					:required="true"
-					:filters="localModel.county ? { county: localModel.county } : {}"
+					:filters="localModel.company ? { county: localModel.company } : {}"
 				/>
 				<p v-if="errors[0]?.['Sub County']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Sub County"] }}
+				</p>
+			</div>
+
+			<div>
+				<Link
+					v-model="localModel.ward"
+					:label="__('Ward')"
+					doctype="Ward"
+					:required="true"
+					:filters="localModel.company ? { county: localModel.company } : {}"
+				/>
+				<p v-if="errors[0]?.['Ward']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["Ward"] }}
 				</p>
 			</div>
 
@@ -154,29 +167,6 @@
 				<p v-if="errors[0]?.['Location']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Location"] }}
 				</p>
-			</div>
-
-			<div>
-				<Link
-					v-model="localModel.ward"
-					:label="__('Ward')"
-					doctype="Ward"
-					:required="true"
-					:filters="localModel.county ? { county: localModel.county } : {}"
-				/>
-				<p v-if="errors[0]?.['Ward']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Ward"] }}
-				</p>
-			</div>
-
-			<div class="hidden">
-				<Link
-					v-model="localModel.county"
-					:label="__('County of Residence')"
-					doctype="Company"
-					:filters="{ is_group: 0 }"
-					:readonly="true"
-				/>
 			</div>
 		</div>
 		<h2 class="text-xl font-bold text-red-700 mb-4">
@@ -316,7 +306,6 @@ function validateForm() {
 	if (!form.phone_number) stepErrors[0]["Phone Number"] = "Phone number is required";
 	if (!form.email_id) stepErrors[0]["Email Address"] = "Email address is required";
 	if (!form.gender) stepErrors[0]["Gender"] = "Gender is required";
-	if (!form.county) stepErrors[0]["County of Residence"] = "County is required";
 	if (!form.sub_county) stepErrors[0]["Sub County"] = "This field is required";
 	if (!form.administrative_location) stepErrors[0]["Location"] = "This field is required";
 	if (!form.ward) stepErrors[0]["Ward"] = "Ward is required";
@@ -412,15 +401,6 @@ onMounted(() => {
 
 watch(
 	() => localModel.value.company,
-	(newVal, oldVal) => {
-		if (ready.value && oldVal !== newVal) {
-			localModel.value.county = newVal;
-		}
-	},
-);
-
-watch(
-	() => localModel.value.county,
 	(newVal, oldVal) => {
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.sub_county = "";
