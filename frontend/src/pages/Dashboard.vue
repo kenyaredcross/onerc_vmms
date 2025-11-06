@@ -1,6 +1,6 @@
 <template>
 	<NoPermission v-if="user?.data == 'Guest'" :page="__('Dashboard')" />
-	<div v-if="user?.data && user?.data !== 'Guest'" class="max-w-7xl mx-auto">
+	<div v-if="user?.data && user?.data !== 'Guest'" class="max-w-7xl">
 		<div class="flex flex-col gap-2 my-6">
 			<h1 class="text-lg md:text-4xl font-bold text-gray-900 ml-7">
 				Welcome back, {{ user?.data?.full_name }}!
@@ -28,7 +28,7 @@
 					roleResource?.data &&
 					(roleResource?.data?.is_volunteer || roleResource?.data?.is_member)
 				"
-				class="flex flex-col gap-4 md:p-6 bg-white shadow"
+				class="flex flex-col gap-4 md:p-6 bg-white shadow p-2"
 			>
 				<div class="flex items-center justify-between">
 					<h2 class="text-2xl font-semibold text-gray-900">
@@ -54,8 +54,6 @@
 						:event="event"
 					/>
 				</div>
-
-				<EventCalendar v-if="toggleEventView" :event="events?.data" />
 
 				<EmptyState
 					v-if="events?.data && events?.data.length === 0"

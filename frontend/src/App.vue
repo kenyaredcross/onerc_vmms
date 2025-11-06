@@ -5,7 +5,6 @@
 				<router-view />
 			</div>
 		</Layout>
-		<InstallPrompt v-if="isMobile" />
 		<Dialogs />
 	</FrappeUIProvider>
 </template>
