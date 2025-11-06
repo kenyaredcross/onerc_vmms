@@ -99,7 +99,12 @@
 				</div>
 			</div>
 
-			<PaymentStatus v-if="paymentStatus" @close="registerDialog = false" />
+			<PaymentStatus
+				v-if="paymentStatus"
+				@close="registerDialog = false"
+				message="Membership processed successfully"
+				title="Membership"
+			/>
 		</template>
 	</Dialog>
 </template>
