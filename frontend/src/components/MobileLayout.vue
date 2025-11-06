@@ -112,10 +112,17 @@ const addOtherLinks = () => {
 				to: app.route,
 			});
 		});
-		otherLinks.value.push({
-			label: "Log out",
-			icon: "LogOut",
-		});
+		otherLinks.value.push(
+			{
+				label: "Profile",
+				icon: "User",
+				to: "Profile",
+			},
+			{
+				label: "Log out",
+				icon: "LogOut",
+			},
+		);
 	} else {
 		otherLinks.value.push({
 			label: "Log in",
