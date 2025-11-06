@@ -120,7 +120,7 @@
 	/>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { createResource } from "frappe-ui";
 import Button from "frappe-ui/src/components/Button/Button.vue";
 import Card from "frappe-ui/src/components/Card.vue";
@@ -131,7 +131,7 @@ import { Eye, EyeOff } from "lucide-vue-next";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { sessionStore } from "../stores/session";
-import { initialForm, resetSignUpForm, SignUp } from "../utils/volunteer";
+import { initialForm, resetSignUpForm } from "../utils/volunteer";
 
 const route = useRoute();
 const router = useRouter();
@@ -141,7 +141,7 @@ const userEmail = ref("");
 const password = ref("");
 const signInState = ref(false);
 
-const signUpForm = reactive<SignUp>({ ...initialForm });
+const signUpForm = reactive({ ...initialForm });
 
 const session = sessionStore();
 let { isLoggedIn } = sessionStore();
@@ -157,8 +157,6 @@ function toggleForm() {
 }
 
 onMounted(() => {
-	if (!route.hash) {
-	}
 	if (isLoggedIn) {
 		router.push({ name: "Dashboard" });
 	}
@@ -179,7 +177,7 @@ function submit() {
 			{ usr: userEmail.value, pwd: password.value },
 			{
 				onSuccess: () => {
-					const redirectTo = route.query["redirect-to"] as string;
+					const redirectTo = route.query["redirect-to"];
 					if (redirectTo) {
 						router.push(redirectTo);
 					} else {

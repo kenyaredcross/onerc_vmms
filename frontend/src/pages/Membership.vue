@@ -50,6 +50,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { createResource, ErrorMessage, toast } from "frappe-ui";
 import { inject, reactive, ref, watch } from "vue";
 import EmptyState from "../components/EmptyState.vue";
@@ -134,5 +135,16 @@ watch(registerDialog, (newValue) => {
 	if (newValue === false) {
 		cleanUpMembershipForm();
 	}
+});
+
+useHead({
+	title: "Manage Membership | Kenya Red Cross VMMS",
+	meta: [
+		{
+			name: "description",
+			content:
+				"View your current Kenya Red Cross membership status, renew your existing plan, or select a new membership type to join the organization.",
+		},
+	],
 });
 </script>

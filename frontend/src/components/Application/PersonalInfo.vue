@@ -115,6 +115,7 @@ watch(
 	() => {
 		form.sub_county = null;
 		form.administrative_location = null;
+		form.ward = null;
 	},
 );
 

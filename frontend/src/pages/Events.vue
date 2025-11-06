@@ -37,12 +37,13 @@
 </template>
 
 <script setup>
+import { watchDebounced } from "@vueuse/core";
+import { useHead } from "@vueuse/head";
 import { createResource, TextInput } from "frappe-ui";
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import ProgressSpinner from "../components/Common/ProgressSpinner.vue";
 import EmptyState from "../components/EmptyState.vue";
 import EventCard from "../components/EventCard.vue";
-import { watchDebounced } from "@vueuse/core";
 
 const searchTerm = ref("");
 
@@ -70,4 +71,15 @@ const toggleEventView = ref(false);
 function toggleEventViews() {
 	toggleEventView.value = !toggleEventView.value;
 }
+
+useHead({
+	title: "Upcoming Events | Kenya Red Cross VMMS",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Discover and register for upcoming Kenya Red Cross events, activities, and training sessions in your area. Search by name or location.",
+		},
+	],
+});
 </script>

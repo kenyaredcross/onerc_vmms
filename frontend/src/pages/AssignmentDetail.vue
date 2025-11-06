@@ -153,20 +153,10 @@
 							{{ __("No notes available for this project.") }}
 						</div>
 					</div>
-					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-						<h2 class="text-lg font-semibold text-gray-900 mb-4">
-							{{ __("Term Details") }}
-						</h2>
-						<div
-							v-if="projectDetail.data.term_details"
-							class="prose prose-sm max-w-none text-gray-700"
-						>
-							{{ projectDetail.data.term_details }}
-						</div>
-						<div v-else class="text-gray-500 italic">
-							{{ __("No term details available for this project.") }}
-						</div>
-					</div>
+					<TORDetails
+						:term-details="projectDetail.data.term_details"
+						:tor-url="projectDetail.data.tor_url"
+					/>
 				</div>
 				<div class="space-y-6">
 					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -257,7 +247,7 @@
 							<p class="text-sm text-gray-700 font-medium mb-2">
 								{{
 									__(
-										"Important: Please review the official project documents before you decide.",
+										"Important: Please review the official project information before you decide.",
 									)
 								}}
 							</p>
@@ -280,7 +270,7 @@
 						<p class="text-sm text-gray-500 italic mb-6">
 							{{
 								__(
-									"Your decision to accept this project confirms your agreement to the terms outlined in both documents.",
+									"Your decision to accept this project confirms your agreement to the terms outlined.",
 								)
 							}}
 						</p>
@@ -349,6 +339,8 @@
 	</Dialog>
 </template>
 <script setup>
+import TORDetails from "@/components/TORDetails.vue";
+import { useHead } from "@vueuse/head";
 import { Badge, Button, createResource, Dialog, ErrorMessage, Spinner, toast } from "frappe-ui";
 import { computed, inject, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
@@ -487,4 +479,15 @@ const downloadContract = (contractName) => {
 			loading.value = false;
 		});
 };
+
+useHead({
+	title: "Project Assignment Details | Kenya Red Cross",
+	meta: [
+		{
+			name: "description",
+			content:
+				"View details for your assigned Kenya Red Cross project, including progress, timeline, and assignment decision (Accept/Reject).",
+		},
+	],
+});
 </script>

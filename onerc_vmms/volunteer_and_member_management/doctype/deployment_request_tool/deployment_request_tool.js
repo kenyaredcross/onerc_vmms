@@ -18,14 +18,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 		frm.events.set_ward_filter(frm);
 		frm.events.set_location_filter(frm);
 
-		frm.set_query("terms_of_reference", function () {
-			return {
-				filters: [
-					["expected_end_date", ">=", frappe.datetime.get_today()],
-					["docstatus", "=", 1],
-				],
-			};
-		});
+		frm.events.set_tor_filter(frm);
 
 		frm.set_query("region", function () {
 			return {
@@ -142,7 +135,12 @@ frappe.ui.form.on("Deployment Request Tool", {
 	},
 
 	terms_of_reference: function (frm) {
+		frm.events.set_tor_filter(frm);
 		render_tor_preview(frm);
+	},
+
+	company: function (frm) {
+		frm.events.set_tor_filter(frm);
 	},
 
 	project(frm) {
@@ -287,6 +285,33 @@ frappe.ui.form.on("Deployment Request Tool", {
 				return {};
 			});
 		}
+	},
+
+	set_tor_filter(frm) {
+		frm.set_query("terms_of_reference", function () {
+			return [];
+		});
+		frm.refresh_field("terms_of_reference");
+
+		frm.call({
+			method: "onerc_vmms.volunteer_and_member_management.utils.get_company_descendants",
+			args: {
+				company: frm.doc.company,
+			},
+		}).then((r) => {
+			const companies = r.message || [];
+			if (frm.doc.company) companies.push(frm.doc.company);
+
+			frm.set_query("terms_of_reference", function () {
+				return {
+					filters: {
+						company: ["in", companies],
+						expected_end_date: [">=", frappe.datetime.get_today()],
+						docstatus: 1,
+					},
+				};
+			});
+		});
 	},
 
 	get_employees: function (frm) {
@@ -514,7 +539,7 @@ async function render_tor_preview(frm) {
 	const doctype = "Personnel Terms of Reference";
 	const base_url = window.location.origin;
 
-	let pdf_url = `${base_url}/api/method/frappe.utils.print_format.download_pdf?doctype=${encodeURIComponent(
+	let pdf_url = `${base_url}/api/method/onerc_vmms.volunteer_and_member_management.utils.download_pdf?doctype=${encodeURIComponent(
 		doctype
 	)}&name=${encodeURIComponent(tor_name)}`;
 

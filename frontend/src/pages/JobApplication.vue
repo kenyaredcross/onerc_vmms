@@ -157,6 +157,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { Button, createResource, TabButtons } from "frappe-ui";
 import { LogIn } from "lucide-vue-next";
@@ -285,5 +286,16 @@ const filteredApplications = computed(() => {
 			(app) => app.docstatus === 1 && app.status?.toLowerCase() === tabValue,
 		);
 	}
+});
+
+useHead({
+	title: "My Applications | Kenya Red Cross VMMS",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Track and manage all your applications for Kenya Red Cross job and volunteer opportunities. View application status, details, and history.",
+		},
+	],
 });
 </script>

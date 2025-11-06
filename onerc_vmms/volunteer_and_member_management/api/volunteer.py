@@ -235,11 +235,3 @@ def create_schedule(schedule_name, weekly_availability):
             schedule_doc.day = day_name
             schedule_doc.shift_type = shift
             schedule_doc.insert(ignore_permissions=True)
-            schedule_doc.insert(ignore_permissions=True)
-            schedule_doc.insert(ignore_permissions=True)
-            schedule_doc.insert(ignore_permissions=True)
-            schedule_doc.insert(ignore_permissions=True)
-            schedule_doc.insert(ignore_permissions=True)
-            schedule_doc.insert(ignore_permissions=True)
-            schedule_doc.insert(ignore_permissions=True)
-            schedule_doc.insert(ignore_permissions=True)

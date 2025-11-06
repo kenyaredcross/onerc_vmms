@@ -67,6 +67,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { createResource } from "frappe-ui";
 import { ChevronRight } from "lucide-vue-next";
 import { onMounted, ref } from "vue";
@@ -108,6 +109,17 @@ const dashboardStats = createResource({
 function toggleEventViews() {
 	toggleEventView.value = !toggleEventView.value;
 }
+
+useHead({
+	title: "Volunteer/Member Dashboard | Kenya Red Cross VMMS",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Access your personal Kenya Red Cross dashboard. View project statistics, membership status, and upcoming events.",
+		},
+	],
+});
 </script>
 
 <style scoped>

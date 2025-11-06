@@ -80,6 +80,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { Button, createResource, toast } from "frappe-ui";
 import { computed, inject, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -147,7 +148,7 @@ const submitApplication = () => {
 		{
 			onSuccess: (response) => {
 				const applicationId = response?.name || response?.application_id;
-				toast.success("Application submitted successfully");
+				// toast.success("Application submitted successfully");
 				router.push({
 					name: "JobApplicationDetail",
 					params: { id: applicationId },
@@ -172,4 +173,22 @@ const getCompanyAbbr = (name) =>
 				.slice(0, 2)
 				.toUpperCase()
 		: "NA";
+
+useHead({
+	title: computed(() =>
+		job.data?.job_title
+			? `Start Application for ${job.data.job_title} | Kenya Red Cross`
+			: "Start Application | Kenya Red Cross",
+	),
+	meta: [
+		{
+			name: "description",
+			content: computed(() =>
+				job.data?.job_title
+					? `Ready to apply for ${job.data.job_title}? Log in or create an account to begin your application with the Kenya Red Cross.`
+					: "Access the application form to apply for this job or volunteer opportunity at the Kenya Red Cross VMMS.",
+			),
+		},
+	],
+});
 </script>

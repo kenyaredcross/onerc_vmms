@@ -232,6 +232,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { Button, createResource, toast } from "frappe-ui";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
 import { CalendarDays, Clock, MapPin, Users } from "lucide-vue-next";

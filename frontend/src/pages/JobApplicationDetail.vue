@@ -204,6 +204,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { Button, createResource, Dialog, toast } from "frappe-ui";
 import { computed, inject, markRaw, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -736,10 +737,10 @@ const submitApplication = () => {
 		{
 			onSuccess: (response) => {
 				if (response?.error) {
-					toast.error("Application submission failed.", response.error);
+					// toast.error("Application submission failed.",  response.error);
 					window.location.reload();
 				} else {
-					toast.success("Application submission successful.");
+					// toast.success("Application submission successful.");
 					window.location.reload();
 				}
 			},
@@ -762,4 +763,15 @@ const getCompanyAbbr = (name) =>
 				.slice(0, 2)
 				.toUpperCase()
 		: "NA";
+
+useHead({
+	title: "Job Application Details | Kenya Red Cross ",
+	meta: [
+		{
+			name: "description",
+			content:
+				"View and manage your job application details for Kenya Red Cross opportunities. Track your application status and updates.",
+		},
+	],
+});
 </script>

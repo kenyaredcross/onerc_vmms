@@ -89,7 +89,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Cost Per Day",
+   "label": "Unit Cost",
    "reqd": 1
   },
   {
@@ -108,7 +108,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-28 17:02:37.042146",
+ "modified": "2025-11-06 09:41:59.352752",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "TOR Resources",

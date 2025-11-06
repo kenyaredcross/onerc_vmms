@@ -181,6 +181,7 @@ import PendingApproval from "@/components/PendingApproval.vue";
 import StepAdditional from "@/components/Signup/StepAdditional.vue";
 import StepDocuments from "@/components/Signup/StepDocuments.vue";
 import StepOrganization from "@/components/Signup/StepOrganization.vue";
+import { useHead } from "@vueuse/head";
 import { Button, createResource, Dialog, toast } from "frappe-ui";
 import { FeatherIcon, LogIn } from "lucide-vue-next";
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
@@ -525,7 +526,7 @@ const confirmSubmit = async () => {
 		{},
 		{
 			onSuccess: () => {
-				toast.success("Application submitted successfully");
+				// toast.success("Application submitted successfully");
 				showSubmitDialog.value = false;
 				alreadyApplied.value = true;
 				hasUnsavedChanges.value = false;
@@ -781,4 +782,15 @@ watch(
 	},
 	{ deep: true, immediate: true },
 );
+
+useHead({
+	title: "Volunteer Signup | Kenya Red Cross",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Join the Kenya Red Cross as a volunteer and make a difference in your community. Sign up to contribute your skills, time, and compassion.",
+		},
+	],
+});
 </script>
