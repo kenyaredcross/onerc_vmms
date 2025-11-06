@@ -1,10 +1,12 @@
+from frappe import _
+import frappe
 import json
 import time
 from datetime import datetime
 
-import frappe
 
 from .user import create_user, get_user_info
+from dataclasses import dataclass
 
 
 @frappe.whitelist(allow_guest=True)
@@ -98,7 +100,7 @@ def register_event(event_name: str | int, attendee: dict[str, any]) -> None:
 
 
 @frappe.whitelist(allow_guest=True)
-def get_event_details(event_name):
+def get_event_details(event_name: str | int) -> dict:
     try:
         event = frappe.get_doc("Buzz Event", {"route": event_name}).as_dict()
         event_name = event.name
@@ -157,146 +159,88 @@ def get_event_details(event_name):
         frappe.throw("Error fetching event details")
 
 
-@frappe.whitelist(allow_guest=True)
-def get_speaker_profiles(event_speakers):
-    try:
-        speakers_list = json.loads(event_speakers)
-
-        speaker_profiles = []
-        for speaker in speakers_list:
-
-            speaker_profile = frappe.get_doc(
-                "Speaker Profile", speaker.get("speaker")
-            ).as_dict()
-            speaker_profiles.append(speaker_profile)
-
-        return speaker_profiles
-    except Exception as e:
-        frappe.log_error(title="Speaker Profile Fetch Error", message=str(e))
-        frappe.throw("Error fetching speaker profiles")
+@dataclass
+class TicketPaymentPayload:
+    phone: str
+    event_name: str | int
+    ticket_name: str | int
+    email: str
+    full_name: str
 
 
 @frappe.whitelist(allow_guest=True)
-def handle_ticket_payment(phone, event_name, ticket_name, email, first_name, last_name):
-    original_user = frappe.session.user
+def handle_ticket_payment(payload: TicketPaymentPayload):
+
+    error_message = "Error processing ticket payment."
+
+    if not payload:
+        frappe.throw(_(error_message))
+
     try:
-        if frappe.session.user == "Guest":
-            if frappe.db.exists("User", email):
-                user = frappe.get_doc("User", email)
-            else:
-                create_user(
-                    email=email,
-                    first_name=first_name,
-                    last_name=last_name,
-                )
-                user = frappe.get_doc("User", email)
 
-            frappe.local.login_manager.login_as(email)
-        else:
-            user = frappe.get_doc("User", frappe.session.user)
-
-        event_ticket_price = frappe.db.get_value(
-            "Event Ticket Type", ticket_name, "price"
-        )
-        company = frappe.db.get_value("Buzz Event", event_name, "company")
-        mode_of_payment = frappe.db.get_value(
-            "Buzz Event", event_name, "mode_of_payment"
-        )
-        currency = frappe.db.get_value("Company", company, "default_currency")
-
-        existing_booking = frappe.db.exists(
-            "Event Booking", {"user": user.name, "event": event_name}
+        event_booking = frappe.get_doc(
+            {
+                "doctype": "Event Booking",
+                "event": payload.event_name,
+                "primary_contact": payload.email,
+                "attendees": [
+                    {
+                        "full_name": payload.full_name,
+                        "email": payload.email,
+                        "ticket_type": payload.ticket_name,
+                    }
+                ],
+            }
         )
 
-        if existing_booking:
-            event_booking = frappe.get_doc("Event Booking", existing_booking)
-        else:
-            event_booking = frappe.get_doc(
-                {
-                    "doctype": "Event Booking",
-                    "event": event_name,
-                    "user": user.name,
-                    "mode_of_payment": mode_of_payment,
-                    "attendees": [
-                        {
-                            "full_name": user.full_name,
-                            "email": user.email,
-                            "ticket_type": ticket_name,
-                            "amount": event_ticket_price,
-                            "currency": currency,
-                        }
-                    ],
-                }
-            )
-            event_booking.insert(ignore_permissions=True)
+        event_booking.insert(ignore_permissions=True)
 
-        event_booking.initialize_payment(phone_number=phone)
-        frappe.db.commit()
+        _pr, invoice = event_booking.initialize_payment(phone_number=payload.phone)
 
-        max_wait_time = 30
-        interval = 5
-        elapsed_time = 0
-        time.sleep(max_wait_time)
-
-        # while elapsed_time < max_wait_time:
-        #     time.sleep(interval)
-        #     elapsed_time += interval
-
-        #     tickets = frappe.get_all(
-        #         "Event Ticket",
-        #         filters={"booking": event_booking.name},
-        #         fields=[
-        #             "name",
-        #             "ticket_type",
-        #             "attendee_name",
-        #             "attendee_email",
-        #             "qr_code",
-        #         ],
-        #     )
-
-        #     if len(tickets) > 0:
-        #         if original_user == "Guest":
-        #             frappe.local.login_manager.logout()
-
-        #         return {
-        #             "success": True,
-        #             "message": "Payment successful",
-        #             "booking": event_booking.name,
-        #             "tickets": tickets,
-        #         }
-
-        if original_user == "Guest":
-            frappe.local.login_manager.logout()
-
-        tickets = frappe.get_all(
-            "Event Ticket",
-            filters={"booking": event_booking.name},
-            fields=[
-                "name",
-                "ticket_type",
-                "attendee_name",
-                "attendee_email",
-                "qr_code",
-            ],
+        data = frappe._dict(
+            {
+                "invoice": invoice.name,
+                "event_booking": event_booking.name,
+            }
         )
 
-        return {
-            "success": False if not tickets else True,
-            "message": (
-                "Payment processing timed out. Please check your payment status later."
-                if not tickets
-                else "Payment successful"
-            ),
-            "booking": event_booking.name,
-            "tickets": tickets,
-        }
+        return data
 
     except Exception as e:
-        if original_user == "Guest" and frappe.session.user != "Guest":
-            frappe.local.login_manager.logout()
-
+        frappe.db.rollback()
         frappe.log_error(frappe.get_traceback(), "Ticket Payment Error")
-        return {
-            "success": False,
-            "message": "Error occurred while processing ticket. Please try again.",
-        }
+        frappe.throw(_(error_message))
+
+
+@frappe.whitelist(allow_guest=True)
+def confirm_payment(
+    invoice_name: str, event_booking: str, confirm_payment_manual: bool
+) -> str:
+    def helper():
+        frappe.set_user("Administrator")
+        error_message = "Error confirming payment"
+
+        if not invoice_name:
+            frappe.throw(_(error_message))
+
+        try:
+            invoice = frappe.get_doc("Sales Invoice", invoice_name)
+
+            if invoice.status == "Paid" and invoice.outstanding_amount == 0:
+                ev_booking = frappe.get_doc("Event Booking", event_booking)
+                ev_booking.submit()
+
+                return "paid"
+
+            return "unpaid"
+
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
+            frappe.throw(_("Error confirming payment: {0}").format(str(e)))
+        finally:
+            frappe.set_user(frappe.session.user)
+
+    if confirm_payment_manual:
+        time.sleep(15)
+        return helper()
+    return helper()

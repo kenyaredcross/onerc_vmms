@@ -193,7 +193,7 @@
 				</div>
 
 				<div
-					v-if="eventDetail.data?.host"
+					v-if="eventDetail.data?.sponsors?.length"
 					class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm"
 				>
 					<div class="mb-6 flex items-center gap-3">
