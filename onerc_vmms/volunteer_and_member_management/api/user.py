@@ -101,7 +101,7 @@ def get_user_info():
             "profession",
             "gender",
         ],
-        as_dict=1,
+        as_dict=True,
     )
 
     roles = frappe.get_roles(user.name)
@@ -136,9 +136,8 @@ def get_user_info():
             employee_company = employee.get("company")
             employee_is_volunteer = True if employee.get("is_volunteer") else False
 
-        user["non_profit_member"] = "Non Profit Member" in roles
-        user["employee"] = employee_name
-        user["company"] = employee_company
+        user["employee"] = employee_name if employee_name else None
+        user["company"] = employee_company if employee_company else None
         user["is_volunteer"] = employee_is_volunteer
 
     if frappe.db.exists("VM Member", {"email_id": user.email}):
