@@ -112,6 +112,7 @@
 				membershipList.data &&
 				membershipList.data.length > 0 &&
 				roleResource.data &&
+				!roleResource.data.is_pending_approval &&
 				!roleResource.data.is_volunteer
 			"
 			class="w-full lg:w-1/3 flex-shrink-0"

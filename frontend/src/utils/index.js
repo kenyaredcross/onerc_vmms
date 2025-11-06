@@ -414,11 +414,6 @@ export function getSidebarLinks() {
 			to: "Membership",
 			activeFor: ["Membership"],
 		},
-		{
-			label: "Learning",
-			icon: "BookOpen",
-			to: "lms",
-		},
 	];
 }
 
