@@ -102,6 +102,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { createResource, toast } from "frappe-ui";
 import { onMounted, reactive, ref } from "vue";
 
@@ -190,5 +191,16 @@ onMounted(() => {
 	}
 
 	if (!userDetailsResource.data) userDetailsResource.reload();
+});
+
+useHead({
+	title: "My Profile | Kenya Red Cross VMMS",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Manage and update your personal information, health details, qualifications, skills, and important documents within the Kenya Red Cross VMMS.",
+		},
+	],
 });
 </script>

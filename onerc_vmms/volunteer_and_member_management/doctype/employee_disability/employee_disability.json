@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "disability",
+  "disability_name",
   "column_break_dtpb",
   "disability_category"
  ],
@@ -36,13 +37,24 @@
    "label": "Disability Category",
    "options": "Disability Category",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.disability == \"Other\"",
+   "fieldname": "disability_name",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Disability Name",
+   "mandatory_depends_on": "eval: doc.disability == \"Other\""
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-28 16:30:52.292935",
+ "modified": "2025-11-06 11:30:45.224461",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Employee Disability",

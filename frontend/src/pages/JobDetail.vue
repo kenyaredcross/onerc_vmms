@@ -22,6 +22,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { Breadcrumbs, createResource, usePageMeta } from "frappe-ui";
 import { computed, inject } from "vue";
 import { useRouter } from "vue-router";
@@ -76,4 +77,22 @@ usePageMeta(() => ({
 	title: job.data?.job_title,
 	icon: brand.favicon,
 }));
+
+useHead({
+	title: computed(() =>
+		job.data?.job_title
+			? `${job.data.job_title} | Opportunity Details - Kenya Red Cross`
+			: "Opportunity Details | Kenya Red Cross VMMS",
+	),
+	meta: [
+		{
+			name: "description",
+			content: computed(() =>
+				job.data?.job_description
+					? `Job Description for ${job.data.job_title}: ${job.data.job_description.substring(0, 150)}... Apply now at the Kenya Red Cross.`
+					: "View the full job description, requirements, and application process for this opportunity with the Kenya Red Cross.",
+			),
+		},
+	],
+});
 </script>

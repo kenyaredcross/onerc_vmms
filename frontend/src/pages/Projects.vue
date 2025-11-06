@@ -24,6 +24,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useHead } from "@vueuse/head";
 import { Badge, createResource, ListView, toast } from "frappe-ui";
 import { computed, inject, onMounted } from "vue";
 import { useRoute } from "vue-router";
@@ -99,4 +100,14 @@ const options = {
 		description: "Be checking on notifications for a new project to get started",
 	},
 };
+useHead({
+	title: "My Projects | Kenya Red Cross VMMS",
+	meta: [
+		{
+			name: "description",
+			content:
+				"View the list of projects you are currently involved in with the Kenya Red Cross. Track project dates, types, and your participation status.",
+		},
+	],
+});
 </script>

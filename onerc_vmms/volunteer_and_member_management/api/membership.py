@@ -124,7 +124,6 @@ def confirm_payment(invoice_name: str) -> str:
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
         frappe.throw(_("Error confirming payment: {0}").format(str(e)))
-        frappe.throw(_("Error confirming payment: {0}").format(str(e)))
 
 
 @frappe.whitelist(allow_guest=True)
@@ -207,5 +206,4 @@ def renew_membership(**kwargs):
         return invoice
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Error renewing membership")
-        frappe.throw("Error creating membership")
-        frappe.throw("Error creating membership")
+        frappe.throw("Error renewing membership")

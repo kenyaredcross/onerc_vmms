@@ -124,14 +124,8 @@ import Link from "@/components/Controls/Link.vue";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import JobCard from "@/components/JobCard.vue";
-import {
-	Breadcrumbs,
-	Button,
-	createResource,
-	FormControl,
-	TabButtons,
-	usePageMeta,
-} from "frappe-ui";
+import { useHead } from "@vueuse/head";
+import { Breadcrumbs, Button, createResource, FormControl, TabButtons } from "frappe-ui";
 import { Search } from "lucide-vue-next";
 import { computed, inject, onMounted, ref, watch } from "vue";
 import { sessionStore } from "../stores/session";
@@ -273,6 +267,14 @@ watch(jobs, () => {
 		jobCount.value = jobs.data?.length || 0;
 	}
 });
-
-usePageMeta(() => ({ title: __("Jobs"), icon: brand.favicon }));
+useHead({
+	title: "Opportunities | Kenya Red Cross",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Explore open opportunities with the Kenya Red Cross. Filter by location, profession, and designation, or manage your applications.",
+		},
+	],
+});
 </script>

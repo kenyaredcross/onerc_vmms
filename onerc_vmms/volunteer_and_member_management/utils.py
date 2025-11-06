@@ -1,9 +1,10 @@
 import json
 from datetime import timedelta
+from typing import Literal
 
 import frappe
 from frappe import _
-from frappe.translate import get_all_translations
+from frappe.translate import get_all_translations, print_language
 from frappe.utils.nestedset import get_descendants_of
 
 
@@ -238,9 +239,7 @@ def get_branding():
     if branding_settings:
         if branding_settings.get("app_logo"):
             file_info = get_file_info(branding_settings.get("app_logo"))
-            branding_settings.update(
-                {"app_logo": json.loads(json.dumps(file_info))}
-            )
+            branding_settings.update({"app_logo": json.loads(json.dumps(file_info))})
         else:
             branding_settings.update({"app_logo": None})
 
@@ -398,3 +397,37 @@ def create_or_update_skill_map(employee, skills):
     frappe.db.commit()
 
     return doc.name
+
+
+@frappe.whitelist(allow_guest=True)
+def download_pdf(
+    doctype: str,
+    name: str,
+    format=None,
+    doc=None,
+    no_letterhead=0,
+    language=None,
+    letterhead=None,
+    pdf_generator: Literal["wkhtmltopdf", "chrome"] | None = None,
+):
+    doc = doc or frappe.get_doc(doctype, name)
+
+    frappe.has_permission = lambda *a, **kw: True
+
+    with print_language(language):
+        pdf_file = frappe.get_print(
+            doctype,
+            name,
+            format,
+            doc=doc,
+            as_pdf=True,
+            letterhead=letterhead,
+            no_letterhead=no_letterhead,
+            pdf_generator=pdf_generator,
+        )
+
+    frappe.local.response.filename = "{name}.pdf".format(
+        name=name.replace(" ", "-").replace("/", "-")
+    )
+    frappe.local.response.filecontent = pdf_file
+    frappe.local.response.type = "pdf"

@@ -125,11 +125,8 @@ def get_assignment_details(assignment_name):
 
     assignment["project"] = project
     assignment["deployment_details"] = deployment.as_dict()
-    assignment["term_details"] = (
-        frappe.utils.strip_html_tags(assignment["term_details"])
-        if assignment.get("term_details")
-        else ""
-    )
+    tor = frappe.get_doc("Personnel Terms of Reference", deployment.terms_of_reference)
+    assignment["term_details"] = tor.as_dict()
 
     return assignment
 

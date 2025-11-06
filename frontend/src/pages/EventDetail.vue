@@ -242,6 +242,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import { Button, createResource, toast } from "frappe-ui";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
 import {
@@ -438,4 +439,22 @@ function getSocialMediaIcon(platform) {
 			return Globe;
 	}
 }
+
+useHead({
+	title: computed(() =>
+		eventDetail.data?.title
+			? `${eventDetail.data.title} | Event Details - Kenya Red Cross`
+			: "Event Details | Kenya Red Cross",
+	),
+	meta: [
+		{
+			name: "description",
+			content: computed(() =>
+				eventDetail.data?.short_description
+					? eventDetail.data.short_description
+					: "View full details, speakers, and register for this Kenya Red Cross event.",
+			),
+		},
+	],
+});
 </script>

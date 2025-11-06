@@ -39,6 +39,7 @@
 </template>
 
 <script setup>
+import { useHead } from "@vueuse/head";
 import Button from "frappe-ui/src/components/Button/Button.vue";
 import { RouterLink } from "vue-router";
 import EmptyState from "../components/EmptyState.vue";
@@ -46,4 +47,15 @@ import VmmsPortalCard from "../components/VmmsPortalCard.vue";
 import { membershipStore } from "../stores/membership";
 
 const { membershipTypes } = membershipStore();
+
+useHead({
+	title: "Join the Kenya Red Cross | Membership & Volunteer Sign Up",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Discover membership and volunteer opportunities with the Kenya Red Cross. View available membership plans and sign up to start contributing today.",
+		},
+	],
+});
 </script>

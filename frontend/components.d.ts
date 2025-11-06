@@ -72,6 +72,7 @@ declare module 'vue' {
     StepOrganization: typeof import('./src/components/Signup/StepOrganization.vue')['default']
     StepOtherDetails: typeof import('./src/components/Signup/StepOtherDetails.vue')['default']
     Ticket: typeof import('./src/components/Modals/Ticket.vue')['default']
+    TORDetails: typeof import('./src/components/TORDetails.vue')['default']
     UnsplashImageBrowser: typeof import('./src/components/UnsplashImageBrowser.vue')['default']
     Uploader: typeof import('./src/components/Controls/Uploader.vue')['default']
     UploadPlugin: typeof import('./src/components/UploadPlugin.vue')['default']
