@@ -15,11 +15,8 @@
 				/>
 			</svg>
 		</div>
-		<h3 class="text-xl font-semibold text-gray-900 mb-2">Membership Successful!</h3>
-		<p class="text-gray-600 mb-6">
-			Your membership has been processed successfully. Thank you for your continued support!
-			Welcome to our community!
-		</p>
+		<h3 class="text-xl font-semibold text-gray-900 mb-2">{{ title }} Successful!</h3>
+		<p class="text-gray-600 mb-6">{{ message }}. Thank you for your support!</p>
 		<Button variant="solid" theme="green" class="rounded-lg px-6" @click="emit('close')">
 			Close
 		</Button>
@@ -30,4 +27,9 @@
 import { Button } from "frappe-ui";
 
 const emit = defineEmits(["close"]);
+
+const props = defineProps({
+	title: String,
+	message: String,
+});
 </script>
