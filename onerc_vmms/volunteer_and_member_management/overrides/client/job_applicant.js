@@ -27,12 +27,12 @@ frappe.ui.form.on("Job Applicant", {
 					frm.page.set_primary_action(__("Update"), () => {
 						frm.save("Update");
 					});
-				} else {
-					frm.page.set_primary_action(__("Cancel"), () => {
-						frappe.confirm(__("Are you sure you want to cancel this document?"), () =>
-							frm.save("Cancel")
-						);
-					});
+					// } else {
+					// 	frm.page.set_primary_action(__("Cancel"), () => {
+					// 		frappe.confirm(__("Are you sure you want to cancel this document?"), () =>
+					// 			frm.save("Cancel")
+					// 		);
+					// 	});
 				}
 			} else if (frm.doc.docstatus === 2) {
 				frm.page.set_primary_action(__("Amend"), () => {
@@ -182,6 +182,34 @@ frappe.ui.form.on("Job Applicant", {
 						});
 					}
 				});
+		}
+
+		if (
+			frm.doc.docstatus === 1 &&
+			frm.doc.status === "Rejected" &&
+			frm.doc.applicant_notified_of_application_status === 0
+		) {
+			frm.add_custom_button(
+				__("Send Rejection Email"),
+				() => {
+					frappe.call({
+						method: "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.send_rejection_email",
+						args: {
+							name: frm.doc.name,
+						},
+						callback: function (r) {
+							if (!r.exc) {
+								frappe.msgprint({
+									title: __("Success"),
+									message: __("Rejection email sent successfully."),
+									indicator: "green",
+								});
+							}
+						},
+					});
+				},
+				__("Actions")
+			);
 		}
 	},
 	after_save: function (frm) {

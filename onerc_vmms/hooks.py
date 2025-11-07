@@ -172,6 +172,7 @@ doc_events = {
     "Job Applicant": {
         "before_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.before_submit",
         "on_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.on_submit",
+        "validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.validate",
     },
 }
 
@@ -181,6 +182,7 @@ doc_events = {
 scheduler_events = {
     "daily": [
         "onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership.set_expired_status",
+        "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.send_opportunity_applicant_rejections",
     ],
     "cron": {
         "*/2 * * * *": [
