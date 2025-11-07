@@ -183,7 +183,7 @@ scheduler_events = {
         "onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership.set_expired_status",
     ],
     "cron": {
-        "*/2 * * * *": [
+        "*/1 * * * *": [
             "onerc_vmms.volunteer_and_member_management.overrides.server.email.email_flush"
         ],
     },
