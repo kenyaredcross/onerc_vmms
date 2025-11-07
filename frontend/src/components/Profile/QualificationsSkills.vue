@@ -28,12 +28,41 @@
 			</button>
 		</div>
 
-		<Link
-			doctype="Profession"
-			v-model="localForm.profession"
-			:label="__('Profession')"
-			class="mt-4"
-		/>
+		<div class="rounded-xl border p-5 bg-white shadow-sm">
+			<h3 class="font-semibold text-gray-800 mb-3">
+				{{ __("Professional Profiles") }}
+			</h3>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-1">
+						{{ __("LinkedIn Profile") }}
+					</label>
+					<FormControl
+						v-model="localForm.linkedin"
+						type="url"
+						placeholder="https://linkedin.com/in/your-profile"
+					/>
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-1">
+						{{ __("GitHub Profile") }}
+					</label>
+					<FormControl
+						v-model="localForm.github"
+						type="url"
+						placeholder="https://github.com/username"
+					/>
+				</div>
+				<Link
+					doctype="Profession"
+					v-model="localForm.profession"
+					:label="__('Profession')"
+					class="mt-4"
+				/>
+			</div>
+		</div>
 
 		<div class="border rounded-lg shadow-sm">
 			<div
@@ -135,7 +164,7 @@
 import ChildTable from "@/components/Controls/ChildTable.vue";
 import Link from "@/components/Controls/Link.vue";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
-import { createResource, toast } from "frappe-ui";
+import { createResource, FormControl, toast } from "frappe-ui";
 import { computed, reactive, ref, watch } from "vue";
 import ErrorModal from "../Modals/ErrorModal.vue";
 
@@ -163,6 +192,8 @@ const isCollapsed = reactive({
 
 const localForm = reactive({
 	profession: null,
+	linkedin: "",
+	github: "",
 	education: [],
 	work_experience: [],
 	work_references: [],

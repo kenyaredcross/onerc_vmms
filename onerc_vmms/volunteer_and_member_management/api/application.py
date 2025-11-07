@@ -278,7 +278,8 @@ def create_job_application(job_opening: str = None, id: str = None, **kwargs) ->
 def fetch_applications(email: str):
     """
     Fetch all job applications (Job Applicant) for a given email,
-    along with related Job Opening details.
+    along with related Job Opening details. If applicant_notified_of_application_status
+    is not set (truthy), set the returned status to "Submitted" (without saving).
     """
     if not email:
         frappe.throw(_("Email is required to fetch job applications."))
@@ -286,33 +287,39 @@ def fetch_applications(email: str):
     applicants = frappe.get_all(
         "Job Applicant",
         filters={"email_id": email, "job_title": ("!=", None), "is_volunteer": 0},
-        fields=[
-            "name",
-            "applicant_name",
-            "designation",
-            "job_title",
-            "status",
-            "docstatus",
-            "company",
-            "cover_letter",
-            "creation",
-            "modified",
-        ],
+        fields=["name"],
         order_by="creation desc",
     )
 
     if not applicants:
         return []
 
+    results = []
     for app in applicants:
-        job_opening = (
-            frappe.get_doc("Job Opening", app.get("job_title")).as_dict()
-            if app.get("job_title")
-            else {}
-        )
-        app["job_opening_details"] = job_opening
+        try:
+            app_doc = frappe.get_doc("Job Applicant", app.get("name")).as_dict()
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Failed to fetch Job Applicant")
+            continue
 
-    return applicants
+        if (
+            not app_doc.get("applicant_notified_of_application_status")
+            and app_doc.get("docstatus") == 1
+        ):
+            app_doc["status"] = "Submitted"
+
+        job_opening_details = {}
+        job_title = app_doc.get("job_title")
+        if job_title:
+            try:
+                job_opening_details = frappe.get_doc("Job Opening", job_title).as_dict()
+            except Exception:
+                frappe.log_error(frappe.get_traceback(), "Failed to fetch Job Opening")
+
+        app_doc["job_opening_details"] = job_opening_details
+        results.append(app_doc)
+
+    return results
 
 
 @frappe.whitelist()

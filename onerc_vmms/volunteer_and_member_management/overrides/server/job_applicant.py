@@ -1,5 +1,7 @@
 import frappe
 from frappe.model.document import Document
+from .job_opening import send_rejection_email
+
 
 SKIP_CHILD_FIELDS = [
     "name",
@@ -42,6 +44,8 @@ NORMAL_FIELDS = [
     "reason_to_join_krcs",
     "gender",
     "consent_to_use_of_bio_data",
+    "linkedin",
+    "github",
 ]
 
 TABLE_FIELDS = [
@@ -214,5 +218,20 @@ def on_submit(doc, method):
     """Run after submit: prepare user updates (no save here)."""
     try:
         update_user_from_applicant(doc)
+        job_opening = frappe.get_doc("Job Opening", doc.job_title)
+        if job_opening.send_rejection_email_immediately and doc.status == "Rejected":
+            frappe.enqueue(
+                send_rejection_email,
+                name=doc.name,
+                queue="long",
+            )
+
     except Exception:
         frappe.log_error("Job Applicant -> User Update Error", frappe.get_traceback())
+
+
+def validate(doc, method):
+    if doc.job_title:
+        job_opening = frappe.get_doc("Job Opening", doc.job_title)
+        if job_opening.job_title != doc.opportunity_name:
+            doc.opportunity_name = job_opening.job_title

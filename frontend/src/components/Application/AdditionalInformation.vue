@@ -1,6 +1,6 @@
 <template>
 	<div class="space-y-8">
-		<div
+		<!-- <div
 			v-if="!props.job?.screening_questions?.length"
 			class="text-center py-10 px-6 rounded-lg bg-emerald-50 border-2 border-emerald-200 text-emerald-800"
 		>
@@ -28,7 +28,7 @@
 					)
 				}}
 			</p>
-		</div>
+		</div> -->
 
 		<div
 			v-for="(q, index) in visibleQuestions"
@@ -128,6 +128,36 @@
 				<FormControl v-else v-model="responses[q.question_id].answer" type="text" />
 			</div>
 		</div>
+
+		<div class="rounded-xl border p-5 bg-white shadow-sm">
+			<h3 class="font-semibold text-gray-800 mb-3">
+				{{ __("Professional Profiles") }}
+			</h3>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-1">
+						{{ __("LinkedIn Profile") }}
+					</label>
+					<FormControl
+						v-model="props.form.linkedin"
+						type="url"
+						placeholder="https://linkedin.com/in/your-profile"
+					/>
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-1">
+						{{ __("GitHub Profile") }}
+					</label>
+					<FormControl
+						v-model="props.form.github"
+						type="url"
+						placeholder="https://github.com/username"
+					/>
+				</div>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -147,7 +177,6 @@ const responses = ref({});
 
 function parseOptions(optStr) {
 	if (!optStr) return [];
-
 	return optStr
 		.split(/\r?\n|,/)
 		.map((o) => o.trim())
