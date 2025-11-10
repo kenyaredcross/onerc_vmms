@@ -150,7 +150,11 @@
 							class="w-full bg-white text-red-600 hover:bg-gray-100 rounded-lg font-semibold h-12"
 							icon-right="arrow-right"
 						>
-							{{ __("Register Now") }}
+							{{
+								roleResource.data.vol_applicant
+									? __("Continue with Volunteer Registration")
+									: __("Register Now")
+							}}
 						</Button>
 					</RouterLink>
 				</div>
@@ -168,20 +172,10 @@
 </template>
 
 <script lang="ts" setup>
-import {
-	Badge,
-	Button,
-	createResource,
-	Dialog,
-	ErrorMessage,
-	Input,
-	Popover,
-	toast,
-} from "frappe-ui";
+import { Badge, Button, createResource, ErrorMessage, Popover } from "frappe-ui";
 import { reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { usersStore } from "../stores/user";
-import { isValidPhone } from "../utils/volunteer";
 import RegisterMembership from "./Modals/RegisterMembership.vue";
 
 const { roleResource } = usersStore();

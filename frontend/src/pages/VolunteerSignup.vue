@@ -10,7 +10,7 @@
 		<h2 class="text-3xl font-bold text-gray-900 mb-4">{{ __("Login Required") }}</h2>
 		<p class="text-gray-600 mb-8">
 			{{ __("Please log in to submit your volunteer application.") }}
-		</p>
+		</p> 
 		<Button
 			variant="solid"
 			class="bg-red-600 hover:bg-red-700 text-white"

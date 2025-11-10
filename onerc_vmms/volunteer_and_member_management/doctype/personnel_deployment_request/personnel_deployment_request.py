@@ -17,6 +17,13 @@ class PersonnelDeploymentRequest(Document):
     def validate(self):
         self.number_of_volunteers_required()
 
+    def after_insert(self):
+        if not frappe.db.exists(
+            "User Permission",
+            {"user": self.user, "allow": "Project", "for_value": self.project},
+        ):
+            frappe.permissions.add_user_permission("Project", self.project, self.user)
+
     def number_of_volunteers_required(self):
         """Ensure that the number of accepted assignments does not exceed the number required"""
         if self.status == "Accepted" and (

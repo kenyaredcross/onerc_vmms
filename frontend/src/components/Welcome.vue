@@ -38,7 +38,11 @@
 						class="w-full py-4 rounded-xl shadow-lg text-lg font-medium"
 						@click="navigateTo('volunteer/signup')"
 					>
-						{{ __("Join as Volunteer") }}
+						{{
+							roleResource.data?.vol_applicant
+								? __("Continue with Volunteer Registration")
+								: __("Join as Volunteer")
+						}}
 					</Button>
 					<Button
 						variant="outline"
@@ -57,7 +61,7 @@
 	<PendingApproval v-else-if="roleResource.data.is_pending_approval" />
 </template>
 
-<script lang="ts" setup>
+<script setup>
 import { Button } from "frappe-ui";
 import router from "../router";
 import { usersStore } from "../stores/user";
@@ -65,7 +69,7 @@ import PendingApproval from "./PendingApproval.vue";
 
 const { roleResource } = usersStore();
 
-function navigateTo(path: string) {
+function navigateTo(path) {
 	router.push("/" + path);
 }
 </script>

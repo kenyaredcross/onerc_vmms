@@ -241,7 +241,7 @@
 			<p class="italic text-sm">
 				{{
 					__(
-						"I consent to the use of my biometric data for identification and verification purposes as per the organization's data protection policy.",
+						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy.",
 					)
 				}}
 			</p>

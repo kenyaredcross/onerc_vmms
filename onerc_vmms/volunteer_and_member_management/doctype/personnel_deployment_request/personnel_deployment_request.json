@@ -11,6 +11,7 @@
   "details_section",
   "employee",
   "employee_name",
+  "user",
   "column_break_qbmp",
   "project",
   "task",
@@ -85,7 +86,8 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Task",
-   "options": "Task"
+   "options": "Task",
+   "search_index": 1
   },
   {
    "fieldname": "location",
@@ -94,7 +96,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Location",
+   "label": "Specific Deployment Location",
    "options": "Location"
   },
   {
@@ -192,6 +194,13 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fetch_from": "employee.user_id",
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
   }
  ],
  "grid_page_length": 50,
@@ -235,7 +244,7 @@
    "link_fieldname": "personnel_deployment_assignment"
   }
  ],
- "modified": "2025-10-28 16:30:33.743787",
+ "modified": "2025-11-10 14:34:48.065793",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Deployment Request",

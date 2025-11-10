@@ -548,17 +548,18 @@
 											/>
 											<p
 												v-if="
-													validationErrors.get(
-														editModalRowIndex || -1,
-													)?.[field.fieldname]
+													editModalRowIndex !== null &&
+													validationErrors.get(editModalRowIndex)?.[
+														field.fieldname
+													]
 												"
 												class="text-xs text-red-500 mt-1"
 											>
 												{{
 													__(
-														validationErrors.get(
-															editModalRowIndex || -1,
-														)?.[field.fieldname],
+														validationErrors.get(editModalRowIndex)?.[
+															field.fieldname
+														],
 													)
 												}}
 											</p>
