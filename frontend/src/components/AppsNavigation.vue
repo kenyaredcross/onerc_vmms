@@ -30,7 +30,6 @@
 
 <script setup>
 import { Tooltip } from "frappe-ui";
-import * as icons from "lucide-vue-next";
 
 const props = defineProps({
 	app: Object,

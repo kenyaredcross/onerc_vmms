@@ -1,15 +1,14 @@
 <template>
 	<NoPermission v-if="user?.data == 'Guest'" :page="__('Dashboard')" />
-	<div v-if="user?.data && user?.data !== 'Guest'" class="max-w-7xl">
+	<div v-if="user?.data && user?.data !== 'Guest'" class="max-w-7xl mx-auto">
 		<div class="flex flex-col gap-2 my-6">
-			<h1 class="text-lg md:text-4xl font-bold text-gray-900 ml-7">
+			<h1 class="text-2xl md:text-4xl font-bold text-gray-900 ml-7">
 				Welcome back, {{ user?.data?.full_name }}!
 			</h1>
 		</div>
 
 		<div v-if="roleResource?.loading" class="text-center py-20">
-			<p>{{ __("Setting Up Dashboard...") }}</p>
-			<ProgressSpinner />
+			<ProgressSpinner :message="'Setting up Dashboard...'" />
 		</div>
 
 		<div v-else-if="roleResource?.data">

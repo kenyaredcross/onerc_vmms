@@ -107,7 +107,7 @@ const toggleSidebar = () => {
 };
 
 const redirectToWebsite = () => {
-	window.open("https://github.com/navariltd/onerc_vmms.git", "_blank");
+	window.open("https://github.com/kenyaredcross/onerc_vmms", "_blank");
 };
 
 const apps = createResource({
