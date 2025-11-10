@@ -149,7 +149,7 @@
 							variant="solid"
 							class="w-full bg-white text-red-600 hover:bg-gray-100 rounded-lg font-semibold h-12"
 							icon-right="arrow-right"
-						>
+						> 
 							{{
 								roleResource.data.vol_applicant
 									? __("Continue with Volunteer Registration")

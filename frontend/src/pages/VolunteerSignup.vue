@@ -10,7 +10,7 @@
 		<h2 class="text-3xl font-bold text-gray-900 mb-4">{{ __("Login Required") }}</h2>
 		<p class="text-gray-600 mb-8">
 			{{ __("Please log in to submit your volunteer application.") }}
-		</p> 
+		</p>
 		<Button
 			variant="solid"
 			class="bg-red-600 hover:bg-red-700 text-white"
@@ -162,12 +162,14 @@
 				<Button
 					variant="solid"
 					class="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-white py-3"
+					:loading="submitInProgress"
+					:disabled="submitInProgress"
 					@click="confirmSubmit"
 				>
 					<template #prefix>
 						<FeatherIcon name="check-circle" class="w-4" />
 					</template>
-					{{ __("Submit") }}
+					{{ submitInProgress ? __("Submitting...") : __("Submit") }}
 				</Button>
 			</div>
 		</template>
@@ -238,6 +240,7 @@ const { userResource } = usersStore();
 const { isLoggedIn } = sessionStore();
 const user = userResource;
 const router = useRouter();
+const submitInProgress = ref(false);
 
 const currentStep = ref(0);
 const steps = [
@@ -522,6 +525,7 @@ const submitApplicationResource = createResource({
 });
 
 const confirmSubmit = async () => {
+	submitInProgress.value = true;
 	submitApplicationResource.submit(
 		{},
 		{
@@ -531,9 +535,11 @@ const confirmSubmit = async () => {
 				alreadyApplied.value = true;
 				hasUnsavedChanges.value = false;
 				changedFields.value.clear();
+				submitInProgress.value = false;
 				window.location.reload();
 			},
 			onError: (err) => {
+				submitInProgress.value = false;
 				toast.error(err.messages?.[0] || "Submission failed");
 			},
 		},

@@ -54,8 +54,13 @@
 				variant="solid"
 				class="bg-red-700 hover:bg-red-800 text-white"
 				@click="router.push({ name: 'VolunteerSignup' })"
+				v-if="!user.data?.is_pending_approval"
 			>
-				{{ __("Register as Volunteer") }}
+				{{
+					user.data.vol_applicant
+						? __("Continue with Volunteer Registration")
+						: __("Register Now")
+				}}
 			</Button>
 		</div>
 
@@ -82,6 +87,7 @@
 <script setup>
 import { useHead } from "@vueuse/head";
 import { Button, createResource, toast } from "frappe-ui";
+import { LogIn } from "lucide-vue-next";
 import { computed, inject, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 

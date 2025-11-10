@@ -218,13 +218,18 @@ def create_job_application(job_opening: str = None, id: str = None, **kwargs) ->
         user_doc = None
         if user_id != "Guest":
             user_doc = frappe.get_doc("User", user_id)
-            kwargs["surname"] = user_doc.last_name or ""
-            first_name = user_doc.first_name or ""
-            middle_name = user_doc.middle_name or ""
-            kwargs["other_names"] = f"{first_name} {middle_name}".strip()
-            kwargs["email_id"] = user_doc.email or ""
-            kwargs["gender"] = user_doc.gender or ""
-            kwargs["phone_number"] = user_doc.phone or user_doc.mobile_no or ""
+            if not kwargs.get("surname"):
+                kwargs["surname"] = user_doc.last_name or ""
+            if not kwargs.get("other_names"):
+                first_name = user_doc.first_name or ""
+                middle_name = user_doc.middle_name or ""
+                kwargs["other_names"] = f"{first_name} {middle_name}".strip()
+            if not kwargs.get("email_id"):
+                kwargs["email_id"] = user_doc.email or ""
+            if not kwargs.get("gender"):
+                kwargs["gender"] = user_doc.gender or ""
+            if not kwargs.get("phone_number"):
+                kwargs["phone_number"] = user_doc.phone or user_doc.mobile_no or ""
 
         email_id = kwargs.get("email_id")
         if (
