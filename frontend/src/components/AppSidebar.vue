@@ -107,7 +107,7 @@ const toggleSidebar = () => {
 };
 
 const redirectToWebsite = () => {
-	window.open("https://github.com/navariltd/onerc_vmms.git", "_blank");
+	window.open("https://github.com/kenyaredcross/onerc_vmms", "_blank");
 };
 
 const apps = createResource({
@@ -118,7 +118,7 @@ const apps = createResource({
 	transform: (data) => {
 		let _apps = [];
 		data.map((app) => {
-			if (app.name === "onerc_vmms" || app.name == "lending") return;
+			if (app.name === "onerc_vmms") return;
 			_apps.push({
 				name: app.name,
 				logo: app.logo,
