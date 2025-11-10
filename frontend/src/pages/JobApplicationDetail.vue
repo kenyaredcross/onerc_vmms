@@ -52,20 +52,24 @@
 					v-for="(step, index) in filteredSteps"
 					:key="index"
 					@click="goToStep(step.originalIndex)"
-					:disabled="step.originalIndex > maxCompletedStep + 1 && !isSubmitted"
+					:disabled="
+						step.originalIndex > maxCompletedStep + 1 &&
+						step.originalIndex > currentStep &&
+						!isSubmitted
+					"
 					:class="[
-						'py-3 px-3 sm:px-5 text-sm sm:text-base font-semibold transition-all duration-200 ease-in-out flex-shrink-0 flex items-center gap-2',
+						'py-3 px-3 sm:px-5 text-sm sm:text-base font-semibold transition-all duration-200 ease-in-out flex-shrink-0 flex items-center gap-2 border-b-4',
 						currentStep === step.originalIndex
-							? 'border-b-4 border-red-600 text-red-700 bg-red-50/50'
-							: step.originalIndex <= maxCompletedStep && !isSubmitted
-								? 'text-green-600 hover:text-red-500 hover:border-b-4 hover:border-red-100'
-								: isSubmitted
-									? 'text-red-700'
-									: 'text-gray-400 cursor-not-allowed',
+							? 'border-red-600 text-red-700 bg-red-50/50'
+							: step.originalIndex < currentStep
+								? 'border-green-600 text-green-600 hover:text-red-500 hover:border-red-200'
+								: step.originalIndex <= maxCompletedStep + 1
+									? 'border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-300'
+									: 'border-gray-100 text-gray-400 cursor-not-allowed',
 					]"
 				>
 					<svg
-						v-if="step.originalIndex <= maxCompletedStep && !isSubmitted"
+						v-if="step.originalIndex < currentStep && !isSubmitted"
 						class="w-4 h-4 text-green-500"
 						fill="none"
 						stroke="currentColor"
@@ -189,12 +193,13 @@
 					<Button
 						variant="solid"
 						class="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-white py-3"
+						:loading="isSaving"
 						@click="submitApplication"
 					>
 						<template #prefix>
 							<FeatherIcon name="check-circle" class="w-4" />
 						</template>
-						{{ __("Submit") }}
+						{{ isSaving ? __("Submitting...") : __("Submit") }}
 					</Button>
 				</div>
 			</template>
@@ -206,6 +211,7 @@
 <script setup>
 import { useHead } from "@vueuse/head";
 import { Button, createResource, Dialog, toast } from "frappe-ui";
+import { FeatherIcon } from "lucide-vue-next";
 import { computed, inject, markRaw, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -429,11 +435,7 @@ const steps = [
 		hash: "#additional",
 		title: "Additional Information",
 		component: markRaw(AdditionalInformation),
-		validate: (form) => {
-			const config = getStepValidationConfig(3);
-			const validationErrors = validateForm(form, config);
-			return validationErrors.length ? validationErrors : true;
-		},
+		validate: (form) => validateAdditionalInformation(form),
 	},
 	{
 		hash: "#review",
@@ -451,6 +453,38 @@ const steps = [
 		},
 	},
 ];
+
+function validateAdditionalInformation(form) {
+	const responses = form.screening_question_responses || {};
+	const questions = job.data?.screening_questions || [];
+	const errors = [];
+
+	if (questions.length) {
+		questions.forEach((q) => {
+			const response = Object.values(responses).find((r) => r.question === q.question);
+			const answer = response?.answer ?? "";
+			if (q.is_required && !answer.trim()) {
+				errors.push(`"${q.question}" is required.`);
+			}
+		});
+	}
+
+	if (form.linkedin) {
+		const linkedinPattern = /^https?:\/\/(www\.)?linkedin\.com\/.*$/i;
+		if (!linkedinPattern.test(form.linkedin)) {
+			errors.push("LinkedIn URL is invalid.");
+		}
+	}
+
+	if (form.github) {
+		const githubPattern = /^https?:\/\/(www\.)?github\.com\/.*$/i;
+		if (!githubPattern.test(form.github)) {
+			errors.push("GitHub URL is invalid.");
+		}
+	}
+
+	return errors.length ? errors : true;
+}
 
 const form = ref({});
 const resume = ref(null);
@@ -631,6 +665,7 @@ function populateForm(data = {}, isApplication = false) {
 		}
 	}
 }
+
 const goToStep = (index) => {
 	if (isSubmitted.value) {
 		const reviewIndex = steps.findIndex((s) => s.hash === "#review");
@@ -645,13 +680,21 @@ const goToStep = (index) => {
 		return;
 	}
 
-	if (index <= maxCompletedStep.value + 1) {
+	if (index <= currentStep.value) {
 		currentStep.value = index;
 		router.replace({ hash: steps[index].hash });
 		isSaving.value = false;
-	} else {
-		toast.error("Please complete the previous step first.");
+		return;
 	}
+
+	if (index > maxCompletedStep.value + 1) {
+		toast.error("Please complete the previous step first.");
+		return;
+	}
+
+	currentStep.value = index;
+	router.replace({ hash: steps[index].hash });
+	isSaving.value = false;
 };
 
 const prevStep = () => {
@@ -737,10 +780,8 @@ const submitApplication = () => {
 		{
 			onSuccess: (response) => {
 				if (response?.error) {
-					// toast.error("Application submission failed.",  response.error);
 					window.location.reload();
 				} else {
-					// toast.success("Application submission successful.");
 					window.location.reload();
 				}
 			},
