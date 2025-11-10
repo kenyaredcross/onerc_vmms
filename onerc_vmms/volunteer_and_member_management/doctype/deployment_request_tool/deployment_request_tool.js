@@ -315,7 +315,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 	},
 
 	get_employees: function (frm) {
-		if (!frm.doc.project || !frm.doc.location || !frm.doc.expected_start_date) {
+		if (!frm.doc.project || !frm.doc.expected_start_date) {
 			frm.events.render_employees_datatable(frm, []);
 			return;
 		}

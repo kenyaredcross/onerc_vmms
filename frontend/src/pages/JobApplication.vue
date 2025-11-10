@@ -9,7 +9,7 @@
 				{{
 					__(
 						"Please log in to access your opportunity application details. Your application information is protected and only available to authenticated users.",
-					)
+					) 
 				}}
 			</p>
 			<Button

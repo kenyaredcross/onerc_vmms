@@ -18,7 +18,6 @@ class DeploymentRequestTool(Document):
     def validate_fields(self, employees: list):
         mandatory_fields = [
             "project",
-            "location",
             "expected_start_date",
             "expected_end_date",
         ]

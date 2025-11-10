@@ -107,17 +107,19 @@ def get_user_info():
     roles = frappe.get_roles(user.name)
     user["roles"] = roles
 
-    job_applicant = frappe.db.get_value(
+    vol_applicant = frappe.db.get_value(
         "Job Applicant",
         {"email_id": user.email, "is_volunteer": 1},
-        ["name", "status"],
+        ["name", "docstatus"],
         as_dict=True,
     )
 
-    if job_applicant and job_applicant.get("docstatus") == 1:
-        user["is_pending_approval"] = True
-    else:
-        user["is_pending_approval"] = False
+    if vol_applicant:
+        user["vol_applicant"] = vol_applicant.get("name")
+        if vol_applicant.get("docstatus") == 1:
+            user["is_pending_approval"] = True
+        else:
+            user["is_pending_approval"] = False
 
     employee_name = employee_company = None
     employee_is_volunteer = False

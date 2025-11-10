@@ -84,9 +84,8 @@
   {
    "fieldname": "location",
    "fieldtype": "Link",
-   "label": "Location",
-   "options": "Location",
-   "reqd": 1
+   "label": "Specific Deployment Location",
+   "options": "Location"
   },
   {
    "fieldname": "column_break_qbmp",
@@ -350,7 +349,7 @@
    "link_fieldname": "personnel_deployment_request"
   }
  ],
- "modified": "2025-11-06 09:53:09.722516",
+ "modified": "2025-11-10 10:01:33.906949",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Deployment Request Tool",
