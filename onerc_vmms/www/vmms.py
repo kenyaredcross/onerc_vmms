@@ -9,11 +9,14 @@ no_cache = 1
 
 
 def get_context():
+    csrf_token = frappe.sessions.get_csrf_token()
     frappe.db.commit()
     context = frappe._dict()
     context.boot = get_boot()
+    context.boot.csrf_token = csrf_token
     if frappe.session.user != "Guest":
         capture("active_site", "vmms")
+
     return context
 
 
@@ -25,13 +28,13 @@ def get_context_for_dev():
 
 
 def get_boot():
+
     return frappe._dict(
         {
             "frappe_version": frappe.__version__,
             "default_route": get_default_route(),
             "site_name": frappe.local.site,
             "read_only_mode": frappe.flags.read_only,
-            "csrf_token": frappe.sessions.get_csrf_token(),
             "setup_complete": cint(frappe.get_system_settings("setup_complete")),
             "sysdefaults": frappe.defaults.get_defaults(),
             "timezone": {
