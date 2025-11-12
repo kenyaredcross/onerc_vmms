@@ -7,7 +7,7 @@
 			:message="__('Failed to get Membership Details')"
 		/>
 
-		<div v-else-if="currentMembership.data" class="w-full flex flex-col items-center">
+		<div v-else-if="currentMembership.data" class="w-full flex flex-col items-center md:mt-10">
 			<Member
 				v-if="currentMembership.data.length > 0"
 				:membershipStatus="currentMembership.data"
