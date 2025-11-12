@@ -23,7 +23,7 @@
 						:src="link.logo"
 						class="h-4 w-4 object-contain"
 					/>
-					<div class="">{{ __(link.label) }}</div>
+					<div class="">{{ __(link.name) }}</div>
 				</div>
 			</div>
 
@@ -31,7 +31,7 @@
 				class="fixed bottom-0 left-0 w-full flex items-center justify-between border-t border-outline-gray-2 bg-surface-white standalone:pb-4 z-10"
 			>
 				<button
-					v-for="tab in sidebarLinks.filter((link) => link.label !== 'Learning')"
+					v-for="tab in sidebarLinks.filter((link) => link.name !== 'Learning')"
 					:key="tab.label"
 					:class="isVisible(tab) ? 'block' : 'hidden'"
 					class="flex-1 flex flex-col items-center justify-center py-4 transition active:scale-95"
@@ -65,6 +65,7 @@ import { createResource } from "frappe-ui";
 import * as icons from "lucide-vue-next";
 import { ref, toRaw, watch } from "vue";
 import { useRouter } from "vue-router";
+import { sideBarApps } from "../utils/appsNavigate";
 
 const { logout, user } = sessionStore();
 let { isLoggedIn } = sessionStore();
@@ -92,63 +93,27 @@ watch(showMenu, (val) => {
 	}
 });
 
-const filterLinksToShow = (data) => {
-	Object.keys(data).forEach((key) => {
-		if (!parseInt(data[key])) {
-			sidebarLinks.value = sidebarLinks.value.filter(
-				(link) => link.label.toLowerCase().split(" ").join("_") !== key,
-			);
-		}
-	});
-};
-
 const addOtherLinks = () => {
 	if (user) {
-		apps.data.forEach((app) => {
-			if (app.name === "onerc_vmms") return;
-			otherLinks.value.push({
-				label: app.title,
-				logo: app.logo,
-				to: app.route,
-			});
-		});
 		otherLinks.value.push(
+			...sideBarApps(),
 			{
-				label: "Profile",
+				name: "Profile",
 				icon: "User",
-				to: "Profile",
+				route: "Profile",
 			},
 			{
-				label: "Log out",
+				name: "Log out",
 				icon: "LogOut",
 			},
 		);
 	} else {
 		otherLinks.value.push({
-			label: "Log in",
+			name: "Log in",
 			icon: "LogIn",
 		});
 	}
 };
-
-const apps = createResource({
-	url: "frappe.apps.get_apps",
-	cache: "apps",
-	auto: true,
-	transform: (data) => {
-		let _apps = [];
-		data.map((app) => {
-			if (app.name === "onerc_vmms") return;
-			_apps.push({
-				name: app.name,
-				logo: app.logo,
-				title: __(app.title),
-				route: app.route,
-			});
-		});
-		return _apps;
-	},
-});
 
 let isActive = (tab) => {
 	return tab.activeFor?.includes(router.currentRoute.value.name);
@@ -157,22 +122,22 @@ let isActive = (tab) => {
 const handleClick = (tabLink) => {
 	let tab = toRaw(tabLink);
 
-	if (tab.label === "Log in") {
+	if (tab.name === "Log in") {
 		window.location.href = "/vmms/login";
-	} else if (tab.label === "Log out") {
+	} else if (tab.name === "Log out") {
 		logout.submit().then(() => {
 			isLoggedIn = false;
 		});
-	} else if (tab.logo) {
-		window.location.href = tab.to;
-	} else if (tab.to) {
-		router.push({ name: tab.to });
+	} else if (tab.icon) {
+		window.location.href = tab.route;
+	} else if (tab.route) {
+		router.push({ name: tab.route });
 	}
 };
 
 const isVisible = (tab) => {
-	if (tab.label == "Log in") return !isLoggedIn;
-	else if (tab.label == "Log out") return isLoggedIn;
+	if (tab.name == "Log in") return !isLoggedIn;
+	else if (tab.name == "Log out") return isLoggedIn;
 	else return true;
 };
 
@@ -180,14 +145,9 @@ const toggleMenu = () => {
 	showMenu.value = !showMenu.value;
 };
 
-watch(
-	() => apps.data,
-	(val) => {
-		if (val && val.length > 0 && !appsLoaded) {
-			addOtherLinks();
-			appsLoaded = true;
-		}
-	},
-	{ immediate: true },
-);
+watch(showMenu, (newVal) => {
+	if (newVal) {
+		if (otherLinks.value.length == 0) addOtherLinks();
+	}
+});
 </script>
