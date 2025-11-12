@@ -19,7 +19,7 @@
 
 			<div v-if="isLoggedIn">
 				<AppsNavigation
-					v-for="app in apps.data"
+					v-for="app in apps"
 					:key="app?.name"
 					:isCollapsed="sidebarStore.sidebarCollapsed"
 					:app="app"
@@ -110,23 +110,24 @@ const redirectToWebsite = () => {
 	window.open("https://github.com/kenyaredcross/onerc_vmms", "_blank");
 };
 
-const apps = createResource({
-	url: "frappe.apps.get_apps",
-	cache: "apps",
-	auto: true,
-
-	transform: (data) => {
-		let _apps = [];
-		data.map((app) => {
-			if (app.name === "onerc_vmms") return;
-			_apps.push({
-				name: app.name,
-				logo: app.logo,
-				title: __(app.title),
-				route: app.route,
-			});
-		});
-		return _apps;
+const apps = ref([
+	{
+		name: "frappe",
+		icon: "Monitor",
+		title: __("Desk"),
+		route: "/app",
 	},
-});
+	{
+		name: "forum",
+		icon: "MessageSquare",
+		title: __("Forum"),
+		route: "/raven",
+	},
+	{
+		name: "helpdesk",
+		icon: "HelpCircle",
+		title: __("Support"),
+		route: "/helpdesk/my-tickets",
+	},
+]);
 </script>
