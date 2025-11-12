@@ -15,6 +15,7 @@
 						<component
 							:is="icons[link.icon]"
 							class="h-4 w-4 stroke-1.5 text-ink-gray-8"
+							:class="isActive ? 'text-ink-red-4' : 'text-ink-gray-8'"
 						/>
 					</span>
 				</slot>
