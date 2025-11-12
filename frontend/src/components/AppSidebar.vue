@@ -95,6 +95,7 @@ import { CircleAlert, Zap } from "lucide-vue-next";
 import { ref } from "vue";
 import AppsNavigation from "./AppsNavigation.vue";
 import { sessionStore } from "../stores/session";
+import { sideBarApps } from "../utils/appsNavigate";
 
 let sidebarStore = useSidebar();
 const sidebarLinks = ref(getSidebarLinks());
@@ -110,24 +111,5 @@ const redirectToWebsite = () => {
 	window.open("https://github.com/kenyaredcross/onerc_vmms", "_blank");
 };
 
-const apps = ref([
-	{
-		name: "frappe",
-		icon: "Monitor",
-		title: __("Desk"),
-		route: "/app",
-	},
-	{
-		name: "forum",
-		icon: "MessageSquare",
-		title: __("Forum"),
-		route: "/raven",
-	},
-	{
-		name: "helpdesk",
-		icon: "HelpCircle",
-		title: __("Support"),
-		route: "/helpdesk/my-tickets",
-	},
-]);
+const apps = ref(sideBarApps());
 </script>
