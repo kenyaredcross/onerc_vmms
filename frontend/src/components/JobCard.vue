@@ -22,11 +22,11 @@
 		</h2>
 
 		<div
-			v-if="job.job_location"
+			v-if="job.county"
 			class="flex items-center gap-2 px-3 py-1 bg-red-100 border-l-4 border-red-500 rounded text-sm font-semibold text-red-800 mb-3"
 		>
 			<MapPin class="w-4 h-4 text-red-600 flex-shrink-0" />
-			<span>{{ __(job.job_location) }}</span>
+			<span>{{ __(job.county) }}</span>
 		</div>
 
 		<div class="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-3"></div>

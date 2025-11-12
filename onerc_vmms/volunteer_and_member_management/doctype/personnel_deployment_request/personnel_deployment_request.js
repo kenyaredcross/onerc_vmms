@@ -2,6 +2,15 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Personnel Deployment Request", {
+	validate(frm) {
+		if (frm.doc.expected_end_date && frm.doc.expected_start_date) {
+			if (frm.doc.expected_end_date < frm.doc.expected_start_date) {
+				frappe.msgprint(__("Expected End Date cannot be before Expected Start Date"));
+				frappe.validated = false;
+			}
+		}
+	},
+
 	refresh(frm) {
 		if (!frm.is_new() && frm.doc.require_contract_before_deployment) {
 			frappe.db.get_value(

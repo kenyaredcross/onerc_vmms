@@ -15,7 +15,7 @@
 			/>
 		</header>
 
-		<div v-if="job.data" class="mx-auto px-4 sm:px-6 pt-6">
+		<div v-if="job.data" class="px-4 sm:px-6 pt-6">
 			<JobDetails :job="job" />
 		</div>
 	</div>

@@ -26,9 +26,9 @@ class PersonnelDeploymentRequest(Document):
 
     def number_of_volunteers_required(self):
         """Ensure that the number of accepted assignments does not exceed the number required"""
-        if self.status == "Accepted" and (
+        if self.deployment_status == "Accepted" and (
             not self.get_doc_before_save()
-            or self.get_doc_before_save().status != "Accepted"
+            or self.get_doc_before_save().deployment_status != "Accepted"
         ):
             deployment_request = frappe.get_doc(
                 "Deployment Request Tool", self.deployment
@@ -38,7 +38,7 @@ class PersonnelDeploymentRequest(Document):
             )
             assigned_count = frappe.db.count(
                 "Personnel Deployment Request",
-                {"deployment": self.deployment, "docstatus": 1, "status": "Accepted"},
+                {"deployment": self.deployment, "deployment_status": "Accepted"},
             )
             if assigned_count > number_of_volunteers_required - 1:
                 frappe.throw(
