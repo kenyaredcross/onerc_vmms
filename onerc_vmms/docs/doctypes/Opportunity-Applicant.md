@@ -10,6 +10,8 @@ The doctype manages multiple types of engagements in one place:
 - **Employment Opportunities**: Full HR recruitment workflow including qualification tracking, automated scoring, and offer generation.
 - **Internal Opportunities**: Tracks _Required Skills_ and, upon verification, updates the corresponding **Personnel record**, keeping skill profiles up-to-date.
 
+![Applicant Overview](../images/applicant/applicant.png)
+
 ---
 
 ## Key Features
@@ -65,7 +67,7 @@ Internal Opportunity Openings can define _Required Skills_ which, once verified 
 | **Reason to Join**             | Select | Motivation: Humanitarian, Skill Development, Social Cohesion, Personal |
 | **Consent to Use of Bio Data** | Check  | Permission for data processing                                         |
 
----
+## ![Profile Overview](../images/applicant/profile.png)
 
 ## Citizenship & Identification
 
@@ -75,6 +77,8 @@ Internal Opportunity Openings can define _Required Skills_ which, once verified 
 | **ID Number**              | Data   | Identification number                         |
 | **Citizenship**            | Select | Citizen, Non-citizen, Refugee, Migrant, Other |
 | **Country of Citizenship** | Link   | Country of citizenship                        |
+
+## ![Citizenship Overview](../images/applicant/citizenship.png)
 
 ---
 
@@ -87,6 +91,8 @@ Internal Opportunity Openings can define _Required Skills_ which, once verified 
 | **Administrative Location** | Link   | Specific administrative location          |
 | **Ward**                    | Link   | Local ward information                    |
 | **Access to Internet**      | Select | Internet availability: Yes, No, Sometimes |
+
+## ![Location Overview](../images/applicant/location.png)
 
 ---
 
@@ -108,6 +114,8 @@ Internal Opportunity Openings can define _Required Skills_ which, once verified 
 | **Blood Group**  | Data  | Blood type information                    |
 | **Disabilities** | Table | Disability information and accommodations |
 | **Allergies**    | Table | Medical allergies and reactions           |
+
+## ![Health Overview](../images/applicant/health.png)
 
 ---
 
@@ -147,6 +155,8 @@ Internal Opportunity Openings can define _Required Skills_ which, once verified 
 | **Screening Score (%)**          | Percent | Percentage score from screening        |
 | **Eligibility Status**           | Select  | Eligible, Not Eligible, Pending Review |
 | **Screening Question Responses** | Table   | Responses to screening questions       |
+
+## ![Screening Overview](../images/applicant/screening.png)
 
 ---
 
