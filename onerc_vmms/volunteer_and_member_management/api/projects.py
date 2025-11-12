@@ -11,7 +11,7 @@ def fetch_assigned_projects():
         "Personnel Deployment Request",
         filters={
             "employee": volunteer,
-            "status": "Pending",
+            "deployment_status": "Pending",
             "docstatus": 1,
         },
         fields=["name", "deployment"],
@@ -142,7 +142,7 @@ def accept_assignment(name, accepted=True, contract_name=None):
         assignee = frappe.get_doc(
             "Personnel Deployment Request", name, ignore_permissions=True
         )
-        assignee.status = "Accepted" if accepted else "Rejected"
+        assignee.deployment_status = "Accepted" if accepted else "Rejected"
         assignee.save(ignore_permissions=True)
         frappe.db.commit()
 
@@ -157,11 +157,11 @@ def get_all_deployed_projects(**kwargs):
 
     volunteer = get_current_volunteer()
 
-    accepted_filters = {"status": "Accepted"}
-    rejected_filters = {"status": "Rejected"}
+    accepted_filters = {"deployment_status": "Accepted"}
+    rejected_filters = {"deployment_status": "Rejected"}
 
     deployments = frappe.get_all(
-        "Volunteer Deployment Assignee",
+        "Personnel Deployment Request",
         (
             {"volunteer": volunteer} | accepted_filters
             if kwargs.get("accepted")

@@ -7,6 +7,15 @@ frappe.ui.form.on("Deployment Request Tool", {
 		hrms.setup_employee_filter_group(frm);
 	},
 
+	validate(frm) {
+		if (frm.doc.expected_end_date && frm.doc.expected_start_date) {
+			if (frm.doc.expected_end_date < frm.doc.expected_start_date) {
+				frappe.msgprint(__("Expected End Date cannot be before Expected Start Date"));
+				frappe.validated = false;
+			}
+		}
+	},
+
 	refresh: function (frm) {
 		frm.page.clear_indicator();
 		frm.trigger("get_employees");

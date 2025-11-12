@@ -62,6 +62,13 @@
 						: __("Register Now")
 				}}
 			</Button>
+			<div v-else class="text-gray-700">
+				{{
+					__(
+						"Your application for volunteering is currently under review. Please come back later to apply for this opportunity.",
+					)
+				}}
+			</div>
 		</div>
 
 		<div v-else class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
