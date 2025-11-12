@@ -37,7 +37,6 @@ const routes = [
 		name: "Profile",
 		component: () => import("@/pages/Profile.vue"),
 		props: true,
-		meta: { requiresAuth: true },
 	},
 	{
 		name: "Welcome",
