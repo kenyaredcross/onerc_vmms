@@ -88,17 +88,6 @@ const userDropdownOptions = computed(() => {
 			group: "",
 			items: [
 				{
-					icon: User,
-					label: "My Profile",
-					onClick: () => {
-						router.push(`/user/profile`);
-					},
-					condition: () => {
-						return isLoggedIn;
-					},
-				},
-
-				{
 					icon: FrappeCloudIcon,
 					label: "Login to Frappe Cloud",
 					onClick: () => {
@@ -141,7 +130,7 @@ const userDropdownOptions = computed(() => {
 					icon: LogIn,
 					label: "Log in",
 					onClick: () => {
-						window.location.href = "/login";
+						window.location.href = "/vmms/login";
 					},
 					condition: () => {
 						return !isLoggedIn;
