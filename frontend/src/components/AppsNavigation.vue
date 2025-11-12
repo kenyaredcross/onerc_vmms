@@ -11,7 +11,10 @@
 			<Tooltip :text="app.title" placement="right">
 				<slot name="icon">
 					<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
-						<img :src="app.logo" class="h-4 w-4 stroke-1.5 text-ink-gray-8" alt="" />
+						<component
+							:is="icons[app.icon]"
+							class="h-4 w-4 stroke-1.5 text-ink-gray-8"
+						/>
 					</span>
 				</slot>
 			</Tooltip>
@@ -30,6 +33,7 @@
 
 <script setup>
 import { Tooltip } from "frappe-ui";
+import * as icons from "lucide-vue-next";
 
 const props = defineProps({
 	app: Object,
