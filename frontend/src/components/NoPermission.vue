@@ -7,7 +7,7 @@
 		</div>
 
 		<h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
-			🔒 {{ __("Authentication Required") }}
+			{{ __("Authentication Required") }}
 		</h2>
 
 		<p class="text-gray-600 mb-8 max-w-md">

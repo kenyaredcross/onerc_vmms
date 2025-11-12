@@ -1,5 +1,6 @@
 <template>
-	<div class="container mx-auto px-4 md:px-8 py-4 md:py-8 min-h-screen bg-gray-50">
+	<NoPermission v-if="!isLoggedIn" :page="__('Profile')" />
+	<div v-else class="container mx-auto px-4 md:px-8 py-4 md:py-8 min-h-screen bg-gray-50">
 		<ProfileHeader :form="form" class="mb-6 md:mb-10" />
 
 		<div v-if="loading" class="text-center py-20 bg-white rounded-xl shadow-lg">
@@ -113,11 +114,13 @@ import HealthDisabilities from "@/components/Profile/HealthDisabilities.vue";
 import PersonalInfo from "@/components/Profile/PersonalInfo.vue";
 import ProfileHeader from "@/components/Profile/ProfileHeader.vue";
 import QualificationsSkills from "@/components/Profile/QualificationsSkills.vue";
+import { sessionStore } from "../stores/session";
 
 const loading = ref(true);
 const showErrorDialog = ref(false);
 const currentTab = ref(0);
 const flatErrors = ref("");
+const { isLoggedIn } = sessionStore();
 
 const tabs = [
 	{ title: "Personal Info", component: PersonalInfo },
