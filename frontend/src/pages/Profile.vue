@@ -139,7 +139,6 @@ function populateForm(data) {
 
 const userDetailsResource = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_details",
-	auto: true,
 	onSuccess(data) {
 		if (data) populateForm(data);
 		loading.value = false;
@@ -193,7 +192,9 @@ onMounted(() => {
 		window.addEventListener("hashchange", updateTabFromHash);
 	}
 
-	if (!userDetailsResource.data) userDetailsResource.reload();
+	if (!isLoggedIn) return;
+
+	 userDetailsResource.fetch();
 });
 
 useHead({
