@@ -13,12 +13,10 @@ def get_membership_types():
         order_by="amount asc",
     )
     for membership in memberships:
-        membership_benefits = frappe.get_all(
-            "Membership Benefit", {"parent": membership.name}, ["benefit"]
+        membership_doc = frappe.get_doc(
+            "VM Membership Type", membership, fields=["benefits"]
         )
-
-        if membership_benefits:
-            membership["benefits"] = [b.benefit for b in membership_benefits]
+        membership.update(membership_doc.as_dict())
 
     return memberships
 
@@ -149,10 +147,26 @@ def create_membership(
     amount: float,
     membership_type: str,
     branch: str,
+    age: int,
 ) -> None:
 
-    if not phone or not amount or not membership_type or not branch:
-        frappe.throw("All fields are required")
+    membership_type_doc = frappe.get_doc("VM Membership Type", membership_type)
+    if not membership_type_doc:
+        frappe.throw(_("Error creating membership"))
+    if membership_type_doc.requires_age_requirement:
+        if age < membership_type_doc.lower_age_limit:
+            frappe.throw(
+                _(
+                    f"You must be at least {membership_type_doc.lower_age_limit} years old to register for this membership type."
+                )
+            )
+
+        if age > membership_type_doc.upper_age_limit:
+            frappe.throw(
+                _(
+                    f"You must be under {membership_type_doc.upper_age_limit} years old to register for this membership type."
+                )
+            )
 
     user = frappe.db.get_value(
         "User", frappe.session.user, ["full_name"], as_dict=1

@@ -17,7 +17,7 @@
   "task",
   "location",
   "column_break_qlbs",
-  "status",
+  "deployment_status",
   "deployment",
   "date",
   "dates__reason_section",
@@ -81,9 +81,6 @@
   {
    "fieldname": "task",
    "fieldtype": "Link",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Task",
    "options": "Task",
@@ -92,9 +89,6 @@
   {
    "fieldname": "location",
    "fieldtype": "Link",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Specific Deployment Location",
    "options": "Location"
@@ -102,18 +96,6 @@
   {
    "fieldname": "column_break_qlbs",
    "fieldtype": "Column Break"
-  },
-  {
-   "allow_on_submit": 1,
-   "default": "Pending",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Pending\nAccepted\nRejected\nCancelled",
-   "reqd": 1
   },
   {
    "fieldname": "deployment",
@@ -164,10 +146,6 @@
   {
    "fieldname": "terms_of_reference",
    "fieldtype": "Link",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_preview": 1,
-   "in_standard_filter": 1,
    "label": "Terms of Reference",
    "options": "Personnel Terms of Reference",
    "reqd": 1,
@@ -201,6 +179,20 @@
    "fieldtype": "Link",
    "label": "User",
    "options": "User"
+  },
+  {
+   "allow_on_submit": 1,
+   "columns": 2,
+   "default": "Pending",
+   "fieldname": "deployment_status",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Deployment Status",
+   "options": "Pending\nAccepted\nRejected\nCancelled",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -244,7 +236,7 @@
    "link_fieldname": "personnel_deployment_assignment"
   }
  ],
- "modified": "2025-11-10 14:34:48.065793",
+ "modified": "2025-11-12 17:03:30.380400",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Deployment Request",

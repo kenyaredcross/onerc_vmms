@@ -1,5 +1,7 @@
 <template>
-	<div class="flex flex-col lg:flex-row gap-10 md:gap-12 px-4 md:px-8 py-6 bg-gray-50 max-w-6xl">
+	<div
+		class="flex flex-col lg:flex-row gap-10 md:gap-12 px-4 md:px-8 py-6 bg-gray-50 rounded-2xl shadow-sm max-w-6xl"
+	>
 		<div class="flex-1 space-y-2 md:space-y-6">
 			<h1 class="text-lg md:text-3xl text-gray-900">{{ __("Your Membership(s)") }}</h1>
 
@@ -149,7 +151,7 @@
 							variant="solid"
 							class="w-full bg-white text-red-600 hover:bg-gray-100 rounded-lg font-semibold h-12"
 							icon-right="arrow-right"
-						> 
+						>
 							{{
 								roleResource.data.vol_applicant
 									? __("Continue with Volunteer Registration")

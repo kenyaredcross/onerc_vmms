@@ -1,5 +1,9 @@
 frappe.ui.form.on("Job Opening", {
 	refresh: function (frm) {
+		if (frm.doc.company) {
+			set_county_filter(frm, frm.doc.company);
+		}
+
 		frappe.db.get_doc("VM Settings").then((settings) => {
 			if (!settings) return;
 
@@ -172,6 +176,11 @@ frappe.ui.form.on("Job Opening", {
 			frm.set_value("closed_on", null);
 		}
 	},
+
+	company: function (frm) {
+		frm.set_value("county", null);
+		set_county_filter(frm, frm.doc.company);
+	},
 });
 
 function show_rejection_dialog(frm, applicants) {
@@ -254,4 +263,36 @@ function show_rejection_dialog(frm, applicants) {
 	});
 
 	d.show();
+}
+
+function set_county_filter(frm, company) {
+	if (!company) return;
+
+	frappe.call({
+		method: "onerc_vmms.volunteer_and_member_management.utils.get_company_descendants",
+		args: { company },
+		callback: function (resp) {
+			const allowedCompanies =
+				resp && resp.message && resp.message.length
+					? resp.message
+					: company
+					? [company]
+					: [];
+
+			frm.set_query("county", function () {
+				if (allowedCompanies && allowedCompanies.length) {
+					return {
+						filters: [["name", "in", allowedCompanies]],
+					};
+				}
+				return {};
+			});
+
+			if (frm.doc.county && !allowedCompanies.includes(frm.doc.company)) {
+				frm.set_value("county", null);
+			}
+
+			frm.refresh_field("county");
+		},
+	});
 }

@@ -391,6 +391,13 @@ export function getUserTimezone() {
 export function getSidebarLinks() {
 	return [
 		{
+			label: "Profile",
+			icon: "User",
+			to: "Profile",
+			activeFor: ["Profile"],
+		},
+
+		{
 			label: "Dashboard",
 			icon: "LayoutDashboard",
 			to: "Dashboard",

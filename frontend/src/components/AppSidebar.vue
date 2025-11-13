@@ -19,7 +19,7 @@
 
 			<div v-if="isLoggedIn">
 				<AppsNavigation
-					v-for="app in apps.data"
+					v-for="app in apps"
 					:key="app?.name"
 					:isCollapsed="sidebarStore.sidebarCollapsed"
 					:app="app"
@@ -95,6 +95,7 @@ import { CircleAlert, Zap } from "lucide-vue-next";
 import { ref } from "vue";
 import AppsNavigation from "./AppsNavigation.vue";
 import { sessionStore } from "../stores/session";
+import { sideBarApps } from "../utils/appsNavigate";
 
 let sidebarStore = useSidebar();
 const sidebarLinks = ref(getSidebarLinks());
@@ -110,23 +111,5 @@ const redirectToWebsite = () => {
 	window.open("https://github.com/kenyaredcross/onerc_vmms", "_blank");
 };
 
-const apps = createResource({
-	url: "frappe.apps.get_apps",
-	cache: "apps",
-	auto: true,
-
-	transform: (data) => {
-		let _apps = [];
-		data.map((app) => {
-			if (app.name === "onerc_vmms") return;
-			_apps.push({
-				name: app.name,
-				logo: app.logo,
-				title: __(app.title),
-				route: app.route,
-			});
-		});
-		return _apps;
-	},
-});
+const apps = ref(sideBarApps());
 </script>

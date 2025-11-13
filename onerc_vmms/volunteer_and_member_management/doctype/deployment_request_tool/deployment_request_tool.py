@@ -32,7 +32,7 @@ class DeploymentRequestTool(Document):
         number_of_volunteers_required = int(self.number_of_volunteers_required or 0)
         assigned_count = frappe.db.count(
             "Personnel Deployment Request",
-            {"deployment": self.name, "docstatus": 1, "status": "Accepted"},
+            {"deployment": self.name, "deployment_status": "Accepted"},
         )
         if assigned_count >= number_of_volunteers_required:
             frappe.throw(
@@ -56,17 +56,16 @@ class DeploymentRequestTool(Document):
                     filters={
                         "employee": employee,
                         "deployment": self.name,
-                        "status": ["in", ["Pending", "Accepted"]],
-                        "docstatus": 1,
+                        "deployment_status": ["in", ["Pending", "Accepted"]],
                     },
-                    fields=["name", "status"],
+                    fields=["name", "deployment_status"],
                 )
 
                 if existing:
                     failure.append(
                         {
                             "employee": employee,
-                            "reason": f"Existing {existing[0].status} assignment (<a href='{frappe.utils.get_url_to_form('Personnel Deployment Request', existing[0].name)}' target='_blank'>{existing[0].name}</a>) found.",
+                            "reason": f"Existing {existing[0].deployment_status} assignment (<a href='{frappe.utils.get_url_to_form('Personnel Deployment Request', existing[0].name)}' target='_blank'>{existing[0].name}</a>) found.",
                         }
                     )
                     continue
@@ -100,7 +99,6 @@ class DeploymentRequestTool(Document):
                     assignment.set(field, value)
 
                 assignment.insert()
-                assignment.submit()
 
                 success.append(
                     {

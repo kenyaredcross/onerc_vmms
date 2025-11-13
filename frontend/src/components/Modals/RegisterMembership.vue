@@ -8,103 +8,141 @@
 		</template>
 
 		<template #body-content>
-			<div v-if="!paymentStatus" class="py-4">
-				<form action="" @submit.prevent="submit">
-					<div
-						class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
-					>
-						<div class="space-y-1">
-							<FormControl
-								type="text"
-								label="Membership Type"
-								placeholder="Select membership type"
-								class="w-full text-sm"
-								v-model="membershipForm.membership_type"
-								:value="props.membership_type"
-								readonly
-							/>
+			<ProgressSpinner
+				v-if="membershipEligibility.loading"
+				:message="'Processing membership validity'"
+			/>
+			<ErrorMessage
+				v-else-if="membershipEligibility.error"
+				:message="membershipEligibility.error"
+			/>
+			<div v-else-if="!membershipEligibility.data">
+				<div
+					class="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg shadow-sm"
+				>
+					<div class="flex items-start space-x-3">
+						<div class="flex-shrink-0">
+							<AlertTriangle class="w-6 h-6 text-yellow-600" />
 						</div>
-
-						<div class="space-y-1">
-							<FormControl
-								type="number"
-								label="Amount"
-								placeholder="Enter amount"
-								class="w-full text-sm"
-								v-model="membershipForm.amount"
-								:value="props.amount"
-								readonly
-							/>
+						<div>
+							<h4 class="text-lg font-semibold text-yellow-800 mb-2">
+								Profile Incomplete
+							</h4>
+							<p class="text-yellow-700 mb-3">
+								To become a member, please complete your profile with all required
+								information. This ensures we can properly process your membership
+								application.
+							</p>
+							<Button
+								variant="solid"
+								theme="red"
+								@click="router.push({ name: 'Profile' })"
+							>
+								Complete Profile
+							</Button>
 						</div>
 					</div>
-
-					<FormControl
-						v-if="!is_renew"
-						type="autocomplete"
-						label="Branch / County"
-						placeholder="Select branch or county to register with"
-						class="w-full mb-4"
-						:options="branches.data"
-						v-model="branch"
-					/>
-
-					<FormControl
-						v-if="is_renew"
-						type="text"
-						label="Branch / County"
-						placeholder="Select branch or county to register with"
-						class="w-full mb-4"
-						:value="props.renew_branch"
-						v-model="branch"
-						readonly
-					/>
-
-					<FormControl
-						type="text"
-						label="Phone Number (MPesa Phone Number to be used for payment)"
-						placeholder="eg. 0712345678"
-						class="w-full"
-						v-model="membershipForm.phone"
-					/>
-
-					<ErrorMessage
-						v-if="createMembership.error"
-						class="text-center border rounded-md p-2 border-red-500 bg-red-50 text-sm my-3"
-						:message="createMembership.error"
-					/>
-					<div class="mt-4 gap-2 flex items-end justify-end">
-						<Button
-							v-if="!confirmPayment"
-							type="submit"
-							variant="solid"
-							theme="green"
-							:loading="createMembership.loading"
-							class="rounded-lg px-6"
-						>
-							{{ props.is_renew ? "Renew" : "Register" }}
-						</Button>
-					</div>
-				</form>
-				<div class="flex items-end justify-end">
-					<Button
-						v-if="confirmPayment"
-						variant="solid"
-						theme="red"
-						class="rounded-lg px-6"
-						@click="checkPayment"
-						:loading="confirmPaymentStatus.loading"
-					>
-						Confirm Payment
-					</Button>
 				</div>
 			</div>
+			<div v-else>
+				<div v-if="!paymentStatus" class="py-4">
+					<form action="" @submit.prevent="submit">
+						<div
+							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
+						>
+							<div class="space-y-1">
+								<FormControl
+									type="text"
+									label="Membership Type"
+									placeholder="Select membership type"
+									class="w-full text-sm"
+									v-model="membershipForm.membership_type"
+									:value="props.membership_type"
+									readonly
+								/>
+							</div>
 
-			<PaymentStatus
-				v-if="paymentStatus"
-				@close="registerDialog = false"
-				message="Membership processed successfully"
-				title="Membership"
-			/>
+							<div class="space-y-1">
+								<FormControl
+									type="number"
+									label="Amount"
+									placeholder="Enter amount"
+									class="w-full text-sm"
+									v-model="membershipForm.amount"
+									:value="props.amount"
+									readonly
+								/>
+							</div>
+						</div>
+
+						<FormControl
+							v-if="!is_renew"
+							type="autocomplete"
+							label="Branch / County"
+							placeholder="Select branch or county to register with"
+							class="w-full mb-4"
+							:options="branches.data"
+							v-model="branch"
+						/>
+
+						<FormControl
+							v-if="is_renew"
+							type="text"
+							label="Branch / County"
+							placeholder="Select branch or county to register with"
+							class="w-full mb-4"
+							:value="props.renew_branch"
+							v-model="branch"
+							readonly
+						/>
+
+						<FormControl
+							type="text"
+							label="Phone Number (MPesa Phone Number to be used for payment)"
+							placeholder="eg. 0712345678"
+							class="w-full"
+							v-model="membershipForm.phone"
+						/>
+
+						<ErrorMessage
+							v-if="createMembership.error"
+							class="text-center border rounded-md p-2 border-red-500 bg-red-50 text-sm my-3"
+							:message="createMembership.error"
+						/>
+						<div class="mt-4 gap-2 flex items-end justify-end">
+							<Button
+								v-if="!confirmPayment"
+								type="submit"
+								variant="solid"
+								theme="green"
+								:loading="createMembership.loading"
+								class="rounded-lg px-6"
+							>
+								{{ props.is_renew ? "Renew" : "Register" }}
+							</Button>
+						</div>
+					</form>
+					<div class="flex items-end justify-end">
+						<Button
+							v-if="confirmPayment"
+							variant="solid"
+							theme="red"
+							class="rounded-lg px-6"
+							@click="checkPayment"
+							:loading="confirmPaymentStatus.loading"
+						>
+							Confirm Payment
+						</Button>
+					</div>
+				</div>
+
+				<PaymentStatus
+					v-if="paymentStatus"
+					@close="registerDialog = false"
+					message="Membership processed successfully"
+					title="Membership"
+				/>
+			</div>
 		</template>
 	</Dialog>
 </template>
@@ -114,6 +152,9 @@ import { reactive, ref, toRaw, watch, watchEffect } from "vue";
 import { isValidPhone } from "../../utils/volunteer";
 import { membershipStore } from "../../stores/membership";
 import PaymentStatus from "../PaymentStatus.vue";
+import { AlertTriangle } from "lucide-vue-next";
+import router from "../../router";
+import ProgressSpinner from "../Common/ProgressSpinner.vue";
 
 const registerDialog = defineModel();
 const branch = ref("");
@@ -127,6 +168,7 @@ const membershipForm = reactive({
 	amount: 0,
 	membership_type: "",
 	branch: "",
+	age: 0,
 });
 
 const { currentMembership } = membershipStore();
@@ -207,6 +249,9 @@ watch(registerDialog, (isOpen) => {
 		paymentStatus.value = false;
 		invoice.value = "";
 		props.is_renew = false;
+	} else {
+		membershipEligibility.fetch();
+		userDetails.fetch();
 	}
 });
 
@@ -249,4 +294,17 @@ const handlePaymentStatus = () => {
 	confirmPayment.value = false;
 	paymentStatus.value = true;
 };
+
+const membershipEligibility = createResource({
+	url: "onerc_vmms.volunteer_and_member_management.api.user.validate_membership_eligibility",
+	cache: "membership_eligibility",
+});
+
+const userDetails = createResource({
+	url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_details",
+	cache: "user_details",
+	onSuccess: (data) => {
+		membershipForm.age = data.age;
+	},
+});
 </script>
