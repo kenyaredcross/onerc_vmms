@@ -31,7 +31,7 @@
 				class="fixed bottom-0 left-0 w-full flex items-center justify-between border-t border-outline-gray-2 bg-surface-white standalone:pb-4 z-10"
 			>
 				<button
-					v-for="tab in sidebarLinks.filter((link) => link.name !== 'Learning')"
+					v-for="tab in sidebarLinks.filter((link) => link.label !== 'Profile')"
 					:key="tab.label"
 					:class="isVisible(tab) ? 'block' : 'hidden'"
 					class="flex-1 flex flex-col items-center justify-center py-4 transition active:scale-95"
@@ -100,7 +100,7 @@ const addOtherLinks = () => {
 			{
 				name: "Profile",
 				icon: "User",
-				route: "Profile",
+				to: "Profile",
 			},
 			{
 				name: "Log out",
@@ -128,10 +128,10 @@ const handleClick = (tabLink) => {
 		logout.submit().then(() => {
 			isLoggedIn = false;
 		});
-	} else if (tab.icon) {
-		window.location.href = tab.route;
 	} else if (tab.route) {
-		router.push({ name: tab.route });
+		window.location.href = tab.route;
+	} else if (tab.to) {
+		router.push({ name: tab.to });
 	}
 };
 
