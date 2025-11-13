@@ -16,7 +16,7 @@
 				v-else-if="membershipEligibility.error"
 				:message="membershipEligibility.error"
 			/>
-			<div v-else-if="!membershipEligibility.data">
+			<div v-else-if="!membershipEligibility.data.eligible">
 				<div
 					class="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg shadow-sm"
 				>
@@ -33,6 +33,21 @@
 								information. This ensures we can properly process your membership
 								application.
 							</p>
+							<div class="mb-2">
+								<p class="text-base font-semibold text-yellow-800">
+									Missing Fields:
+								</p>
+								<ul class="list-disc list-inside text-yellow-700">
+									<li
+										v-for="field in membershipEligibility.data.missing_fields"
+										:key="field"
+									>
+										{{
+											__(field).charAt(0).toUpperCase() + __(field).slice(1)
+										}}
+									</li>
+								</ul>
+							</div>
 							<Button
 								variant="solid"
 								theme="red"
@@ -168,7 +183,6 @@ const membershipForm = reactive({
 	amount: 0,
 	membership_type: "",
 	branch: "",
-	age: 0,
 });
 
 const { currentMembership } = membershipStore();
@@ -296,15 +310,15 @@ const handlePaymentStatus = () => {
 };
 
 const membershipEligibility = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.user.validate_membership_eligibility",
+	url: "onerc_vmms.volunteer_and_member_management.api.membership.validate_membership_eligibility",
 	cache: "membership_eligibility",
 });
 
 const userDetails = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_details",
 	cache: "user_details",
-	onSuccess: (data) => {
-		membershipForm.age = data.age;
+	onSuccess(data) {
+		membershipForm.phone = data.mobile_no || "";
 	},
 });
 </script>

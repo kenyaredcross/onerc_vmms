@@ -3,6 +3,7 @@ from datetime import datetime
 import frappe
 from frappe import _
 from frappe.utils import add_to_date
+from ..api.user import get_user_details
 
 
 @frappe.whitelist(allow_guest=True)
@@ -147,24 +148,23 @@ def create_membership(
     amount: float,
     membership_type: str,
     branch: str,
-    age: int,
 ) -> None:
+    age = get_user_details().get("age", 0)
 
     membership_type_doc = frappe.get_doc("VM Membership Type", membership_type)
     if not membership_type_doc:
         frappe.throw(_("Error creating membership"))
     if membership_type_doc.requires_age_requirement:
-        if age < membership_type_doc.lower_age_limit:
+        if (
+            age < membership_type_doc.lower_age_limit
+            or age > membership_type_doc.upper_age_limit
+        ):
             frappe.throw(
                 _(
-                    f"You must be at least {membership_type_doc.lower_age_limit} years old to register for this membership type."
-                )
-            )
-
-        if age > membership_type_doc.upper_age_limit:
-            frappe.throw(
-                _(
-                    f"You must be under {membership_type_doc.upper_age_limit} years old to register for this membership type."
+                    "Your age does not meet the requirements for this membership type. It should be between {0} and {1} years.".format(
+                        membership_type_doc.lower_age_limit,
+                        membership_type_doc.upper_age_limit,
+                    )
                 )
             )
 
@@ -250,3 +250,39 @@ def renew_membership(**kwargs):
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Error renewing membership")
         frappe.throw("Error renewing membership")
+
+
+@frappe.whitelist()
+def validate_membership_eligibility():
+
+    user_info = get_user_details()
+
+    missing_fields = []
+    required_fields = [
+        "full_name",
+        "phone",
+        "id_number",
+        "county",
+        "sub_county",
+        "birth_date",
+        "gender",
+        "citizenship",
+        "identification_type",
+    ]
+
+    def convert_missing_fields(field_name):
+        return field_name.replace("_", " ").title()
+
+    for field in required_fields:
+        if not user_info.get(field):
+            missing_fields.append(convert_missing_fields(field))
+    if missing_fields:
+        return {
+            "eligible": False,
+            "missing_fields": missing_fields,
+        }
+
+    return {
+        "eligible": True,
+        "missing_fields": [],
+    }

@@ -201,32 +201,6 @@ def calculate_age(birth_date: date) -> int:
 
 
 @frappe.whitelist()
-def validate_membership_eligibility():
-
-    user_info = get_user_info()
-
-    missing_fields = []
-    required_fields = [
-        "full_name",
-        "phone",
-        "id_number",
-        "county",
-        "sub_county",
-        "administrative_location",
-        "birth_date",
-    ]
-
-    for field in required_fields:
-        if not user_info.get(field):
-            missing_fields.append(field)
-
-    if missing_fields:
-        return False
-
-    return True
-
-
-@frappe.whitelist()
 def update_user_details(**data):
     """
     Updates the logged-in user's details.
