@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex flex-col items-center justify-center py-20 h-[75vh] bg-gray-50 m-8 md:m-16 text-center px-4"
+		class="flex flex-col items-center justify-center py-20 h-[75vh] bg-gray-50 m-8 md:m-16 text-center md:px-4"
 	>
 		<div class="bg-red-100 rounded-full p-6 mb-6 shadow-md">
 			<LogIn class="w-12 h-12 text-red-600" />
