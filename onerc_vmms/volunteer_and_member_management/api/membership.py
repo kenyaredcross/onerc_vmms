@@ -159,15 +159,25 @@ def create_membership(
             age < membership_type_doc.lower_age_limit
             or age > membership_type_doc.upper_age_limit
         ):
-            frappe.throw(
-                _(
-                    "Your age does not meet the requirements for this membership type. It should be between {0} and {1} years.".format(
-                        membership_type_doc.lower_age_limit,
-                        membership_type_doc.upper_age_limit,
+            if membership_type_doc.lower_age_limit == 0:
+                frappe.throw(
+                    _(
+                        "You must be under {0} years to apply for this membership"
+                    ).format(membership_type_doc.upper_age_limit)
+                )
+            elif membership_type_doc.lower_age_limit == 30:
+                frappe.throw(
+                    _("You must be 30 years or older to apply for this membership")
+                )
+            else:
+                frappe.throw(
+                    _(
+                        "Your age does not meet the requirements for this membership type. It should be between {0} and {1} years.".format(
+                            membership_type_doc.lower_age_limit,
+                            membership_type_doc.upper_age_limit,
+                        )
                     )
                 )
-            )
-
     user = frappe.db.get_value(
         "User", frappe.session.user, ["full_name"], as_dict=1
     ).full_name
