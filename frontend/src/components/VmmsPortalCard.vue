@@ -50,8 +50,19 @@
 			v-if="membershipType.requires_age_requirement"
 			class="my-3 text-sm pt-1 border-t border-t-red-500 font-medium text-gray-700"
 		>
-			{{ __("Ages") }} {{ membershipType.lower_age_limit }} -
-			{{ membershipType.upper_age_limit }} {{ __("years") }}
+			<template v-if="membershipType.lower_age_limit === 0">
+				{{ __("Ages below") }} {{ membershipType.upper_age_limit }} {{ __("years") }}
+			</template>
+
+			<template v-else-if="membershipType.lower_age_limit >= 30">
+				{{ __("Ages 30 and above") }} {{ __("years") }}
+			</template>
+
+			<template v-else>
+				{{ __("Ages") }}
+				{{ membershipType.lower_age_limit }} - {{ membershipType.upper_age_limit }}
+				{{ __("years") }}
+			</template>
 		</span>
 
 		<Button
