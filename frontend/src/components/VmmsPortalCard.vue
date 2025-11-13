@@ -23,11 +23,12 @@
 
 		<div class="flex-1 mb-6">
 			<div class="space-y-2.5 sm:space-y-2">
-				<div>
+				<div class="">
 					<h4 class="text-lg sm:text-base font-bold text-red-600 mb-1.5">
 						{{ __("What's included") }}
 					</h4>
 				</div>
+
 				<div
 					v-for="benefit in membershipType.benefits"
 					:key="benefit"
@@ -42,12 +43,16 @@
 						{{ __(benefit.benefit) }}
 					</span>
 				</div>
-				<span v-if="membershipType.requires_age_requirement" class="mt-2">
-					{{ __("Ages") }} {{ membershipType.lower_age_limit }} -
-					{{ membershipType.upper_age_limit }} {{ __("years") }}
-				</span>
 			</div>
 		</div>
+
+		<span
+			v-if="membershipType.requires_age_requirement"
+			class="my-3 text-sm pt-1 border-t border-t-red-500 font-medium text-gray-700"
+		>
+			{{ __("Ages") }} {{ membershipType.lower_age_limit }} -
+			{{ membershipType.upper_age_limit }} {{ __("years") }}
+		</span>
 
 		<Button
 			variant="solid"
