@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 
 from ..utils import set_field_value
+from datetime import datetime, date
 
 
 @frappe.whitelist(allow_guest=True)
@@ -180,8 +181,49 @@ def get_user_details():
 
     user_doc = frappe.get_doc("User", frappe.session.user)
     user_info = user_doc.as_dict()
+    user_info["age"] = calculate_age(user_info.get("birth_date"))
 
     return user_info
+
+
+def calculate_age(birth_date: date) -> int:
+    """Calculate age from a date object."""
+    if not birth_date:
+        return 0
+
+    today = date.today()
+    age = (
+        today.year
+        - birth_date.year
+        - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    )
+    return age
+
+
+@frappe.whitelist()
+def validate_membership_eligibility():
+
+    user_info = get_user_info()
+
+    missing_fields = []
+    required_fields = [
+        "full_name",
+        "phone",
+        "id_number",
+        "county",
+        "sub_county",
+        "administrative_location",
+        "birth_date",
+    ]
+
+    for field in required_fields:
+        if not user_info.get(field):
+            missing_fields.append(field)
+
+    if missing_fields:
+        return False
+
+    return True
 
 
 @frappe.whitelist()
