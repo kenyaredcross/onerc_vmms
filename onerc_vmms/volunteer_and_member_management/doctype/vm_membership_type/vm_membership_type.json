@@ -14,7 +14,9 @@
   "amount",
   "currency",
   "billing_cycle",
-  "age_requirement",
+  "requires_age_requirement",
+  "lower_age_limit",
+  "upper_age_limit",
   "section_break_ilnt",
   "benefits"
  ],
@@ -74,16 +76,33 @@
    "options": "Currency"
   },
   {
-   "fieldname": "age_requirement",
-   "fieldtype": "Data",
-   "label": "Age Requirement"
-  },
-  {
    "fieldname": "template",
    "fieldtype": "Link",
    "label": "Template",
    "link_filters": "[[\"Print Format\",\"doc_type\",\"=\",\"VM Membership\"]]",
    "options": "Print Format"
+  },
+  {
+   "depends_on": "eval:doc.requires_age_requirement===1;",
+   "fieldname": "lower_age_limit",
+   "fieldtype": "Int",
+   "label": "Lower Age Limit",
+   "mandatory_depends_on": "eval:doc.requires_age_requirement===1;",
+   "non_negative": 1
+  },
+  {
+   "depends_on": "eval:doc.requires_age_requirement===1;",
+   "fieldname": "upper_age_limit",
+   "fieldtype": "Int",
+   "label": "Upper Age Limit ",
+   "mandatory_depends_on": "eval:doc.requires_age_requirement===1;",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "requires_age_requirement",
+   "fieldtype": "Check",
+   "label": "Requires Age Requirement"
   }
  ],
  "grid_page_length": 50,
@@ -95,7 +114,7 @@
    "link_fieldname": "membership_type"
   }
  ],
- "modified": "2025-10-28 18:52:20.587876",
+ "modified": "2025-11-12 18:39:16.046701",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Membership Type",
