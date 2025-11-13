@@ -21,7 +21,7 @@ function sideBarApps() {
 		{
 			name: "helpdesk",
 			icon: "HelpCircle",
-			title: __("Support"),
+			title: __("Help Desk"),
 			route: "/helpdesk/my-tickets",
 		},
 	];
