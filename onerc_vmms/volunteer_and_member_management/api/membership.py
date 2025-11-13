@@ -13,12 +13,10 @@ def get_membership_types():
         order_by="amount asc",
     )
     for membership in memberships:
-        membership_benefits = frappe.get_all(
-            "Membership Benefit", {"parent": membership.name}, ["benefit"]
+        membership_doc = frappe.get_doc(
+            "VM Membership Type", membership, fields=["benefits"]
         )
-
-        if membership_benefits:
-            membership["benefits"] = [b.benefit for b in membership_benefits]
+        membership.update(membership_doc.as_dict())
 
     return memberships
 

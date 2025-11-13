@@ -39,9 +39,13 @@
 						<Check class="w-3.5 h-3.5" />
 					</div>
 					<span class="text-sm sm:text-xs font-medium text-gray-700 leading-snug">
-						{{ __(benefit) }}
+						{{ __(benefit.benefit) }}
 					</span>
 				</div>
+				<span v-if="membershipType.requires_age_requirement" class="mt-2">
+					{{ __("Ages") }} {{ membershipType.lower_age_limit }} -
+					{{ membershipType.upper_age_limit }} {{ __("years") }}
+				</span>
 			</div>
 		</div>
 
@@ -50,25 +54,18 @@
 			class="w-full py-3 sm:py-2.5 font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg border-0 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:shadow-red-300/50"
 		>
 			<span class="flex items-center justify-center gap-2">
-				{{ __("Select Plan") }}
+				{{ __("Select") }}
 				<ArrowRight class="w-4 h-4" />
 			</span>
 		</Button>
 	</div>
 </template>
 
-<script lang="ts" setup>
+<script setup>
 import { Button } from "frappe-ui";
 import { ArrowRight, Check } from "lucide-vue-next";
 
-interface MembershipType {
-	name: string;
-	membership_type: string;
-	amount: number;
-	benefits: string[];
-}
-
-const props = defineProps<{
-	membershipType: MembershipType;
-}>();
+const props = defineProps({
+	membershipType: Object,
+});
 </script>

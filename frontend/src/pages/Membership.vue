@@ -1,6 +1,6 @@
 <template>
-	<NoPermission v-if="user?.data == 'Guest'" :page="__('Membership')" />
-	<div class="space-y-4 mx-auto px-4" v-if="user?.data && user?.data !== 'Guest'">
+	<NoPermission v-if="!isLoggedIn" :page="__('Membership')" />
+	<div v-else class="space-y-4 mx-auto px-4">
 		<ErrorMessage
 			v-if="currentMembership.error || membershipTypes.error"
 			class="text-center border rounded-md p-2 border-red-500 bg-red-50 text-sm my-auto mt-20"
@@ -12,28 +12,29 @@
 				v-if="currentMembership.data.length > 0"
 				:membershipStatus="currentMembership.data"
 			/>
-			<EmptyState v-else :type="__('Membership')" class="mt-6" />
 		</div>
 
 		<div
 			v-if="currentMembership.data"
 			class="p-2 pt-2 md:p-8 bg-gray-50 rounded-2xl shadow-md text-center mb-20 max-w-7xl mx-auto"
 		>
-			<h1 class="text-lg md:text-3xl text-gray-900">{{ __("Select a New Plan") }}</h1>
+			<h1
+				class="flex flex-col md:flex-row justify-center items-center gap-2 text-xl md:text-3xl font-semibold text-red-600"
+			>
+				<span>{{ __("Select a New Plan") }}</span>
+				<span v-if="!currentMembership.data.length">
+					{{ __("to become a member") }}
+				</span>
+			</h1>
 
-			<div v-if="membershipTypes.data?.length > 0" class="mt-10">
+			<div v-if="membershipTypes.data?.length" class="mt-10">
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-					<div
+					<VmmsPortalCard
 						v-for="membershipType in membershipTypes.data"
-						:key="membershipType.name"
-						class="flex justify-center"
-					>
-						<VmmsPortalCard
-							class="w-full max-w-sm transition hover:scale-105 hover:shadow-lg cursor-pointer"
-							:membershipType="membershipType"
-							@click="selectMembershipType(membershipType)"
-						/>
-					</div>
+						class="w-full max-w-sm transition hover:shadow-lg cursor-pointer"
+						:membershipType="membershipType"
+						@click="selectMembershipType(membershipType)"
+					/>
 				</div>
 			</div>
 
@@ -60,9 +61,10 @@ import NoPermission from "../components/NoPermission.vue";
 import VmmsPortalCard from "../components/VmmsPortalCard.vue";
 import { membershipStore } from "../stores/membership";
 import { isValidPhone } from "../utils/volunteer";
+import { sessionStore } from "../stores/session";
 
 const { membershipTypes, currentMembership } = membershipStore();
-const user = inject("$user");
+const { isLoggedIn } = sessionStore();
 const membershipId = ref("");
 
 const registerDialog = ref(false);
