@@ -27,6 +27,9 @@ This ensures seamless traceability between mission planning, execution, and post
 | **Itinerary**                 | Table (`TOR Itinerary`)        | Detailed schedule of activities, persons responsible, and timelines. |
 | **Resources**                 | Table (`TOR Resources`)        | Resource plan, donors, quantities, and estimated costs.              |
 
+![Details Overview](../images/tor/details.png)
+![approach Overview](../images/tor/approach.png)
+
 ---
 
 ## Supporting Child Tables
