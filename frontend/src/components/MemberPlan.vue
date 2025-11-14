@@ -98,10 +98,6 @@
 										<br />
 										{{ __("You'll be notified when approved.") }}
 										<br />
-										{{ __("Please finish creating your ") }}
-										<a href="/vmms/user/profile" class="text-blue-600 t"
-											>Profile</a
-										>
 									</div>
 								</template>
 							</Popover>
