@@ -65,6 +65,31 @@ Renewals occur directly through the portal:
 
 ---
 
+## Related Documents
+
+- [User](./doctypes/User.md)
+- [Settings](./doctypes/Settings.md)
+- [Member](./doctypes/Member.md)
+- [Membership](./doctypes/Membership.md)
+
+## Navigation
+
+<div style="display: flex; align-items: center;">
+
+  <a href="./Volunteer-Management.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/←%20Previous-1E3A8A?style=for-the-badge" />
+  </a>
+
+  <a href="../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="./Opportunities.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
+
 ## Documentation & Support
 
 Need help? Browse detailed guides, FAQs, or open an issue in our GitHub repository.

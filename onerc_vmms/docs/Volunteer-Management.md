@@ -142,7 +142,46 @@ Volunteers, once onboarded, gain access to multiple standard ERPNext modules —
 - **HR Features**
   Personal profile management, document uploads, leave applications (if enabled), and notifications.
 
----
+## Related Documents
+
+- [User](./doctypes/User.md)
+- [Personnel](./doctypes/Personnel.md)
+- [Settings](./doctypes/Settings.md)
+- [Deployment Tool](./Deployment-Tool.md)
+- [Deployment Terms of Reference](./doctypes/TOR.md)
+- [Opportunity Applicant](./doctypes/Opportunity-Applicant.md)
+
+## Navigation
+
+<div style="display: flex; align-items: center;">
+
+  <a href="../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="Membership-Management.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
+
+## Navigation
+
+<div style="display: flex; align-items: center;">
+
+  <a href="./Membership-Management.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/←%20Previous-1E3A8A?style=for-the-badge" />
+  </a>
+
+  <a href="../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="./Events.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
 
 ## Documentation & Support
 

@@ -29,6 +29,7 @@ This ensures seamless traceability between mission planning, execution, and post
 
 ![Details Overview](../images/tor/details.png)
 ![approach Overview](../images/tor/approach.png)
+![itenary Overview](../images/tor/itenary.png)
 
 ---
 
@@ -131,6 +132,24 @@ Lists employees or accompanying personnel for the mission.
 | Designation | Role in the mission.  |
 
 ---
+
+## Navigation
+
+<div style="display: flex; align-items: center;">
+
+  <a href="./Deployment-Tool.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/←%20Previous-1E3A8A?style=for-the-badge" />
+  </a>
+
+  <a href="../../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="./Member.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
 
 ## Documentation & Support
 

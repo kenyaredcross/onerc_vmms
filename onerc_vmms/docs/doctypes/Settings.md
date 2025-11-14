@@ -9,6 +9,8 @@ It controls automation and system-wide defaults related to **Membership Manageme
 
 These fields define how membership billing, invoicing, and communication are handled.
 
+![Details Overview](../images/settings.png)
+
 ### Billing & Invoicing
 
 | Field                                | Description                                                                            |
@@ -75,19 +77,32 @@ These settings extend the standard ERPNext HR recruitment process to integrate *
 
 These options control visual appearance for the organization’s VMMS portal and internal desk.
 
+![Details Overview](../images/settings-branding.png)
+
 | Field          | Description                                           |
 | -------------- | ----------------------------------------------------- |
-| **Brand Name** | Display name shown in the portal and documents.       |
-| **Logo**       | Image displayed in the top-left corner of the system. |
+| **Brand Name** | Display name shown in the portal.                     |
+| **Logo**       | Image displayed in the top-left corner of the portal. |
 
 ---
 
-## Related Documents
+## Navigation
 
-- [Membership-Management.md](./Membership-Management.md)
-- [Opportunities.md](./Opportunities.md)
-- [Personnel-Deployment-Request.md](./Personnel-Deployment-Request.md)
-- [Volunteer-Deployment-Criteria.md](./Volunteer-Deployment-Criteria.md)
+<div style="display: flex; align-items: center;">
+
+  <a href="./Personnel.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/←%20Previous-1E3A8A?style=for-the-badge" />
+  </a>
+
+  <a href="../../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="./Deployment-Tool.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
 
 ## Documentation & Support
 

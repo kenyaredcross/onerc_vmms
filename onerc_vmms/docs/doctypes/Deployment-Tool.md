@@ -77,15 +77,23 @@ Filtered personnel are listed under **Employee List**, allowing admins to:
 
 ---
 
-## Related Documents
+## Navigation
 
-- [Personnel-Terms-of-Reference.md](./Personnel-Terms-of-Reference.md)
-- [Personnel-Deployment-Request.md](./Personnel-Deployment-Request.md)
-- [Volunteer-Deployment-Criteria.md](./Volunteer-Deployment-Criteria.md)
-- [VM-Settings.md](./VM-Settings.md)
-- [Project.md](./Project.md)
+<div style="display: flex; align-items: center;">
 
----
+  <a href="./Settings.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/←%20Previous-1E3A8A?style=for-the-badge" />
+  </a>
+
+  <a href="../../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="./TOR.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
 
 ## Documentation & Support
 

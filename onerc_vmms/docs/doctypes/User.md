@@ -1,6 +1,6 @@
 # User
 
-The **User** doctype in ERPNext has been extended to support comprehensive volunteer and personnel management capabilities. These enhancements provide detailed profile information, qualifications tracking, and location data essential for managing both staff and volunteers within the Volunteer and Member Management System (VMMS).
+The **User** doctype has been extended to support comprehensive volunteer and personnel management capabilities. These enhancements provide detailed profile information, qualifications tracking, and location data essential for managing both staff and volunteers within the Volunteer and Member Management System (VMMS).
 
 ## Key Features
 
@@ -114,6 +114,20 @@ Additionally, the extended profile supports dynamic updates, enabling users to c
 | **Supporting Documents** | Table | Additional required documents |
 
 ![Documents Overview](../images/user/documents.png)
+
+## Navigation
+
+<div style="display: flex; align-items: center;">
+
+  <a href="../../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="./Personnel.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
 
 ## Documentation & Support
 

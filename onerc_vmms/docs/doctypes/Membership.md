@@ -18,11 +18,23 @@ Each record represents a specific membership plan linked to a member, branch (co
 
 ---
 
-## Related DocTypes
+## Navigation
 
-- [VM Member](./VM-Member.md) – The individual or organization that holds the membership.
-- [VM Membership Type](./VM-Membership-Type.md) – Defines membership categories, fees, and duration.
-- [VM Settings](./VM-Settings.md) – Controls membership and payment configuration options.
+<div style="display: flex; align-items: center;">
+
+  <a href="./Member.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/←%20Previous-1E3A8A?style=for-the-badge" />
+  </a>
+
+  <a href="../../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="./Opportunity-Opening.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
 
 ## Documentation & Support
 

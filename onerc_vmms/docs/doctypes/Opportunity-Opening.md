@@ -1,9 +1,11 @@
 # Opportunity Opening
 
-The Opportunity Opening is a translated version of ERPNext’s standard Job Opening DocType — extended to support both employment and volunteer opportunities.
+The Opportunity Opening is a translated version of standard Job Opening DocType — extended to support both employment and volunteer opportunities.
 This transition ensures compatibility with the Volunteer and Member Management System (VMMS).
 
 ---
+
+![Details Overview](../images/opening/details.png)
 
 ## Extended Fields
 
@@ -17,15 +19,16 @@ This transition ensures compatibility with the Volunteer and Member Management S
 
 ### Education Requirements
 
-| Field                                 | Type   | Description                                                                |
+![Requirements Overview](../images/opening/requirements.png)
+| Field | Type | Description |
 | ------------------------------------- | ------ | -------------------------------------------------------------------------- |
-| **Enable Auto-Grading**               | Check  | Activate automated application scoring system                              |
-| **Disqualify if Requirement Not Met** | Check  | Automatically reject applications not meeting minimum criteria             |
-| **Minimum Pass Score**                | Float  | Required scoring threshold for application consideration                   |
-| **Minimum Qualification Level**       | Select | Education level: Primary, Secondary, Undergraduate, Graduate, Postgraduate |
-| **Allow Equivalent Experience**       | Check  | Accept relevant work experience as qualification substitute                |
-| **Required GPA / Grade**              | Data   | Minimum academic performance requirement                                   |
-| **Preferred Field of Study**          | Data   | Desired educational background or major                                    |
+| **Enable Auto-Grading** | Check | Activate automated application scoring system |
+| **Disqualify if Requirement Not Met** | Check | Automatically reject applications not meeting minimum criteria |
+| **Minimum Pass Score** | Float | Required scoring threshold for application consideration |
+| **Minimum Qualification Level** | Select | Education level: Primary, Secondary, Undergraduate, Graduate, Postgraduate |
+| **Allow Equivalent Experience** | Check | Accept relevant work experience as qualification substitute |
+| **Required GPA / Grade** | Data | Minimum academic performance requirement |
+| **Preferred Field of Study** | Data | Desired educational background or major |
 
 ### Experience Requirements
 
@@ -52,6 +55,8 @@ This transition ensures compatibility with the Volunteer and Member Management S
 
 ## Screening Questions
 
+![Questions Overview](../images/opening/questions.png)
+
 | Field                   | Type   | Description                                    |
 | ----------------------- | ------ | ---------------------------------------------- |
 | **Screening Questions** | Table  | Custom qualification assessment questions      |
@@ -62,6 +67,8 @@ This transition ensures compatibility with the Volunteer and Member Management S
 ---
 
 ## Notification Settings
+
+![Notification Overview](../images/opening/notification.png)
 
 ### Rejection Notification Settings
 
@@ -74,6 +81,24 @@ This transition ensures compatibility with the Volunteer and Member Management S
 | **Shortlisted Rejection Notification Date**  | Date  | Specific date to notify rejected shortlisted candidates      |
 
 ---
+
+## Navigation
+
+<div style="display: flex; align-items: center;">
+
+  <a href="./Membership.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/←%20Previous-1E3A8A?style=for-the-badge" />
+  </a>
+
+  <a href="../../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+  <a href="./Opportunity-Applicant.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/Next%20→-6D28D9?style=for-the-badge" />
+  </a>
+
+</div>
 
 ## Documentation & Support
 

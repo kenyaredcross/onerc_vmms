@@ -1,6 +1,6 @@
 # Opportunity Applicant
 
-The **Opportunity Applicant** is a translated and extended version of ERPNext's standard Job Applicant DocType, designed to support both employment candidates and volunteer applicants within a unified framework. This comprehensive system captures detailed applicant information while maintaining compatibility with the Volunteer and Member Management System (VMMS).
+The **Opportunity Applicant** is a translated and extended version of standard Job Applicant DocType, designed to support both employment candidates and volunteer applicants within a unified framework. This comprehensive system captures detailed applicant information while maintaining compatibility with the Volunteer and Member Management System (VMMS).
 
 ## Core Purpose
 
@@ -167,6 +167,20 @@ Internal Opportunity Openings can define _Required Skills_ which, once verified 
 | **Supporting Documents** | Table | Additional required documents |
 
 ---
+
+## Navigation
+
+<div style="display: flex; align-items: center;">
+
+  <a href="./Opportunity-Opening.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/←%20Previous-1E3A8A?style=for-the-badge" />
+  </a>
+
+  <a href="../../../README.md" style="margin-right: 10px;">
+    <img height="34" src="https://img.shields.io/badge/⌂%20Home-047857?style=for-the-badge" />
+  </a>
+
+</div>
 
 ## Documentation & Support
 

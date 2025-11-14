@@ -1,6 +1,6 @@
-# Volunteer & Member Management (VMMS) for ERPNext
+# Volunteer & Member Management (VMMS)
 
-The **Volunteer and Member Management System (VMMS)** is a comprehensive extension for [ERPNext](https://erpnext.com), designed to streamline the management of **volunteers, memberships, deployments, and events** — all within one cohesive platform.
+The **Volunteer and Member Management System (VMMS)** is a comprehensive extension for [Frappe](https://frappe.io/), designed to streamline the management of **volunteers, memberships, deployments, and events** — all within one cohesive platform.
 
 Perfect for organizations managing humanitarian, community, or professional networks.
 
@@ -100,11 +100,15 @@ Explore the doctypes powering VMMS — structured to support flexibility and sca
 
 ### Core Doctypes & Customizations
 
+- [User](./onerc_vmms/docs/doctypes/User.md)
 - [Personnel](./onerc_vmms/docs/doctypes/Personnel.md)
+- [Settings](./onerc_vmms/docs/doctypes/Settings.md)
 - [Deployment Tool](./onerc_vmms/docs/Deployment-Tool.md)
+- [Deployment Terms of Reference](./onerc_vmms/docs/doctypes/TOR.md)
 - [Member](./onerc_vmms/docs/doctypes/Member.md)
 - [Membership](./onerc_vmms/docs/doctypes/Membership.md)
-- [Opportunity Application](./onerc_vmms/docs/doctypes/Opportunity-Application.md)
+- [Opportunity Opening](./onerc_vmms/docs/doctypes/Opportunity-Opening.md)
+- [Opportunity Applicant](./onerc_vmms/docs/doctypes/Opportunity-Applicant.md)
 
 ---
 
