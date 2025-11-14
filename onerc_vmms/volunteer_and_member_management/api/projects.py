@@ -12,7 +12,7 @@ def fetch_assigned_projects():
         filters={
             "employee": volunteer,
             "deployment_status": "Pending",
-            "docstatus": 1,
+            "docstatus": 0,
         },
         fields=["name", "deployment"],
     )

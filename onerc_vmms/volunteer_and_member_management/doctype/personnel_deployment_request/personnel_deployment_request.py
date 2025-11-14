@@ -12,19 +12,36 @@ class PersonnelDeploymentRequest(Document):
             self.date = today()
 
     def before_update_after_submit(self):
-        self.number_of_volunteers_required()
+        self.validate_assignment_limit()
 
     def validate(self):
-        self.number_of_volunteers_required()
+        self.validate_assignment_limit()
 
-    def after_insert(self):
-        if not frappe.db.exists(
-            "User Permission",
-            {"user": self.user, "allow": "Project", "for_value": self.project},
+    def on_submit(self):
+        if (
+            self.project
+            and self.user
+            and not frappe.db.exists(
+                "User Permission",
+                {"user": self.user, "allow": "Project", "for_value": self.project},
+            )
         ):
             frappe.permissions.add_user_permission("Project", self.project, self.user)
 
-    def number_of_volunteers_required(self):
+    def on_cancel(self):
+        if (
+            self.project
+            and self.user
+            and frappe.db.exists(
+                "User Permission",
+                {"user": self.user, "allow": "Project", "for_value": self.project},
+            )
+        ):
+            frappe.permissions.remove_user_permission(
+                "Project", self.project, self.user
+            )
+
+    def validate_assignment_limit(self):
         """Ensure that the number of accepted assignments does not exceed the number required"""
         if self.deployment_status == "Accepted" and (
             not self.get_doc_before_save()

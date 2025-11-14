@@ -1,5 +1,25 @@
 <template>
 	<div class="space-y-6">
+		<FormControl
+			v-model="localForm.blood_group"
+			:label="__('Blood Group')"
+			type="select"
+			:options="bloodGroupOptions"
+		/>
+
+		<ChildTable
+			v-model="localForm.allergies"
+			doctype="Allergy Table"
+			:label="__('Allergies')"
+			:autoEditGrid="false"
+		/>
+
+		<ChildTable
+			v-model="localForm.disabilities"
+			doctype="Employee Disability"
+			:label="__('Disabilities')"
+			:autoEditGrid="false"
+		/>
 		<div class="flex justify-end">
 			<button
 				v-if="hasChanges"
@@ -27,27 +47,6 @@
 				</svg>
 			</button>
 		</div>
-
-		<FormControl
-			v-model="localForm.blood_group"
-			:label="__('Blood Group')"
-			type="select"
-			:options="bloodGroupOptions"
-		/>
-
-		<ChildTable
-			v-model="localForm.allergies"
-			doctype="Allergy Table"
-			:label="__('Allergies')"
-			:autoEditGrid="false"
-		/>
-
-		<ChildTable
-			v-model="localForm.disabilities"
-			doctype="Employee Disability"
-			:label="__('Disabilities')"
-			:autoEditGrid="false"
-		/>
 	</div>
 	<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />
 </template>

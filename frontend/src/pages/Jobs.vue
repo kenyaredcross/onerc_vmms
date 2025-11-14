@@ -80,7 +80,7 @@
 							doctype="Company Item"
 							v-model="selectedBranches"
 							:mainField="'company'"
-							:label="__('Branch')"
+							:label="__('County')"
 							:filters="branchFilters"
 							class="w-full"
 							@change="updateJobs"

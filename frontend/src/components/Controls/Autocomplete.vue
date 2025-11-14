@@ -176,6 +176,7 @@ const search = ref(null);
 const triggerRef = ref(null);
 const dropdownRef = ref(null);
 const dropdownStyle = ref({});
+const isMobile = ref(false);
 
 const attrs = useAttrs();
 const slots = useSlots();
@@ -216,15 +217,24 @@ function updateDropdownPosition() {
 		if (triggerRef.value) {
 			const rect = triggerRef.value.getBoundingClientRect();
 			const viewportHeight = window.innerHeight;
-			const isNearBottom = rect.bottom > viewportHeight * 0.75;
 			const dropdownHeight = dropdownRef.value?.offsetHeight || 200;
 
+			const spaceBelow = viewportHeight - rect.bottom;
+			const spaceAbove = rect.top;
+
+			let top;
+
+			if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
+				top = `${rect.bottom + window.scrollY + 4}px`;
+			} else {
+				top = `${rect.top + window.scrollY - dropdownHeight - 8}px`;
+			}
+
 			dropdownStyle.value = {
-				top: isNearBottom
-					? `${rect.top + window.scrollY - dropdownHeight - 8}px`
-					: `${rect.bottom + window.scrollY + 4}px`,
+				top: top,
 				left: `${rect.left + window.scrollX}px`,
 				width: `${rect.width}px`,
+				position: "absolute",
 			};
 		}
 	});
@@ -274,9 +284,19 @@ watch(query, (q) => {
 
 watch(showOptions, (val) => {
 	if (val) {
-		nextTick(() => {
-			search.value.el.focus();
-		});
+		const isSmallScreen = window.innerWidth < 768;
+		if (!isSmallScreen) {
+			nextTick(() => {
+				search.value.el.focus();
+			});
+		} else {
+			setTimeout(() => {
+				if (showOptions.value) {
+					search.value.el.focus();
+				}
+			}, 50);
+		}
+
 		window.addEventListener("scroll", updateDropdownPosition, true);
 		window.addEventListener("resize", updateDropdownPosition);
 	} else {
@@ -306,8 +326,15 @@ function handleOutsideClick(event) {
 }
 
 onMounted(() => {
-	document.addEventListener("click", handleOutsideClick, true);
-	document.addEventListener("focusin", handleOutsideClick, true);
+	isMobile.value = window.innerWidth < 768;
+	window.addEventListener("resize", () => {
+		isMobile.value = window.innerWidth < 768;
+	});
+
+	setTimeout(() => {
+		document.addEventListener("click", handleOutsideClick, true);
+		document.addEventListener("focusin", handleOutsideClick, true);
+	}, 10);
 });
 
 onUnmounted(() => {
