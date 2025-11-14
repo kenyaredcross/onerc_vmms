@@ -131,11 +131,11 @@
 					</div>
 
 					<div
-						v-if="job.data.job_location || job.data.county"
+						v-if="job.data.job_location || job.data.company"
 						class="mb-12 p-6 bg-gradient-to-r from-gray-50 to-red-50/30 rounded-2xl border border-gray-200"
 					>
 						<div class="flex flex-wrap gap-8">
-							<div v-if="job.data.county" class="flex items-center gap-3">
+							<div v-if="job.data.company" class="flex items-center gap-3">
 								<div
 									class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center"
 								>
@@ -164,7 +164,7 @@
 										{{ __("County") }}
 									</p>
 									<p class="text-base font-semibold text-gray-900">
-										{{ __(job.data.county) }}
+										{{ __(job.data.company) }}
 									</p>
 								</div>
 							</div>

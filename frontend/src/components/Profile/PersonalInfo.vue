@@ -1,33 +1,5 @@
 <template>
 	<div class="space-y-8">
-		<div class="flex justify-end">
-			<button
-				v-if="hasChanges"
-				@click="handleSave"
-				variant="solid"
-				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
-				:loading="saveInProgress"
-			>
-				<span>{{ __("Save") }}</span>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="w-4 h-4"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-					aria-hidden="true"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M5 5v14a2 2 0 002 2h10a2 2 0 002-2V7l-4-4H7a2 2 0 00-2 2z"
-					/>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M9 9h6v6H9z" />
-				</svg>
-			</button>
-		</div>
-
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 			<div>
 				<h2 class="text-lg font-semibold mb-4 border-b pb-2">
@@ -159,7 +131,33 @@
 				}}
 			</p>
 		</div>
-
+		<div class="flex justify-end">
+			<button
+				v-if="hasChanges"
+				@click="handleSave"
+				variant="solid"
+				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
+				:loading="saveInProgress"
+			>
+				<span>{{ __("Save") }}</span>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="w-4 h-4"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					stroke-width="2"
+					aria-hidden="true"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M5 5v14a2 2 0 002 2h10a2 2 0 002-2V7l-4-4H7a2 2 0 00-2 2z"
+					/>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 9h6v6H9z" />
+				</svg>
+			</button>
+		</div>
 		<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />
 	</div>
 </template>

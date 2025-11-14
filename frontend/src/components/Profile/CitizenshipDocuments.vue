@@ -1,17 +1,5 @@
 <template>
 	<div class="space-y-6">
-		<div class="flex justify-end">
-			<button
-				v-if="hasChanges"
-				@click="handleSave"
-				variant="solid"
-				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
-				:loading="saveInProgress"
-			>
-				{{ __("Save") }}
-			</button>
-		</div>
-
 		<div class="border rounded-lg shadow-sm">
 			<div
 				class="flex justify-between items-center p-4 cursor-pointer"
@@ -44,6 +32,17 @@
 					:autoEditGrid="false"
 				/>
 			</div>
+		</div>
+		<div class="flex justify-end">
+			<button
+				v-if="hasChanges"
+				@click="handleSave"
+				variant="solid"
+				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
+				:loading="saveInProgress"
+			>
+				{{ __("Save") }}
+			</button>
 		</div>
 	</div>
 	<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />

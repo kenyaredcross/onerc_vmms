@@ -90,19 +90,19 @@
 							</span>
 
 							<Badge
-								v-if="projectDetail.data.status"
+								v-if="projectDetail.data.deployment_status"
 								variant="subtle"
 								:theme="
-									projectDetail.data.status === 'Pending'
+									projectDetail.data.deployment_status === 'Pending'
 										? 'orange'
-										: projectDetail.data.status === 'Rejected'
+										: projectDetail.data.deployment_status === 'Rejected'
 											? 'red'
 											: 'green'
 								"
 								class="px-3 py-1"
 								size="lg"
 							>
-								{{ __("Assignment") }} {{ projectDetail.data.status }}
+								{{ __("Assignment") }} {{ projectDetail.data.deployment_status }}
 							</Badge>
 						</div>
 					</div>
@@ -119,7 +119,7 @@
 
 			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<div class="lg:col-span-2 space-y-6">
-					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+					<!-- <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
 						<h2 class="text-lg font-semibold text-gray-900 mb-4">
 							{{ __("Project Progress") }}
 						</h2>
@@ -139,7 +139,7 @@
 								></div>
 							</div>
 						</div>
-					</div>
+					</div> -->
 
 					<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
 						<h2 class="text-lg font-semibold text-gray-900 mb-4">{{ __("Notes") }}</h2>
@@ -196,7 +196,7 @@
 					</div>
 					<div
 						v-if="
-							projectDetail?.data?.status === 'Pending' &&
+							projectDetail?.data?.deployment_status === 'Pending' &&
 							projectDetail?.data?.require_contract_before_deployment &&
 							!projectDetail?.data?.contract?.name
 						"
@@ -231,7 +231,7 @@
 					</div>
 
 					<div
-						v-else-if="projectDetail?.data?.status === 'Pending'"
+						v-else-if="projectDetail?.data?.deployment_status === 'Pending'"
 						class="bg-white rounded-xl shadow-lg border border-red-300 p-8"
 					>
 						<h2
