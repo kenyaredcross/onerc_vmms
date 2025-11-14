@@ -108,6 +108,7 @@
 							label="MPesa Phone Number  for payment"
 							v-model="ticketData.phone"
 						/>
+						<PaymentInfoAlert v-if="checkSTK" />
 					</div>
 				</div>
 
@@ -137,7 +138,7 @@
 				<Button
 					v-if="confirmPayment"
 					class="w-full mt-4"
-					theme="red"
+					theme="green"
 					variant="solid"
 					@click="checkPayment"
 					:loading="confirmPaymentStatus.loading"
@@ -158,8 +159,11 @@
 <script setup>
 import { Button, createResource, Dialog, ErrorMessage, Input, toast } from "frappe-ui";
 import { ChevronRight } from "lucide-vue-next";
-import { computed, inject, reactive, ref } from "vue";
+import { computed, inject, reactive, ref, watch } from "vue";
 import PaymentStatus from "../PaymentStatus.vue";
+import { sessionStore } from "../../stores/session";
+import { AlertTriangle } from "lucide-vue-next";
+import PaymentInfoAlert from "../PaymentInfoAlert.vue";
 
 const openTicketModal = defineModel();
 const payStatus = ref(false);
@@ -173,15 +177,17 @@ const eventBooking = ref("");
 const paymentStatus = ref(false);
 const confirmPayment = ref(null);
 const confirm_payment_manual = ref(false);
+const { isLoggedIn } = sessionStore();
+const checkSTK = ref(false);
 
 const ticketData = reactive({
 	ticket_type: "",
 	price: "",
 	currency: "",
-	phone: "",
+	phone: isLoggedIn ? user.data.phone : "",
 	ticket_name: "",
-	email: "",
-	full_name: "",
+	email: isLoggedIn ? user.data.email : "",
+	full_name: isLoggedIn ? user.data.full_name : "",
 });
 
 const props = defineProps({
@@ -205,6 +211,24 @@ function handleSelection(ticket) {
 	ticketData.ticket_name = ticket.name;
 }
 
+watch(openTicketModal, (newVal) => {
+	if (!newVal) {
+		// Reset modal state when closed
+		selectedTicket.value = null;
+		payStatus.value = false;
+		handlePay.error = null;
+		confirmPayment.value = null;
+		paymentStatus.value = false;
+		ticketData.ticket_type = "";
+		ticketData.price = "";
+		ticketData.currency = "";
+		ticketData.phone = isLoggedIn ? user.data.phone : "";
+		ticketData.ticket_name = "";
+		ticketData.email = isLoggedIn ? user.data.email : "";
+		ticketData.full_name = isLoggedIn ? user.data.full_name : "";
+	}
+});
+
 const handlePay = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.events.handle_ticket_payment",
 	makeParams() {
@@ -220,6 +244,7 @@ const handlePay = createResource({
 	},
 	onSuccess(data) {
 		if (data) {
+			checkSTK.value = true;
 			toast.success(
 				"Payment initiated successfully. Please complete the payment on your phone.",
 			);

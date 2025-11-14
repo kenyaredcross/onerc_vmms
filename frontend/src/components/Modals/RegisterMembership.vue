@@ -118,6 +118,7 @@
 							class="w-full"
 							v-model="membershipForm.phone"
 						/>
+						<PaymentInfoAlert class="mt-2" v-if="checkSTK" />
 
 						<ErrorMessage
 							v-if="createMembership.error"
@@ -141,7 +142,7 @@
 						<Button
 							v-if="confirmPayment"
 							variant="solid"
-							theme="red"
+							theme="green"
 							class="rounded-lg px-6"
 							@click="checkPayment"
 							:loading="confirmPaymentStatus.loading"
@@ -170,6 +171,7 @@ import PaymentStatus from "../PaymentStatus.vue";
 import { AlertTriangle } from "lucide-vue-next";
 import router from "../../router";
 import ProgressSpinner from "../Common/ProgressSpinner.vue";
+import PaymentInfoAlert from "../PaymentInfoAlert.vue";
 
 const registerDialog = defineModel();
 const branch = ref("");
@@ -177,6 +179,7 @@ const close = defineEmits(["close"]);
 const confirmPayment = ref(false);
 const invoice = ref("");
 const paymentStatus = ref(false);
+const checkSTK = ref(false);
 
 const membershipForm = reactive({
 	phone: "",
@@ -241,6 +244,7 @@ function submit() {
 		{},
 		{
 			onSuccess(data) {
+				checkSTK.value = true;
 				toast.success(
 					"Payment initiated Successfully! You will receive a payment prompt shortly on your phone.",
 				);
@@ -249,7 +253,6 @@ function submit() {
 				invoice.value = data;
 				confirmPayment.value = true;
 			},
-			onError(error) {},
 		},
 	);
 }
