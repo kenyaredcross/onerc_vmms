@@ -241,6 +241,6 @@ def confirm_payment(
             frappe.set_user(frappe.session.user)
 
     if confirm_payment_manual:
-        time.sleep(15)
+        time.sleep(10)
         return helper()
     return helper()
