@@ -51,12 +51,12 @@
 		</div>
 
 		<div
-			class="flex flex-col sm:flex-row items-center sm:items-end justify-between px-6 pb-6 -mt-16 sm:-mt-20 relative z-1"
+			class="flex flex-col sm:flex-row items-center sm:items-end justify-between px-4 sm:px-6 pb-6 -mt-12 sm:-mt-20 relative z-1"
 		>
-			<div class="flex items-end space-x-4">
+			<div class="flex items-center sm:items-end space-x-3 sm:space-x-4 w-full">
 				<div class="relative">
 					<div
-						class="w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-white shadow-lg bg-gray-100 overflow-hidden"
+						class="w-20 h-20 sm:w-32 sm:h-32 rounded-full border-3 sm:border-4 border-white shadow-md bg-gray-100 overflow-hidden"
 					>
 						<img
 							v-if="form?.user_image"
@@ -70,7 +70,7 @@
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
-								class="w-10 h-10"
+								class="w-8 h-8 sm:w-10 sm:h-10"
 								fill="currentColor"
 								viewBox="0 0 20 20"
 							>
@@ -85,12 +85,11 @@
 
 					<button
 						@click="openProfileUploader"
-						class="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow-md hover:bg-gray-50 text-gray-700 transition"
-						:aria-label="__('Edit profile photo')"
+						class="absolute bottom-1 right-1 bg-white p-1 sm:p-1.5 rounded-full shadow hover:bg-gray-50 text-gray-700 transition"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							class="w-4 h-4"
+							class="w-3.5 h-3.5 sm:w-4 sm:h-4"
 							fill="none"
 							viewBox="0 0 24 24"
 							stroke="currentColor"
@@ -105,13 +104,39 @@
 					</button>
 				</div>
 
-				<div>
-					<h1 class="text-2xl sm:text-3xl font-bold text-red-600 leading-tight">
-						{{ __(form?.full_name || "Volunteer Name") }}
-					</h1>
-					<p class="text-sm sm:text-base text-gray-500 font-medium">
-						{{ __(form?.email) }}
-					</p>
+				<div
+					class="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full"
+				>
+					<div class="text-center sm:text-left hidden md:block">
+						<h1 class="text-xl sm:text-3xl font-bold text-red-600 leading-tight">
+							{{ __(form?.full_name || "Volunteer Name") }}
+						</h1>
+						<p class="text-xs sm:text-base text-gray-500 font-medium">
+							{{ __(form?.email) }}
+						</p>
+					</div>
+
+					<div class="mt-3 sm:mt-0 flex-shrink-0">
+						<a
+							href="/app/user-profile"
+							target="_blank"
+							class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 border border-red-700 shadow text-xs sm:text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+							>
+								<path
+									d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.195 1.328L10 17.5l6.705 1.381a1 1 0 001.195-1.328l-7-14z"
+								/>
+							</svg>
+							<span class="font-semibold sm:font-bold">
+								{{ __("View More") }}
+							</span>
+						</a>
+					</div>
 				</div>
 			</div>
 		</div>
