@@ -51,9 +51,15 @@ const routes = [
 	},
 	{
 		name: "Projects",
-		path: "/projects/:status",
+		path: "/projects",
 		component: () => import("@/pages/Projects.vue"),
-		meta: { requiresAuth: true },
+		meta: { requiresAuth: true, requiresVolunteer: true },
+	},
+	{
+		name: "ProjectDetail",
+		path: "/projects/:id",
+		component: () => import("@/pages/ProjectDetail.vue"),
+		meta: { requiresAuth: true, requiresVolunteer: true },
 	},
 	{
 		name: "Membership",
