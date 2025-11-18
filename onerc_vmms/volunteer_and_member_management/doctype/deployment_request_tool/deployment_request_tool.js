@@ -312,6 +312,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 				return {
 					filters: {
 						company: ["in", companies],
+						project: frm.doc.project || "",
 						expected_end_date: [">=", frappe.datetime.get_today()],
 						docstatus: 1,
 					},
