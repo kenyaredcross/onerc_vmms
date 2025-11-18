@@ -27,30 +27,63 @@ def get_current_volunteer():
 
 @frappe.whitelist()
 def get_dashboard_stats():
-
     volunteer = get_current_volunteer()
 
-    project_stats = {}
-
-    total_projects_deployed = frappe.db.count(
-        "Personnel Deployment Request", {"employee": volunteer}
-    )
-    pending_projects = frappe.db.count(
-        "Personnel Deployment Request", {"employee": volunteer, "status": "Pending"}
-    )
-    accepted_projects = frappe.db.count(
-        "Personnel Deployment Request", {"employee": volunteer, "status": "Accepted"}
-    )
-    rejected_projects = frappe.db.count(
-        "Personnel Deployment Request", {"employee": volunteer, "status": "Rejected"}
+    deployments = frappe.get_all(
+        "Personnel Deployment Request",
+        filters={"employee": volunteer},
+        fields=["name", "deployment_status", "docstatus", "deployment"],
     )
 
-    project_stats["total_projects_deployed"] = total_projects_deployed
-    project_stats["pending_projects"] = pending_projects
-    project_stats["accepted_projects"] = accepted_projects
-    project_stats["rejected_projects"] = rejected_projects
+    stats = {
+        "total_projects_deployed": len(deployments),
+        "pending_response": 0,
+        "awaiting_deployment": 0,
+        "declined_deployment": 0,
+        "active": 0,
+        "closed": 0,
+    }
 
-    return project_stats
+    def compute_status(d, project_status):
+        """Apply your JS logic in Python."""
+        if d.docstatus == 0:
+            if d.deployment_status == "Pending":
+                return "Pending Response"
+            if d.deployment_status == "Accepted":
+                return "Awaiting Deployment"
+            if d.deployment_status == "Rejected":
+                return "Declined Deployment"
+
+        if d.docstatus == 1 and d.deployment_status == "Accepted":
+            return "Active" if project_status == "Open" else "Closed"
+
+        return None
+
+    for d in deployments:
+        project_status = None
+
+        if d.deployment:
+            deployment_doc = frappe.get_doc("Deployment Request Tool", d.deployment)
+            if deployment_doc.project:
+                project_status = frappe.db.get_value(
+                    "Project", deployment_doc.project, "status"
+                )
+
+        final_status = compute_status(d, project_status)
+
+        match final_status:
+            case "Pending Response":
+                stats["pending_response"] += 1
+            case "Awaiting Deployment":
+                stats["awaiting_deployment"] += 1
+            case "Declined Deployment":
+                stats["declined_deployment"] += 1
+            case "Active":
+                stats["active"] += 1
+            case "Closed":
+                stats["closed"] += 1
+
+    return stats
 
 
 @frappe.whitelist()
