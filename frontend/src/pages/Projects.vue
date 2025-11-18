@@ -1,36 +1,110 @@
 <template>
-	<div class="p-5"></div>
-
-	<div class="md:p-6 mx-auto w-3/4">
-		<h1 class="text-3xl font-semibold">{{ __("Projects") }}</h1>
-		<Badge></Badge>
-	</div>
-
-	<div class="md:p-6 mx-auto border rounded-lg shadow-sm bg-white w-3/4">
-		<ListView
-			class="h-[250px]"
-			:columns="columns"
-			:rows="rows"
-			:options="options"
-			row-key="id"
+	<div class="flex flex-col min-h-screen bg-gray-50">
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 shadow-md"
 		>
-			<template #cell="{ item, row, column }">
-				<span class="font-medium text-ink-gray-7">
-					{{ item }}
-				</span>
-			</template>
-		</ListView>
+			<div class="flex items-center space-x-4">
+				<h1 class="text-2xl sm:text-3xl font-bold text-gray-800">{{ __("Projects") }}</h1>
+				<div class="text-lg font-bold text-red-600">
+					<span class="hidden sm:inline-block text-xl">
+						{{ __("{0} Projects").format(filteredProjects.length) }}
+					</span>
+					<span class="sm:hidden text-base"> ({{ filteredProjects.length }}) </span>
+				</div>
+			</div>
+		</header>
+
+		<main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+			<div
+				class="flex justify-start mb-6 lg:mb-8 overflow-x-auto whitespace-nowrap -mx-4 sm:mx-0 p-2 sm:p-0"
+			>
+				<TabButtons
+					:buttons="projectTabs"
+					:model-value="currentTab"
+					@update:model-value="updateTabAndHash"
+					class="min-w-max sm:w-auto"
+					active-class="bg-red-600 text-white"
+					inactive-class="text-gray-700 hover:bg-gray-100"
+				/>
+			</div>
+
+			<div v-if="projects.loading" class="text-center py-10">
+				<p class="text-gray-500 text-lg">{{ __("Loading projects...") }}</p>
+			</div>
+
+			<div v-else-if="filteredProjects.length">
+				<div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+					<router-link
+						v-for="project in filteredProjects"
+						:key="project.name"
+						:to="{ name: 'ProjectDetail', params: { id: project.name } }"
+						class="transition-transform duration-300 hover:scale-[1.02] transform block"
+					>
+						<ProjectCard
+							:project="project"
+							:current-status="getProjectStatus(project)"
+						/>
+					</router-link>
+				</div>
+			</div>
+
+			<EmptyState v-else :type="__('Projects')" />
+		</main>
 	</div>
 </template>
 
-<script lang="ts" setup>
+<script setup>
+import EmptyState from "@/components/EmptyState.vue";
+import ProjectCard from "@/components/ProjectCard.vue";
 import { useHead } from "@vueuse/head";
-import { Badge, createResource, ListView, toast } from "frappe-ui";
-import { computed, inject, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { createResource, TabButtons, toast } from "frappe-ui";
+import { computed, inject, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
+const user = inject("$user");
 const route = useRoute();
-const user = inject<any>("$user");
+const router = useRouter();
+const defaultTab = "All";
+
+const baseProjectTabs = [
+	{ label: __("All"), value: "All" },
+	{ label: __("Active"), value: "Active" },
+	{ label: __("Pending Response"), value: "Pending Response" },
+	{ label: __("Awaiting Deployment"), value: "Awaiting Deployment" },
+	{ label: __("Declined Deployment"), value: "Declined Deployment" },
+	{ label: __("Closed"), value: "Closed" },
+];
+
+const projectTabs = computed(() => baseProjectTabs);
+
+const normalizeTabToHash = (tabName) => {
+	return tabName.toLowerCase().replace(/\s+/g, "-");
+};
+
+const denormalizeHashToTab = (hash) => {
+	const normalizedHash = hash.startsWith("#") ? hash.substring(1) : hash;
+
+	const tab = projectTabs.value.find((t) => normalizeTabToHash(t.value) === normalizedHash);
+	return tab ? tab.value : defaultTab;
+};
+
+const currentTab = ref(defaultTab);
+
+watch(
+	() => route.hash,
+	(newHash) => {
+		currentTab.value = denormalizeHashToTab(newHash);
+	},
+	{ immediate: true },
+);
+
+const updateTabAndHash = (newTabValue) => {
+	currentTab.value = newTabValue;
+	const hash = `#${normalizeTabToHash(newTabValue)}`;
+	if (route.hash !== hash) {
+		router.replace({ hash: hash });
+	}
+};
 
 onMounted(() => {
 	if (!user.data) {
@@ -41,65 +115,34 @@ onMounted(() => {
 	}
 });
 
-const projectParams = computed(() => {
-	const status = route.params.status;
-	if (status === "accepted") {
-		return { accepted: 1 };
-	}
-	if (status === "rejected") {
-		return { rejected: 1 };
-	}
-	return {};
-});
-
 const projects = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.projects.get_all_deployed_projects",
 	auto: true,
-	cache: ["projects"],
-	makeParams(value) {
-		return projectParams.value;
+	onError: (error) => {
+		toast.error(__("Failed to load projects: {0}").format(error.message));
 	},
 });
 
-const columns = [
-	{
-		label: "Project",
-		key: "project_name",
-		getLabel: ({ row }) => row.name,
-		width: "200px",
-	},
-	{
-		label: "Start Date",
-		key: "expected_start_date",
-		width: "200px",
-	},
-	{
-		label: "End Date",
-		key: "expected_end_date",
-		width: "200px",
-	},
-	{
-		label: "Project Type",
-		key: "project_type",
-		width: "200px",
-	},
-	{
-		label: "Status",
-		key: "status",
-	},
-];
+const allProjects = computed(() => projects.data || []);
 
-const rows = computed(() => projects.data || []);
-
-const options = {
-	selectable: false,
-	showTooltip: true,
-	resizeColumn: true,
-	emptyState: {
-		title: "No projects found",
-		description: "Be checking on notifications for a new project to get started",
-	},
+const getProjectStatus = (project) => {
+	if (project.docstatus === 0) {
+		if (project.deployment_status === "Pending") return "Pending Response";
+		if (project.deployment_status === "Accepted") return "Awaiting Deployment";
+		if (project.deployment_status === "Rejected") return "Declined Deployment";
+	}
+	if (project.docstatus === 1 && project.deployment_status === "Accepted") {
+		return project.project.status === "Open" ? "Active" : "Closed";
+	}
+	return "All";
 };
+
+const filteredProjects = computed(() => {
+	if (currentTab.value === "All") return allProjects.value;
+
+	return allProjects.value.filter((project) => getProjectStatus(project) === currentTab.value);
+});
+
 useHead({
 	title: "My Projects | Kenya Red Cross VMMS",
 	meta: [
