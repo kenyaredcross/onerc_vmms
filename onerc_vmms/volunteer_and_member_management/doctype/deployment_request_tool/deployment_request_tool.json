@@ -141,7 +141,7 @@
    "options": "Notification Channel Item"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "require_contract_before_deployment",
    "fieldtype": "Check",
    "label": "Require Contract Before Deployment"
