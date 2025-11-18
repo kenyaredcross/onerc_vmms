@@ -153,56 +153,29 @@ def accept_assignment(name, accepted=True, contract_name=None):
 
 
 @frappe.whitelist()
-def get_all_deployed_projects(**kwargs):
-
+def get_all_deployed_projects():
     volunteer = get_current_volunteer()
 
-    accepted_filters = {"deployment_status": "Accepted"}
-    rejected_filters = {"deployment_status": "Rejected"}
+    filters = {"employee": volunteer, "docstatus": ["!=", 2]}
 
     deployments = frappe.get_all(
         "Personnel Deployment Request",
-        (
-            {"volunteer": volunteer} | accepted_filters
-            if kwargs.get("accepted")
-            else {} | rejected_filters if kwargs.get("rejected") else {}
-        ),
-        ["parent"],
+        filters=filters,
+        fields=["name"],
     )
 
-    project = None
-    projects = []
-    projects_details = []
+    result = []
 
-    for deployment in deployments:
+    for dep in deployments:
+        deployment_doc = frappe.get_doc("Personnel Deployment Request", dep.name)
+        try:
+            project_doc = frappe.get_doc("Project", deployment_doc.project)
+        except frappe.DoesNotExistError:
+            continue
 
-        project = frappe.db.get_value(
-            "Volunteer Deployment", deployment.parent, "project", as_dict=True
-        )
+        deployment_dict = deployment_doc.as_dict()
+        deployment_dict["project"] = project_doc.as_dict()
 
-        if project:
-            projects.append(project)
+        result.append(deployment_dict)
 
-    for project in projects:
-        project_details = frappe.db.get_value(
-            "Project",
-            project.project,
-            [
-                "name",
-                "project_name",
-                "status",
-                "project_type",
-                "is_active",
-                "percent_complete",
-                "priority",
-                "expected_start_date",
-                "expected_end_date",
-                "priority",
-                "notes",
-            ],
-            as_dict=True,
-        )
-        if project_details:
-            projects_details.append(project_details)
-
-    return projects_details
+    return result

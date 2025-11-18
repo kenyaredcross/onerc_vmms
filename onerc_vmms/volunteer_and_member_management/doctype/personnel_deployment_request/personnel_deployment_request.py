@@ -28,6 +28,13 @@ class PersonnelDeploymentRequest(Document):
         ):
             frappe.permissions.add_user_permission("Project", self.project, self.user)
 
+        if self.project and self.user:
+            project_doc = frappe.get_doc("Project", self.project)
+            exists = any(row.user == self.user for row in project_doc.users)
+            if not exists:
+                project_doc.append("users", {"user": self.user})
+                project_doc.save(ignore_permissions=True)
+
     def on_cancel(self):
         if (
             self.project
@@ -40,6 +47,13 @@ class PersonnelDeploymentRequest(Document):
             frappe.permissions.remove_user_permission(
                 "Project", self.project, self.user
             )
+
+        if self.project and self.user:
+            project_doc = frappe.get_doc("Project", self.project)
+            updated_rows = [row for row in project_doc.users if row.user != self.user]
+            if len(updated_rows) != len(project_doc.users):
+                project_doc.set("users", updated_rows)
+                project_doc.save(ignore_permissions=True)
 
     def validate_assignment_limit(self):
         """Ensure that the number of accepted assignments does not exceed the number required"""

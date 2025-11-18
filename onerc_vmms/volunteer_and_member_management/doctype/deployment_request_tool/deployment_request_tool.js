@@ -161,7 +161,6 @@ frappe.ui.form.on("Deployment Request Tool", {
 				"expected_start_date",
 				"expected_end_date",
 				"notes",
-				"terms_of_reference",
 			])
 			.then((r) => {
 				if (r && r.message) {
@@ -171,8 +170,6 @@ frappe.ui.form.on("Deployment Request Tool", {
 					if (r.message.expected_end_date)
 						frm.set_value("expected_end_date", r.message.expected_end_date);
 					if (r.message.notes) frm.set_value("notes", r.message.notes);
-					if (r.message.terms_of_reference)
-						frm.set_value("terms_of_reference", r.message.terms_of_reference);
 				}
 			});
 		frm.trigger("get_employees");
@@ -315,6 +312,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 				return {
 					filters: {
 						company: ["in", companies],
+						project: frm.doc.project || "",
 						expected_end_date: [">=", frappe.datetime.get_today()],
 						docstatus: 1,
 					},
@@ -399,6 +397,17 @@ frappe.ui.form.on("Deployment Request Tool", {
 				},
 			},
 			{
+				name: "user_id",
+				id: "user_id",
+				content: __("Email"),
+				width: 250,
+				format: (value, row, column, data) => {
+					return value
+						? `<a href="/app/user/${value}" target="_blank">${value}</a>`
+						: "";
+				},
+			},
+			{
 				name: "company",
 				id: "company",
 				content: __("Company"),
@@ -409,17 +418,17 @@ frappe.ui.form.on("Deployment Request Tool", {
 						: "";
 				},
 			},
-			{
-				name: "department",
-				id: "department",
-				content: __("Department"),
-				width: 150,
-				format: (value, row, column, data) => {
-					return value
-						? `<a href="/app/department/${value}" target="_blank">${value}</a>`
-						: "";
-				},
-			},
+			// {
+			// 	name: "department",
+			// 	id: "department",
+			// 	content: __("Department"),
+			// 	width: 150,
+			// 	format: (value, row, column, data) => {
+			// 		return value
+			// 			? `<a href="/app/department/${value}" target="_blank">${value}</a>`
+			// 			: "";
+			// 	},
+			// },
 			{
 				name: "designation",
 				id: "designation",
@@ -431,15 +440,15 @@ frappe.ui.form.on("Deployment Request Tool", {
 						: "";
 				},
 			},
-			{
-				name: "employment_type",
-				id: "employment_type",
-				content: __("Personnel Type"),
-				width: 130,
-				format: (value) => {
-					return value || "";
-				},
-			},
+			// {
+			// 	name: "employment_type",
+			// 	id: "employment_type",
+			// 	content: __("Personnel Type"),
+			// 	width: 130,
+			// 	format: (value) => {
+			// 		return value || "";
+			// 	},
+			// },
 		].map((x) => ({
 			...x,
 			editable: false,

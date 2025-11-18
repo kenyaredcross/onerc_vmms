@@ -141,7 +141,7 @@
    "options": "Notification Channel Item"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "require_contract_before_deployment",
    "fieldtype": "Check",
    "label": "Require Contract Before Deployment"
@@ -349,7 +349,7 @@
    "link_fieldname": "personnel_deployment_request"
   }
  ],
- "modified": "2025-11-10 10:01:33.906949",
+ "modified": "2025-11-18 08:44:31.361807",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Deployment Request Tool",

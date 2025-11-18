@@ -51,9 +51,15 @@ const routes = [
 	},
 	{
 		name: "Projects",
-		path: "/projects/:status",
+		path: "/projects",
 		component: () => import("@/pages/Projects.vue"),
-		meta: { requiresAuth: true },
+		meta: { requiresAuth: true, requiresVolunteer: true },
+	},
+	{
+		name: "ProjectDetail",
+		path: "/projects/:id",
+		component: () => import("@/pages/ProjectDetail.vue"),
+		meta: { requiresAuth: true, requiresVolunteer: true },
 	},
 	{
 		name: "Membership",
@@ -121,6 +127,39 @@ router.beforeEach(async (to, from, next) => {
 			return next();
 		}
 	}
+
+	router.beforeEach(async (to, from, next) => {
+		const { userResource } = usersStore();
+		let { isLoggedIn } = sessionStore();
+
+		if (to.meta.requiresAuth === false) {
+			return next();
+		}
+
+		try {
+			if (isLoggedIn) {
+				await userResource.promise;
+			}
+		} catch (error) {
+			isLoggedIn = false;
+		}
+
+		if (!isLoggedIn) {
+			if (to.meta.requiresAuth) {
+				return next({ name: "Login" });
+			} else {
+				return next();
+			}
+		}
+
+		if (to.meta.requiresVolunteer) {
+			if (!userResource?.data?.is_volunteer) {
+				return next({ name: "Dashboard" });
+			}
+		}
+
+		return next();
+	});
 
 	return next();
 });

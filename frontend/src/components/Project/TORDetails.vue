@@ -288,7 +288,7 @@
 							</td>
 							<td class="border border-gray-200 p-2 break-words">{{ row.donor }}</td>
 							<td class="border border-gray-200 p-2 break-words">
-								{{ row.project_code }}
+								{{ row.project }}
 							</td>
 							<td class="border border-gray-200 p-2 text-right break-words">
 								{{ row.quantity }}

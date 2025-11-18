@@ -10,6 +10,7 @@
   "naming_series",
   "title_of_mission",
   "company",
+  "project",
   "column_break_ehba",
   "expected_start_date",
   "expected_end_date",
@@ -193,6 +194,17 @@
    "fieldtype": "Tab Break",
    "label": "Connections",
    "show_dashboard": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -203,14 +215,9 @@
    "group": "Deployments",
    "link_doctype": "Deployment Request Tool",
    "link_fieldname": "terms_of_reference"
-  },
-  {
-   "group": "Projects",
-   "link_doctype": "Project",
-   "link_fieldname": "terms_of_reference"
   }
  ],
- "modified": "2025-11-14 09:11:24.297114",
+ "modified": "2025-11-18 05:47:53.402777",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Terms of Reference",

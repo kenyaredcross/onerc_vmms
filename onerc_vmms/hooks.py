@@ -44,7 +44,11 @@ add_to_apps_screen = [
 
 # include js in doctype views
 doctype_js = {
-    "Project": "volunteer_and_member_management/overrides/client/project.js",
+    # "Project": "volunteer_and_member_management/overrides/client/project.js",
+    "Attendance": "volunteer_and_member_management/overrides/client/attendance.js",
+    "Employee Advance": "volunteer_and_member_management/overrides/client/employee_advance.js",
+    "Expense Claim": "volunteer_and_member_management/overrides/client/expense_claim.js",
+    "Timesheet": "volunteer_and_member_management/overrides/client/timesheet.js",
     "Job Opening": "volunteer_and_member_management/overrides/client/job_opening.js",
     "Employee Onboarding": "volunteer_and_member_management/overrides/client/employee_onboarding.js",
     "Employee": "volunteer_and_member_management/overrides/client/employee.js",
