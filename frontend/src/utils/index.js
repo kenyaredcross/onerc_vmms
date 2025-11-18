@@ -410,6 +410,12 @@ export function getSidebarLinks() {
 			activeFor: ["Jobs", "JobDetail", "NewJobApplication"],
 		},
 		{
+			label: "Projects",
+			icon: "FolderOpen",
+			to: "Projects",
+			activeFor: ["Projects"],
+		},
+		{
 			label: "Events",
 			icon: "Calendar",
 			to: "Events",
