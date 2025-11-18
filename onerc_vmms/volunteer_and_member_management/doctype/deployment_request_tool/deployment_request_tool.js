@@ -397,6 +397,17 @@ frappe.ui.form.on("Deployment Request Tool", {
 				},
 			},
 			{
+				name: "user_id",
+				id: "user_id",
+				content: __("Email"),
+				width: 250,
+				format: (value, row, column, data) => {
+					return value
+						? `<a href="/app/user/${value}" target="_blank">${value}</a>`
+						: "";
+				},
+			},
+			{
 				name: "company",
 				id: "company",
 				content: __("Company"),
@@ -407,17 +418,17 @@ frappe.ui.form.on("Deployment Request Tool", {
 						: "";
 				},
 			},
-			{
-				name: "department",
-				id: "department",
-				content: __("Department"),
-				width: 150,
-				format: (value, row, column, data) => {
-					return value
-						? `<a href="/app/department/${value}" target="_blank">${value}</a>`
-						: "";
-				},
-			},
+			// {
+			// 	name: "department",
+			// 	id: "department",
+			// 	content: __("Department"),
+			// 	width: 150,
+			// 	format: (value, row, column, data) => {
+			// 		return value
+			// 			? `<a href="/app/department/${value}" target="_blank">${value}</a>`
+			// 			: "";
+			// 	},
+			// },
 			{
 				name: "designation",
 				id: "designation",
@@ -429,15 +440,15 @@ frappe.ui.form.on("Deployment Request Tool", {
 						: "";
 				},
 			},
-			{
-				name: "employment_type",
-				id: "employment_type",
-				content: __("Personnel Type"),
-				width: 130,
-				format: (value) => {
-					return value || "";
-				},
-			},
+			// {
+			// 	name: "employment_type",
+			// 	id: "employment_type",
+			// 	content: __("Personnel Type"),
+			// 	width: 130,
+			// 	format: (value) => {
+			// 		return value || "";
+			// 	},
+			// },
 		].map((x) => ({
 			...x,
 			editable: false,
