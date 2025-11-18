@@ -8,7 +8,7 @@
   "date",
   "resource",
   "donor",
-  "project_code",
+  "project",
   "column_break_gzon",
   "quantity",
   "unit",
@@ -45,12 +45,6 @@
    "in_preview": 1,
    "label": "Donor",
    "options": "VM Donor",
-   "reqd": 1
-  },
-  {
-   "fieldname": "project_code",
-   "fieldtype": "Data",
-   "label": "Project Code",
    "reqd": 1
   },
   {
@@ -102,13 +96,20 @@
    "in_standard_filter": 1,
    "label": "Total Cost",
    "read_only": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-11-06 09:41:59.352752",
+ "modified": "2025-11-18 05:45:25.826260",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "TOR Resources",
