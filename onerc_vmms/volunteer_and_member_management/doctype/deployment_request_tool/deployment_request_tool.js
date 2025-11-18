@@ -161,7 +161,6 @@ frappe.ui.form.on("Deployment Request Tool", {
 				"expected_start_date",
 				"expected_end_date",
 				"notes",
-				"terms_of_reference",
 			])
 			.then((r) => {
 				if (r && r.message) {
@@ -171,8 +170,6 @@ frappe.ui.form.on("Deployment Request Tool", {
 					if (r.message.expected_end_date)
 						frm.set_value("expected_end_date", r.message.expected_end_date);
 					if (r.message.notes) frm.set_value("notes", r.message.notes);
-					if (r.message.terms_of_reference)
-						frm.set_value("terms_of_reference", r.message.terms_of_reference);
 				}
 			});
 		frm.trigger("get_employees");
