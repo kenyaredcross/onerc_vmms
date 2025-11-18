@@ -23,7 +23,7 @@
 			</div>
 
 			<section
-				v-if="
+				v-if=" 
 					roleResource?.data &&
 					(roleResource?.data?.is_volunteer || roleResource?.data?.is_member)
 				"
