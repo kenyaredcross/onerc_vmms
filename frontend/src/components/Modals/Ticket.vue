@@ -164,6 +164,7 @@ import PaymentStatus from "../PaymentStatus.vue";
 import { sessionStore } from "../../stores/session";
 import { AlertTriangle } from "lucide-vue-next";
 import PaymentInfoAlert from "../PaymentInfoAlert.vue";
+import { PaymentListener } from "../../utils/payment";
 
 const openTicketModal = defineModel();
 const payStatus = ref(false);
@@ -250,7 +251,8 @@ const handlePay = createResource({
 			);
 			invoice.value = data.invoice;
 			eventBooking.value = data.event_booking;
-			checkPayment();
+			confirmPaymentStatus.loading = true;
+			initiatePaymentListener(data);
 		}
 	},
 	onError(error) {
@@ -261,6 +263,17 @@ const handlePay = createResource({
 function validatePhone(phone) {
 	const phoneRegex = /^07\d{8}$/;
 	return phoneRegex.test(phone);
+}
+
+function initiatePaymentListener(data) {
+	const paymentInstance = new PaymentListener();
+	paymentInstance.saveToken(data.payment_token);
+	paymentInstance.listenForPayment().then((status) => {
+		confirmPaymentStatus.loading = false;
+		status === "Completed"
+			? (paymentStatus.value = true)
+			: (handlePay.error = "An error occured during payment.");
+	});
 }
 
 function proceedToPay() {

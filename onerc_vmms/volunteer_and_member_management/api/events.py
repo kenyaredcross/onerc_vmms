@@ -195,12 +195,15 @@ def handle_ticket_payment(payload: TicketPaymentPayload):
 
         event_booking.insert(ignore_permissions=True)
 
-        _pr, invoice = event_booking.initialize_payment(phone_number=payload.phone)
+        pr, invoice = event_booking.initialize_payment(
+            phone_number=payload.phone, payment_token=True
+        )
 
         data = frappe._dict(
             {
                 "invoice": invoice.name,
                 "event_booking": event_booking.name,
+                "payment_token": pr.payment_token,
             }
         )
 
