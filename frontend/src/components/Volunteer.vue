@@ -89,7 +89,7 @@
 
 							<router-link
 								:to="{
-									name: 'AssignmentDetail',
+									name: 'ProjectDetail',
 									params: { id: project.deployment_name },
 								}"
 								class="ml-4"
@@ -123,9 +123,10 @@
 		</Dialog>
 	</div>
 
-	<div class="px-10">
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-8">
-			<div
+	<div class="px-0">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 my-8">
+			<router-link
+				:to="{ name: 'Projects', hash: '#all' }"
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
@@ -135,44 +136,59 @@
 					{{ __(props.total_projects_deployed || 0) }}
 				</div>
 				<div class="text-xs text-gray-500">{{ __("All assignments") }}</div>
-			</div>
+			</router-link>
 
-			<div
-				@click="showNotificationDialog = true"
+			<router-link
+				:to="{ name: 'Projects', hash: '#active' }"
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
-					{{ __("Pending") }}
-				</h4>
-				<div class="text-3xl font-bold text-amber-600 mb-1">
-					{{ __(props.pending_projects || 0) }}
-				</div>
-				<div class="text-xs text-gray-500">{{ __("Awaiting response") }}</div>
-			</div>
-
-			<div
-				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
-			>
-				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
-					{{ __("Accepted") }}
+					{{ __("Active") }}
 				</h4>
 				<div class="text-3xl font-bold text-green-600 mb-1">
-					{{ __(props.accepted_projects || 0) }}
+					{{ __(props.active || 0) }}
 				</div>
 				<div class="text-xs text-gray-500">{{ __("Ongoing assignments") }}</div>
-			</div>
+			</router-link>
 
-			<div
+			<router-link
+				:to="{ name: 'Projects', hash: '#pending-response' }"
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
-					{{ __("Rejected") }}
+					{{ __("Pending Response") }}
+				</h4>
+				<div class="text-3xl font-bold text-amber-600 mb-1">
+					{{ __(props.pending_response || 0) }}
+				</div>
+				<div class="text-xs text-gray-500">{{ __("Awaiting your action") }}</div>
+			</router-link>
+
+			<router-link
+				:to="{ name: 'Projects', hash: '#awaiting-deployment' }"
+				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+			>
+				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
+					{{ __("Awaiting Deployment") }}
+				</h4>
+				<div class="text-3xl font-bold text-blue-600 mb-1">
+					{{ __(props.awaiting_deployment || 0) }}
+				</div>
+				<div class="text-xs text-gray-500">{{ __("Deployment pending") }}</div>
+			</router-link>
+
+			<router-link
+				:to="{ name: 'Projects', hash: '#declined-deployment' }"
+				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+			>
+				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
+					{{ __("Declined") }}
 				</h4>
 				<div class="text-3xl font-bold text-red-600 mb-1">
-					{{ __(props.rejected_projects || 0) }}
+					{{ __(props.declined_deployment || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">{{ __("Declined assignments") }}</div>
-			</div>
+				<div class="text-xs text-gray-500">{{ __("Assignments declined") }}</div>
+			</router-link>
 		</div>
 	</div>
 
@@ -184,7 +200,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Badge, Button, createResource, Dialog, toast } from "frappe-ui";
+import { Badge, Button, createResource, Dialog } from "frappe-ui";
 import { Bell } from "lucide-vue-next";
 import { ref } from "vue";
 import { usersStore } from "../stores/user";
@@ -218,9 +234,11 @@ interface Project {
 
 const props = defineProps<{
 	total_projects_deployed: number;
-	pending_projects: number;
-	accepted_projects: number;
-	rejected_projects: number;
+	pending_response: number;
+	awaiting_deployment: number;
+	declined_deployment: number;
+	active: number;
+	closed: number;
 }>();
 
 const hasNotification = ref(false);
