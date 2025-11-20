@@ -1,4 +1,18 @@
 <template>
+	<Breadcrumbs
+		v-if="eventDetail.data"
+		:items="[
+			{
+				label: 'Events',
+				route: '/events',
+			},
+			{
+				label: eventDetail.data.title,
+				route: '/event/' + eventDetail.data.route,
+			},
+		]"
+		class="my-4 max-w-4xl px-4"
+	/>
 	<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
 		<ProgressSpinner v-if="eventDetail.loading" />
 		<ErrorMessage
@@ -38,27 +52,18 @@
 						</div>
 
 						<div class="mb-6 sm:mb-8">
-							<div v-if="eventDetail.data?.is_ticketed">
-								<Button
-									v-if="!hasBookedTickets"
-									theme="red"
-									variant="solid"
-									size="lg"
-									@click="handleRegister(true)"
-								>
-									{{ __("Get Ticket") }}
-								</Button>
-							</div>
-							<div v-else>
-								<Button
-									theme="red"
-									variant="solid"
-									size="lg"
-									@click="handleRegister(false)"
-								>
-									{{ __("Register") }}
-								</Button>
-							</div>
+							<Button
+								theme="red"
+								variant="solid"
+								size="lg"
+								@click="handleRegister(eventDetail.data.route)"
+							>
+								{{
+									eventDetail.data.is_ticketed
+										? __("Get Tickets")
+										: __("Register ")
+								}}
+							</Button>
 						</div>
 
 						<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -218,22 +223,10 @@
 			</div>
 		</div>
 	</div>
-	<AttendEventModal
-		:eventId="eventDetail.data?.name"
-		:dialogStatus="isOpen"
-		@close="isOpen = false"
-		v-model="isOpen"
-	/>
-	<Ticket
-		v-model="openTicketModal"
-		:tickets="eventDetail.data?.tickets"
-		:event="eventDetail.data?.name"
-	/>
 </template>
 
 <script setup>
-import { useHead } from "@vueuse/head";
-import { Button, createResource, toast } from "frappe-ui";
+import { Breadcrumbs, Button, createResource, toast } from "frappe-ui";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
 import { CalendarDays, Clock, MapPin, Users } from "lucide-vue-next";
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
@@ -243,14 +236,10 @@ import AttendEventModal from "../components/Modals/AttendEventModal.vue";
 import Ticket from "../components/Modals/Ticket.vue";
 import router from "../router";
 
-const hasBookedTickets = computed(() => {
-	return eventDetail.data?.booked_tickets && eventDetail.data.booked_tickets.length > 0;
-});
-
 const route = useRoute();
 const eventName = ref(route.params.id);
 const user = inject("$user");
-const isOpen = ref(false);
+const openAttendModal = ref(false);
 const openTicketModal = ref(false);
 
 const eventDetail = createResource({
@@ -357,12 +346,8 @@ const formatDate = (dateStr) => {
 	});
 };
 
-const handleRegister = (status) => {
-	if (status) {
-		openTicketModal.value = true;
-	} else {
-		isOpen.value = true;
-	}
+const handleRegister = (route) => {
+	window.location.href = `/vmms/event/registration/${route}`;
 };
 
 onMounted(() => {
