@@ -145,6 +145,29 @@ frappe.ui.form.on("Deployment Request Tool", {
 
 	terms_of_reference: function (frm) {
 		frm.events.set_tor_filter(frm);
+		frappe.db
+			.get_value("Personnel Terms of Reference", frm.doc.terms_of_reference, [
+				"company",
+				"expected_start_date",
+				"expected_end_date",
+				"mission_background",
+				"project",
+				"title_of_mission",
+			])
+			.then((r) => {
+				if (r && r.message) {
+					if (r.message.company) frm.set_value("company", r.message.company);
+					if (r.message.expected_start_date)
+						frm.set_value("expected_start_date", r.message.expected_start_date);
+					if (r.message.expected_end_date)
+						frm.set_value("expected_end_date", r.message.expected_end_date);
+					if (r.message.mission_background)
+						frm.set_value("notes", r.message.mission_background);
+					if (r.message.project) frm.set_value("project", r.message.project);
+					if (r.message.title_of_mission)
+						frm.set_value("title", r.message.title_of_mission);
+				}
+			});
 		render_tor_preview(frm);
 	},
 
@@ -155,23 +178,23 @@ frappe.ui.form.on("Deployment Request Tool", {
 	project(frm) {
 		if (!frm.doc.project) return;
 		frm.events.set_task_filter(frm);
-		frappe.db
-			.get_value("Project", frm.doc.project, [
-				"company",
-				"expected_start_date",
-				"expected_end_date",
-				"notes",
-			])
-			.then((r) => {
-				if (r && r.message) {
-					if (r.message.company) frm.set_value("company", r.message.company);
-					if (r.message.expected_start_date)
-						frm.set_value("expected_start_date", r.message.expected_start_date);
-					if (r.message.expected_end_date)
-						frm.set_value("expected_end_date", r.message.expected_end_date);
-					if (r.message.notes) frm.set_value("notes", r.message.notes);
-				}
-			});
+		// frappe.db
+		// 	.get_value("Project", frm.doc.project, [
+		// 		"company",
+		// 		"expected_start_date",
+		// 		"expected_end_date",
+		// 		"notes",
+		// 	])
+		// 	.then((r) => {
+		// 		if (r && r.message) {
+		// 			if (r.message.company) frm.set_value("company", r.message.company);
+		// 			if (r.message.expected_start_date)
+		// 				frm.set_value("expected_start_date", r.message.expected_start_date);
+		// 			if (r.message.expected_end_date)
+		// 				frm.set_value("expected_end_date", r.message.expected_end_date);
+		// 			if (r.message.notes) frm.set_value("notes", r.message.notes);
+		// 		}
+		// 	});
 		frm.trigger("get_employees");
 	},
 

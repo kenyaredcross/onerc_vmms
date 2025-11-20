@@ -170,11 +170,15 @@ def get_all_deployed_projects():
         deployment_doc = frappe.get_doc("Personnel Deployment Request", dep.name)
         try:
             project_doc = frappe.get_doc("Project", deployment_doc.project)
+            deployment_record = frappe.get_doc(
+                "Deployment Request Tool", deployment_doc.deployment
+            )
         except frappe.DoesNotExistError:
             continue
 
         deployment_dict = deployment_doc.as_dict()
         deployment_dict["project"] = project_doc.as_dict()
+        deployment_dict["deployment"] = deployment_record.as_dict()
 
         result.append(deployment_dict)
 
