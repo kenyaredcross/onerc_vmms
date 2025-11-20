@@ -107,7 +107,7 @@
 				<div
 					class="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full"
 				>
-					<div class="text-center sm:text-left hidden md:block">
+					<div class="text-center sm:text-left">
 						<h1 class="text-xl sm:text-3xl font-bold text-red-600 leading-tight">
 							{{ __(form?.full_name || "Volunteer Name") }}
 						</h1>
@@ -116,7 +116,7 @@
 						</p>
 					</div>
 
-					<div class="mt-3 sm:mt-0 flex-shrink-0">
+					<!-- <div class="mt-3 sm:mt-0 flex-shrink-0">
 						<a
 							href="/app/user-profile"
 							target="_blank"
@@ -136,7 +136,7 @@
 								{{ __("View More") }}
 							</span>
 						</a>
-					</div>
+					</div> -->
 				</div>
 			</div>
 		</div>
