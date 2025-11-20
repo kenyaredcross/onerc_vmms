@@ -29,7 +29,32 @@
 			</div>
 		</div>
 
+		<div
+			v-else-if="!showEditMode && userId"
+			class="bg-white shadow-xl rounded-xl p-4 sm:p-6 lg:p-8"
+		>
+			<EnergyPointsDashboard :user-id="userId" @edit-profile="toggleEditMode" />
+		</div>
+
 		<div v-else class="bg-white shadow-xl rounded-xl p-4 sm:p-6 lg:p-8">
+			<div class="flex justify-between items-center mb-6">
+				<h2 class="text-2xl font-bold text-gray-800">Edit Profile</h2>
+				<button
+					@click="toggleEditMode"
+					class="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M10 19l-7-7m0 0l7-7m-7 7h18"
+						></path>
+					</svg>
+					Back to Dashboard
+				</button>
+			</div>
+
 			<div
 				class="flex overflow-x-auto border-b border-gray-200 whitespace-nowrap mb-6 -mx-4 sm:mx-0 px-4 sm:px-0"
 			>
@@ -51,51 +76,6 @@
 			<div class="min-h-[400px] py-4">
 				<component :is="tabs[currentTab].component" :form="form" @saved="handleSaved" />
 			</div>
-
-			<!-- <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
-				<button
-					v-if="currentTab > 0"
-					class="flex items-center gap-1 px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg transition-colors hover:bg-gray-200 active:scale-95"
-					@click="prevTab"
-				>
-					<svg
-						class="w-4 h-4"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M10 19l-7-7m0 0l7-7m-7 7h18"
-						></path>
-					</svg>
-					{{ __("Back") }}
-				</button>
-				<button
-					v-if="currentTab < tabs.length - 1"
-					class="flex items-center gap-1 px-4 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
-					@click="nextTab"
-				>
-					{{ __("Next") }}
-					<svg
-						class="w-4 h-4"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-						xmlns="http://www.w3.org/2000/svg"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M14 5l7 7m0 0l-7 7m7-7H3"
-						></path>
-					</svg>
-				</button>
-			</div> -->
 		</div>
 
 		<ErrorModal v-model="showErrorDialog" :errors="flatErrors" />
@@ -107,9 +87,9 @@ import { useHead } from "@vueuse/head";
 import { createResource, toast } from "frappe-ui";
 import { onMounted, reactive, ref } from "vue";
 
-// Component Imports
 import ErrorModal from "@/components/Modals/ErrorModal.vue";
 import CitizenshipDocuments from "@/components/Profile/CitizenshipDocuments.vue";
+import EnergyPointsDashboard from "@/components/Profile/EnergyPointsDashboard.vue";
 import HealthDisabilities from "@/components/Profile/HealthDisabilities.vue";
 import PersonalInfo from "@/components/Profile/PersonalInfo.vue";
 import ProfileHeader from "@/components/Profile/ProfileHeader.vue";
@@ -118,15 +98,17 @@ import { sessionStore } from "../stores/session";
 
 const loading = ref(true);
 const showErrorDialog = ref(false);
+const showEditMode = ref(false);
 const currentTab = ref(0);
 const flatErrors = ref("");
-const { isLoggedIn } = sessionStore();
+const userId = ref(null);
+const { isLoggedIn, user } = sessionStore();
 
 const tabs = [
 	{ title: "Personal Info", component: PersonalInfo },
 	{ title: "Health & Disabilities", component: HealthDisabilities },
 	{ title: "Qualifications & Skills", component: QualificationsSkills },
-	{ title: "Documents", component: CitizenshipDocuments },
+	{ title: "Documents", CitizenshipDocuments },
 ];
 
 const form = reactive({});
@@ -140,7 +122,11 @@ function populateForm(data) {
 const userDetailsResource = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_details",
 	onSuccess(data) {
-		if (data) populateForm(data);
+		if (data) {
+			populateForm(data);
+
+			userId.value = data.name || user;
+		}
 		loading.value = false;
 	},
 	onError(err) {
@@ -151,11 +137,23 @@ const userDetailsResource = createResource({
 
 function handleSaved(updatedData) {
 	Object.assign(form, updatedData);
+	toast.success("Profile updated successfully");
+}
+
+function toggleEditMode() {
+	showEditMode.value = !showEditMode.value;
+	if (!showEditMode.value) {
+		currentTab.value = 0;
+	}
 }
 
 function updateTabFromHash() {
-	if (typeof window !== "undefined") {
+	if (typeof window !== "undefined" && showEditMode.value) {
 		const hash = window.location.hash.substring(1);
+		if (hash === "edit") {
+			showEditMode.value = true;
+			return;
+		}
 		const index = parseInt(hash.replace("tab-", ""), 10);
 		if (!isNaN(index) && index >= 0 && index < tabs.length) {
 			currentTab.value = index;
@@ -167,7 +165,7 @@ function updateTabFromHash() {
 }
 
 function updateHash(index) {
-	if (typeof window !== "undefined") {
+	if (typeof window !== "undefined" && showEditMode.value) {
 		window.location.hash = `tab-${index}`;
 	}
 }
@@ -177,15 +175,14 @@ function goToTab(i) {
 	updateHash(i);
 }
 
-function nextTab() {
-	goToTab(Math.min(currentTab.value + 1, tabs.length - 1));
-}
-
-function prevTab() {
-	goToTab(Math.max(currentTab.value - 1, 0));
-}
-
 onMounted(() => {
+	if (typeof window !== "undefined") {
+		const hash = window.location.hash.substring(1);
+		if (hash === "edit" || hash.startsWith("tab-")) {
+			showEditMode.value = true;
+		}
+	}
+
 	updateTabFromHash();
 
 	if (typeof window !== "undefined") {
@@ -203,7 +200,7 @@ useHead({
 		{
 			name: "description",
 			content:
-				"Manage and update your personal information, health details, qualifications, skills, and important documents within the Kenya Red Cross VMMS.",
+				"View your energy points dashboard and manage your personal information, health details, qualifications, skills, and important documents within the Kenya Red Cross VMMS.",
 		},
 	],
 });
