@@ -4,10 +4,12 @@
 			class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 shadow-md"
 		>
 			<div class="flex items-center space-x-4">
-				<h1 class="text-2xl sm:text-3xl font-bold text-gray-800">{{ __("Projects") }}</h1>
+				<h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
+					{{ __("Deployments") }}
+				</h1>
 				<div class="text-lg font-bold text-red-600">
 					<span class="hidden sm:inline-block text-xl">
-						{{ __("{0} Projects").format(filteredProjects.length) }}
+						{{ __("{0} Deployments").format(filteredProjects.length) }}
 					</span>
 					<span class="sm:hidden text-base"> ({{ filteredProjects.length }}) </span>
 				</div>
@@ -29,7 +31,7 @@
 			</div>
 
 			<div v-if="projects.loading" class="text-center py-10">
-				<p class="text-gray-500 text-lg">{{ __("Loading projects...") }}</p>
+				<p class="text-gray-500 text-lg">{{ __("Loading deployments...") }}</p>
 			</div>
 
 			<div v-else-if="filteredProjects.length">
@@ -37,7 +39,7 @@
 					<router-link
 						v-for="project in filteredProjects"
 						:key="project.name"
-						:to="{ name: 'ProjectDetail', params: { id: project.name } }"
+						:to="{ name: 'DeploymentDetail', params: { id: project.name } }"
 						class="transition-transform duration-300 hover:scale-[1.02] transform block"
 					>
 						<ProjectCard
@@ -48,14 +50,14 @@
 				</div>
 			</div>
 
-			<EmptyState v-else :type="__('Projects')" />
+			<EmptyState v-else :type="__('Deployments')" />
 		</main>
 	</div>
 </template>
 
 <script setup>
 import EmptyState from "@/components/EmptyState.vue";
-import ProjectCard from "@/components/ProjectCard.vue";
+import ProjectCard from "@/components/Project/ProjectCard.vue";
 import { useHead } from "@vueuse/head";
 import { createResource, TabButtons, toast } from "frappe-ui";
 import { computed, inject, onMounted, ref, watch } from "vue";
@@ -126,10 +128,10 @@ const projects = createResource({
 const allProjects = computed(() => projects.data || []);
 
 const getProjectStatus = (project) => {
+	if (project.deployment_status === "Rejected") return "Declined Deployment";
 	if (project.docstatus === 0) {
 		if (project.deployment_status === "Pending") return "Pending Response";
 		if (project.deployment_status === "Accepted") return "Awaiting Deployment";
-		if (project.deployment_status === "Rejected") return "Declined Deployment";
 	}
 	if (project.docstatus === 1 && project.deployment_status === "Accepted") {
 		return project.project.status === "Open" ? "Active" : "Closed";
@@ -144,12 +146,12 @@ const filteredProjects = computed(() => {
 });
 
 useHead({
-	title: "My Projects | Kenya Red Cross VMMS",
+	title: "My Deployments | Kenya Red Cross VMMS",
 	meta: [
 		{
 			name: "description",
 			content:
-				"View the list of projects you are currently involved in with the Kenya Red Cross. Track project dates, types, and your participation status.",
+				"View the list of deployments you are currently involved in with the Kenya Red Cross. Track deployment dates, types, and your participation status.",
 		},
 	],
 });
