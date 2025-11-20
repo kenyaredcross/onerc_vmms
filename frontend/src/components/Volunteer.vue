@@ -51,7 +51,7 @@
 						>
 							<Bell class="h-5 w-5 text-red-600" />
 						</div>
-						{{ __("New Assignment") }}
+						{{ __("New Deployment Assignment") }}
 					</h3>
 
 					<Badge variant="outline" theme="red" class="ml-2">
@@ -89,7 +89,7 @@
 
 							<router-link
 								:to="{
-									name: 'ProjectDetail',
+									name: 'DeploymentDetail',
 									params: { id: project.deployment_name },
 								}"
 								class="ml-4"
@@ -114,7 +114,7 @@
 					<p class="text-sm text-gray-500 max-w-sm">
 						{{
 							__(
-								"No new project assignments at the moment. We'll notify you when new ones arrive.",
+								"No new deployment assignments at the moment. We'll notify you when new ones arrive.",
 							)
 						}}
 					</p>
@@ -126,20 +126,20 @@
 	<div class="px-0">
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 my-8">
 			<router-link
-				:to="{ name: 'Projects', hash: '#all' }"
+				:to="{ name: 'Deployments', hash: '#all' }"
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
-					{{ __("Total Assignments") }}
+					{{ __("Total Deployments") }}
 				</h4>
 				<div class="text-3xl font-bold text-gray-900 mb-1">
 					{{ __(props.total_projects_deployed || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">{{ __("All assignments") }}</div>
+				<div class="text-xs text-gray-500">{{ __("All deployments") }}</div>
 			</router-link>
 
 			<router-link
-				:to="{ name: 'Projects', hash: '#active' }"
+				:to="{ name: 'Deployments', hash: '#active' }"
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
@@ -148,11 +148,11 @@
 				<div class="text-3xl font-bold text-green-600 mb-1">
 					{{ __(props.active || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">{{ __("Ongoing assignments") }}</div>
+				<div class="text-xs text-gray-500">{{ __("Ongoing deployments") }}</div>
 			</router-link>
 
 			<router-link
-				:to="{ name: 'Projects', hash: '#pending-response' }"
+				:to="{ name: 'Deployments', hash: '#pending-response' }"
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
@@ -165,7 +165,7 @@
 			</router-link>
 
 			<router-link
-				:to="{ name: 'Projects', hash: '#awaiting-deployment' }"
+				:to="{ name: 'Deployments', hash: '#awaiting-deployment' }"
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
@@ -174,11 +174,11 @@
 				<div class="text-3xl font-bold text-blue-600 mb-1">
 					{{ __(props.awaiting_deployment || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">{{ __("Deployment pending") }}</div>
+				<div class="text-xs text-gray-500">{{ __("Deployments pending") }}</div>
 			</router-link>
 
 			<router-link
-				:to="{ name: 'Projects', hash: '#declined-deployment' }"
+				:to="{ name: 'Deployments', hash: '#declined-deployment' }"
 				class="cursor-pointer p-6 flex flex-col w-full bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
 			>
 				<h4 class="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
@@ -187,7 +187,7 @@
 				<div class="text-3xl font-bold text-red-600 mb-1">
 					{{ __(props.declined_deployment || 0) }}
 				</div>
-				<div class="text-xs text-gray-500">{{ __("Assignments declined") }}</div>
+				<div class="text-xs text-gray-500">{{ __("Deployments declined") }}</div>
 			</router-link>
 		</div>
 	</div>

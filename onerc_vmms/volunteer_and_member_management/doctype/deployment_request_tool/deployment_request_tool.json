@@ -8,6 +8,7 @@
  "field_order": [
   "details_tab",
   "details_section",
+  "title",
   "project",
   "task",
   "location",
@@ -308,6 +309,12 @@
    "fieldname": "employee_list",
    "fieldtype": "HTML",
    "label": "Employee List"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -349,7 +356,7 @@
    "link_fieldname": "personnel_deployment_request"
   }
  ],
- "modified": "2025-11-18 08:44:31.361807",
+ "modified": "2025-11-20 08:56:34.143618",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Deployment Request Tool",
@@ -370,7 +377,11 @@
   }
  ],
  "row_format": "Dynamic",
+ "search_fields": "title,company,project",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "title",
+ "translated_doctype": 1
 }

@@ -70,13 +70,13 @@
   },
   {
    "fieldname": "expected_start_date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Expected Start Date",
    "reqd": 1
   },
   {
    "fieldname": "expected_end_date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Expected End Date",
    "reqd": 1
   },
@@ -217,7 +217,7 @@
    "link_fieldname": "terms_of_reference"
   }
  ],
- "modified": "2025-11-18 05:47:53.402777",
+ "modified": "2025-11-20 09:02:46.996364",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Terms of Reference",

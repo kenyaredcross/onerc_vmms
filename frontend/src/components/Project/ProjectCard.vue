@@ -6,11 +6,22 @@
 			class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-500 via-red-400 to-orange-400"
 		></div>
 
-		<h2
-			class="text-lg font-bold text-gray-900 leading-tight mb-1 group-hover:text-red-700 transition-colors duration-200"
-		>
-			{{ __(project.project?.project_name || project.project_name || project.name) }}
-		</h2>
+		<div class="mb-1">
+			<h2
+				class="text-lg font-bold text-gray-900 leading-tight group-hover:text-red-700 transition-colors duration-200"
+			>
+				{{ __(project?.deployment?.title || project.name) }}
+			</h2>
+
+			<div
+				v-if="project?.project?.project_name || project.project_name"
+				class="flex items-center gap-2 mt-1"
+			>
+				<span class="text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-md">
+					{{ __("Project: ") + __(project?.project?.project_name) }}
+				</span>
+			</div>
+		</div>
 
 		<div class="my-3 flex flex-wrap gap-1.5">
 			<div

@@ -5,7 +5,7 @@
 			{{ notes }}
 		</div>
 		<div v-else class="text-gray-500 italic">
-			{{ __("No notes available for this project.") }}
+			{{ __("No notes available for this deployment.") }}
 		</div>
 	</div>
 </template>

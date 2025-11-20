@@ -11,7 +11,6 @@
 			<div class="space-y-6">
 				<ProjectInfo :project="project" />
 
-				<!-- NEW: Show Actions if project is submitted + accepted -->
 				<ProjectActions
 					v-if="project.docstatus === 1 && project.deployment_status === 'Accepted'"
 					:project="project"

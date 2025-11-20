@@ -1,10 +1,10 @@
 <template>
 	<div class="min-h-screen bg-gray-50">
-		<ProjectLoading v-if="projectDetail.loading" />
-		<ProjectError v-else-if="projectDetail.error" @reload="projectDetail.reload()" />
+		<ProjectLoading v-if="DeploymentDetail.loading" />
+		<ProjectError v-else-if="DeploymentDetail.error" @reload="DeploymentDetail.reload()" />
 		<ProjectContent
-			v-else-if="projectDetail.data"
-			:project="projectDetail.data"
+			v-else-if="DeploymentDetail.data"
+			:project="DeploymentDetail.data"
 			@accept="acceptAssignment"
 			@reject="rejectAssignment"
 			@download-contract="downloadContract"
@@ -38,7 +38,7 @@ const projectParams = computed(() => {
 	return route.params.id;
 });
 
-const projectDetail = createResource({
+const DeploymentDetail = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.projects.get_assignment_details",
 	auto: true,
 	cache: ["project_detail", projectParams.value],
@@ -66,7 +66,7 @@ const assignmentDecision = createResource({
 	},
 	onSuccess() {
 		toast.success("Your decision has been recorded.");
-		projectDetail.reload();
+		DeploymentDetail.reload();
 	},
 });
 

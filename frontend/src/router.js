@@ -50,15 +50,15 @@ const routes = [
 		component: () => import("@/pages/Events.vue"),
 	},
 	{
-		name: "Projects",
-		path: "/projects",
-		component: () => import("@/pages/Projects.vue"),
+		name: "Deployments",
+		path: "/deployments",
+		component: () => import("@/pages/Deployments.vue"),
 		meta: { requiresAuth: true, requiresVolunteer: true },
 	},
 	{
-		name: "ProjectDetail",
-		path: "/projects/:id",
-		component: () => import("@/pages/ProjectDetail.vue"),
+		name: "DeploymentDetail",
+		path: "/deployments/:id",
+		component: () => import("@/pages/DeploymentDetail.vue"),
 		meta: { requiresAuth: true, requiresVolunteer: true },
 	},
 	{

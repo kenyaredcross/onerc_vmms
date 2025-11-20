@@ -194,7 +194,7 @@ onMounted(() => {
 
 	if (!isLoggedIn) return;
 
-	 userDetailsResource.fetch();
+	userDetailsResource.fetch();
 });
 
 useHead({
