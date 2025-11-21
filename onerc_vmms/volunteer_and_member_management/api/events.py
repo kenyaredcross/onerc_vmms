@@ -161,42 +161,45 @@ def get_event_details(event_name: str | int) -> dict:
 
 @dataclass
 class TicketPaymentPayload:
-    phone: str
     event_name: str | int
     ticket_name: str | int
-    email: str
-    full_name: str
+    booking_details: list[dict[str, any]]
 
 
 @frappe.whitelist(allow_guest=True)
-def handle_ticket_payment(payload: TicketPaymentPayload):
-
+def handle_ticket_payment(payload: dict) -> dict:
     error_message = "Error processing ticket payment."
 
     if not payload:
         frappe.throw(_(error_message))
+
+    payload_object = TicketPaymentPayload(**payload)
+    attendee_booking_details = []
+    for attendee in payload_object.booking_details:
+        attendee_booking_details.append(
+            {
+                "full_name": attendee.get("full_name"),
+                "email": attendee.get("email"),
+                "phone": attendee.get("phone"),
+                "ticket_type": payload_object.ticket_name,
+            }
+        )
 
     try:
 
         event_booking = frappe.get_doc(
             {
                 "doctype": "Event Booking",
-                "event": payload.event_name,
-                "primary_contact": payload.email,
-                "attendees": [
-                    {
-                        "full_name": payload.full_name,
-                        "email": payload.email,
-                        "ticket_type": payload.ticket_name,
-                    }
-                ],
+                "event": payload_object.event_name,
+                "primary_contact": payload_object.booking_details[0]["email"],
+                "attendees": attendee_booking_details,
             }
         )
 
         event_booking.insert(ignore_permissions=True)
 
         pr, invoice = event_booking.initialize_payment(
-            phone_number=payload.phone, payment_token=True
+            phone_number=payload_object.booking_details[0]["phone"], payment_token=True
         )
 
         data = frappe._dict(
