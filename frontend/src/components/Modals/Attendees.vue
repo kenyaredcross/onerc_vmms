@@ -7,10 +7,22 @@
 	>
 		><template #body-title>
 			<h3 class="text-2xl font-semibold text-ink-gray-9">Attendees</h3>
-			<span class="text-gray-800"
-				>Your tickets will automatically be sent to you and your guests. You will simply
-				need to fill in their Name, Email address and phone number.</span
+			<span class="text-gray-800">{{
+				__(
+					"Your tickets will automatically be sent to you and your guests. You will simply need to fill in their Name, Email address and phone number.",
+				)
+			}}</span>
+			<br />
+			<div
+				class="flex items-center gap-2 text-sm text-red-600 border border-red-500 p-2 rounded-md mt-2 bg-red-50"
 			>
+				<AlertCircle :size="16" class="flex-shrink-0" />
+				<span>{{
+					__(
+						"The First record is for the primary ticket holder and will be prompted for payment",
+					)
+				}}</span>
+			</div>
 		</template>
 		<template #body-content>
 			<div
@@ -72,6 +84,8 @@
 import { Dialog, Input, Button, ErrorMessage } from "frappe-ui";
 import { toRaw, ref, watch } from "vue";
 import { attendeeBooking } from "../../utils/booking";
+import { AlertCircle } from "lucide-vue-next";
+
 const attendeesModal = defineModel();
 const loading = ref(false);
 const errorMessage = ref("");
