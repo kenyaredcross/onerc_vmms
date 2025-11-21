@@ -46,7 +46,6 @@
 					v-model="attendees[index].phone"
 				/>
 			</div>
-            {{ props.edit }}
 			<ErrorMessage
 				:message="errorMessage"
 				class="w-1/2 mt-4 mx-auto border border-red-500 rounded-md p-2 flex justify-center"
