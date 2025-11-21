@@ -10,7 +10,7 @@
 				'grid grid-cols-1 md:grid-cols-2 gap-4': selectedTicket,
 			}"
 		>
-			<div class="mt-6 space-y-3 border">
+			<div class="mt-6 space-y-3">
 				<div
 					v-for="ticket in props.tickets"
 					:key="ticket.id"
@@ -78,7 +78,7 @@
 				/>
 
 				<div class="flex flex-col gap-2">
-					<label class="text-sm text-gray-700 mb-2"> Number of Tickets </label>
+					<label class="text-sm text-gray-700 mb-2">{{ __("Number of Tickets") }}</label>
 					<div class="flex items-center gap-3">
 						<Button
 							type="button"
@@ -115,7 +115,9 @@
 					type="button"
 					class="w-full mt-4"
 					>{{
-						attendeeBooking.getAttendees().length ? "Edit Attendees" : "Get Tickets"
+						attendeeBooking.getAttendees().length
+							? __("Edit Attendees")
+							: __("Get Tickets")
 					}}</Button
 				>
 				<div v-if="attendeeBooking.getAttendees().length">
@@ -130,10 +132,10 @@
 					>
 						{{
 							handlePay.loading
-								? "Initialising Payment"
+								? __("Initialising Payment")
 								: confirmPaymentStatus.loading
-									? "Confirming Payment"
-									: "Proceed to Pay"
+									? __("Confirming Payment")
+									: __("Proceed to Pay")
 						}}
 					</Button>
 				</div>
