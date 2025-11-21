@@ -1,17 +1,16 @@
 <template>
-	<div class="space-y-2">
-		<h3 class="text-2xl font-bold text-gray-900">Select Your Ticket</h3>
-		<p class="text-sm text-gray-500">Choose the perfect ticket for your experience</p>
-	</div>
-
 	<div v-if="!paymentStatus">
+		<div class="space-y-2">
+			<h3 class="text-2xl font-bold text-gray-900">Select Your Ticket</h3>
+			<p class="text-sm text-gray-500">Choose the perfect ticket for your experience</p>
+		</div>
 		<div
 			:class="{
-				'grid grid-cols-1 md:grid-cols-2 border': !selectedTicket,
+				'grid grid-cols-1 md:grid-cols-2': !selectedTicket,
 				'grid grid-cols-1 md:grid-cols-2 gap-4': selectedTicket,
 			}"
 		>
-			<div class="mt-6 space-y-3">
+			<div class="mt-6 space-y-3 border">
 				<div
 					v-for="ticket in props.tickets"
 					:key="ticket.id"
@@ -61,7 +60,7 @@
 				</div>
 			</div>
 
-			<div v-if="payStatus" class="mt-6 space-y-3">
+			<form v-if="payStatus" class="mt-6 space-y-3" @submit.prevent="proceedToPay">
 				<Input
 					name="ticket_type"
 					type="text"
@@ -77,37 +76,12 @@
 					v-model="ticketData.price"
 					readonly
 				/>
-				<Input
-					v-if="user.data === 'Guest'"
-					required
-					name="email"
-					type="email"
-					placeholder="you@example.com"
-					label="Email"
-					v-model="ticketData.email"
-				/>
-				<Input
-					v-if="user.data === 'Guest'"
-					required
-					name="first_name"
-					type="text"
-					placeholder="Jane Doe"
-					label="Full Name"
-					v-model="ticketData.full_name"
-				/>
 
-				<Input
-					required
-					name="phone"
-					type="text"
-					placeholder="0712345678"
-					label="MPesa Phone Number  for payment"
-					v-model="ticketData.phone"
-				/>
 				<div class="flex flex-col gap-2">
 					<label class="text-sm text-gray-700 mb-2"> Number of Tickets </label>
 					<div class="flex items-center gap-3">
 						<Button
+							type="button"
 							theme="blue"
 							variant="outline"
 							@click="numberOfTickets = Math.max(1, numberOfTickets - 1)"
@@ -120,9 +94,14 @@
 							v-model.number="numberOfTickets"
 							min="1"
 							@input="handleTicketsNumber($event.target.value)"
-							class="w-20 text-center border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent"
+							class="w-20 h-10 text-center border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent"
 						/>
-						<Button theme="green" variant="outline" @click="numberOfTickets++">
+						<Button
+							type="button"
+							theme="green"
+							variant="outline"
+							@click="numberOfTickets++"
+						>
 							+
 						</Button>
 					</div>
@@ -130,29 +109,41 @@
 
 				<PaymentInfoAlert v-if="checkSTK" />
 				<Button
-					v-if="!confirmPayment && payStatus"
-					class="w-full mt-4"
-					theme="green"
+					theme="red"
 					variant="solid"
-					@click="proceedToPay"
-					:loading="handlePay.loading || confirmPaymentStatus.loading"
+					@click="handleAttendeeModal(attendeeBooking.getAttendees().length)"
+					type="button"
+					class="w-full mt-4"
+					>{{
+						attendeeBooking.getAttendees().length ? "Edit Attendees" : "Get Tickets"
+					}}</Button
 				>
-					{{
-						handlePay.loading
-							? "Initialising Payment"
-							: confirmPaymentStatus.loading
-								? "Confirming Payment"
-								: "Proceed to Pay"
-					}}
-				</Button>
-			</div>
+				<div v-if="attendeeBooking.getAttendees().length">
+					<Button
+						type="button"
+						v-if="!confirmPayment && payStatus"
+						class="w-full mt-4"
+						theme="green"
+						variant="solid"
+						@click="proceedToPay"
+						:loading="handlePay.loading || confirmPaymentStatus.loading"
+					>
+						{{
+							handlePay.loading
+								? "Initialising Payment"
+								: confirmPaymentStatus.loading
+									? "Confirming Payment"
+									: "Proceed to Pay"
+						}}
+					</Button>
+				</div>
+				<ErrorMessage
+					v-if="handlePay.error"
+					:message="handlePay.error"
+					class="text-center border border-red-400 rounded-md p-2 mt-3"
+				/>
+			</form>
 		</div>
-
-		<ErrorMessage
-			v-if="handlePay.error"
-			:message="handlePay.error"
-			class="w-1/2 text-center border border-red-400 rounded-md p-2 mt-3"
-		/>
 
 		<Button
 			v-if="confirmPayment"
@@ -171,22 +162,27 @@
 		message="Ticket booked successfully. You will receive an email with your ticket details."
 		title="Ticket"
 	/>
+	<Attendees
+		v-model="attendeesModal"
+		:attendees="attendeeFormData"
+		:edit="editAttendees"
+		@update:attendees="attendeeBooking.getAttendees()"
+	/>
 </template>
 
 <script setup>
 import { Button, createResource, ErrorMessage, Input, TextInput, toast } from "frappe-ui";
 import { ChevronRight } from "lucide-vue-next";
-import { computed, inject, reactive, ref } from "vue";
+import { computed, inject, reactive, ref, watch } from "vue";
 import PaymentStatus from "../PaymentStatus.vue";
 import { sessionStore } from "../../stores/session";
 import PaymentInfoAlert from "../PaymentInfoAlert.vue";
 import { PaymentListener } from "../../utils/payment";
+import Attendees from "./Attendees.vue";
+import { attendeeBooking } from "../../utils/booking";
 
 const openTicketModal = defineModel();
 const payStatus = ref(false);
-const amount = computed(() => {
-	return `${ticketData.currency} ${ticketData.price}`;
-});
 const selectedTicket = ref(null);
 const user = inject("$user");
 const invoice = ref("");
@@ -197,6 +193,9 @@ const confirm_payment_manual = ref(false);
 const { isLoggedIn } = sessionStore();
 const checkSTK = ref(false);
 const numberOfTickets = ref(1);
+const attendeesModal = ref(false);
+const attendeeFormData = ref([{ full_name: "", email: "", phone: "" }]);
+const editAttendees = ref(false);
 
 const ticketData = reactive({
 	ticket_type: "",
@@ -206,6 +205,20 @@ const ticketData = reactive({
 	ticket_name: "",
 	email: isLoggedIn ? user.data.email : "",
 	full_name: isLoggedIn ? user.data.full_name : "",
+});
+
+const attendeeBookingDetails = ref([]);
+watch(numberOfTickets, (newVal) => {
+	if (newVal < 1) {
+		attendeeFormData.value = [];
+		return;
+	}
+
+	attendeeFormData.value = Array.from({ length: newVal }, () => ({
+		full_name: "",
+		email: "",
+		phone: "",
+	}));
 });
 
 const props = defineProps({
@@ -223,7 +236,14 @@ const props = defineProps({
 const ticketTotal = computed(() => {
 	return ticketData.price * numberOfTickets.value;
 });
-
+const handleAttendeeModal = (status) => {
+	attendeesModal.value = true;
+	if (status) {
+		editAttendees.value = true;
+	} else {
+		editAttendees.value = false;
+	}
+};
 function handleSelection(ticket) {
 	selectedTicket.value = ticket.name;
 	payStatus.value = true;
@@ -240,10 +260,8 @@ const handlePay = createResource({
 		return {
 			payload: {
 				event_name: props.event,
-				phone: ticketData.phone,
 				ticket_name: ticketData.ticket_name,
-				email: ticketData.email,
-				full_name: ticketData.full_name,
+				booking_details: attendeeBookingDetails.value,
 			},
 		};
 	},
@@ -259,7 +277,7 @@ const handlePay = createResource({
 			initiatePaymentListener(data);
 		}
 	},
-	onError(error) {
+	onError() {
 		handlePay.error = "An error occurred during payment. Please try again.";
 	},
 });
@@ -275,7 +293,9 @@ function initiatePaymentListener(data) {
 	paymentInstance.listenForPayment().then((status) => {
 		confirmPaymentStatus.loading = false;
 		status === "Completed"
-			? (paymentStatus.value = true)
+			? ((paymentStatus.value = true),
+				attendeeBooking.clearAttendees(),
+				toast.success("Payment successful! Your ticket has been booked."))
 			: ((checkSTK.value = false),
 				(handlePay.error =
 					"There was an error processing your payment. Please try again."));
@@ -283,22 +303,7 @@ function initiatePaymentListener(data) {
 }
 
 function proceedToPay() {
-	if (user.data == "Guest") {
-		if (!ticketData.email || !ticketData.full_name || !ticketData.phone) {
-			handlePay.error = "All fields are required";
-			return;
-		}
-	} else {
-		if (!ticketData.phone) {
-			handlePay.error = "Phone number is required";
-			return;
-		}
-
-		if (!validatePhone(ticketData.phone)) {
-			handlePay.error = "Invalid phone number format. Please use 0712345678 format";
-			return;
-		}
-	}
+	attendeeBookingDetails.value = attendeeBooking.getAttendees();
 	handlePay.submit({});
 }
 
@@ -343,7 +348,6 @@ const checkPayment = (checkPaymentManual) => {
 const handleTicketsNumber = (val) => {
 	const parsed = Number(val);
 
-	// If invalid, zero, negative, NaN → force to 1
 	numberOfTickets.value = parsed >= 1 ? parsed : 1;
 };
 </script>
