@@ -114,9 +114,6 @@ const updateTabAndHash = (newTabValue) => {
 const projects = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.projects.get_all_deployed_projects",
 	auto: true,
-	onError: (error) => {
-		toast.error(__("Failed to load projects: {0}").format(error.message));
-	},
 });
 
 const allProjects = computed(() => projects.data || []);

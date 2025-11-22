@@ -153,10 +153,12 @@
 				</div>
 
 				<PaymentStatus
-					v-if="paymentStatus"
+					v-else
 					@close="registerDialog = false"
 					message="Membership processed successfully"
 					title="Membership"
+					returnUrl="/vmms/membership"
+					urlName="Membership"
 				/>
 			</div>
 		</template>
@@ -231,7 +233,7 @@ const createMembership = createResource({
 
 function submit() {
 	if ((!props.is_renew && !branch.value) || !membershipForm.phone) {
-		createMembership.error = "Please fill in all required fields before submitting.";
+		createMembership.error = "Please fill in all fields before submitting.";
 		return;
 	}
 	if (!isValidPhone(membershipForm.phone)) {
