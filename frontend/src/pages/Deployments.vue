@@ -1,5 +1,6 @@
 <template>
-	<div class="flex flex-col min-h-screen bg-gray-50">
+	<NoPermission v-if="!isLoggedIn" :page="__('Deployments')" />
+	<div v-else class="flex flex-col min-h-screen bg-gray-50">
 		<header
 			class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 shadow-md"
 		>
@@ -62,11 +63,13 @@ import { useHead } from "@vueuse/head";
 import { createResource, TabButtons, toast } from "frappe-ui";
 import { computed, inject, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { sessionStore } from "../stores/session";
+import NoPermission from "@/components/NoPermission.vue";
 
-const user = inject("$user");
 const route = useRoute();
 const router = useRouter();
 const defaultTab = "All";
+const { isLoggedIn } = sessionStore();
 
 const baseProjectTabs = [
 	{ label: __("All"), value: "All" },
@@ -107,15 +110,6 @@ const updateTabAndHash = (newTabValue) => {
 		router.replace({ hash: hash });
 	}
 };
-
-onMounted(() => {
-	if (!user.data) {
-		toast.warning("You must be logged in to view this page");
-		setTimeout(() => {
-			window.location.href = "/login";
-		}, 500);
-	}
-});
 
 const projects = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.projects.get_all_deployed_projects",
