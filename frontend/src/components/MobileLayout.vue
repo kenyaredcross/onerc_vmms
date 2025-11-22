@@ -31,7 +31,9 @@
 				class="fixed bottom-0 left-0 w-full flex items-center justify-between border-t border-outline-gray-2 bg-surface-white standalone:pb-4 z-10"
 			>
 				<button
-					v-for="tab in sidebarLinks.filter((link) => link.label !== 'Profile')"
+					v-for="tab in sidebarLinks.filter(
+						(link) => link.label !== 'Profile' && link.label !== 'Events',
+					)"
 					:key="tab.label"
 					:class="isVisible(tab) ? 'block' : 'hidden'"
 					class="flex-1 flex flex-col items-center justify-center py-4 transition active:scale-95"
@@ -98,6 +100,11 @@ const addOtherLinks = () => {
 		otherLinks.value.push(
 			...sideBarApps(),
 			{
+				name: "Events",
+				icon: "CalendarDays",
+				to: "Events",
+			},
+			{
 				name: "Profile",
 				icon: "User",
 				to: "Profile",
@@ -108,10 +115,17 @@ const addOtherLinks = () => {
 			},
 		);
 	} else {
-		otherLinks.value.push({
-			name: "Log in",
-			icon: "LogIn",
-		});
+		otherLinks.value.push(
+			{
+				name: "Events",
+				icon: "CalendarDays",
+				to: "Events",
+			},
+			{
+				name: "Log in",
+				icon: "LogIn",
+			},
+		);
 	}
 };
 
