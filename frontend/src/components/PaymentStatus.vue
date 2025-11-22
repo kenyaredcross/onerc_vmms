@@ -1,5 +1,5 @@
 <template>
-	<div class="text-center py-8 border rounded-lg shadow-sm bg-white">
+	<div class="text-center py-8 px-2 border rounded-lg shadow-sm bg-white">
 		<div class="mb-4">
 			<svg
 				class="mx-auto h-16 w-16 text-green-500"
@@ -17,6 +17,11 @@
 		</div>
 		<h3 class="text-xl font-semibold text-gray-900 mb-2">{{ title }} Successful!</h3>
 		<p class="text-gray-600 mb-6">{{ message }}. Thank you for your support!</p>
+		<div>
+			<Button theme="green" variant="solid" @click="navigateToReturnUrl">
+				Back to {{ urlName }}
+			</Button>
+		</div>
 	</div>
 </template>
 
@@ -28,5 +33,11 @@ const emit = defineEmits(["close"]);
 const props = defineProps({
 	title: String,
 	message: String,
+	returnUrl: String,
+	urlName: String,
 });
+
+function navigateToReturnUrl() {
+	window.location.href = props.returnUrl;
+}
 </script>
