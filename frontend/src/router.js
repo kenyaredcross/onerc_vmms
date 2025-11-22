@@ -53,7 +53,7 @@ const routes = [
 		name: "Deployments",
 		path: "/deployments",
 		component: () => import("@/pages/Deployments.vue"),
-		meta: { requiresAuth: true, requiresVolunteer: true },
+		meta: { requiresVolunteer: true },
 	},
 	{
 		name: "DeploymentDetail",
