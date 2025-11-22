@@ -116,7 +116,7 @@ const saveAttendeeFormData = () => {
 		}
 	}
 
-	attendeeBooking.saveAttendees(attendeeData);
+	attendeeBooking.attendees = attendeeData;
 	loading.value = false;
 	attendeesModal.value = false;
 	emit("update:attendees");

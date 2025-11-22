@@ -1,5 +1,5 @@
 <template>
-	<div v-if="!paymentStatus">
+	<div>
 		<div class="space-y-2">
 			<h3 class="text-2xl font-bold text-gray-900">Select Your Ticket</h3>
 			<p class="text-sm text-gray-500">Choose the perfect ticket for your experience</p>
@@ -14,49 +14,14 @@
 				<div
 					v-for="ticket in props.tickets"
 					:key="ticket.id"
-					class="group relative overflow-hidden p-5 border-2 rounded-2xl bg-white cursor-pointer transition-all duration-300"
 					:class="{
-						'border-red-500 shadow-md shadow-red-100': selectedTicket === ticket.name,
+						'border-2 border-red-500 rounded-2xl shadow-md shadow-red-100':
+							selectedTicket === ticket.name,
 						'border-gray-100 hover:border-red-300': selectedTicket !== ticket.name,
 					}"
 					@click="handleSelection(ticket)"
 				>
-					<div
-						class="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -mr-16 -mt-16"
-					></div>
-
-					<div class="relative flex items-start justify-between gap-4">
-						<div class="flex-1">
-							<div class="flex items-center gap-2 mb-2">
-								<h4 class="text-lg font-semibold text-gray-900">
-									{{ ticket.title }}
-								</h4>
-								<ChevronRight
-									class="w-5 h-5 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-								/>
-							</div>
-						</div>
-
-						<div class="flex flex-col items-end justify-between h-full">
-							<div class="text-right">
-								<div class="text-2xl font-bold text-gray-900">
-									{{ ticket.price }}
-								</div>
-								<div class="text-xs text-gray-400 font-medium">
-									{{ ticket.currency }}
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<Button
-						class="w-full mt-4"
-						theme="red"
-						variant="solid"
-						@click.stop="handleSelection(ticket)"
-					>
-						Select
-					</Button>
+					<TicketCard :ticket="ticket" />
 				</div>
 			</div>
 
@@ -107,93 +72,41 @@
 					</div>
 				</div>
 
-				<PaymentInfoAlert v-if="checkSTK" />
 				<Button
 					theme="red"
 					variant="solid"
-					@click="handleAttendeeModal(attendeeBooking.getAttendees().length)"
+					@click="saveTicketDetails"
 					type="button"
 					class="w-full mt-4"
-					>{{
-						attendeeBooking.getAttendees().length
-							? __("Edit Attendees")
-							: __("Get Tickets")
-					}}</Button
+					>{{ __("Get Tickets") }}</Button
 				>
-				<div v-if="attendeeBooking.getAttendees().length">
-					<Button
-						type="button"
-						v-if="!confirmPayment && payStatus"
-						class="w-full mt-4"
-						theme="green"
-						variant="solid"
-						@click="proceedToPay"
-						:loading="handlePay.loading || confirmPaymentStatus.loading"
-					>
-						{{
-							handlePay.loading
-								? __("Initialising Payment")
-								: confirmPaymentStatus.loading
-									? __("Confirming Payment")
-									: __("Proceed to Pay")
-						}}
-					</Button>
-				</div>
-				<ErrorMessage
-					v-if="handlePay.error"
-					:message="handlePay.error"
-					class="text-center border border-red-400 rounded-md p-2 mt-3"
-				/>
 			</form>
 		</div>
-
-		<Button
-			v-if="confirmPayment"
-			class="w-full mt-4"
-			theme="green"
-			variant="solid"
-			@click="checkPayment"
-			:loading="confirmPaymentStatus.loading"
-		>
-			Confirm Payment
-		</Button>
 	</div>
-	<PaymentStatus
-		v-if="paymentStatus"
-		@close="openTicketModal = false"
-		message="Ticket booked successfully. You will receive an email with your ticket details."
-		title="Ticket"
-	/>
+
 	<Attendees
 		v-model="attendeesModal"
 		:attendees="attendeeFormData"
 		:edit="editAttendees"
-		@update:attendees="attendeeBooking.getAttendees()"
+		@update:attendees="goToCheckout"
 	/>
 </template>
 
 <script setup>
-import { Button, createResource, ErrorMessage, Input, TextInput, toast } from "frappe-ui";
-import { ChevronRight } from "lucide-vue-next";
+import { Button, createResource, Input, toast } from "frappe-ui";
 import { computed, inject, reactive, ref, watch } from "vue";
-import PaymentStatus from "../PaymentStatus.vue";
 import { sessionStore } from "../../stores/session";
-import PaymentInfoAlert from "../PaymentInfoAlert.vue";
-import { PaymentListener } from "../../utils/payment";
 import Attendees from "./Attendees.vue";
 import { attendeeBooking } from "../../utils/booking";
+import TicketCard from "../TicketCard.vue";
+import router from "../../router";
 
-const openTicketModal = defineModel();
 const payStatus = ref(false);
 const selectedTicket = ref(null);
 const user = inject("$user");
-const invoice = ref("");
-const eventBooking = ref("");
-const paymentStatus = ref(false);
 const confirmPayment = ref(null);
 const confirm_payment_manual = ref(false);
 const { isLoggedIn } = sessionStore();
-const checkSTK = ref(false);
 const numberOfTickets = ref(1);
 const attendeesModal = ref(false);
 const attendeeFormData = ref([{ full_name: "", email: "", phone: "" }]);
@@ -238,13 +151,21 @@ const props = defineProps({
 const ticketTotal = computed(() => {
 	return ticketData.price * numberOfTickets.value;
 });
-const handleAttendeeModal = (status) => {
+
+const goToCheckout = () => {
+	router.push({
+		name: "CheckoutSummary",
+	});
+};
+
+const saveTicketDetails = () => {
 	attendeesModal.value = true;
-	if (status) {
-		editAttendees.value = true;
-	} else {
-		editAttendees.value = false;
-	}
+
+	attendeeBooking.TicketDetails = {
+		ticket_type: selectedTicket.value,
+		number_of_tickets: numberOfTickets.value,
+		total_price: ticketTotal.value,
+	};
 };
 function handleSelection(ticket) {
 	selectedTicket.value = ticket.name;
@@ -254,59 +175,6 @@ function handleSelection(ticket) {
 	ticketData.currency = ticket.currency;
 	ticketData.ticket_name = ticket.name;
 	numberOfTickets.value = 1;
-}
-
-const handlePay = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.events.handle_ticket_payment",
-	makeParams() {
-		return {
-			payload: {
-				event_name: props.event,
-				ticket_name: ticketData.ticket_name,
-				booking_details: attendeeBookingDetails.value,
-			},
-		};
-	},
-	onSuccess(data) {
-		if (data) {
-			checkSTK.value = true;
-			toast.success(
-				"Payment initiated successfully. Please complete the payment on your phone.",
-			);
-			invoice.value = data.invoice;
-			eventBooking.value = data.event_booking;
-			confirmPaymentStatus.loading = true;
-			initiatePaymentListener(data);
-		}
-	},
-	onError() {
-		handlePay.error = "An error occurred during payment. Please try again.";
-	},
-});
-
-function validatePhone(phone) {
-	const phoneRegex = /^07\d{8}$/;
-	return phoneRegex.test(phone);
-}
-
-function initiatePaymentListener(data) {
-	const paymentInstance = new PaymentListener();
-	paymentInstance.saveToken(data.payment_token);
-	paymentInstance.listenForPayment().then((status) => {
-		confirmPaymentStatus.loading = false;
-		status === "Completed"
-			? ((paymentStatus.value = true),
-				attendeeBooking.clearAttendees(),
-				toast.success("Payment successful! Your ticket has been booked."))
-			: ((checkSTK.value = false),
-				(handlePay.error =
-					"There was an error processing your payment. Please try again."));
-	});
-}
-
-function proceedToPay() {
-	attendeeBookingDetails.value = attendeeBooking.getAttendees();
-	handlePay.submit({});
 }
 
 const confirmPaymentStatus = createResource({
@@ -320,33 +188,6 @@ const confirmPaymentStatus = createResource({
 	},
 });
 
-const checkPayment = (checkPaymentManual) => {
-	if (!invoice.value) {
-		toast.error("Error confirming payment. Please try again.");
-		return;
-	}
-
-	if (checkPaymentManual) {
-		toast.info("Checking payment status. Please wait...");
-	}
-	confirmPaymentStatus.submit(
-		{},
-		{
-			onSuccess(data) {
-				if (data === "paid") {
-					toast.success("Payment confirmed! Your ticket has been booked.");
-					paymentStatus.value = true;
-				} else {
-					toast.error("Payment timeout. Please try again or confirm Payment");
-					confirmPayment.value = true;
-				}
-			},
-			onError() {
-				toast.error("Error confirming payment. Please try again.");
-			},
-		},
-	);
-};
 const handleTicketsNumber = (val) => {
 	const parsed = Number(val);
 

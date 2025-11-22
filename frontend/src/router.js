@@ -103,6 +103,11 @@ const routes = [
 		component: () => import("@/pages/EventRegistration.vue"),
 		props: true,
 	},
+	{
+		name: "CheckoutSummary",
+		path: "/checkout-summary",
+		component: () => import("@/pages/CheckoutSummary.vue"),
+	},
 ];
 
 let router = createRouter({
