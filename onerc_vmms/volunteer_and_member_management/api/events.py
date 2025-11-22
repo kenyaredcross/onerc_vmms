@@ -250,3 +250,26 @@ def confirm_payment(
         time.sleep(10)
         return helper()
     return helper()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_event_ticket_type(ticket_id: str | int) -> dict[str, any]:
+
+    if not ticket_id or not frappe.db.exists("Event Ticket Type", ticket_id):
+        frappe.throw("This ticket type does not exist.")
+
+    ticket = frappe.get_doc(
+        "Event Ticket Type",
+        ticket_id,
+    ).as_dict()
+
+    ticket["event_details"] = {}
+
+    event_name, event_title, event_route = frappe.db.get_value(
+        "Buzz Event", ticket.event, ["name", "title", "route"]
+    )
+    ticket["event_details"]["title"] = event_title
+    ticket["event_details"]["route"] = event_route
+    ticket["event_details"]["name"] = event_name
+
+    return ticket
