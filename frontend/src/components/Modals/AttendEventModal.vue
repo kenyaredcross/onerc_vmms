@@ -105,10 +105,12 @@
 import { Button, createResource, Dialog, ErrorMessage, Input, toast } from "frappe-ui";
 import { CalendarCheck, Check } from "lucide-vue-next";
 import { inject, reactive, ref, watch } from "vue";
+import { registrationResponses } from "../../composables/RegistrationQuestions";
 
 const user = inject("$user");
 const emit = defineEmits(["close"]);
 const registerSuccess = ref(false);
+const { formResponse, clearResponses } = registrationResponses();
 
 const props = defineProps({
 	dialogStatus: Boolean,
@@ -125,8 +127,11 @@ const confirmEvent = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.events.register_event",
 	makeParams() {
 		return {
-			event_name: props.eventId,
-			attendee: { ...attendData },
+			payload: {
+				event_name: props.eventId,
+				attendee: { ...attendData },
+				registration_responses: formResponse.value,
+			},
 		};
 	},
 });
@@ -138,15 +143,9 @@ function submit() {
 			onSuccess() {
 				registerSuccess.value = true;
 				toast.success("You have successfully registered for the event.");
+				clearResponses();
 			},
 		},
 	);
-}
-
-function cleanForm() {
-	attendData.full_name = "";
-	attendData.phone = "";
-	attendData.email = "";
-	registerSuccess.value = false;
 }
 </script>
