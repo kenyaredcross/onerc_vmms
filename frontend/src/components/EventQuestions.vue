@@ -196,6 +196,4 @@ const saveResponses = () => {
 	addResponses(toRaw(responses.value));
 	formCompleted.value = true;
 };
-
-const nextUrl = () => {};
 </script>
