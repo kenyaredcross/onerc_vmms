@@ -1,11 +1,10 @@
 from frappe import _
 import frappe
-import json
 import time
 from datetime import datetime
 
 
-from .user import create_user, get_user_info
+from .user import get_user_info
 from dataclasses import dataclass
 
 
@@ -170,6 +169,8 @@ def get_event_details(event_name: str | int) -> dict:
             sponsors.append(sponsor)
 
         event["sponsors"] = sponsors
+
+        event["is_past_event"] = event.get("end_date") < datetime.now().date()
 
         return event
 

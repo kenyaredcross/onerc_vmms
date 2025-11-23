@@ -51,7 +51,7 @@
 							</div>
 						</div>
 
-						<div class="mb-6 sm:mb-8">
+						<div class="mb-6 sm:mb-8" v-if="!eventDetail.data.is_past_event">
 							<Button
 								theme="red"
 								variant="solid"
@@ -216,7 +216,11 @@
 							:key="sponsor.name"
 							class="flex items-center gap-2 text-sm text-gray-600"
 						>
-							<img :src="sponsor.company_logo" :alt="__('Sponsor Logo')" />
+							<img
+								:src="sponsor.company_logo"
+								:alt="__('Sponsor Logo')"
+								class="w-32 h-16 object-contain"
+							/>
 						</a>
 					</div>
 				</div>
