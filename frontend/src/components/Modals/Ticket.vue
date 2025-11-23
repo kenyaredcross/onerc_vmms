@@ -42,7 +42,10 @@
 					readonly
 				/>
 
-				<div class="flex flex-col gap-2">
+				<div
+					v-if="!eventDetails.event_registration_questions.length"
+					class="flex flex-col gap-2"
+				>
 					<label class="text-sm text-gray-700 mb-2">{{ __("Number of Tickets") }}</label>
 					<div class="flex items-center gap-3">
 						<Button
@@ -122,7 +125,6 @@ const ticketData = reactive({
 	full_name: isLoggedIn ? user.data.full_name : "",
 });
 
-const attendeeBookingDetails = ref([]);
 watch(numberOfTickets, (newVal) => {
 	if (newVal < 1) {
 		attendeeFormData.value = [];
@@ -145,6 +147,10 @@ const props = defineProps({
 	event: {
 		type: String,
 		required: true,
+	},
+	eventDetails: {
+		type: Object,
+		required: false,
 	},
 });
 

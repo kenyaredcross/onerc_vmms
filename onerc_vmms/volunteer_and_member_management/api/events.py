@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 
 @frappe.whitelist(allow_guest=True)
-def get_events(search=None):
+def get_events(search=None, event_type="upcoming") -> list[dict[str, any]]:
 
     user_info = get_user_info()
 
@@ -32,7 +32,11 @@ def get_events(search=None):
             "title": ["like", f"%{search}%"],
         }
 
-    base_filters = {"end_date": [">=", datetime.now().date()], "is_published": 1}
+    base_filters = {
+        "is_published": 1,
+    }
+    if event_type == "upcoming":
+        base_filters["end_date"] = [">=", datetime.now().date()]
 
     if user_info == "Guest":
         base_filters["event_access"] = ["in", ["Public", "Private"]]
@@ -60,8 +64,22 @@ def get_events(search=None):
     return events
 
 
+@dataclass
+class EventRegistrationPayload:
+    attendee: dict[str, any]
+    event_name: str | int
+    registration_responses: list[dict[str, any]]
+
+
 @frappe.whitelist(allow_guest=True)
-def register_event(event_name: str | int, attendee: dict[str, any]) -> None:
+def register_event(payload: dict) -> None:
+
+    payload_object = EventRegistrationPayload(**payload)
+    attendee = payload_object.attendee
+    event_name = payload_object.event_name
+    registration_responses = payload_object.registration_responses
+
+    processed_responses = process_multiselect_reponse(registration_responses)
 
     if not event_name or not frappe.db.exists("Buzz Event", event_name):
         frappe.throw("This event does not exist.")
@@ -87,6 +105,7 @@ def register_event(event_name: str | int, attendee: dict[str, any]) -> None:
                         "ticket_type": ticket.name,
                     }
                 ],
+                "responses": processed_responses,
             }
         )
 
@@ -164,15 +183,14 @@ class TicketPaymentPayload:
     event_name: str | int
     ticket_name: str | int
     booking_details: list[dict[str, any]]
+    registration_responses: list[dict[str, any]]
 
 
 @frappe.whitelist(allow_guest=True)
 def handle_ticket_payment(payload: dict) -> dict:
     error_message = "Error processing ticket payment."
-
     if not payload:
         frappe.throw(_(error_message))
-
     payload_object = TicketPaymentPayload(**payload)
     attendee_booking_details = []
     for attendee in payload_object.booking_details:
@@ -185,23 +203,24 @@ def handle_ticket_payment(payload: dict) -> dict:
             }
         )
 
-    try:
+    processed_responses = process_multiselect_reponse(
+        payload_object.registration_responses
+    )
 
+    try:
         event_booking = frappe.get_doc(
             {
                 "doctype": "Event Booking",
                 "event": payload_object.event_name,
                 "primary_contact": payload_object.booking_details[0]["email"],
                 "attendees": attendee_booking_details,
+                "responses": processed_responses,
             }
         )
-
         event_booking.insert(ignore_permissions=True)
-
         pr, invoice = event_booking.initialize_payment(
             phone_number=payload_object.booking_details[0]["phone"], payment_token=True
         )
-
         data = frappe._dict(
             {
                 "invoice": invoice.name,
@@ -209,9 +228,7 @@ def handle_ticket_payment(payload: dict) -> dict:
                 "payment_token": pr.payment_token,
             }
         )
-
         return data
-
     except Exception as e:
         frappe.db.rollback()
         frappe.log_error(frappe.get_traceback(), "Ticket Payment Error")
@@ -273,3 +290,20 @@ def get_event_ticket_type(ticket_id: str | int) -> dict[str, any]:
     ticket["event_details"]["name"] = event_name
 
     return ticket
+
+
+def process_multiselect_reponse(
+    responses: list[dict[str, any]],
+) -> str:
+    processed_responses = []
+    for response in responses:
+        processed_response = response.copy()
+
+        if isinstance(response.get("response"), list):
+            processed_response["response"] = "\n".join(
+                str(item) for item in response["response"]
+            )
+
+        processed_responses.append(processed_response)
+
+    return processed_responses
