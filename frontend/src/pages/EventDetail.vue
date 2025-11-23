@@ -236,15 +236,11 @@ import { CalendarDays, Clock, MapPin, Users } from "lucide-vue-next";
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import ProgressSpinner from "../components/Common/ProgressSpinner.vue";
-import AttendEventModal from "../components/Modals/AttendEventModal.vue";
-import Ticket from "../components/Modals/Ticket.vue";
 import router from "../router";
 
 const route = useRoute();
 const eventName = ref(route.params.id);
 const user = inject("$user");
-const openAttendModal = ref(false);
-const openTicketModal = ref(false);
 
 const eventDetail = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.events.get_event_details",
@@ -255,7 +251,7 @@ const eventDetail = createResource({
 	},
 	auto: true,
 	cache: ["event", eventName.value],
-	onSuccess(data) {
+	onSuccess() {
 		if (
 			user?.data == "Guest" &&
 			(eventDetail.data?.event_access === "Private" ||
