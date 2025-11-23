@@ -42,10 +42,7 @@
 					readonly
 				/>
 
-				<div
-					v-if="!eventDetails.event_registration_questions.length"
-					class="flex flex-col gap-2"
-				>
+				<div v-if="!hasRegistrationQuestions" class="flex flex-col gap-2">
 					<label class="text-sm text-gray-700 mb-2">{{ __("Number of Tickets") }}</label>
 					<div class="flex items-center gap-3">
 						<Button
@@ -96,7 +93,7 @@
 </template>
 
 <script setup>
-import { Button, createResource, Input, toast } from "frappe-ui";
+import { Button, Input } from "frappe-ui";
 import { computed, inject, reactive, ref, watch } from "vue";
 import { sessionStore } from "../../stores/session";
 import Attendees from "./Attendees.vue";
@@ -107,8 +104,6 @@ import router from "../../router";
 const payStatus = ref(false);
 const selectedTicket = ref(null);
 const user = inject("$user");
-const confirmPayment = ref(null);
-const confirm_payment_manual = ref(false);
 const { isLoggedIn } = sessionStore();
 const numberOfTickets = ref(1);
 const attendeesModal = ref(false);
@@ -154,6 +149,9 @@ const props = defineProps({
 	},
 });
 
+const hasRegistrationQuestions = computed(
+	() => props.eventDetails?.event_registration_questions?.length > 0,
+);
 const ticketTotal = computed(() => {
 	return ticketData.price * numberOfTickets.value;
 });
@@ -182,17 +180,6 @@ function handleSelection(ticket) {
 	ticketData.ticket_name = ticket.name;
 	numberOfTickets.value = 1;
 }
-
-const confirmPaymentStatus = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.events.confirm_payment",
-	makeParams() {
-		return {
-			invoice_name: invoice.value,
-			event_booking: eventBooking.value,
-			confirm_payment_manual: confirm_payment_manual.value,
-		};
-	},
-});
 
 const handleTicketsNumber = (val) => {
 	const parsed = Number(val);
