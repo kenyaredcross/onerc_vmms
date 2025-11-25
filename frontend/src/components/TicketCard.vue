@@ -5,9 +5,15 @@
 		<div class="relative flex items-start justify-between gap-4">
 			<div class="flex-1">
 				<div class="flex items-center gap-2 mb-2">
-					<h4 class="text-lg font-semibold text-gray-900">
-						{{ ticket.title }}
-					</h4>
+					<div class="flex flex-col gap-1">
+						<h4 class="text-lg font-semibold text-gray-900">
+							{{ ticket.title }}
+						</h4>
+						<span
+							class="border border-red-500 rounded-md text-center p-1 text-xs text-red-500"
+							>{{ ticket.ticket_type }}</span
+						>
+					</div>
 					<ChevronRight
 						class="w-5 h-5 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
 					/>
@@ -15,7 +21,10 @@
 			</div>
 
 			<div class="flex flex-col items-end justify-between h-full">
-				<div class="text-right">
+				<div class="text-right text-gray-500">
+					<div v-if="ticket.ticket_type === 'Group'" class="">
+						Group of {{ ticket.ticket_capacity }}
+					</div>
 					<div class="text-2xl font-bold text-gray-900">
 						{{ ticket.price }}
 					</div>
@@ -34,7 +43,7 @@
 	</div>
 </template>
 <script setup>
-import { Button } from "frappe-ui";
+import { Badge, Button } from "frappe-ui";
 import { ChevronRight } from "lucide-vue-next";
 
 const props = defineProps({
