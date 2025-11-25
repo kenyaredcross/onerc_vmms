@@ -141,7 +141,14 @@ def get_event_details(event_name: str | int) -> dict:
         event_tickets = frappe.get_all(
             "Event Ticket Type",
             filters={"event": event.name},
-            fields=["name", "title", "price", "currency"],
+            fields=[
+                "name",
+                "title",
+                "price",
+                "currency",
+                "ticket_type",
+                "ticket_capacity",
+            ],
             order_by="price asc",
         )
         event["tickets"] = event_tickets or []
@@ -189,9 +196,8 @@ class TicketPaymentPayload:
 
 @frappe.whitelist(allow_guest=True)
 def handle_ticket_payment(payload: dict) -> dict:
-    error_message = "Error processing ticket payment."
     if not payload:
-        frappe.throw(_(error_message))
+        frappe.throw(_("Error processing ticket payment."))
     payload_object = TicketPaymentPayload(**payload)
     attendee_booking_details = []
     for attendee in payload_object.booking_details:
@@ -208,6 +214,19 @@ def handle_ticket_payment(payload: dict) -> dict:
         payload_object.registration_responses
     )
 
+    data = create_event_booking(
+        payload_object, processed_responses, attendee_booking_details
+    )
+
+    return data
+
+
+def create_event_booking(
+    payload_object: TicketPaymentPayload,
+    processed_responses: list[dict[str, any]],
+    attendee_booking_details: list[dict[str, any]],
+) -> dict[str, any]:
+    error_message = "Error processing ticket payment."
     try:
         event_booking = frappe.get_doc(
             {
