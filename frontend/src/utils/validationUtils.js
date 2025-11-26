@@ -5,9 +5,13 @@ const isEmailValid = (email) => {
 	return emailRegex.test(email);
 };
 const isPhoneNumberValid = (phone) => {
-	const phoneRegex = /^\+?[\d\s-()]{7,20}$/;
-	return phoneRegex.test(phone.toString().replace(/\s+/g, ""));
+	if (!phone) return true;
+	const cleanPhone = phone.toString().replace(/\s+/g, "");
+
+	const phoneRegex = /^(?:\+254|0)(7\d{8}|1\d{8})$/;
+	return phoneRegex.test(cleanPhone);
 };
+
 const isRowEffectivelyEmpty = (row) => {
 	if (!row || typeof row !== "object") return true;
 	const keys = Object.keys(row);
@@ -25,93 +29,109 @@ const isRowEffectivelyEmpty = (row) => {
 };
 const getFieldLabel = (field) => field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-/**
- * Validates form data against a configuration array.
- *
- * @param {Object} form - The reactive form object containing child tables (arrays).
- * @param {Array<Object>} config - Configuration array for tables to check.
- * @returns {Array<string>} An array of error messages.
- */
-export function validateForm(form, config) {
+export function validateForm(form, stepConfig) {
 	const errors = [];
+	form = form || {};
 
-	for (const table of config) {
-		const rows = form[table.field];
-		if (!rows || rows.length === 0) continue;
+	const pushError = (msg) => msg && errors.push(msg);
+
+	const formChecks = stepConfig.formChecks || {};
+
+	runChecks(form, formChecks, pushError);
+
+	const tables = stepConfig.tableChecks || {};
+
+	for (const tableKey in tables) {
+		const tableConfig = tables[tableKey];
+		const rows = form[tableKey];
+
+		if (!Array.isArray(rows) || rows.length === 0) continue;
 
 		rows.forEach((row, index) => {
-			const rowPrefix = `${table.label}: Row ${index + 1}`;
+			const prefix = `${tableConfig.label || tableKey}: Row ${index + 1}`;
 
 			if (isRowEffectivelyEmpty(row)) {
-				errors.push(
-					`${rowPrefix} appears to be empty. Please either complete it or remove it.`,
-				);
+				pushError(`${prefix} appears to be empty.`);
 				return;
 			}
 
-			table.requiredFields.forEach((req) => {
-				let field,
-					shouldCheck = true;
+			runChecks(row, tableConfig, (msg) => pushError(`${prefix}, ${msg}`));
+		});
+	}
 
-				if (typeof req === "string") {
-					field = req;
-				} else if (req && typeof req === "object") {
-					field = req.field;
-					shouldCheck = typeof req.condition === "function" ? req.condition(row) : true;
-				}
+	return [...new Set(errors)];
+}
 
-				if (shouldCheck && (!row[field] || row[field] === "" || row[field] == null)) {
-					errors.push(`${rowPrefix} is missing "${getFieldLabel(field)}".`);
-				}
-			});
+function runChecks(data, rules, pushError) {
+	if (Array.isArray(rules.requiredFields)) {
+		rules.requiredFields.forEach((req) => {
+			let field,
+				condition = true;
 
-			if (table.dateChecks) {
-				table.dateChecks.forEach((check) => {
-					const field = check.field;
-					const date = row[field];
-
-					const condition = check.condition ? check.condition(row) : date;
-
-					if (condition && date) {
-						if (!isDateValid(date)) {
-							errors.push(
-								`${rowPrefix}, "${getFieldLabel(field)}" is not a valid date.`,
-							);
-						} else if (
-							typeof check.validation === "function" &&
-							!check.validation(date, row)
-						) {
-							const errorMsg =
-								typeof check.error === "function" ? check.error(row) : check.error;
-							errors.push(`${rowPrefix}, "${getFieldLabel(field)}" ${errorMsg}`);
-						}
-					}
-				});
+			if (typeof req === "string") {
+				field = req;
+			} else {
+				field = req.field;
+				condition = req.condition ? req.condition(data) : true;
 			}
 
-			if (table.emailChecks) {
-				table.emailChecks.forEach((check) => {
-					const field = check.field;
-					const email = row[field];
-					if (email && !isEmailValid(email)) {
-						errors.push(`${rowPrefix}, "${getFieldLabel(field)}" ${check.error}`);
-					}
-				});
-			}
-
-			if (table.phoneChecks) {
-				table.phoneChecks.forEach((check) => {
-					const field = check.field;
-					const phone = row[field];
-					if (phone && !isPhoneNumberValid(phone)) {
-						errors.push(`${rowPrefix}, "${getFieldLabel(field)}" ${check.error}`);
-					}
-				});
+			const value = data[field];
+			if (condition && (!value || String(value).trim() === "")) {
+				pushError(`"${getFieldLabel(field)}" is required.`);
 			}
 		});
 	}
 
-	return errors;
+	if (Array.isArray(rules.emailChecks)) {
+		rules.emailChecks.forEach((check) => {
+			const value = data[check.field];
+			if (value && !isEmailValid(value)) {
+				pushError(`"${getFieldLabel(check.field)}" is not a valid email address.`);
+			}
+		});
+	}
+
+	if (Array.isArray(rules.phoneChecks)) {
+		rules.phoneChecks.forEach((check) => {
+			const value = data[check.field];
+
+			if (value && !isPhoneNumberValid(value)) {
+				pushError(`"${getFieldLabel(check.field)}" is not a valid phone number.`);
+			}
+		});
+	}
+
+	if (Array.isArray(rules.dateChecks)) {
+		rules.dateChecks.forEach((check) => {
+			const value = data[check.field];
+			const condition = check.condition ? check.condition(data) : value;
+
+			if (condition && value) {
+				if (!isDateValid(value)) {
+					pushError(`"${getFieldLabel(check.field)}" is not a valid date.`);
+				} else if (
+					typeof check.validation === "function" &&
+					!check.validation(value, data)
+				) {
+					const msg =
+						typeof check.error === "function" ? check.error(data) : check.error;
+
+					pushError(`"${getFieldLabel(check.field)}" ${msg}`);
+				}
+			}
+		});
+	}
+
+	if (Array.isArray(rules.customChecks)) {
+		rules.customChecks.forEach((fn) => {
+			try {
+				const result = fn(data);
+				if (Array.isArray(result)) result.forEach(pushError);
+			} catch (err) {
+				console.error("Validation error:", err);
+			}
+		});
+	}
 }
 
 export { isDateValid, isEmailValid, isPastDate, isPhoneNumberValid, isRowEffectivelyEmpty };

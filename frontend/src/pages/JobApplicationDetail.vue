@@ -249,156 +249,188 @@ const flatErrors = computed(() => {
 const applicationValidationConfig = [
 	{
 		step: 0,
-		fields: ["surname", "other_names"],
-		customChecks: [
-			(form) => {
-				const errors = [];
-				if (form.identification_type && !form.id_number) {
-					errors.push("ID Number is required when Identification Type is selected.");
-				}
-				if (!form.surname || !form.other_names) {
-					errors.push("Surname and Other Names are required.");
-				}
-				return errors;
-			},
-		],
+		formChecks: {
+			requiredFields: [
+				"surname",
+				"email_id",
+				"phone_number",
+				"identification_type",
+				"citizenship",
+				"country_of_citizenship",
+				"id_number",
+				"gender",
+			],
+
+			customChecks: [
+				(form) => {
+					const errors = [];
+					if (!form.identification_type || !form.id_number) return errors;
+
+					const id = String(form.id_number).trim();
+					const type = form.identification_type.toLowerCase();
+
+					const rules = {
+						"national id": {
+							pattern: /^\d{7,9}$/,
+							error: "National Identity Card must be 7–9 digits.",
+						},
+						passport: {
+							pattern: /^[A-Z0-9]{6,9}$/i,
+							error: "Passport number must be 6–9 characters (letters and numbers).",
+						},
+						"military id": {
+							pattern: /^[A-Z0-9\-]{5,20}$/i,
+							error: "Military ID must be 5–20 characters (letters, numbers, hyphens allowed).",
+						},
+						"alien id": {
+							pattern: /^[A-Z0-9\-]{5,20}$/i,
+							error: "Alien ID must be 5–20 characters (letters, numbers, hyphens allowed).",
+						},
+						"birth certificate": {
+							pattern: /^[A-Z0-9\-]{6,20}$/i,
+							error: "Birth Certificate number must be 6–20 characters.",
+						},
+						"nemis number": {
+							pattern: /^\d{8,14}$/,
+							error: "NEMIS Number must be 8–14 digits.",
+						},
+					};
+
+					const rule = rules[type] || {
+						pattern: /^[A-Z0-9\-]{5,20}$/i,
+						error: "Identification Number must be 5–20 characters (letters, numbers, hyphens allowed).",
+					};
+
+					if (!rule.pattern.test(id)) {
+						errors.push(rule.error);
+					}
+
+					return errors;
+				},
+			],
+		},
 	},
 	{
 		step: 1,
-		customChecks: [
-			(form) => {
-				const errors = [];
-				if (!form.profession) {
-					errors.push("Profession is required.");
-				}
-				if (!form.education || form.education.length === 0) {
-					errors.push("Education History is required.");
-				}
-				return errors;
+		formChecks: {
+			requiredFields: ["profession"],
+			customChecks: [
+				(form) => (!form.education?.length ? ["Education History is required."] : []),
+			],
+		},
+
+		tableChecks: {
+			education: {
+				label: "Education History",
+				requiredFields: ["school_univ", "level", "year_of_passing"],
+				dateChecks: [
+					{
+						field: "year_of_passing",
+						validation: isPastDate,
+						error: "must be a past date.",
+					},
+				],
 			},
-		],
-	},
-	{
-		step: 1,
-		field: "education",
-		label: "Education History",
-		requiredFields: ["school_univ", "level", "year_of_passing"],
-		dateChecks: [
-			{
-				field: "year_of_passing",
-				validation: (date) => isPastDate(date),
-				error: "must be a past date.",
+
+			additional_skills: {
+				label: "Skills",
+				requiredFields: ["additional_skill"],
 			},
-		],
-	},
-	{
-		step: 1,
-		field: "additional_skills",
-		label: "Skills",
-		requiredFields: ["additional_skill"],
-	},
-	{
-		step: 1,
-		field: "courses",
-		label: "Certifications and Trainings",
-		requiredFields: ["course_name", "institution", "start_date", "date_completed"],
-		dateChecks: [
-			{
-				field: "start_date",
-				validation: (date) => isPastDate(date),
-				error: "must be a past date.",
+
+			courses: {
+				label: "Certifications",
+				requiredFields: ["course_name", "institution", "start_date", "date_completed"],
+				dateChecks: [
+					{ field: "start_date", validation: isPastDate, error: "must be a past date." },
+					{
+						field: "date_completed",
+						validation: isPastDate,
+						error: "must be a past date.",
+						condition: (row) => row.date_completed,
+					},
+					{
+						field: "date_completed",
+						validation: (d, r) => new Date(d) >= new Date(r.start_date),
+						error: (r) => `cannot be before Start Date (${r.start_date}).`,
+						condition: (r) => r.start_date && r.date_completed,
+					},
+				],
 			},
-			{
-				field: "date_completed",
-				validation: (date) => isPastDate(date),
-				error: "must be a past date.",
-				condition: (row) => row.date_completed,
+
+			licences: {
+				label: "Professional Licences",
+				requiredFields: [
+					"license_type",
+					"institution",
+					"qualification",
+					"valid_from",
+					{ field: "license_name", condition: (r) => r.license_type === "Other" },
+					{ field: "valid_to", condition: (r) => !r.does_not_expire },
+				],
+				dateChecks: [
+					{ field: "valid_from", validation: isDateValid, error: "is not valid." },
+					{
+						field: "valid_to",
+						validation: isDateValid,
+						error: "is not valid.",
+						condition: (r) => r.valid_to && r.does_not_expire !== 1,
+					},
+					{
+						field: "valid_to",
+						validation: (d, r) => new Date(d) > new Date(r.valid_from),
+						error: (r) => `must be after Valid From (${r.valid_from}).`,
+						condition: (r) => r.valid_from && r.valid_to && r.does_not_expire !== 1,
+					},
+				],
 			},
-			{
-				field: "date_completed",
-				validation: (date, row) => new Date(date) >= new Date(row.start_date),
-				error: (row) => `cannot be before Start Date (${row.start_date}).`,
-				condition: (row) => row.start_date && row.date_completed,
-			},
-		],
-	},
-	{
-		step: 1,
-		field: "licences",
-		label: "Professional Licences",
-		requiredFields: [
-			"license_type",
-			"institution",
-			"qualification",
-			"valid_from",
-			{ field: "license_name", condition: (row) => row.license_type === "Other" },
-			{ field: "valid_to", condition: (row) => !row.does_not_expire },
-		],
-		dateChecks: [
-			{
-				field: "valid_from",
-				validation: (date) => isDateValid(date),
-				error: "is not a valid date.",
-			},
-			{
-				field: "valid_to",
-				validation: (date) => isDateValid(date),
-				error: "is not a valid date.",
-				condition: (row) => row.valid_to && row.does_not_expire !== 1,
-			},
-			{
-				field: "valid_to",
-				validation: (date, row) => new Date(date) > new Date(row.valid_from),
-				error: (row) => `must be after Valid From (${row.valid_from}).`,
-				condition: (row) => row.valid_from && row.valid_to && row.does_not_expire !== 1,
-			},
-		],
+		},
 	},
 	{
 		step: 2,
-		field: "work_experience",
-		label: "Work Experience",
-		requiredFields: [
-			"title",
-			"company",
-			"location",
-			"from_date",
-			{ field: "to_date", condition: (row) => !row.current },
-		],
-		dateChecks: [
-			{
-				field: "from_date",
-				validation: (date) => isPastDate(date),
-				error: "must be a past date.",
+
+		tableChecks: {
+			work_experience: {
+				label: "Work Experience",
+				requiredFields: [
+					"title",
+					"company",
+					"location",
+					"from_date",
+					{ field: "to_date", condition: (r) => !r.current },
+				],
+				dateChecks: [
+					{ field: "from_date", validation: isPastDate, error: "must be a past date." },
+					{
+						field: "to_date",
+						validation: isPastDate,
+						error: "must be a past date.",
+						condition: (r) => r.to_date && !r.current,
+					},
+					{
+						field: "to_date",
+						validation: (d, r) => new Date(d) >= new Date(r.from_date),
+						error: (r) => `cannot be before From Date (${r.from_date}).`,
+						condition: (r) => r.from_date && r.to_date && !r.current,
+					},
+				],
 			},
-			{
-				field: "to_date",
-				validation: (date) => isPastDate(date),
-				error: "must be a past date.",
-				condition: (row) => row.to_date && !row.current,
+
+			work_references: {
+				label: "Work References",
+				requiredFields: [
+					"reference_name",
+					"position",
+					"organization",
+					"email",
+					"phone_number",
+				],
+				emailChecks: [{ field: "email", error: "is invalid." }],
+				phoneChecks: [{ field: "phone_number", error: "is invalid." }],
 			},
-			{
-				field: "to_date",
-				validation: (date, row) => new Date(date) >= new Date(row.from_date),
-				error: (row) => `cannot be before From Date (${row.from_date}).`,
-				condition: (row) => row.from_date && row.to_date && !row.current,
-			},
-		],
-	},
-	{
-		step: 2,
-		field: "work_references",
-		label: "Work References",
-		requiredFields: ["reference_name", "position", "organization", "email", "phone_number"],
-		emailChecks: [{ field: "email", error: "is not a valid email address." }],
-		phoneChecks: [{ field: "phone_number", error: "is not a valid phone number." }],
+		},
 	},
 	{ step: 3, validate: (form) => true },
 ];
-
-const getStepValidationConfig = (stepIndex) => {
-	return applicationValidationConfig.filter((config) => config.step === stepIndex);
-};
 
 const steps = [
 	{
@@ -406,8 +438,9 @@ const steps = [
 		title: "Personal Info",
 		component: markRaw(PersonalInfo),
 		validate: (form) => {
-			const config = getStepValidationConfig(0);
+			const config = applicationValidationConfig.find((c) => c.step === 0);
 			const validationErrors = validateForm(form, config);
+
 			return validationErrors.length ? validationErrors : true;
 		},
 	},
@@ -416,7 +449,7 @@ const steps = [
 		title: "Education & Qualifications",
 		component: markRaw(EducationBackground),
 		validate: (form) => {
-			const config = getStepValidationConfig(1);
+			const config = applicationValidationConfig.find((c) => c.step === 1);
 			const validationErrors = validateForm(form, config);
 			return validationErrors.length ? validationErrors : true;
 		},
@@ -426,7 +459,7 @@ const steps = [
 		title: "Work Experience",
 		component: markRaw(WorkExperience),
 		validate: (form) => {
-			const config = getStepValidationConfig(2);
+			const config = applicationValidationConfig.find((c) => c.step === 2);
 			const validationErrors = validateForm(form, config);
 			return validationErrors.length ? validationErrors : true;
 		},

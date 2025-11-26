@@ -76,7 +76,7 @@ const isCollapsed = reactive({
 const localForm = reactive({
 	supporting_documents: [],
 	attachments: [],
-});
+}); 
 
 const documentValidationConfig = [
 	{
