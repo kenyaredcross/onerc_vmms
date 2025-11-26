@@ -1,8 +1,8 @@
 import router from "@/router";
+import { usersStore } from "@/stores/user";
 import { createResource } from "frappe-ui";
 import { defineStore } from "pinia";
 import { computed, reactive, ref } from "vue";
-import { usersStore } from "./user";
 
 export const sessionStore = defineStore("vmms-session", () => {
 	let { userResource } = usersStore();

@@ -32,7 +32,10 @@
 			>
 				<button
 					v-for="tab in sidebarLinks.filter(
-						(link) => link.label !== 'Profile' && link.label !== 'Events',
+						(link) =>
+							!['Profile', 'Events', 'Membership', 'Opportunities'].includes(
+								link.label,
+							),
 					)"
 					:key="tab.label"
 					:class="isVisible(tab) ? 'block' : 'hidden'"
@@ -63,9 +66,8 @@
 import { sessionStore } from "@/stores/session";
 import { usersStore } from "@/stores/user";
 import { getSidebarLinks } from "@/utils";
-import { createResource } from "frappe-ui";
 import * as icons from "lucide-vue-next";
-import { ref, toRaw, watch } from "vue";
+import { computed, ref, toRaw, watch } from "vue";
 import { useRouter } from "vue-router";
 import { sideBarApps } from "../utils/appsNavigate";
 
@@ -73,11 +75,12 @@ const { logout, user } = sessionStore();
 let { isLoggedIn } = sessionStore();
 const router = useRouter();
 let { userResource } = usersStore();
-const sidebarLinks = ref(getSidebarLinks());
 const otherLinks = ref([]);
 const showMenu = ref(false);
 const menu = ref(null);
 let appsLoaded = false;
+
+const sidebarLinks = computed(() => getSidebarLinks({ user: userResource?.data }));
 
 const handleOutsideClick = (e) => {
 	if (menu.value && !menu.value.contains(e.target)) {
@@ -99,6 +102,17 @@ const addOtherLinks = () => {
 	if (user) {
 		otherLinks.value.push(
 			...sideBarApps(),
+
+			{
+				name: "Opportunities",
+				icon: "Briefcase",
+				to: "Jobs",
+			},
+			{
+				name: "Membership",
+				icon: "Users",
+				to: "Membership",
+			},
 			{
 				name: "Events",
 				icon: "CalendarDays",

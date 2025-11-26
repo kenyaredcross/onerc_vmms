@@ -39,6 +39,12 @@ const routes = [
 		props: true,
 	},
 	{
+		name: "ProfileOverview",
+		path: "/user/profile/overview",
+		component: () => import("@/pages/ProfileOverview.vue"),
+		props: true,
+	},
+	{
 		name: "Welcome",
 		path: "/welcome",
 		component: () => import("@/pages/VmmsPortal.vue"),

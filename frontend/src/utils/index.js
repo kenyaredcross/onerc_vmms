@@ -388,15 +388,16 @@ export function getUserTimezone() {
 	}
 }
 
-export function getSidebarLinks() {
+export function getSidebarLinks({ user }) {
+	const isVolunteer = Boolean(user?.is_volunteer);
+
 	return [
 		{
 			label: "Profile",
 			icon: "User",
 			to: "Profile",
-			activeFor: ["Profile"],
+			activeFor: ["Profile", "ProfileOverview"],
 		},
-
 		{
 			label: "Dashboard",
 			icon: "LayoutDashboard",
@@ -409,7 +410,7 @@ export function getSidebarLinks() {
 			to: "Jobs",
 			activeFor: ["Jobs", "JobDetail", "NewJobApplication"],
 		},
-		{
+		isVolunteer && {
 			label: "Deployments",
 			icon: "FolderOpen",
 			to: "Deployments",
@@ -427,7 +428,7 @@ export function getSidebarLinks() {
 			to: "Membership",
 			activeFor: ["Membership"],
 		},
-	];
+	].filter(Boolean);
 }
 
 export function getFormattedDateRange(startDate, endDate, format = "DD MMM YYYY") {
