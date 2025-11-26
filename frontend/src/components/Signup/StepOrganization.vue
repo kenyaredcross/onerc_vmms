@@ -132,11 +132,22 @@
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
 			<div>
 				<Link
+					v-model="localModel.county"
+					:label="__('County of Residence')"
+					doctype="County"
+					:required="true"
+				/>
+				<p v-if="errors[0]?.['County of Residence']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["County of Residence"] }}
+				</p>
+			</div>
+			<div>
+				<Link
 					v-model="localModel.sub_county"
 					:label="__('Sub County')"
 					doctype="Sub County"
 					:required="true"
-					:filters="localModel.company ? { county: localModel.company } : {}"
+					:filters="localModel.county ? { county: localModel.county } : {}"
 				/>
 				<p v-if="errors[0]?.['Sub County']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Sub County"] }}
@@ -303,6 +314,7 @@ function validateForm() {
 	const form = localModel.value;
 
 	if (!form.company) stepErrors[0]["Branch / County"] = "Branch is required";
+	if (!form.county) stepErrors[0]["County of Residence"] = "County of residence is required";
 	if (!form.phone_number) stepErrors[0]["Phone Number"] = "Phone number is required";
 	if (!form.email_id) stepErrors[0]["Email Address"] = "Email address is required";
 	if (!form.gender) stepErrors[0]["Gender"] = "Gender is required";
@@ -337,38 +349,37 @@ function validateForm() {
 					stepErrors[0]["Identification Number"] = "National ID must be 7–9 digits";
 				break;
 			case "passport":
-				if (!/^[A-Z]\d{7}$/.test(id))
+				if (!/^[A-Z0-9]{6,9}$/i.test(id))
 					stepErrors[0]["Identification Number"] =
-						"Passport must start with a letter followed by 7 digits";
+						"Passport number must be 6–9 characters (letters and numbers)";
 				break;
+
 			case "military id":
-				if (!/^MIL\d{5,7}$/.test(id))
+				if (!/^[A-Z0-9\-]{5,20}$/i.test(id))
 					stepErrors[0]["Identification Number"] =
-						"Military ID must start with 'MIL' followed by 5–7 digits";
+						"Military ID must be 5–20 characters (letters, numbers, hyphens allowed)";
 				break;
+
 			case "alien id":
-				if (!/^A\d{7,9}$/.test(id))
+				if (!/^[A-Z0-9\-]{5,20}$/i.test(id))
 					stepErrors[0]["Identification Number"] =
-						"Alien ID must start with 'A' followed by 7–9 digits";
+						"Alien ID must be 5–20 characters (letters, numbers, hyphens allowed)";
 				break;
+
 			case "birth certificate":
-				if (!/^\d{8,12}$/.test(id))
+				if (!/^[A-Z0-9\-]{6,20}$/i.test(id))
 					stepErrors[0]["Identification Number"] =
-						"Birth Certificate must be 8–12 digits";
+						"Birth Certificate number must be 6–20 characters";
 				break;
+
 			case "nemis number":
-				if (!/^\d{10,12}$/.test(id))
-					stepErrors[0]["Identification Number"] = "NEMIS Number must be 10–12 digits";
-				break;
-			case "hospital card":
-			case "health id":
-				if (!/^[A-Z0-9]{5,15}$/i.test(id))
-					stepErrors[0]["Identification Number"] =
-						"Health/Hospital ID must be 5–15 alphanumeric characters";
+				if (!/^\d{8,14}$/.test(id))
+					stepErrors[0]["Identification Number"] = "NEMIS Number must be 8–14 digits";
 				break;
 			default:
-				if (!id) stepErrors[0]["Identification Number"] = "ID number cannot be empty";
-				break;
+				if (!/^[A-Z0-9\-]{5,20}$/i.test(id))
+					stepErrors[0]["Identification Number"] =
+						"Identification Number must be 5–20 characters (letters, numbers, hyphens allowed)";
 		}
 	}
 	const phoneRegex = /^(?:\+254|0)(?:7\d{8}|1\d{8})$/;
@@ -401,6 +412,17 @@ onMounted(() => {
 
 watch(
 	() => localModel.value.company,
+	(newVal, oldVal) => {
+		if (ready.value && oldVal !== newVal) {
+			if (!localModel.value.county && newVal) {
+				localModel.value.county = newVal;
+			}
+		}
+	},
+);
+
+watch(
+	() => localModel.value.county,
 	(newVal, oldVal) => {
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.sub_county = "";

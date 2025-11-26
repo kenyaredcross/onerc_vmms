@@ -169,7 +169,7 @@ import { FormControl, createResource, toast } from "frappe-ui";
 import { computed, reactive, ref, watch } from "vue";
 import ErrorModal from "../Modals/ErrorModal.vue";
 
-import { isEmailValid, isPastDate } from "@/utils/validationUtils.js";
+import { validateForm } from "@/utils/validationUtils.js";
 
 const props = defineProps({
 	form: {
@@ -266,109 +266,89 @@ const hasChanges = computed(() => {
 	return Object.keys(getChangedFields()).length > 0;
 });
 
-const isKenyanPhoneNumberValid = (phone) => {
-	if (!phone) return true;
-	const cleanPhone = phone.toString().replace(/\s+/g, "");
+const formConfig = {
+	formChecks: {
+		requiredFields: [
+			"first_name",
+			"last_name",
+			"birth_date",
+			"email",
+			"phone",
+			"identification_type",
+			"citizenship",
+			"country_of_citizenship",
+			"id_number",
+			"gender",
+		],
+		emailChecks: [
+			{
+				field: "email",
+			},
+		],
+		phoneChecks: [
+			{
+				field: "phone",
+			},
+			{
+				field: "mobile_no",
+			},
+		],
+		dateChecks: [
+			{
+				field: "birth_date",
+				maxDate: new Date(),
+				errorMessage: "Date of Birth cannot be in the future.",
+			},
+		],
+		customChecks: [
+			(form) => {
+				const errors = [];
+				if (!form.identification_type || !form.id_number) return errors;
 
-	const phoneRegex = /^(?:\+254|0)(7\d{8}|1\d{8})$/;
-	return phoneRegex.test(cleanPhone);
+				const id = String(form.id_number).trim();
+				const type = form.identification_type.toLowerCase();
+
+				const rules = {
+					"national id": {
+						pattern: /^\d{7,9}$/,
+						error: "National Identity Card must be 7–9 digits.",
+					},
+					passport: {
+						pattern: /^[A-Z0-9]{6,9}$/i,
+						error: "Passport number must be 6–9 characters (letters and numbers).",
+					},
+					"military id": {
+						pattern: /^[A-Z0-9\-]{5,20}$/i,
+						error: "Military ID must be 5–20 characters (letters, numbers, hyphens allowed).",
+					},
+					"alien id": {
+						pattern: /^[A-Z0-9\-]{5,20}$/i,
+						error: "Alien ID must be 5–20 characters (letters, numbers, hyphens allowed).",
+					},
+					"birth certificate": {
+						pattern: /^[A-Z0-9\-]{6,20}$/i,
+						error: "Birth Certificate number must be 6–20 characters.",
+					},
+					"nemis number": {
+						pattern: /^\d{8,14}$/,
+						error: "NEMIS Number must be 8–14 digits.",
+					},
+				};
+
+				const rule = rules[type] || {
+					pattern: /^[A-Z0-9\-]{5,20}$/i,
+					error: "Identification Number must be 5–20 characters (letters, numbers, hyphens allowed).",
+				};
+
+				if (!rule.pattern.test(id)) {
+					errors.push(rule.error);
+				}
+
+				return errors;
+			},
+		],
+	},
 };
-
-function validateForm(form) {
-	const errors = {};
-
-	const requiredFields = [
-		{ field: "first_name", label: "First Name" },
-		{ field: "last_name", label: "Last Name" },
-		{
-			field: "birth_date",
-			label: "Date of Birth",
-			check: (val) => isPastDate(val) || "must be a date in the past.",
-		},
-		{ field: "email", label: "Email" },
-		{ field: "phone", label: "Phone" },
-		{ field: "citizenship", label: "Citizenship" },
-	];
-
-	requiredFields.forEach((item) => {
-		if (!form[item.field]) {
-			errors[item.label] = `${item.label} is required.`;
-		} else if (item.check) {
-			const checkResult = item.check(form[item.field]);
-			if (typeof checkResult === "string") {
-				errors[item.label] = `${item.label} ${checkResult}`;
-			}
-		}
-	});
-
-	if (form.identification_type && form.id_number) {
-		const id = form.id_number.toString().trim();
-
-		switch (form.identification_type.toLowerCase()) {
-			case "national id":
-			case "national identity card":
-				if (!/^\d{7,9}$/.test(id))
-					errors["Identification Number"] = "National ID must be 7–9 digits";
-				break;
-			case "passport":
-				if (!/^[A-Z]\d{7}$/.test(id))
-					errors["Identification Number"] =
-						"Passport must start with a letter followed by 7 digits";
-				break;
-			case "military id":
-				if (!/^MIL\d{5,7}$/.test(id))
-					errors["Identification Number"] =
-						"Military ID must start with 'MIL' followed by 5–7 digits";
-				break;
-			case "alien id":
-				if (!/^A\d{7,9}$/.test(id))
-					errors["Identification Number"] =
-						"Alien ID must start with 'A' followed by 7–9 digits";
-				break;
-			case "birth certificate":
-				if (!/^\d{8,12}$/.test(id))
-					errors["Identification Number"] = "Birth Certificate must be 8–12 digits";
-				break;
-			case "nemis number":
-				if (!/^\d{10,12}$/.test(id))
-					errors["Identification Number"] = "NEMIS Number must be 10–12 digits";
-				break;
-			case "hospital card":
-			case "health id":
-				if (!/^[A-Z0-9]{5,15}$/i.test(id))
-					errors["Identification Number"] =
-						"Health/Hospital ID must be 5–15 alphanumeric characters";
-				break;
-			default:
-				if (!id) errors["Identification Number"] = "ID number cannot be empty";
-				break;
-		}
-	} else if (form.identification_type || form.id_number) {
-		if (!form.identification_type)
-			errors["Identification Document Type"] =
-				"Identification Document Type is required if ID Number is provided.";
-		if (!form.id_number)
-			errors["ID Number"] =
-				"ID Number is required if Identification Document Type is provided.";
-	}
-
-	if (form.mobile_no && !isKenyanPhoneNumberValid(form.mobile_no)) {
-		errors["Mobile Money (M-Pesa) Phone"] =
-			"Enter a valid Kenyan phone number (e.g., 07xx/01xx or +254).";
-	}
-
-	if (form.phone && !isKenyanPhoneNumberValid(form.phone)) {
-		errors["Phone"] = "Enter a valid Kenyan phone number (e.g., 07xx/01xx or +254).";
-	}
-
-	if (form.email) {
-		const email = form.email.toString().trim();
-		if (!isEmailValid(email)) errors["Email"] = "Enter a valid email address";
-	}
-
-	return errors;
-}
-
 const saveUserResource = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.update_user_details",
 	makeParams() {
@@ -396,7 +376,7 @@ async function handleSave() {
 		return;
 	}
 
-	const validationErrors = validateForm(localForm);
+	const validationErrors = validateForm(localForm, formConfig);
 	if (Object.keys(validationErrors).length > 0) {
 		flatErrors.value = Object.entries(validationErrors).map(
 			([field, message]) => `${field}: ${message}`,
