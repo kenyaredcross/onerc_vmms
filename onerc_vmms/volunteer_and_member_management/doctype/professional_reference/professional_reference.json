@@ -65,8 +65,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Phone Number",
-   "reqd": 1
+   "label": "Phone Number"
   },
   {
    "fieldname": "notes",
@@ -78,7 +77,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-28 16:30:41.677880",
+ "modified": "2025-11-26 07:14:59.284791",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Professional Reference",
