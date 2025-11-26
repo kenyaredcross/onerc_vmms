@@ -32,6 +32,7 @@
 				@click="openCoverUploader"
 				class="absolute top-3 right-3 bg-white/90 hover:bg-white text-gray-700 p-2 rounded-full shadow transition"
 				:aria-label="__('Edit cover image')"
+				v-if="allowEdit"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -85,6 +86,7 @@
 
 					<button
 						@click="openProfileUploader"
+						v-if="allowEdit"
 						class="absolute bottom-1 right-1 bg-white p-1 sm:p-1.5 rounded-full shadow hover:bg-gray-50 text-gray-700 transition"
 					>
 						<svg
@@ -537,6 +539,10 @@ const props = defineProps({
 	form: {
 		type: Object,
 		required: true,
+	},
+	allowEdit: {
+		type: Boolean,
+		default: false,
 	},
 });
 

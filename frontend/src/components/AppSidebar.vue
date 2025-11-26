@@ -89,18 +89,23 @@ import CollapseSidebar from "@/components/Icons/CollapseSidebar.vue";
 import SidebarLink from "@/components/SidebarLink.vue";
 import UserDropdown from "@/components/UserDropdown.vue";
 import { useSidebar } from "@/stores/sidebar";
+import { usersStore } from "@/stores/user";
 import { getSidebarLinks } from "@/utils";
-import { createResource, Tooltip } from "frappe-ui";
+import { Tooltip } from "frappe-ui";
 import { CircleAlert, Zap } from "lucide-vue-next";
-import { ref } from "vue";
-import AppsNavigation from "./AppsNavigation.vue";
+import { computed, ref } from "vue";
 import { sessionStore } from "../stores/session";
 import { sideBarApps } from "../utils/appsNavigate";
+import AppsNavigation from "./AppsNavigation.vue";
+
+let { userResource } = usersStore();
+
+const { isLoggedIn } = sessionStore();
+
+const sidebarLinks = computed(() => getSidebarLinks({ user: userResource?.data }));
 
 let sidebarStore = useSidebar();
-const sidebarLinks = ref(getSidebarLinks());
 const readOnlyMode = window.read_only_mode;
-const { isLoggedIn } = sessionStore();
 
 const toggleSidebar = () => {
 	sidebarStore.sidebarCollapsed = !sidebarStore.sidebarCollapsed;

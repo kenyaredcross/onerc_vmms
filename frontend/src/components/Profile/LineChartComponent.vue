@@ -11,16 +11,11 @@ export default {
 		chartData: {
 			type: Object,
 			required: true,
-			default: () => ({
-				labels: [],
-				datasets: [],
-			}),
+			default: () => ({ labels: [], datasets: [] }),
 		},
 	},
 	data() {
-		return {
-			chartInstance: null,
-		};
+		return { chartInstance: null };
 	},
 	watch: {
 		chartData: {
@@ -34,61 +29,72 @@ export default {
 		this.initChart();
 	},
 	beforeUnmount() {
-		if (this.chartInstance) {
-			this.chartInstance.destroy();
-		}
+		if (this.chartInstance) this.chartInstance.destroy();
 	},
 	methods: {
 		async initChart() {
-			// Load Chart.js if not already loaded
-			if (!window.Chart) {
-				await this.loadChartJS();
-			}
+			if (!window.Chart) await this.loadChartJS();
 
 			const ctx = this.$refs.chartCanvas.getContext("2d");
+
+			const colors = [
+				"#8B5CF6",
+				"#3B82F6",
+				"#06B6D4",
+				"#14B8A6",
+				"#EC4899",
+				"#F97316",
+				"#EAB308",
+				"#FBBF24",
+			];
 
 			this.chartInstance = new Chart(ctx, {
 				type: "line",
 				data: {
 					labels: this.chartData.labels || [],
-					datasets: (this.chartData.datasets || []).map((dataset, index) => ({
-						label: dataset.name || `Dataset ${index + 1}`,
-						data: dataset.values || dataset.data || [],
-						borderColor: "#8B5CF6",
-						backgroundColor: "rgba(139, 92, 246, 0.1)",
-						tension: 0.4,
+					datasets: (this.chartData.datasets || []).map((d, idx) => ({
+						label: d.name || `Dataset ${idx + 1}`,
+						data: d.values || d.data || [],
+						borderColor: colors[idx % colors.length],
+						backgroundColor: colors[idx % colors.length] + "33",
+						tension: 0.3,
 						fill: true,
-						pointRadius: 4,
-						pointHoverRadius: 6,
+						pointRadius: 3,
+						pointHoverRadius: 5,
 						borderWidth: 2,
 					})),
 				},
 				options: {
 					responsive: true,
 					maintainAspectRatio: false,
+					interaction: { mode: "index", intersect: false },
 					plugins: {
 						legend: {
 							display: true,
 							position: "top",
+							labels: { boxWidth: 12, padding: 15, font: { size: 12 } },
 						},
 						tooltip: {
-							mode: "index",
-							intersect: false,
+							backgroundColor: "#fff",
+							titleColor: "#111",
+							bodyColor: "#111",
+							borderColor: "#ddd",
+							borderWidth: 1,
+							padding: 8,
+							cornerRadius: 6,
+							displayColors: true,
 						},
 					},
 					scales: {
 						x: {
 							display: true,
-							grid: {
-								display: false,
-							},
+							grid: { display: false },
+							ticks: { color: "#4B5563", maxRotation: 0, minRotation: 0 },
 						},
 						y: {
-							display: true,
 							beginAtZero: true,
-							grid: {
-								color: "rgba(0, 0, 0, 0.05)",
-							},
+							grid: { color: "rgba(0,0,0,0.05)" },
+							ticks: { color: "#4B5563", stepSize: 10 },
 						},
 					},
 				},
@@ -101,20 +107,29 @@ export default {
 				return;
 			}
 
+			const colors = [
+				"#8B5CF6",
+				"#3B82F6",
+				"#06B6D4",
+				"#14B8A6",
+				"#EC4899",
+				"#F97316",
+				"#EAB308",
+				"#FBBF24",
+			];
+
 			this.chartInstance.data.labels = this.chartData.labels || [];
-			this.chartInstance.data.datasets = (this.chartData.datasets || []).map(
-				(dataset, index) => ({
-					label: dataset.name || `Dataset ${index + 1}`,
-					data: dataset.values || dataset.data || [],
-					borderColor: "#8B5CF6",
-					backgroundColor: "rgba(139, 92, 246, 0.1)",
-					tension: 0.4,
-					fill: true,
-					pointRadius: 4,
-					pointHoverRadius: 6,
-					borderWidth: 2,
-				}),
-			);
+			this.chartInstance.data.datasets = (this.chartData.datasets || []).map((d, idx) => ({
+				label: d.name || `Dataset ${idx + 1}`,
+				data: d.values || d.data || [],
+				borderColor: colors[idx % colors.length],
+				backgroundColor: colors[idx % colors.length] + "33",
+				tension: 0.3,
+				fill: true,
+				pointRadius: 3,
+				pointHoverRadius: 5,
+				borderWidth: 2,
+			}));
 
 			this.chartInstance.update();
 		},
@@ -125,7 +140,6 @@ export default {
 					resolve();
 					return;
 				}
-
 				const script = document.createElement("script");
 				script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js";
 				script.onload = resolve;
