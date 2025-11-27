@@ -32,10 +32,7 @@
 			>
 				<button
 					v-for="tab in sidebarLinks.filter(
-						(link) =>
-							!['Profile', 'Events', 'Membership', 'Opportunities'].includes(
-								link.label,
-							),
+						(link) => !['Profile', 'Events'].includes(link.label),
 					)"
 					:key="tab.label"
 					:class="isVisible(tab) ? 'block' : 'hidden'"
@@ -47,7 +44,7 @@
 						class="h-6 w-6 stroke-1.5"
 						:class="[isActive(tab) ? 'text-ink-red-4' : 'text-ink-gray-5']"
 					/>
-					<span class="text-xs">{{ __(tab.label) }}</span>
+					<span class="text-2xs">{{ __(tab.label) }}</span>
 				</button>
 
 				<button
@@ -103,16 +100,6 @@ const addOtherLinks = () => {
 		otherLinks.value.push(
 			...sideBarApps(),
 
-			{
-				name: "Opportunities",
-				icon: "Briefcase",
-				to: "Jobs",
-			},
-			{
-				name: "Membership",
-				icon: "Users",
-				to: "Membership",
-			},
 			{
 				name: "Events",
 				icon: "CalendarDays",
