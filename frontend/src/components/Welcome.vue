@@ -3,7 +3,7 @@
 		v-if="!roleResource.data.is_pending_approval"
 		class="h-[75vh] flex items-center justify-center"
 	>
-		<div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 p-10">
+		<div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 p-2 md:p-10">
 			<div class="flex flex-col justify-center space-y-6 text-left">
 				<h1 class="text-3xl md:text-6xl font-extrabold text-red-600 leading-tight">
 					{{ __("Kenya Red Cross") }} <br />

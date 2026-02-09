@@ -8,39 +8,39 @@
 		<header
 			class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 p-4 sm:p-6 bg-white rounded-xl shadow-lg border border-gray-100"
 		>
+			<!-- Title -->
 			<h1
-				class="text-2xl sm:text-3xl lg:text-4xl !font-extrabold text-gray-900 tracking-tight mb-3 sm:mb-0 text-right md:text-left w-full truncate"
+				class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight mb-3 sm:mb-0 w-full truncate text-left sm:text-left"
 			>
-				{{ __("Welcome back") }},
-				<span class="text-red-600 font-black">{{ user?.data?.full_name }}</span
-				>!
+				{{ __("Welcome back, ") }}
+				<span class="ml-1 text-red-600 font-black">{{ user?.data?.full_name }}</span>
 			</h1>
 
+			<!-- Action Buttons & Notifications -->
 			<div
-				class="flex items-center gap-3 md:gap-4 flex-shrink-0 w-full sm:w-auto justify-end"
+				class="flex flex-wrap sm:flex-nowrap items-center gap-2 md:gap-4 w-full sm:w-auto justify-end"
 			>
+				<!-- Volunteer Action -->
 				<div
 					v-if="roleResource?.data?.is_volunteer"
-					class="flex items-center gap-2 flex-wrap justify-end"
+					class="flex flex-wrap sm:flex-nowrap items-center gap-2 justify-end"
 				>
 					<div
 						v-if="!presentSlots?.data"
-						class="hidden sm:block text-xs border border-blue-600 px-2 py-1 bg-blue-100 rounded-lg text-blue-600 font-medium whitespace-nowrap order-1"
+						class="hidden sm:block text-xs border border-blue-600 px-2 py-1 bg-blue-100 rounded-lg text-blue-600 font-medium whitespace-nowrap"
 					>
 						{{ __("Action Required") }}
 					</div>
 
 					<button
-						class="px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg transition duration-150 ease-in-out transform hover:scale-[1.02] active:scale-95 whitespace-nowrap order-3 sm:order-2"
+						class="px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg transition duration-150 ease-in-out transform hover:scale-[1.02] active:scale-95 whitespace-nowrap"
 						@click="setAvailability = true"
 					>
 						{{ __("Set Availability") }}
 					</button>
 
-					<div
-						class="relative cursor-pointer flex-shrink-0 order-2 sm:order-3"
-						@click="showNotificationDialog = true"
-					>
+					<!-- Notifications -->
+					<div class="relative cursor-pointer" @click="showNotificationDialog = true">
 						<div
 							class="relative transition duration-200"
 							:class="{ 'animate-wiggle': hasNotification }"
@@ -57,6 +57,7 @@
 					</div>
 				</div>
 
+				<!-- Profile Menu -->
 				<div class="relative flex-shrink-0">
 					<button
 						@click="isOpen = !isOpen"
@@ -86,13 +87,13 @@
 					>
 						<div
 							v-show="isOpen"
-							class="absolute right-0 mt-4 w-56 bg-white rounded-xl border border-gray-100 shadow-2xl shadow-red-500/10 py-2 z-50 origin-top-right ring-1 ring-black ring-opacity-5"
+							class="absolute right-0 mt-4 w-56 bg-white rounded-xl border border-gray-100 shadow-2xl py-2 z-50 origin-top-right ring-1 ring-black ring-opacity-5"
 							role="menu"
 							aria-orientation="vertical"
 						>
 							<router-link
 								:to="{ name: 'Profile' }"
-								class="flex flex-row items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
+								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
 								role="menuitem"
 								@click="isOpen = false"
 							>
@@ -103,7 +104,7 @@
 
 							<router-link
 								:to="{ name: 'ProfileOverview' }"
-								class="flex flex-row items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
+								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
 								role="menuitem"
 								@click="isOpen = false"
 							>
@@ -273,6 +274,6 @@ onMounted(() => {
 });
 
 useHead({
-	title: "Volunteer Dashboard",
+	title: "VMMS",
 });
 </script>
