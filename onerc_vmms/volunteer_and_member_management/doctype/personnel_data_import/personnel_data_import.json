@@ -1,0 +1,216 @@
+{
+ "actions": [],
+ "autoname": "format:{reference_doctype} Import on {creation}",
+ "beta": 1,
+ "creation": "2026-02-09 12:56:08.290656",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "import_type",
+  "download_template",
+  "import_file",
+  "payload_count",
+  "html_5",
+  "google_sheets_url",
+  "refresh_google_sheet",
+  "column_break_5",
+  "status",
+  "total",
+  "submit_after_import",
+  "mute_emails",
+  "user_template_options",
+  "employee_template_options",
+  "import_warnings_section",
+  "template_warnings",
+  "successes",
+  "failures",
+  "import_warnings",
+  "section_import_preview",
+  "import_preview",
+  "import_log_section",
+  "show_failed_logs",
+  "import_log_preview"
+ ],
+ "fields": [
+  {
+   "fieldname": "import_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Import Type",
+   "options": "\nInsert New Records\nUpdate Existing Records",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:!doc.__islocal",
+   "fieldname": "download_template",
+   "fieldtype": "Button",
+   "label": "Download Template"
+  },
+  {
+   "depends_on": "eval:!doc.__islocal",
+   "fieldname": "import_file",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Import File",
+   "read_only_depends_on": "eval: ['Success', 'Partial Success'].includes(doc.status)"
+  },
+  {
+   "fieldname": "payload_count",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Payload Count",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:!doc.__islocal && !doc.import_file",
+   "fieldname": "html_5",
+   "fieldtype": "HTML",
+   "options": "<h5 class=\"text-muted uppercase\">Or</h5>"
+  },
+  {
+   "depends_on": "eval:!doc.__islocal && !doc.import_file\n",
+   "description": "Must be a publicly accessible Google Sheets URL",
+   "fieldname": "google_sheets_url",
+   "fieldtype": "Data",
+   "label": "Import from Google Sheets",
+   "read_only_depends_on": "eval: ['Success', 'Partial Success'].includes(doc.status)"
+  },
+  {
+   "depends_on": "eval:doc.google_sheets_url && !doc.__unsaved &&  ['Success', 'Partial Success'].includes(doc.status)",
+   "fieldname": "refresh_google_sheet",
+   "fieldtype": "Button",
+   "label": "Refresh Google Sheet"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "no_copy": 1,
+   "options": "Pending\nSuccess\nPartial Success\nError\nTimed Out"
+  },
+  {
+   "default": "0",
+   "fieldname": "submit_after_import",
+   "fieldtype": "Check",
+   "label": "Submit After Import",
+   "set_only_once": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "mute_emails",
+   "fieldtype": "Check",
+   "label": "Don't Send Emails",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "import_warnings_section",
+   "fieldtype": "Section Break",
+   "label": "Import File Errors and Warnings"
+  },
+  {
+   "fieldname": "template_warnings",
+   "fieldtype": "Code",
+   "label": "Template Warnings",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "import_warnings",
+   "fieldtype": "HTML",
+   "label": "Import Warnings"
+  },
+  {
+   "fieldname": "section_import_preview",
+   "fieldtype": "Section Break",
+   "label": "Preview"
+  },
+  {
+   "fieldname": "import_preview",
+   "fieldtype": "HTML",
+   "label": "Import Preview"
+  },
+  {
+   "fieldname": "import_log_section",
+   "fieldtype": "Section Break",
+   "label": "Import Log"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_failed_logs",
+   "fieldtype": "Check",
+   "label": "Show Only Failed Logs"
+  },
+  {
+   "fieldname": "import_log_preview",
+   "fieldtype": "HTML",
+   "label": "Import Log Preview"
+  },
+  {
+   "fieldname": "user_template_options",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "User Template Options",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee_template_options",
+   "fieldtype": "Code",
+   "hidden": 1,
+   "label": "Employee Template Options ",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "successes",
+   "fieldtype": "Code",
+   "label": "Successes",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "failures",
+   "fieldtype": "Code",
+   "label": "Failures",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Float",
+   "label": "Total"
+  }
+ ],
+ "hide_toolbar": 1,
+ "links": [],
+ "modified": "2026-02-10 01:46:07.244256",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "Personnel Data Import",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
