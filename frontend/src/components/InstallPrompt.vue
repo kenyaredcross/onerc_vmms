@@ -9,7 +9,7 @@
 			</p>
 		</template>
 		<template #actions>
-			<Button variant="solid" class="w-full py-5" @click="install">
+			<Button variant="solid" theme="red" class="w-full py-5" @click="install">
 				<template #prefix><FeatherIcon name="download" class="w-4" /></template>
 				{{ __("Install") }}
 			</Button>
@@ -72,7 +72,6 @@ const isInStandaloneMode = () => "standalone" in window.navigator && window.navi
 if (isIos() && !isInStandaloneMode()) iosInstallMessage.value = true;
 
 window.addEventListener("beforeinstallprompt", (e) => {
-	console.log("beforeinstallprompt event fired");
 	e.preventDefault();
 	deferredPrompt.value = e;
 	if (isIos() && !isInStandaloneMode()) iosInstallMessage.value = true;
