@@ -1,12 +1,15 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
- "autoname": "field:location_name",
- "creation": "2025-09-30 11:55:04.667665",
+ "autoname": "field:sub_location_name",
+ "creation": "2025-11-26 13:22:20.494804",
+ "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "location_name",
+  "sub_location_name",
+  "location",
   "division",
   "column_break_hzyp",
   "county",
@@ -14,48 +17,53 @@
  ],
  "fields": [
   {
-   "fieldname": "location_name",
-   "fieldtype": "Data",
-   "label": "Location Name",
-   "unique": 1
-  },
-  {
-   "fetch_from": "division.sub_county",
+   "fetch_from": "location.sub_county",
    "fieldname": "sub_county",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Sub County",
-   "options": "Sub County",
-   "search_index": 1
+   "options": "Sub County"
   },
   {
    "fieldname": "column_break_hzyp",
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "division.county",
+   "fetch_from": "location.county",
    "fieldname": "county",
    "fieldtype": "Link",
    "label": "County",
-   "options": "County",
-   "search_index": 1
+   "options": "County"
   },
   {
-   "fetch_from": "sub_county.county",
+   "fieldname": "sub_location_name",
+   "fieldtype": "Data",
+   "label": "Sub Location Name",
+   "unique": 1
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Location",
+   "options": "Administrative Location",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "location.division",
    "fieldname": "division",
    "fieldtype": "Link",
    "label": "DIvision",
-   "options": "Administrative Division",
-   "reqd": 1
+   "options": "Administrative Division"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-26 13:36:21.791749",
+ "modified": "2026-02-09 12:00:19.208998",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
- "name": "Administrative Location",
+ "name": "Sub Location",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [

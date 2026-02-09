@@ -2,49 +2,50 @@
  "actions": [],
  "allow_import": 1,
  "allow_rename": 1,
- "autoname": "field:sub_county_name",
- "creation": "2025-09-30 11:51:47.244290",
+ "autoname": "field:division_name",
+ "creation": "2025-11-26 13:20:08.249575",
+ "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "sub_county_name",
-  "county",
-  "column_break_kntk"
+  "division_name",
+  "sub_county",
+  "column_break_hzyp",
+  "county"
  ],
  "fields": [
   {
-   "fieldname": "sub_county_name",
-   "fieldtype": "Data",
-   "label": "Sub County Name",
-   "unique": 1
+   "fieldname": "sub_county",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Sub County",
+   "options": "Sub County"
   },
   {
+   "fieldname": "column_break_hzyp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sub_county.county",
    "fieldname": "county",
    "fieldtype": "Link",
-   "in_filter": 1,
-   "in_list_view": 1,
-   "in_preview": 1,
-   "in_standard_filter": 1,
    "label": "County",
    "options": "County"
   },
   {
-   "fieldname": "column_break_kntk",
-   "fieldtype": "Column Break"
+   "fieldname": "division_name",
+   "fieldtype": "Data",
+   "label": "Division Name",
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [
-  {
-   "link_doctype": "Administrative Location",
-   "link_fieldname": "sub_county"
-  }
- ],
- "modified": "2026-02-09 11:56:23.912705",
+ "links": [],
+ "modified": "2026-02-09 11:43:50.630740",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
- "name": "Sub County",
+ "name": "Administrative Division",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
