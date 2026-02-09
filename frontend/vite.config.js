@@ -2,6 +2,7 @@ import vue from "@vitejs/plugin-vue";
 import frappeui from "frappe-ui/vite";
 import path from "node:path";
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
 	plugins: [
@@ -18,21 +19,17 @@ export default defineConfig({
 
 		vue(),
 
-		/*
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'robots.txt'],
-      manifest: {
-        name: 'VMMS Portal',
-        short_name: 'VMMS',
-        start_url: '.',
-        display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#ff0000',
-        icons: [],
-      },
-    }),
-    */
+		VitePWA({
+			registerType: "autoUpdate",
+			devOptions: {
+				enabled: true,
+			},
+			workbox: {
+				cleanupOutdatedCaches: true,
+				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+			},
+			manifest: false,
+		}),
 	],
 
 	build: {
