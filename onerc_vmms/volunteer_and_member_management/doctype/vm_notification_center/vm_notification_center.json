@@ -12,6 +12,7 @@
   "column_break_bubb",
   "party_type",
   "company",
+  "fetch_party_list",
   "personnel_filters_section",
   "affiliation_column",
   "region",
@@ -222,13 +223,19 @@
    "fieldname": "membership_detail_column",
    "fieldtype": "Column Break",
    "label": "Membership Details"
+  },
+  {
+   "depends_on": "eval:doc.party_type;",
+   "fieldname": "fetch_party_list",
+   "fieldtype": "Button",
+   "label": "Fetch Party List"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-02 15:38:50.729544",
+ "modified": "2025-12-02 16:53:40.491622",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Notification Center",

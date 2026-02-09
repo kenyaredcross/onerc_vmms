@@ -10,16 +10,13 @@ frappe.ui.form.on("VM Notification Center", {
 	party_type(frm) {
 		initialiseRegionField(frm);
 	},
-	personnel_type(frm) {
-		frm.trigger("get_party_list");
-	},
+	personnel_type(frm) {},
 
 	get_party_list: (frm) => {
 		frm.call({
 			method: "get_party_list",
-			args: {
-				personnel_type: frm.doc.personnel_type,
-			},
+			doc: frm.doc,
+			args: { document: frm.doc },
 		}).then((r) => {
 			console.log("parties", r);
 		});
@@ -50,6 +47,10 @@ frappe.ui.form.on("VM Notification Center", {
 	membership_region: (frm) => {
 		frm.set_value("membership_branch", "");
 		branchQuery(frm);
+	},
+
+	fetch_party_list: (frm) => {
+		frm.trigger("get_party_list");
 	},
 });
 

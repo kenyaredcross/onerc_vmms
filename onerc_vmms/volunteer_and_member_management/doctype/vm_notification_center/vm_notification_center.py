@@ -15,16 +15,36 @@ class VMNotificationCenter(Document):
         from frappe.types import DF
         from hrms.hr.doctype.designation_skill.designation_skill import DesignationSkill
         from lms.lms.doctype.related_courses.related_courses import RelatedCourses
-        from onerc_vmms.volunteer_and_member_management.doctype.administrative_location_table.administrative_location_table import AdministrativeLocationTable
-        from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import CompanyItem
-        from onerc_vmms.volunteer_and_member_management.doctype.county_table.county_table import CountyTable
-        from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import DepartmentItem
-        from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import DesignationItem
-        from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import EmploymentTypeItem
-        from onerc_vmms.volunteer_and_member_management.doctype.membership_type_item.membership_type_item import MembershipTypeItem
-        from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import PersonnelLicenceItem
-        from onerc_vmms.volunteer_and_member_management.doctype.sub_county_table.sub_county_table import SubCountyTable
-        from onerc_vmms.volunteer_and_member_management.doctype.ward_table.ward_table import WardTable
+        from onerc_vmms.volunteer_and_member_management.doctype.administrative_location_table.administrative_location_table import (
+            AdministrativeLocationTable,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import (
+            CompanyItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.county_table.county_table import (
+            CountyTable,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import (
+            DepartmentItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import (
+            DesignationItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import (
+            EmploymentTypeItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.membership_type_item.membership_type_item import (
+            MembershipTypeItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import (
+            PersonnelLicenceItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.sub_county_table.sub_county_table import (
+            SubCountyTable,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.ward_table.ward_table import (
+            WardTable,
+        )
 
         administrative_location: DF.TableMultiSelect[AdministrativeLocationTable]
         amended_from: DF.Link | None
@@ -37,7 +57,9 @@ class VMNotificationCenter(Document):
         licences: DF.TableMultiSelect[PersonnelLicenceItem]
         membership_branch: DF.TableMultiSelect[CompanyItem]
         membership_region: DF.TableMultiSelect[CompanyItem]
-        membership_status: DF.Literal["", "Draft", "Pending", "Active", "Rejected", "Expired"]
+        membership_status: DF.Literal[
+            "", "Draft", "Pending", "Active", "Rejected", "Expired"
+        ]
         membership_type: DF.TableMultiSelect[MembershipTypeItem]
         party_type: DF.Link
         personnel_type: DF.TableMultiSelect[EmploymentTypeItem]
@@ -48,9 +70,11 @@ class VMNotificationCenter(Document):
         title: DF.Data
         ward: DF.TableMultiSelect[WardTable]
     # end: auto-generated types
-    
+
     @frappe.whitelist()
-    def get_party_list(self) -> list[dict[str, any]]:
+    def get_party_list(self, document: dict[str, any]) -> list[dict[str, any]]:
+        print("sssssssssssssssssssssssssssssssss")
+        print(document)
         party_list = frappe.get_all(
             self.party_type,
         )
