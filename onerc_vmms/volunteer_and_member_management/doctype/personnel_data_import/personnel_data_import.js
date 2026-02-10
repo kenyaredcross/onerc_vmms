@@ -359,27 +359,25 @@ frappe.ui.form.on("Personnel Data Import", {
 
 				if (logs.length === 0) return;
 
-				frm.toggle_display("import_log_section", true);
+				frm.toggle_display("import_log_preview", true);
 
 				let rows = logs
 					.map((log) => {
 						let html = "";
 						if (log.success) {
+							const ref_dt = frm.doc.reference_doctype;
+							const link =
+								ref_dt && log.docname
+									? frappe.utils.get_form_link(ref_dt, log.docname, true)
+									: log.docname || __("Unknown Record");
+
 							if (frm.doc.import_type === "Insert New Records") {
 								html = __("Successfully imported {0}", [
-									`<span class="underline">${frappe.utils.get_form_link(
-										frm.doc.reference_doctype,
-										log.docname,
-										true,
-									)}<span>`,
+									`<span class="underline">${link}</span>`,
 								]);
 							} else {
 								html = __("Successfully updated {0}", [
-									`<span class="underline">${frappe.utils.get_form_link(
-										frm.doc.reference_doctype,
-										log.docname,
-										true,
-									)}<span>`,
+									`<span class="underline">${link}</span>`,
 								]);
 							}
 						} else {
@@ -441,7 +439,7 @@ frappe.ui.form.on("Personnel Data Import", {
 	},
 
 	show_import_log(frm) {
-		frm.toggle_display("import_log_section", false);
+		frm.toggle_display("import_log_preview", false);
 
 		if (frm.is_new() || frm.import_in_progress) {
 			return;
@@ -457,10 +455,11 @@ frappe.ui.form.on("Personnel Data Import", {
 			},
 			callback: function (r) {
 				let count = r.message;
-				if (count < 5000) {
+
+				if (count < 50000) {
 					frm.trigger("render_import_log");
 				} else {
-					frm.toggle_display("import_log_section", false);
+					frm.toggle_display("import_log_preview", false);
 					frm.add_custom_button(__("Export Import Log"), () =>
 						frm.trigger("export_import_log"),
 					);
