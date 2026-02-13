@@ -9,6 +9,7 @@
  "engine": "InnoDB",
  "field_order": [
   "import_type",
+  "import_mode",
   "download_template",
   "import_file",
   "payload_count",
@@ -94,7 +95,7 @@
    "fieldtype": "Select",
    "label": "Status",
    "no_copy": 1,
-   "options": "Pending\nSuccess\nPartial Success\nError\nTimed Out"
+   "options": "Pending\nIn Progress\nSuccess\nPartial Success\nError\nTimed Out"
   },
   {
    "default": "0",
@@ -183,12 +184,22 @@
   {
    "fieldname": "total",
    "fieldtype": "Float",
-   "label": "Total"
+   "label": "Total",
+   "read_only": 1
+  },
+  {
+   "default": "Both",
+   "fieldname": "import_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Import Mode",
+   "options": "Both\nEmployee\nUser",
+   "reqd": 1
   }
  ],
  "hide_toolbar": 1,
  "links": [],
- "modified": "2026-02-10 01:46:07.244256",
+ "modified": "2026-02-13 07:34:14.479798",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Data Import",

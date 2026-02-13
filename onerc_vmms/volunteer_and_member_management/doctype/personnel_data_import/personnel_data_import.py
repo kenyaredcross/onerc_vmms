@@ -1,3 +1,4 @@
+import json
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -59,7 +60,54 @@ class PersonnelDataImport(Document):
                 queue="long",
                 timeout=10000 
             )
+            
+@frappe.whitelist()
+def export_errored_rows(name):
+    import json
+    from frappe.utils.csvutils import build_csv_response
 
+    logs = frappe.get_all(
+        "Data Import Log",
+        fields=["log_index", "row_indexes", "messages", "docname", "exception"],
+        filters={
+            "data_import": name,
+            "success": 0  
+        },
+        order_by="log_index asc"
+    )
+
+    if not logs:
+        frappe.throw(_("No error logs found for this import."))
+
+    headers = [
+        _("Excel Row Numbers"), 
+        _("Error Message"), 
+        _("Technical Traceback")
+    ]
+    
+    csv_rows = [headers]
+
+    for log in logs:
+        try:
+            msg_list = json.loads(log.messages or "[]")
+            readable_msg = "; ".join([m.get("message", "") for m in msg_list if m.get("message")])
+        except:
+            readable_msg = log.messages
+
+        try:
+            rows = ", ".join(map(str, json.loads(log.row_indexes or "[]")))
+        except:
+            rows = log.row_indexes
+
+        csv_rows.append([
+            rows,
+            readable_msg,
+            log.exception
+        ])
+
+    build_csv_response(csv_rows, f"Error_Log_{name}")
+
+    
 @frappe.whitelist()
 def execute_import_chunk(data_import_name, start_index, end_index):
     doc = frappe.get_doc("Personnel Data Import", data_import_name)
