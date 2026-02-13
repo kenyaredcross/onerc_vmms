@@ -25,14 +25,14 @@
    "reqd": 1
   },
   {
+   "default": "Kenya Red Cross Society",
    "fieldname": "institution",
    "fieldtype": "Data",
    "in_filter": 1,
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Organization / Institution",
-   "reqd": 1
+   "label": "Organization / Institution"
   },
   {
    "fieldname": "start_date",
@@ -41,8 +41,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Start Date",
-   "reqd": 1
+   "label": "Start Date"
   },
   {
    "fieldname": "date_completed",
@@ -51,8 +50,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Date Completed",
-   "reqd": 1
+   "label": "Date Completed"
   },
   {
    "fieldname": "column_break_jyfw",
@@ -77,7 +75,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-28 16:30:55.821071",
+ "modified": "2026-02-13 09:21:02.879388",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "User External Course",

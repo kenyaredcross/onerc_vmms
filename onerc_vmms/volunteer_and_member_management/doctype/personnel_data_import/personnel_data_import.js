@@ -69,10 +69,12 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 	}
 
 	show_column_mapper() {
-		const emp_opts = this.get_doctype_options("Employee");
-		const user_opts = this.get_doctype_options("User");
+		const emp_opts = [].concat(get_fields_as_options("Employee"));
+		const user_opts = [].concat(get_fields_as_options("User"));
 		const SKIP_VAL = "Don't Import";
 		const skip_option = { label: __(SKIP_VAL), value: SKIP_VAL };
+
+		const mode = this.frm.doc.import_mode || "Both";
 
 		let emp_saved = {},
 			user_saved = {};
@@ -84,52 +86,67 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 				JSON.parse(this.frm.doc.user_template_options || "{}").column_to_field_map || {};
 		} catch (e) {}
 
-		let fields = [
-			{
-				fieldtype: "HTML",
-				options: `<div class="row fw-bold text-muted small uppercase px-2 mb-2" style="border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
-                        <div class="col-4">${__("File Column")}</div>
-                        <div class="col-4">${__("User Mapping")}</div>
-                        <div class="col-4">${__("Employee Mapping")}</div>
-                      </div>`,
-			},
-		];
+		let column_width = mode === "Both" ? "col-4" : "col-6";
+		let field_width = mode === "Both" ? "33%" : "50%";
+
+		let header_html = `<div class="row fw-bold text-muted small uppercase px-2 mb-2" style="border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
+						<div class="${column_width}">${__("File Column")}</div>`;
+
+		if (mode === "User" || mode === "Both") {
+			header_html += `<div class="${column_width}">${__("User Mapping")}</div>`;
+		}
+		if (mode === "Employee" || mode === "Both") {
+			header_html += `<div class="${column_width}">${__("Employee Mapping")}</div>`;
+		}
+		header_html += `</div>`;
+
+		let fields = [{ fieldtype: "HTML", options: header_html }];
 
 		this.preview_data.columns.forEach((col, i) => {
 			const header = col.header_title;
 			if (header === "Sr. No") return;
 
-			const current_user =
-				user_saved[header] || this.find_best_match(header, user_opts) || SKIP_VAL;
-			const current_emp =
-				emp_saved[header] || this.find_best_match(header, emp_opts) || SKIP_VAL;
+			fields.push({ fieldtype: "Section Break", fieldname: `sb_${i}` });
 
 			fields.push(
-				{ fieldtype: "Section Break", fieldname: `sb_${i}` },
-				{ fieldtype: "Column Break", width: "33%" },
+				{ fieldtype: "Column Break", width: field_width },
 				{
 					fieldtype: "HTML",
 					options: `<div style="padding-top: 8px; font-weight: bold; font-size: 12px;">${header}</div>`,
 				},
-				{ fieldtype: "Column Break", width: "33%" },
-				{
-					fieldname: `user_map_${i}`,
-					fieldtype: "Autocomplete",
-					options: [skip_option].concat(user_opts),
-					default: current_user,
-				},
-				{ fieldtype: "Column Break", width: "33%" },
-				{
-					fieldname: `emp_map_${i}`,
-					fieldtype: "Autocomplete",
-					options: [skip_option].concat(emp_opts),
-					default: current_emp,
-				},
 			);
+
+			if (mode === "User" || mode === "Both") {
+				const current_user =
+					user_saved[header] || this.find_best_match(header, user_opts) || SKIP_VAL;
+				fields.push(
+					{ fieldtype: "Column Break", width: field_width },
+					{
+						fieldname: `user_map_${i}`,
+						fieldtype: "Autocomplete",
+						options: [skip_option].concat(user_opts),
+						default: current_user,
+					},
+				);
+			}
+
+			if (mode === "Employee" || mode === "Both") {
+				const current_emp =
+					emp_saved[header] || this.find_best_match(header, emp_opts) || SKIP_VAL;
+				fields.push(
+					{ fieldtype: "Column Break", width: field_width },
+					{
+						fieldname: `emp_map_${i}`,
+						fieldtype: "Autocomplete",
+						options: [skip_option].concat(emp_opts),
+						default: current_emp,
+					},
+				);
+			}
 		});
 
 		let dialog = new frappe.ui.Dialog({
-			title: __("Map Personnel Data Fields"),
+			title: __("Map Personnel Data Fields ({0})", [mode]),
 			fields: fields,
 			size: "large",
 			primary_action: (values) => {
@@ -138,8 +155,13 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 				this.preview_data.columns.forEach((col, i) => {
 					const header = col.header_title;
 					if (header === "Sr. No") return;
-					u_map[header] = values[`user_map_${i}`] || SKIP_VAL;
-					e_map[header] = values[`emp_map_${i}`] || SKIP_VAL;
+
+					if (mode === "User" || mode === "Both") {
+						u_map[header] = values[`user_map_${i}`] || SKIP_VAL;
+					}
+					if (mode === "Employee" || mode === "Both") {
+						e_map[header] = values[`emp_map_${i}`] || SKIP_VAL;
+					}
 				});
 				this.events.remap_columns(e_map, u_map);
 				dialog.hide();
@@ -176,6 +198,78 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 	}
 };
 
+function get_columns_for_picker(doctype) {
+	let out = {};
+
+	const exportable_fields = (df) => {
+		let keep = true;
+		if (frappe.model.no_value_type.includes(df.fieldtype)) {
+			keep = false;
+		}
+		if (["lft", "rgt"].includes(df.fieldname)) {
+			keep = false;
+		}
+		if (df.is_virtual) {
+			keep = false;
+		}
+		return keep;
+	};
+
+	let doctype_fields = frappe.meta.get_docfields(doctype).filter(exportable_fields);
+
+	out[doctype] = [
+		{
+			label: __("ID"),
+			fieldname: "name",
+			fieldtype: "Data",
+			reqd: 1,
+		},
+	].concat(doctype_fields);
+
+	const table_fields = frappe.meta.get_table_fields(doctype);
+	table_fields.forEach((df) => {
+		const cdt = df.options;
+		const child_table_fields = frappe.meta.get_docfields(cdt).filter(exportable_fields);
+
+		out[df.fieldname] = [
+			{
+				label: __("ID"),
+				fieldname: "name",
+				fieldtype: "Data",
+				reqd: 1,
+			},
+		].concat(child_table_fields);
+	});
+
+	return out;
+}
+
+function get_fields_as_options(doctype) {
+	const column_map = get_columns_for_picker(doctype);
+	let keys = [doctype];
+	frappe.meta.get_table_fields(doctype).forEach((df) => {
+		keys.push(df.fieldname);
+	});
+	return [].concat(
+		...keys.map((key) => {
+			return column_map[key].map((df) => {
+				let label = __(df.label, null, df.parent);
+				let value = df.fieldname;
+				if (doctype !== key) {
+					let table_field = frappe.meta.get_docfield(doctype, key);
+					label = `${__(df.label, null, df.parent)} (${__(table_field.label)})`;
+					value = `${table_field.fieldname}.${df.fieldname}`;
+				}
+				return {
+					label,
+					value,
+					description: value,
+				};
+			});
+		}),
+	);
+}
+
 frappe.ui.form.on("Personnel Data Import", {
 	refresh(frm) {
 		frm.trigger("update_indicators");
@@ -183,6 +277,7 @@ frappe.ui.form.on("Personnel Data Import", {
 		frm.trigger("update_primary_action");
 		frm.trigger("show_import_log");
 		frm.trigger("show_import_warnings");
+
 		frappe.realtime.on("data_import_refresh", function (data) {
 			if (data.data_import === frm.doc.name) {
 				frm.reload_doc();
@@ -201,12 +296,17 @@ frappe.ui.form.on("Personnel Data Import", {
 		});
 	},
 
+	import_mode(frm) {
+		if (frm.doc.import_file) {
+			frm.trigger("import_file");
+		}
+	},
+
 	update_primary_action(frm) {
 		if (frm.is_dirty()) {
 			frm.enable_save();
 			return;
 		}
-		// frm.disable_save();
 
 		if (frm.doc.status === "In Progress") {
 			frm.page.clear_primary_action();
@@ -241,28 +341,31 @@ frappe.ui.form.on("Personnel Data Import", {
 			doc: frm.doc,
 		}).then((r) => {
 			if (r.message) {
-				frm.get_field("import_preview").$wrapper.empty();
-				let $container = $('<div class="unified-preview-container"></div>').appendTo(
-					frm.get_field("import_preview").$wrapper,
-				);
-				frm.import_preview = new onerc_vmms.data_import.ImportPreview({
-					wrapper: $container,
-					preview_data: r.message,
-					frm: frm,
-					events: {
-						remap_columns: (emp_map, user_map) => {
-							frm.set_value(
-								"employee_template_options",
-								JSON.stringify({ column_to_field_map: emp_map }),
-							);
-							frm.set_value(
-								"user_template_options",
-								JSON.stringify({ column_to_field_map: user_map }),
-							);
-							frm.save().then(() => frm.trigger("import_file"));
+				const field = frm.get_field("import_preview");
+				if (field) {
+					field.$wrapper.empty();
+					let $container = $('<div class="unified-preview-container"></div>').appendTo(
+						field.$wrapper,
+					);
+					frm.import_preview = new onerc_vmms.data_import.ImportPreview({
+						wrapper: $container,
+						preview_data: r.message,
+						frm: frm,
+						events: {
+							remap_columns: (emp_map, user_map) => {
+								frm.set_value(
+									"employee_template_options",
+									JSON.stringify({ column_to_field_map: emp_map }),
+								);
+								frm.set_value(
+									"user_template_options",
+									JSON.stringify({ column_to_field_map: user_map }),
+								);
+								frm.save().then(() => frm.trigger("import_file"));
+							},
 						},
-					},
-				});
+					});
+				}
 			}
 		});
 	},
@@ -273,6 +376,7 @@ frappe.ui.form.on("Personnel Data Import", {
 	},
 
 	show_import_warnings(frm, preview_data) {
+		if (!preview_data) return;
 		let columns = preview_data.columns;
 		let warnings = JSON.parse(frm.doc.template_warnings || "[]");
 		warnings = warnings.concat(preview_data.warnings || []);
@@ -294,8 +398,7 @@ frappe.ui.form.on("Personnel Data Import", {
 			}
 		}
 
-		let html = "";
-		html += Object.keys(warnings_by_row)
+		let html = Object.keys(warnings_by_row)
 			.map((row_number) => {
 				let message = warnings_by_row[row_number]
 					.map((w) => {
@@ -310,12 +413,10 @@ frappe.ui.form.on("Personnel Data Import", {
 						return `<li>${w.message}</li>`;
 					})
 					.join("");
-				return `
-                <div class="warning" data-row="${row_number}">
-                    <h5 class="text-uppercase">${__("Row {0}", [row_number])}</h5>
-                    <div class="body"><ul>${message}</ul></div>
-                </div>
-            `;
+				return `<div class="warning" data-row="${row_number}">
+							<h5 class="text-uppercase">${__("Row {0}", [row_number])}</h5>
+							<div class="body"><ul>${message}</ul></div>
+						</div>`;
 			})
 			.join("");
 
@@ -323,25 +424,20 @@ frappe.ui.form.on("Personnel Data Import", {
 			.map((warning) => {
 				let header = "";
 				if (columns && warning.col) {
-					let column_number = `<span class="text-uppercase">${__("Column {0}", [
-						warning.col,
-					])}</span>`;
+					let column_number = `<span class="text-uppercase">${__("Column {0}", [warning.col])}</span>`;
 					let column_header = columns[warning.col].header_title;
 					header = `${column_number} (${column_header})`;
 				}
-				return `
-                    <div class="warning" data-col="${warning.col}">
-                        <h5>${header}</h5>
-                        <div class="body">${warning.message}</div>
-                    </div>
-                `;
+				return `<div class="warning" data-col="${warning.col}">
+							<h5>${header}</h5>
+							<div class="body">${warning.message}</div>
+						</div>`;
 			})
 			.join("");
-		frm.get_field("import_warnings").$wrapper.html(`
-            <div class="row">
-                <div class="col-sm-10 warnings">${html}</div>
-            </div>
-        `);
+
+		frm.get_field("import_warnings").$wrapper.html(
+			`<div class="row"><div class="col-sm-10 warnings">${html}</div></div>`,
+		);
 	},
 
 	show_failed_logs(frm) {
@@ -351,15 +447,26 @@ frappe.ui.form.on("Personnel Data Import", {
 	render_import_log(frm) {
 		frappe.call({
 			method: "onerc_vmms.volunteer_and_member_management.doctype.personnel_data_import.personnel_data_import.get_import_logs",
-			args: {
-				data_import: frm.doc.name,
-			},
+			args: { data_import: frm.doc.name },
 			callback: function (r) {
 				let logs = r.message;
-
-				if (logs.length === 0) return;
-
+				if (!logs || logs.length === 0) return;
 				frm.toggle_display("import_log_preview", true);
+
+				if (logs.some((log) => log.success === 0)) {
+					frm.add_custom_button(
+						__("Export Errored Rows"),
+						() => {
+							const method =
+								"onerc_vmms.volunteer_and_member_management.doctype.personnel_data_import.personnel_data_import.export_errored_rows";
+							window.open(
+								`${frappe.request.url}?cmd=${method}&name=${frm.doc.name}`,
+								"_blank",
+							);
+						},
+						__("Actions"),
+					);
+				}
 
 				let rows = logs
 					.map((log) => {
@@ -370,96 +477,67 @@ frappe.ui.form.on("Personnel Data Import", {
 								ref_dt && log.docname
 									? frappe.utils.get_form_link(ref_dt, log.docname, true)
 									: log.docname || __("Unknown Record");
-
-							if (frm.doc.import_type === "Insert New Records") {
-								html = __("Successfully imported {0}", [
-									`<span class="underline">${link}</span>`,
-								]);
-							} else {
-								html = __("Successfully updated {0}", [
-									`<span class="underline">${link}</span>`,
-								]);
-							}
+							html = __("Successfully processed {0}", [
+								`<span class="underline">${link}</span>`,
+							]);
 						} else {
 							let messages = JSON.parse(log.messages || "[]")
 								.map((m) => {
-									let title = m.title ? `<strong>${m.title}</strong>` : "";
-									let message = m.message ? `<div>${m.message}</div>` : "";
-									return title + message;
+									return (
+										(m.title ? `<strong>${m.title}</strong>` : "") +
+										(m.message ? `<div>${m.message}</div>` : "")
+									);
 								})
 								.join("");
 							let id = frappe.dom.get_unique_id();
 							html = `${messages}
-                                <button class="btn btn-default btn-xs" type="button" data-toggle="collapse" data-target="#${id}" aria-expanded="false" aria-controls="${id}" style="margin-top: 15px;">
-                                    ${__("Show Traceback")}
-                                </button>
-                                <div class="collapse" id="${id}" style="margin-top: 15px;">
-                                    <div class="well">
-                                        <pre>${log.exception}</pre>
-                                    </div>
-                                </div>`;
+								<button class="btn btn-default btn-xs" type="button" data-toggle="collapse" data-target="#${id}" aria-expanded="false" style="margin-top: 15px;">
+									${__("Show Traceback")}
+								</button>
+								<div class="collapse" id="${id}" style="margin-top: 15px;">
+									<div class="well"><pre>${log.exception}</pre></div>
+								</div>`;
 						}
-						let indicator_color = log.success ? "green" : "red";
-						let title = log.success ? __("Success") : __("Failure");
 
-						if (frm.doc.show_failed_logs && log.success) {
-							return "";
-						}
+						if (frm.doc.show_failed_logs && log.success) return "";
 
 						return `<tr>
-                            <td>${JSON.parse(log.row_indexes).join(", ")}</td>
-                            <td>
-                                <div class="indicator ${indicator_color}">${title}</div>
-                            </td>
-                            <td>
-                                ${html}
-                            </td>
-                        </tr>`;
+							<td>${JSON.parse(log.row_indexes).join(", ")}</td>
+							<td><div class="indicator ${log.success ? "green" : "red"}">${log.success ? __("Success") : __("Failure")}</div></td>
+							<td>${html}</td>
+						</tr>`;
 					})
 					.join("");
 
 				if (!rows && frm.doc.show_failed_logs) {
-					rows = `<tr><td class="text-center text-muted" colspan=3>
-                        ${__("No failed logs")}
-                    </td></tr>`;
+					rows = `<tr><td class="text-center text-muted" colspan=3>${__("No failed logs")}</td></tr>`;
 				}
 
 				frm.get_field("import_log_preview").$wrapper.html(`
-                    <table class="table table-bordered">
-                        <tr class="text-muted">
-                            <th width="10%">${__("Row Number")}</th>
-                            <th width="10%">${__("Status")}</th>
-                            <th width="80%">${__("Message")}</th>
-                        </tr>
-                        ${rows}
-                    </table>
-                `);
+					<table class="table table-bordered">
+						<tr class="text-muted">
+							<th width="10%">${__("Row Number")}</th>
+							<th width="10%">${__("Status")}</th>
+							<th width="80%">${__("Message")}</th>
+						</tr>
+						${rows}
+					</table>
+				`);
 			},
 		});
 	},
 
 	show_import_log(frm) {
 		frm.toggle_display("import_log_preview", false);
-
-		if (frm.is_new() || frm.import_in_progress) {
-			return;
-		}
+		if (frm.is_new() || frm.import_in_progress) return;
 
 		frappe.call({
 			method: "frappe.client.get_count",
-			args: {
-				doctype: "Data Import Log",
-				filters: {
-					data_import: frm.doc.name,
-				},
-			},
+			args: { doctype: "Data Import Log", filters: { data_import: frm.doc.name } },
 			callback: function (r) {
-				let count = r.message;
-
-				if (count < 50000) {
+				if (r.message < 50000) {
 					frm.trigger("render_import_log");
 				} else {
-					frm.toggle_display("import_log_preview", false);
 					frm.add_custom_button(__("Export Import Log"), () =>
 						frm.trigger("export_import_log"),
 					);

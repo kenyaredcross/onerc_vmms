@@ -178,6 +178,9 @@ doc_events = {
         "on_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.on_submit",
         "validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.validate",
     },
+    "Language": {
+        "before_naming": "onerc_vmms.volunteer_and_member_management.overrides.server.language.before_validate"
+    },
 }
 
 # Scheduled Tasks
