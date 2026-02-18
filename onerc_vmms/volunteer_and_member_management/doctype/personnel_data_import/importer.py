@@ -108,7 +108,7 @@ class PersonnelDataImporter:
                     return existing_by_title
             new_doc = frappe.new_doc(target_doctype)
             new_doc.set(title_field or "name", value)
-            new_doc.insert(ignore_permissions=True, ignore_mandatory=True, ignore_validate=True)
+            new_doc.insert(ignore_permissions=True, ignore_mandatory=True)
             return new_doc.name
         return value
 
@@ -176,6 +176,7 @@ class PersonnelDataImporter:
                     "doctype": config["doctype"],
                     "name": frappe.generate_hash(length=10)
                 })
+                frappe.flags.in_import = True
                 frappe.get_doc(row_data).insert(
                     ignore_permissions=True, 
                     ignore_links=True,
@@ -229,6 +230,7 @@ class PersonnelDataImporter:
             return False
 
     def upsert_user_base(self, data):
+        frappe.flags.in_import = True
         u = frappe.new_doc("User")
         u.update(data)
         if not u.first_name: u.first_name = data.get("email").split('@')[0]
@@ -238,6 +240,7 @@ class PersonnelDataImporter:
         return u.name
 
     def create_doc_base(self, doctype, data):
+        frappe.flags.in_import = True
         d = frappe.new_doc(doctype)
         d.update(data)
         d.insert(ignore_permissions=True)
