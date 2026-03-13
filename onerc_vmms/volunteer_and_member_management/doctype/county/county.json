@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:county_name",
  "creation": "2025-09-30 11:50:36.318049",
@@ -20,17 +21,23 @@
  "index_web_pages_for_search": 1,
  "links": [
   {
-   "group": "Sub Counties",
    "link_doctype": "Sub County",
    "link_fieldname": "county"
   },
   {
-   "group": "Locations",
    "link_doctype": "Administrative Location",
+   "link_fieldname": "county"
+  },
+  {
+   "link_doctype": "Sub Location",
+   "link_fieldname": "county"
+  },
+  {
+   "link_doctype": "Ward",
    "link_fieldname": "county"
   }
  ],
- "modified": "2025-10-28 16:31:01.497230",
+ "modified": "2026-03-13 03:21:03.742341",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "County",
