@@ -331,11 +331,11 @@
  "sequence_id": 51.0,
  "shortcuts": [
   {
-   "color": "Grey",
+   "color": "Green",
    "doc_view": "List",
    "label": "Volunteer Applicant",
    "link_to": "Job Applicant",
-   "stats_filter": "[[\"Job Applicant\",\"is_volunteer\",\"=\",1,false]]",
+   "stats_filter": "[[\"Job Applicant\",\"is_volunteer\",\"=\",1,false],[\"Job Applicant\",\"docstatus\",\"=\",\"1\",false]]",
    "type": "DocType"
   },
   {
@@ -344,6 +344,14 @@
    "label": "Open Portal",
    "type": "URL",
    "url": "/vmms"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "Job Applicant",
+   "link_to": "Job Applicant",
+   "stats_filter": "[[\"Job Applicant\",\"is_volunteer\",\"=\",0,false],[\"Job Applicant\",\"docstatus\",\"=\",\"1\",false]]",
+   "type": "DocType"
   },
   {
    "color": "Grey",
@@ -366,14 +374,6 @@
    "label": "Volunteers",
    "link_to": "Employee",
    "stats_filter": "[[\"Employee\",\"is_volunteer\",\"=\",1,false]]",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Job Applicant",
-   "link_to": "Job Applicant",
-   "stats_filter": "[[\"Job Applicant\",\"is_volunteer\",\"=\",0,false]]",
    "type": "DocType"
   }
  ],
