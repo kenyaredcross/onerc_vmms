@@ -124,24 +124,32 @@ def get_user_info():
 
     employee_name = employee_company = None
     employee_is_volunteer = False
-
+    employee = None
     if frappe.db.exists("Employee", {"user_id": user.name, "status": "Active"}):
-
         employee = frappe.db.get_value(
             "Employee",
-            {"user_id": user.name},
+            {"user_id": user.name, "status": "Active"},
             ["name", "company", "is_volunteer"],
             as_dict=True,
         )
-        if employee:
+    elif vol_applicant and frappe.db.exists(
+        "Employee", {"job_applicant": vol_applicant.get("name"), "status": "Active"}
+    ):
+        employee = frappe.db.get_value(
+            "Employee",
+            {"job_applicant": vol_applicant.get("name"), "status": "Active"},
+            ["name", "company", "is_volunteer"],
+            as_dict=True,
+        )
+    if employee:
 
-            employee_name = employee.get("name")
-            employee_company = employee.get("company")
-            employee_is_volunteer = True if employee.get("is_volunteer") else False
+        employee_name = employee.get("name")
+        employee_company = employee.get("company")
+        employee_is_volunteer = True if employee.get("is_volunteer") else False
 
-        user["employee"] = employee_name if employee_name else None
-        user["company"] = employee_company if employee_company else None
-        user["is_volunteer"] = employee_is_volunteer
+    user["employee"] = employee_name if employee_name else None
+    user["company"] = employee_company if employee_company else None
+    user["is_volunteer"] = employee_is_volunteer
 
     if frappe.db.exists("VM Member", {"email_id": user.email}):
         member = frappe.db.get_value(

@@ -58,7 +58,9 @@ doctype_js = {
     "Interview Round": "volunteer_and_member_management/overrides/client/interview_round.js",
 }
 
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {
+    "Job Applicant": "volunteer_and_member_management/overrides/client/job_applicant_list.js"
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -180,6 +182,9 @@ doc_events = {
     },
     "Language": {
         "before_naming": "onerc_vmms.volunteer_and_member_management.overrides.server.language.before_validate"
+    },
+    "User": {
+        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.user.on_update"
     },
 }
 

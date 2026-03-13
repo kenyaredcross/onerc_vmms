@@ -20,9 +20,10 @@
 				<ReviewField label="Blood Group" :value="form.blood_group" />
 				<ReviewField label="KRCS Insurance" :value="form.has_insurance" />
 
+				<ReviewField label="Ward" :value="form.ward" />
 				<ReviewField label="Sub County" :value="form.sub_county" />
 				<ReviewField label="Location" :value="form.administrative_location" />
-				<ReviewField label="Ward" :value="form.ward" />
+				<ReviewField label="Sub Location" :value="form.sub_location" />
 				<ReviewField label="County of Residence" :value="form.county" />
 
 				<ReviewField label="Citizenship" :value="form.citizenship" />

@@ -10,7 +10,6 @@
  "field_order": [
   "sub_location_name",
   "location",
-  "division",
   "column_break_hzyp",
   "county",
   "sub_county"
@@ -22,7 +21,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Sub County",
-   "options": "Sub County"
+   "options": "Sub County",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_hzyp",
@@ -33,7 +33,8 @@
    "fieldname": "county",
    "fieldtype": "Link",
    "label": "County",
-   "options": "County"
+   "options": "County",
+   "search_index": 1
   },
   {
    "fieldname": "sub_location_name",
@@ -46,21 +47,13 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Location",
-   "options": "Administrative Location",
-   "reqd": 1
-  },
-  {
-   "fetch_from": "location.division",
-   "fieldname": "division",
-   "fieldtype": "Link",
-   "label": "DIvision",
-   "options": "Administrative Division"
+   "options": "Administrative Location"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-09 12:00:19.208998",
+ "modified": "2026-03-12 14:23:26.200182",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Sub Location",

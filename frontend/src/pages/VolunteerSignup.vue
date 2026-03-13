@@ -213,6 +213,7 @@ const NORMAL_FIELDS = [
 	"citizenship",
 	"country_of_citizenship",
 	"administrative_location",
+	"sub_location",
 	"sub_county",
 	"county",
 	"access_to_internet",

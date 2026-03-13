@@ -99,13 +99,25 @@
 						:label="__('Sub County')"
 						:filters="{ county: localForm.county }"
 					/>
-					<Link doctype="Ward" v-model="localForm.ward" :label="__('Ward')" />
+					<Link
+						doctype="Ward"
+						v-model="localForm.ward"
+						:label="__('Ward')"
+						:filters="{ sub_county: localForm.sub_county }"
+					/>
 					<Link
 						v-if="localForm.sub_county"
 						doctype="Administrative Location"
 						v-model="localForm.administrative_location"
 						:label="__('Location')"
 						:filters="{ sub_county: localForm.sub_county }"
+					/>
+					<Link
+						v-if="localForm.administrative_location"
+						doctype="Sub Location"
+						v-model="localForm.sub_location"
+						:label="__('Sub Location')"
+						:filters="{ location: localForm.administrative_location }"
 					/>
 					<FormControl
 						v-model="localForm.access_to_internet"
@@ -227,6 +239,7 @@ const localForm = reactive({
 	sub_county: "",
 	ward: "",
 	administrative_location: "",
+	sub_location: "",
 	access_to_internet: "",
 	mobile_no: "",
 	gender: "",
@@ -395,6 +408,7 @@ watch(
 		localForm.sub_county = null;
 		localForm.administrative_location = null;
 		localForm.ward = null;
+		localForm.sub_location = null;
 	},
 );
 
@@ -402,6 +416,15 @@ watch(
 	() => localForm.sub_county,
 	() => {
 		localForm.administrative_location = null;
+		localForm.ward = null;
+		localForm.sub_location = null;
+	},
+);
+
+watch(
+	() => localForm.administrative_location,
+	() => {
+		localForm.sub_location = null;
 	},
 );
 

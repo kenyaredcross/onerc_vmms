@@ -1571,7 +1571,7 @@
       "insert_after": "asset_received_but_not_billed",
       "is_system_generated": 1,
       "is_virtual": 0,
-      "label": "Non Profit Settings",
+      "label": "VM Settings",
       "length": 0,
       "link_filters": null,
       "mandatory_depends_on": null,

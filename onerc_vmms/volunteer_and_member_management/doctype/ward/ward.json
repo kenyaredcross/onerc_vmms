@@ -1,12 +1,14 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "prompt",
  "creation": "2025-10-24 12:31:53.679021",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "county"
+  "county",
+  "sub_county"
  ],
  "fields": [
   {
@@ -16,12 +18,18 @@
    "label": "County",
    "options": "County",
    "reqd": 1
+  },
+  {
+   "fieldname": "sub_county",
+   "fieldtype": "Link",
+   "label": "Sub County",
+   "options": "Sub County"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-28 16:30:36.591600",
+ "modified": "2026-03-13 03:39:09.284519",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Ward",

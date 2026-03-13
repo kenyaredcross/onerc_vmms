@@ -124,7 +124,8 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Expected Answer"
+   "label": "Expected Answer",
+   "mandatory_depends_on": "eval: doc.is_knock_off"
   },
   {
    "fieldname": "dependency_logic_section",
@@ -152,7 +153,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-28 16:30:32.638464",
+ "modified": "2026-03-13 02:34:18.835880",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Job Application Screening Questions",

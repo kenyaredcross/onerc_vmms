@@ -160,7 +160,7 @@
 					:label="__('Ward')"
 					doctype="Ward"
 					:required="true"
-					:filters="localModel.company ? { county: localModel.company } : {}"
+					:filters="localModel.sub_county ? { sub_county: localModel.sub_county } : {}"
 				/>
 				<p v-if="errors[0]?.['Ward']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Ward"] }}
@@ -177,6 +177,23 @@
 				/>
 				<p v-if="errors[0]?.['Location']" class="text-sm text-red-600 mt-1">
 					{{ errors[0]?.["Location"] }}
+				</p>
+			</div>
+
+			<div>
+				<Link
+					v-model="localModel.sub_location"
+					:label="__('Sub Location')"
+					doctype="Sub Location"
+					:required="true"
+					:filters="
+						localModel.administrative_location
+							? { location: localModel.administrative_location }
+							: {}
+					"
+				/>
+				<p v-if="errors[0]?.['Sub Location']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["Sub Location"] }}
 				</p>
 			</div>
 		</div>
@@ -320,6 +337,7 @@ function validateForm() {
 	if (!form.gender) stepErrors[0]["Gender"] = "Gender is required";
 	if (!form.sub_county) stepErrors[0]["Sub County"] = "This field is required";
 	if (!form.administrative_location) stepErrors[0]["Location"] = "This field is required";
+	if (!form.sub_location) stepErrors[0]["Sub Location"] = "This field is required";
 	if (!form.ward) stepErrors[0]["Ward"] = "Ward is required";
 	if (!form.citizenship) stepErrors[0]["Citizenship"] = "This field is required";
 	if (!form.identification_type)
@@ -428,6 +446,7 @@ watch(
 			localModel.value.sub_county = "";
 			localModel.value.ward = "";
 			localModel.value.administrative_location = "";
+			localModel.value.sub_location = "";
 		}
 	},
 );
@@ -437,6 +456,17 @@ watch(
 	(newVal, oldVal) => {
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.administrative_location = "";
+			localModel.value.sub_location = "";
+			localModel.value.ward = "";
+		}
+	},
+);
+
+watch(
+	() => localModel.value.administrative_location,
+	(newVal, oldVal) => {
+		if (ready.value && oldVal !== newVal) {
+			localModel.value.sub_location = "";
 		}
 	},
 );
