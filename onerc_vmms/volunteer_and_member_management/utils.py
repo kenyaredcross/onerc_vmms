@@ -66,7 +66,7 @@ def get_dates_for_day_of_week(start_date, end_date, day_name):
 
 @frappe.whitelist()
 def get_interviewers():
-    settings = frappe.get_single("Non Profit Settings")
+    settings = frappe.get_single("VM Settings")
     allowed_roles = [r.role for r in settings.interview_roles]
 
     if not allowed_roles:
