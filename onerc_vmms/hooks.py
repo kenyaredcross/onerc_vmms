@@ -181,6 +181,9 @@ doc_events = {
     "Language": {
         "before_naming": "onerc_vmms.volunteer_and_member_management.overrides.server.language.before_validate"
     },
+    "User": {
+        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.user.on_update"
+    },
 }
 
 # Scheduled Tasks

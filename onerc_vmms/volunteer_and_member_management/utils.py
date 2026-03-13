@@ -431,3 +431,11 @@ def download_pdf(
     )
     frappe.local.response.filecontent = pdf_file
     frappe.local.response.type = "pdf"
+
+
+def disable_energy_point_email_notifications(user):
+    notification_settings = frappe.get_doc("Notification Settings", user)
+
+    if notification_settings.enable_email_energy_point:
+        notification_settings.enable_email_energy_point = 0
+        notification_settings.save(ignore_permissions=True)

@@ -31,6 +31,8 @@
   "send_rejection_email_immediately",
   "notify_unshortlisted_applicants_after",
   "rejection_email_template",
+  "notifications_section",
+  "disable_energy_point_email_notifications",
   "section_break_27",
   "creation_user",
   "branding_tab",
@@ -232,13 +234,24 @@
    "fieldname": "send_rejection_email_immediately",
    "fieldtype": "Check",
    "label": "Send Rejection Email Immediately"
+  },
+  {
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_energy_point_email_notifications",
+   "fieldtype": "Check",
+   "label": "Disable Energy Point Email Notifications"
   }
  ],
  "image_field": "logo",
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-11-07 18:23:49.487765",
+ "modified": "2026-03-13 04:18:54.703737",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Settings",
