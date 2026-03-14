@@ -1,7 +1,7 @@
 import { initSocket } from "../socket";
 
-export class PaymentListener {
-  private TOKEN_KEY = "pt_ticket";
+class PaymentListener {
+  private MEMBERSHIP_PAYMENT_KEY = "mp_token";
   private SOCKET_EVENT = "stk_payment_complete";
   private expectedToken = "";
 
@@ -10,28 +10,29 @@ export class PaymentListener {
   }
 
   saveToken(token: string) {
-    sessionStorage.setItem(this.TOKEN_KEY, token);
+    sessionStorage.setItem(this.MEMBERSHIP_PAYMENT_KEY, token);
     this.expectedToken = token;
   }
 
   private getToken(): void {
-    this.expectedToken = sessionStorage.getItem(this.TOKEN_KEY) || "";
+    this.expectedToken =
+      sessionStorage.getItem(this.MEMBERSHIP_PAYMENT_KEY) || "";
   }
 
   private clearToken(): void {
-    sessionStorage.removeItem(this.TOKEN_KEY);
+    sessionStorage.removeItem(this.MEMBERSHIP_PAYMENT_KEY);
   }
 
   listenForPayment(): Promise<string> {
-    const socket = initSocket();
+    const $socket = initSocket();
 
     return new Promise((resolve) => {
-      socket.on(this.SOCKET_EVENT, (data) => {
+      $socket.on(this.SOCKET_EVENT, (data) => {
         if (data?.expected_token === this.expectedToken) {
           const status = data.status;
 
           this.clearToken();
-          socket.off(this.SOCKET_EVENT);
+          $socket.off(this.SOCKET_EVENT);
 
           resolve(status);
         }
@@ -39,3 +40,5 @@ export class PaymentListener {
     });
   }
 }
+
+export const paymentListener = new PaymentListener();

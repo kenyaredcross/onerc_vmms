@@ -2,8 +2,10 @@ from datetime import datetime
 
 import frappe
 from frappe import _
-from frappe.utils import add_to_date
+from frappe.utils import add_to_date, get_fullname
 from ..api.user import get_user_details
+from frappe.model.document import Document
+from ..utils import log_throw_error
 
 
 @frappe.whitelist(allow_guest=True)
@@ -142,6 +144,21 @@ def confirm_payment(invoice_name: str) -> str:
         frappe.throw(_("Error confirming payment: {0}").format(str(e)))
 
 
+@frappe.whitelist()
+def initiate_membership_registration(
+    phone: str, amount: float, membership_type: str, branch: str
+) -> str:
+
+    try:
+        membership_id = create_membership(phone, amount, membership_type, branch)
+
+        payment_token = initiate_payment(membership_id, phone)
+
+        return payment_token
+    except Exception as e:
+        log_throw_error("Error initiating membership registration")
+
+
 @frappe.whitelist(allow_guest=True)
 def create_membership(
     phone: str,
@@ -149,11 +166,58 @@ def create_membership(
     membership_type: str,
     branch: str,
 ) -> None:
-    age = get_user_details().get("age", 0)
 
     membership_type_doc = frappe.get_doc("VM Membership Type", membership_type)
     if not membership_type_doc:
         frappe.throw(_("Error creating membership"))
+
+    validate_membership_age_eligibility(membership_type_doc)
+
+    try:
+
+        member = frappe.db.exists("VM Member", {"email_id": frappe.session.user})
+        if not member:
+            member = create_member(phone)
+
+        else:
+            member = frappe.get_doc("VM Member", member)
+
+        check_conflicting_memberships(member, branch)
+
+        from_date = datetime.today().date()
+
+        membership = frappe.get_doc(
+            {
+                "doctype": "VM Membership",
+                "member": member.name,
+                "membership_type": membership_type,
+                "amount": amount,
+                "company": branch,
+                "status": "Draft",
+                "from_date": from_date,
+                "to_date": add_to_date(from_date, years=1, days=-1),
+                "member_since_date": from_date,
+            }
+        )
+
+        membership.insert(ignore_permissions=True)
+        return membership.name
+
+    except Exception:
+        log_throw_error("Error creating membership")
+
+
+def initiate_payment(membership_id: str, phone_number: str) -> str:
+    membership = frappe.get_doc("VM Membership", membership_id)
+
+    payment_request, invoice = membership.initiate_payment(phone_number=phone_number)
+
+    return payment_request.payment_token
+
+
+def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
+    age = get_user_details().get("age", 0)
+
     if membership_type_doc.requires_age_requirement:
         if (
             age < membership_type_doc.lower_age_limit
@@ -178,74 +242,41 @@ def create_membership(
                         )
                     )
                 )
-    user = frappe.db.get_value(
-        "User", frappe.session.user, ["full_name"], as_dict=1
-    ).full_name
 
-    try:
-        frappe.db.begin()
 
-        member = frappe.db.exists("VM Member", {"email_id": frappe.session.user})
-        if not member:
-            member = frappe.get_doc(
-                {
-                    "doctype": "VM Member",
-                    "member_name": user,
-                    "email_id": frappe.session.user,
-                    "phone_number": phone,
-                }
+def create_member(phone: str) -> "Document":
+    member = frappe.get_doc(
+        {
+            "doctype": "VM Member",
+            "member_name": get_fullname,
+            "email_id": frappe.session.user,
+            "phone_number": phone,
+        }
+    )
+    member.insert(ignore_permissions=True)
+
+    return member
+
+
+def check_conflicting_memberships(member_doc: "Document", company: str) -> None:
+    membership = frappe.db.get_value(
+        "VM Membership",
+        {
+            "member": member_doc.name,
+            "company": company,
+            "status": ["in", ["Active", "Pending"]],
+        },
+        "status",
+    )
+
+    if membership == "Active":
+        frappe.throw(_("You already have an active membership for this branch."))
+    elif membership == "Pending":
+        frappe.throw(
+            _(
+                "You have a pending membership for this branch. Please complete the payment."
             )
-            member.insert(ignore_permissions=True)
-
-        else:
-            member = frappe.get_doc("VM Member", member)
-
-        if frappe.db.exists(
-            "VM Membership",
-            {"member": member.name, "status": "Active", "company": branch},
-        ):
-            frappe.throw("You already have an active membership for this branch")
-
-        if frappe.db.exists(
-            "VM Membership",
-            {
-                "member": member.name,
-                "status": "Pending",
-                "company": branch,
-            },
-        ):
-            frappe.throw(
-                "You have a pending membership for this branch. Please await approval."
-            )
-
-        from_date = datetime.today().date()
-
-        membership = frappe.get_doc(
-            {
-                "doctype": "VM Membership",
-                "member": member.name,
-                "membership_type": membership_type,
-                "amount": amount,
-                "company": branch,
-                "status": "Draft",
-                "from_date": from_date,
-                "to_date": add_to_date(from_date, years=1, days=-1),
-                "member_since_date": from_date,
-            }
         )
-
-        membership.insert(ignore_permissions=True)
-
-        invoice = renew_membership(id=membership.name, phone_number=phone)
-
-        frappe.db.commit()
-
-        return invoice.name
-
-    except Exception:
-        frappe.db.rollback()
-        frappe.log_error(frappe.get_traceback(), "Error creating membership")
-        frappe.throw("Error creating membership")
 
 
 @frappe.whitelist(allow_guest=True)
