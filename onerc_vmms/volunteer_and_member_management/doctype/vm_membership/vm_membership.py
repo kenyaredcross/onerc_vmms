@@ -19,6 +19,7 @@ from frappe.utils import (
 )
 
 from ..vm_member.vm_member import create_member
+from frappe.utils import random_string
 
 
 class VMMembership(Document):
@@ -395,6 +396,7 @@ def make_payment_request(membership, member, plan, phone_number=None):
                 "currency": membership.currency,
                 "grand_total": membership.amount,
                 "email_to": member.email_id,
+                "payment_token": random_string(16),
                 # "payment_gateway_account": payment_gateway_account,
                 "subject": _("Payment Request for {0} Membership").format(plan.name),
                 "message": _("Please pay {0} {1} to renew your membership.").format(
