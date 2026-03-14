@@ -439,3 +439,8 @@ def disable_energy_point_email_notifications(user):
     if notification_settings.enable_email_energy_point:
         notification_settings.enable_email_energy_point = 0
         notification_settings.save(ignore_permissions=True)
+
+
+def log_throw_error(message: str) -> None:
+    frappe.log_error(title=message, message=frappe.get_traceback())
+    frappe.throw(_(message))
