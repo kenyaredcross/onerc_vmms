@@ -117,6 +117,7 @@
 							placeholder="eg. 0712345678"
 							class="w-full"
 							v-model="membershipForm.phone"
+							required
 						/>
 						<PaymentInfoAlert class="mt-2" v-if="checkSTK" />
 
@@ -127,29 +128,22 @@
 						/>
 						<div class="mt-4 gap-2 flex items-end justify-end">
 							<Button
-								v-if="!confirmPayment"
 								type="submit"
 								variant="solid"
 								theme="green"
-								:loading="createMembership.loading"
+								:loading="createMembership.loading || confirmPayment"
 								class="rounded-lg px-6"
 							>
-								{{ props.is_renew ? "Renew" : "Register" }}
+								{{
+									props.is_renew
+										? "Renew"
+										: confirmPayment
+											? "Processing Payment...."
+											: "Register"
+								}}
 							</Button>
 						</div>
 					</form>
-					<div class="flex items-end justify-end">
-						<Button
-							v-if="confirmPayment"
-							variant="solid"
-							theme="green"
-							class="rounded-lg px-6"
-							@click="checkPayment"
-							:loading="confirmPaymentStatus.loading"
-						>
-							Confirm Payment
-						</Button>
-					</div>
 				</div>
 
 				<PaymentStatus
@@ -174,6 +168,7 @@ import { AlertTriangle } from "lucide-vue-next";
 import router from "../../router";
 import ProgressSpinner from "../Common/ProgressSpinner.vue";
 import PaymentInfoAlert from "../PaymentInfoAlert.vue";
+import { paymentListener } from "../../utils/payment";
 
 const registerDialog = defineModel();
 const branch = ref("");
@@ -225,7 +220,7 @@ const branches = createResource({
 });
 
 const createMembership = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.membership.create_membership",
+	url: "onerc_vmms.volunteer_and_member_management.api.membership.initiate_membership_registration",
 	makeParams() {
 		return { ...membershipForm };
 	},
@@ -242,6 +237,7 @@ function submit() {
 	}
 
 	createMembership.error = "";
+
 	createMembership.submit(
 		{},
 		{
@@ -250,13 +246,26 @@ function submit() {
 				toast.success(
 					"Payment initiated Successfully! You will receive a payment prompt shortly on your phone.",
 				);
-				currentMembership.reload();
 				createMembership.error = "";
-				invoice.value = data;
 				confirmPayment.value = true;
+				initiatePaymentListener(data);
 			},
 		},
 	);
+}
+
+function initiatePaymentListener(data) {
+	paymentListener.saveToken(data);
+	paymentListener.listenForPayment().then((status) => {
+		if (status === "Completed") {
+			handlePaymentStatus();
+		} else {
+			checkSTK.value = false;
+			toast.error("Payment failed or was cancelled. Please try again.");
+		}
+
+		confirmPayment.value = false;
+	});
 }
 
 watch(registerDialog, (isOpen) => {
@@ -268,49 +277,16 @@ watch(registerDialog, (isOpen) => {
 		paymentStatus.value = false;
 		invoice.value = "";
 		props.is_renew = false;
+		checkSTK.value = false;
 	} else {
 		membershipEligibility.fetch();
 		userDetails.fetch();
 	}
 });
 
-const confirmPaymentStatus = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.membership.confirm_payment",
-	makeParams() {
-		return {
-			invoice_name: invoice.value,
-		};
-	},
-});
-
-const checkPayment = () => {
-	if (!invoice.value) {
-		toast.error("Error confirming payment. Please try again.");
-
-		return;
-	}
-
-	confirmPaymentStatus.submit(
-		{},
-		{
-			onSuccess(data) {
-				data === "paid"
-					? handlePaymentStatus()
-					: toast.info(
-							"Payment confirmation pending. Please click 'Confirm Payment' again to verify your transaction status.",
-						);
-			},
-			onError(error) {
-				toast.error("Error confirming payment. Please try again.");
-			},
-		},
-	);
-};
-
 const handlePaymentStatus = () => {
 	toast.success("Payment confirmed! Thank you for your membership.");
 	currentMembership.reload();
-	confirmPayment.value = false;
 	paymentStatus.value = true;
 };
 
