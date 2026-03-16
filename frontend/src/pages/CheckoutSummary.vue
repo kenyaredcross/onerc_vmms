@@ -221,7 +221,7 @@ import { attendeeBooking } from "../utils/booking";
 import TicketCard from "../components/TicketCard.vue";
 import { ref } from "vue";
 import { toast } from "frappe-ui";
-import { PaymentListener } from "../utils/payment";
+import { paymentListener } from "../utils/payment";
 import PaymentStatus from "../components/PaymentStatus.vue";
 import EmptyState from "../components/EmptyState.vue";
 import { registrationResponses } from "../composables/RegistrationQuestions";
@@ -277,7 +277,7 @@ const handlePay = createResource({
 });
 
 function initiatePaymentListener(data) {
-	const paymentInstance = new PaymentListener();
+	const paymentInstance = paymentListener;
 	paymentInstance.saveToken(data.payment_token);
 	paymentInstance.listenForPayment().then((status) => {
 		confirmPaymentStatus.loading = false;
