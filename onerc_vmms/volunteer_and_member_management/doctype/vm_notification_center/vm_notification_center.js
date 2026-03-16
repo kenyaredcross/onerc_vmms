@@ -3,24 +3,56 @@
 
 frappe.ui.form.on("VM Notification Center", {
 	refresh(frm) {
+		frm.trigger("showPartyChild");
+		frm.trigger("fetchParties");
 		initiliasePartyTypeField(frm);
 		branchQuery(frm);
+	},
+
+	showPartyChild(frm) {
+		frm.doc.__islocal
+			? frm.set_df_property("parties", "hidden", 1)
+			: frm.set_df_property("parties", "hidden", 0);
+	},
+	fetchParties(frm) {
+		if (!frm.doc.__islocal) {
+			frm.add_custom_button("Fetch Parties", () => {
+				frappe.dom.freeze("Fetching Parties...");
+				frappe.call({
+					doc: frm.doc,
+					method: "get_party_list",
+					freeze: true,
+					freeze_message: "Fetching Parties...",
+					callback: (r) => {
+						frappe.dom.unfreeze();
+
+						console.log("parties", r);
+
+						frm.clear_table("parties");
+
+						if (r.message && r.message.length) {
+							r.message.forEach((party) => {
+								const child = frm.add_child("parties");
+								child.link_doctype = frm.doc.party_type;
+								child.party_name = party.full_name;
+								child.party = party.name;
+								child.user = party.user_id;
+								child.phone = party.phone;
+							});
+							frm.refresh_field("parties");
+							frm.save();
+						}
+					},
+				});
+				frappe.dom.unfreeze();
+			});
+		}
 	},
 
 	party_type(frm) {
 		initialiseRegionField(frm);
 	},
 	personnel_type(frm) {},
-
-	get_party_list: (frm) => {
-		frm.call({
-			method: "get_party_list",
-			doc: frm.doc,
-			args: { document: frm.doc },
-		}).then((r) => {
-			console.log("parties", r);
-		});
-	},
 
 	buildFilterPayload: (filters) => {
 		const payload = [];
