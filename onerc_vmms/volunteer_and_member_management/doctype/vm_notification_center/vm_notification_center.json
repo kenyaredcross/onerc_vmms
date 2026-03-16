@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:title",
  "creation": "2025-12-02 10:12:12.023801",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,8 +12,10 @@
   "short_description",
   "column_break_bubb",
   "party_type",
-  "company",
-  "fetch_party_list",
+  "personnel_specific_type",
+  "communication_channel",
+  "section_break_ktij",
+  "message",
   "personnel_filters_section",
   "affiliation_column",
   "region",
@@ -20,11 +23,6 @@
   "department",
   "personnel_type",
   "designation",
-  "column_break_fazy",
-  "county",
-  "sub_county",
-  "ward",
-  "administrative_location",
   "column_break_fmip",
   "courses",
   "skills",
@@ -35,7 +33,10 @@
   "membership_status",
   "column_break_zyer",
   "membership_region",
-  "membership_branch"
+  "membership_branch",
+  "party_list_tab",
+  "parties_section",
+  "parties"
  ],
  "fields": [
   {
@@ -59,10 +60,11 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Title",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
-   "description": "A brief summary of the notification's purpose and conent.",
+   "description": "A brief summary of the notification's purpose.",
    "fieldname": "short_description",
    "fieldtype": "Small Text",
    "label": "Short Description"
@@ -79,14 +81,6 @@
    "label": "Party Type",
    "options": "DocType",
    "reqd": 1
-  },
-  {
-   "depends_on": "eval:doc.party_type===\"Employee\";",
-   "fieldname": "company",
-   "fieldtype": "Select",
-   "label": "Personnel Type",
-   "mandatory_depends_on": "eval:doc.party_type===\"Employee\"",
-   "options": "Volunteer\nEmployee Staff"
   },
   {
    "depends_on": "eval:doc.party_type===\"Employee\";",
@@ -119,12 +113,6 @@
    "options": "Designation Item"
   },
   {
-   "description": "Represents the person\u2019s current place of residence, which may differ from their official posting or membership.",
-   "fieldname": "column_break_fazy",
-   "fieldtype": "Column Break",
-   "label": "Location"
-  },
-  {
    "fieldname": "column_break_fmip",
    "fieldtype": "Column Break",
    "label": "Qualifications"
@@ -140,30 +128,6 @@
    "fieldname": "affiliation_column",
    "fieldtype": "Column Break",
    "label": "Affiliation"
-  },
-  {
-   "fieldname": "administrative_location",
-   "fieldtype": "Table MultiSelect",
-   "label": "Administrative Location",
-   "options": "Administrative Location Table"
-  },
-  {
-   "fieldname": "county",
-   "fieldtype": "Table MultiSelect",
-   "label": "County of Residence",
-   "options": "County Table"
-  },
-  {
-   "fieldname": "sub_county",
-   "fieldtype": "Table MultiSelect",
-   "label": "Sub County ",
-   "options": "Sub County Table"
-  },
-  {
-   "fieldname": "ward",
-   "fieldtype": "Table MultiSelect",
-   "label": "Ward",
-   "options": "Ward Table"
   },
   {
    "fieldname": "courses",
@@ -225,20 +189,59 @@
    "label": "Membership Details"
   },
   {
-   "depends_on": "eval:doc.party_type;",
-   "fieldname": "fetch_party_list",
-   "fieldtype": "Button",
-   "label": "Fetch Party List"
+   "depends_on": "eval:doc.party_type===\"Employee\";",
+   "fieldname": "personnel_specific_type",
+   "fieldtype": "Select",
+   "label": "Personnel Type",
+   "mandatory_depends_on": "eval:doc.party_type===\"Employee\"",
+   "options": "Volunteer\nEmployee Staff"
+  },
+  {
+   "fieldname": "party_list_tab",
+   "fieldtype": "Tab Break",
+   "label": "Party List"
+  },
+  {
+   "fieldname": "parties_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "parties",
+   "fieldtype": "Table",
+   "label": "Parties",
+   "options": "VM Notification Party"
+  },
+  {
+   "description": "The preferred channel or method through which the parties should be contacted.",
+   "fieldname": "communication_channel",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Communication Channel",
+   "options": "\nSMS\nEmail",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_ktij",
+   "fieldtype": "Section Break",
+   "label": "Notification Message Detail"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Code",
+   "label": "Message"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-02 16:53:40.491622",
+ "modified": "2026-03-16 12:14:38.758565",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Notification Center",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
