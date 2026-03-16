@@ -1,0 +1,266 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:title",
+ "creation": "2025-12-02 10:12:12.023801",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_i3iw",
+  "amended_from",
+  "title",
+  "short_description",
+  "column_break_bubb",
+  "party_type",
+  "personnel_specific_type",
+  "communication_channel",
+  "section_break_ktij",
+  "message",
+  "personnel_filters_section",
+  "affiliation_column",
+  "region",
+  "branch",
+  "department",
+  "personnel_type",
+  "designation",
+  "column_break_fmip",
+  "courses",
+  "skills",
+  "licences",
+  "member_filters_section",
+  "membership_detail_column",
+  "membership_type",
+  "membership_status",
+  "column_break_zyer",
+  "membership_region",
+  "membership_branch",
+  "party_list_tab",
+  "parties_section",
+  "parties"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_i3iw",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "VM Notification Center",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Title",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "A brief summary of the notification's purpose.",
+   "fieldname": "short_description",
+   "fieldtype": "Small Text",
+   "label": "Short Description"
+  },
+  {
+   "fieldname": "column_break_bubb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Party Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.party_type===\"Employee\";",
+   "fieldname": "personnel_filters_section",
+   "fieldtype": "Section Break",
+   "label": "Personnel Filters"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Table MultiSelect",
+   "label": "Region",
+   "options": "Company Item"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Table MultiSelect",
+   "label": "Department",
+   "options": "Department Item"
+  },
+  {
+   "fieldname": "personnel_type",
+   "fieldtype": "Table MultiSelect",
+   "label": "Personnel Type",
+   "options": "Employment Type Item"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Table MultiSelect",
+   "label": "Designation",
+   "options": "Designation Item"
+  },
+  {
+   "fieldname": "column_break_fmip",
+   "fieldtype": "Column Break",
+   "label": "Qualifications"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Table MultiSelect",
+   "label": "Branch (County of Membership)",
+   "options": "Company Item"
+  },
+  {
+   "description": "Represents where the person is officially assigned within the organization.",
+   "fieldname": "affiliation_column",
+   "fieldtype": "Column Break",
+   "label": "Affiliation"
+  },
+  {
+   "fieldname": "courses",
+   "fieldtype": "Table MultiSelect",
+   "label": "Courses",
+   "options": "Related Courses"
+  },
+  {
+   "fieldname": "skills",
+   "fieldtype": "Table MultiSelect",
+   "label": "Skills",
+   "options": "Designation Skill"
+  },
+  {
+   "fieldname": "licences",
+   "fieldtype": "Table MultiSelect",
+   "label": "Licences",
+   "options": "Personnel Licence Item"
+  },
+  {
+   "depends_on": "eval:doc.party_type===\"VM Member\";",
+   "fieldname": "member_filters_section",
+   "fieldtype": "Section Break",
+   "label": "Member Filters"
+  },
+  {
+   "fieldname": "membership_type",
+   "fieldtype": "Table MultiSelect",
+   "label": "Membership Type",
+   "options": "Membership Type Item"
+  },
+  {
+   "fieldname": "membership_branch",
+   "fieldtype": "Table MultiSelect",
+   "label": "Branch",
+   "options": "Company Item"
+  },
+  {
+   "fieldname": "membership_status",
+   "fieldtype": "Select",
+   "label": "Membership Status",
+   "options": "\nDraft\nPending\nActive\nRejected\nExpired"
+  },
+  {
+   "description": "Represents where the person is officially assigned within the organization.",
+   "fieldname": "column_break_zyer",
+   "fieldtype": "Column Break",
+   "label": "Afiliation"
+  },
+  {
+   "fieldname": "membership_region",
+   "fieldtype": "Table MultiSelect",
+   "label": "Region",
+   "options": "Company Item"
+  },
+  {
+   "fieldname": "membership_detail_column",
+   "fieldtype": "Column Break",
+   "label": "Membership Details"
+  },
+  {
+   "depends_on": "eval:doc.party_type===\"Employee\";",
+   "fieldname": "personnel_specific_type",
+   "fieldtype": "Select",
+   "label": "Personnel Type",
+   "mandatory_depends_on": "eval:doc.party_type===\"Employee\"",
+   "options": "Volunteer\nEmployee Staff"
+  },
+  {
+   "fieldname": "party_list_tab",
+   "fieldtype": "Tab Break",
+   "label": "Party List"
+  },
+  {
+   "fieldname": "parties_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "parties",
+   "fieldtype": "Table",
+   "label": "Parties",
+   "options": "VM Notification Party"
+  },
+  {
+   "description": "The preferred channel or method through which the parties should be contacted.",
+   "fieldname": "communication_channel",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Communication Channel",
+   "options": "\nSMS\nEmail",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_ktij",
+   "fieldtype": "Section Break",
+   "label": "Notification Message Detail"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Code",
+   "label": "Message"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-03-16 12:14:38.758565",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "VM Notification Center",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
