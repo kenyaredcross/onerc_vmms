@@ -24,19 +24,18 @@ frappe.ui.form.on("VM Notification Center", {
 					freeze: true,
 					freeze_message: "Fetching Parties...",
 					callback: (r) => {
+						console.log("response", r);
 						frappe.dom.unfreeze();
 
-						console.log("parties", r);
-
-						frm.clear_table("parties");
+						frm.refresh_field("parties");
 
 						if (r.message && r.message.length) {
 							r.message.forEach((party) => {
 								const child = frm.add_child("parties");
 								child.link_doctype = frm.doc.party_type;
-								child.party_name = party.full_name;
+								child.party_name = party.party_name;
 								child.party = party.name;
-								child.user = party.user_id;
+								child.user = party.user;
 								child.phone = party.phone;
 							});
 							frm.refresh_field("parties");
