@@ -194,7 +194,7 @@
    "fieldtype": "Select",
    "label": "Personnel Type",
    "mandatory_depends_on": "eval:doc.party_type===\"Employee\"",
-   "options": "Volunteer\nEmployee Staff"
+   "options": "\nVolunteer\nEmployee Staff"
   },
   {
    "fieldname": "party_list_tab",
@@ -237,7 +237,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-16 12:14:38.758565",
+ "modified": "2026-03-16 22:57:07.711677",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Notification Center",
