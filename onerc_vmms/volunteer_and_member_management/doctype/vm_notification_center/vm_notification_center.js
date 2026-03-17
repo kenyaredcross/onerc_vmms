@@ -4,8 +4,7 @@
 frappe.ui.form.on("VM Notification Center", {
 	refresh(frm) {
 		frm.trigger("showPartyChild");
-		frm.trigger("fetchParties");
-		initiliasePartyTypeField(frm);
+		initialiseRecipientTypeField(frm);
 		branchQuery(frm);
 	},
 
@@ -14,38 +13,61 @@ frappe.ui.form.on("VM Notification Center", {
 			? frm.set_df_property("parties", "hidden", 1)
 			: frm.set_df_property("parties", "hidden", 0);
 	},
-	fetchParties(frm) {
-		if (!frm.doc.__islocal) {
-			frm.add_custom_button("Fetch Parties", () => {
-				frappe.dom.freeze("Fetching Parties...");
-				frappe.call({
-					doc: frm.doc,
-					method: "get_party_list",
-					freeze: true,
-					freeze_message: "Fetching Parties...",
-					callback: (r) => {
-						console.log("response", r);
-						frappe.dom.unfreeze();
 
-						frm.refresh_field("parties");
-
-						if (r.message && r.message.length) {
-							r.message.forEach((party) => {
-								const child = frm.add_child("parties");
-								child.link_doctype = frm.doc.party_type;
-								child.party_name = party.party_name;
-								child.party = party.name;
-								child.user = party.user;
-								child.phone = party.phone;
-							});
-							frm.refresh_field("parties");
-							frm.save();
-						}
-					},
-				});
+	show_recpients(frm) {
+		frm.trigger("fetchRecipients");
+	},
+	fetchRecipients(frm) {
+		frappe.dom.freeze("Fetching Recipients...");
+		frappe.call({
+			doc: frm.doc,
+			method: "get_recipient_list",
+			freeze: true,
+			freeze_message: "Fetching Recipients...",
+			callback: (r) => {
 				frappe.dom.unfreeze();
-			});
-		}
+
+				console.log("parties", r);
+
+				let wrapper = frm.fields_dict["recipients"].$wrapper;
+				wrapper.empty();
+
+				let container = $("<div>").appendTo(wrapper)[0];
+				new frappe.DataTable(container, {
+					columns: [
+						{
+							name: "Recipient ID",
+							width: 150,
+							format: (value) => {
+								if (!value) return "—";
+								return `<a href="/app/${frm.doc.recipient_type.toLowerCase()}/${value}" target="_blank">${value}</a>`;
+							},
+						},
+						{ name: "Recipient Name", width: 200 },
+						{
+							name: "Email",
+							width: 200,
+							format: (value) => {
+								if (!value) return "—";
+								return `<a href="/app/user/${value}" target="_blank">${value}</a>`;
+							},
+						},
+						{ name: "Phone", width: 150 },
+					],
+					data: r.message.map((recipient) => [
+						recipient.name,
+						recipient.recipient_name,
+						recipient.user,
+						recipient.phone,
+					]),
+					inlineFilters: true,
+					noDataMessage: "No recipients found",
+					layout: "fluid",
+					cellHeight: 35,
+					disableReorderColumn: true,
+				});
+			},
+		});
 	},
 
 	party_type(frm) {
@@ -75,18 +97,14 @@ frappe.ui.form.on("VM Notification Center", {
 		frm.set_value("administrative_location", "");
 		set_administrative_location_filter(frm);
 	},
-	membership_region: (frm) => {
-		frm.set_value("membership_branch", "");
-		branchQuery(frm);
-	},
 
 	fetch_party_list: (frm) => {
 		frm.trigger("get_party_list");
 	},
 });
 
-const initiliasePartyTypeField = (frm) => {
-	frm.set_query("party_type", () => {
+const initialiseRecipientTypeField = (frm) => {
+	frm.set_query("recipient_type", () => {
 		return {
 			filters: {
 				name: ["in", ["Employee", "VM Member"]],

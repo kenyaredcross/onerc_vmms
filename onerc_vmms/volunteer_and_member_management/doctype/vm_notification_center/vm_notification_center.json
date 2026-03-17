@@ -8,10 +8,11 @@
  "field_order": [
   "section_break_i3iw",
   "amended_from",
+  "total_recipients",
   "title",
   "short_description",
   "column_break_bubb",
-  "party_type",
+  "recipient_type",
   "personnel_specific_type",
   "communication_channel",
   "section_break_ktij",
@@ -29,14 +30,15 @@
   "licences",
   "member_filters_section",
   "membership_detail_column",
+  "membership_branch",
   "membership_type",
   "membership_status",
   "column_break_zyer",
-  "membership_region",
-  "membership_branch",
-  "party_list_tab",
-  "parties_section",
-  "parties"
+  "recipient_list_section",
+  "show_recpients",
+  "column_break_ysra",
+  "section_break_vwyu",
+  "recipients"
  ],
  "fields": [
   {
@@ -74,16 +76,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "party_type",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Party Type",
-   "options": "DocType",
-   "reqd": 1
-  },
-  {
-   "depends_on": "eval:doc.party_type===\"Employee\";",
+   "depends_on": "eval:doc.recipient_type===\"Employee\";",
    "fieldname": "personnel_filters_section",
    "fieldtype": "Section Break",
    "label": "Personnel Filters"
@@ -148,7 +141,7 @@
    "options": "Personnel Licence Item"
   },
   {
-   "depends_on": "eval:doc.party_type===\"VM Member\";",
+   "depends_on": "eval:doc.recipient_type===\"VM Member\";",
    "fieldname": "member_filters_section",
    "fieldtype": "Section Break",
    "label": "Member Filters"
@@ -172,16 +165,8 @@
    "options": "\nDraft\nPending\nActive\nRejected\nExpired"
   },
   {
-   "description": "Represents where the person is officially assigned within the organization.",
    "fieldname": "column_break_zyer",
-   "fieldtype": "Column Break",
-   "label": "Afiliation"
-  },
-  {
-   "fieldname": "membership_region",
-   "fieldtype": "Table MultiSelect",
-   "label": "Region",
-   "options": "Company Item"
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "membership_detail_column",
@@ -194,22 +179,7 @@
    "fieldtype": "Select",
    "label": "Personnel Type",
    "mandatory_depends_on": "eval:doc.party_type===\"Employee\"",
-   "options": "\nVolunteer\nEmployee Staff"
-  },
-  {
-   "fieldname": "party_list_tab",
-   "fieldtype": "Tab Break",
-   "label": "Party List"
-  },
-  {
-   "fieldname": "parties_section",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "parties",
-   "fieldtype": "Table",
-   "label": "Parties",
-   "options": "VM Notification Party"
+   "options": "Volunteer\nEmployee Staff"
   },
   {
    "description": "The preferred channel or method through which the parties should be contacted.",
@@ -231,13 +201,53 @@
    "fieldname": "message",
    "fieldtype": "Code",
    "label": "Message"
+  },
+  {
+   "fieldname": "recipient_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Recipient Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recipients",
+   "fieldtype": "HTML",
+   "label": "Recipients"
+  },
+  {
+   "depends_on": "eval:!doc.__islocal",
+   "fieldname": "recipient_list_section",
+   "fieldtype": "Section Break",
+   "label": "Recipient List"
+  },
+  {
+   "fieldname": "show_recpients",
+   "fieldtype": "Button",
+   "label": "Show Recpients"
+  },
+  {
+   "fieldname": "column_break_ysra",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.docstatus === 1;",
+   "fieldname": "total_recipients",
+   "fieldtype": "Int",
+   "label": "Total Recipients",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_vwyu",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-16 22:57:07.711677",
+ "modified": "2026-03-17 23:30:21.053161",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Notification Center",

@@ -18,27 +18,12 @@ class VMNotificationCenter(Document):
         from frappe.types import DF
         from hrms.hr.doctype.designation_skill.designation_skill import DesignationSkill
         from lms.lms.doctype.related_courses.related_courses import RelatedCourses
-        from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import (
-            CompanyItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import (
-            DepartmentItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import (
-            DesignationItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import (
-            EmploymentTypeItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.membership_type_item.membership_type_item import (
-            MembershipTypeItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import (
-            PersonnelLicenceItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.vm_notification_party.vm_notification_party import (
-            VMNotificationParty,
-        )
+        from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import CompanyItem
+        from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import DepartmentItem
+        from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import DesignationItem
+        from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import EmploymentTypeItem
+        from onerc_vmms.volunteer_and_member_management.doctype.membership_type_item.membership_type_item import MembershipTypeItem
+        from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import PersonnelLicenceItem
 
         amended_from: DF.Link | None
         branch: DF.TableMultiSelect[CompanyItem]
@@ -48,25 +33,21 @@ class VMNotificationCenter(Document):
         designation: DF.TableMultiSelect[DesignationItem]
         licences: DF.TableMultiSelect[PersonnelLicenceItem]
         membership_branch: DF.TableMultiSelect[CompanyItem]
-        membership_region: DF.TableMultiSelect[CompanyItem]
-        membership_status: DF.Literal[
-            "", "Draft", "Pending", "Active", "Rejected", "Expired"
-        ]
+        membership_status: DF.Literal["", "Draft", "Pending", "Active", "Rejected", "Expired"]
         membership_type: DF.TableMultiSelect[MembershipTypeItem]
         message: DF.Code | None
-        parties: DF.Table[VMNotificationParty]
-        party_type: DF.Link
-        personnel_specific_type: DF.Literal["", "Volunteer", "Employee Staff"]
+        personnel_specific_type: DF.Literal["Volunteer", "Employee Staff"]
         personnel_type: DF.TableMultiSelect[EmploymentTypeItem]
+        recipient_type: DF.Link
         region: DF.TableMultiSelect[CompanyItem]
         short_description: DF.SmallText | None
         skills: DF.TableMultiSelect[DesignationSkill]
         title: DF.Data
+        total_recipients: DF.Int
     # end: auto-generated types
 
     def validate(self): ...
     def on_submit(self):
-        self.validate_party_presence()
         self.send_notification()
 
     def before_submit(self):
@@ -76,15 +57,24 @@ class VMNotificationCenter(Document):
             else ...
         )
 
-    def validate_party_presence(self):
-        if not self.parties:
-            frappe.throw(
-                "No parties found. Please fetch parties before sending notifications."
-            )
-
     @frappe.whitelist()
-    def get_party_list(self):
-        registry_filters = self.map_filters_to_registry()
+    def get_recipient_list(self):
+        party_type_map = {
+            "Employee": self.get_personel_recipient_list,
+            "VM Member": self.get_member_party_list,
+        }
+
+        recipient_type_list = party_type_map.get(self.recipient_type)
+        if not recipient_type_list:
+            frappe.throw("Invalid recipient type selected")
+
+        return recipient_type_list()
+
+    def get_member_party_list(self):
+        print("Fetching member party list with filters:")
+
+    def get_personel_recipient_list(self):
+        registry_filters = self.map_personel_filters_to_registry()
 
         filters = []
 
@@ -100,16 +90,10 @@ class VMNotificationCenter(Document):
         )
 
         party_list = frappe.get_all(
-            self.party_type,
+            self.recipient_type,
             filters=filters,
             fields=["name", "user_id as user"],
         )
-
-        if len(party_list) > 2000:
-
-            frappe.enqueue(
-                self.handle_many_parties(party_list),
-            )
 
         return self.get_user_detail(party_list)
 
@@ -123,21 +107,10 @@ class VMNotificationCenter(Document):
                 )
 
                 party["phone"] = phone
-                party["party_name"] = full_name
+                party["recipient_name"] = full_name
                 new_party_list.append(party)
 
         return new_party_list
-
-    def handle_many_parties(self, party_list: list[dict[str, str]]):
-
-        self.parties = []
-        new_party_list = self.get_user_detail(party_list)
-
-        for party in new_party_list:
-            self.append("parties", party)
-
-        self.reload()
-        self.save()
 
     def personel_registry_filters(self) -> list[dict[str, str]]:
         return [
@@ -155,7 +128,7 @@ class VMNotificationCenter(Document):
             # {"licences": "licence"},
         ]
 
-    def map_filters_to_registry(self):
+    def map_personel_filters_to_registry(self):
         result = {}
 
         filters = self.personel_registry_filters()
@@ -169,6 +142,11 @@ class VMNotificationCenter(Document):
                     result[doctype] = [getattr(v, doctype) for v in value]
 
         return result
+
+    def map_member_filters_to_registry(self): ...
+
+    def member_registry_filters(self) -> list[dict[str, str]]:
+        return []
 
     def get_communication_channel(self, selected_channel: str) -> Callable[..., None]:
         comm_map = {
@@ -194,15 +172,14 @@ class VMNotificationCenter(Document):
             frappe.throw("No valid recipient phone numbers found.")
 
         frappe.enqueue(
-            send_sms(
-                recipient_nos,
-                cstr(self.message),
-            ),
-            queue="short",
+            send_sms,
+            queue="long",
+            receiver_list=recipient_nos,
+            msg=cstr(self.message),
         )
 
         frappe.msgprint(
-            msg=f"SMS notification has been queued and will be sent to {len(recipient_nos)} recipient(s). You can track the status in {get_link_to_form('SMS Log', 'SMS Log')}.",
+            msg=f"SMS notification has been queued and will be sent to {len(recipient_nos)} recipient(s).",
             title="Notification Queued",
             indicator="blue",
         )
@@ -210,9 +187,16 @@ class VMNotificationCenter(Document):
     def send_email(self): ...
 
     def get_recipients_nos(self) -> list[str]:
-        if not len(self.parties):
-            return
-        return [party.phone for party in self.parties if party.phone]
+        recipient_list = self.get_recipient_list()
+        recipient_nos = [
+            recipient.get("phone")
+            for recipient in recipient_list
+            if recipient.get("phone")
+        ]
+
+        self.total_recipients = len(recipient_nos)
+
+        return recipient_nos
 
     @staticmethod
     def get_sms_settings():
