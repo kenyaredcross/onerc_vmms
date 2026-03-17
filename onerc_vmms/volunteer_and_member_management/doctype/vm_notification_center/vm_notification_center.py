@@ -56,7 +56,7 @@ class VMNotificationCenter(Document):
         message: DF.Code | None
         parties: DF.Table[VMNotificationParty]
         party_type: DF.Link
-        personnel_specific_type: DF.Literal["Volunteer", "Employee Staff"]
+        personnel_specific_type: DF.Literal["", "Volunteer", "Employee Staff"]
         personnel_type: DF.TableMultiSelect[EmploymentTypeItem]
         region: DF.TableMultiSelect[CompanyItem]
         short_description: DF.SmallText | None
@@ -86,16 +86,30 @@ class VMNotificationCenter(Document):
     def get_party_list(self):
         registry_filters = self.map_filters_to_registry()
 
-        or_filters = []
+        filters = []
 
         for field, values in registry_filters.items():
-            or_filters.append([field, "in", values])
+            filters.append([field, "in", values])
+
+        filters.append(
+            [
+                "is_volunteer",
+                "=",
+                1 if self.personnel_specific_type == "Volunteer" else 0,
+            ]
+        )
 
         party_list = frappe.get_all(
             self.party_type,
-            filters=or_filters,
-            fields=["name", "user_id"],
+            filters=filters,
+            fields=["name", "user_id as user"],
         )
+
+        if len(party_list) > 2000:
+
+            frappe.enqueue(
+                self.handle_many_parties(party_list),
+            )
 
         return self.get_user_detail(party_list)
 
@@ -103,14 +117,27 @@ class VMNotificationCenter(Document):
         new_party_list = []
 
         for party in party_list:
-            phone, full_name = frappe.db.get_value(
-                "User", party.get("user_id"), ["mobile_no", "full_name"]
-            )
+            if party.get("user"):
+                phone, full_name = frappe.db.get_value(
+                    "User", party.get("user"), ["mobile_no", "full_name"]
+                )
 
-            party["phone"] = phone
-            party["full_name"] = full_name
-            new_party_list.append(party)
+                party["phone"] = phone
+                party["party_name"] = full_name
+                new_party_list.append(party)
+
         return new_party_list
+
+    def handle_many_parties(self, party_list: list[dict[str, str]]):
+
+        self.parties = []
+        new_party_list = self.get_user_detail(party_list)
+
+        for party in new_party_list:
+            self.append("parties", party)
+
+        self.reload()
+        self.save()
 
     def personel_registry_filters(self) -> list[dict[str, str]]:
         return [
