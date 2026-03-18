@@ -18,28 +18,43 @@ class VMNotificationCenter(Document):
         from frappe.types import DF
         from hrms.hr.doctype.designation_skill.designation_skill import DesignationSkill
         from lms.lms.doctype.related_courses.related_courses import RelatedCourses
-        from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import CompanyItem
-        from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import DepartmentItem
-        from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import DesignationItem
-        from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import EmploymentTypeItem
-        from onerc_vmms.volunteer_and_member_management.doctype.membership_type_item.membership_type_item import MembershipTypeItem
-        from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import PersonnelLicenceItem
+        from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import (
+            CompanyItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import (
+            DepartmentItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import (
+            DesignationItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import (
+            EmploymentTypeItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.membership_type_item.membership_type_item import (
+            MembershipTypeItem,
+        )
+        from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import (
+            PersonnelLicenceItem,
+        )
 
+        active: DF.Check
         amended_from: DF.Link | None
         branch: DF.TableMultiSelect[CompanyItem]
         communication_channel: DF.Literal["", "SMS", "Email"]
         courses: DF.TableMultiSelect[RelatedCourses]
         department: DF.TableMultiSelect[DepartmentItem]
         designation: DF.TableMultiSelect[DesignationItem]
+        expired: DF.Check
         licences: DF.TableMultiSelect[PersonnelLicenceItem]
         membership_branch: DF.TableMultiSelect[CompanyItem]
-        membership_status: DF.Literal["", "Draft", "Pending", "Active", "Rejected", "Expired"]
         membership_type: DF.TableMultiSelect[MembershipTypeItem]
         message: DF.Code | None
+        pending: DF.Check
         personnel_specific_type: DF.Literal["Volunteer", "Employee Staff"]
         personnel_type: DF.TableMultiSelect[EmploymentTypeItem]
         recipient_type: DF.Link
         region: DF.TableMultiSelect[CompanyItem]
+        rejected: DF.Check
         short_description: DF.SmallText | None
         skills: DF.TableMultiSelect[DesignationSkill]
         title: DF.Data
@@ -47,6 +62,7 @@ class VMNotificationCenter(Document):
     # end: auto-generated types
 
     def validate(self): ...
+
     def on_submit(self):
         self.send_notification()
 
@@ -61,7 +77,7 @@ class VMNotificationCenter(Document):
     def get_recipient_list(self):
         party_type_map = {
             "Employee": self.get_personel_recipient_list,
-            "VM Member": self.get_member_party_list,
+            "VM Member": self.get_member_recipient_list,
         }
 
         recipient_type_list = party_type_map.get(self.recipient_type)
@@ -70,8 +86,71 @@ class VMNotificationCenter(Document):
 
         return recipient_type_list()
 
-    def get_member_party_list(self):
-        print("Fetching member party list with filters:")
+    @staticmethod
+    def get_user_phone(user_id: str) -> str | None:
+        mobile_no, phone = frappe.db.get_value("User", user_id, ["mobile_no", "phone"])
+        return mobile_no or phone
+
+    def get_member_recipient_list(self):
+
+        members = self.build_member_query()
+        member_recipients = []
+
+        for member in members:
+            member_details = frappe.db.get_value(
+                "VM Member", member, ["name", "member_name", "email_id"], as_dict=True
+            )
+            if member_details and member_details.get("email_id"):
+                phone = self.get_user_phone(member_details.get("email_id"))
+                member_recipients.append(
+                    {
+                        "name": member_details.name,
+                        "recipient_name": member_details.member_name,
+                        "user": member_details.email_id,
+                        "phone": phone,
+                    }
+                )
+
+        return member_recipients
+
+    def build_member_query(self):
+
+        filters = []
+
+        for field, values in self.build_membership_filters().items():
+            filters.append([field, "in", values])
+
+        memberships = frappe.get_all("VM Membership", filters=filters, pluck="member")
+
+        return set(memberships)
+
+    def build_membership_filters(self):
+        result = {}
+        company = [v.company for v in self.membership_branch]
+        membership_type = [v.membership_type for v in self.membership_type]
+        status = self.map_membership_status()
+
+        if company:
+            result["company"] = company
+        if membership_type:
+            result["membership_type"] = membership_type
+        if status:
+            result["status"] = status
+
+        return result
+
+    def map_membership_status(
+        self,
+    ) -> list[str]:
+
+        status_map = {
+            "Active": self.active,
+            "Pending": self.pending,
+            "Expired": self.expired,
+            "Rejected": self.rejected,
+        }
+
+        return [status for status, is_selected in status_map.items() if is_selected]
 
     def get_personel_recipient_list(self):
         registry_filters = self.map_personel_filters_to_registry()
@@ -97,20 +176,20 @@ class VMNotificationCenter(Document):
 
         return self.get_user_detail(party_list)
 
-    def get_user_detail(self, party_list: list[dict[str, str]]):
-        new_party_list = []
+    def get_user_detail(self, recipient_list: list[dict[str, str]]):
+        new_recipient_list = []
 
-        for party in party_list:
-            if party.get("user"):
+        for recipient in recipient_list:
+            if recipient.get("user"):
                 phone, full_name = frappe.db.get_value(
-                    "User", party.get("user"), ["mobile_no", "full_name"]
+                    "User", recipient.get("user"), ["mobile_no", "full_name"]
                 )
 
-                party["phone"] = phone
-                party["recipient_name"] = full_name
-                new_party_list.append(party)
+                recipient["phone"] = phone
+                recipient["recipient_name"] = full_name
+                new_recipient_list.append(recipient)
 
-        return new_party_list
+        return new_recipient_list
 
     def personel_registry_filters(self) -> list[dict[str, str]]:
         return [
@@ -142,11 +221,6 @@ class VMNotificationCenter(Document):
                     result[doctype] = [getattr(v, doctype) for v in value]
 
         return result
-
-    def map_member_filters_to_registry(self): ...
-
-    def member_registry_filters(self) -> list[dict[str, str]]:
-        return []
 
     def get_communication_channel(self, selected_channel: str) -> Callable[..., None]:
         comm_map = {
@@ -204,5 +278,3 @@ class VMNotificationCenter(Document):
             frappe.throw(
                 f"Please set up <a href='/app/sms-settings' target='_blank'>SMS Settings</a> before sending notifications via SMS."
             )
-
-    def auto_populate_title(self): ...
