@@ -3,32 +3,26 @@
 
 frappe.ui.form.on("VM Notification Center", {
 	refresh(frm) {
-		frm.trigger("showPartyChild");
+		frm.trigger("clearDataTable");
 		initialiseRecipientTypeField(frm);
 		branchQuery(frm);
 	},
 
-	showPartyChild(frm) {
-		frm.doc.__islocal
-			? frm.set_df_property("parties", "hidden", 1)
-			: frm.set_df_property("parties", "hidden", 0);
+	clearDataTable(frm) {
+		let wrapper = frm.fields_dict["recipients"].$wrapper;
+		wrapper.empty();
 	},
 
 	show_recpients(frm) {
 		frm.trigger("fetchRecipients");
 	},
 	fetchRecipients(frm) {
-		frappe.dom.freeze("Fetching Recipients...");
 		frappe.call({
 			doc: frm.doc,
 			method: "get_recipient_list",
 			freeze: true,
 			freeze_message: "Fetching Recipients...",
 			callback: (r) => {
-				frappe.dom.unfreeze();
-
-				console.log("parties", r);
-
 				let wrapper = frm.fields_dict["recipients"].$wrapper;
 				wrapper.empty();
 
@@ -66,6 +60,14 @@ frappe.ui.form.on("VM Notification Center", {
 					cellHeight: 35,
 					disableReorderColumn: true,
 				});
+			},
+			error: (err) => {
+				frappe.dom.unfreeze();
+				frappe.throw("An error occurred while fetching recipients.");
+				console.error(err);
+			},
+			always: () => {
+				frappe.dom.unfreeze();
 			},
 		});
 	},
