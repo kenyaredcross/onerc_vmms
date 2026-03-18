@@ -32,8 +32,12 @@
   "membership_detail_column",
   "membership_branch",
   "membership_type",
-  "membership_status",
   "column_break_zyer",
+  "html_lctk",
+  "pending",
+  "active",
+  "rejected",
+  "expired",
   "recipient_list_section",
   "show_recpients",
   "column_break_ysra",
@@ -147,22 +151,10 @@
    "label": "Member Filters"
   },
   {
-   "fieldname": "membership_type",
-   "fieldtype": "Table MultiSelect",
-   "label": "Membership Type",
-   "options": "Membership Type Item"
-  },
-  {
    "fieldname": "membership_branch",
    "fieldtype": "Table MultiSelect",
    "label": "Branch",
    "options": "Company Item"
-  },
-  {
-   "fieldname": "membership_status",
-   "fieldtype": "Select",
-   "label": "Membership Status",
-   "options": "\nDraft\nPending\nActive\nRejected\nExpired"
   },
   {
    "fieldname": "column_break_zyer",
@@ -170,8 +162,7 @@
   },
   {
    "fieldname": "membership_detail_column",
-   "fieldtype": "Column Break",
-   "label": "Membership Details"
+   "fieldtype": "Column Break"
   },
   {
    "depends_on": "eval:doc.party_type===\"Employee\";",
@@ -241,13 +232,49 @@
   {
    "fieldname": "section_break_vwyu",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "pending",
+   "fieldtype": "Check",
+   "label": "Pending"
+  },
+  {
+   "default": "0",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "default": "0",
+   "fieldname": "rejected",
+   "fieldtype": "Check",
+   "label": "Rejected"
+  },
+  {
+   "default": "0",
+   "fieldname": "expired",
+   "fieldtype": "Check",
+   "label": "Expired"
+  },
+  {
+   "fieldname": "html_lctk",
+   "fieldtype": "HTML",
+   "options": "<b>Membership Status</b>\n<br>\nSelect all  that apply Below\n<hr>",
+   "read_only": 1
+  },
+  {
+   "fieldname": "membership_type",
+   "fieldtype": "Table MultiSelect",
+   "label": "Membership Type",
+   "options": "Membership Type Item"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-17 23:30:21.053161",
+ "modified": "2026-03-18 08:38:47.113850",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Notification Center",
