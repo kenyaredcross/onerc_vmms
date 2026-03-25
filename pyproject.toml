@@ -1,7 +1,7 @@
 [project]
 name = "onerc_vmms"
 authors = [
-    { name = "Kenya Red Cross Society", email = "onerc@redcross.or.ke"}
+    { name = "Kenya Red Cross Society", email = "digital@redcross.or.ke"}
 ]
 description = "Volunteer and Member Management"
 requires-python = ">=3.10"
