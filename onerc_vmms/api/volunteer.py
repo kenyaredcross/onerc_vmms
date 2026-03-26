@@ -1,7 +1,7 @@
 import frappe
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def get_volunteers(
 	geo_node=None,
 	skill=None,
@@ -76,3 +76,37 @@ def filter_by_language(volunteers, language):
 		if has_language:
 			result.append(v)
 	return result
+
+
+@frappe.whitelist(allow_guest=True)
+def register_volunteer(data):
+	import json
+	data = json.loads(data)
+
+	doc = frappe.get_doc({
+		"doctype": "Volunteer",
+		"naming_series": "VOL-.YY.-.#####",
+		"first_name": data.get("first_name"),
+		"middle_name": data.get("middle_name"),
+		"last_name": data.get("last_name"),
+		"date_of_birth": data.get("date_of_birth"),
+		"gender": data.get("gender"),
+		"nationality": data.get("nationality"),
+		"primary_phone": data.get("primary_phone"),
+		"email_address": data.get("email_address"),
+		"emergency_contact_name": data.get("emergency_contact_name"),
+		"emergency_contact_relationship": data.get("emergency_contact_relationship"),
+		"emergency_contact_phone": data.get("emergency_contact_phone"),
+		"physical_address": data.get("physical_address"),
+		"home_geo_node": data.get("home_geo_node"),
+		"availability_status": data.get("availability_status"),
+		"volunteer_status": "Draft",
+		"skills": data.get("skills", []),
+		"languages": data.get("languages", []),
+		"availability": data.get("availability", []),
+	})
+
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+
+	return {"name": doc.name}
