@@ -1,0 +1,357 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:VOL-.YY.-.#####",
+ "creation": "2026-03-26 09:22:33.714418",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "first_name",
+  "middle_name",
+  "date_of_birth",
+  "age",
+  "gender",
+  "column_break_qjqt",
+  "last_name",
+  "full_name",
+  "nationality",
+  "national_id_passport",
+  "photo",
+  "contact_information_section",
+  "primary_phone",
+  "secondary_phone",
+  "column_break_iyai",
+  "email_address",
+  "preferred_contact_method",
+  "emergency_contact_section",
+  "emergency_contact_name",
+  "emergency_contact_relationship",
+  "column_break_wccp",
+  "emergency_contact_phone",
+  "emergency_contact_email",
+  "location_section",
+  "home_geo_node",
+  "current_geo_node",
+  "branch_geo_node",
+  "column_break_bwhv",
+  "physical_address",
+  "professional_tab",
+  "education",
+  "work_experience",
+  "trainings",
+  "volunteer_info_tab",
+  "skills",
+  "languages",
+  "availability",
+  "status_admin_tab",
+  "volunteer_status",
+  "availability_status",
+  "membership_status",
+  "column_break_lkpr",
+  "user_account",
+  "approved_by",
+  "approval_date",
+  "section_break_nhpd",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Naming Series",
+   "options": "VOL-.YY.-.#####",
+   "read_only": 1
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name",
+   "options": "Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "middle_name",
+   "fieldtype": "Data",
+   "label": "Middle Name"
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Link",
+   "label": "Gender",
+   "options": "Gender"
+  },
+  {
+   "fieldname": "nationality",
+   "fieldtype": "Link",
+   "label": "Nationality",
+   "options": "Country"
+  },
+  {
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  },
+  {
+   "fieldname": "column_break_qjqt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "national_id_passport",
+   "fieldtype": "Data",
+   "label": "National ID/ Passport"
+  },
+  {
+   "fieldname": "contact_information_section",
+   "fieldtype": "Section Break",
+   "label": "Contact Information"
+  },
+  {
+   "fieldname": "primary_phone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Primary Phone",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "secondary_phone",
+   "fieldtype": "Data",
+   "label": "Secondary Phone",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "email_address",
+   "fieldtype": "Data",
+   "label": "Email Address"
+  },
+  {
+   "fieldname": "preferred_contact_method",
+   "fieldtype": "Select",
+   "label": "Preferred Contact Method",
+   "options": "\nPhone\nEmail\nSMS\nWhatsApp"
+  },
+  {
+   "fieldname": "column_break_iyai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "emergency_contact_section",
+   "fieldtype": "Section Break",
+   "label": "Emergency Contact"
+  },
+  {
+   "fieldname": "emergency_contact_name",
+   "fieldtype": "Data",
+   "label": "Contact Name",
+   "options": "Name"
+  },
+  {
+   "fieldname": "emergency_contact_relationship",
+   "fieldtype": "Data",
+   "label": "Relationship"
+  },
+  {
+   "fieldname": "emergency_contact_phone",
+   "fieldtype": "Data",
+   "label": "Phone"
+  },
+  {
+   "fieldname": "column_break_wccp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "emergency_contact_email",
+   "fieldtype": "Data",
+   "label": "Email Address",
+   "options": "Email"
+  },
+  {
+   "fieldname": "location_section",
+   "fieldtype": "Section Break",
+   "label": "Location"
+  },
+  {
+   "description": "Permanent Home",
+   "fieldname": "home_geo_node",
+   "fieldtype": "Link",
+   "label": "Home Location",
+   "options": "Geo Node"
+  },
+  {
+   "fieldname": "current_geo_node",
+   "fieldtype": "Link",
+   "label": "Current Location",
+   "options": "Geo Node"
+  },
+  {
+   "fieldname": "column_break_bwhv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "physical_address",
+   "fieldtype": "Small Text",
+   "label": "Physical Address"
+  },
+  {
+   "description": "Red Cross Branch",
+   "fieldname": "branch_geo_node",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Geo Node"
+  },
+  {
+   "fieldname": "professional_tab",
+   "fieldtype": "Tab Break",
+   "label": "Professional"
+  },
+  {
+   "fieldname": "education",
+   "fieldtype": "Table",
+   "label": "Education",
+   "options": "Volunteer Education"
+  },
+  {
+   "fieldname": "work_experience",
+   "fieldtype": "Table",
+   "label": "Work Experience",
+   "options": "Volunteer Experience"
+  },
+  {
+   "fieldname": "trainings",
+   "fieldtype": "Table",
+   "label": "Trainings",
+   "options": "Volunteer Training"
+  },
+  {
+   "fieldname": "volunteer_info_tab",
+   "fieldtype": "Tab Break",
+   "label": "Volunteer Info"
+  },
+  {
+   "fieldname": "skills",
+   "fieldtype": "Table",
+   "label": "Skills",
+   "options": "Volunteer Skill"
+  },
+  {
+   "fieldname": "languages",
+   "fieldtype": "Table",
+   "label": "Languages",
+   "options": "Volunteer Language"
+  },
+  {
+   "fieldname": "availability",
+   "fieldtype": "Table",
+   "label": "Availability",
+   "options": "Volunteer Availability"
+  },
+  {
+   "fieldname": "status_admin_tab",
+   "fieldtype": "Tab Break",
+   "label": "Status and Admin"
+  },
+  {
+   "fieldname": "volunteer_status",
+   "fieldtype": "Select",
+   "label": "Volunteer Status",
+   "options": "\nDraft\nPending Approval\nActive\nSuspended\nInactive\nRejected"
+  },
+  {
+   "fieldname": "availability_status",
+   "fieldtype": "Select",
+   "label": "Availability Status",
+   "options": "\nAvailable\nUnavailable\nOn Deployment\nOn Leave"
+  },
+  {
+   "fieldname": "membership_status",
+   "fieldtype": "Select",
+   "label": "Membership Status",
+   "options": "\nNon Member\nPending\nActive Member\nExpired"
+  },
+  {
+   "fieldname": "user_account",
+   "fieldtype": "Link",
+   "label": "User Account",
+   "options": "User"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User"
+  },
+  {
+   "fieldname": "approval_date",
+   "fieldtype": "Date",
+   "label": "Approval Date"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "column_break_lkpr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_nhpd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "age",
+   "fieldtype": "Int",
+   "label": "Age",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-26 11:25:20.256334",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "Volunteer",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "full_name",
+ "track_changes": 1
+}

@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:level_key",
+ "creation": "2026-03-26 08:55:15.239558",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "level_identity_section",
+  "level_name",
+  "level_key",
+  "column_break_gxja",
+  "level_order",
+  "configuration_section",
+  "is_lowest_level",
+  "requires_parent",
+  "column_break_udej",
+  "allow_volunteers",
+  "allow_branches",
+  "status_section",
+  "is_active",
+  "column_break_pcwx",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "level_identity_section",
+   "fieldtype": "Section Break",
+   "label": "Level Identity"
+  },
+  {
+   "fieldname": "level_name",
+   "fieldtype": "Data",
+   "label": "Level Name"
+  },
+  {
+   "fieldname": "level_key",
+   "fieldtype": "Data",
+   "label": "Level Key",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_gxja",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "level_order",
+   "fieldtype": "Int",
+   "label": "Level Order"
+  },
+  {
+   "fieldname": "configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Configuration"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_lowest_level",
+   "fieldtype": "Check",
+   "label": "Is Lowest Level"
+  },
+  {
+   "default": "0",
+   "fieldname": "requires_parent",
+   "fieldtype": "Check",
+   "label": "Requires Parent"
+  },
+  {
+   "fieldname": "column_break_udej",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_volunteers",
+   "fieldtype": "Check",
+   "label": "Allow Volunteers"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_branches",
+   "fieldtype": "Check",
+   "label": "Allow Branches"
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "column_break_pcwx",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-26 09:16:35.987332",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "Geo Level",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "level_name",
+ "track_changes": 1
+}

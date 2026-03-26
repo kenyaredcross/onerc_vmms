@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-26 10:40:20.964502",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "language",
+  "spoken_proficiency",
+  "written_proficiency",
+  "is_primary_language"
+ ],
+ "fields": [
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Language",
+   "options": "Language",
+   "reqd": 1
+  },
+  {
+   "fieldname": "spoken_proficiency",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Spoken Proficiency",
+   "options": "\nBasic\nConversational\nFluent\nNative",
+   "reqd": 1
+  },
+  {
+   "fieldname": "written_proficiency",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Written Proficiency",
+   "options": "\nBasic\nConversational\nFluent\nNative",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_primary_language",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Primary Language"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-03-26 12:11:37.199210",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "Volunteer Language",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

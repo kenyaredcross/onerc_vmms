@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-26 08:47:59.492477",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "organization_identity_section",
+  "organization_name",
+  "organization_short_name",
+  "country",
+  "primary_color",
+  "secondary_color",
+  "logo",
+  "terminology_section",
+  "volunteer_label",
+  "member_label",
+  "branch_label",
+  "region_label",
+  "geography_section",
+  "maximum_geo_depth"
+ ],
+ "fields": [
+  {
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization Name"
+  },
+  {
+   "fieldname": "organization_short_name",
+   "fieldtype": "Data",
+   "label": "Organization Short Name"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "primary_color",
+   "fieldtype": "Color",
+   "label": "Primary Color"
+  },
+  {
+   "fieldname": "secondary_color",
+   "fieldtype": "Color",
+   "label": "Secondary Color"
+  },
+  {
+   "fieldname": "logo",
+   "fieldtype": "Attach Image",
+   "label": "Logo"
+  },
+  {
+   "fieldname": "organization_identity_section",
+   "fieldtype": "Section Break",
+   "label": "Organization Identity"
+  },
+  {
+   "fieldname": "terminology_section",
+   "fieldtype": "Section Break",
+   "label": "Terminology"
+  },
+  {
+   "fieldname": "volunteer_label",
+   "fieldtype": "Data",
+   "label": "Volunteer Label"
+  },
+  {
+   "fieldname": "member_label",
+   "fieldtype": "Data",
+   "label": "Member Label"
+  },
+  {
+   "fieldname": "branch_label",
+   "fieldtype": "Data",
+   "label": "Branch Label"
+  },
+  {
+   "fieldname": "region_label",
+   "fieldtype": "Data",
+   "label": "Region Label"
+  },
+  {
+   "fieldname": "geography_section",
+   "fieldtype": "Section Break",
+   "label": "Geography"
+  },
+  {
+   "fieldname": "maximum_geo_depth",
+   "fieldtype": "Int",
+   "label": "Maximum Geo Depth"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-03-26 08:52:11.878365",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "National Society Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

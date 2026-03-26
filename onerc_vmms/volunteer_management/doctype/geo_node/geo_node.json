@@ -1,0 +1,206 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:node_name",
+ "creation": "2026-03-26 09:02:28.224147",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "node_name",
+  "geo_level",
+  "geo_code",
+  "column_break_dpmk",
+  "parent_geo_node",
+  "is_active",
+  "is_group",
+  "section_break_ohud",
+  "level_1_node",
+  "column_break_xosc",
+  "level_2_node",
+  "details_section",
+  "latitude",
+  "longitude",
+  "column_break_vyrp",
+  "population",
+  "section_break_k8vb",
+  "column_break_aagc",
+  "lft",
+  "rgt",
+  "column_break_equm",
+  "old_parent",
+  "section_break_xqxc",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_k8vb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "lft",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Left",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "rgt",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Right",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_group",
+   "fieldtype": "Check",
+   "label": "Is Group"
+  },
+  {
+   "fieldname": "old_parent",
+   "fieldtype": "Link",
+   "label": "Old Parent",
+   "options": "Geo Node"
+  },
+  {
+   "fieldname": "parent_geo_node",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Parent Geo Node",
+   "options": "Geo Node"
+  },
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "fieldname": "node_name",
+   "fieldtype": "Data",
+   "label": "Node Name",
+   "unique": 1
+  },
+  {
+   "fieldname": "geo_level",
+   "fieldtype": "Link",
+   "label": "Geo Level",
+   "options": "Geo Level"
+  },
+  {
+   "fieldname": "geo_code",
+   "fieldtype": "Data",
+   "label": "Geo Code"
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude"
+  },
+  {
+   "fieldname": "column_break_vyrp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "population",
+   "fieldtype": "Int",
+   "label": "Population"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "section_break_xqxc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "column_break_dpmk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_aagc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_equm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ohud",
+   "fieldtype": "Section Break",
+   "label": "Hierachy"
+  },
+  {
+   "fieldname": "level_1_node",
+   "fieldtype": "Link",
+   "label": "Level 1",
+   "options": "Geo Node",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xosc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "level_2_node",
+   "fieldtype": "Link",
+   "label": "Level 2",
+   "options": "Geo Node",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_tree": 1,
+ "links": [],
+ "modified": "2026-03-26 12:31:03.742503",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "Geo Node",
+ "naming_rule": "By fieldname",
+ "nsm_parent_field": "parent_geo_node",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "node_name",
+ "track_changes": 1
+}

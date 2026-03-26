@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-26 10:31:03.214297",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employer",
+  "role_position",
+  "from_date",
+  "currently_working",
+  "to_date",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "employer",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "role_position",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Role/ Position",
+   "reqd": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "From Date",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.currently_working === 0;",
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "To Date",
+   "mandatory_depends_on": "eval:doc.currently_working === 0;"
+  },
+  {
+   "default": "0",
+   "fieldname": "currently_working",
+   "fieldtype": "Check",
+   "label": "Currently Working"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-03-26 10:55:55.484629",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "Volunteer Experience",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
