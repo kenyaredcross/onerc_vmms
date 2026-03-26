@@ -18,7 +18,7 @@
   "branch_label",
   "region_label",
   "geography_section",
-  "maximum_geo_depth"
+  "maximum_geographical_depth"
  ],
  "fields": [
   {
@@ -88,7 +88,7 @@
    "label": "Geography"
   },
   {
-   "fieldname": "maximum_geo_depth",
+   "fieldname": "maximum_geographical_depth",
    "fieldtype": "Int",
    "label": "Maximum Geo Depth"
   }
@@ -97,7 +97,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-26 08:52:11.878365",
+ "modified": "2026-03-26 22:58:16.321523",
  "modified_by": "Administrator",
  "module": "Volunteer Management",
  "name": "National Society Settings",
