@@ -13,6 +13,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^0.20.5"
   }
 }
