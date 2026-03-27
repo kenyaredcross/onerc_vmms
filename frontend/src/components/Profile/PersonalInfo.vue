@@ -63,8 +63,8 @@
 						:label="__('Country of Citizenship')"
 						:filters="
 							localForm.citizenship === 'Citizen'
-								? [['name', '=', 'Kenya']]
-								: [['name', '!=', 'Kenya']]
+								? [['name', '=', 'Tanzania']]
+								: [['name', '!=', 'Tanzania']]
 						"
 					/>
 					<Link
@@ -91,18 +91,18 @@
 					{{ __("Contact & Location") }}
 				</h2>
 				<div class="space-y-4">
-					<Link doctype="County" v-model="localForm.county" :label="__('County')" />
+					<Link doctype="County" v-model="localForm.county" :label="__('Wilaya')" />
 					<Link
 						v-if="localForm.county"
 						doctype="Sub County"
 						v-model="localForm.sub_county"
-						:label="__('Sub County')"
+						:label="__('Kata')"
 						:filters="{ county: localForm.county }"
 					/>
 					<Link
 						doctype="Ward"
 						v-model="localForm.ward"
-						:label="__('Ward')"
+						:label="__('Mtaa')"
 						:filters="{ sub_county: localForm.sub_county }"
 					/>
 					<Link

@@ -137,12 +137,12 @@ const filteredProjects = computed(() => {
 });
 
 useHead({
-	title: "My Deployments | Kenya Red Cross VMMS",
+	title: "My Deployments | Tanzania Red Cross VMMS",
 	meta: [
 		{
 			name: "description",
 			content:
-				"View the list of deployments you are currently involved in with the Kenya Red Cross. Track deployment dates, types, and your participation status.",
+				"View the list of deployments you are currently involved in with the Tanzania Red Cross. Track deployment dates, types, and your participation status.",
 		},
 	],
 });

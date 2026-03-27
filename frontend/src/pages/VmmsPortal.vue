@@ -49,12 +49,12 @@ import { membershipStore } from "../stores/membership";
 const { membershipTypes } = membershipStore();
 
 useHead({
-	title: "Join the Kenya Red Cross | Membership & Volunteer Sign Up",
+	title: "Join the Tanzania Red Cross | Membership & Volunteer Sign Up",
 	meta: [
 		{
 			name: "description",
 			content:
-				"Discover membership and volunteer opportunities with the Kenya Red Cross. View available membership plans and sign up to start contributing today.",
+				"Discover membership and volunteer opportunities with the Tanzania Red Cross. View available membership plans and sign up to start contributing today.",
 		},
 	],
 });

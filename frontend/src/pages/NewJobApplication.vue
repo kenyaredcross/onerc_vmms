@@ -190,16 +190,16 @@ const getCompanyAbbr = (name) =>
 useHead({
 	title: computed(() =>
 		job.data?.job_title
-			? `Start Application for ${job.data.job_title} | Kenya Red Cross`
-			: "Start Application | Kenya Red Cross",
+			? `Start Application for ${job.data.job_title} | Tanzania Red Cross`
+			: "Start Application | Tanzania Red Cross",
 	),
 	meta: [
 		{
 			name: "description",
 			content: computed(() =>
 				job.data?.job_title
-					? `Ready to apply for ${job.data.job_title}? Log in or create an account to begin your application with the Kenya Red Cross.`
-					: "Access the application form to apply for this job or volunteer opportunity at the Kenya Red Cross VMMS.",
+					? `Ready to apply for ${job.data.job_title}? Log in or create an account to begin your application with the Tanzania Red Cross.`
+					: "Access the application form to apply for this job or volunteer opportunity at the Tanzania Red Cross VMMS.",
 			),
 		},
 	],

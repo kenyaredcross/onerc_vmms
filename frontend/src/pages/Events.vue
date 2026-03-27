@@ -93,12 +93,12 @@ watchDebounced(
 );
 
 useHead({
-	title: "Upcoming Events | Kenya Red Cross VMMS",
+	title: "Upcoming Events | Tanzania Red Cross VMMS",
 	meta: [
 		{
 			name: "description",
 			content:
-				"Discover and register for upcoming Kenya Red Cross events, activities, and training sessions in your area. Search by name or location.",
+				"Discover and register for upcoming Tanzania Red Cross events, activities, and training sessions in your area. Search by name or location.",
 		},
 	],
 });

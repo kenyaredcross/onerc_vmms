@@ -13,7 +13,7 @@
    "fieldname": "county",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "County",
+   "label": "Wilaya",
    "options": "County",
    "reqd": 1
   }

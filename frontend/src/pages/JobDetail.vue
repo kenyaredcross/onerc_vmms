@@ -81,16 +81,16 @@ usePageMeta(() => ({
 useHead({
 	title: computed(() =>
 		job.data?.job_title
-			? `${job.data.job_title} | Opportunity Details - Kenya Red Cross`
-			: "Opportunity Details | Kenya Red Cross VMMS",
+			? `${job.data.job_title} | Opportunity Details - Tanzania Red Cross`
+			: "Opportunity Details | Tanzania Red Cross VMMS",
 	),
 	meta: [
 		{
 			name: "description",
 			content: computed(() =>
 				job.data?.job_description
-					? `Job Description for ${job.data.job_title}: ${job.data.job_description.substring(0, 150)}... Apply now at the Kenya Red Cross.`
-					: "View the full job description, requirements, and application process for this opportunity with the Kenya Red Cross.",
+					? `Job Description for ${job.data.job_title}: ${job.data.job_description.substring(0, 150)}... Apply now at the Tanzania Red Cross.`
+					: "View the full job description, requirements, and application process for this opportunity with the Tanzania Red Cross.",
 			),
 		},
 	],

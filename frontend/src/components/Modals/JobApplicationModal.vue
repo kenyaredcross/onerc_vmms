@@ -117,7 +117,7 @@
 							/>
 							<FormControl
 								v-model="form.ward"
-								:label="__('Region & Ward')"
+								:label="__('Mkoa & Mtaa')"
 								type="text"
 							/>
 							<FormControl

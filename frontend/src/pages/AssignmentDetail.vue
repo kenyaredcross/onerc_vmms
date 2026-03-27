@@ -114,12 +114,12 @@ const downloadContract = (contractName) => {
 };
 
 useHead({
-	title: "Project Assignment Details | Kenya Red Cross",
+	title: "Project Assignment Details | Tanzania Red Cross",
 	meta: [
 		{
 			name: "description",
 			content:
-				"View details for your assigned Kenya Red Cross project, including progress, timeline, and assignment decision (Accept/Reject).",
+				"View details for your assigned Tanzania Red Cross project, including progress, timeline, and assignment decision (Accept/Reject).",
 		},
 	],
 });

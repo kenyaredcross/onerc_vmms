@@ -62,20 +62,20 @@
 				<Link
 					doctype="County"
 					v-model="form.county"
-					:label="__('County')"
+					:label="__('Wilaya')"
 					:readOnly="true"
 				/>
 				<Link
 					v-if="form.county"
 					doctype="Sub County"
 					v-model="form.sub_county"
-					:label="__('Sub County')"
+					:label="__('Kata')"
 					:filters="{ county: form.county }"
 					:readOnly="true"
 				/>
 				<FormControl
 					v-model="form.ward"
-					:label="__('Ward')"
+					:label="__('Mtaa')"
 					type="text"
 					:readonly="true"
 				/>

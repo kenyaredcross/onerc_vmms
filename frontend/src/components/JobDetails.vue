@@ -161,7 +161,7 @@
 								</div>
 								<div>
 									<p class="text-xs font-bold text-gray-500 uppercase">
-										{{ __("County") }}
+										{{ __("Wilaya") }}
 									</p>
 									<p class="text-base font-semibold text-gray-900">
 										{{ __(job.data.company) }}

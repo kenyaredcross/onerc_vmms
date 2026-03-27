@@ -6,7 +6,7 @@
 
 		<CollapsibleSection :title="__('Personal & Location Info')">
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				<ReviewField label="Branch / County" :value="form.company" />
+				<ReviewField label="Branch / Wilaya" :value="form.company" />
 				<ReviewField label="Phone Number" :value="form.phone_number" />
 				<ReviewField label="Email Address" :value="form.email_id" />
 				<ReviewField label="Date of Birth" :value="form.date_of_birth" />
@@ -18,13 +18,13 @@
 					:value="form.mpesa_mobile_phone"
 				/>
 				<ReviewField label="Blood Group" :value="form.blood_group" />
-				<ReviewField label="KRCS Insurance" :value="form.has_insurance" />
+				<ReviewField label="TRCS Insurance" :value="form.has_insurance" />
 
-				<ReviewField label="Ward" :value="form.ward" />
-				<ReviewField label="Sub County" :value="form.sub_county" />
+				<ReviewField label="Mtaa" :value="form.ward" />
+				<ReviewField label="Kata" :value="form.sub_county" />
 				<ReviewField label="Location" :value="form.administrative_location" />
 				<ReviewField label="Sub Location" :value="form.sub_location" />
-				<ReviewField label="County of Residence" :value="form.county" />
+				<ReviewField label="Wilaya" :value="form.county" />
 
 				<ReviewField label="Citizenship" :value="form.citizenship" />
 				<ReviewField

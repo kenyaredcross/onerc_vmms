@@ -7,13 +7,13 @@
 			<div>
 				<Link
 					v-model="localModel.company"
-					:label="__('Branch / County')"
+					:label="__('Branch / Wilaya')"
 					doctype="Company"
 					:required="true"
 					:filters="{ is_group: 0 }"
 				/>
-				<p v-if="errors[0]?.['Branch / County']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Branch / County"] }}
+				<p v-if="errors[0]?.['Branch / Wilaya']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["Branch / Wilaya"] }}
 				</p>
 			</div>
 			<div>
@@ -106,22 +106,22 @@
 			<div>
 				<FormControl
 					v-model="localModel.has_insurance"
-					:label="__('KRCS Insurance')"
+					:label="__('TRCS Insurance')"
 					type="select"
 					:options="yesNoOptions"
-					title="Select 'Yes' if you are insured through KRCS"
+					title="Select 'Yes' if you are insured through TRCS"
 					aria-describedby="krcs-insurance-desc"
 				/>
 				<p id="krcs-insurance-desc" class="text-sm text-gray-600 mt-1">
-					<span title="KRCS = Kenya Red Cross Society" class="mr-2 text-xs">ⓘ</span>
+					<span title="KRCS = Tanzania Red Cross Society" class="mr-2 text-xs">ⓘ</span>
 					{{
 						__(
-							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS).",
+							"Indicate whether you have insurance with the Tanzania Red Cross Society (TRCS).",
 						)
 					}}
 				</p>
-				<p v-if="errors[0]?.['KRCS Insurance']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["KRCS Insurance"] }}
+				<p v-if="errors[0]?.['TRCS Insurance']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["TRCS Insurance"] }}
 				</p>
 			</div>
 		</div>
@@ -133,37 +133,37 @@
 			<div>
 				<Link
 					v-model="localModel.county"
-					:label="__('County of Residence')"
+					:label="__('Wilaya')"
 					doctype="County"
 					:required="true"
 				/>
-				<p v-if="errors[0]?.['County of Residence']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["County of Residence"] }}
+				<p v-if="errors[0]?.['Wilaya']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["Wilaya"] }}
 				</p>
 			</div>
 			<div>
 				<Link
 					v-model="localModel.sub_county"
-					:label="__('Sub County')"
+					:label="__('Kata')"
 					doctype="Sub County"
 					:required="true"
 					:filters="localModel.county ? { county: localModel.county } : {}"
 				/>
-				<p v-if="errors[0]?.['Sub County']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Sub County"] }}
+				<p v-if="errors[0]?.['Kata']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["Kata"] }}
 				</p>
 			</div>
 
 			<div>
 				<Link
 					v-model="localModel.ward"
-					:label="__('Ward')"
+					:label="__('Mtaa')"
 					doctype="Ward"
 					:required="true"
 					:filters="localModel.sub_county ? { sub_county: localModel.sub_county } : {}"
 				/>
-				<p v-if="errors[0]?.['Ward']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Ward"] }}
+				<p v-if="errors[0]?.['Mtaa']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["Mtaa"] }}
 				</p>
 			</div>
 
@@ -248,8 +248,8 @@
 					:required="true"
 					:filters="
 						localModel.citizenship === 'Citizen'
-							? [['name', '=', 'Kenya']]
-							: [['name', '!=', 'Kenya']]
+							? [['name', '=', 'Tanzania']]
+							: [['name', '!=', 'Tanzania']]
 					"
 				/>
 				<p v-if="errors[0]?.['Country of Citizenship']" class="text-sm text-red-600 mt-1">
@@ -330,15 +330,15 @@ function validateForm() {
 	const stepErrors = { 0: {} };
 	const form = localModel.value;
 
-	if (!form.company) stepErrors[0]["Branch / County"] = "Branch is required";
-	if (!form.county) stepErrors[0]["County of Residence"] = "County of residence is required";
+	if (!form.company) stepErrors[0]["Branch / Wilaya"] = "Branch is required";
+	if (!form.county) stepErrors[0]["Wilaya"] = "Wilaya is required";
 	if (!form.phone_number) stepErrors[0]["Phone Number"] = "Phone number is required";
 	if (!form.email_id) stepErrors[0]["Email Address"] = "Email address is required";
 	if (!form.gender) stepErrors[0]["Gender"] = "Gender is required";
-	if (!form.sub_county) stepErrors[0]["Sub County"] = "This field is required";
+	if (!form.sub_county) stepErrors[0]["Kata"] = "This field is required";
 	if (!form.administrative_location) stepErrors[0]["Location"] = "This field is required";
 	if (!form.sub_location) stepErrors[0]["Sub Location"] = "This field is required";
-	if (!form.ward) stepErrors[0]["Ward"] = "Ward is required";
+	if (!form.ward) stepErrors[0]["Mtaa"] = "Mtaa is required";
 	if (!form.citizenship) stepErrors[0]["Citizenship"] = "This field is required";
 	if (!form.identification_type)
 		stepErrors[0]["Identification Document Type"] = "This field is required";
@@ -475,7 +475,7 @@ watch(
 	() => localModel.value.citizenship,
 	(newVal, oldVal) => {
 		if (ready.value && oldVal !== newVal) {
-			localModel.value.country_of_citizenship = newVal === "Citizen" ? "Kenya" : "";
+			localModel.value.country_of_citizenship = newVal === "Citizen" ? "Tanzania" : "";
 		}
 	},
 );

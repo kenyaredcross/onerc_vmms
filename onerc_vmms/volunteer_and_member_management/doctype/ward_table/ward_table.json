@@ -13,7 +13,7 @@
    "fieldname": "ward",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Ward",
+   "label": "Mtaa",
    "options": "Ward",
    "reqd": 1
   }

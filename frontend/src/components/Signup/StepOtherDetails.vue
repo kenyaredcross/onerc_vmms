@@ -10,7 +10,7 @@
         type="textarea"
         :rows="4"
       />
-      <FormControl v-model="localForm.ward" :label="__('Ward')" type="text" />
+      <FormControl v-model="localForm.ward" :label="__('Mtaa')" type="text" />
     </div>
   </section>
 </template>

@@ -93,7 +93,7 @@
 						<FormControl
 							v-if="!is_renew"
 							type="autocomplete"
-							label="Branch / County"
+							label="Branch / Wilaya"
 							placeholder="Select branch or county to register with"
 							class="w-full mb-4"
 							:options="branches.data"
@@ -103,7 +103,7 @@
 						<FormControl
 							v-if="is_renew"
 							type="text"
-							label="Branch / County"
+							label="Branch / Wilaya"
 							placeholder="Select branch or county to register with"
 							class="w-full mb-4"
 							:value="props.renew_branch"

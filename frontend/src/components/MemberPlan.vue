@@ -136,7 +136,7 @@
 						<p class="text-red-50 leading-relaxed opacity-90 text-sm">
 							{{
 								__(
-									"Join Kenya Red Cross Society and support your community through life-saving services while gaining valuable skills.",
+									"Join Tanzania Red Cross Society and support your community through life-saving services while gaining valuable skills.",
 								)
 							}}
 						</p>

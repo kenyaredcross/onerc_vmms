@@ -114,12 +114,12 @@ const downloadContract = (contractName) => {
 };
 
 useHead({
-	title: "Deployment Assignment Details | Kenya Red Cross",
+	title: "Deployment Assignment Details | Tanzania Red Cross",
 	meta: [
 		{
 			name: "description",
 			content:
-				"View details for your assigned Kenya Red Cross deployment, including progress, timeline, and assignment decision (Accept/Reject).",
+				"View details for your assigned Tanzania Red Cross deployment, including progress, timeline, and assignment decision (Accept/Reject).",
 		},
 	],
 });

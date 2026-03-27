@@ -289,12 +289,12 @@ const filteredApplications = computed(() => {
 });
 
 useHead({
-	title: "My Applications | Kenya Red Cross VMMS",
+	title: "My Applications | Tanzania Red Cross VMMS",
 	meta: [
 		{
 			name: "description",
 			content:
-				"Track and manage all your applications for Kenya Red Cross job and volunteer opportunities. View application status, details, and history.",
+				"Track and manage all your applications for Tanzania Red Cross job and volunteer opportunities. View application status, details, and history.",
 		},
 	],
 });

@@ -6,7 +6,7 @@
 		<div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 p-2 md:p-10">
 			<div class="flex flex-col justify-center space-y-6 text-left">
 				<h1 class="text-3xl md:text-6xl font-extrabold text-red-600 leading-tight">
-					{{ __("Kenya Red Cross") }} <br />
+					{{ __("Tanzania Red Cross") }} <br />
 					<span class="text-gray-800">{{ __("Society") }}</span>
 				</h1>
 				<p class="text-lg text-gray-700 max-w-lg">

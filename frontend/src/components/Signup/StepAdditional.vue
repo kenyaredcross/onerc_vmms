@@ -35,8 +35,8 @@
 					:required="true"
 					:options="reasonsOptions"
 				/>
-				<p v-if="errors[1]?.['Reason To Join Krcs']" class="text-sm text-red-600 mt-1">
-					{{ errors[1]?.["Reason To Join Krcs"] }}
+				<p v-if="errors[1]?.['Reason To Join TRCS']" class="text-sm text-red-600 mt-1">
+					{{ errors[1]?.["Reason To Join TRCS"] }}
 				</p>
 			</div>
 			<div>
@@ -231,7 +231,7 @@ function validateChildTableRows(rows, config, tableLabel) {
 const componentValidationConfig = [
 	{ field: "access_to_internet", label: "Access To Internet", type: "simple" },
 	{ field: "profession", label: "Profession", type: "simple" },
-	{ field: "reason_to_join_krcs", label: "Reason To Join Krcs", type: "simple" },
+	{ field: "reason_to_join_krcs", label: "Reason To Join TRCS", type: "simple" },
 	{ field: "languages", label: "Languages", type: "multiselect" },
 	{ field: "driving_licence", label: "Driving Licence", type: "multiselect" },
 
