@@ -19,7 +19,6 @@
   "message",
   "personnel_filters_section",
   "affiliation_column",
-  "region",
   "branch",
   "department",
   "personnel_type",
@@ -66,6 +65,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Title",
+   "no_copy": 1,
    "reqd": 1,
    "unique": 1
   },
@@ -84,12 +84,6 @@
    "fieldname": "personnel_filters_section",
    "fieldtype": "Section Break",
    "label": "Personnel Filters"
-  },
-  {
-   "fieldname": "region",
-   "fieldtype": "Table MultiSelect",
-   "label": "Region",
-   "options": "Company Item"
   },
   {
    "fieldname": "department",
@@ -117,7 +111,7 @@
   {
    "fieldname": "branch",
    "fieldtype": "Table MultiSelect",
-   "label": "Branch (County of Membership)",
+   "label": "Branch",
    "options": "Company Item"
   },
   {
@@ -165,12 +159,12 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.party_type===\"Employee\";",
+   "depends_on": "eval:doc.recipient_type===\"Employee\";",
    "fieldname": "personnel_specific_type",
    "fieldtype": "Select",
    "label": "Personnel Type",
-   "mandatory_depends_on": "eval:doc.party_type===\"Employee\"",
-   "options": "Volunteer\nEmployee Staff"
+   "mandatory_depends_on": "eval:doc.recipient_type===\"Employee\";",
+   "options": "\nVolunteer\nEmployee Staff"
   },
   {
    "description": "The preferred channel or method through which the parties should be contacted.",
@@ -274,7 +268,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-18 08:38:47.113850",
+ "modified": "2026-04-05 13:22:09.516166",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Notification Center",

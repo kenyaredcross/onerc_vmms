@@ -49,7 +49,7 @@ frappe.ui.form.on("VM Notification Center", {
 						{ name: "Phone", width: 150 },
 					],
 					data: r.message.map((recipient) => [
-						recipient.name,
+						recipient.recipient_id,
 						recipient.recipient_name,
 						recipient.user,
 						recipient.phone,
