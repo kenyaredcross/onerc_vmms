@@ -87,17 +87,6 @@ def get_current_membership():
 
 
 @frappe.whitelist()
-def create_member(name):
-    volunteer_details = frappe.get_doc("Employee", name)
-    member = frappe.new_doc("VM Member")
-    member.member_name = volunteer_details.employee_name
-    member.email_id = volunteer_details.personal_email
-    member.volunteer = volunteer_details.name
-    member.insert(ignore_permissions=True)
-    return member.name
-
-
-@frappe.whitelist()
 def membership_certificate_template(membership_type: str) -> str:
 
     error_message = "Error printing membership certificate"
@@ -177,7 +166,7 @@ def create_membership(
 
         member = frappe.db.exists("VM Member", {"email_id": frappe.session.user})
         if not member:
-            member = create_member(phone)
+            member = create_member()
 
         else:
             member = frappe.get_doc("VM Member", member)
@@ -244,13 +233,13 @@ def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
                 )
 
 
-def create_member(phone: str) -> "Document":
+def create_member() -> "Document":
+
     member = frappe.get_doc(
         {
             "doctype": "VM Member",
-            "member_name": get_fullname,
+            "member_name": get_fullname(),
             "email_id": frappe.session.user,
-            "phone_number": phone,
         }
     )
     member.insert(ignore_permissions=True)
