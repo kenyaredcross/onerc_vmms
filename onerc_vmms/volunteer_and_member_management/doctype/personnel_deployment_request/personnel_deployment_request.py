@@ -145,9 +145,11 @@ class PersonnelDeploymentRequest(Document):
 
 			if any(row.notification_channel in sms for row in deployment_doc.notification_channels):
 				from frappe.core.doctype.sms_settings.sms_settings import send_sms
-				from frappe.utils import get_site_name
+				from frappe.utils import get_url
 
-				message = f"""Hello, you have received a new deployment request. View details: https://{get_site_name(frappe.local.request.host)}/vmms/assignment/{self.name}"""
+				url = get_url("/vmms/assignment/" + self.name)
+
+				message = f"""Hello, you have received a new deployment request. View details: {url}"""
 				mobile_contact: dict = frappe.db.get_value(
 					"User", self.user, ["phone", "mobile_no"], as_dict=True
 				)
