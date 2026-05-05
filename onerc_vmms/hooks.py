@@ -73,12 +73,18 @@ doctype_list_js = {
 # ----------
 
 # application home page (will override Website Settings)
-# home_page = "login"
+# ALL users (guests and logged-in) start at the OneRC portal
+home_page = "index"
 
 # website user home page (by Role)
-# role_home_page = {
-# 	"Role": "home_page"
-# }
+# Everyone starts at the portal page
+role_home_page = {
+    "Guest": "index",
+    "System User": "index",
+}
+
+# All users see the OneRC portal landing page first
+# They can then navigate to VMMS or other services from there
 
 # Generators
 # ----------
