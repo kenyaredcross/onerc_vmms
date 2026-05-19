@@ -116,7 +116,7 @@
 					<span title="KRCS = Kenya Red Cross Society" class="mr-2 text-xs">ⓘ</span>
 					{{
 						__(
-							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS).",
+							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS)."
 						)
 					}}
 				</p>
@@ -172,12 +172,8 @@
 					v-model="localModel.administrative_location"
 					:label="__('Location')"
 					doctype="Administrative Location"
-					:required="true"
 					:filters="localModel.sub_county ? { sub_county: localModel.sub_county } : {}"
 				/>
-				<p v-if="errors[0]?.['Location']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Location"] }}
-				</p>
 			</div>
 
 			<div>
@@ -185,16 +181,12 @@
 					v-model="localModel.sub_location"
 					:label="__('Sub Location')"
 					doctype="Sub Location"
-					:required="true"
 					:filters="
 						localModel.administrative_location
 							? { location: localModel.administrative_location }
 							: {}
 					"
 				/>
-				<p v-if="errors[0]?.['Sub Location']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Sub Location"] }}
-				</p>
 			</div>
 		</div>
 		<h2 class="text-xl font-bold text-red-700 mb-4">
@@ -269,7 +261,7 @@
 			<p class="italic text-sm">
 				{{
 					__(
-						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy.",
+						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy."
 					)
 				}}
 			</p>
@@ -336,8 +328,7 @@ function validateForm() {
 	if (!form.email_id) stepErrors[0]["Email Address"] = "Email address is required";
 	if (!form.gender) stepErrors[0]["Gender"] = "Gender is required";
 	if (!form.sub_county) stepErrors[0]["Sub County"] = "This field is required";
-	if (!form.administrative_location) stepErrors[0]["Location"] = "This field is required";
-	if (!form.sub_location) stepErrors[0]["Sub Location"] = "This field is required";
+
 	if (!form.ward) stepErrors[0]["Ward"] = "Ward is required";
 	if (!form.citizenship) stepErrors[0]["Citizenship"] = "This field is required";
 	if (!form.identification_type)
@@ -436,7 +427,7 @@ watch(
 				localModel.value.county = newVal;
 			}
 		}
-	},
+	}
 );
 
 watch(
@@ -448,7 +439,7 @@ watch(
 			localModel.value.administrative_location = "";
 			localModel.value.sub_location = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -459,7 +450,7 @@ watch(
 			localModel.value.sub_location = "";
 			localModel.value.ward = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -468,7 +459,7 @@ watch(
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.sub_location = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -477,7 +468,7 @@ watch(
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.country_of_citizenship = newVal === "Citizen" ? "Kenya" : "";
 		}
-	},
+	}
 );
 
 watch(localModel, validateForm, { deep: true, immediate: true });
