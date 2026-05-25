@@ -1,0 +1,44 @@
+{
+ "cards": [
+  {
+   "card": "Personnel"
+  },
+  {
+   "card": "Volunteers"
+  },
+  {
+   "card": "Members"
+  },
+  {
+   "card": "Active Memberships"
+  },
+  {
+   "card": "Deployments"
+  }
+ ],
+ "charts": [
+  {
+   "width": "Half"
+  },
+  {
+   "chart": "Deployments Trend",
+   "width": "Half"
+  },
+  {
+   "chart": "Volunter Branch Distribution",
+   "width": "Full"
+  }
+ ],
+ "creation": "2026-05-25 13:06:42.656389",
+ "dashboard_name": "VMMS Overview",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-05-25 14:24:55.919210",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "VMMS Overview",
+ "owner": "Administrator"
+}
