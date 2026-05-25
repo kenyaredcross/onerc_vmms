@@ -46,7 +46,9 @@
   "advanced_filters_section",
   "filter_list",
   "select_employees_section",
-  "employee_list"
+  "employee_list",
+  "notification_templates_tab",
+  "email_template"
  ],
  "fields": [
   {
@@ -315,6 +317,17 @@
    "fieldtype": "Data",
    "label": "Title",
    "reqd": 1
+  },
+  {
+   "fieldname": "notification_templates_tab",
+   "fieldtype": "Tab Break",
+   "label": "Notification Templates"
+  },
+  {
+   "fieldname": "email_template",
+   "fieldtype": "Link",
+   "label": "Email Template",
+   "options": "Email Template"
   }
  ],
  "grid_page_length": 50,

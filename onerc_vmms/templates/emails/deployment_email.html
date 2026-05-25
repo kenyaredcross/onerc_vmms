@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Volunteer Deployment Request</title>
+		<style type="text/css">
+			body,
+			#bodyTable,
+			#bodyCell {
+				height: 100% !important;
+				margin: 0;
+				padding: 0;
+				width: 100% !important;
+				font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+				background-color: #f2f2f2;
+			}
+			table {
+				border-collapse: collapse;
+			}
+			img,
+			a img {
+				border: 0;
+				outline: none;
+				text-decoration: none;
+			}
+			h1,
+			h2,
+			h3,
+			h4,
+			h5,
+			h6 {
+				margin: 0;
+				padding: 0;
+			}
+			p {
+				margin: 0;
+				padding: 0;
+				margin-bottom: 15px;
+				color: #333333;
+				line-height: 1.5;
+			}
+
+			.email-container {
+				max-width: 600px;
+				margin: auto;
+			}
+			.content-cell {
+				background-color: #ffffff;
+				padding: 40px 30px;
+				border-radius: 0 0 8px 8px;
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+			}
+
+			.header-bg {
+				background-color: #d71a28;
+			}
+			.header-content {
+				padding: 30px 20px;
+				text-align: center;
+			}
+			.header-title {
+				color: #ffffff;
+				font-size: 28px;
+				font-weight: 400;
+				line-height: 1.3;
+			}
+
+			.button-group {
+				text-align: center;
+				margin: 30px 0 10px;
+			}
+			.button-link {
+				display: inline-block;
+				background-color: #d71a28;
+				color: #ffffff !important;
+				padding: 8px 18px;
+				border-radius: 6px;
+				font-weight: 600;
+				font-size: 15px;
+				text-decoration: none;
+				margin: 8px;
+				min-width: 180px;
+				transition: background-color 0.3s ease;
+			}
+			.button-link:hover {
+				background-color: #b91520;
+			}
+
+			.footer-cell {
+				background-color: #fafafa;
+				padding: 20px 20px;
+				text-align: center;
+				font-size: 12px;
+				color: #777777;
+				border-top: 1px solid #e0e0e0;
+				border-radius: 0 0 8px 8px;
+			}
+			.footer-cell a {
+				color: #d71a28;
+				text-decoration: none;
+			}
+
+			@media only screen and (max-width: 480px) {
+				.header-title {
+					font-size: 24px !important;
+				}
+				.content-cell {
+					padding: 25px 20px !important;
+				}
+				.button-link {
+					display: block;
+					width: 100%;
+					margin: 10px 0;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<center>
+			<table border="0" cellpadding="0" cellspacing="0" id="bodyTable" width="100%">
+				<tr>
+					<td align="center" id="bodyCell">
+						<table
+							border="0"
+							cellpadding="0"
+							cellspacing="0"
+							class="email-container"
+							width="100%"
+						>
+							<tr>
+								<td align="center" style="padding: 20px 0">
+									<table
+										border="0"
+										cellpadding="0"
+										cellspacing="0"
+										width="100%"
+										class="header-bg"
+										style="border-radius: 8px 8px 0 0"
+									>
+										<tr>
+											<td align="center" class="header-content">
+												<h1 class="header-title">
+													<span style="font-weight: 700">VOLUNTEER</span>
+													DEPLOYMENT
+												</h1>
+											</td>
+										</tr>
+									</table>
+
+									<table border="0" cellpadding="0" cellspacing="0" width="100%">
+										<tr>
+											<td class="content-cell">
+												<h3
+													style="
+														color: #d71a28;
+														font-size: 20px;
+														margin-bottom: 20px;
+													"
+												>
+													New Deployment Request
+												</h3>
+												<p>Dear {{ doc.employee_name }},</p>
+												<p>
+													We are pleased to inform you that a new
+													deployment request has been created for you.
+													This deployment opportunity requires your
+													participation and timely acknowledgment.
+												</p>
+												<p>
+													Please review the deployment details and
+													confirm your availability through the link
+													below.
+												</p>
+												<p>
+													We appreciate your continued commitment and
+													service to the Kenya Red Cross Society.
+												</p>
+												<p style="margin-bottom: 30px">
+													Best regards,<br /><strong
+														>Kenya Red Cross Society</strong
+													>
+												</p>
+
+												<div class="button-group">
+													<a
+														href="/vmms/assignment/{{ doc.name }}"
+														target="_blank"
+														class="button-link"
+													>
+														VIEW DEPLOYMENT DETAILS
+													</a>
+													<a
+														href="{{ doc.tor_url }}"
+														target="_blank"
+														class="button-link"
+														style="background-color: #555555"
+													>
+														VIEW TOR
+													</a>
+												</div>
+											</td>
+										</tr>
+									</table>
+
+									<table border="0" cellpadding="0" cellspacing="0" width="100%">
+										<tr>
+											<td class="footer-cell">
+												&copy; {{ frappe.utils.nowdate() }} Kenya Red Cross
+												Society. All rights reserved.
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+		</center>
+	</body>
+</html>
