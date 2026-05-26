@@ -27,7 +27,7 @@ class VMMember(Document):
     @frappe.whitelist()
     def make_customer_and_link(self):
         if self.customer:
-            frappe.msgprint(_("A customer is already linked to this Member"))
+            return
 
         customer = create_customer(
             frappe._dict(

@@ -1,0 +1,23 @@
+{
+ "app": "onerc_vmms",
+ "bg_color": "gray",
+ "creation": "2026-05-25 13:50:22.329919",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "Folder",
+ "idx": 0,
+ "label": "VMMS",
+ "link_to": "",
+ "link_type": "Workspace Sidebar",
+ "logo_url": "/assets/onerc_vmms/frontend/vmms.png",
+ "modified": "2026-05-25 14:41:33.431527",
+ "modified_by": "Administrator",
+ "name": "VMMS",
+ "owner": "Administrator",
+ "parent_icon": "",
+ "restrict_removal": 0,
+ "roles": [],
+ "sidebar": "",
+ "standard": 1
+}

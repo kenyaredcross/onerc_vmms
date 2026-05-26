@@ -186,15 +186,6 @@ def search_widget(
     order_by_based_on_meta = get_order_by(doctype, meta)
     order_by = f"`tab{doctype}`.idx desc, {order_by_based_on_meta}"
 
-    if not meta.translated_doctype:
-        _txt = frappe.db.escape((txt or "").replace("%", "").replace("@", ""))
-        _relevance = f"(1 / nullif(locate({_txt}, `tab{doctype}`.`name`), 0))"
-        formatted_fields.append(f"""{_relevance} as `_relevance`""")
-        if frappe.db.db_type == "mariadb":
-            order_by = f"ifnull(_relevance, -9999) desc, {order_by}"
-        elif frappe.db.db_type == "postgres":
-            order_by = f"{len(formatted_fields)} desc nulls last, {order_by}"
-
     ignore_permissions = True
 
     values = frappe.get_list(
@@ -222,13 +213,6 @@ def search_widget(
         )
 
     values = sorted(values, key=lambda x: relevance_sorter(x, txt, as_dict))
-
-    if not meta.translated_doctype:
-        if as_dict:
-            for r in values:
-                r.pop("_relevance", None)
-        else:
-            values = [r[:-1] for r in values]
 
     return values
 
