@@ -53,14 +53,13 @@
 <script setup>
 import { useHead } from "@vueuse/head";
 import { createResource, ErrorMessage, toast } from "frappe-ui";
-import { inject, reactive, ref, watch } from "vue";
+import { reactive, ref, watch } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import Member from "../components/MemberPlan.vue";
 import RegisterMembership from "../components/Modals/RegisterMembership.vue";
 import NoPermission from "../components/NoPermission.vue";
 import VmmsPortalCard from "../components/VmmsPortalCard.vue";
 import { membershipStore } from "../stores/membership";
-import { isValidPhone } from "../utils/volunteer";
 import { sessionStore } from "../stores/session";
 
 const { membershipTypes, currentMembership } = membershipStore();
@@ -94,7 +93,6 @@ function cleanUpMembershipForm() {
 	registerDialog.value = false;
 	membershipForm.membership_type = "";
 	membershipForm.amount = 0;
-	payNow.value = false;
 }
 
 function selectMembershipType(membershipType) {
@@ -109,30 +107,6 @@ function submit() {
 		return;
 	}
 	createMembership.submit({ ...membershipForm });
-}
-
-function payMembership() {
-	if (!membershipForm.phone_number) {
-		createMembership.error = "Please enter your phone number";
-		return;
-	}
-
-	if (!isValidPhone(membershipForm.phone_number)) {
-		createMembership.error = "Please enter a valid Kenyan phone number.eg. (+254123456789)";
-		return;
-	}
-	createMembership.error = "";
-
-	const membershipId = currentMembership.data?.[0]?.name;
-
-	if (membershipId) {
-		renewMembership.submit({
-			membership: membershipId,
-			phone_number: membershipForm.phone_number,
-		});
-	} else {
-		toast.info("Payment can only be initiated after a membership document has been created.");
-	}
 }
 
 watch(registerDialog, (newValue) => {
