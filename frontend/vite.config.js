@@ -17,12 +17,17 @@ export default defineConfig({
 			},
 		}),
 
-		vue(),
+		vue({
+			script: {
+				defineModel: true,
+				propsDestructure: true,
+			},
+		}),
 
 		VitePWA({
 			registerType: "autoUpdate",
 			devOptions: {
-				enabled: true,
+				enabled: false,
 			},
 			workbox: {
 				cleanupOutdatedCaches: true,
@@ -40,6 +45,10 @@ export default defineConfig({
 		chunkSizeWarningLimit: 1500,
 	},
 
+	css: {
+		devSourcemap: false,
+	},
+
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "src"),
@@ -48,8 +57,33 @@ export default defineConfig({
 	},
 
 	optimizeDeps: {
-		include: ["feather-icons", "showdown", "highlight.js/lib/core", "interactjs"],
-
+		include: [
+			"feather-icons",
+			"showdown",
+			"highlight.js/lib/core",
+			"interactjs",
+			"vue",
+			"vue-router",
+			"pinia",
+			"frappe-ui",
+			"dayjs",
+			"date-fns",
+			"apexcharts",
+			"vue-chartjs",
+			"chart.js",
+			"socket.io-client",
+			"markdown-it",
+			"lucide-vue-next",
+			"@heroicons/vue/24/outline",
+			"@heroicons/vue/24/solid",
+			"@vueuse/head",
+			"@vueuse/router",
+			"codemirror",
+			"@codemirror/lang-html",
+			"@codemirror/lang-javascript",
+			"@codemirror/lang-json",
+			"@codemirror/lang-python",
+		],
 		esbuildOptions: {
 			define: {
 				global: "globalThis",
@@ -59,8 +93,16 @@ export default defineConfig({
 
 	server: {
 		allowedHosts: true,
-		port: 8080,
-		open: true,
+		port: 8081,
+		open: false,
+		hmr: {
+			overlay: true,
+			clientPort: 8081,
+		},
+		watch: {
+			usePolling: true,
+			interval: 150,
+		},
 	},
 
 	define: {
