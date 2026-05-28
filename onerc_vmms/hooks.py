@@ -173,10 +173,6 @@ doc_events = {
     "Job Opening": {
         "validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.validate"
     },
-    "Sales Invoice": {
-        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
-        "on_update_after_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
-    },
     "GL Entry": {
         "after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
         "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",

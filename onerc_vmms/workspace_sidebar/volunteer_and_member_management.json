@@ -9,6 +9,18 @@
   {
    "child": 0,
    "collapsible": 1,
+   "icon": "web",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Portal",
+   "link_type": "URL",
+   "show_arrow": 0,
+   "type": "Link",
+   "url": "/vmms"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
    "icon": "dashboard-list",
    "indent": 0,
    "keep_closed": 0,
@@ -27,18 +39,6 @@
    "label": "VM Settings",
    "link_to": "VM Settings",
    "link_type": "DocType",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "icon": "web",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Portal",
-   "link_to": "vmms",
-   "link_type": "Page",
    "show_arrow": 0,
    "type": "Link"
   },
@@ -214,8 +214,8 @@
    "type": "Link"
   }
  ],
- "modified": "2026-05-25 14:32:14.887414",
- "modified_by": "Administrator",
+ "modified": "2026-05-26 09:26:38.139286",
+ "modified_by": "mukunajohn329@gmail.com",
  "module": "Setup",
  "name": "Volunteer and Member Management",
  "owner": "Administrator",
