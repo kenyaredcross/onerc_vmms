@@ -15,6 +15,8 @@
   "column_break_qbmp",
   "expected_start_date",
   "expected_end_date",
+  "future_deployment",
+  "future_deployment_date",
   "column_break_qlgy",
   "company",
   "number_of_volunteers_required",
@@ -328,6 +330,20 @@
    "fieldtype": "Link",
    "label": "Email Template",
    "options": "Email Template"
+  },
+  {
+   "default": "0",
+   "fieldname": "future_deployment",
+   "fieldtype": "Check",
+   "label": "Future Deployment"
+  },
+  {
+   "depends_on": "eval:doc.future_deployment",
+   "description": "The deployment will be sent to volunteers automatically on this date",
+   "fieldname": "future_deployment_date",
+   "fieldtype": "Date",
+   "label": "Future Deployment Date",
+   "mandatory_depends_on": "eval:doc.future_deployment"
   }
  ],
  "grid_page_length": 50,
@@ -369,11 +385,11 @@
    "link_fieldname": "personnel_deployment_request"
   }
  ],
- "modified": "2025-11-20 08:56:34.143618",
+ "modified": "2026-06-02 18:30:51.612523",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Deployment Request Tool",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

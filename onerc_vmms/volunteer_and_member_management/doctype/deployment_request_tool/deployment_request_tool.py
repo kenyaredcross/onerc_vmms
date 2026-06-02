@@ -24,37 +24,16 @@ class DeploymentRequestTool(Document):
 		from frappe.types import DF
 		from hrms.hr.doctype.designation_skill.designation_skill import DesignationSkill
 		from lms.lms.doctype.related_courses.related_courses import RelatedCourses
-
-		from onerc_vmms.volunteer_and_member_management.doctype.administrative_location_table.administrative_location_table import (
-			AdministrativeLocationTable,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import (
-			CompanyItem,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.county_table.county_table import (
-			CountyTable,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import (
-			DepartmentItem,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import (
-			DesignationItem,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import (
-			EmploymentTypeItem,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.notification_channel_item.notification_channel_item import (
-			NotificationChannelItem,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import (
-			PersonnelLicenceItem,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.sub_county_table.sub_county_table import (
-			SubCountyTable,
-		)
-		from onerc_vmms.volunteer_and_member_management.doctype.ward_table.ward_table import (
-			WardTable,
-		)
+		from onerc_vmms.volunteer_and_member_management.doctype.administrative_location_table.administrative_location_table import AdministrativeLocationTable
+		from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import CompanyItem
+		from onerc_vmms.volunteer_and_member_management.doctype.county_table.county_table import CountyTable
+		from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import DepartmentItem
+		from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import DesignationItem
+		from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import EmploymentTypeItem
+		from onerc_vmms.volunteer_and_member_management.doctype.notification_channel_item.notification_channel_item import NotificationChannelItem
+		from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import PersonnelLicenceItem
+		from onerc_vmms.volunteer_and_member_management.doctype.sub_county_table.sub_county_table import SubCountyTable
+		from onerc_vmms.volunteer_and_member_management.doctype.ward_table.ward_table import WardTable
 
 		administrative_location: DF.TableMultiSelect[AdministrativeLocationTable]
 		branch: DF.TableMultiSelect[CompanyItem]
@@ -68,6 +47,8 @@ class DeploymentRequestTool(Document):
 		expected_end_date: DF.Datetime
 		expected_start_date: DF.Datetime
 		filter_criteria: DF.Link | None
+		future_deployment: DF.Check
+		future_deployment_date: DF.Date | None
 		licences: DF.TableMultiSelect[PersonnelLicenceItem]
 		location: DF.Link | None
 		notes: DF.TextEditor | None
@@ -83,8 +64,8 @@ class DeploymentRequestTool(Document):
 		title: DF.Data
 		tor_url: DF.SmallText | None
 		ward: DF.TableMultiSelect[WardTable]
-
 	# end: auto-generated types
+
 	def validate_fields(self, employees: list):
 		mandatory_fields = [
 			"project",
