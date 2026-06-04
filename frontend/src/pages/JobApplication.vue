@@ -1,35 +1,20 @@
 <template>
 	<div class="w-full mx-auto py-2 px-1">
-		<div v-if="!isLoggedIn" class="text-center py-20">
-			<LogIn class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-			<h2 class="text-3xl font-bold text-gray-900 mb-4">
-				{{ __("Authentication Required") }}
-			</h2>
-			<p class="text-gray-600 mb-8">
-				{{
-					__(
-						"Please log in to access your opportunity application details. Your application information is protected and only available to authenticated users.",
-					) 
-				}}
-			</p>
-			<Button
-				variant="solid"
-				class="bg-red-700 hover:bg-red-800 text-white px-6 py-3 rounded-lg"
-				@click="redirectToLogin"
-			>
-				{{ __("Log In") }}
-			</Button>
+		<div v-if="!isLoggedIn" class="text-center">
+			<NoPermission class="mt-8" :page="__('application details')" />
 		</div>
 
 		<div v-else>
-			<h1 class="text-3xl font-bold text-gray-900 mb-8">{{ __("My Applications") }}</h1>
+			<h1 class="text-3xl font-bold text-ink-gray-1-900 mb-8">
+				{{ __("My Applications") }}
+			</h1>
 
 			<div v-if="applications.loading" class="text-center py-20">
-				<p class="text-gray-500">{{ __("Loading applications...") }}</p>
+				<p class="text-ink-gray-1-500">{{ __("Loading applications...") }}</p>
 			</div>
 
 			<div v-else-if="!applications.data?.length" class="text-center py-20">
-				<p class="text-gray-500">
+				<p class="text-ink-gray-1-500">
 					{{ __("You haven't applied for any opportunities yet.") }}
 				</p>
 			</div>
@@ -41,7 +26,7 @@
 						:buttons="jobTabs"
 						class="w-full sm:w-auto"
 						active-class="bg-red-600 text-white"
-						inactive-class="text-gray-700 hover:bg-gray-100"
+						inactive-class="text-ink-gray-1-700 hover:bg-surface-gray-100"
 					/>
 				</div>
 
@@ -53,18 +38,18 @@
 						v-for="app in filteredApplications"
 						:key="app.name"
 						:to="{ name: 'JobApplicationDetail', params: { id: app.name } }"
-						class="flex flex-col bg-gradient-to-br from-white via-red-50 to-red-100 border border-red-200 rounded-2xl p-6 h-full shadow-md hover:shadow-lg transition-all duration-300"
+						class="flex flex-col bg-surface-gray-2 border border-outline-red-1 rounded-2xl p-6 h-full shadow-md hover:shadow-lg transition-all duration-300"
 					>
 						<div class="flex items-start gap-4">
 							<div>
 								<img
 									v-if="app.job_opening_details?.company_logo"
 									:src="app.job_opening_details.company_logo"
-									class="w-14 h-14 rounded-lg object-contain bg-gray-50 border"
+									class="w-14 h-14 rounded-lg object-contain bg-surface-gray-50 border"
 								/>
 								<div
 									v-else
-									class="w-14 h-14 flex items-center justify-center rounded-lg bg-red-100 text-red-700 font-bold"
+									class="w-14 h-14 flex items-center justify-center rounded-lg bg-surface-red-2 text-red-700 font-bold"
 								>
 									{{ __(getCompanyAbbr(app.company)) }}
 								</div>
@@ -72,7 +57,7 @@
 
 							<div class="flex-1">
 								<div class="flex justify-between items-start">
-									<h2 class="text-xl font-bold text-gray-900">
+									<h2 class="text-xl font-bold text-ink-gray-1-900">
 										{{
 											__(
 												app?.job_opening_details?.job_title ||
@@ -94,25 +79,25 @@
 									</span>
 								</div>
 								<p class="text-red-700 font-medium">{{ __(app.company) }}</p>
-								<p v-if="app.designation" class="text-gray-500 text-sm">
+								<p v-if="app.designation" class="text-ink-gray-1-500 text-sm">
 									<strong>{{ __("Designation") }}:</strong>
 									{{ __(app.designation) }}
 								</p>
 							</div>
 						</div>
 
-						<div class="mt-4 text-sm text-gray-600">
+						<div class="mt-4 text-sm text-ink-gray-1-600">
 							{{ __("Applied") }}
 							{{ formatDistanceToNow(parseISO(app.creation), { addSuffix: true }) }}
 						</div>
-						<div class="mt-1 text-sm text-gray-600">
+						<div class="mt-1 text-sm text-ink-gray-1-600">
 							{{ __("Modified") }}
 							{{ formatDistanceToNow(parseISO(app.modified), { addSuffix: true }) }}
 						</div>
 
 						<div
 							v-if="app.cover_letter"
-							class="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700"
+							class="mt-4 p-3 bg-surface-gray-50 rounded-lg text-sm text-ink-gray-1-700"
 						>
 							<strong>{{ __("Cover Letter") }}:</strong>
 							<div
@@ -125,7 +110,7 @@
 
 						<div
 							v-if="app.job_opening_details"
-							class="mt-4 border-t pt-4 text-sm text-gray-700"
+							class="mt-4 border-t pt-4 text-sm text-ink-gray-1-700"
 						>
 							<p v-if="app.job_opening_details.job_status">
 								<strong>{{ __("Opportunity Status") }}:</strong>
@@ -147,7 +132,7 @@
 					</router-link>
 				</div>
 
-				<div v-else class="text-center py-20 text-gray-500">
+				<div v-else class="text-center py-20 text-ink-gray-1-500">
 					{{ __("No applications found under") }} "{{ __(currentTab) }}"
 					{{ __("status.") }}
 				</div>
@@ -165,6 +150,7 @@ import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { sessionStore } from "../stores/session";
 import { usersStore } from "../stores/user";
+import NoPermission from "../components/NoPermission.vue";
 
 const { userResource } = usersStore();
 const { isLoggedIn } = sessionStore();
@@ -201,7 +187,7 @@ const getCompanyAbbr = (name) =>
 
 const statusClass = (status, docstatus) => {
 	if (docstatus === 0) {
-		return "bg-gray-200 text-gray-800";
+		return "bg-surface-gray-200 text-ink-gray-1-800";
 	}
 	if (docstatus === 2) {
 		return "bg-red-200 text-red-800";
@@ -217,7 +203,7 @@ const statusClass = (status, docstatus) => {
 		case "under review":
 			return "bg-yellow-100 text-yellow-700";
 		default:
-			return "bg-gray-100 text-gray-700";
+			return "bg-surface-gray-100 text-ink-gray-1-700";
 	}
 };
 

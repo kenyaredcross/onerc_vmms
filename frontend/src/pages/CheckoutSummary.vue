@@ -1,5 +1,5 @@
 <template>
-	<div class="min-h-screen bg-gray-50 py-3 md:py-6 px-3 md:px-4">
+	<div class="min-h-screen bg-surface-gray-50 py-3 md:py-6 px-3 md:px-4">
 		<Breadcrumbs
 			v-if="ticketType.data"
 			:items="[
@@ -19,7 +19,10 @@
 			]"
 			class="mx-4 my-4"
 		/>
-		<div v-else class="flex flex-col sm:w-1/2 mx-auto bg-gray-50 py-3 md:py-6 px-3 md:px-4">
+		<div
+			v-else
+			class="flex flex-col sm:w-1/2 mx-auto bg-surface-gray-50 py-3 md:py-6 px-3 md:px-4"
+		>
 			<EmptyState type="Event Bookings" />
 			<Button
 				type="button"
@@ -39,9 +42,11 @@
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
 							<div class="space-y-3">
 								<div
-									class="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4"
+									class="bg-surface-white rounded-lg shadow-sm border border-outline-gray-200 p-3 md:p-4"
 								>
-									<h1 class="text-lg md:text-xl font-semibold text-gray-900">
+									<h1
+										class="text-lg md:text-xl font-semibold text-ink-gray-1-900"
+									>
 										Booked Ticket Type
 									</h1>
 								</div>
@@ -49,7 +54,7 @@
 								<TicketCard :ticket="ticketType.data" />
 
 								<div
-									class="bg-white shadow-sm rounded-lg p-3 md:p-4 border border-gray-200"
+									class="bg-surface-white shadow-sm rounded-lg p-3 md:p-4 border border-outline-gray-200"
 								>
 									<h2
 										class="text-base md:text-lg font-semibold text-red-600 mb-3"
@@ -57,15 +62,17 @@
 										Booking Summary
 									</h2>
 
-									<div class="mb-3 pb-3 border-b border-gray-100">
-										<p class="text-xs text-gray-500 mb-0.5">Event</p>
-										<h2 class="text-sm md:text-base font-medium text-gray-900">
+									<div class="mb-3 pb-3 border-b border-outline-gray-100">
+										<p class="text-xs text-ink-gray-1-500 mb-0.5">Event</p>
+										<h2
+											class="text-sm md:text-base font-medium text-ink-gray-1-900"
+										>
 											{{ ticketType.data?.event_details?.title }}
 										</h2>
 									</div>
 
 									<h3
-										class="text-sm md:text-base font-semibold text-gray-800 mb-2"
+										class="text-sm md:text-base font-semibold text-ink-gray-1-800 mb-2"
 									>
 										Attendee Details
 									</h3>
@@ -86,13 +93,13 @@
 													}}</span>
 												</div>
 												<p
-													class="text-xs md:text-sm font-medium text-gray-800"
+													class="text-xs md:text-sm font-medium text-ink-gray-1-800"
 												>
 													Attendee {{ i + 1 }}
 												</p>
 											</div>
 											<div
-												class="space-y-1 text-xs md:text-sm text-gray-700"
+												class="space-y-1 text-xs md:text-sm text-ink-gray-1-700"
 											>
 												<p>
 													<span class="font-medium">Name:</span>
@@ -114,7 +121,7 @@
 
 							<div class="lg:sticky lg:top-3 lg:self-start">
 								<div
-									class="bg-white shadow-sm rounded-lg p-3 md:p-4 border border-gray-200"
+									class="bg-surface-white shadow-sm rounded-lg p-3 md:p-4 border border-outline-gray-200"
 								>
 									<h2
 										class="text-base md:text-lg font-semibold text-red-600 mb-3"
@@ -124,13 +131,13 @@
 
 									<div class="space-y-2.5">
 										<div
-											class="flex justify-between items-center py-2 border-b border-gray-100"
+											class="flex justify-between items-center py-2 border-b border-outline-gray-100"
 										>
-											<span class="text-xs md:text-sm text-gray-600"
+											<span class="text-xs md:text-sm text-ink-gray-1-600"
 												>Total Tickets</span
 											>
 											<span
-												class="text-sm md:text-base font-semibold text-gray-900"
+												class="text-sm md:text-base font-semibold text-ink-gray-1-900"
 											>
 												{{
 													attendeeBooking.getBookingData().attendees
@@ -140,13 +147,13 @@
 										</div>
 
 										<div
-											class="flex justify-between items-center py-2 border-b border-gray-100"
+											class="flex justify-between items-center py-2 border-b border-outline-gray-100"
 										>
-											<span class="text-xs md:text-sm text-gray-600"
+											<span class="text-xs md:text-sm text-ink-gray-1-600"
 												>Price Per Ticket</span
 											>
 											<span
-												class="text-sm md:text-base font-semibold text-gray-900"
+												class="text-sm md:text-base font-semibold text-ink-gray-1-900"
 											>
 												{{ ticketType.data?.price || 0 }}
 											</span>
@@ -204,7 +211,7 @@
 					</div>
 				</div>
 			</div>
-			<div v-else class="sm:w-1/2 mx-auto bg-gray-50 py-3 md:py-6 px-3 md:px-4">
+			<div v-else class="sm:w-1/2 mx-auto bg-surface-gray-50 py-3 md:py-6 px-3 md:px-4">
 				<PaymentStatus
 					message="Ticket booked successfully. You will receive an email with your ticket(s) details."
 					title="Ticket Booking"

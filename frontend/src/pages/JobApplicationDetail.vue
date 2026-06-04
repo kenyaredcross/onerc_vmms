@@ -2,14 +2,14 @@
 	<div class="max-w-5xl mx-auto py-10 space-y-8">
 		<div
 			v-if="job.data"
-			class="p-6 rounded-xl shadow-sm border border-gray-200 bg-gradient-to-r from-red-50 to-white"
+			class="p-6 rounded-xl shadow-sm border border-outline-gray-200 bg-surface-gray-1 bg-gradient-to-r"
 		>
 			<div class="flex items-start gap-4">
 				<div>
 					<img
 						v-if="job.data.company_logo"
 						:src="job.data.company_logo"
-						class="w-16 h-16 rounded-lg object-contain cursor-pointer bg-gray-50 border"
+						class="w-16 h-16 rounded-lg object-contain cursor-pointer bg-surface-gray-50 border"
 						:alt="__(job.data.company)"
 						@click="redirectToWebsite(job.data.company_website)"
 					/>
@@ -21,7 +21,7 @@
 					</div>
 				</div>
 				<div>
-					<h1 class="text-3xl font-bold text-gray-900 mb-1">
+					<h1 class="text-3xl font-bold text-ink-gray-1-900 mb-1">
 						{{ __(job.data.job_title) }}
 					</h1>
 					<div class="text-lg font-medium text-red-600">
@@ -29,7 +29,7 @@
 					</div>
 					<div
 						v-if="job.data.location || job.data.country"
-						class="text-sm text-gray-500 mt-1"
+						class="text-sm text-ink-gray-1-500 mt-1"
 					>
 						{{ __(job.data.location)
 						}}<span v-if="job.data.country"
@@ -40,13 +40,16 @@
 			</div>
 		</div>
 
-		<div v-if="!loading" class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+		<div
+			v-if="!loading"
+			class="bg-surface-white rounded-xl shadow-sm p-6 border border-outline-gray-200"
+		>
 			<h2 class="text-2xl font-bold text-red-700 mb-6">
 				{{ __("Apply for this Opportunity") }}
 			</h2>
 
 			<div
-				class="flex overflow-x-auto border-b border-gray-200 whitespace-nowrap mb-8 -mx-6 px-6 sm:mx-0 sm:px-0"
+				class="flex overflow-x-auto border-b border-outline-gray-200 whitespace-nowrap mb-8 -mx-6 px-6 sm:mx-0 sm:px-0"
 			>
 				<button
 					v-for="(step, index) in filteredSteps"
@@ -64,8 +67,8 @@
 							: step.originalIndex < currentStep
 								? 'border-green-600 text-green-600 hover:text-red-500 hover:border-red-200'
 								: step.originalIndex <= maxCompletedStep + 1
-									? 'border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-300'
-									: 'border-gray-100 text-gray-400 cursor-not-allowed',
+									? 'border-outline-gray-200 text-ink-gray-1-600 hover:text-red-600 hover:border-red-300'
+									: 'border-outline-gray-100 text-ink-gray-1-400 cursor-not-allowed',
 					]"
 				>
 					<svg
@@ -86,7 +89,9 @@
 				</button>
 			</div>
 
-			<div class="space-y-10 min-h-[300px] bg-gray-50 rounded-xl p-6 border border-gray-200">
+			<div
+				class="space-y-10 min-h-[300px] bg-surface-gray-50 rounded-xl p-6 border border-outline-gray-200"
+			>
 				<component
 					:is="steps[currentStep].component"
 					v-bind="{
@@ -101,13 +106,13 @@
 
 			<div
 				v-if="!isSubmitted"
-				class="flex justify-between mt-6 pt-4 border-t border-gray-100"
+				class="flex justify-between mt-6 pt-4 border-t border-outline-gray-100"
 			>
 				<Button
 					v-if="currentStep > 0"
 					variant="subtle"
 					@click="prevStep"
-					class="text-gray-700 hover:bg-gray-100"
+					class="text-ink-gray-1-700 hover:bg-surface-gray-100"
 				>
 					{{ __("&larr; Back") }}
 				</Button>
@@ -130,7 +135,7 @@
 
 			<div
 				v-else
-				class="mt-6 pt-4 border-t border-gray-100 text-lg font-medium text-gray-700"
+				class="mt-6 pt-4 border-t border-outline-gray-100 text-lg font-medium text-ink-gray-1-700"
 			>
 				<div class="text-center py-4">
 					<div
@@ -151,7 +156,7 @@
 						</svg>
 						{{ __("Application Successfully Submitted") }}
 					</div>
-					<p class="text-gray-600">
+					<p class="text-ink-gray-1-600">
 						{{
 							__(
 								"Thank you for your application. You can review your submitted details here.",
@@ -162,18 +167,18 @@
 			</div>
 		</div>
 
-		<div v-else class="text-center py-20 text-gray-500">
+		<div v-else class="text-center py-20 text-ink-gray-1-500">
 			{{ __("Loading application details...") }}
 		</div>
 		<Dialog v-model="showSubmitDialog">
 			<template #body-title>
-				<h2 class="text-lg font-bold text-gray-900">
+				<h2 class="text-lg font-bold text-ink-gray-1-900">
 					{{ __("Confirm Submission") }}
 				</h2>
 			</template>
 
 			<template #body-content>
-				<p class="text-gray-700 leading-relaxed">
+				<p class="text-ink-gray-1-700 leading-relaxed">
 					{{ __("Are you sure you want to submit this application?") }}
 				</p>
 				<p class="mt-2 text-sm text-red-600 font-medium">

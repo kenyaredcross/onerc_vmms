@@ -3,7 +3,7 @@
 		<!-- Header with Aid Theme Icon -->
 		<div class="flex items-center space-x-3 border-b border-red-200 pb-4">
 			<HeartPulse :size="24" class="text-red-600" />
-			<h3 class="text-xl font-bold text-gray-800">Deployment Operations</h3>
+			<h3 class="text-xl font-bold text-ink-gray-1-800">Deployment Operations</h3>
 		</div>
 
 		<!-- Action Buttons (Strictly 1 per line) -->

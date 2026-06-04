@@ -1,12 +1,12 @@
 <template>
 	<div
-		class="group relative overflow-hidden p-5 border rounded-2xl bg-white cursor-pointer transition-all duration-300"
+		class="group relative overflow-hidden p-5 border rounded-2xl bg-surface-white cursor-pointer transition-all duration-300"
 	>
 		<div class="relative flex items-start justify-between gap-4">
 			<div class="flex-1">
 				<div class="flex items-center gap-2 mb-2">
 					<div class="flex flex-col gap-1">
-						<h4 class="text-lg font-semibold text-gray-900">
+						<h4 class="text-lg font-semibold text-ink-gray-1-900">
 							{{ ticket.title }}
 						</h4>
 						<span
@@ -21,14 +21,14 @@
 			</div>
 
 			<div class="flex flex-col items-end justify-between h-full">
-				<div class="text-right text-gray-500">
+				<div class="text-right text-ink-gray-1-500">
 					<div v-if="ticket.ticket_type === 'Group'" class="">
 						Group of {{ ticket.ticket_capacity }}
 					</div>
-					<div class="text-2xl font-bold text-gray-900">
+					<div class="text-2xl font-bold text-ink-gray-1-900">
 						{{ ticket.price }}
 					</div>
-					<div class="text-xs text-gray-400 font-medium">
+					<div class="text-xs text-ink-gray-1-400 font-medium">
 						{{ ticket.currency }}
 					</div>
 				</div>

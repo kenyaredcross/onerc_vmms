@@ -1,15 +1,15 @@
 <template>
-	<div class="max-w-3xl mx-auto my-auto p-6 bg-white rounded-2xl">
+	<div class="max-w-3xl mx-auto my-auto p-6 bg-surface-white rounded-2xl">
 		<div class="flex items-center gap-4">
 			<CalendarCheck class="w-6 h-6 text-green-600" />
-			<h3 class="text-xl font-semibold text-gray-900">
+			<h3 class="text-xl font-semibold text-ink-gray-1-900">
 				{{ registerSuccess ? "Registration Successful" : "Confirm Attendance" }}
 			</h3>
 		</div>
 
 		<div v-if="!registerSuccess">
 			<div class="space-y-4 mt-4">
-				<p class="text-gray-700">
+				<p class="text-ink-gray-1-700">
 					You're about to register for the
 					<span class="font-semibold text-red-500">{{ props.eventName }}</span> event.
 					Once confirmed, you'll receive:
@@ -18,7 +18,7 @@
 				<div class="bg-green-50 border border-green-100 rounded-lg p-4 space-y-2">
 					<div class="flex items-start gap-3">
 						<Check class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-						<span class="text-sm text-gray-700">
+						<span class="text-sm text-ink-gray-1-700">
 							<span class="font-semibold">Confirmation email</span> with event
 							details
 						</span>
@@ -26,7 +26,7 @@
 				</div>
 
 				<div class="bg-red-50 border border-red-100 rounded-lg p-3">
-					<p class="text-sm text-gray-700">
+					<p class="text-sm text-ink-gray-1-700">
 						<span class="font-semibold text-red-900">📅 Important:</span>
 						Make sure to mark your calendar and arrive on time!
 					</p>
@@ -92,8 +92,8 @@
 
 		<div v-else class="text-center space-y-4">
 			<Check class="w-12 h-12 text-green-600 mx-auto" />
-			<h2 class="text-2xl font-semibold text-gray-900">Registration Successful!</h2>
-			<p class="text-gray-700">
+			<h2 class="text-2xl font-semibold text-ink-gray-1-900">Registration Successful!</h2>
+			<p class="text-ink-gray-1-700">
 				Thank you for registering! We look forward to seeing you at the event. You will
 				receive a confirmation email shortly with all the event details.
 			</p>

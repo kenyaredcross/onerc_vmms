@@ -1,9 +1,9 @@
 <template>
 	<div
-		class="relative flex flex-col w-full max-w-sm mx-auto rounded-3xl p-8 sm:p-6 xs:p-5 bg-white shadow-lg hover:shadow-2xl transition-all duration-700 group border border-gray-100 overflow-hidden hover:border-red-100 hover:-translate-y-1"
+		class="relative flex flex-col w-full max-w-sm mx-auto rounded-3xl p-8 sm:p-6 xs:p-5 bg-surface-white shadow-lg hover:shadow-2xl transition-all duration-700 group border border-outline-gray-100 overflow-hidden hover:border-red-100 hover:-translate-y-1"
 	>
 		<div class="mb-6 text-center">
-			<h3 class="text-2xl sm:text-xl font-bold text-gray-900 mb-2 tracking-tight">
+			<h3 class="text-2xl sm:text-xl font-bold text-ink-gray-1-900 mb-2 tracking-tight">
 				{{ __(membershipType.membership_type) }}
 			</h3>
 		</div>
@@ -15,7 +15,7 @@
 				>
 					{{ __("KES") }} {{ __(membershipType.amount) }}
 				</span>
-				<span class="text-base sm:text-sm font-semibold text-gray-500">{{
+				<span class="text-base sm:text-sm font-semibold text-ink-gray-1-500">{{
 					__("/year")
 				}}</span>
 			</div>
@@ -39,7 +39,7 @@
 					>
 						<Check class="w-3.5 h-3.5" />
 					</div>
-					<span class="text-sm sm:text-xs font-medium text-gray-700 leading-snug">
+					<span class="text-sm sm:text-xs font-medium text-ink-gray-1-700 leading-snug">
 						{{ __(benefit.benefit) }}
 					</span>
 				</div>
@@ -48,7 +48,7 @@
 
 		<span
 			v-if="membershipType.requires_age_requirement"
-			class="my-3 text-sm pt-1 border-t border-t-red-500 font-medium text-gray-700"
+			class="my-3 text-sm pt-1 border-t border-t-red-500 font-medium text-ink-gray-1-700"
 		>
 			<template v-if="membershipType.lower_age_limit === 0">
 				{{ __("Ages below") }} {{ membershipType.upper_age_limit }} {{ __("years") }}

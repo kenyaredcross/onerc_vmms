@@ -1,9 +1,8 @@
 <template>
 	<Dialog v-model="registerDialog">
 		<template #body-title>
-			<h3 class="text-2xl font-bold text-gray-900" id="modal-title">
-				{{ props.is_renew ? "Renew" : "Register" }} as a
-				<span class="text-red-600">Member</span>
+			<h3 class="text-2xl font-bold text-ink-gray-8" id="modal-title">
+				{{ props.is_renew ? "Renew" : "Register" }} as a Member
 			</h3>
 		</template>
 
@@ -17,9 +16,7 @@
 				:message="membershipEligibility.error"
 			/>
 			<div v-else-if="!membershipEligibility.data.eligible">
-				<div
-					class="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg shadow-sm"
-				>
+				<div class="p-6 rounded-lg shadow-sm">
 					<div class="flex items-start space-x-3">
 						<div class="flex-shrink-0">
 							<AlertTriangle class="w-6 h-6 text-yellow-600" />
@@ -63,7 +60,7 @@
 				<div class="py-4">
 					<form action="" @submit.prevent="submit">
 						<div
-							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
+							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-surface-red-1 border border-outline-red-1 rounded-2xl shadow-sm"
 						>
 							<div class="space-y-1">
 								<FormControl
@@ -122,32 +119,32 @@
 								:message="paymentGateways.error"
 							/>
 							<div v-else-if="paymentGateways.data">
-								<p class="mt-4 mb-2 text text-gray-700">
-									Select a Payment Method:
+								<p class="mt-4 mb-2 text-sm font-medium text-ink-gray-5">
+									{{ __("Select a Payment Method:") }}
 								</p>
-								<ul class="list-disc list-inside text-gray-700">
+								<ul class="space-y-2">
 									<li
 										v-for="pgw in paymentGateways.data"
 										:key="pgw"
 										@click="membershipForm.payment_gateway = pgw"
-										class="flex items-center gap-3 p-3 mb-2 rounded-lg border-2 cursor-pointer transition-all duration-200"
+										class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200"
 										:class="
 											membershipForm.payment_gateway === pgw
-												? 'border-red-500 bg-red-50 text-red-700 font-semibold shadow-sm'
-												: 'border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:bg-red-50'
+												? 'border-outline-red-3 bg-surface-red-1 text-ink-red-3 font-semibold'
+												: 'border-outline-gray-2 bg-surface-white text-ink-gray-7 hover:border-outline-red-2 hover:bg-surface-red-1'
 										"
 									>
 										<span
-											class="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+											class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
 											:class="
 												membershipForm.payment_gateway === pgw
-													? 'border-red-500'
-													: 'border-gray-400'
+													? 'border-outline-red-3'
+													: 'border-outline-gray-3'
 											"
 										>
 											<span
 												v-if="membershipForm.payment_gateway === pgw"
-												class="w-2 h-2 rounded-full bg-red-500"
+												class="w-2 h-2 rounded-full bg-surface-red-4"
 											></span>
 										</span>
 										{{ __(pgw) }}
@@ -262,6 +259,10 @@ function submit() {
 						window.location.href = data;
 					}, 3000);
 				}
+			},
+			onError: () => {
+				createMembership.error =
+					"Failed to initiate membership registration. Please try again.";
 			},
 		},
 	);

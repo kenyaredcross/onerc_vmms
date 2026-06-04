@@ -1,6 +1,6 @@
 <template>
 	<div v-if="!formCompleted">
-		<div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-2">
+		<div class="bg-surface-white rounded-2xl shadow-lg overflow-hidden mb-2">
 			<div class="bg-gradient-to-r from-red-500 to-red-600 px-8 py-10">
 				<h1 class="text-3xl font-sans font-bold text-white mb-2">
 					{{ eventDetail.data.title }}
@@ -8,10 +8,10 @@
 				<p class="text-red-50 text-lg">{{ __("Event Registration") }}</p>
 			</div>
 
-			<div class="px-8 py-6 bg-gray-50 border-b border-gray-200">
+			<div class="px-8 py-6 bg-surface-gray-50 border-b border-outline-gray-200">
 				<div class="flex items-start gap-2">
 					<Info class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-					<p class="text-gray-700 leading-relaxed">
+					<p class="text-ink-gray-1-700 leading-relaxed">
 						{{
 							__(
 								"Please fill in the following registration information. Fields marked with * are mandatory.",
@@ -22,8 +22,10 @@
 			</div>
 		</div>
 
-		<div class="bg-white rounded-2xl shadow-lg p-4 md:p-8">
-			<h2 class="text-2xl font-semibold text-gray-800 mb-6 pb-4 border-b border-gray-200">
+		<div class="bg-surface-white rounded-2xl shadow-lg p-4 md:p-8">
+			<h2
+				class="text-2xl font-semibold text-ink-gray-1-800 mb-6 pb-4 border-b border-outline-gray-200"
+			>
 				{{ __("Registration Information") }}
 			</h2>
 
@@ -35,7 +37,7 @@
 				>
 					<div class="rounded-xl md:p-6 transition-all duration-200 hover:shadow-md">
 						<label class="block mb-3">
-							<span class="text-gray-900 font-medium text-lg flex items-start">
+							<span class="text-ink-gray-1-900 font-medium text-lg flex items-start">
 								<span
 									class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 text-red-600 text-sm font-semibold mr-3 flex-shrink-0 mt-0.5"
 								>
@@ -48,7 +50,7 @@
 							</span>
 							<span
 								v-if="question.help_text"
-								class="block text-sm text-gray-500 mt-2 ml-10"
+								class="block text-sm text-ink-gray-1-500 mt-2 ml-10"
 							>
 								{{ question.help_text }}
 							</span>

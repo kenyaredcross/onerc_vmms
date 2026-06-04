@@ -198,14 +198,6 @@ def create_membership(
         log_throw_error("Error creating membership")
 
 
-def initiate_payment(membership_id: str, phone_number: str) -> str:
-    membership = frappe.get_doc("VM Membership", membership_id)
-
-    payment_request, invoice = membership.initiate_payment(phone_number=phone_number)
-
-    return payment_request.payment_token
-
-
 def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
     age = get_user_details().get("age", 0)
 

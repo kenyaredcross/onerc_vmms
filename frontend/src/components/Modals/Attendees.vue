@@ -7,7 +7,7 @@
 	>
 		><template #body-title>
 			<h3 class="text-2xl font-semibold text-ink-gray-9">Attendees</h3>
-			<span class="text-gray-800">{{
+			<span class="text-ink-gray-1-800">{{
 				__(
 					"Your tickets will automatically be sent to you and your guests. You will simply need to fill in their Name, Email address and phone number.",
 				)
@@ -30,7 +30,7 @@
 				:key="index"
 				class="space-y-2 md:space-y-5 md:flex items-center justify-center md:space-x-4"
 			>
-				<h1 class="text-gray-500 font-sans">Ticket #{{ index + 1 }}</h1>
+				<h1 class="text-ink-gray-1-500 font-sans">Ticket #{{ index + 1 }}</h1>
 				<Input
 					required
 					:name="`full_name_${index}`"

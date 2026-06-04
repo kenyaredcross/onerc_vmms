@@ -22,7 +22,7 @@
 				<ProgressSpinner />
 			</div>
 
-			<div v-else-if="eventDetail.error" class="bg-white rounded-2xl shadow-lg p-8">
+			<div v-else-if="eventDetail.error" class="bg-surface-white rounded-2xl shadow-lg p-8">
 				<ErrorMessage message="Failed to load event details." />
 			</div>
 			<div v-else-if="eventDetail.data">
