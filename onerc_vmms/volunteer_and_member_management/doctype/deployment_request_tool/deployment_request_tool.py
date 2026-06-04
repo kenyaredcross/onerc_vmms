@@ -445,6 +445,8 @@ def deploy_future_requests() -> None:
                 f"Error processing future deployment request: {deployment}",
                 frappe.get_traceback(),
             )
+        else:
+            doc.db_set("is_future_deployed", 1, update_modified=False)
 
 
 # def filter_by_availability(self, employees: list, expected_start_date, expected_end_date) -> list:
