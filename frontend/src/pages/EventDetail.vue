@@ -21,19 +21,21 @@
 			:message="__('Failed to load Event Details')"
 		/>
 		<div v-else-if="eventDetail.data">
-			<div class="relative overflow-hidden bg-white">
+			<div class="relative overflow-hidden bg-surface-white">
 				<div class="absolute inset-0 bg-gradient-to-r from-red-300 to-transparent"></div>
 				<div
 					class="max-w-7xl mx-auto px-4 sm:px-2 lg:px-8 py-8 lg:py-10 relative flex flex-col md:flex-row items-center gap-4 md:gap-10"
 				>
 					<div class="flex-1">
 						<h1
-							class="text-3xl lg:text-[2.0rem] font-bold text-gray-800 mb-4 leading-tight"
+							class="text-3xl lg:text-[2.0rem] font-bold text-ink-gray-1-800 mb-4 leading-tight"
 						>
 							{{ __(eventDetail.data?.title) }}
 						</h1>
 
-						<div class="flex flex-wrap gap-4 sm:gap-6 text-gray-700 mb-4 sm:mb-6">
+						<div
+							class="flex flex-wrap gap-4 sm:gap-6 text-ink-gray-1-700 mb-4 sm:mb-6"
+						>
 							<div class="flex items-center gap-2 text-sm sm:text-base">
 								<CalendarDays class="w-5 h-5 text-red-500" />
 								<span
@@ -72,10 +74,10 @@
 								:key="key"
 								class="bg-red-50 border border-red-100 rounded-lg py-3 px-1 sm:py-4 text-center"
 							>
-								<div class="text-xl sm:text-3xl font-bold text-gray-800">
+								<div class="text-xl sm:text-3xl font-bold text-ink-gray-1-800">
 									{{ value }}
 								</div>
-								<div class="text-xs sm:text-sm text-gray-600 uppercase mt-1">
+								<div class="text-xs sm:text-sm text-ink-gray-1-600 uppercase mt-1">
 									{{ key }}
 								</div>
 							</div>
@@ -94,15 +96,17 @@
 
 			<div class="max-w-7xl mx-auto md:px-4 px-1 lg:px-8 p-2 flex flex-col gap-2">
 				<div v-if="eventDetail.data?.short_description">
-					<div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-12 shadow-sm">
+					<div
+						class="bg-surface-white border border-outline-gray-200 rounded-2xl p-6 sm:p-12 shadow-sm"
+					>
 						<h2 class="text-xl md:text-3xl font-extrabold text-red-500 mb-3">
 							{{ __("Why attend?") }}
 						</h2>
-						<p class="text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
+						<p class="text-base sm:text-lg text-ink-gray-1-700 leading-relaxed mb-6">
 							{{ __(eventDetail.data?.short_description) }}
 						</p>
 						<hr class="my-4" />
-						<p class="text-base sm:text-lg text-gray-700 leading-relaxed mb-6">
+						<p class="text-base sm:text-lg text-ink-gray-1-700 leading-relaxed mb-6">
 							{{ __(eventDetail.data?.about) }}
 						</p>
 					</div>
@@ -112,7 +116,7 @@
 					<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 						<div
 							v-if="eventDetail.data?.speakers?.length"
-							class="md:col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm"
+							class="md:col-span-2 bg-surface-white rounded-xl p-6 border border-outline-gray-200 shadow-sm"
 						>
 							<div class="mb-6 flex items-center gap-3">
 								<div
@@ -120,7 +124,7 @@
 								>
 									<Users class="w-5 h-5 text-red-500" />
 								</div>
-								<h3 class="text-xl md:text-3xl font-extrabold text-gray-900">
+								<h3 class="text-xl md:text-3xl font-extrabold text-ink-gray-1-900">
 									{{ __("Featured Speakers") }}
 								</h3>
 							</div>
@@ -129,19 +133,19 @@
 								<li
 									v-for="speaker in eventDetail.data?.speakers"
 									:key="speaker.name"
-									class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4"
+									class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-gray-50 border border-outline-gray-200 rounded-lg p-4"
 								>
 									<div class="flex items-center gap-4">
 										<img
 											:src="speaker.display_image"
 											:alt="__('Speaker Image')"
-											class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-gray-200"
+											class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-outline-gray-200"
 										/>
 										<div class="flex flex-col gap-1">
-											<h4 class="text-lg font-semibold text-gray-800">
+											<h4 class="text-lg font-semibold text-ink-gray-1-800">
 												{{ __(speaker.display_name) }}
 											</h4>
-											<p class="text-sm text-gray-600">
+											<p class="text-sm text-ink-gray-1-600">
 												{{ __(speaker.designation) }}
 											</p>
 											<p
@@ -160,7 +164,7 @@
 
 				<div
 					v-if="eventDetail.data?.host"
-					class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm"
+					class="bg-surface-white rounded-xl p-6 border border-outline-gray-200 shadow-sm"
 				>
 					<div class="mb-6 flex items-center gap-3">
 						<div
@@ -168,28 +172,28 @@
 						>
 							<Users class="w-5 h-5 text-red-500" />
 						</div>
-						<h3 class="text-xl md:text-3xl font-extrabold text-gray-900">
+						<h3 class="text-xl md:text-3xl font-extrabold text-ink-gray-1-900">
 							{{ __("Meet The Host") }}
 						</h3>
 					</div>
 
-					<div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+					<div class="bg-surface-gray-50 border border-outline-gray-200 rounded-lg p-6">
 						<div class="flex flex-row px-4 items-center gap-4 mb-2">
 							<img
 								:src="eventDetail.data.host.logo"
 								alt=""
-								class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-gray-200"
+								class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-outline-gray-200"
 							/>
 							<h4 class="text-3xl font-semibold text-red-500 mb-3">
 								{{ __(eventDetail.data.host.name) }}
 							</h4>
 						</div>
-						<p class="text-base text-gray-700 leading-relaxed mb-4">
+						<p class="text-base text-ink-gray-1-700 leading-relaxed mb-4">
 							{{ __(eventDetail.data.host.about) }}
 						</p>
 						<div
 							v-if="eventDetail.data.host.address"
-							class="flex items-center gap-2 text-sm text-gray-600"
+							class="flex items-center gap-2 text-sm text-ink-gray-1-600"
 						>
 							<MapPin class="w-4 h-4 text-red-500" />
 							<span>{{ __(eventDetail.data.host.address) }}</span>
@@ -199,22 +203,22 @@
 
 				<div
 					v-if="eventDetail.data?.sponsors?.length"
-					class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm"
+					class="bg-surface-white rounded-xl p-6 border border-outline-gray-200 shadow-sm"
 				>
 					<div class="mb-6 flex items-center gap-3">
-						<h3 class="text-xl md:text-3xl font-extrabold text-gray-900">
+						<h3 class="text-xl md:text-3xl font-extrabold text-ink-gray-1-900">
 							{{ __("Our Sponsors") }}
 						</h3>
 					</div>
 					<div
 						v-if="eventDetail.data?.sponsors"
-						class="bg-gray-50 border border-gray-200 rounded-lg p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+						class="bg-surface-gray-50 border border-outline-gray-200 rounded-lg p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
 					>
 						<a
 							:href="sponsor.website"
 							v-for="sponsor in eventDetail.data.sponsors"
 							:key="sponsor.name"
-							class="flex items-center gap-2 text-sm text-gray-600"
+							class="flex items-center gap-2 text-sm text-ink-gray-1-600"
 						>
 							<img
 								:src="sponsor.company_logo"

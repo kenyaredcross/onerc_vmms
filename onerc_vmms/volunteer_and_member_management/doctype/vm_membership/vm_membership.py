@@ -55,10 +55,8 @@ class VMMembership(Document):
             else:
                 frappe.throw(_("Please select a Member"))
 
-        self._apply_membership_period_logic()
 
     def validate_membership_period(self):
-        self._apply_membership_period_logic()
         self.save(ignore_permissions=True)
         frappe.db.commit()
 

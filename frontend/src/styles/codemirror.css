@@ -3,9 +3,7 @@
 	padding: 0px !important;
 	position: relative !important;
 }
-.cm-gutters {
-	@apply !border-0 !bg-transparent !px-1.5 !text-xs !leading-6 !text-gray-500;
-}
+
 .cm-foldGutter span {
 	@apply !hidden !opacity-0;
 }
@@ -15,19 +13,12 @@
 .cm-activeLine {
 	@apply !bg-transparent;
 }
-.cm-activeLineGutter {
-	@apply !bg-transparent text-gray-600;
-}
+
 .cm-editor {
 	width: 100%;
 	user-select: text;
 }
-.cm-placeholder {
-	@apply !leading-6 !text-gray-500;
-}
-.cm-scroller {
-	@apply !font-mono !leading-6 !text-gray-600;
-}
+
 .cm-matchingBracket {
 	font-weight: 500 !important;
 	background: none !important;
@@ -41,12 +32,9 @@
 	@apply !rounded-lg !shadow-md !bg-surface-white !p-1.5 !border-none;
 }
 .cm-tooltip-autocomplete > ul {
-	font-family: 'Inter' !important;
+	font-family: "Inter" !important;
 }
-.cm-tooltip-autocomplete ul li[aria-selected='true'] {
-	@apply !rounded !bg-gray-200/80;
-	color: #000 !important;
-}
+
 .cm-completionLabel {
 	margin-right: 1rem !important;
 }

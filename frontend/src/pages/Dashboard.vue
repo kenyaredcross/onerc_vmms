@@ -3,18 +3,23 @@
 
 	<div
 		v-if="user?.data && user?.data !== 'Guest'"
-		class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+		class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 lg:py-8"
 	>
 		<header
-			class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 p-4 sm:p-6 bg-white rounded-xl shadow-lg border border-gray-100"
+			class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 bg-surface-white rounded-xl shadow-lg border border-outline-gray-1"
 		>
 			<!-- Title -->
 			<h1
-				class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight mb-3 sm:mb-0 w-full truncate text-left sm:text-left"
+				class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-ink-gray-1-900 tracking-tight mb-3 sm:mb-0 w-full truncate text-left sm:text-left"
 			>
 				{{ __("Welcome back, ") }}
 				<span class="ml-1 text-red-600 font-black">{{ user?.data?.full_name }}</span>
 			</h1>
+
+			<div v-show="isMobile" class="p-2 cursor-pointer" @click="changeTheme">
+				<Sun v-if="currentTheme == 'dark'" class="w-5 h-5 text-ink-gray-6" />
+				<Moon v-else class="w-5 h-5 text-ink-gray-6" />
+			</div>
 
 			<!-- Action Buttons & Notifications -->
 			<div
@@ -46,7 +51,7 @@
 							:class="{ 'animate-wiggle': hasNotification }"
 						>
 							<Bell
-								class="h-6 w-6 text-gray-700 hover:text-red-600 transition duration-150"
+								class="h-6 w-6 text-ink-gray-1-700 hover:text-red-600 transition duration-150"
 							/>
 							<span
 								v-if="hasNotification"
@@ -65,7 +70,7 @@
 							'flex items-center justify-center w-11 h-11 rounded-full shadow-xl transition-all duration-300 ease-in-out',
 							isOpen
 								? 'bg-red-600 ring-4 ring-red-300/50 text-white'
-								: 'bg-gray-200 hover:bg-red-500 hover:text-white text-gray-700',
+								: 'bg-surface-gray-200 hover:bg-red-500 hover:text-white text-ink-gray-1-700',
 						]"
 						aria-label="Toggle profile menu"
 						aria-expanded="[isOpen ? 'true' : 'false']"
@@ -87,13 +92,13 @@
 					>
 						<div
 							v-show="isOpen"
-							class="absolute right-0 mt-4 w-56 bg-white rounded-xl border border-gray-100 shadow-2xl py-2 z-50 origin-top-right ring-1 ring-black ring-opacity-5"
+							class="absolute right-0 mt-4 w-56 bg-surface-white rounded-xl border border-outline-gray-100 shadow-2xl py-2 z-50 origin-top-right ring-1 ring-black ring-opacity-5"
 							role="menu"
 							aria-orientation="vertical"
 						>
 							<router-link
 								:to="{ name: 'Profile' }"
-								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
+								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-ink-gray-1-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
 								role="menuitem"
 								@click="isOpen = false"
 							>
@@ -104,7 +109,7 @@
 
 							<router-link
 								:to="{ name: 'ProfileOverview' }"
-								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
+								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-ink-gray-1-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
 								role="menuitem"
 								@click="isOpen = false"
 							>
@@ -138,7 +143,7 @@
 						roleResource?.data &&
 						(roleResource?.data?.is_volunteer || roleResource?.data?.is_member)
 					"
-					class="bg-white p-6 rounded-xl border shadow"
+					class="bg-surface-white p-6 rounded-xl border shadow"
 				>
 					<div class="flex justify-between mb-4">
 						<h2 class="text-xl font-bold">{{ __("Upcoming Events") }}</h2>
@@ -193,7 +198,7 @@
 						<div class="flex justify-between">
 							<div>
 								<h4 class="font-semibold">{{ p.project_name }}</h4>
-								<p class="text-xs text-gray-500">{{ p.name }}</p>
+								<p class="text-xs text-ink-gray-1-500">{{ p.name }}</p>
 							</div>
 							<router-link
 								:to="{
@@ -207,7 +212,7 @@
 					</div>
 				</div>
 
-				<div v-else class="text-center py-12 text-gray-500">
+				<div v-else class="text-center py-12 text-ink-gray-1-500">
 					{{ __("No new assignments") }}
 				</div>
 			</template>
@@ -218,8 +223,9 @@
 <script setup>
 import { useHead } from "@vueuse/head";
 import { Badge, Button, createResource, Dialog } from "frappe-ui";
-import { Bell, LogIn, User } from "lucide-vue-next";
-import { onMounted, ref } from "vue";
+import { Bell, LogIn, User, Sun, Moon } from "lucide-vue-next";
+
+import { onMounted, ref, computed } from "vue";
 
 import { membershipStore } from "../stores/membership";
 import { sessionStore } from "../stores/session";
@@ -233,7 +239,25 @@ import Availability from "../components/Modals/Availability.vue";
 import NoPermission from "../components/NoPermission.vue";
 import Volunteer from "../components/Volunteer.vue";
 import Welcome from "../components/Welcome.vue";
+import { useScreenSize } from "@/utils/composables";
+import { useTheme } from "frappe-ui";
 
+const { isMobile } = useScreenSize();
+const { currentTheme, setTheme } = useTheme();
+const theme = computed({
+	get() {
+		if (currentTheme.value === "light") return "light";
+		if (currentTheme.value === "dark") return "dark";
+		return "system";
+	},
+	set(value) {
+		setTheme(value);
+	},
+});
+
+function changeTheme() {
+	theme.value = theme.value === "light" ? "dark" : "light";
+}
 const isOpen = ref(false);
 const showNotificationDialog = ref(false);
 const setAvailability = ref(false);

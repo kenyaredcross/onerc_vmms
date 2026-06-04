@@ -16,7 +16,7 @@
 
 		<div
 			v-if="currentMembership.data"
-			class="p-2 pt-2 md:p-8 bg-gray-50 rounded-2xl shadow-md text-center mb-20 max-w-7xl mx-auto"
+			class="p-2 pt-2 md:p-8 bg-surface-gray-50 rounded-2xl shadow-md text-center mb-20 max-w-7xl mx-auto"
 		>
 			<h1
 				class="flex flex-col md:flex-row justify-center items-center gap-2 text-xl md:text-3xl font-semibold text-red-600"

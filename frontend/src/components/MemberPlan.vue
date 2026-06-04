@@ -1,15 +1,15 @@
 <template>
 	<div
-		class="flex flex-col lg:flex-row gap-10 md:gap-12 px-4 md:px-8 py-6 bg-gray-50 rounded-2xl shadow-sm max-w-6xl"
+		class="flex flex-col lg:flex-row gap-10 md:gap-12 px-4 md:px-8 md:py-6 bg-surface-gray-50 rounded-2xl shadow-sm max-w-6xl"
 	>
 		<div class="flex-1 space-y-2 md:space-y-6">
-			<h1 class="text-lg md:text-3xl text-gray-900">{{ __("Your Membership(s)") }}</h1>
+			<h1 class="text-lg md:text-3xl text-ink-gray-8">{{ __("Your Membership(s)") }}</h1>
 
 			<div v-if="membershipList.data && membershipList.data.length > 0" class="space-y-5">
 				<div
 					v-for="membership in membershipList.data"
 					:key="membership.name"
-					class="group relative rounded-2xl bg-white border border-gray-200 hover:shadow-lg transition-all duration-300 p-6"
+					class="group relative rounded-2xl bg-surface-white border border-outline-gray-200 hover:shadow-lg transition-all duration-300 p-6"
 				>
 					<div
 						class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6"
@@ -28,19 +28,21 @@
 								{{ __(membership.status) }}
 							</Badge>
 							<div>
-								<h3 class="text-lg font-semibold text-gray-900">
+								<h3 class="text-lg font-semibold text-ink-gray-1-900">
 									{{ __(membership.membership_type) }}
 								</h3>
-								<p class="text-sm text-gray-700">
+								<p class="text-sm text-ink-gray-1-700">
 									{{ __(membership.company) }}
 								</p>
 							</div>
 						</div>
 
-						<div class="flex gap-8 justify-between sm:justify-start text-gray-800">
+						<div
+							class="flex gap-8 justify-between sm:justify-start text-ink-gray-1-800"
+						>
 							<div>
 								<p
-									class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1"
+									class="text-xs text-ink-gray-1-500 uppercase tracking-wide font-medium mb-1"
 								>
 									{{ __("Started") }}
 								</p>
@@ -50,7 +52,7 @@
 							</div>
 							<div v-if="membership.type_details?.billing_cycle !== 'One Off'">
 								<p
-									class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1"
+									class="text-xs text-ink-gray-1-500 uppercase tracking-wide font-medium mb-1"
 								>
 									{{ __("Renewal") }}
 								</p>
@@ -62,10 +64,10 @@
 
 						<div class="flex items-center justify-end gap-5">
 							<div class="text-right">
-								<div class="text-2xl font-bold text-gray-900">
+								<div class="text-2xl font-bold text-ink-gray-1-900">
 									{{ __(membership.amount) }}
 								</div>
-								<div class="text-xs text-gray-700">{{ __("KES") }}</div>
+								<div class="text-xs text-ink-gray-1-700">{{ __("KES") }}</div>
 							</div>
 							<Button
 								v-if="
@@ -107,7 +109,9 @@
 				</div>
 			</div>
 
-			<div v-else class="text-center text-gray-700">{{ __("No memberships found.") }}</div>
+			<div v-else class="text-center text-ink-gray-1-700">
+				{{ __("No memberships found.") }}
+			</div>
 		</div>
 
 		<aside
@@ -124,10 +128,10 @@
 				class="relative rounded-2xl bg-gradient-to-br from-red-600 to-red-700 p-8 text-white overflow-hidden shadow-md"
 			>
 				<div
-					class="absolute top-0 right-0 w-56 h-56 bg-white opacity-10 rounded-full -mr-28 -mt-28"
+					class="absolute top-0 right-0 w-56 h-56 bg-surface-white opacity-10 rounded-full -mr-28 -mt-28"
 				></div>
 				<div
-					class="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-10 rounded-full -ml-24 -mb-24"
+					class="absolute bottom-0 left-0 w-48 h-48 bg-surface-white opacity-10 rounded-full -ml-24 -mb-24"
 				></div>
 
 				<div class="relative flex flex-col gap-5">
@@ -145,7 +149,7 @@
 					<RouterLink :to="{ name: 'VolunteerSignup' }" class="block mt-4">
 						<Button
 							variant="solid"
-							class="w-full bg-white text-red-600 hover:bg-gray-100 rounded-lg font-semibold h-12"
+							class="w-full bg-surface-white text-red-600 hover:bg-surface-gray-100 rounded-lg font-semibold h-12"
 							icon-right="arrow-right"
 						>
 							{{

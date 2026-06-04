@@ -1,11 +1,11 @@
 <template>
 	<NoPermission v-if="!isLoggedIn" :page="__('Deployments')" />
-	<div v-else class="flex flex-col min-h-screen bg-gray-50">
+	<div v-else class="flex flex-col min-h-screen bg-surface-gray-50">
 		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 shadow-md"
+			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-200 bg-surface-white px-4 py-3 sm:px-6 shadow-md"
 		>
 			<div class="flex items-center space-x-4">
-				<h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
+				<h1 class="text-2xl sm:text-3xl font-bold text-ink-gray-1-800">
 					{{ __("Deployments") }}
 				</h1>
 				<div class="text-lg font-bold text-red-600">
@@ -27,12 +27,12 @@
 					@update:model-value="updateTabAndHash"
 					class="min-w-max sm:w-auto"
 					active-class="bg-red-600 text-white"
-					inactive-class="text-gray-700 hover:bg-gray-100"
+					inactive-class="text-ink-gray-1-700 hover:bg-surface-gray-100"
 				/>
 			</div>
 
 			<div v-if="projects.loading" class="text-center py-10">
-				<p class="text-gray-500 text-lg">{{ __("Loading deployments...") }}</p>
+				<p class="text-ink-gray-1-500 text-lg">{{ __("Loading deployments...") }}</p>
 			</div>
 
 			<div v-else-if="filteredProjects.length">

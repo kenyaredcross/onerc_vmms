@@ -1,9 +1,9 @@
 <template>
 	<div class="border-0">
-		<label v-if="label" class="block text-sm font-medium text-gray-700 mb-1"
+		<label v-if="label" class="block text-sm font-medium text-ink-gray-1-700 mb-1"
 			>{{ label }} <span v-if="required" class="text-red-500">*</span></label
 		>
-		<p v-if="description" class="text-xs text-gray-500 mb-2">
+		<p v-if="description" class="text-xs text-ink-gray-1-500 mb-2">
 			{{ description }}
 		</p>
 
@@ -20,7 +20,7 @@
 		<button
 			v-else-if="!readOnly && (multi || !uploadedFiles.length)"
 			type="button"
-			class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:border-blue-400 transition-colors duration-300 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mb-4"
+			class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-outline-gray-300 rounded-md bg-surface-gray-50 hover:border-blue-400 transition-colors duration-300 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mb-4"
 			@dragover.prevent
 			@drop.prevent="onDrop"
 			@click="triggerFileInput"
@@ -34,12 +34,12 @@
 				class="hidden"
 			/>
 			<div class="text-center mb-4 pointer-events-none">
-				<Cloud class="mx-auto h-12 w-12 text-gray-400" />
-				<div class="mt-4 text-sm text-gray-600">
+				<Cloud class="mx-auto h-12 w-12 text-ink-gray-1-400" />
+				<div class="mt-4 text-sm text-ink-gray-1-600">
 					<span class="font-medium text-blue-600">Click to upload</span>
 					or drag and drop
 				</div>
-				<p class="text-xs text-gray-500 mt-1">
+				<p class="text-xs text-ink-gray-1-500 mt-1">
 					Supported formats: {{ supportedFormatsText }}
 				</p>
 				<p v-if="multi" class="text-xs text-blue-500 mt-1 font-medium">
@@ -50,13 +50,13 @@
 
 		<div
 			v-if="readOnly && !uploadedFiles.length"
-			class="p-6 border-2 border-solid border-gray-200 rounded-md bg-gray-50 text-center text-gray-500"
+			class="p-6 border-2 border-solid border-outline-gray-200 rounded-md bg-surface-gray-50 text-center text-ink-gray-1-500"
 		>
 			No files uploaded.
 		</div>
 
 		<div v-if="uploadedFiles.length" class="space-y-3">
-			<div class="text-sm font-medium text-gray-700 mb-2" v-if="showLength">
+			<div class="text-sm font-medium text-ink-gray-1-700 mb-2" v-if="showLength">
 				{{ uploadedFiles.length }} file(s)
 				{{ readOnly ? "attached" : "uploaded" }}
 			</div>
@@ -64,7 +64,7 @@
 				<div
 					v-for="(file, index) in uploadedFiles"
 					:key="(file.file_name || file.name || file.file_url) + index"
-					class="bg-white p-4 rounded-md border space-y-2"
+					class="bg-surface-white p-4 rounded-md border space-y-2"
 				>
 					<component
 						v-if="customPreviewComponent"
@@ -91,7 +91,7 @@
 
 						<div
 							v-else
-							class="flex items-center justify-center w-32 h-32 border rounded-lg bg-gray-100 text-gray-500"
+							class="flex items-center justify-center w-32 h-32 border rounded-lg bg-surface-gray-100 text-ink-gray-1-500"
 						>
 							<FileText class="w-10 h-10" />
 						</div>
@@ -99,7 +99,7 @@
 						<button
 							v-if="!uploading && !readOnly"
 							@click="removeFile(index)"
-							class="absolute -top-2 -right-2 bg-gray-200 border rounded-full shadow h-6 w-6 text-red-500 hover:bg-red-100 flex items-center justify-center text-xs"
+							class="absolute -top-2 -right-2 bg-surface-gray-200 border rounded-full shadow h-6 w-6 text-red-500 hover:bg-red-100 flex items-center justify-center text-xs"
 							title="Remove File"
 						>
 							✕
@@ -115,7 +115,7 @@
 						>
 							{{ file.file_name || file.name || file }}
 						</a>
-						<p v-if="file.file_size" class="text-xs text-gray-500 mt-1">
+						<p v-if="file.file_size" class="text-xs text-ink-gray-1-500 mt-1">
 							{{ formatBytes(file.file_size) }}
 						</p>
 					</div>
@@ -143,8 +143,8 @@
 			v-else-if="uploading"
 			class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
 		>
-			<div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-lg">
-				<h2 class="text-lg font-semibold text-gray-800 mb-4">Uploading Files</h2>
+			<div class="bg-surface-white p-6 rounded-xl shadow-2xl w-full max-w-lg">
+				<h2 class="text-lg font-semibold text-ink-gray-1-800 mb-4">Uploading Files</h2>
 
 				<div class="space-y-4 max-h-80 overflow-y-auto pr-2">
 					<div
@@ -152,11 +152,11 @@
 						:key="item.file.name + index"
 						class="space-y-1"
 					>
-						<div class="flex justify-between text-sm font-medium text-gray-700">
+						<div class="flex justify-between text-sm font-medium text-ink-gray-1-700">
 							<span class="truncate w-40">{{ item.file.name }}</span>
 							<span>{{ item.progress }}%</span>
 						</div>
-						<div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+						<div class="w-full bg-surface-gray-200 rounded-full h-2 overflow-hidden">
 							<div
 								class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-300"
 								:style="{ width: `${item.progress}%` }"
@@ -166,7 +166,7 @@
 				</div>
 
 				<div class="mt-6 text-center">
-					<p class="text-xs text-gray-500">
+					<p class="text-xs text-ink-gray-1-500">
 						{{ uploadQueue.length }} file(s) uploading...
 					</p>
 				</div>

@@ -1,13 +1,13 @@
 <template>
 	<div
-		class="bg-white rounded-lg shadow-md p-6 flex items-center space-x-4 hover:shadow-lg transition-shadow duration-200"
+		class="bg-surface-white rounded-lg shadow-md p-6 flex items-center space-x-4 hover:shadow-lg transition-shadow duration-200"
 	>
 		<div :class="['p-3 rounded-full', color]">
 			<component :is="iconSvg" class="w-6 h-6 text-white" />
 		</div>
 		<div>
-			<div class="text-2xl font-bold text-gray-800">{{ value }}</div>
-			<div class="text-sm text-gray-600">{{ label }}</div>
+			<div class="text-2xl font-bold text-ink-gray-1-800">{{ value }}</div>
+			<div class="text-sm text-ink-gray-1-600">{{ label }}</div>
 		</div>
 	</div>
 </template>

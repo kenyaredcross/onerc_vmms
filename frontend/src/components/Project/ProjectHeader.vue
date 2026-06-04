@@ -1,9 +1,9 @@
 <template>
-	<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+	<div class="bg-surface-white rounded-xl shadow-sm border border-outline-gray-200 p-6 mb-6">
 		<div class="flex items-start justify-between">
 			<div class="flex-1">
 				<div class="flex items-center gap-3 mb-3">
-					<h1 class="text-3xl font-bold text-gray-900">
+					<h1 class="text-3xl font-bold text-ink-gray-1-900">
 						{{ project.project.project_name }}
 					</h1>
 					<Badge :theme="getStatusTheme(project.project.status)" class="px-3 py-1">
@@ -11,11 +11,11 @@
 					</Badge>
 				</div>
 				<p
-					class="text-sm text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded inline-block mb-4"
+					class="text-sm text-ink-gray-1-500 font-mono bg-surface-gray-50 px-2 py-1 rounded inline-block mb-4"
 				>
 					{{ project.project.name }}
 				</p>
-				<div class="flex items-center gap-6 text-sm text-gray-600">
+				<div class="flex items-center gap-6 text-sm text-ink-gray-1-600">
 					<span class="flex items-center gap-2">
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path

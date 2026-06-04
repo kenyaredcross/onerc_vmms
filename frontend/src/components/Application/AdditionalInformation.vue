@@ -33,19 +33,19 @@
 		<div
 			v-for="(q, index) in visibleQuestions"
 			:key="q.question_id"
-			class="rounded-xl border p-5 bg-white shadow-sm transition-all"
+			class="rounded-xl border p-5 bg-surface-white shadow-sm transition-all"
 			:class="{
 				'ml-8 border-blue-300 bg-blue-50': q.depends_on_question,
 			}"
 		>
 			<div class="flex justify-between items-start mb-2">
-				<label class="font-medium text-gray-800">
+				<label class="font-medium text-ink-gray-1-800">
 					{{ index + 1 }}. {{ __(q.question) }}
 					<span v-if="q.is_required" class="text-red-500">*</span>
 				</label>
 			</div>
 
-			<p v-if="q.help_text" class="text-sm text-gray-500 mb-2">
+			<p v-if="q.help_text" class="text-sm text-ink-gray-1-500 mb-2">
 				{{ __(q.help_text) }}
 			</p>
 
@@ -129,14 +129,14 @@
 			</div>
 		</div>
 
-		<div class="rounded-xl border p-5 bg-white shadow-sm">
-			<h3 class="font-semibold text-gray-800 mb-3">
+		<div class="rounded-xl border p-5 bg-surface-white shadow-sm">
+			<h3 class="font-semibold text-ink-gray-1-800 mb-3">
 				{{ __("Professional Profiles") }}
 			</h3>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">
+					<label class="block text-sm font-medium text-ink-gray-1-700 mb-1">
 						{{ __("LinkedIn Profile") }}
 					</label>
 					<FormControl
@@ -147,7 +147,7 @@
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">
+					<label class="block text-sm font-medium text-ink-gray-1-700 mb-1">
 						{{ __("GitHub Profile") }}
 					</label>
 					<FormControl
