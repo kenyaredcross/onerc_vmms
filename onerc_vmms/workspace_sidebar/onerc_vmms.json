@@ -1,0 +1,27 @@
+{
+ "app": "onerc_vmms",
+ "creation": "2026-06-04 17:33:59.204201",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "home",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Home",
+   "link_to": "OneRC VMMS",
+   "link_type": "Workspace",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-06-04 17:35:33.835862",
+ "modified_by": "Administrator",
+ "name": "OneRC VMMS",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "OneRC VMMS"
+}
