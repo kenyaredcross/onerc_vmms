@@ -20,6 +20,7 @@ from frappe.utils import (
 from ....volunteer_and_member_management.utils import log_throw_error
 from ..vm_member.vm_member import create_member
 from frappe.utils import random_string
+from ...doctype.vm_settings.vm_settings import VMSettings
 
 
 class VMMembership(Document):
@@ -54,7 +55,6 @@ class VMMembership(Document):
                 self.create_member_from_website_user()
             else:
                 frappe.throw(_("Please select a Member"))
-
 
     def validate_membership_period(self):
         self.save(ignore_permissions=True)
@@ -109,12 +109,13 @@ class VMMembership(Document):
             self.reconcile()
 
     def reconcile(self):
+
         member = self.create_customer()
 
         plan = frappe.get_doc("VM Membership Type", self.membership_type)
 
         invoice = make_invoice(self, member, plan)
-        vm_settings = frappe.get_cached_doc("VM Settings")
+        vm_settings: VMSettings = frappe.get_cached_doc("VM Settings")
         if invoice:
             self.make_payment_entry(vm_settings, invoice)
 
@@ -132,13 +133,7 @@ class VMMembership(Document):
     def initiate_payment(self, phone_number=None):
         frappe.msgprint(_("Initiating payment..."))
 
-    def make_payment_entry(self, settings, invoice):
-        if not settings.membership_payment_account:
-            frappe.throw(
-                _(
-                    "You need to set <b>Payment Account</b> for Membership in {0}"
-                ).format(get_link_to_form("VM Settings", "VM Settings"))
-            )
+    def make_payment_entry(self, settings: VMSettings, invoice):
 
         from erpnext.accounts.doctype.payment_entry.payment_entry import (
             get_payment_entry,
@@ -149,9 +144,7 @@ class VMMembership(Document):
             dt="Sales Invoice", dn=invoice.name, bank_amount=invoice.grand_total
         )
         frappe.flags.ignore_account_permission = False
-        pe.paid_to = settings.membership_payment_account
         pe.reference_no = self.name
-        pe.reference_date = getdate()
         pe.flags.ignore_mandatory = True
         pe.save()
         pe.submit()
