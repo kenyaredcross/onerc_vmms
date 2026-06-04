@@ -1,0 +1,38 @@
+{
+ "app": "onerc_vmms",
+ "charts": [],
+ "content": "[{\"id\":\"t2Kptd3de9\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Welcome to the OneRC VMMS workspace</span>\",\"col\":12}},{\"id\":\"SVCKsSx6FJ\",\"type\":\"paragraph\",\"data\":{\"text\":\"Click on \\n\\t\\t\\t\\n\\t\\t\\t\\n\\t\\t to edit\",\"col\":12}},{\"id\":\"WvuqBdr1Ty\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vm Member\",\"col\":3}}]",
+ "creation": "2026-06-04 17:33:59.163406",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "OneRC VMMS",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2026-06-04 17:44:06.322156",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "OneRC VMMS",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Vm Member",
+   "link_to": "VM Member",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "OneRC VMMS",
+ "type": "Workspace"
+}
