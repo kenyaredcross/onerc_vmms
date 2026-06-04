@@ -4,7 +4,6 @@
 frappe.ui.form.on("Deployment Request Tool", {
 	setup: function (frm) {
 		frm.trigger("set_query");
-		hrms.setup_employee_filter_group(frm);
 	},
 
 	validate(frm) {
@@ -299,7 +298,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 		}
 
 		frm.call({
-			method: "get_employees",
+			method: "_get_employees",
 			args: {
 				advanced_filters: frm.advanced_filters || [],
 			},
@@ -551,12 +550,18 @@ async function render_tor_preview(frm) {
 }
 function addActionsButtons(frm) {
 	const buttonRegistry = {
-		"Fetch Volunteers": { method: "get_employees", type: "info" },
-		"Send Deployment Request": { method: "deploy_employees", type: "danger" },
+		"Fetch Volunteers": { method: "get_employees", type: "info", condition: false },
+		"Send Deployment Request": {
+			method: "deploy_employees",
+			type: "danger",
+			condition: frm.doc.future_deployment,
+		},
 	};
 
 	Object.keys(buttonRegistry).forEach((action) => {
-		const { method, type } = buttonRegistry[action];
+		const { method, type, condition } = buttonRegistry[action];
+
+		if (condition) return;
 		frm.add_custom_button(action, () => {
 			frm.trigger(method);
 		});

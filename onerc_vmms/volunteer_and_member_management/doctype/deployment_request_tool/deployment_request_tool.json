@@ -17,6 +17,7 @@
   "expected_end_date",
   "future_deployment",
   "future_deployment_date",
+  "is_future_deployed",
   "column_break_qlgy",
   "company",
   "number_of_volunteers_required",
@@ -45,7 +46,7 @@
   "skills",
   "licences",
   "filter_criteria",
-  "advanced_filters_section",
+  "column_break_npzo",
   "filter_list",
   "select_employees_section",
   "employee_list",
@@ -295,11 +296,6 @@
    "options": "Volunteer Deployment Criteria"
   },
   {
-   "fieldname": "advanced_filters_section",
-   "fieldtype": "Section Break",
-   "label": "Advanced Filters"
-  },
-  {
    "fieldname": "filter_list",
    "fieldtype": "HTML",
    "label": "Filter List"
@@ -344,6 +340,18 @@
    "fieldtype": "Date",
    "label": "Future Deployment Date",
    "mandatory_depends_on": "eval:doc.future_deployment"
+  },
+  {
+   "fieldname": "column_break_npzo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_future_deployed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Is Future Deployed",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -385,7 +393,7 @@
    "link_fieldname": "personnel_deployment_request"
   }
  ],
- "modified": "2026-06-02 18:30:51.612523",
+ "modified": "2026-06-04 08:23:25.228138",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Deployment Request Tool",
