@@ -197,6 +197,7 @@ scheduler_events = {
     "daily": [
         "onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership.set_expired_status",
         "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.send_opportunity_applicant_rejections",
+        "onerc_vmms.volunteer_and_member_management.doctype.deployment_request_tool.deployment_request_tool.deploy_future_requests",
     ],
     "cron": {
         "*/1 * * * *": [
