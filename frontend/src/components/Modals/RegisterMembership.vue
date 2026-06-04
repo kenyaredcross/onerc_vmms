@@ -260,10 +260,6 @@ function submit() {
 					}, 3000);
 				}
 			},
-			onError: () => {
-				createMembership.error =
-					"Failed to initiate membership registration. Please try again.";
-			},
 		},
 	);
 }
