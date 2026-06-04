@@ -335,7 +335,11 @@ def get_membership_type_pgws(membership_type: str) -> list[str]:
             membership_type,
         )
         if not pgw.payment_gateways:
-            frappe.throw(_("No payment gateways configured for this membership type"))
+            frappe.log_error(
+                f"No payment gateways configured for membership type: {membership_type}",
+                "Membership Type Payment Gateway Error",
+            )
+            frappe.throw(_("This membership type cannot be paid for at the moment"))
 
         result = [gateway.gateway for gateway in pgw.payment_gateways]
 
