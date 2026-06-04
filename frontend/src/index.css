@@ -1,3 +1,7 @@
 @import './assets/Inter/inter.css';
 @import 'frappe-ui/src/style.css';
 @import './styles/codemirror.css';
+
+html {
+  font-feature-settings: 'calt' 1, 'cv01' 1, 'cv03' 1, 'cv04' 1, 'cv11' 1;
+}
