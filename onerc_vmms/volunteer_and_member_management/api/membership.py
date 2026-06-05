@@ -164,18 +164,16 @@ def create_membership(
 
     validate_membership_age_eligibility(membership_type_doc)
 
+    member = frappe.db.exists("VM Member", {"email_id": frappe.session.user})
+    if not member:
+        member = create_member()
+    else:
+        member = frappe.get_doc("VM Member", member)
+
+    check_conflicting_memberships(member, branch)
+    from_date = datetime.today().date()
+
     try:
-
-        member = frappe.db.exists("VM Member", {"email_id": frappe.session.user})
-        if not member:
-            member = create_member()
-
-        else:
-            member = frappe.get_doc("VM Member", member)
-
-        check_conflicting_memberships(member, branch)
-
-        from_date = datetime.today().date()
 
         membership = frappe.get_doc(
             {
@@ -228,17 +226,19 @@ def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
 
 
 def create_member() -> "Document":
+    try:
+        member = frappe.get_doc(
+            {
+                "doctype": "VM Member",
+                "member_name": get_fullname(),
+                "email_id": frappe.session.user,
+            }
+        )
+        member.insert(ignore_permissions=True)
 
-    member = frappe.get_doc(
-        {
-            "doctype": "VM Member",
-            "member_name": get_fullname(),
-            "email_id": frappe.session.user,
-        }
-    )
-    member.insert(ignore_permissions=True)
-
-    return member
+        return member
+    except Exception:
+        log_throw_error("Error creating member")
 
 
 def check_conflicting_memberships(member_doc: "Document", company: str) -> None:
@@ -255,11 +255,7 @@ def check_conflicting_memberships(member_doc: "Document", company: str) -> None:
     if membership == "Active":
         frappe.throw(_("You already have an active membership for this branch."))
     elif membership == "Pending":
-        frappe.throw(
-            _(
-                "You have a pending membership for this branch. Please complete the payment."
-            )
-        )
+        frappe.throw(_("You have a pending membership for this branch."))
 
 
 @frappe.whitelist(allow_guest=True)
@@ -272,8 +268,7 @@ def renew_membership(**kwargs):
 
         return invoice
     except Exception:
-        frappe.log_error(frappe.get_traceback(), "Error renewing membership")
-        frappe.throw("Error renewing membership")
+        log_throw_error("Error renewing membership")
 
 
 @frappe.whitelist()
@@ -338,11 +333,7 @@ def get_membership_type_pgws(membership_type: str) -> list[str]:
         return result
 
     except Exception:
-        frappe.log_error(
-            frappe.get_traceback(),
-            "Error fetching payment gateways for membership type",
-        )
-        frappe.throw(_("Error fetching payment gateways for membership type"))
+        log_throw_error("Error fetching payment gateways for membership type")
 
 
 def get_payment_link(membership_doc: "VMMembership", payment_gateway: str) -> str:
