@@ -1,7 +1,7 @@
 <template>
 	<div class="flex flex-col min-h-screen bg-surface-gray-50">
 		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-200 bg-surface-white px-4 py-3 sm:px-6 shadow-sm"
+			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-2 bg-surface-white px-4 py-3 sm:px-6 shadow-sm"
 		>
 			<div class="flex items-center space-x-4">
 				<Breadcrumbs
@@ -32,7 +32,7 @@
 			<div v-if="currentTab === 'Open'">
 				<div
 					v-if="currentTab === 'Open'"
-					class="bg-surface-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 space-y-6"
+					class="bg-surface-white rounded-xl p-4 sm:p-6 mb-6 space-y-6"
 				>
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						<FormControl

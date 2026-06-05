@@ -7,7 +7,10 @@
 			:message="__('Failed to get Membership Details')"
 		/>
 
-		<div v-else-if="currentMembership.data" class="w-full flex flex-col items-center md:mt-10">
+		<div
+			v-else-if="currentMembership.data"
+			class="w-full flex flex-col items-center mt-2 md:mt-10"
+		>
 			<Member
 				v-if="currentMembership.data.length > 0"
 				:membershipStatus="currentMembership.data"
@@ -16,18 +19,18 @@
 
 		<div
 			v-if="currentMembership.data"
-			class="p-2 pt-2 md:p-8 bg-surface-gray-50 rounded-2xl shadow-md text-center mb-20 max-w-7xl mx-auto"
+			class="p-2 pt-2 md:p-8 bg-surface-gray-50 rounded-2xl border border-outline-gray-2 text-center mb-20 max-w-7xl mx-auto"
 		>
-			<h1
+			<div
 				class="flex flex-col md:flex-row justify-center items-center gap-2 text-xl md:text-3xl font-semibold text-red-600"
 			>
 				<span>{{ __("Select a New Plan") }}</span>
 				<span v-if="!currentMembership.data.length">
 					{{ __("to become a member") }}
 				</span>
-			</h1>
+			</div>
 
-			<div v-if="membershipTypes.data?.length" class="mt-10">
+			<div v-if="membershipTypes.data?.length" class="mt-5 md:mt-10">
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
 					<VmmsPortalCard
 						v-for="membershipType in membershipTypes.data"

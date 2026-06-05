@@ -1,15 +1,15 @@
 <template>
 	<div
-		class="flex flex-col lg:flex-row gap-10 md:gap-12 px-4 md:px-8 md:py-6 bg-surface-gray-50 rounded-2xl shadow-sm max-w-6xl"
+		class="flex flex-col lg:flex-row gap-10 md:gap-12 px-4 md:px-8 md:py-6 bg-surface-gray rounded-2xl border border-outline-gray-2 max-w-6xl"
 	>
-		<div class="flex-1 space-y-2 md:space-y-6">
-			<h1 class="text-lg md:text-3xl text-ink-gray-8">{{ __("Your Membership(s)") }}</h1>
+		<div class="flex-1 py-2 md:space-y-6">
+			<h1 class="my-1 md:text-3xl text-ink-gray-8">{{ __("Your Membership(s)") }}</h1>
 
 			<div v-if="membershipList.data && membershipList.data.length > 0" class="space-y-5">
 				<div
 					v-for="membership in membershipList.data"
 					:key="membership.name"
-					class="group relative rounded-2xl bg-surface-white border border-outline-gray-200 hover:shadow-lg transition-all duration-300 p-6"
+					class="group relative rounded-2xl bg-surface-white border border-outline-gray-2 hover:shadow-lg transition-all duration-300 p-6"
 				>
 					<div
 						class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6"

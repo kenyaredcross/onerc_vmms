@@ -33,7 +33,7 @@
 		<div
 			v-for="(q, index) in visibleQuestions"
 			:key="q.question_id"
-			class="rounded-xl border p-5 bg-surface-white shadow-sm transition-all"
+			class="rounded-xl border p-5 bg-surface-white transition-all"
 			:class="{
 				'ml-8 border-blue-300 bg-blue-50': q.depends_on_question,
 			}"

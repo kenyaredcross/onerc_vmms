@@ -1,5 +1,5 @@
 <template>
-	<div class="relative z-1 bg-surface-gray-1 rounded-2xl shadow-lg overflow-hidden">
+	<div class="relative z-1 bg-surface-gray-1 rounded-2xl">
 		<div class="relative z-1 w-full h-48 sm:h-64 bg-surface-gray-100">
 			<img
 				v-if="form?.cover_image"
@@ -509,7 +509,7 @@
 				</div>
 
 				<div
-					class="flex justify-end gap-3 p-4 border-t border-outline-gray-200 bg-surface-gray-50"
+					class="flex justify-end gap-3 p-4 border-t border-outline-gray-2 bg-surface-gray-50"
 				>
 					<button
 						@click="closeDeleteConfirm"

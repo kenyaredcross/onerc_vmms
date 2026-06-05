@@ -1,5 +1,5 @@
 <template>
-	<div class="text-center py-8 px-2 border rounded-lg shadow-sm bg-surface-white">
+	<div class="text-center py-8 px-2 border rounded-lg bg-surface-white">
 		<div class="mb-4">
 			<svg
 				class="mx-auto h-16 w-16 text-green-500"

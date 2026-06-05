@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="group relative flex flex-col bg-surface-white border border-outline-gray-200 rounded-lg p-4 h-full shadow-md hover:shadow-xl hover:border-red-400 transition-all duration-300 overflow-hidden"
+		class="group relative flex flex-col bg-surface-white border border-outline-gray-2 rounded-lg p-4 h-full shadow-md hover:shadow-xl hover:border-red-400 transition-all duration-300 overflow-hidden"
 	>
 		<div
 			class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-500 via-red-400 to-orange-400"

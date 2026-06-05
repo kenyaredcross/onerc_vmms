@@ -60,14 +60,14 @@
 				<div class="py-4">
 					<form action="" @submit.prevent="submit">
 						<div
-							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-surface-red-1 border border-outline-red-1 rounded-2xl shadow-sm"
+							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-surface-red-4 border border-outline-red-1 rounded-2xl shadow-sm"
 						>
 							<div class="space-y-1">
 								<FormControl
 									type="text"
 									label="Membership Type"
 									placeholder="Select membership type"
-									class="w-full text-sm"
+									class="w-full text-sm text-ink-gray-8"
 									v-model="membershipForm.membership_type"
 									:value="props.membership_type"
 									readonly
@@ -110,6 +110,17 @@
 						/>
 
 						<div>
+							<ProgressSpinner
+								v-if="validateBranchPGW.loading"
+								:message="'Validating payment for branch selection...'"
+							/>
+							<ErrorMessage
+								v-else-if="validateBranchPGW.error"
+								:message="validateBranchPGW.error"
+							/>
+						</div>
+
+						<div v-show="showPaymentOptions">
 							<ProgressSpinner
 								v-if="paymentGateways.loading"
 								:message="'Fetching Payment Methods'"
@@ -155,11 +166,12 @@
 
 						<div class="mt-4 gap-2 flex items-end justify-end">
 							<Button
-								type="submit"
+								type="button"
 								variant="solid"
 								theme="red"
 								:loading="createMembership.loading"
 								class="rounded-lg px-6"
+								@click="submit"
 							>
 								Proceed
 							</Button>
@@ -195,6 +207,7 @@ const registerDialog = defineModel();
 const branch = ref("");
 const close = defineEmits(["close"]);
 const formError = ref("");
+const showPaymentOptions = ref(false);
 
 const membershipForm = reactive({
 	amount: 0,
@@ -221,11 +234,27 @@ watchEffect(() => {
 
 watch(branch, (newValue) => {
 	const selectedBranch = toRaw(newValue);
+
 	if (selectedBranch) {
+		validateBranchPGW.submit(
+			{ company: selectedBranch.value },
+			{
+				onSuccess: () => {
+					showPaymentOptions.value = true;
+				},
+				onError: () => {
+					showPaymentOptions.value = false;
+				},
+			},
+		);
 		membershipForm.branch = selectedBranch.value;
 	} else {
 		membershipForm.branch = "";
 	}
+});
+
+const validateBranchPGW = createResource({
+	url: "onerc_vmms.volunteer_and_member_management.api.membership.get_pgw_for_company",
 });
 
 const branches = createResource({

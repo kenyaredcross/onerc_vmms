@@ -1,82 +1,96 @@
 <template>
 	<div
-		class="relative flex flex-col w-full max-w-sm mx-auto rounded-3xl p-8 sm:p-6 xs:p-5 bg-surface-white shadow-lg hover:shadow-2xl transition-all duration-700 group border border-outline-gray-100 overflow-hidden hover:border-red-100 hover:-translate-y-1"
+		class="relative flex flex-col w-full max-w-sm mx-auto rounded-2xl bg-surface-white border border-outline-gray-2 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden group"
 	>
-		<div class="mb-6 text-center">
-			<h3 class="text-2xl sm:text-xl font-bold text-ink-gray-1-900 mb-2 tracking-tight">
+		<!-- Top accent bar -->
+		<div
+			class="h-1 w-full bg-gradient-to-r from-surface-red-4 via-surface-red-5 to-surface-red-6"
+		/>
+
+		<!-- Header -->
+		<div class="px-5 pt-5 pb-5">
+			<h3 class="text-xl font-bold text-ink-gray-9 tracking-tight">
 				{{ __(membershipType.membership_type) }}
 			</h3>
 		</div>
 
-		<div class="mb-6 text-center">
-			<div class="flex items-baseline justify-center gap-1.5 sm:gap-1">
-				<span
-					class="text-4xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent"
-				>
+		<!-- Divider -->
+		<div class="mx-7 border-t border-outline-gray-1" />
+
+		<!-- Pricing -->
+		<div class="px-7 py-5">
+			<div class="flex items-end gap-1">
+				<span class="text-3xl font-extrabold text-ink-gray-9 leading-none">
 					{{ __("KES") }} {{ __(membershipType.amount) }}
 				</span>
-				<span class="text-base sm:text-sm font-semibold text-ink-gray-1-500">{{
-					__("/year")
-				}}</span>
+				<span class="text-sm font-medium mb-0.5">/ {{ __("year") }}</span>
 			</div>
 		</div>
 
-		<div class="flex-1 mb-6">
-			<div class="space-y-2.5 sm:space-y-2">
-				<div class="">
-					<h4 class="text-lg sm:text-base font-bold text-red-600 mb-1.5">
-						{{ __("What's included") }}
-					</h4>
-				</div>
-
-				<div
+		<!-- Benefits -->
+		<div class="px-7 pb-5 flex-1">
+			<p class="text-xs font-semibold text-ink-red-4 uppercase tracking-widest mb-3">
+				{{ __("What's included") }}
+			</p>
+			<ul class="space-y-2.5">
+				<li
 					v-for="benefit in membershipType.benefits"
 					:key="benefit"
-					class="flex items-center gap-2.5 sm:gap-2"
+					class="flex items-start gap-3"
 				>
-					<div
-						class="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 text-red-600 bg-red-50"
+					<span
+						class="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full bg-surface-red-1 flex items-center justify-center"
 					>
-						<Check class="w-3.5 h-3.5" />
-					</div>
-					<span class="text-sm sm:text-xs font-medium text-ink-gray-1-700 leading-snug">
+						<Check class="w-2.5 h-2.5 text-ink-red-3" />
+					</span>
+					<span class="text-sm text-ink-gray-6 leading-snug">
 						{{ __(benefit.benefit) }}
 					</span>
-				</div>
-			</div>
+				</li>
+			</ul>
 		</div>
 
-		<span
+		<!-- Age Requirement -->
+		<div
 			v-if="membershipType.requires_age_requirement"
-			class="my-3 text-sm pt-1 border-t border-t-red-500 font-medium text-ink-gray-1-700"
+			class="mx-7 mb-5 flex items-center gap-2 rounded-lg bg-surface-gray-1 px-3.5 py-2.5"
 		>
-			<template v-if="membershipType.lower_age_limit === 0">
-				{{ __("Ages below") }} {{ membershipType.upper_age_limit }} {{ __("years") }}
-			</template>
-
-			<template v-else-if="membershipType.lower_age_limit >= 30">
-				{{ __("Ages 30 and above") }} {{ __("years") }}
-			</template>
-
-			<template v-else>
-				{{ __("Ages") }}
-				{{ membershipType.lower_age_limit }} - {{ membershipType.upper_age_limit }}
-				{{ __("years") }}
-			</template>
-		</span>
-
-		<Button
-			variant="solid"
-			class="w-full py-3 sm:py-2.5 font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg border-0 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:shadow-red-300/50"
-		>
-			<span class="flex items-center justify-center gap-2">
-				{{ __("Select") }}
-				<ArrowRight class="w-4 h-4" />
+			<span class="text-xs leading-snug">
+				<template v-if="membershipType.lower_age_limit === 0">
+					{{ __("Open to ages below") }}
+					<strong class="text-ink-gray-8"
+						>{{ membershipType.upper_age_limit }} {{ __("yrs") }}</strong
+					>
+				</template>
+				<template v-else-if="membershipType.lower_age_limit >= 30">
+					{{ __("Open to ages") }}
+					<strong class="text-ink-gray-8">{{ __("30 yrs and above") }}</strong>
+				</template>
+				<template v-else>
+					{{ __("Open to ages") }}
+					<strong class="text-ink-gray-8">
+						{{ membershipType.lower_age_limit }}–{{ membershipType.upper_age_limit }}
+						{{ __("yrs") }}
+					</strong>
+				</template>
 			</span>
-		</Button>
+		</div>
+
+		<!-- CTA -->
+		<div class="px-7 pb-7">
+			<Button
+				variant="solid"
+				theme="red"
+				class="w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-[0.98]"
+			>
+				<span class="flex items-center justify-center gap-2">
+					{{ __("Select Plan") }}
+					<ArrowRight class="w-4 h-4" />
+				</span>
+			</Button>
+		</div>
 	</div>
 </template>
-
 <script setup>
 import { Button } from "frappe-ui";
 import { ArrowRight, Check } from "lucide-vue-next";

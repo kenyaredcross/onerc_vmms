@@ -25,6 +25,10 @@
    "width": "Half"
   },
   {
+   "chart": "Volunteer Applications",
+   "width": "Half"
+  },
+  {
    "chart": "Volunter Branch Distribution",
    "width": "Full"
   }
@@ -36,7 +40,7 @@
  "idx": 0,
  "is_default": 0,
  "is_standard": 1,
- "modified": "2026-05-25 14:24:55.919210",
+ "modified": "2026-06-05 12:19:41.955735",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VMMS Overview",

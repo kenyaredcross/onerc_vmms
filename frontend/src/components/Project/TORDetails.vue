@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="termDetails"
-		class="bg-surface-white text-ink-gray-1-900 p-4 sm:p-6 lg:p-10 rounded-2xl shadow-lg max-w-full sm:max-w-6xl mx-auto print:max-w-full print:shadow-none print:p-0 font-sans break-words"
+		class="bg-surface-white text-ink-gray-8 p-4 sm:p-6 lg:p-10 rounded-2xl shadow-lg max-w-full sm:max-w-6xl mx-auto print:max-w-full print:shadow-none print:p-0 font-sans break-words"
 	>
 		<header
 			class="border-b-4 border-red-700 pb-6 mb-8 sm:mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between"
@@ -62,7 +62,7 @@
 			>
 				Stakeholders
 			</h2>
-			<div class="overflow-x-auto rounded-lg shadow-sm border border-outline-gray-200">
+			<div class="overflow-x-auto rounded-lg border border-outline-gray-2">
 				<table class="w-full text-sm border-collapse table-auto">
 					<thead>
 						<tr>
@@ -89,13 +89,13 @@
 							:key="i"
 							:class="{ 'bg-surface-gray-50': (i + 1) % 2 === 0 }"
 						>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.designation }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.full_name }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.phone_number }}
 							</td>
 						</tr>
@@ -136,7 +136,7 @@
 			>
 				Proposed Approach
 			</h2>
-			<div class="overflow-x-auto rounded-lg shadow-sm border border-outline-gray-200">
+			<div class="overflow-x-auto rounded-lg border border-outline-gray-2">
 				<table class="w-full text-sm border-collapse table-auto">
 					<thead>
 						<tr>
@@ -158,10 +158,10 @@
 							:key="i"
 							:class="{ 'bg-surface-gray-50': (i + 1) % 2 === 0 }"
 						>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.methodology }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.notes }}
 							</td>
 						</tr>
@@ -176,7 +176,7 @@
 			>
 				Itinerary
 			</h2>
-			<div class="overflow-x-auto rounded-lg shadow-sm border border-outline-gray-200">
+			<div class="overflow-x-auto rounded-lg border border-outline-gray-2">
 				<table class="w-full text-sm border-collapse table-auto">
 					<thead>
 						<tr>
@@ -208,16 +208,16 @@
 							:key="i"
 							:class="{ 'bg-surface-gray-50': (i + 1) % 2 === 0 }"
 						>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ formatDate(row.date) }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.time }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.person_responsible }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.activity }}
 							</td>
 						</tr>
@@ -232,7 +232,7 @@
 			>
 				Resources
 			</h2>
-			<div class="overflow-x-auto rounded-lg shadow-sm border border-outline-gray-200">
+			<div class="overflow-x-auto rounded-lg border border-outline-gray-2">
 				<table class="w-full text-sm border-collapse table-auto">
 					<thead>
 						<tr>
@@ -284,28 +284,28 @@
 							:key="i"
 							:class="{ 'bg-surface-gray-50': (i + 1) % 2 === 0 }"
 						>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ formatDate(row.date) }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.resource }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.donor }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 break-words">
+							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.project }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 text-right break-words">
+							<td class="border border-outline-gray-2 p-2 text-right break-words">
 								{{ row.quantity }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 text-right break-words">
+							<td class="border border-outline-gray-2 p-2 text-right break-words">
 								{{ row.unit }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 text-right break-words">
+							<td class="border border-outline-gray-2 p-2 text-right break-words">
 								{{ formatCurrency(row.cost_per_day) }}
 							</td>
-							<td class="border border-outline-gray-200 p-2 text-right break-words">
+							<td class="border border-outline-gray-2 p-2 text-right break-words">
 								{{ formatCurrency(row.total_cost) }}
 							</td>
 						</tr>

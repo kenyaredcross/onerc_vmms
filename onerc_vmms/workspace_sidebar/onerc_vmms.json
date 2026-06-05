@@ -1,22 +1,21 @@
 {
  "app": "onerc_vmms",
- "creation": "2026-05-25 12:07:39.623415",
+ "creation": "2026-06-04 17:33:59.204201",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
- "header_icon": "hand-fist",
  "idx": 0,
  "items": [
   {
    "child": 0,
    "collapsible": 1,
-   "icon": "web",
+   "icon": "home",
    "indent": 0,
    "keep_closed": 0,
-   "label": "Portal",
-   "link_type": "URL",
+   "label": "Home",
+   "link_to": "OneRC VMMS",
+   "link_type": "Workspace",
    "show_arrow": 0,
-   "type": "Link",
-   "url": "/vmms"
+   "type": "Link"
   },
   {
    "child": 0,
@@ -24,7 +23,7 @@
    "icon": "dashboard-list",
    "indent": 0,
    "keep_closed": 0,
-   "label": "Dashboard",
+   "label": "Overview",
    "link_to": "VMMS Overview",
    "link_type": "Dashboard",
    "show_arrow": 0,
@@ -36,7 +35,7 @@
    "icon": "setting-gear",
    "indent": 0,
    "keep_closed": 0,
-   "label": "VM Settings",
+   "label": "Settings",
    "link_to": "VM Settings",
    "link_type": "DocType",
    "show_arrow": 0,
@@ -69,24 +68,10 @@
    "child": 1,
    "collapsible": 1,
    "filters": "[[\"Employee\",\"is_volunteer\",\"=\",1]]",
-   "icon": "",
    "indent": 0,
    "keep_closed": 0,
-   "label": "Volunteer",
+   "label": "Volunteers",
    "link_to": "Employee",
-   "link_type": "DocType",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 1,
-   "collapsible": 1,
-   "filters": "[[\"Job Applicant\",\"is_volunteer\",\"=\",1]]",
-   "icon": "",
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "Volunteer Applicant",
-   "link_to": "Job Applicant",
    "link_type": "DocType",
    "show_arrow": 0,
    "type": "Link"
@@ -104,9 +89,21 @@
    "type": "Link"
   },
   {
+   "child": 1,
+   "collapsible": 1,
+   "filters": "[[\"Job Applicant\",\"is_volunteer\",\"=\",1]]",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Volunteer Applicant",
+   "link_to": "Job Applicant",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
    "child": 0,
    "collapsible": 1,
-   "icon": "id-card",
+   "icon": "memory-stick",
    "indent": 1,
    "keep_closed": 1,
    "label": "Membership",
@@ -153,7 +150,7 @@
    "icon": "rocket",
    "indent": 1,
    "keep_closed": 1,
-   "label": "Deployment",
+   "label": "Deployment ",
    "link_type": "Page",
    "show_arrow": 1,
    "type": "Section Break"
@@ -163,7 +160,7 @@
    "collapsible": 1,
    "indent": 0,
    "keep_closed": 0,
-   "label": "Terms of Reference ",
+   "label": "Terms of Reference",
    "link_to": "Personnel Terms of Reference",
    "link_type": "DocType",
    "show_arrow": 0,
@@ -214,11 +211,11 @@
    "type": "Link"
   }
  ],
- "modified": "2026-05-26 09:26:38.139286",
- "modified_by": "mukunajohn329@gmail.com",
- "module": "Setup",
- "name": "Volunteer and Member Management",
+ "modified": "2026-06-05 12:15:57.651819",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "OneRC VMMS",
  "owner": "Administrator",
  "standard": 1,
- "title": "Volunteer and Member Management"
+ "title": "OneRC VMMS"
 }

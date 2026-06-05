@@ -2,7 +2,7 @@
 	<div class="w-full space-y-8">
 		<div
 			v-if="!user.data?.name"
-			class="bg-surface-gray-50 rounded-xl p-6 border border-outline-gray-200"
+			class="bg-surface-gray-50 rounded-xl p-6 border border-outline-gray-2"
 		>
 			<h3 class="text-xl font-semibold text-ink-gray-1-800 mb-6">
 				{{ __("Authentication Required") }}
@@ -74,21 +74,14 @@
 			</div>
 		</div>
 
-		<div
-			v-else
-			class="bg-surface-white rounded-xl shadow-sm p-6 border border-outline-gray-200"
-		>
+		<div v-else class="bg-surface-white rounded-xl p-6 border border-outline-gray-2">
 			<h2 class="text-2xl font-bold text-red-500 mb-6">
 				{{ __("Apply for this Opportunity") }}
 			</h2>
 
 			<form class="space-y-10" @submit.prevent="submitApplication">
 				<div class="flex justify-start">
-					<Button
-						type="submit"
-						variant="solid"
-                        theme="red"
-					>
+					<Button type="submit" variant="solid" theme="red">
 						{{ __("Start Application") }}
 					</Button>
 				</div>

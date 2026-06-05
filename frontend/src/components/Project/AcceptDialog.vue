@@ -1,11 +1,11 @@
 <template>
 	<Dialog :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)">
 		<template #body-title>
-			<h3 class="text-2xl font-semibold text-ink-gray-1-900">{{ __("Confirm Action") }}</h3>
+			<h3 class="text-2xl font-semibold text-ink-red-4">{{ __("Confirm Action") }}</h3>
 		</template>
 
 		<template #body-content>
-			<div class="space-y-4 text-ink-gray-1-700">
+			<div class="space-y-4 text-ink-gray-8">
 				<p>
 					{{
 						__(
@@ -22,7 +22,7 @@
 		<template #actions="{ close }">
 			<div class="flex space-x-2">
 				<Button
-					theme="red"
+					theme="green"
 					variant="solid"
 					:loading="loading"
 					@click="handleConfirm(close)"

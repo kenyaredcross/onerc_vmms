@@ -50,7 +50,7 @@
 
 		<div
 			v-if="readOnly && !uploadedFiles.length"
-			class="p-6 border-2 border-solid border-outline-gray-200 rounded-md bg-surface-gray-50 text-center text-ink-gray-1-500"
+			class="p-6 border-2 border-solid border-outline-gray-2 rounded-md bg-surface-gray-50 text-center text-ink-gray-1-500"
 		>
 			No files uploaded.
 		</div>

@@ -26,7 +26,7 @@
 			</div>
 
 			<div
-				class="bg-surface-white border border-red-600 text-red-600 px-8 py-3 flex items-center gap-3 rounded-xl shadow-sm cursor-pointer hover:bg-red-50"
+				class="bg-surface-white border border-red-600 text-red-600 px-8 py-3 flex items-center gap-3 rounded-xl cursor-pointer hover:bg-red-50"
 				@click="redirectToSignup"
 			>
 				<UserPlus class="w-5 h-5" />
