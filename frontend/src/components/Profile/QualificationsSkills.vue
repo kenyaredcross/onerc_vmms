@@ -1,13 +1,13 @@
 <template>
 	<div class="space-y-6">
-		<div class="rounded-xl border p-5 bg-white shadow-sm">
-			<h3 class="font-semibold text-gray-800 mb-3">
+		<div class="rounded-xl border p-5 bg-surface-white shadow-sm">
+			<h3 class="font-semibold text-ink-gray-1-800 mb-3">
 				{{ __("Professional Profiles") }}
 			</h3>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">
+					<label class="block text-sm font-medium text-ink-gray-1-700 mb-1">
 						{{ __("LinkedIn Profile") }}
 					</label>
 					<FormControl
@@ -18,7 +18,7 @@
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-1">
+					<label class="block text-sm font-medium text-ink-gray-1-700 mb-1">
 						{{ __("GitHub Profile") }}
 					</label>
 					<FormControl
@@ -44,7 +44,7 @@
 				<h2 class="text-lg font-semibold">{{ __("Education & Work History") }}</h2>
 				<svg
 					:class="{ 'rotate-180': !isCollapsed.education }"
-					class="w-5 h-5 text-gray-500 transition-transform duration-200"
+					class="w-5 h-5 text-ink-gray-1-500 transition-transform duration-200"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -88,7 +88,7 @@
 				<h2 class="text-lg font-semibold">{{ __("Skills, Licences & Courses") }}</h2>
 				<svg
 					:class="{ 'rotate-180': !isCollapsed.skills }"
-					class="w-5 h-5 text-gray-500 transition-transform duration-200"
+					class="w-5 h-5 text-ink-gray-1-500 transition-transform duration-200"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"

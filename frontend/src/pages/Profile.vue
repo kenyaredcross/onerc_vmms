@@ -1,9 +1,12 @@
 <template>
 	<NoPermission v-if="!isLoggedIn" :page="__('Profile')" />
-	<div v-else class="container mx-auto px-4 md:px-8 py-4 md:py-8 min-h-screen bg-gray-50">
+	<div
+		v-else
+		class="container mx-auto px-4 md:px-8 py-4 md:py-8 min-h-screen bg-surface-gray-50"
+	>
 		<ProfileHeader :allow-edit="true" :form="form" class="mb-6 md:mb-10" />
 
-		<div v-if="loading" class="text-center py-20 bg-white rounded-xl shadow-lg">
+		<div v-if="loading" class="text-center py-20 bg-surface-white rounded-xl shadow-lg">
 			<div class="flex flex-col items-center justify-center">
 				<svg
 					class="animate-spin h-8 w-8 text-red-600 mb-3"
@@ -25,13 +28,13 @@
 						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 					></path>
 				</svg>
-				<p class="text-gray-600 font-medium">{{ __("Loading user details...") }}</p>
+				<p class="text-ink-gray-1-600 font-medium">{{ __("Loading user details...") }}</p>
 			</div>
 		</div>
 
-		<div v-else class="bg-white shadow-xl rounded-xl p-4 sm:p-6 lg:p-8">
+		<div v-else class="bg-surface-white shadow-xl rounded-xl p-4 sm:p-6 lg:p-8">
 			<div class="flex justify-between items-center mb-6">
-				<h2 class="text-2xl font-bold text-gray-800">
+				<h2 class="text-2xl font-bold text-ink-gray-1-900 dark:text-ink-gray-5">
 					{{ __("Edit Profile") }}
 				</h2>
 
@@ -46,7 +49,7 @@
 
 			<div>
 				<div
-					class="flex overflow-x-auto border-b border-gray-200 whitespace-nowrap mb-6 -mx-4 sm:mx-0 px-4 sm:px-0"
+					class="flex overflow-x-auto border-b border-outline-gray-2 whitespace-nowrap mb-6 -mx-4 sm:mx-0 px-4 sm:px-0"
 				>
 					<button
 						v-for="(tab, i) in tabs"
@@ -56,7 +59,7 @@
 							'py-3 px-3 sm:px-5 text-sm sm:text-base font-semibold transition-all duration-200 ease-in-out flex-shrink-0',
 							currentTab === i
 								? 'border-b-4 border-red-600 text-red-700 bg-red-50/50'
-								: 'text-gray-600 hover:text-red-500 hover:border-b-4 hover:border-red-100',
+								: 'text-ink-gray-8 hover:text-red-500 hover:border-b-4 hover:border-red-100',
 						]"
 					>
 						{{ __(tab.title) }}

@@ -7,7 +7,7 @@
 					isCollapsed
 						? 'px-0 w-auto'
 						: open
-							? 'bg-surface-white shadow-sm px-2 w-52'
+							? 'bg-surface-white px-2 w-52'
 							: 'hover:bg-surface-gray-3 px-2 w-52'
 				"
 			>
@@ -56,7 +56,6 @@
 </template>
 
 <script setup>
-import Apps from "@/components/Apps.vue";
 import FrappeCloudIcon from "@/components/Icons/FrappeCloudIcon.vue";
 import VMMSLogo from "@/components/Icons/VMMSLogo.vue";
 import { sessionStore } from "@/stores/session";
@@ -64,9 +63,10 @@ import { usersStore } from "@/stores/user";
 import { convertToTitleCase } from "@/utils";
 import { createDialog } from "@/utils/dialogs";
 import { Dropdown } from "frappe-ui";
-import { ChevronDown, LogIn, LogOut, User } from "lucide-vue-next";
-import { computed, markRaw, ref } from "vue";
+import { ChevronDown, LogIn, LogOut, Sun, Moon } from "lucide-vue-next";
+import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
+import { useTheme } from "frappe-ui";
 
 const router = useRouter();
 const { logout, branding } = sessionStore();
@@ -75,6 +75,22 @@ let { isLoggedIn } = sessionStore();
 const frappeCloudBaseEndpoint = "https://frappecloud.com";
 const $dialog = createDialog;
 
+const { currentTheme, setTheme } = useTheme();
+
+const theme = computed({
+	get() {
+		if (currentTheme.value === "light") return "light";
+		if (currentTheme.value === "dark") return "dark";
+		return "system";
+	},
+	set(value) {
+		setTheme(value);
+	},
+});
+
+const themeIcon = computed(() => {
+	return currentTheme.value === "light" ? Moon : Sun;
+});
 const props = defineProps({
 	isCollapsed: {
 		type: Boolean,
@@ -112,6 +128,13 @@ const userDropdownOptions = computed(() => {
 						return (
 							userResource.data?.is_system_manager && userResource.data?.is_fc_site
 						);
+					},
+				},
+				{
+					icon: themeIcon.value,
+					label: "Theme",
+					onClick: () => {
+						theme.value = theme.value === "light" ? "dark" : "light";
 					},
 				},
 				{

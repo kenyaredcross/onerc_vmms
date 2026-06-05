@@ -18,7 +18,7 @@
 		</template>
 		<template #body>
 			<div
-				class="grid grid-cols-3 justify-between mx-3 p-2 rounded-lg border border-gray-100 bg-surface-white shadow-xl"
+				class="grid grid-cols-3 justify-between mx-3 p-2 rounded-lg border border-outline-gray-100 bg-surface-white shadow-xl"
 			>
 				<div v-for="app in apps.data" :key="app.name">
 					<a

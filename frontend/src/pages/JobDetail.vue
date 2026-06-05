@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3 sm:px-6"
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-surface-white px-4 py-3 md:px-6"
 		>
 			<Breadcrumbs
 				class="h-7"
@@ -15,7 +15,7 @@
 			/>
 		</header>
 
-		<div v-if="job.data" class="px-4 sm:px-6 pt-6">
+		<div v-if="job.data" class="px-4 md:px-6 pt-6">
 			<JobDetails :job="job" />
 		</div>
 	</div>

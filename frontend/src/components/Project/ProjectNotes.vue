@@ -1,10 +1,10 @@
 <template>
-	<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-		<h2 class="text-lg font-semibold text-gray-900 mb-4">{{ __("Notes") }}</h2>
-		<div v-if="notes" class="prose prose-sm max-w-none text-gray-700">
+	<div class="bg-surface-white rounded-xl border border-outline-gray-2 p-6">
+		<h2 class="text-lg font-semibold text-ink-gray-1-900 mb-4">{{ __("Notes") }}</h2>
+		<div v-if="notes" class="prose prose-sm max-w-none text-ink-gray-1-700">
 			{{ notes }}
 		</div>
-		<div v-else class="text-gray-500 italic">
+		<div v-else class="text-ink-gray-1-500 italic">
 			{{ __("No notes available for this deployment.") }}
 		</div>
 	</div>

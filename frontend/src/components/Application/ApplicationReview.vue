@@ -168,19 +168,19 @@
 				<div
 					v-for="(q, index) in visibleQuestions"
 					:key="q.question_id"
-					class="rounded-xl border p-5 bg-white shadow-sm transition-all"
+					class="rounded-xl border p-5 bg-surface-white transition-all"
 					:class="{
 						'ml-8 border-blue-300 bg-blue-50': q.depends_on_question,
 					}"
 				>
 					<div class="flex justify-between items-start mb-2">
-						<label class="font-medium text-gray-800">
+						<label class="font-medium text-ink-gray-1-800">
 							{{ index + 1 }}. {{ __(q.question) }}
 							<span v-if="q.is_required" class="text-red-500">*</span>
 						</label>
 					</div>
 
-					<p v-if="q.help_text" class="text-sm text-gray-500 mb-2">
+					<p v-if="q.help_text" class="text-sm text-ink-gray-1-500 mb-2">
 						{{ __(q.help_text) }}
 					</p>
 
@@ -230,7 +230,10 @@
 							<span class="text-lg font-bold">
 								{{ responses[q.question_id].answer || __("N/A") }}
 							</span>
-							<span v-if="responses[q.question_id].answer" class="text-gray-500">
+							<span
+								v-if="responses[q.question_id].answer"
+								class="text-ink-gray-1-500"
+							>
 								/ {{ __(q.max_score) }}
 							</span>
 						</div>
@@ -256,7 +259,9 @@
 							>
 								{{ __("View Uploaded File") }}
 							</a>
-							<span v-else class="text-gray-500">{{ __("No file uploaded") }}</span>
+							<span v-else class="text-ink-gray-1-500">{{
+								__("No file uploaded")
+							}}</span>
 						</div>
 
 						<FormControl

@@ -59,7 +59,9 @@
 					:key="`mobile-row-${rowIndex}`"
 					class="border rounded-lg p-3 transition-all"
 					:class="[
-						selectedRows.has(rowIndex) ? 'bg-blue-50 border-blue-200' : 'bg-white',
+						selectedRows.has(rowIndex)
+							? 'bg-blue-50 border-blue-200'
+							: 'bg-surface-white',
 						editingRow === rowIndex ? 'ring-2 ring-blue-300' : '',
 						validationErrors.has(rowIndex) &&
 						Object.keys(validationErrors.get(rowIndex) || {}).length > 0
@@ -275,7 +277,7 @@
 					:key="`desktop-row-${rowIndex}`"
 					class="grid items-center gap-4 p-3 transition-all group"
 					:class="[
-						rowIndex % 2 === 0 ? 'bg-white' : 'bg-surface-white',
+						rowIndex % 2 === 0 ? 'bg-surface-white' : 'bg-surface-white',
 						selectedRows.has(rowIndex) ? 'bg-blue-50' : '',
 						editingRow === rowIndex ? 'ring-2 ring-blue-300' : '',
 						validationErrors.has(rowIndex) &&
@@ -444,7 +446,7 @@
 			@click.self="closeEditModal"
 		>
 			<div
-				class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col m-2"
+				class="bg-surface-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col m-2"
 			>
 				<div
 					class="flex items-center justify-between p-3 sm:p-4 border-b bg-surface-gray-1"

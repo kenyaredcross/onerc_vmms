@@ -1,5 +1,5 @@
 <template>
-	<div class="max-w-6xl mx-auto px-6 py-8">
+	<div class="max-w-6xl mx-auto px-2 md:px-6 py-8">
 		<ProjectHeader :project="project" />
 
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

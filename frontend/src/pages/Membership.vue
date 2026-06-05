@@ -7,7 +7,10 @@
 			:message="__('Failed to get Membership Details')"
 		/>
 
-		<div v-else-if="currentMembership.data" class="w-full flex flex-col items-center md:mt-10">
+		<div
+			v-else-if="currentMembership.data"
+			class="w-full flex flex-col items-center mt-2 md:mt-10"
+		>
 			<Member
 				v-if="currentMembership.data.length > 0"
 				:membershipStatus="currentMembership.data"
@@ -16,18 +19,18 @@
 
 		<div
 			v-if="currentMembership.data"
-			class="p-2 pt-2 md:p-8 bg-gray-50 rounded-2xl shadow-md text-center mb-20 max-w-7xl mx-auto"
+			class="p-2 pt-2 md:p-8 bg-surface-gray-50 rounded-2xl border border-outline-gray-2 text-center mb-20 max-w-7xl mx-auto"
 		>
-			<h1
+			<div
 				class="flex flex-col md:flex-row justify-center items-center gap-2 text-xl md:text-3xl font-semibold text-red-600"
 			>
 				<span>{{ __("Select a New Plan") }}</span>
 				<span v-if="!currentMembership.data.length">
 					{{ __("to become a member") }}
 				</span>
-			</h1>
+			</div>
 
-			<div v-if="membershipTypes.data?.length" class="mt-10">
+			<div v-if="membershipTypes.data?.length" class="mt-5 md:mt-10">
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
 					<VmmsPortalCard
 						v-for="membershipType in membershipTypes.data"
@@ -53,14 +56,13 @@
 <script setup>
 import { useHead } from "@vueuse/head";
 import { createResource, ErrorMessage, toast } from "frappe-ui";
-import { inject, reactive, ref, watch } from "vue";
+import { reactive, ref, watch } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import Member from "../components/MemberPlan.vue";
 import RegisterMembership from "../components/Modals/RegisterMembership.vue";
 import NoPermission from "../components/NoPermission.vue";
 import VmmsPortalCard from "../components/VmmsPortalCard.vue";
 import { membershipStore } from "../stores/membership";
-import { isValidPhone } from "../utils/volunteer";
 import { sessionStore } from "../stores/session";
 
 const { membershipTypes, currentMembership } = membershipStore();
@@ -94,7 +96,6 @@ function cleanUpMembershipForm() {
 	registerDialog.value = false;
 	membershipForm.membership_type = "";
 	membershipForm.amount = 0;
-	payNow.value = false;
 }
 
 function selectMembershipType(membershipType) {
@@ -109,30 +110,6 @@ function submit() {
 		return;
 	}
 	createMembership.submit({ ...membershipForm });
-}
-
-function payMembership() {
-	if (!membershipForm.phone_number) {
-		createMembership.error = "Please enter your phone number";
-		return;
-	}
-
-	if (!isValidPhone(membershipForm.phone_number)) {
-		createMembership.error = "Please enter a valid Kenyan phone number.eg. (+254123456789)";
-		return;
-	}
-	createMembership.error = "";
-
-	const membershipId = currentMembership.data?.[0]?.name;
-
-	if (membershipId) {
-		renewMembership.submit({
-			membership: membershipId,
-			phone_number: membershipForm.phone_number,
-		});
-	} else {
-		toast.info("Payment can only be initiated after a membership document has been created.");
-	}
 }
 
 watch(registerDialog, (newValue) => {

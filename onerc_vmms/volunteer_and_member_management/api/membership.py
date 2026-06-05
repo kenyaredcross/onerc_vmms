@@ -3,6 +3,11 @@ from datetime import datetime
 import frappe
 from frappe import _
 from frappe.utils import add_to_date, get_fullname
+from ...volunteer_and_member_management.utils import log_throw_error
+
+from onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership import (
+    VMMembership,
+)
 from ..api.user import get_user_details
 from frappe.model.document import Document
 from ..utils import log_throw_error
@@ -135,30 +140,27 @@ def confirm_payment(invoice_name: str) -> str:
 
 @frappe.whitelist()
 def initiate_membership_registration(
-    phone: str, amount: float, membership_type: str, branch: str
+    amount: float, membership_type: str, branch: str, payment_gateway: str
 ) -> str:
 
-    try:
-        membership_id = create_membership(phone, amount, membership_type, branch)
+    membership = create_membership(amount, membership_type, branch)
 
-        payment_token = initiate_payment(membership_id, phone)
+    payment_link = get_payment_link(membership, payment_gateway)
 
-        return payment_token
-    except Exception as e:
-        log_throw_error("Error initiating membership registration")
+    return payment_link
 
 
 @frappe.whitelist(allow_guest=True)
 def create_membership(
-    phone: str,
     amount: float,
     membership_type: str,
     branch: str,
-) -> None:
+) -> VMMembership:
 
-    membership_type_doc = frappe.get_doc("VM Membership Type", membership_type)
-    if not membership_type_doc:
-        frappe.throw(_("Error creating membership"))
+    if not frappe.db.exists("VM Membership Type", membership_type):
+        frappe.throw(_("The specified membership type does not exist"))
+
+    membership_type_doc = frappe.get_cached_doc("VM Membership Type", membership_type)
 
     validate_membership_age_eligibility(membership_type_doc)
 
@@ -190,18 +192,10 @@ def create_membership(
         )
 
         membership.insert(ignore_permissions=True)
-        return membership.name
+        return membership
 
     except Exception:
         log_throw_error("Error creating membership")
-
-
-def initiate_payment(membership_id: str, phone_number: str) -> str:
-    membership = frappe.get_doc("VM Membership", membership_id)
-
-    payment_request, invoice = membership.initiate_payment(phone_number=phone_number)
-
-    return payment_request.payment_token
 
 
 def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
@@ -316,3 +310,83 @@ def validate_membership_eligibility():
         "eligible": True,
         "missing_fields": [],
     }
+
+
+@frappe.whitelist()
+def get_membership_type_pgws(membership_type: str) -> list[str]:
+    from ...volunteer_and_member_management.doctype.vm_membership_type.vm_membership_type import (
+        VMMembershipType,
+    )
+
+    if not frappe.db.exists("VM Membership Type", membership_type):
+        frappe.throw(_("The specified membership type does not exist"))
+
+    try:
+        pgw: VMMembershipType = frappe.get_cached_doc(
+            "VM Membership Type",
+            membership_type,
+        )
+        if not pgw.payment_gateways:
+            frappe.log_error(
+                f"No payment gateways configured for membership type: {membership_type}",
+                "Membership Type Payment Gateway Error",
+            )
+            frappe.throw(_("This membership type cannot be paid for at the moment"))
+
+        result = [gateway.gateway for gateway in pgw.payment_gateways]
+
+        return result
+
+    except Exception:
+        frappe.log_error(
+            frappe.get_traceback(),
+            "Error fetching payment gateways for membership type",
+        )
+        frappe.throw(_("Error fetching payment gateways for membership type"))
+
+
+def get_payment_link(membership_doc: "VMMembership", payment_gateway: str) -> str:
+    from erpnext.accounts.doctype.payment_request.payment_request import (
+        _get_payment_gateway_controller,
+    )
+
+    data = {
+        "payment_gateway": payment_gateway,
+        "reference_doctype": "VM Membership",
+        "reference_docname": membership_doc.name,
+        "title": "Membership Payment",
+        "transaction_description": f"Payment for {membership_doc.membership_type} membership",
+        "redirect_to": "/vmms/membership",
+        "amount": membership_doc.amount,
+    }
+    if not frappe.db.exists("Payment Gateway", payment_gateway):
+        log_throw_error("The specified payment gateway does not exist")
+
+    try:
+
+        gateway_controller = _get_payment_gateway_controller(payment_gateway)
+    except Exception:
+        log_throw_error("Error fetching payment gateway controller")
+    else:
+
+        if not hasattr(gateway_controller, "get_payment_url"):
+            frappe.throw(
+                _("The selected payment gateway does not support payment links")
+            )
+
+        payment_url = gateway_controller.get_payment_url(**data)
+
+        if not payment_url:
+            log_throw_error("Error generating payment URL")
+        return payment_url
+
+
+@frappe.whitelist()
+def get_pgw_for_company(company: str) -> bool:
+    if not frappe.db.exists("Payment Gateway Account", {"company": company}):
+        frappe.throw(
+            _(
+                "Payment cannot be processed for this branch at the moment. Please contact support."
+            )
+        )
+    return True

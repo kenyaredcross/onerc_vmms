@@ -33,7 +33,7 @@
 
 						<div
 							v-else
-							class="w-full min-h-[2.5rem] border border-gray-300 rounded px-3 py-2 bg-gray-100 text-gray-700 flex items-center"
+							class="w-full min-h-[2.5rem] border border-outline-gray-300 rounded px-3 py-2 bg-surface-gray-100 text-ink-gray-1-700 flex items-center"
 						>
 							<span class="text-ink-gray-5">
 								{{ __(props.label) }}
@@ -83,7 +83,7 @@
 									<div class="h-10"></div>
 									<div
 										v-if="props.allowCreate"
-										class="absolute bottom-2 left-1 w-[99%] pt-2 bg-white border-t"
+										class="absolute bottom-2 left-1 w-[99%] pt-2 bg-surface-white border-t"
 									>
 										<Button
 											variant="ghost"

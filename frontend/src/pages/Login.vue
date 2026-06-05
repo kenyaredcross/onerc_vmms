@@ -1,11 +1,25 @@
 <template>
-	<div class="flex min-h-screen items-center justify-center bg-gray-50">
-		<Card
-			:title="isLogin ? __('Login VMMS Portal') : __('Sign Up VMMS Portal')"
-			:class="isLogin ? 'w-full max-w-md' : 'w-full max-w-2xl'"
-			class="border-2 border-gray-100 shadow-md rounded-2xl"
+	<div class="flex min-h-screen items-center justify-center bg-surface-gray-1">
+		<div
+			:class="isLogin ? 'max-w-md' : 'max-w-2xl'"
+			class="w-full rounded-2xl border border-outline-gray-1 bg-surface-white shadow-lg"
 		>
-			<form class="flex flex-col space-y-4 w-full" @submit.prevent="submit">
+			<!-- Header -->
+			<div class="px-8 pt-8 pb-4 border-b border-outline-gray-1">
+				<h1 class="text-2xl font-semibold text-ink-gray-9">
+					{{ isLogin ? __("Welcome back") : __("Create an account") }}
+				</h1>
+				<p class="mt-1 text-sm text-ink-gray-5">
+					{{
+						isLogin
+							? __("Sign in to your VMMS Portal account")
+							: __("Get started with the VMMS Portal")
+					}}
+				</p>
+			</div>
+
+			<!-- Form -->
+			<form class="px-8 py-6 flex flex-col space-y-4" @submit.prevent="submit">
 				<template v-if="isLogin">
 					<Input
 						required
@@ -16,34 +30,36 @@
 						v-model="userEmail"
 					/>
 
-					<div class="flex items-center space-x-2">
-						<Input
-							class="w-full"
-							required
-							name="password"
-							:type="passWordVisible ? 'text' : 'password'"
-							:placeholder="__('••••••')"
-							:label="__('Password')"
-							v-model="password"
-						/>
-
-						<Eye
-							v-if="!passWordVisible"
-							class="w-5 h-5 mt-6 cursor-pointer text-gray-600"
-							@click="passWordVisible = !passWordVisible"
-						/>
-
-						<EyeOff
-							v-if="passWordVisible"
-							class="w-5 h-5 mt-6 cursor-pointer text-gray-600"
-							@click="passWordVisible = !passWordVisible"
-						/>
+					<div>
+						<div class="flex items-end gap-2">
+							<Input
+								class="flex-1"
+								required
+								name="password"
+								:type="passWordVisible ? 'text' : 'password'"
+								:placeholder="__('••••••')"
+								:label="__('Password')"
+								v-model="password"
+							/>
+							<button
+								type="button"
+								class="mb-0.5 p-2 rounded-lg text-ink-gray-4 hover:text-ink-gray-6 hover:bg-surface-gray-2 transition-colors"
+								@click="passWordVisible = !passWordVisible"
+							>
+								<Eye v-if="!passWordVisible" class="w-4 h-4" />
+								<EyeOff v-else class="w-4 h-4" />
+							</button>
+						</div>
+						<div class="mt-1 text-right">
+							<button
+								type="button"
+								class="text-xs text-ink-red-3 hover:underline"
+								@click="forgotPassword"
+							>
+								{{ __("Forgot Password?") }}
+							</button>
+						</div>
 					</div>
-					<button type="button" @click="forgotPassword">
-						<span class="text-sm text-right text-red-600 hover:underline">{{
-							__("Forgot Password?")
-						}}</span>
-					</button>
 				</template>
 
 				<template v-else>
@@ -65,7 +81,6 @@
 							v-model="signUpForm.last_name"
 						/>
 					</div>
-
 					<Input
 						required
 						name="email"
@@ -81,27 +96,31 @@
 					variant="solid"
 					type="submit"
 					theme="red"
+					class="w-full"
 				>
 					{{ isLogin ? __("Login") : __("Sign Up") }}
 				</Button>
+
+				<ErrorMessage
+					class="text-center"
+					:message="isLogin ? session.login.error : createSignUp.error"
+				/>
 			</form>
 
-			<div class="mt-2 text-center">
-				<ErrorMessage :message="isLogin ? session.login.error : createSignUp.error" />
-			</div>
-
-			<div class="mt-4 text-center text-sm">
-				<span v-if="isLogin">{{ __("Don’t have an account?") }} </span>
-				<span v-else>{{ __("Already have an account?") }} </span>
-				<Button
-					class="text-red-600 hover:underline font-medium"
-					@click="toggleForm"
+			<!-- Footer -->
+			<div class="px-8 py-4 border-t border-outline-gray-1 text-center text-sm text-ink-gray-5">
+				<span>{{
+					isLogin ? __("Don't have an account?") : __("Already have an account?")
+				}}</span>
+				<button
 					type="button"
+					class="ml-1 font-medium text-ink-red-3 hover:underline"
+					@click="toggleForm"
 				>
 					{{ isLogin ? __("Sign up") : __("Login") }}
-				</Button>
+				</button>
 			</div>
-		</Card>
+		</div>
 	</div>
 
 	<Dialog
@@ -111,10 +130,7 @@
 				'We have sent you an email with a link to set your password. Please check your inbox (and spam folder) to complete your registration.',
 			),
 			size: 'lg',
-			icon: {
-				name: 'check-circle',
-				appearance: 'success',
-			},
+			icon: { name: 'check-circle', appearance: 'success' },
 		}"
 		v-model="signInState"
 	/>

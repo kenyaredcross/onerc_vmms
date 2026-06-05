@@ -1,9 +1,9 @@
 <template>
-	<div class="bg-red-50 border border-red-200 rounded-xl shadow-lg p-6 space-y-6 max-w-sm">
+	<div class="bg-surface-red-1 border border-outline-red-3 rounded-xl p-6 space-y-6 max-w-sm">
 		<!-- Header with Aid Theme Icon -->
-		<div class="flex items-center space-x-3 border-b border-red-200 pb-4">
+		<div class="flex items-center space-x-3 border-b border-outline-red-3 pb-4">
 			<HeartPulse :size="24" class="text-red-600" />
-			<h3 class="text-xl font-bold text-gray-800">Deployment Operations</h3>
+			<h3 class="text-xl font-bold text-ink-gray-1-800">Deployment Operations</h3>
 		</div>
 
 		<!-- Action Buttons (Strictly 1 per line) -->
