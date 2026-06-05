@@ -12,7 +12,7 @@
    "indent": 0,
    "keep_closed": 0,
    "label": "Home",
-   "link_to": "OneRC VMMS",
+   "link_to": "OneRC",
    "link_type": "Workspace",
    "show_arrow": 0,
    "type": "Link"
@@ -211,7 +211,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-06-05 12:15:57.651819",
+ "modified": "2026-06-05 15:18:10.289472",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "OneRC VMMS",
