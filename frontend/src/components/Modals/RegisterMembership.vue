@@ -301,6 +301,8 @@ watch(registerDialog, (isOpen) => {
 	} else {
 		membershipEligibility.fetch();
 		getPaymentGateways();
+		createMembership.error = "";
+		formError.value = "";
 	}
 });
 
