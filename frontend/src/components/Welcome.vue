@@ -7,9 +7,9 @@
 			<div class="flex flex-col justify-center space-y-6 text-left">
 				<h1 class="text-3xl md:text-6xl font-extrabold text-red-600 leading-tight">
 					{{ __("Kenya Red Cross") }} <br />
-					<span class="text-ink-gray-1-800">{{ __("Society") }}</span>
+					<span class="text-gray-800">{{ __("Society") }}</span>
 				</h1>
-				<p class="text-lg text-ink-gray-1-700 max-w-lg">
+				<p class="text-lg text-gray-700 max-w-lg">
 					{{ __("Together, we can") }}
 					<span class="font-semibold text-red-500">{{ __("save lives") }}</span
 					>, {{ __("support") }}
@@ -20,7 +20,7 @@
 					{{ __("or a") }}
 					<span class="font-semibold text-red-500">{{ __("member") }}</span> !
 				</p>
-				<p class="text-ink-gray-1-600 max-w-md">
+				<p class="text-gray-600 max-w-md">
 					{{
 						__(
 							"Your time and passion can help change lives. Join us today and help build stronger, safer communities for everyone.",

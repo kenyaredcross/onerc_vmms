@@ -18,7 +18,7 @@
 					/>
 				</svg>
 			</div>
-			<h3 class="text-lg font-medium text-ink-gray-1-900 mb-2">
+			<h3 class="text-lg font-medium text-gray-900 mb-2">
 				{{ __("Error loading deployment") }}
 			</h3>
 			<Button theme="red" @click="$emit('reload')">{{ __("Try Again") }}</Button>

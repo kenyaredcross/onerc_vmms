@@ -1,12 +1,12 @@
 <template>
-	<div class="h-screen bg-surface-gray-50 flex items-center justify-center">
+	<div class="h-screen bg-gray-50 flex items-center justify-center">
 		<div class="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 p-10">
 			<div class="flex flex-col justify-center space-y-6 text-left">
 				<h1 class="text-3xl md:text-6xl font-extrabold text-red-600 leading-tight">
 					{{ __("Application") }} <br />
-					<span class="text-ink-gray-1-800">{{ __("Received") }}</span>
+					<span class="text-gray-800">{{ __("Received") }}</span>
 				</h1>
-				<p class="text-lg text-ink-gray-1-600 max-w-lg">
+				<p class="text-lg text-gray-600 max-w-lg">
 					{{ __("Thank you for your interest in joining the") }}
 					<span class="font-semibold text-red-500">{{
 						__("Kenya Red Cross Society")
@@ -18,9 +18,7 @@
 			</div>
 
 			<div class="flex flex-col items-center justify-center space-y-6">
-				<div
-					class="bg-surface-white rounded-2xl p-8 shadow-lg max-w-sm w-full text-center"
-				>
+				<div class="bg-white rounded-2xl p-8 shadow-lg max-w-sm w-full text-center">
 					<div
 						class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
 					>
@@ -38,10 +36,10 @@
 							></path>
 						</svg>
 					</div>
-					<h3 class="text-xl font-bold text-ink-gray-1-800 mb-2">
+					<h3 class="text-xl font-bold text-gray-800 mb-2">
 						{{ __("We've Got Your Application!") }}
 					</h3>
-					<p class="text-ink-gray-1-600 mb-6">
+					<p class="text-gray-600 mb-6">
 						{{ __("Our team is currently reviewing your submission.") }}
 					</p>
 					<div class="space-y-3"></div>

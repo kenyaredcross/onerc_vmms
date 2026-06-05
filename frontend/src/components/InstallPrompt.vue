@@ -1,18 +1,16 @@
 <template>
 	<Dialog v-model="showDialog">
 		<template #body-title>
-			<h2 class="text-base font-semibold text-ink-gray-9">{{ __("Install VMMS") }}</h2>
+			<h2 class="text-lg font-bold">{{ __("Install VMMS") }}</h2>
 		</template>
 		<template #body-content>
-			<p class="text-sm text-ink-gray-6">
+			<p>
 				{{ __("Get the app on your device for easy access & a better experience!") }}
 			</p>
 		</template>
 		<template #actions>
-			<Button variant="solid" theme="red" class="w-full" @click="install">
-				<template #prefix>
-					<FeatherIcon name="download" class="w-4 h-4" />
-				</template>
+			<Button variant="solid" theme="red" class="w-full py-5" @click="install">
+				<template #prefix><FeatherIcon name="download" class="w-4" /></template>
 				{{ __("Install") }}
 			</Button>
 		</template>
@@ -20,31 +18,36 @@
 
 	<Popover :show="iosInstallMessage" placement="bottom">
 		<template #body>
-			<div class="m-3 rounded-xl bg-surface-white border border-outline-gray-1 shadow-lg overflow-hidden">
-				<!-- Header -->
-				<div class="flex items-center justify-between px-4 py-3 border-b border-outline-gray-1">
-					<span class="text-sm font-semibold text-ink-gray-9">
-						{{ __("Install VMMS") }}
+			<div
+				class="mx-2 mt-[calc(100vh-15rem)] flex flex-col gap-3 rounded bg-red-100 py-5 drop-shadow-xl"
+			>
+				<div class="mb-1 flex flex-row items-center justify-between px-3 text-center">
+					<span class="text-base font-bold text-gray-900">
+						{{ __("Install VMMS ") }}
 					</span>
-					<button
-						class="p-1 rounded-md text-ink-gray-4 hover:text-ink-gray-7 hover:bg-surface-gray-2 transition-colors"
-						@click="iosInstallMessage = false"
-					>
-						<FeatherIcon name="x" class="w-4 h-4" />
-					</button>
+					<span class="inline-flex items-baseline">
+						<FeatherIcon
+							name="x"
+							class="ml-auto h-4 w-4 text-gray-700"
+							@click="iosInstallMessage = false"
+						/>
+					</span>
 				</div>
-
-				<!-- Body -->
-				<div class="px-4 py-3 space-y-2">
-					<p class="text-sm text-ink-gray-7">
-						{{ __("Get the app on your iPhone for easy access & a better experience.") }}
-					</p>
-					<p class="text-sm text-ink-gray-6 flex items-center gap-1 flex-wrap">
-						<span>{{ __("Tap") }}</span>
-						<FeatherIcon name="share" class="w-4 h-4 text-ink-blue-2 shrink-0" />
-						<span>{{ __("then") }}</span>
-						<span class="font-medium text-ink-gray-8">{{ __("'Add to Home Screen'") }}</span>
-					</p>
+				<div class="px-3 text-xs text-gray-800">
+					<span class="flex flex-col gap-2">
+						<span>
+							{{
+								__(
+									"Get the app on your iPhone for easy access & a better experience",
+								)
+							}}
+						</span>
+						<span class="inline-flex items-start whitespace-nowrap">
+							<span>{{ __("Tap") }}&nbsp;</span>
+							<FeatherIcon name="share" class="h-4 w-4 text-blue-600" />
+							<span>&nbsp;{{ __("and then 'Add to Home Screen'") }}</span>
+						</span>
+					</span>
 				</div>
 			</div>
 		</template>

@@ -2,7 +2,7 @@
 	<div class="flex items-center justify-center min-h-screen">
 		<div class="flex flex-col justify-center items-center text-center text-red-800">
 			<Spinner class="w-12" />
-			<p class="text-ink-gray-1-600">{{ __("Loading deployment details...") }}</p>
+			<p class="text-gray-600">{{ __("Loading deployment details...") }}</p>
 		</div>
 	</div>
 </template>

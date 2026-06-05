@@ -1,13 +1,10 @@
 <template>
 	<div class="w-full space-y-8">
-		<div
-			v-if="!user.data?.name"
-			class="bg-surface-gray-50 rounded-xl p-6 border border-outline-gray-2"
-		>
-			<h3 class="text-xl font-semibold text-ink-gray-1-800 mb-6">
+		<div v-if="!user.data?.name" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+			<h3 class="text-xl font-semibold text-gray-800 mb-6">
 				{{ __("Authentication Required") }}
 			</h3>
-			<p class="text-ink-gray-1-600 mb-8 max-w-md">
+			<p class="text-gray-600 mb-8 max-w-md">
 				{{ __("Please create an account to submit your application") }}
 			</p>
 
@@ -48,7 +45,7 @@
 				user.data &&
 				!user.data?.employee
 			"
-			class="bg-red-50 border border-outline-red-200 rounded-xl p-6 text-center"
+			class="bg-red-50 border border-red-200 rounded-xl p-6 text-center"
 		>
 			<h2 class="text-xl font-semibold text-red-800 mb-4">
 				{{ __("This opportunity is available for volunteers only.") }}
@@ -65,7 +62,7 @@
 						: __("Register Now")
 				}}
 			</Button>
-			<div v-else class="text-ink-gray-1-700">
+			<div v-else class="text-gray-700">
 				{{
 					__(
 						"Your application for volunteering is currently under review. Please come back later to apply for this opportunity.",
@@ -74,14 +71,18 @@
 			</div>
 		</div>
 
-		<div v-else class="bg-surface-white rounded-xl p-6 border border-outline-gray-2">
-			<h2 class="text-2xl font-bold text-red-500 mb-6">
+		<div v-else class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+			<h2 class="text-2xl font-bold text-red-700 mb-6">
 				{{ __("Apply for this Opportunity") }}
 			</h2>
 
 			<form class="space-y-10" @submit.prevent="submitApplication">
 				<div class="flex justify-start">
-					<Button type="submit" variant="solid" theme="red">
+					<Button
+						type="submit"
+						variant="solid"
+						class="bg-red-700 hover:bg-red-800 text-white px-6 py-3 rounded-lg"
+					>
 						{{ __("Start Application") }}
 					</Button>
 				</div>

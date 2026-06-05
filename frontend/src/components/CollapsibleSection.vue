@@ -1,8 +1,8 @@
 <template>
-	<div class="border rounded-lg bg-surface-white shadow-sm">
+	<div class="border rounded-lg bg-white shadow-sm">
 		<button
 			@click="toggle"
-			class="flex justify-between items-center w-full p-4 text-left font-semibold text-ink-gray-1-700 hover:bg-surface-gray-50 transition duration-150"
+			class="flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 transition duration-150"
 		>
 			<h2 class="text-xl font-semibold">{{ __(title) }}</h2>
 			<svg

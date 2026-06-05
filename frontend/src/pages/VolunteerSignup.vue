@@ -6,9 +6,9 @@
 	</div>
 
 	<div v-if="!isLoggedIn" class="text-center py-20">
-		<LogIn class="w-16 h-16 text-ink-gray-1-400 mx-auto mb-4" />
-		<h2 class="text-3xl font-bold text-ink-gray-1-900 mb-4">{{ __("Login Required") }}</h2>
-		<p class="text-ink-gray-1-600 mb-8">
+		<LogIn class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+		<h2 class="text-3xl font-bold text-gray-900 mb-4">{{ __("Login Required") }}</h2>
+		<p class="text-gray-600 mb-8">
 			{{ __("Please log in to submit your volunteer application.") }}
 		</p>
 		<Button
@@ -32,7 +32,7 @@
 		class="min-h-screen flex flex-col"
 	>
 		<main class="flex-1 container mx-auto px-4 py-4">
-			<div class="bg-surface-white shadow-lg rounded p-6">
+			<div class="bg-white shadow-lg rounded p-6">
 				<div class="w-full mb-10">
 					<div
 						v-if="alreadyApplied && applicationStatus === 'Draft'"
@@ -41,7 +41,7 @@
 						<h2 class="text-xl font-semibold text-orange-600">
 							{{ __("Continue Your Draft Application") }}
 						</h2>
-						<p class="text-ink-gray-1-600 text-sm">
+						<p class="text-gray-600 text-sm">
 							{{ __("Complete and submit your volunteer application") }}
 						</p>
 					</div>
@@ -55,7 +55,7 @@
 							<div
 								v-if="i < steps.length"
 								class="absolute top-6 w-full h-1 -translate-y-1/2"
-								:class="i < currentStep ? 'bg-red-600' : 'bg-surface-gray-300'"
+								:class="i < currentStep ? 'bg-red-600' : 'bg-gray-300'"
 							></div>
 
 							<div
@@ -64,8 +64,8 @@
 									i < currentStep
 										? 'bg-red-600 border-red-600 text-white shadow-md hover:shadow-lg'
 										: i === currentStep
-											? 'bg-surface-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
-											: 'bg-surface-gray-200 border-outline-gray-300 text-ink-gray-1-500 hover:border-outline-gray-400 hover:bg-surface-gray-300',
+											? 'bg-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
+											: 'bg-gray-200 border-gray-300 text-gray-500 hover:border-gray-400 hover:bg-gray-300',
 								]"
 							>
 								<span class="text-lg">{{ i + 1 }}</span>
@@ -115,7 +115,6 @@
 							v-if="currentStep < steps.length - 1"
 							@click="nextStep"
 							variant="solid"
-                            theme="red"
 							:loading="saveInProgress"
 						>
 							{{ __("Save & Continue") }}
@@ -137,13 +136,13 @@
 
 	<Dialog v-model="showSubmitDialog">
 		<template #body-title>
-			<h2 class="text-lg font-bold text-ink-gray-1-900">
+			<h2 class="text-lg font-bold text-gray-900">
 				{{ __("Confirm Submission") }}
 			</h2>
 		</template>
 
 		<template #body-content>
-			<p class="text-ink-gray-1-700 leading-relaxed">
+			<p class="text-gray-700 leading-relaxed">
 				{{ __("Are you sure you want to submit this application?") }}
 			</p>
 			<p class="mt-2 text-sm text-red-600 font-medium">

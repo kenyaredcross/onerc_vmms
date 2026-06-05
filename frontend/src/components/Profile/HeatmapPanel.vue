@@ -1,11 +1,11 @@
 <template>
-	<div class="bg-surface-white rounded-lg shadow-md p-6">
+	<div class="bg-white rounded-lg shadow-md p-6">
 		<div class="flex justify-between items-center mb-4">
-			<h3 class="text-lg font-semibold text-ink-gray-1-800">Activity Overview</h3>
+			<h3 class="text-lg font-semibold text-gray-800">Activity Overview</h3>
 			<select
 				v-model="year"
 				@change="updateHeatmap"
-				class="text-sm border border-outline-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+				class="text-sm border border-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
 			>
 				<option v-for="y in availableYears" :key="y" :value="y">
 					{{ y }}
@@ -49,7 +49,7 @@ function generateYears() {
 	const years = [];
 	for (let i = currentYear; i >= currentYear - 5; i--) years.push(i);
 	availableYears.value = years;
-}
+} 
 
 function updateHeatmap() {
 	loading.value = true;

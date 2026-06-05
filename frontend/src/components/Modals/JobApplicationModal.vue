@@ -4,7 +4,7 @@
 	</div>
 	<div v-else class="min-h-screen flex flex-col">
 		<main class="flex-1 container mx-auto px-6 py-10">
-			<div class="bg-surface-white shadow-lg rounded-2xl p-8">
+			<div class="bg-white shadow-lg rounded-2xl p-8">
 				<div v-if="loading" class="text-center py-10">
 					<p>{{ __("Loading application...") }}</p>
 				</div>
@@ -129,7 +129,7 @@
 						</div>
 
 						<div
-							class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-outline-gray-300"
+							class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-300"
 						>
 							<MultiSelect
 								doctype="LMS Course"
@@ -180,7 +180,7 @@
 						</h2>
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 							<div>
-								<label class="block mb-2 font-semibold text-ink-gray-1-800">{{
+								<label class="block mb-2 font-semibold text-gray-800">{{
 									__("Profile Photo")
 								}}</label>
 								<Uploader
@@ -191,7 +191,7 @@
 							</div>
 
 							<div>
-								<label class="block mb-2 font-semibold text-ink-gray-1-800">{{
+								<label class="block mb-2 font-semibold text-gray-800">{{
 									__("Upload Resume")
 								}}</label>
 								<Uploader
@@ -205,7 +205,7 @@
 
 					<section class="mb-10">
 						<div>
-							<label class="block mb-2 font-semibold text-ink-gray-1-800">
+							<label class="block mb-2 font-semibold text-gray-800">
 								{{ __("Supporting Documents") }}
 							</label>
 							<Uploader
@@ -216,11 +216,11 @@
 							/>
 						</div>
 
-						<span class="mb-2 !pt-4 text-lg font-semibold text-ink-gray-1-800">
+						<span class="mb-2 !pt-4 text-lg font-semibold text-gray-800">
 							{{ __("Cover Letter") }}
 						</span>
 						<div
-							class="mt-6 mb-2 font-semibold text-ink-gray-1-800 border border-outline-gray-300 rounded-lg"
+							class="mt-6 mb-2 font-semibold text-gray-800 border border-gray-300 rounded-lg"
 						>
 							<TextEditor
 								editor-class="min-h-[20rem] w-full rounded-b-lg border-t-0 p-2"

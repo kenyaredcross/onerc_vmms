@@ -1,6 +1,6 @@
 <template>
-	<div class="relative z-1 bg-surface-gray-1 rounded-2xl">
-		<div class="relative z-1 w-full h-48 sm:h-64 bg-surface-gray-100">
+	<div class="relative z-1 bg-white rounded-2xl shadow-lg overflow-hidden">
+		<div class="relative z-1 w-full h-48 sm:h-64 bg-gray-100">
 			<img
 				v-if="form?.cover_image"
 				:src="form.cover_image"
@@ -9,7 +9,7 @@
 			/>
 			<div
 				v-else
-				class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-400 border-2 border-dashed border-outline-gray-300"
+				class="flex flex-col items-center justify-center w-full h-full text-gray-400 border-2 border-dashed border-gray-300"
 			>
 				<svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
@@ -30,7 +30,7 @@
 
 			<button
 				@click="openCoverUploader"
-				class="absolute top-3 right-3 bg-surface-white/90 hover:bg-surface-white text-ink-gray-1-700 p-2 rounded-full shadow transition"
+				class="absolute top-3 right-3 bg-white/90 hover:bg-white text-gray-700 p-2 rounded-full shadow transition"
 				:aria-label="__('Edit cover image')"
 				v-if="allowEdit"
 			>
@@ -57,7 +57,7 @@
 			<div class="flex items-center sm:items-end space-x-3 sm:space-x-4 w-full">
 				<div class="relative">
 					<div
-						class="w-20 h-20 sm:w-32 sm:h-32 rounded-full border-3 sm:border-4 border-white shadow-md bg-surface-gray-100 overflow-hidden"
+						class="w-20 h-20 sm:w-32 sm:h-32 rounded-full border-3 sm:border-4 border-white shadow-md bg-gray-100 overflow-hidden"
 					>
 						<img
 							v-if="form?.user_image"
@@ -67,7 +67,7 @@
 						/>
 						<div
 							v-else
-							class="flex items-center justify-center w-full h-full text-ink-gray-1-400"
+							class="flex items-center justify-center w-full h-full text-gray-400"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -87,7 +87,7 @@
 					<button
 						@click="openProfileUploader"
 						v-if="allowEdit"
-						class="absolute bottom-1 right-1 bg-surface-white p-1 sm:p-1.5 rounded-full shadow hover:bg-surface-gray-50 text-ink-gray-1-700 transition"
+						class="absolute bottom-1 right-1 bg-white p-1 sm:p-1.5 rounded-full shadow hover:bg-gray-50 text-gray-700 transition"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -113,7 +113,7 @@
 						<h1 class="text-xl sm:text-3xl font-bold text-red-600 leading-tight">
 							{{ __(form?.full_name || "Volunteer Name") }}
 						</h1>
-						<p class="text-xs sm:text-base text-ink-gray-1-500 font-medium">
+						<p class="text-xs sm:text-base text-gray-500 font-medium">
 							{{ __(form?.email) }}
 						</p>
 					</div>
@@ -149,15 +149,15 @@
 			@click.self="closeCoverUploader"
 		>
 			<div
-				class="bg-surface-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+				class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
 			>
 				<div class="flex items-center justify-between p-4 border-b">
-					<h2 class="text-lg font-semibold text-ink-gray-1-900">
+					<h2 class="text-lg font-semibold text-gray-900">
 						{{ __("Edit Cover Image") }}
 					</h2>
 					<button
 						@click="closeCoverUploader"
-						class="text-ink-gray-1-400 hover:text-ink-gray-1-600 transition"
+						class="text-gray-400 hover:text-gray-600 transition"
 						:disabled="saveInProgress"
 					>
 						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,12 +175,12 @@
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<div class="flex items-center justify-between mb-3">
-								<label class="block text-sm font-medium text-ink-gray-1-700">
+								<label class="block text-sm font-medium text-gray-700">
 									{{ __("Current Cover Image") }}
 								</label>
 							</div>
 							<div
-								class="relative bg-surface-gray-100 rounded-lg overflow-hidden w-full h-48"
+								class="relative bg-gray-100 rounded-lg overflow-hidden w-full h-48"
 							>
 								<img
 									v-if="form?.cover_image"
@@ -190,7 +190,7 @@
 								/>
 								<div
 									v-else
-									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-400"
+									class="flex flex-col items-center justify-center w-full h-full text-gray-400"
 								>
 									<svg
 										class="w-12 h-12 mb-2"
@@ -211,11 +211,11 @@
 						</div>
 
 						<div>
-							<label class="block text-sm font-medium text-ink-gray-1-700 mb-3">
+							<label class="block text-sm font-medium text-gray-700 mb-3">
 								{{ __("New Cover Image") }}
 							</label>
 							<div
-								class="relative bg-surface-gray-100 rounded-lg overflow-hidden w-full h-48"
+								class="relative bg-gray-100 rounded-lg overflow-hidden w-full h-48"
 							>
 								<img
 									v-if="coverImageModel"
@@ -225,7 +225,7 @@
 								/>
 								<div
 									v-else
-									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-400"
+									class="flex flex-col items-center justify-center w-full h-full text-gray-400"
 								>
 									<svg
 										class="w-12 h-12 mb-2"
@@ -261,14 +261,12 @@
 					</div>
 				</div>
 
-				<div
-					class="flex items-center justify-between gap-3 p-4 border-t bg-surface-gray-50"
-				>
+				<div class="flex items-center justify-between gap-3 p-4 border-t bg-gray-50">
 					<button
 						v-if="form?.cover_image"
 						@click="deleteCoverImage"
 						:disabled="saveInProgress"
-						class="px-4 py-2 text-sm font-medium text-red-600 bg-surface-white border border-red-300 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+						class="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -286,7 +284,7 @@
 						<button
 							@click="closeCoverUploader"
 							:disabled="saveInProgress"
-							class="px-4 py-2 text-sm font-medium text-ink-gray-1-700 bg-surface-white border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+							class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{{ __("Cancel") }}
 						</button>
@@ -314,15 +312,15 @@
 			@click.self="closeProfileUploader"
 		>
 			<div
-				class="bg-surface-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+				class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
 			>
 				<div class="flex items-center justify-between p-4 border-b">
-					<h2 class="text-lg font-semibold text-ink-gray-1-900">
+					<h2 class="text-lg font-semibold text-gray-900">
 						{{ __("Edit Profile Image") }}
 					</h2>
 					<button
 						@click="closeProfileUploader"
-						class="text-ink-gray-1-400 hover:text-ink-gray-1-600 transition"
+						class="text-gray-400 hover:text-gray-600 transition"
 						:disabled="saveInProgress"
 					>
 						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,12 +338,12 @@
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div class="flex flex-col items-center">
 							<div class="flex items-center justify-between w-full mb-3">
-								<label class="block text-sm font-medium text-ink-gray-1-700">
+								<label class="block text-sm font-medium text-gray-700">
 									{{ __("Current Profile Image") }}
 								</label>
 							</div>
 							<div
-								class="w-48 h-48 rounded-full border-4 border-white shadow-lg bg-surface-gray-100 overflow-hidden"
+								class="w-48 h-48 rounded-full border-4 border-white shadow-lg bg-gray-100 overflow-hidden"
 							>
 								<img
 									v-if="form?.user_image"
@@ -355,7 +353,7 @@
 								/>
 								<div
 									v-else
-									class="flex items-center justify-center w-full h-full text-ink-gray-1-400"
+									class="flex items-center justify-center w-full h-full text-gray-400"
 								>
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
@@ -374,13 +372,11 @@
 						</div>
 
 						<div class="flex flex-col items-center">
-							<label
-								class="block text-sm font-medium text-ink-gray-1-700 mb-3 w-full"
-							>
+							<label class="block text-sm font-medium text-gray-700 mb-3 w-full">
 								{{ __("New Profile Image") }}
 							</label>
 							<div
-								class="w-48 h-48 rounded-full border-4 border-white shadow-lg bg-surface-gray-100 overflow-hidden"
+								class="w-48 h-48 rounded-full border-4 border-white shadow-lg bg-gray-100 overflow-hidden"
 							>
 								<img
 									v-if="profileImageModel"
@@ -390,7 +386,7 @@
 								/>
 								<div
 									v-else
-									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-400"
+									class="flex flex-col items-center justify-center w-full h-full text-gray-400"
 								>
 									<svg
 										class="w-12 h-12 mb-2"
@@ -431,14 +427,12 @@
 					</div>
 				</div>
 
-				<div
-					class="flex items-center justify-between gap-3 p-4 border-t bg-surface-gray-50"
-				>
+				<div class="flex items-center justify-between gap-3 p-4 border-t bg-gray-50">
 					<button
 						v-if="form?.user_image"
 						@click="deleteProfileImage"
 						:disabled="saveInProgress"
-						class="px-4 py-2 text-sm font-medium text-red-600 bg-surface-white border border-red-300 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+						class="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -456,7 +450,7 @@
 						<button
 							@click="closeProfileUploader"
 							:disabled="saveInProgress"
-							class="px-4 py-2 text-sm font-medium text-ink-gray-1-700 bg-surface-white border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+							class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{{ __("Cancel") }}
 						</button>
@@ -483,7 +477,7 @@
 			class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4"
 			@click.self="closeDeleteConfirm"
 		>
-			<div class="bg-surface-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+			<div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
 				<div class="p-6 text-center">
 					<svg
 						class="w-16 h-16 mx-auto text-red-500"
@@ -498,23 +492,21 @@
 							d="M12 9v2m0 4h.01m-6.938 4h13.856a2 2 0 001.995-1.858L21 5H3l.012 13.142A2 2 0 004.062 19z"
 						></path>
 					</svg>
-					<h3 class="mt-4 text-lg font-medium text-ink-gray-1-900">
+					<h3 class="mt-4 text-lg font-medium text-gray-900">
 						{{ __("Confirm Deletion") }}
 					</h3>
-					<p class="mt-2 text-sm text-ink-gray-1-500">
+					<p class="mt-2 text-sm text-gray-500">
 						{{ __("Are you sure you want to delete your") }}
 						<span class="font-semibold">{{ __(deleteConfirm.type) }}</span>
 						{{ __("image? This action cannot be undone.") }}
 					</p>
 				</div>
 
-				<div
-					class="flex justify-end gap-3 p-4 border-t border-outline-gray-2 bg-surface-gray-50"
-				>
+				<div class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
 					<button
 						@click="closeDeleteConfirm"
 						:disabled="saveInProgress"
-						class="px-4 py-2 text-sm font-medium text-ink-gray-1-700 bg-surface-white border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50"
+						class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
 					>
 						{{ __("Cancel") }}
 					</button>

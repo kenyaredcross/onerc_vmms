@@ -21,7 +21,7 @@
 			<TabButtons
 				:buttons="[
 					{
-						label: 'Upcoming',
+						label: 'Upcoming Events',
 						value: 'upcoming',
 					},
 					{

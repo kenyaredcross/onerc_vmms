@@ -1,8 +1,8 @@
 <template>
-	<div class="bg-surface-white rounded-lg shadow-md p-6">
-		<h3 class="text-lg font-semibold text-ink-gray-1-800 mb-4">Recent Activity</h3>
+	<div class="bg-white rounded-lg shadow-md p-6">
+		<h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
 
-		<div v-if="activities.length === 0" class="text-center py-8 text-ink-gray-1-500">
+		<div v-if="activities.length === 0" class="text-center py-8 text-gray-500">
 			No activities to show
 		</div>
 
@@ -10,7 +10,7 @@
 			<div
 				v-for="activity in activities"
 				:key="activity.name"
-				class="border-l-4 border-purple-500 pl-4 py-3 hover:bg-surface-gray-50 transition-colors rounded-r"
+				class="border-l-4 border-purple-500 pl-4 py-3 hover:bg-gray-50 transition-colors rounded-r"
 			>
 				<div class="flex justify-between items-start">
 					<div class="flex-1">
@@ -21,15 +21,12 @@
 								}}{{ activity.points }} pts</span
 							>
 						</div>
-						<p
-							class="text-ink-gray-1-700 text-sm"
-							v-html="activity.formatted_message"
-						></p>
-						<p v-if="activity.user" class="text-xs text-ink-gray-1-500 mt-1">
+						<p class="text-gray-700 text-sm" v-html="activity.formatted_message"></p>
+						<p v-if="activity.user" class="text-xs text-gray-500 mt-1">
 							From: {{ activity.user }}
 						</p>
 					</div>
-					<span class="text-xs text-ink-gray-1-500 whitespace-nowrap ml-4">{{
+					<span class="text-xs text-gray-500 whitespace-nowrap ml-4">{{
 						formatDate(activity.creation)
 					}}</span>
 				</div>
@@ -106,7 +103,7 @@ function getBadgeClass(type) {
 		Revert: "bg-orange-100 text-orange-800",
 		Review: "bg-purple-100 text-purple-800",
 	};
-	return `px-2 py-1 text-xs font-semibold rounded ${classes[type] || "bg-surface-gray-100 text-ink-gray-1-800"}`;
+	return `px-2 py-1 text-xs font-semibold rounded ${classes[type] || "bg-gray-100 text-gray-800"}`;
 }
 
 function formatDate(date) {

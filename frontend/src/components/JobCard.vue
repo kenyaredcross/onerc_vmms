@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="group relative flex flex-col bg-surface-white border border-outline-gray-2 rounded-xl p-4 h-full hover:shadow-xl hover:border-red-300 transition-all duration-300 overflow-hidden"
+		class="group relative flex flex-col bg-white border border-gray-200 rounded-xl p-4 h-full shadow-sm hover:shadow-xl hover:border-red-300 transition-all duration-300 overflow-hidden"
 	>
 		<div
 			class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-red-400 to-orange-400"
@@ -16,7 +16,7 @@
 			</div>
 		</div>
 		<h2
-			class="text-lg font-bold text-ink-gray-1-900 leading-tight mb-2 group-hover:text-red-600 transition-colors duration-200"
+			class="text-lg font-bold text-gray-900 leading-tight mb-2 group-hover:text-red-600 transition-colors duration-200"
 		>
 			{{ __(job.job_title) }}
 		</h2>
@@ -40,9 +40,9 @@
 						<Calendar class="w-4 h-4 text-green-600" />
 					</div>
 					<div class="flex-1 min-w-0">
-						<p class="text-xs text-ink-gray-1-500">
+						<p class="text-xs text-gray-500">
 							{{ __("Posted On:") }}
-							<span class="font-semibold text-ink-gray-1-900">{{
+							<span class="font-semibold text-gray-900">{{
 								__(dayjs(job.posted_on).format("MMM D"))
 							}}</span>
 						</p>
@@ -56,9 +56,9 @@
 						<CalendarX class="w-4 h-4 text-red-600" />
 					</div>
 					<div class="flex-1 min-w-0">
-						<p class="text-xs text-ink-gray-1-500">
+						<p class="text-xs text-gray-500">
 							{{ __("Closes On:") }}
-							<span class="font-semibold text-ink-gray-1-900">{{
+							<span class="font-semibold text-gray-900">{{
 								__(dayjs(job.closes_on).format("MMM D"))
 							}}</span>
 						</p>
@@ -73,9 +73,9 @@
 					<Clock class="w-4 h-4 text-blue-600" />
 				</div>
 				<div class="flex-1 min-w-0">
-					<p class="text-xs text-ink-gray-1-500">
+					<p class="text-xs text-gray-500">
 						{{ __("Open For:") }}
-						<span class="text-sm font-semibold text-ink-gray-1-900">{{
+						<span class="text-sm font-semibold text-gray-900">{{
 							__(formatDuration(job.duration))
 						}}</span>
 					</p>
@@ -83,12 +83,9 @@
 			</div>
 		</div>
 
-		<div class="pt-3 border-t border-outline-gray-100 mt-auto">
+		<div class="pt-3 border-t border-gray-100 mt-auto">
 			<div class="flex items-center justify-between gap-4">
-				<div
-					v-if="job.creation"
-					class="flex items-center gap-1.5 text-xs text-ink-gray-1-500"
-				>
+				<div v-if="job.creation" class="flex items-center gap-1.5 text-xs text-gray-500">
 					<History class="w-3 h-3" />
 					<span
 						>{{ __(dayjs().diff(dayjs(job.creation), "day")) }}{{ __("d ago") }}</span

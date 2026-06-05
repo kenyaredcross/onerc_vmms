@@ -1,7 +1,7 @@
 <template>
 	<Dialog v-model="show" class="rounded-lg shadow-xl p-4 w-full mx-auto">
 		<template #title>
-			<h3 class="text-xl font-semibold text-ink-gray-1-800">
+			<h3 class="text-xl font-semibold text-gray-800">
 				{{ __("Create New") }} {{ doctype }}
 			</h3>
 		</template>
@@ -13,7 +13,7 @@
 					:key="field.fieldname"
 					class="flex flex-col gap-1"
 				>
-					<label class="block text-sm font-medium text-ink-gray-1-700">
+					<label class="block text-sm font-medium text-gray-700">
 						{{ field.label }}
 						<span v-if="field.reqd" class="text-red-500">*</span>
 					</label>
@@ -27,7 +27,7 @@
 				</div>
 			</div>
 
-			<div class="flex justify-end gap-3 p-4 border-t border-outline-gray-100">
+			<div class="flex justify-end gap-3 p-4 border-t border-gray-100">
 				<Button variant="subtle" @click="close">{{ __("Cancel") }}</Button>
 				<Button variant="solid" @click="submit">{{ __("Create") }}</Button>
 			</div>

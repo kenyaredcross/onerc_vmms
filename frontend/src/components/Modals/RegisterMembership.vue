@@ -1,8 +1,9 @@
 <template>
 	<Dialog v-model="registerDialog">
 		<template #body-title>
-			<h3 class="text-2xl font-bold text-ink-gray-8" id="modal-title">
-				{{ props.is_renew ? "Renew" : "Register" }} as a Member
+			<h3 class="text-2xl font-bold text-gray-900" id="modal-title">
+				{{ props.is_renew ? "Renew" : "Register" }} as a
+				<span class="text-red-600">Member</span>
 			</h3>
 		</template>
 
@@ -16,7 +17,9 @@
 				:message="membershipEligibility.error"
 			/>
 			<div v-else-if="!membershipEligibility.data.eligible">
-				<div class="p-6 rounded-lg shadow-sm">
+				<div
+					class="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg shadow-sm"
+				>
 					<div class="flex items-start space-x-3">
 						<div class="flex-shrink-0">
 							<AlertTriangle class="w-6 h-6 text-yellow-600" />
@@ -57,17 +60,17 @@
 				</div>
 			</div>
 			<div v-else>
-				<div class="py-4">
+				<div v-if="!paymentStatus" class="py-4">
 					<form action="" @submit.prevent="submit">
 						<div
-							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-surface-red-4 border border-outline-red-1 rounded-2xl shadow-sm"
+							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
 						>
 							<div class="space-y-1">
 								<FormControl
 									type="text"
 									label="Membership Type"
 									placeholder="Select membership type"
-									class="w-full text-sm text-ink-gray-8"
+									class="w-full text-sm"
 									v-model="membershipForm.membership_type"
 									:value="props.membership_type"
 									readonly
@@ -106,115 +109,83 @@
 							:value="props.renew_branch"
 							v-model="branch"
 							readonly
+						/>
+
+						<FormControl
+							type="text"
+							label="Phone Number (MPesa Phone Number to be used for payment)"
+							placeholder="eg. 0712345678"
+							class="w-full"
+							v-model="membershipForm.phone"
 							required
 						/>
+						<PaymentInfoAlert class="mt-2" v-if="checkSTK" />
 
-						<div>
-							<ProgressSpinner
-								v-if="validateBranchPGW.loading"
-								:message="'Validating payment for branch selection...'"
-							/>
-							<ErrorMessage
-								v-else-if="validateBranchPGW.error"
-								:message="validateBranchPGW.error"
-							/>
-						</div>
-
-						<div v-show="showPaymentOptions">
-							<ProgressSpinner
-								v-if="paymentGateways.loading"
-								:message="'Fetching Payment Methods'"
-							/>
-							<ErrorMessage
-								v-else-if="paymentGateways.error"
-								:message="paymentGateways.error"
-							/>
-							<div v-else-if="paymentGateways.data">
-								<p class="mt-4 mb-2 text-sm font-medium text-ink-gray-5">
-									{{ __("Select a Payment Method:") }}
-								</p>
-								<ul class="space-y-2">
-									<li
-										v-for="pgw in paymentGateways.data"
-										:key="pgw"
-										@click="membershipForm.payment_gateway = pgw"
-										class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200"
-										:class="
-											membershipForm.payment_gateway === pgw
-												? 'border-outline-red-3 bg-surface-red-1 text-ink-red-3 font-semibold'
-												: 'border-outline-gray-2 bg-surface-white text-ink-gray-7 hover:border-outline-red-2 hover:bg-surface-red-1'
-										"
-									>
-										<span
-											class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
-											:class="
-												membershipForm.payment_gateway === pgw
-													? 'border-outline-red-3'
-													: 'border-outline-gray-3'
-											"
-										>
-											<span
-												v-if="membershipForm.payment_gateway === pgw"
-												class="w-2 h-2 rounded-full bg-surface-red-4"
-											></span>
-										</span>
-										{{ __(pgw) }}
-									</li>
-								</ul>
-							</div>
-						</div>
-
-						<div class="mt-4 gap-2 flex items-end justify-end">
-							<Button
-								type="button"
-								variant="solid"
-								theme="red"
-								:loading="createMembership.loading"
-								class="rounded-lg px-6"
-								@click="submit"
-							>
-								Proceed
-							</Button>
-						</div>
-						<ErrorMessage v-if="formError" class="mt-2" :message="formError" />
 						<ErrorMessage
-							v-else-if="createMembership.error"
-							class="mt-2"
+							v-if="createMembership.error"
+							class="text-center border rounded-md p-2 border-red-500 bg-red-50 text-sm my-3"
 							:message="createMembership.error"
 						/>
+						<div class="mt-4 gap-2 flex items-end justify-end">
+							<Button
+								type="submit"
+								variant="solid"
+								theme="green"
+								:loading="createMembership.loading || confirmPayment"
+								class="rounded-lg px-6"
+							>
+								{{
+									props.is_renew
+										? "Renew"
+										: confirmPayment
+											? "Processing Payment...."
+											: "Register"
+								}}
+							</Button>
+						</div>
 					</form>
 				</div>
+
+				<PaymentStatus
+					v-else
+					@close="registerDialog = false"
+					message="Membership processed successfully"
+					title="Membership"
+					returnUrl="/vmms/membership"
+					urlName="Membership"
+				/>
 			</div>
 		</template>
 	</Dialog>
 </template>
 <script setup>
-import {
-	Dialog,
-	FormControl,
-	Button,
-	createResource,
-	ErrorMessage,
-	toast,
-	Toast,
-} from "frappe-ui";
+import { Dialog, FormControl, Button, createResource, ErrorMessage, toast } from "frappe-ui";
 import { reactive, ref, toRaw, watch, watchEffect } from "vue";
+import { isValidPhone } from "../../utils/volunteer";
+import { membershipStore } from "../../stores/membership";
+import PaymentStatus from "../PaymentStatus.vue";
 import { AlertTriangle } from "lucide-vue-next";
 import router from "../../router";
 import ProgressSpinner from "../Common/ProgressSpinner.vue";
+import PaymentInfoAlert from "../PaymentInfoAlert.vue";
+import { paymentListener } from "../../utils/payment";
 
 const registerDialog = defineModel();
 const branch = ref("");
 const close = defineEmits(["close"]);
-const formError = ref("");
-const showPaymentOptions = ref(false);
+const confirmPayment = ref(false);
+const invoice = ref("");
+const paymentStatus = ref(false);
+const checkSTK = ref(false);
 
 const membershipForm = reactive({
+	phone: "",
 	amount: 0,
 	membership_type: "",
 	branch: "",
-	payment_gateway: "",
 });
+
+const { currentMembership } = membershipStore();
 
 const props = defineProps({
 	membership_type: String,
@@ -234,27 +205,11 @@ watchEffect(() => {
 
 watch(branch, (newValue) => {
 	const selectedBranch = toRaw(newValue);
-
 	if (selectedBranch) {
-		validateBranchPGW.submit(
-			{ company: selectedBranch.value },
-			{
-				onSuccess: () => {
-					showPaymentOptions.value = true;
-				},
-				onError: () => {
-					showPaymentOptions.value = false;
-				},
-			},
-		);
 		membershipForm.branch = selectedBranch.value;
 	} else {
 		membershipForm.branch = "";
 	}
-});
-
-const validateBranchPGW = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.membership.get_pgw_for_company",
 });
 
 const branches = createResource({
@@ -272,80 +227,79 @@ const createMembership = createResource({
 });
 
 function submit() {
-	if (!props.is_renew && !branch.value) {
+	if ((!props.is_renew && !branch.value) || !membershipForm.phone) {
+		createMembership.error = "Please fill in all fields before submitting.";
+		return;
+	}
+	if (!isValidPhone(membershipForm.phone)) {
+		createMembership.error = "Please enter a valid phone number.";
 		return;
 	}
 
-	if (!validateForm()) return;
+	createMembership.error = "";
 
 	createMembership.submit(
 		{},
 		{
-			onSuccess: (data) => {
-				if (data) {
-					toast.success("Redirecting you to the payment page...");
-					setTimeout(() => {
-						window.location.href = data;
-					}, 3000);
-				}
+			onSuccess(data) {
+				checkSTK.value = true;
+				toast.success(
+					"Payment initiated Successfully! You will receive a payment prompt shortly on your phone.",
+				);
+				createMembership.error = "";
+				confirmPayment.value = true;
+				initiatePaymentListener(data);
 			},
 		},
 	);
+}
+
+function initiatePaymentListener(data) {
+	paymentListener.saveToken(data);
+	paymentListener.listenForPayment().then((status) => {
+		if (status === "Completed") {
+			handlePaymentStatus();
+		} else {
+			checkSTK.value = false;
+			toast.error("Payment failed or was cancelled. Please try again.");
+		}
+
+		confirmPayment.value = false;
+	});
 }
 
 watch(registerDialog, (isOpen) => {
 	if (!isOpen) {
 		branch.value = "";
-		formError.value = "";
+		membershipForm.phone = "";
+		createMembership.error = "";
+		confirmPayment.value = false;
+		paymentStatus.value = false;
+		invoice.value = "";
 		props.is_renew = false;
+		checkSTK.value = false;
 	} else {
 		membershipEligibility.fetch();
-		getPaymentGateways();
+		userDetails.fetch();
 	}
 });
 
-function getPaymentGateways() {
-	if (!props.membership_type) {
-		toast.error("Membership type is required to fetch payment gateways.");
-		return;
-	}
-	paymentGateways.submit(
-		{},
-		{
-			onError(error) {
-				console.error("Failed to fetch payment gateways:", error);
-			},
-		},
-	);
-}
-
-const paymentGateways = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.membership.get_membership_type_pgws",
-	makeParams() {
-		return { membership_type: props.membership_type };
-	},
-});
+const handlePaymentStatus = () => {
+	toast.success("Payment confirmed! Thank you for your membership.");
+	currentMembership.reload();
+	paymentStatus.value = true;
+};
 
 const membershipEligibility = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.membership.validate_membership_eligibility",
 	cache: "membership_eligibility",
 });
 
-function validateForm() {
-	formError.value = "";
-	const labels = {
-		amount: "Amount",
-		membership_type: "Membership Type",
-		branch: "Branch / County",
-		payment_gateway: "Payment Method",
-	};
-	for (const [key, value] of Object.entries(membershipForm)) {
-		if (!value) {
-			formError.value = `${labels[key] ?? key} is required.`;
-			return false;
-		}
-	}
-	formError.value = "";
-	return true;
-}
+const userDetails = createResource({
+	url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_details",
+	cache: "user_details",
+	onSuccess(data) {
+		membershipForm.phone = data.mobile_no || "";
+	},
+});
 </script>

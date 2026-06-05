@@ -2,7 +2,7 @@
 	<div class="w-full max-w-xs mx-auto">
 		<div
 			@click="navigateEvent(event)"
-			class="flex flex-col rounded-2xl overflow-hidden border hover:shadow-2xl transition-all duration-500 bg-surface-white cursor-pointer"
+			class="flex flex-col rounded-2xl overflow-hidden border hover:shadow-2xl transition-all duration-500 bg-white cursor-pointer"
 		>
 			<div class="relative w-full h-48">
 				<img
@@ -16,10 +16,10 @@
 			</div>
 
 			<div
-				class="flex border-b rounded-2xl border-b-red-500 flex-col bg-surface-white rounded-b-3xl px-5 py-6 space-y-3"
+				class="flex border-b rounded-2xl border-b-red-500 flex-col bg-white rounded-b-3xl px-5 py-6 space-y-3"
 			>
 				<div
-					class="grid grid-cols-12 items-center justify-between text-ink-gray-1-700 text-sm gap-2"
+					class="grid grid-cols-12 items-center justify-between text-gray-700 text-sm gap-2"
 				>
 					<div class="col-span-3">
 						<div
@@ -44,13 +44,13 @@
 					</div>
 				</div>
 
-				<h2 class="text-lg font-bold text-ink-gray-1-900">{{ event.title }}</h2>
+				<h2 class="text-lg font-bold text-gray-900">{{ event.title }}</h2>
 
-				<p class="text-ink-gray-1-500 text-sm leading-snug line-clamp-2">
+				<p class="text-gray-500 text-sm leading-snug line-clamp-2">
 					{{ event.short_description }}
 				</p>
 
-				<div class="flex items-center gap-2 text-sm text-ink-gray-1-600">
+				<div class="flex items-center gap-2 text-sm text-gray-600">
 					<Clock class="w-4 h-4 flex-shrink-0 text-red-500" />
 					{{ formatTime(event.start_time) }}
 				</div>
@@ -60,11 +60,16 @@
 	<PrivateEvent v-model="dialog" />
 </template>
 <script lang="ts" setup>
-import { Clock, MapPin } from "lucide-vue-next";
+import { Badge, Button, Dialog } from "frappe-ui";
+import { Calendar, Clock, MapPin } from "lucide-vue-next";
 import { onMounted, ref } from "vue";
+import router from "../router";
+import { usersStore } from "../stores/user";
 import PrivateEvent from "./Modals/PrivateEvent.vue";
 
 const dialog = ref(false);
+
+const { userResource } = usersStore();
 
 onMounted(() => {});
 
@@ -73,7 +78,11 @@ defineProps<{
 }>();
 
 function navigateEvent(event: any) {
-	window.location.href = `/dashboard/book-tickets/${event.route}`;
+	if (event.event_access === "Private" && userResource.data == "Guest") {
+		dialog.value = true;
+	} else {
+		router.push({ name: "EventDetail", params: { id: event.route } });
+	}
 }
 
 function formatTime(timeStr: string) {

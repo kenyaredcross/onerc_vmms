@@ -17,36 +17,12 @@ from frappe.utils import (
     nowdate,
     today,
 )
-from ....volunteer_and_member_management.utils import log_throw_error
+
 from ..vm_member.vm_member import create_member
 from frappe.utils import random_string
-from ...doctype.vm_settings.vm_settings import VMSettings
 
 
 class VMMembership(Document):
-    # begin: auto-generated types
-    # This code is auto-generated. Do not modify anything in this block.
-
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:
-        from frappe.types import DF
-
-        amount: DF.Float
-        company: DF.Link
-        currency: DF.Link | None
-        from_date: DF.Date
-        member: DF.Link | None
-        member_name: DF.Data | None
-        member_since_date: DF.Date | None
-        membership_type: DF.Link
-        naming_series: DF.Literal["VM-MSH-.YYYY.-"]
-        paid: DF.Check
-        qr_code: DF.AttachImage | None
-        status: DF.Literal["Draft", "Pending", "Active", "Rejected", "Expired"]
-        to_date: DF.Date | None
-    # end: auto-generated types
-
     def validate(self):
         if not self.member or not frappe.db.exists("VM Member", self.member):
             # for web forms
@@ -56,9 +32,54 @@ class VMMembership(Document):
             else:
                 frappe.throw(_("Please select a Member"))
 
+        self._apply_membership_period_logic()
+
     def validate_membership_period(self):
+        self._apply_membership_period_logic()
         self.save(ignore_permissions=True)
         frappe.db.commit()
+
+    def _apply_membership_period_logic(self):
+        if not self.status == "Draft":
+            return
+        membership_type = frappe.get_doc("VM Membership Type", self.membership_type)
+
+        invoices = frappe.get_all(
+            "Sales Invoice",
+            filters={"membership": self.name},
+            fields=["name", "grand_total", "outstanding_amount", "posting_date"],
+            order_by="posting_date asc",
+        )
+
+        if not invoices:
+            if self.to_date and getdate(self.to_date) < getdate(today()):
+                self.status = "Expired"
+            return
+
+        total_paid = 0
+        for inv in invoices:
+            if getdate(inv.posting_date) >= getdate(self.from_date):
+                if inv.outstanding_amount == 0:
+                    total_paid += inv.grand_total
+
+        cycle_amount = self.amount or membership_type.amount
+        cycles = int(total_paid // cycle_amount) if cycle_amount else 0
+
+        if cycles <= 0:
+            if self.to_date and getdate(self.to_date) < getdate(today()):
+                self.status = "Expired"
+            return
+
+        start_date = (
+            today()
+            if not self.from_date or getdate(self.from_date) < getdate(today())
+            else self.from_date
+        )
+
+        end_date = get_cycle_dates(start_date, membership_type.billing_cycle, cycles)
+
+        self.to_date = end_date
+        self.status = "Pending"
 
     def create_member_from_website_user(self):
         member_name = frappe.get_value("VM Member", dict(email_id=frappe.session.user))
@@ -100,40 +121,30 @@ class VMMembership(Document):
 
         return invoice
 
-    def on_payment_authorized(self, payment_status: str) -> None:
-        if payment_status in ("Completed", "Authorized"):
-            self.status = "Pending"
-            self.paid = 1
-            self.save(ignore_permissions=True)
-
-            self.reconcile()
-
-    def reconcile(self):
-
-        member = self.create_customer()
-
-        plan = frappe.get_doc("VM Membership Type", self.membership_type)
-
-        invoice = make_invoice(self, member, plan)
-        vm_settings: VMSettings = frappe.get_cached_doc("VM Settings")
-        if invoice:
-            self.make_payment_entry(vm_settings, invoice)
-
     @frappe.whitelist()
-    def create_customer(self):
+    def initiate_payment(self, phone_number=None):
         member = frappe.get_doc("VM Member", self.member)
         if not member.customer:
             member = frappe.get_doc("VM Member", self.member)
             member.make_customer_and_link()
             member.reload()
 
-        return member
+        plan = frappe.get_doc("VM Membership Type", self.membership_type)
 
-    @frappe.whitelist()
-    def initiate_payment(self, phone_number=None):
-        frappe.msgprint(_("Initiating payment..."))
+        payment_request, invoice = make_payment_request(
+            self, member, plan, phone_number
+        )
+        self.reload()
 
-    def make_payment_entry(self, settings: VMSettings, invoice):
+        return payment_request, invoice
+
+    def make_payment_entry(self, settings, invoice):
+        if not settings.membership_payment_account:
+            frappe.throw(
+                _(
+                    "You need to set <b>Payment Account</b> for Membership in {0}"
+                ).format(get_link_to_form("VM Settings", "VM Settings"))
+            )
 
         from erpnext.accounts.doctype.payment_entry.payment_entry import (
             get_payment_entry,
@@ -144,10 +155,14 @@ class VMMembership(Document):
             dt="Sales Invoice", dn=invoice.name, bank_amount=invoice.grand_total
         )
         frappe.flags.ignore_account_permission = False
+        pe.paid_to = settings.membership_payment_account
         pe.reference_no = self.name
+        pe.reference_date = getdate()
         pe.flags.ignore_mandatory = True
         pe.save()
         pe.submit()
+
+        self.status = "Pending"
 
     @frappe.whitelist()
     def send_acknowlement(self):
@@ -281,7 +296,7 @@ def get_cycle_dates(start_date, billing_cycle, cycles=1):
 
 
 def make_invoice(membership, member, plan):
-    company = frappe.get_cached_doc("Company", membership.company)
+    company = frappe.get_doc("Company", membership.company)
 
     # Get defaults from Company
     default_income_account = company.default_income_account
@@ -318,16 +333,99 @@ def make_invoice(membership, member, plan):
     )
 
     # invoice.set_missing_values()
-    try:
-        invoice.insert(ignore_permissions=True)
-        invoice.submit()
-    except Exception as e:
-        frappe.log_error(
-            message=frappe.get_traceback(), title="Membership Invoice Creation Failed"
-        )
-        frappe.throw(_("Failed to create invoice: {0}"))
+    invoice.insert(ignore_permissions=True)
+    # invoice.submit()
+
+    frappe.msgprint(_("Sales Invoice created successfully"))
 
     return invoice
+
+
+def make_payment_request(membership, member, plan, phone_number=None):
+    try:
+        invoice = None
+        mop = frappe.db.get_value(
+            "VM Settings", "VM Settings", "membership_mode_of_payment"
+        )
+        if not frappe.db.exists(
+            "Sales Invoice",
+            {"membership": membership.name, "docstatus": ["!=", 2]},
+        ):
+            invoice = make_invoice(membership, member, plan)
+        else:
+            invoice_id = frappe.db.get_value(
+                "Sales Invoice",
+                {"membership": membership.name, "docstatus": ["!=", 2]},
+                "name",
+            )
+            invoice = frappe.get_doc("Sales Invoice", invoice_id)
+
+        payment_gateway = get_payment_gateway_from_mop(mop, membership.company)
+        payment_gateway_account = frappe.db.get_value(
+            "Payment Gateway Account",
+            {"payment_gateway": payment_gateway, "company": membership.company},
+            "name",
+        )
+        payment_gateway_account = frappe.db.get_value(
+            "Payment Gateway Account",
+            {"is_default": 1, "currency": membership.currency},
+            ["name"],
+        )
+
+        if not payment_gateway_account:
+            frappe.throw(
+                _(
+                    "Please set up a default Payment Gateway Account for currency {0}"
+                ).format(membership.currency)
+            )
+
+        payment_request = frappe.get_doc(
+            {
+                "doctype": "Payment Request",
+                "payment_request_type": "Inward",
+                "transaction_date": nowdate(),
+                "party_type": "Customer",
+                "status": "Initiated",
+                "party": member.customer,
+                "reference_doctype": "Sales Invoice",
+                "reference_name": invoice.name,
+                "mode_of_payment": mop,
+                "payment_gateway": payment_gateway,
+                "payment_gateway_account": payment_gateway_account,
+                "outstanding_amount": invoice.outstanding_amount,
+                "currency": membership.currency,
+                "grand_total": membership.amount,
+                "email_to": member.email_id,
+                "payment_token": random_string(16),
+                # "payment_gateway_account": payment_gateway_account,
+                "subject": _("Payment Request for {0} Membership").format(plan.name),
+                "message": _("Please pay {0} {1} to renew your membership.").format(
+                    membership.currency, membership.amount
+                ),
+            }
+        )
+
+        if phone_number:
+            payment_request.phone_number = phone_number
+
+        payment_request.flags.ignore_validate = True
+        payment_request.insert(ignore_permissions=True)
+        payment_request.submit()
+
+        frappe.msgprint(_("Payment Request created successfully"))
+        return payment_request, invoice
+
+    except Exception as e:
+        message = "{0}\n\n{1}".format(e, frappe.get_traceback())
+        log = frappe.log_error(
+            _("Error creating payment request for {0}").format(member.name), message
+        )
+        frappe.msgprint(
+            _(
+                "Failed to create payment request. Please check the error log: {0}"
+            ).format(log.name)
+        )
+        return None
 
 
 def get_member_based_on_subscription(subscription_id, email=None, customer_id=None):
@@ -491,7 +589,9 @@ def notify_failure(log):
 			Please check the following error log linked below
 			Error Log: {0}
 			Regards, Administrator
-		""".format(get_link_to_form("Error Log", log.name))
+		""".format(
+            get_link_to_form("Error Log", log.name)
+        )
 
         sendmail_to_system_managers(
             "[Important] [ERPNext] Razorpay membership webhook failed , please check.",

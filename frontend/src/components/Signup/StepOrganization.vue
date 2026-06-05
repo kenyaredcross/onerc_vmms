@@ -112,11 +112,11 @@
 					title="Select 'Yes' if you are insured through KRCS"
 					aria-describedby="krcs-insurance-desc"
 				/>
-				<p id="krcs-insurance-desc" class="text-sm text-ink-gray-1-600 mt-1">
+				<p id="krcs-insurance-desc" class="text-sm text-gray-600 mt-1">
 					<span title="KRCS = Kenya Red Cross Society" class="mr-2 text-xs">ⓘ</span>
 					{{
 						__(
-							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS).",
+							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS)."
 						)
 					}}
 				</p>
@@ -261,7 +261,7 @@
 			<p class="italic text-sm">
 				{{
 					__(
-						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy.",
+						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy."
 					)
 				}}
 			</p>
@@ -427,7 +427,7 @@ watch(
 				localModel.value.county = newVal;
 			}
 		}
-	},
+	}
 );
 
 watch(
@@ -439,7 +439,7 @@ watch(
 			localModel.value.administrative_location = "";
 			localModel.value.sub_location = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -450,7 +450,7 @@ watch(
 			localModel.value.sub_location = "";
 			localModel.value.ward = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -459,7 +459,7 @@ watch(
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.sub_location = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -468,7 +468,7 @@ watch(
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.country_of_citizenship = newVal === "Citizen" ? "Kenya" : "";
 		}
-	},
+	}
 );
 
 watch(localModel, validateForm, { deep: true, immediate: true });

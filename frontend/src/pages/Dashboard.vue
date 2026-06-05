@@ -3,23 +3,18 @@
 
 	<div
 		v-if="user?.data && user?.data !== 'Guest'"
-		class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 lg:py-8"
+		class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
 	>
 		<header
-			class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 bg-surface-white rounded-xl border border-outline-gray-2"
+			class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 p-4 sm:p-6 bg-white rounded-xl shadow-lg border border-gray-100"
 		>
 			<!-- Title -->
 			<h1
-				class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-ink-gray-1-900 tracking-tight mb-3 sm:mb-0 w-full truncate text-left sm:text-left"
+				class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight mb-3 sm:mb-0 w-full truncate text-left sm:text-left"
 			>
 				{{ __("Welcome back, ") }}
 				<span class="ml-1 text-red-600 font-black">{{ user?.data?.full_name }}</span>
 			</h1>
-
-			<div v-show="isMobile" class="p-2 cursor-pointer" @click="changeTheme">
-				<Sun v-if="currentTheme == 'dark'" class="w-5 h-5 text-ink-gray-6" />
-				<Moon v-else class="w-5 h-5 text-ink-gray-6" />
-			</div>
 
 			<!-- Action Buttons & Notifications -->
 			<div
@@ -51,7 +46,7 @@
 							:class="{ 'animate-wiggle': hasNotification }"
 						>
 							<Bell
-								class="h-6 w-6 text-ink-gray-1-700 hover:text-red-600 transition duration-150"
+								class="h-6 w-6 text-gray-700 hover:text-red-600 transition duration-150"
 							/>
 							<span
 								v-if="hasNotification"
@@ -67,10 +62,10 @@
 					<button
 						@click="isOpen = !isOpen"
 						:class="[
-							'flex items-center justify-center w-11 h-11 rounded-full border border-outline-gray-2 transition-all duration-300 ease-in-out',
+							'flex items-center justify-center w-11 h-11 rounded-full shadow-xl transition-all duration-300 ease-in-out',
 							isOpen
 								? 'bg-red-600 ring-4 ring-red-300/50 text-white'
-								: 'bg-surface-gray-200 hover:bg-red-500 hover:text-white text-ink-gray-1-700',
+								: 'bg-gray-200 hover:bg-red-500 hover:text-white text-gray-700',
 						]"
 						aria-label="Toggle profile menu"
 						aria-expanded="[isOpen ? 'true' : 'false']"
@@ -92,13 +87,13 @@
 					>
 						<div
 							v-show="isOpen"
-							class="absolute right-0 mt-4 w-56 bg-surface-white rounded-xl border border-outline-gray-100 shadow-2xl py-2 z-50 origin-top-right ring-1 ring-black ring-opacity-5"
+							class="absolute right-0 mt-4 w-56 bg-white rounded-xl border border-gray-100 shadow-2xl py-2 z-50 origin-top-right ring-1 ring-black ring-opacity-5"
 							role="menu"
 							aria-orientation="vertical"
 						>
 							<router-link
 								:to="{ name: 'Profile' }"
-								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-ink-gray-1-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
+								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
 								role="menuitem"
 								@click="isOpen = false"
 							>
@@ -109,7 +104,7 @@
 
 							<router-link
 								:to="{ name: 'ProfileOverview' }"
-								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-ink-gray-1-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
+								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
 								role="menuitem"
 								@click="isOpen = false"
 							>
@@ -127,15 +122,23 @@
 			</div>
 
 			<div v-else-if="roleResource?.data" class="grid grid-cols-1 gap-6">
-				<Welcome v-if="!isVolunteer && !isMember" />
+				<Welcome
+					v-if="!roleResource?.data?.is_volunteer && !roleResource?.data?.is_member"
+				/>
 
-				<Volunteer v-if="isVolunteer" v-bind="dashboardStats?.data" />
+				<Volunteer v-if="roleResource?.data?.is_volunteer" v-bind="dashboardStats?.data" />
 
-				<Member v-if="isMember" :membership-status="currentMembership?.data" />
+				<Member
+					v-if="roleResource?.data?.is_member"
+					:membership-status="currentMembership?.data"
+				/>
 
 				<section
-					v-if="roleResource?.data && (isVolunteer || isMember)"
-					class="bg-surface-white p-6 rounded-xl border border-outline-gray-2"
+					v-if="
+						roleResource?.data &&
+						(roleResource?.data?.is_volunteer || roleResource?.data?.is_member)
+					"
+					class="bg-white p-6 rounded-xl border shadow"
 				>
 					<div class="flex justify-between mb-4">
 						<h2 class="text-xl font-bold">{{ __("Upcoming Events") }}</h2>
@@ -175,9 +178,9 @@
 
 		<Dialog :options="{ size: 'lg' }" v-model="showNotificationDialog">
 			<template #body-title>
-				<div class="flex gap-2 justify-between">
-					<h3 class="text-xl font-bold flex items-center text-ink-gray-8 gap-2">
-						<Bell class="w-5 h-5 text-ink-red-4" />
+				<div class="flex justify-between">
+					<h3 class="text-xl font-bold flex items-center gap-2">
+						<Bell class="w-5 h-5 text-red-600" />
 						{{ __("Assignments") }}
 					</h3>
 					<Badge theme="red">{{ assignedProjects.length }}</Badge>
@@ -189,8 +192,8 @@
 					<div v-for="p in assignedProjects" :key="p.name" class="p-4 border rounded-lg">
 						<div class="flex justify-between">
 							<div>
-								<h4 class="font-semibold text-ink-gray-8">{{ p.project_name }}</h4>
-								<p class="text-xs text-ink-gray-5">{{ p.name }}</p>
+								<h4 class="font-semibold">{{ p.project_name }}</h4>
+								<p class="text-xs text-gray-500">{{ p.name }}</p>
 							</div>
 							<router-link
 								:to="{
@@ -198,13 +201,13 @@
 									params: { id: p.deployment_name },
 								}"
 							>
-								<Button variant="solid" theme="red">{{ __("View") }}</Button>
+								<Button theme="red">{{ __("View") }}</Button>
 							</router-link>
 						</div>
 					</div>
 				</div>
 
-				<div v-else class="text-center py-12 text-ink-gray-1-500">
+				<div v-else class="text-center py-12 text-gray-500">
 					{{ __("No new assignments") }}
 				</div>
 			</template>
@@ -215,9 +218,8 @@
 <script setup>
 import { useHead } from "@vueuse/head";
 import { Badge, Button, createResource, Dialog } from "frappe-ui";
-import { Bell, LogIn, User, Sun, Moon } from "lucide-vue-next";
-
-import { onMounted, ref, computed } from "vue";
+import { Bell, LogIn, User } from "lucide-vue-next";
+import { onMounted, ref } from "vue";
 
 import { membershipStore } from "../stores/membership";
 import { sessionStore } from "../stores/session";
@@ -231,32 +233,14 @@ import Availability from "../components/Modals/Availability.vue";
 import NoPermission from "../components/NoPermission.vue";
 import Volunteer from "../components/Volunteer.vue";
 import Welcome from "../components/Welcome.vue";
-import { useScreenSize } from "@/utils/composables";
-import { useTheme } from "frappe-ui";
 
-const { isMobile } = useScreenSize();
-const { currentTheme, setTheme } = useTheme();
-const theme = computed({
-	get() {
-		if (currentTheme.value === "light") return "light";
-		if (currentTheme.value === "dark") return "dark";
-		return "system";
-	},
-	set(value) {
-		setTheme(value);
-	},
-});
-
-function changeTheme() {
-	theme.value = theme.value === "light" ? "dark" : "light";
-}
 const isOpen = ref(false);
 const showNotificationDialog = ref(false);
 const setAvailability = ref(false);
 const hasNotification = ref(false);
 const assignedProjects = ref([]);
 
-const { roleResource, userResource, presentSlots, isVolunteer, isMember } = usersStore();
+const { roleResource, userResource, presentSlots } = usersStore();
 const { events, currentMembership } = membershipStore();
 const { isLoggedIn } = sessionStore();
 

@@ -1,12 +1,13 @@
 <template>
 	<FrappeUIProvider>
-		<div class="text-base text-ink-gray-8 h-full bg-surface-white">
-			<InstallPrompt v-if="isMobile" />
-			<Layout>
+		<InstallPrompt v-if="isMobile" />
+
+		<Layout>
+			<div class="text-base">
 				<router-view />
-			</Layout>
-			<Dialogs />
-		</div>
+			</div>
+		</Layout>
+		<Dialogs />
 	</FrappeUIProvider>
 </template>
 <script setup>

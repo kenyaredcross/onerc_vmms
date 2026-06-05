@@ -1,10 +1,8 @@
 <template>
 	<div>
 		<div class="space-y-2">
-			<h3 class="text-2xl font-bold text-ink-gray-1-900">Select Your Ticket</h3>
-			<p class="text-sm text-ink-gray-1-500">
-				Choose the perfect ticket for your experience
-			</p>
+			<h3 class="text-2xl font-bold text-gray-900">Select Your Ticket</h3>
+			<p class="text-sm text-gray-500">Choose the perfect ticket for your experience</p>
 		</div>
 		<div
 			:class="{
@@ -19,8 +17,7 @@
 					:class="{
 						'border-2 border-red-500 rounded-2xl shadow-md shadow-red-100':
 							selectedTicket === ticket.name,
-						'border-outline-gray-100 hover:border-red-300':
-							selectedTicket !== ticket.name,
+						'border-gray-100 hover:border-red-300': selectedTicket !== ticket.name,
 					}"
 					@click="handleSelection(ticket)"
 				>
@@ -45,9 +42,7 @@
 					readonly
 				/>
 				<div v-if="shouldShowTicketNumber" class="flex flex-col gap-2">
-					<label class="text-sm text-ink-gray-1-700 mb-2">{{
-						__("Number of Tickets")
-					}}</label>
+					<label class="text-sm text-gray-700 mb-2">{{ __("Number of Tickets") }}</label>
 					<div class="flex items-center gap-3">
 						<Button
 							type="button"
@@ -64,7 +59,7 @@
 							min="1"
 							max="10"
 							@input="handleTicketsNumber($event.target.value)"
-							class="w-20 h-10 text-center border border-outline-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent"
+							class="w-20 h-10 text-center border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent"
 						/>
 						<Button
 							type="button"

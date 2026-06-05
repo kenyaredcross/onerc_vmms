@@ -5,7 +5,7 @@
 				<div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
 					<FeatherIcon name="alert-circle" class="w-5 h-5 text-red-600" />
 				</div>
-				<h2 class="text-lg font-bold text-ink-gray-1-900">{{ title }}</h2>
+				<h2 class="text-lg font-bold text-gray-900">{{ title }}</h2>
 			</div>
 		</template>
 
@@ -25,7 +25,11 @@
 		</template>
 
 		<template #actions>
-			<Button variant="solid" theme="red" class="w-full" @click="show = false">
+			<Button
+				variant="solid"
+				class="w-full bg-red-700 hover:bg-red-800 text-white"
+				@click="show = false"
+			>
 				{{ buttonText }}
 			</Button>
 		</template>
@@ -111,7 +115,7 @@ const ErrorRenderer = defineComponent({
 							return h(
 								"div",
 								{
-									class: "bg-surface-white rounded p-3 border border-red-200 mb-2",
+									class: "bg-white rounded p-3 border border-red-200 mb-2",
 									key: index,
 								},
 								[

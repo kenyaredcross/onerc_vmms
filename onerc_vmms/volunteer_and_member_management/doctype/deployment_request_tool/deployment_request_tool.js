@@ -4,6 +4,7 @@
 frappe.ui.form.on("Deployment Request Tool", {
 	setup: function (frm) {
 		frm.trigger("set_query");
+		hrms.setup_employee_filter_group(frm);
 	},
 
 	validate(frm) {
@@ -17,8 +18,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 
 	refresh: function (frm) {
 		frm.page.clear_indicator();
-		!frm.doc.__islocal ? addActionsButtons(frm) : null;
-
+		frm.trigger("get_employees");
 		frm.trigger("set_primary_action");
 
 		frm.events.set_task_filter(frm);
@@ -72,10 +72,19 @@ frappe.ui.form.on("Deployment Request Tool", {
 		});
 
 		render_tor_preview(frm);
+
+		frm.add_custom_button(__("Send Deployment Request"), () => {
+			frm.trigger("deploy_employees");
+		}).addClass("btn-primary");
+	},
+
+	branch(frm) {
+		frm.trigger("get_employees");
 	},
 
 	region(frm) {
 		frm.set_value("branch", "");
+		frm.trigger("get_employees");
 	},
 
 	county(frm) {
@@ -85,11 +94,53 @@ frappe.ui.form.on("Deployment Request Tool", {
 		frm.events.set_sub_county_filter(frm);
 		frm.events.set_ward_filter(frm);
 		frm.events.set_location_filter(frm);
+		frm.trigger("get_employees");
 	},
 
 	sub_county(frm) {
 		frm.events.set_ward_filter(frm);
 		frm.events.set_location_filter(frm);
+		frm.trigger("get_employees");
+	},
+
+	ward(frm) {
+		frm.trigger("get_employees");
+	},
+
+	administrative_location(frm) {
+		frm.trigger("get_employees");
+	},
+
+	department: function (frm) {
+		frm.trigger("get_employees");
+	},
+
+	employment_type: function (frm) {
+		frm.trigger("get_employees");
+	},
+
+	designation: function (frm) {
+		frm.trigger("get_employees");
+	},
+
+	courses: function (frm) {
+		frm.trigger("get_employees");
+	},
+
+	skills: function (frm) {
+		frm.trigger("get_employees");
+	},
+
+	licences: function (frm) {
+		frm.trigger("get_employees");
+	},
+
+	filter_criteria: function (frm) {
+		frm.trigger("get_employees");
+	},
+
+	expected_start_date: function (frm) {
+		frm.trigger("get_employees");
 	},
 
 	terms_of_reference: function (frm) {
@@ -144,6 +195,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 		// 			if (r.message.notes) frm.set_value("notes", r.message.notes);
 		// 		}
 		// 	});
+		frm.trigger("get_employees");
 	},
 
 	task(frm) {
@@ -168,6 +220,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 					if (r.message.project) frm.set_value("project", r.message.project);
 				}
 			});
+		frm.trigger("get_employees");
 	},
 
 	set_task_filter(frm) {
@@ -298,7 +351,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 		}
 
 		frm.call({
-			method: "_get_employees",
+			method: "get_employees",
 			args: {
 				advanced_filters: frm.advanced_filters || [],
 			},
@@ -462,7 +515,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 	confirm_deployment: function (frm, selected_employees) {
 		frappe.confirm(
 			__("Send request to {0} personnel(s) for this project?", [selected_employees.length]),
-			() => frm.events.bulk_deploy_employees(frm, selected_employees),
+			() => frm.events.bulk_deploy_employees(frm, selected_employees)
 		);
 	},
 
@@ -491,7 +544,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 					message += "<ul>";
 					failure.forEach((f) => {
 						const employeeData = frm.employees_datatable.datamanager.data.find(
-							(d) => d.employee === f.employee,
+							(d) => d.employee === f.employee
 						);
 						const employeeName =
 							(employeeData && employeeData.employee_name) || f.employee_name || "";
@@ -528,7 +581,7 @@ async function render_tor_preview(frm) {
 	const base_url = window.location.origin;
 
 	let pdf_url = `${base_url}/api/method/onerc_vmms.volunteer_and_member_management.utils.download_pdf?doctype=${encodeURIComponent(
-		doctype,
+		doctype
 	)}&name=${encodeURIComponent(tor_name)}`;
 
 	pdf_url += "&settings=%7B%7D&_lang=en";
@@ -547,24 +600,4 @@ async function render_tor_preview(frm) {
 		frm.save();
 	}
 	frm.refresh_field("tor");
-}
-function addActionsButtons(frm) {
-	const buttonRegistry = {
-		"Fetch Volunteers": { method: "get_employees", type: "info", condition: false },
-		"Send Deployment Request": {
-			method: "deploy_employees",
-			type: "danger",
-			condition: frm.doc.future_deployment,
-		},
-	};
-
-	Object.keys(buttonRegistry).forEach((action) => {
-		const { method, type, condition } = buttonRegistry[action];
-
-		if (condition) return;
-		frm.add_custom_button(action, () => {
-			frm.trigger(method);
-		});
-		frm.change_custom_button_type(action, null, type);
-	});
 }

@@ -1,11 +1,11 @@
 <template>
-	<div class="flex flex-col min-h-screen bg-surface-gray-50">
+	<div class="flex flex-col min-h-screen bg-gray-50">
 		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-2 bg-surface-white px-4 py-3 sm:px-6 shadow-sm"
+			class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6 shadow-sm"
 		>
 			<div class="flex items-center space-x-4">
 				<Breadcrumbs
-					class="h-7 text-sm sm:text-base text-ink-gray-1-600"
+					class="h-7 text-sm sm:text-base text-gray-600"
 					:items="[{ label: __('Opportunities'), route: { name: 'Jobs' } }]"
 				/>
 				<div class="hidden sm:block text-xl font-bold text-red-600">
@@ -25,14 +25,14 @@
 					v-model="currentTab"
 					class="w-full sm:w-auto"
 					active-class="bg-red-600 text-white"
-					inactive-class="text-ink-gray-1-700 hover:bg-surface-gray-100"
+					inactive-class="text-gray-700 hover:bg-gray-100"
 				/>
 			</div>
 
 			<div v-if="currentTab === 'Open'">
 				<div
 					v-if="currentTab === 'Open'"
-					class="bg-surface-white rounded-xl p-4 sm:p-6 mb-6 space-y-6"
+					class="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 space-y-6"
 				>
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						<FormControl
@@ -43,7 +43,7 @@
 							@input="updateJobs"
 						>
 							<template #prefix>
-								<Search class="w-5 h-5 text-ink-gray-1-400" />
+								<Search class="w-5 h-5 text-gray-400" />
 							</template>
 						</FormControl>
 						<Link

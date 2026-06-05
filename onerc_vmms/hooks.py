@@ -173,6 +173,10 @@ doc_events = {
     "Job Opening": {
         "validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.validate"
     },
+    "Sales Invoice": {
+        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
+        "on_update_after_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
+    },
     "GL Entry": {
         "after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
         "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
@@ -197,7 +201,6 @@ scheduler_events = {
     "daily": [
         "onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership.set_expired_status",
         "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.send_opportunity_applicant_rejections",
-        "onerc_vmms.volunteer_and_member_management.doctype.deployment_request_tool.deployment_request_tool.deploy_future_requests",
     ],
     "cron": {
         "*/1 * * * *": [
