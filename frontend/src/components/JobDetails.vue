@@ -1,9 +1,7 @@
 <template>
-	<div v-if="job.data" class="min-h-screen bg-surface-gray-1">
-		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-			<div
-				class="bg-surface-white rounded-2xl shadow-md overflow-hidden border border-outline-gray-1"
-			>
+	<div v-if="job.data" class="min-h-screen">
+		<div class="max-w-7xl mx-auto mb-4 md:px-4 lg:px-8 md:py-6">
+			<div class="bg-surface-white rounded-2xl overflow-hidden border border-outline-gray-2">
 				<!-- Hero Banner -->
 				<div
 					class="relative bg-gradient-to-r from-red-600 to-red-700 px-5 sm:px-8 py-8 sm:py-12 text-white"
@@ -236,7 +234,7 @@
 							<div
 								v-for="(skill, idx) in job.data.required_skills"
 								:key="idx"
-								class="flex items-center gap-3 p-3 sm:p-4 bg-surface-white rounded-xl border border-outline-gray-1 hover:border-outline-red-1 hover:shadow-sm transition-all duration-200"
+								class="flex items-center gap-3 p-3 sm:p-4 bg-surface-white rounded-xl border border-outline-gray-1 hover:border-outline-red-1 hover:transition-all duration-200"
 							>
 								<div
 									class="w-7 h-7 rounded-lg bg-surface-red-1 flex items-center justify-center shrink-0"
@@ -330,7 +328,7 @@
 							<div
 								v-for="(lic, idx) in job.data.required_licences"
 								:key="idx"
-								class="flex items-center gap-3 p-3 sm:p-4 bg-surface-white rounded-xl border border-outline-gray-1 hover:border-outline-green-1 hover:shadow-sm transition-all duration-200"
+								class="flex items-center gap-3 p-3 sm:p-4 bg-surface-white rounded-xl border border-outline-gray-1 hover:border-outline-green-1 hover:transition-all duration-200"
 							>
 								<div
 									class="w-7 h-7 rounded-lg bg-surface-green-1 flex items-center justify-center shrink-0"
@@ -418,51 +416,51 @@ const hasQualification = (job) =>
 <style scoped>
 /* Override inline styles injected by Frappe's editor */
 .frappe-editor-content :deep(*) {
-    color: unset !important;
-    background-color: unset !important;
+	color: unset !important;
+	background-color: unset !important;
 }
 
 .frappe-editor-content :deep(p),
 .frappe-editor-content :deep(li),
 .frappe-editor-content :deep(td),
 .frappe-editor-content :deep(span) {
-    color: var(--ink-gray-8) !important;
+	color: var(--ink-gray-8) !important;
 }
 
 .frappe-editor-content :deep(h1),
 .frappe-editor-content :deep(h2),
 .frappe-editor-content :deep(h3),
 .frappe-editor-content :deep(h4) {
-    color: var(--ink-gray-9) !important;
-    font-weight: 800;
+	color: var(--ink-gray-9) !important;
+	font-weight: 800;
 }
 
 .frappe-editor-content :deep(a) {
-    color: var(--ink-red-3) !important;
+	color: var(--ink-red-3) !important;
 }
 
 .frappe-editor-content :deep(strong) {
-    color: var(--ink-gray-9) !important;
-    font-weight: 700;
+	color: var(--ink-gray-9) !important;
+	font-weight: 700;
 }
 
 .frappe-editor-content :deep(th) {
-    background-color: var(--surface-gray-2) !important;
-    font-weight: 700;
-    padding: 0.75rem;
+	background-color: var(--surface-gray-2) !important;
+	font-weight: 700;
+	padding: 0.75rem;
 }
 
 .frappe-editor-content :deep(td) {
-    padding: 0.75rem;
+	padding: 0.75rem;
 }
 
 .frappe-editor-content :deep(table) {
-    width: 100%;
-    border-collapse: collapse;
+	width: 100%;
+	border-collapse: collapse;
 }
 
 .frappe-editor-content :deep(td),
 .frappe-editor-content :deep(th) {
-    border: 1px solid var(--outline-gray-2) !important;
+	border: 1px solid var(--outline-gray-2) !important;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-	<div class="bg-surface-white rounded-xl shadow-sm border border-outline-gray-200 p-6">
+	<div class="bg-surface-white rounded-xl border border-outline-gray-2 p-6">
 		<h2 class="text-lg font-semibold text-ink-gray-1-900 mb-4">{{ __("Notes") }}</h2>
 		<div v-if="notes" class="prose prose-sm max-w-none text-ink-gray-1-700">
 			{{ notes }}

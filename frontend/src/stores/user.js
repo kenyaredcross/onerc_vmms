@@ -1,10 +1,13 @@
 import { createResource } from "frappe-ui";
 import { defineStore } from "pinia";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 
 export const usersStore = defineStore("vmms-users", () => {
+	const isVolunteer = ref(false);
+	const isMember = ref(false);
 	let userResource = createResource({
 		url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_info",
 		onError(error) {
@@ -19,6 +22,10 @@ export const usersStore = defineStore("vmms-users", () => {
 		url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_info",
 		auto: true,
 		cache: ["roles"],
+		onSuccess: (data) => {
+            isVolunteer.value = Boolean(data.is_volunteer);
+            isMember.value = Boolean(data.is_member);
+		},
 	});
 
 	const presentSlots = createResource({
@@ -27,9 +34,11 @@ export const usersStore = defineStore("vmms-users", () => {
 		auto: true,
 	});
 
-  return {
-    userResource,
-    roleResource,
-    presentSlots,
-  };
+	return {
+		userResource,
+		roleResource,
+		presentSlots,
+		isVolunteer,
+		isMember,
+	};
 });

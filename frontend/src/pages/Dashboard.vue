@@ -6,7 +6,7 @@
 		class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 lg:py-8"
 	>
 		<header
-			class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 bg-surface-white rounded-xl shadow-lg border border-outline-gray-1"
+			class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 bg-surface-white rounded-xl border border-outline-gray-2"
 		>
 			<!-- Title -->
 			<h1
@@ -67,7 +67,7 @@
 					<button
 						@click="isOpen = !isOpen"
 						:class="[
-							'flex items-center justify-center w-11 h-11 rounded-full shadow-xl transition-all duration-300 ease-in-out',
+							'flex items-center justify-center w-11 h-11 rounded-full border border-outline-gray-2 transition-all duration-300 ease-in-out',
 							isOpen
 								? 'bg-red-600 ring-4 ring-red-300/50 text-white'
 								: 'bg-surface-gray-200 hover:bg-red-500 hover:text-white text-ink-gray-1-700',
@@ -127,23 +127,15 @@
 			</div>
 
 			<div v-else-if="roleResource?.data" class="grid grid-cols-1 gap-6">
-				<Welcome
-					v-if="!roleResource?.data?.is_volunteer && !roleResource?.data?.is_member"
-				/>
+				<Welcome v-if="!isVolunteer && !isMember" />
 
-				<Volunteer v-if="roleResource?.data?.is_volunteer" v-bind="dashboardStats?.data" />
+				<Volunteer v-if="isVolunteer" v-bind="dashboardStats?.data" />
 
-				<Member
-					v-if="roleResource?.data?.is_member"
-					:membership-status="currentMembership?.data"
-				/>
+				<Member v-if="isMember" :membership-status="currentMembership?.data" />
 
 				<section
-					v-if="
-						roleResource?.data &&
-						(roleResource?.data?.is_volunteer || roleResource?.data?.is_member)
-					"
-					class="bg-surface-white p-6 rounded-xl border shadow"
+					v-if="roleResource?.data && (isVolunteer || isMember)"
+					class="bg-surface-white p-6 rounded-xl border border-outline-gray-2"
 				>
 					<div class="flex justify-between mb-4">
 						<h2 class="text-xl font-bold">{{ __("Upcoming Events") }}</h2>
@@ -183,9 +175,9 @@
 
 		<Dialog :options="{ size: 'lg' }" v-model="showNotificationDialog">
 			<template #body-title>
-				<div class="flex justify-between">
-					<h3 class="text-xl font-bold flex items-center gap-2">
-						<Bell class="w-5 h-5 text-red-600" />
+				<div class="flex gap-2 justify-between">
+					<h3 class="text-xl font-bold flex items-center text-ink-gray-8 gap-2">
+						<Bell class="w-5 h-5 text-ink-red-4" />
 						{{ __("Assignments") }}
 					</h3>
 					<Badge theme="red">{{ assignedProjects.length }}</Badge>
@@ -197,8 +189,8 @@
 					<div v-for="p in assignedProjects" :key="p.name" class="p-4 border rounded-lg">
 						<div class="flex justify-between">
 							<div>
-								<h4 class="font-semibold">{{ p.project_name }}</h4>
-								<p class="text-xs text-ink-gray-1-500">{{ p.name }}</p>
+								<h4 class="font-semibold text-ink-gray-8">{{ p.project_name }}</h4>
+								<p class="text-xs text-ink-gray-5">{{ p.name }}</p>
 							</div>
 							<router-link
 								:to="{
@@ -206,7 +198,7 @@
 									params: { id: p.deployment_name },
 								}"
 							>
-								<Button theme="red">{{ __("View") }}</Button>
+								<Button variant="solid" theme="red">{{ __("View") }}</Button>
 							</router-link>
 						</div>
 					</div>
@@ -264,7 +256,7 @@ const setAvailability = ref(false);
 const hasNotification = ref(false);
 const assignedProjects = ref([]);
 
-const { roleResource, userResource, presentSlots } = usersStore();
+const { roleResource, userResource, presentSlots, isVolunteer, isMember } = usersStore();
 const { events, currentMembership } = membershipStore();
 const { isLoggedIn } = sessionStore();
 

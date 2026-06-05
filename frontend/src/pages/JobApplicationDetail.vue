@@ -2,7 +2,7 @@
 	<div class="max-w-5xl mx-auto py-10 space-y-8">
 		<div
 			v-if="job.data"
-			class="p-6 rounded-xl shadow-sm border border-outline-gray-200 bg-surface-gray-1 bg-gradient-to-r"
+			class="p-6 rounded-xl border border-outline-gray-2 bg-surface-gray-1 bg-gradient-to-r"
 		>
 			<div class="flex items-start gap-4">
 				<div>
@@ -40,16 +40,13 @@
 			</div>
 		</div>
 
-		<div
-			v-if="!loading"
-			class="bg-surface-white rounded-xl shadow-sm p-6 border border-outline-gray-200"
-		>
+		<div v-if="!loading" class="bg-surface-white rounded-xl p-6 border border-outline-gray-2">
 			<h2 class="text-2xl font-bold text-red-700 mb-6">
 				{{ __("Apply for this Opportunity") }}
 			</h2>
 
 			<div
-				class="flex overflow-x-auto border-b border-outline-gray-200 whitespace-nowrap mb-8 -mx-6 px-6 sm:mx-0 sm:px-0"
+				class="flex overflow-x-auto border-b border-outline-gray-2 whitespace-nowrap mb-8 -mx-6 px-6 sm:mx-0 sm:px-0"
 			>
 				<button
 					v-for="(step, index) in filteredSteps"
@@ -67,7 +64,7 @@
 							: step.originalIndex < currentStep
 								? 'border-green-600 text-green-600 hover:text-red-500 hover:border-red-200'
 								: step.originalIndex <= maxCompletedStep + 1
-									? 'border-outline-gray-200 text-ink-gray-1-600 hover:text-red-600 hover:border-red-300'
+									? 'border-outline-gray-2 text-ink-gray-1-600 hover:text-red-600 hover:border-red-300'
 									: 'border-outline-gray-100 text-ink-gray-1-400 cursor-not-allowed',
 					]"
 				>
@@ -90,7 +87,7 @@
 			</div>
 
 			<div
-				class="space-y-10 min-h-[300px] bg-surface-gray-50 rounded-xl p-6 border border-outline-gray-200"
+				class="space-y-10 min-h-[300px] bg-surface-gray-50 rounded-xl p-6 border border-outline-gray-2"
 			>
 				<component
 					:is="steps[currentStep].component"

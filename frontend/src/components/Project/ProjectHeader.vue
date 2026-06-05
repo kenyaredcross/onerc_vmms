@@ -1,5 +1,5 @@
 <template>
-	<div class="bg-surface-white rounded-xl shadow-sm border border-outline-gray-200 p-6 mb-6">
+	<div class="bg-surface-white rounded-xl border border-outline-gray-2 p-6 mb-6">
 		<div class="flex items-start justify-between">
 			<div class="flex-1">
 				<div class="flex items-center gap-3 mb-3">

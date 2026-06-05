@@ -379,3 +379,14 @@ def get_payment_link(membership_doc: "VMMembership", payment_gateway: str) -> st
         if not payment_url:
             log_throw_error("Error generating payment URL")
         return payment_url
+
+
+@frappe.whitelist()
+def get_pgw_for_company(company: str) -> bool:
+    if not frappe.db.exists("Payment Gateway Account", {"company": company}):
+        frappe.throw(
+            _(
+                "Payment cannot be processed for this branch at the moment. Please contact support."
+            )
+        )
+    return True

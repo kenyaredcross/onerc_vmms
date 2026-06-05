@@ -49,7 +49,7 @@
 
 			<div>
 				<div
-					class="flex overflow-x-auto border-b border-outline-gray-200 whitespace-nowrap mb-6 -mx-4 sm:mx-0 px-4 sm:px-0"
+					class="flex overflow-x-auto border-b border-outline-gray-2 whitespace-nowrap mb-6 -mx-4 sm:mx-0 px-4 sm:px-0"
 				>
 					<button
 						v-for="(tab, i) in tabs"

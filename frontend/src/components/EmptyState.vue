@@ -1,7 +1,7 @@
 <template>
 	<div class="flex items-center justify-center px-4">
 		<div
-			class="bg-surface-white shadow-sm rounded-2xl p-8 max-w-lg w-full text-center border border-red-200"
+			class="bg-surface-white rounded-2xl p-8 max-w-lg w-full text-center border border-red-200"
 		>
 			<div
 				class="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-red-50 mb-4"

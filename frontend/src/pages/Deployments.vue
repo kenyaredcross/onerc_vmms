@@ -2,7 +2,7 @@
 	<NoPermission v-if="!isLoggedIn" :page="__('Deployments')" />
 	<div v-else class="flex flex-col min-h-screen bg-surface-gray-50">
 		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-200 bg-surface-white px-4 py-3 sm:px-6 shadow-md"
+			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-2 bg-surface-white px-4 py-3 sm:px-6 shadow-md"
 		>
 			<div class="flex items-center space-x-4">
 				<h1 class="text-2xl sm:text-3xl font-bold text-ink-gray-1-800">
