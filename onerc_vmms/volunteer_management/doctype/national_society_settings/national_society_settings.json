@@ -9,12 +9,14 @@
   "organization_name",
   "organization_short_name",
   "country",
+  "column_break_xhhf",
   "primary_color",
   "secondary_color",
   "logo",
   "terminology_section",
   "volunteer_label",
   "member_label",
+  "column_break_pvrp",
   "branch_label",
   "region_label",
   "geography_section",
@@ -91,13 +93,21 @@
    "fieldname": "maximum_geographical_depth",
    "fieldtype": "Int",
    "label": "Maximum Geo Depth"
+  },
+  {
+   "fieldname": "column_break_xhhf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_pvrp",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-26 22:58:16.321523",
+ "modified": "2026-04-18 15:57:08.120133",
  "modified_by": "Administrator",
  "module": "Volunteer Management",
  "name": "National Society Settings",

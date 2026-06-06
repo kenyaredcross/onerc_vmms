@@ -256,3 +256,4 @@ guest_methods = [
     "onerc_vmms.api.volunteer.get_volunteers",
     "onerc_vmms.api.bootstrap.get_app_bootstrap",
 ]
+
