@@ -18,6 +18,8 @@
   "nationality",
   "national_id_passport",
   "photo",
+  "consent_to_use_of_bio_data",
+  "accepted_volunteer_terms",
   "contact_information_section",
   "primary_phone",
   "secondary_phone",
@@ -52,6 +54,8 @@
   "user_account",
   "approved_by",
   "approval_date",
+  "employee",
+  "organization_name",
   "section_break_nhpd",
   "notes"
  ],
@@ -94,7 +98,6 @@
    "options": "Gender"
   },
   {
-   "default": "Kenya",
    "fieldname": "nationality",
    "fieldtype": "Link",
    "label": "Nationality",
@@ -106,13 +109,25 @@
    "label": "Photo"
   },
   {
+   "fieldname": "consent_to_use_of_bio_data",
+   "fieldtype": "Check",
+   "label": "I consent to the use of my biodata for deployment purposes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "accepted_volunteer_terms",
+   "fieldtype": "Check",
+   "label": "I accept the Volunteer Terms and Conditions",
+   "reqd": 1
+  },
+  {
    "fieldname": "column_break_qjqt",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "national_id_passport",
    "fieldtype": "Data",
-   "label": "National ID/ Passport"
+   "label": "National ID / Passport"
   },
   {
    "fieldname": "contact_information_section",
@@ -185,7 +200,6 @@
    "label": "Location"
   },
   {
-   "description": "Permanent Home",
    "fieldname": "home_geo_node",
    "fieldtype": "Link",
    "label": "Home Location",
@@ -198,6 +212,12 @@
    "options": "Geo Node"
   },
   {
+   "fieldname": "branch_geo_node",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Geo Node"
+  },
+  {
    "fieldname": "column_break_bwhv",
    "fieldtype": "Column Break"
   },
@@ -205,13 +225,6 @@
    "fieldname": "physical_address",
    "fieldtype": "Small Text",
    "label": "Physical Address"
-  },
-  {
-   "description": "Red Cross Branch",
-   "fieldname": "branch_geo_node",
-   "fieldtype": "Link",
-   "label": "Branch",
-   "options": "Geo Node"
   },
   {
    "fieldname": "professional_tab",
@@ -300,9 +313,17 @@
    "label": "Approval Date"
   },
   {
-   "fieldname": "notes",
-   "fieldtype": "Small Text",
-   "label": "Notes"
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_lkpr",
@@ -323,12 +344,17 @@
    "fieldtype": "Int",
    "label": "Age",
    "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-18 13:56:04.183517",
+ "modified": "2026-06-06 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Volunteer Management",
  "name": "Volunteer",

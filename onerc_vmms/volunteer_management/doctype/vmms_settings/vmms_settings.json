@@ -1,0 +1,273 @@
+{
+ "actions": [],
+ "creation": "2026-06-06 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "volunteer_tab",
+  "volunteer_section",
+  "volunteer_label",
+  "member_label",
+  "column_break_vt1",
+  "branch_label",
+  "region_label",
+  "consent_section",
+  "consent_biodata_text",
+  "terms_section",
+  "terms_and_conditions_volunteer",
+  "terms_and_conditions_membership",
+  "volunteer_settings_section",
+  "auto_create_employee",
+  "volunteer_id_series",
+  "deployment_tab",
+  "deployment_section",
+  "require_project_for_deployment",
+  "require_contract_by_default",
+  "column_break_dep1",
+  "contract_threshold_days",
+  "deployment_request_sms",
+  "tor_id_series",
+  "membership_tab",
+  "membership_section",
+  "membership_enabled",
+  "membership_renewal_reminder_days",
+  "column_break_mem1",
+  "membership_id_series",
+  "require_volunteer_profile_for_membership",
+  "messaging_tab",
+  "messaging_section",
+  "bulk_message_batch_size",
+  "bulk_message_retry_failed",
+  "templates_section",
+  "deployment_notification_sms_template",
+  "approval_notification_template"
+ ],
+ "fields": [
+  {
+   "fieldname": "volunteer_tab",
+   "fieldtype": "Tab Break",
+   "label": "Volunteer"
+  },
+  {
+   "fieldname": "volunteer_section",
+   "fieldtype": "Section Break",
+   "label": "Labels"
+  },
+  {
+   "default": "Volunteer",
+   "fieldname": "volunteer_label",
+   "fieldtype": "Data",
+   "label": "Volunteer Label"
+  },
+  {
+   "default": "Member",
+   "fieldname": "member_label",
+   "fieldtype": "Data",
+   "label": "Member Label"
+  },
+  {
+   "fieldname": "column_break_vt1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Branch",
+   "fieldname": "branch_label",
+   "fieldtype": "Data",
+   "label": "Branch Label"
+  },
+  {
+   "default": "Region",
+   "fieldname": "region_label",
+   "fieldtype": "Data",
+   "label": "Region Label"
+  },
+  {
+   "fieldname": "consent_section",
+   "fieldtype": "Section Break",
+   "label": "Consent"
+  },
+  {
+   "fieldname": "consent_biodata_text",
+   "fieldtype": "Small Text",
+   "label": "Biodata Consent Text"
+  },
+  {
+   "fieldname": "terms_section",
+   "fieldtype": "Section Break",
+   "label": "Terms and Conditions"
+  },
+  {
+   "fieldname": "terms_and_conditions_volunteer",
+   "fieldtype": "Text Editor",
+   "label": "Volunteer Terms and Conditions"
+  },
+  {
+   "fieldname": "terms_and_conditions_membership",
+   "fieldtype": "Text Editor",
+   "label": "Membership Terms and Conditions"
+  },
+  {
+   "fieldname": "volunteer_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Volunteer Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_create_employee",
+   "fieldtype": "Check",
+   "label": "Auto-Create Employee on Approval"
+  },
+  {
+   "default": "VOL-.YY.-.#####",
+   "fieldname": "volunteer_id_series",
+   "fieldtype": "Data",
+   "label": "Volunteer ID Series"
+  },
+  {
+   "fieldname": "deployment_tab",
+   "fieldtype": "Tab Break",
+   "label": "Deployment"
+  },
+  {
+   "fieldname": "deployment_section",
+   "fieldtype": "Section Break",
+   "label": "Deployment Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_project_for_deployment",
+   "fieldtype": "Check",
+   "label": "Require Project for Deployment"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_contract_by_default",
+   "fieldtype": "Check",
+   "label": "Require Contract by Default"
+  },
+  {
+   "fieldname": "column_break_dep1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "30",
+   "fieldname": "contract_threshold_days",
+   "fieldtype": "Int",
+   "label": "Contract Threshold (Days)"
+  },
+  {
+   "default": "1",
+   "fieldname": "deployment_request_sms",
+   "fieldtype": "Check",
+   "label": "Send SMS on Deployment Request"
+  },
+  {
+   "default": "TOR-.YY.-.#####",
+   "fieldname": "tor_id_series",
+   "fieldtype": "Data",
+   "label": "TOR ID Series"
+  },
+  {
+   "fieldname": "membership_tab",
+   "fieldtype": "Tab Break",
+   "label": "Membership"
+  },
+  {
+   "fieldname": "membership_section",
+   "fieldtype": "Section Break",
+   "label": "Membership Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "membership_enabled",
+   "fieldtype": "Check",
+   "label": "Membership Enabled"
+  },
+  {
+   "default": "30",
+   "fieldname": "membership_renewal_reminder_days",
+   "fieldtype": "Int",
+   "label": "Renewal Reminder (Days Before Expiry)"
+  },
+  {
+   "fieldname": "column_break_mem1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "MEM-.YY.-.#####",
+   "fieldname": "membership_id_series",
+   "fieldtype": "Data",
+   "label": "Membership ID Series"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_volunteer_profile_for_membership",
+   "fieldtype": "Check",
+   "label": "Require Complete Volunteer Profile for Membership"
+  },
+  {
+   "fieldname": "messaging_tab",
+   "fieldtype": "Tab Break",
+   "label": "Messaging"
+  },
+  {
+   "fieldname": "messaging_section",
+   "fieldtype": "Section Break",
+   "label": "Bulk Messaging"
+  },
+  {
+   "default": "100",
+   "fieldname": "bulk_message_batch_size",
+   "fieldtype": "Int",
+   "label": "Bulk Message Batch Size"
+  },
+  {
+   "default": "1",
+   "fieldname": "bulk_message_retry_failed",
+   "fieldtype": "Check",
+   "label": "Retry Failed Messages"
+  },
+  {
+   "fieldname": "templates_section",
+   "fieldtype": "Section Break",
+   "label": "Message Templates"
+  },
+  {
+   "fieldname": "deployment_notification_sms_template",
+   "fieldtype": "Small Text",
+   "label": "Deployment Notification SMS Template"
+  },
+  {
+   "fieldname": "approval_notification_template",
+   "fieldtype": "Small Text",
+   "label": "Approval Notification Email Subject Template"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "VMMS Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

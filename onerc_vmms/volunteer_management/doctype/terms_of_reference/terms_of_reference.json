@@ -23,13 +23,19 @@
   "column_break_fgce",
   "specific_venue",
   "mission_narrative_tab",
+  "project",
   "mission_background",
   "objectives",
   "expected_output",
-  "tab_3_tab",
+  "people_and_resources_tab",
   "attending",
   "itininerary",
-  "resources"
+  "resources",
+  "budget_section",
+  "total_cost",
+  "column_break_budget",
+  "project_budget",
+  "budget_status"
  ],
  "fields": [
   {
@@ -129,6 +135,12 @@
    "label": "Mission Narrative"
   },
   {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
    "fieldname": "mission_background",
    "fieldtype": "Text Editor",
    "label": "Mission Background"
@@ -144,9 +156,9 @@
    "label": "Expected Output"
   },
   {
-   "fieldname": "tab_3_tab",
+   "fieldname": "people_and_resources_tab",
    "fieldtype": "Tab Break",
-   "label": "Tab 3"
+   "label": "People and Resources"
   },
   {
    "fieldname": "attending",
@@ -157,7 +169,7 @@
   {
    "fieldname": "itininerary",
    "fieldtype": "Table",
-   "label": "Itininerary",
+   "label": "Itinerary",
    "options": "TOR Itinerary"
   },
   {
@@ -165,13 +177,40 @@
    "fieldtype": "Table",
    "label": "Resources",
    "options": "TOR Resource"
+  },
+  {
+   "fieldname": "budget_section",
+   "fieldtype": "Section Break",
+   "label": "Budget"
+  },
+  {
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "label": "Total Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_budget",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "project_budget",
+   "fieldtype": "Currency",
+   "label": "Project Budget",
+   "read_only": 1
+  },
+  {
+   "fieldname": "budget_status",
+   "fieldtype": "Data",
+   "label": "Budget Status",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-25 07:21:34.068743",
+ "modified": "2026-06-06 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Volunteer Management",
  "name": "Terms of Reference",

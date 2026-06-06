@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.utils import date_diff
 
 
-class TermsOfReference(Document):
+class TermsofReference(Document):
 
 	def before_save(self):
 		self.calculate_duration()
@@ -12,7 +12,7 @@ class TermsOfReference(Document):
 
 	def before_submit(self):
 		if self.status != "Approved":
-			frappe.throw("TOR must be Approved before it can be submitted.")
+			frappe.throw("TOR must be Approved before submitting.")
 
 	def calculate_duration(self):
 		if self.start_date and self.end_date:
@@ -30,17 +30,18 @@ class TermsOfReference(Document):
 
 	def check_budget(self):
 		if not self.project:
+			self.budget_status = "No Project Linked"
 			return
-		project = frappe.get_doc("Project", self.project)
-		self.project_budget = project.estimated_costing or 0
-		if self.total_cost and self.project_budget:
-			if self.total_cost > self.project_budget:
-				self.budget_status = "Over Budget"
-				frappe.throw(
-					f"Total cost exceeds project budget of {self.project_budget}. "
-					f"Please revise resources or increase the project budget."
-				)
-			else:
-				self.budget_status = "Within Budget"
-		else:
+		budget = frappe.db.get_value("Project", self.project, "estimated_costing") or 0
+		self.project_budget = budget
+		if not budget:
 			self.budget_status = "No Budget Set"
+			return
+		if self.total_cost > budget:
+			self.budget_status = "Over Budget"
+			frappe.throw(
+				f"Total cost ({self.total_cost}) exceeds project budget ({budget}). "
+				f"Please revise resources or increase the project budget."
+			)
+		else:
+			self.budget_status = "Within Budget"
