@@ -17,7 +17,7 @@
         </div>
         <div class="grid-3 mt">
           <AppInput  v-model="form.date_of_birth" label="Date of Birth" type="date" :error="e.dob" required />
-          <AppSelect v-model="form.gender" label="Gender" :options="genders" placeholder="Select…" />
+          <AppSelect v-model="form.gender" label="Gender" :options="genders" placeholder="Select gender..." />
           <AppSelect v-model="form.nationality" label="Nationality" :options="countries" placeholder="Select…" value-key="name" label-key="country_name" />
         </div>
         <div class="grid-2 mt">
@@ -141,7 +141,7 @@ const app = useAppStore()
 const step = ref(0), submitting = ref(false), submittedId = ref(''), submitError = ref('')
 const e = ref({})
 const stepLabels = ['Personal Info', 'Location', 'Skills & Availability', 'Consent & Review']
-const genders = ['Male', 'Female', 'Non-binary', 'Prefer not to say']
+const genders = ref([])
 const proficiencies = ['Beginner', 'Intermediate', 'Advanced', 'Expert']
 const langLevels = ['Basic', 'Conversational', 'Fluent', 'Native']
 const availStatuses = ['Available', 'Unavailable', 'On Leave', 'On Deployment']
@@ -166,6 +166,15 @@ onMounted(async () => {
     skillTypes.value = skRes.data.data || []
     countries.value  = (cRes.data.data || []).map(c => ({ name: c.name, country_name: c.name }))
   } catch {}
+
+  try {
+    const gRes = await http.get('/api/resource/Gender', {
+      params: { fields: JSON.stringify(['name']), limit: 50 }
+    })
+    genders.value = (gRes.data.data || []).map(g => g.name)
+  } catch {
+    genders.value = ['Male', 'Female', 'Other']
+  }
 })
 
 function nextStep() {

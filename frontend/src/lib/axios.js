@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-const http = axios.create({ withCredentials: true })
+const http = axios.create({
+  withCredentials: true,
+  headers: { 'Accept': 'application/json' }
+})
 
 http.interceptors.request.use(config => {
   if (['post','put','patch','delete'].includes(config.method?.toLowerCase())) {

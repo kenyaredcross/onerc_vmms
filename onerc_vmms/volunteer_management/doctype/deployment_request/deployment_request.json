@@ -1,0 +1,219 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-07 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "mission_tab",
+  "naming_series",
+  "tor",
+  "tor_title",
+  "status",
+  "deployment_type",
+  "project",
+  "requirements_tab",
+  "volunteers_required",
+  "skills_required",
+  "response_deadline",
+  "volunteers_tab",
+  "volunteers",
+  "communication_tab",
+  "message_to_volunteers",
+  "notify_via_email",
+  "notify_via_sms",
+  "summary_tab",
+  "total_notified",
+  "total_accepted",
+  "total_declined",
+  "total_pending",
+  "total_withdrawn",
+  "manager_notified_threshold"
+ ],
+ "fields": [
+  {
+   "fieldname": "mission_tab",
+   "fieldtype": "Tab Break",
+   "label": "Mission"
+  },
+  {
+   "default": "DR-.YY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "DR-.YY.-.#####"
+  },
+  {
+   "fieldname": "tor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Terms of Reference",
+   "options": "Terms of Reference",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "tor.title_of_mission",
+   "fieldname": "tor_title",
+   "fieldtype": "Data",
+   "label": "Mission Title",
+   "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nSent\nIn Progress\nConfirmed\nActive\nClosed\nCancelled"
+  },
+  {
+   "fieldname": "deployment_type",
+   "fieldtype": "Select",
+   "label": "Deployment Type",
+   "options": "Emergency\nRoutine\nTraining\nAssessment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "requirements_tab",
+   "fieldtype": "Tab Break",
+   "label": "Requirements"
+  },
+  {
+   "default": "1",
+   "fieldname": "volunteers_required",
+   "fieldtype": "Int",
+   "label": "Volunteers Required",
+   "reqd": 1
+  },
+  {
+   "fieldname": "skills_required",
+   "fieldtype": "Small Text",
+   "label": "Skills Required"
+  },
+  {
+   "fieldname": "response_deadline",
+   "fieldtype": "Datetime",
+   "label": "Response Deadline",
+   "reqd": 1
+  },
+  {
+   "fieldname": "volunteers_tab",
+   "fieldtype": "Tab Break",
+   "label": "Volunteers"
+  },
+  {
+   "fieldname": "volunteers",
+   "fieldtype": "Table",
+   "label": "Volunteers",
+   "options": "Deployment Request Volunteer"
+  },
+  {
+   "fieldname": "communication_tab",
+   "fieldtype": "Tab Break",
+   "label": "Communication"
+  },
+  {
+   "fieldname": "message_to_volunteers",
+   "fieldtype": "Text Editor",
+   "label": "Message to Volunteers"
+  },
+  {
+   "default": "1",
+   "fieldname": "notify_via_email",
+   "fieldtype": "Check",
+   "label": "Notify via Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "notify_via_sms",
+   "fieldtype": "Check",
+   "label": "Notify via SMS"
+  },
+  {
+   "fieldname": "summary_tab",
+   "fieldtype": "Tab Break",
+   "label": "Summary"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_notified",
+   "fieldtype": "Int",
+   "label": "Total Notified",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_accepted",
+   "fieldtype": "Int",
+   "label": "Total Accepted",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_declined",
+   "fieldtype": "Int",
+   "label": "Total Declined",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_pending",
+   "fieldtype": "Int",
+   "label": "Total Pending",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_withdrawn",
+   "fieldtype": "Int",
+   "label": "Total Withdrawn",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "manager_notified_threshold",
+   "fieldtype": "Check",
+   "label": "Manager Notified of Threshold",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-06-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "Deployment Request",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "tor_title",
+ "track_changes": 1
+}
