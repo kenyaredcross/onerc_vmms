@@ -12,7 +12,9 @@ http.interceptors.request.use(config => {
 http.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 403) {
+    const url = err.config?.url || ''
+    // 403 from get_logged_user means "guest" — let auth store handle it, don't redirect
+    if (err.response?.status === 403 && !url.includes('get_logged_user')) {
       window.location.href = '/vmms/login'
     }
     return Promise.reject(err)
