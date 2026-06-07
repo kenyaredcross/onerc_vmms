@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:plan_name",
+ "creation": "2026-06-07 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_name",
+  "description",
+  "annual_fee",
+  "currency",
+  "is_active",
+  "requires_age_requirement",
+  "min_age",
+  "max_age",
+  "benefits",
+  "terms_and_conditions"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Plan Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "annual_fee",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Annual Fee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "default": "0",
+   "fieldname": "requires_age_requirement",
+   "fieldtype": "Check",
+   "label": "Requires Age Requirement"
+  },
+  {
+   "depends_on": "eval:doc.requires_age_requirement==1",
+   "fieldname": "min_age",
+   "fieldtype": "Int",
+   "label": "Minimum Age"
+  },
+  {
+   "depends_on": "eval:doc.requires_age_requirement==1",
+   "fieldname": "max_age",
+   "fieldtype": "Int",
+   "label": "Maximum Age"
+  },
+  {
+   "fieldname": "benefits",
+   "fieldtype": "Table",
+   "label": "Benefits",
+   "options": "Membership Plan Benefit"
+  },
+  {
+   "fieldname": "terms_and_conditions",
+   "fieldtype": "Text Editor",
+   "label": "Terms and Conditions"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "OneRC Membership Plan",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "plan_name",
+ "track_changes": 1
+}

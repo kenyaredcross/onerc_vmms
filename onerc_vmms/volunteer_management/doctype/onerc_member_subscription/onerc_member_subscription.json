@@ -1,0 +1,224 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-07 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "subscription_tab",
+  "naming_series",
+  "member",
+  "member_name",
+  "plan",
+  "status",
+  "from_date",
+  "to_date",
+  "payment_tab",
+  "amount",
+  "currency",
+  "payment_method",
+  "payment_reference",
+  "payment_confirmed",
+  "payment_confirmed_by",
+  "payment_confirmed_on",
+  "approval_tab",
+  "approved_by",
+  "approved_on",
+  "rejection_reason",
+  "certificate_tab",
+  "qr_code",
+  "certificate"
+ ],
+ "fields": [
+  {
+   "fieldname": "subscription_tab",
+   "fieldtype": "Tab Break",
+   "label": "Subscription"
+  },
+  {
+   "default": "SUB-.YY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "SUB-.YY.-.#####"
+  },
+  {
+   "fieldname": "member",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Member",
+   "options": "OneRC Member",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "member.full_name",
+   "fieldname": "member_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Member Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Membership Plan",
+   "options": "OneRC Membership Plan",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nPending Payment\nActive\nExpired\nCancelled"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "payment_tab",
+   "fieldtype": "Tab Break",
+   "label": "Payment"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "payment_method",
+   "fieldtype": "Select",
+   "label": "Payment Method",
+   "options": "M-Pesa\nBank Transfer\nCash\nOther"
+  },
+  {
+   "description": "Transaction code or reference number",
+   "fieldname": "payment_reference",
+   "fieldtype": "Data",
+   "label": "Payment Reference"
+  },
+  {
+   "default": "0",
+   "fieldname": "payment_confirmed",
+   "fieldtype": "Check",
+   "label": "Payment Confirmed"
+  },
+  {
+   "fieldname": "payment_confirmed_by",
+   "fieldtype": "Link",
+   "label": "Payment Confirmed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_confirmed_on",
+   "fieldtype": "Datetime",
+   "label": "Payment Confirmed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_tab",
+   "fieldtype": "Tab Break",
+   "label": "Approval"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Small Text",
+   "label": "Rejection Reason"
+  },
+  {
+   "fieldname": "certificate_tab",
+   "fieldtype": "Tab Break",
+   "label": "Certificate"
+  },
+  {
+   "fieldname": "qr_code",
+   "fieldtype": "Attach Image",
+   "label": "QR Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate",
+   "fieldtype": "Attach",
+   "label": "Certificate",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-06-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Volunteer Management",
+ "name": "OneRC Member Subscription",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HQ Admin",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "member_name",
+ "track_changes": 1
+}
