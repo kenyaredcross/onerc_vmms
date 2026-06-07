@@ -96,7 +96,7 @@ async function submit() {
 
 <style scoped>
 .login-shell {
-  display: flex; min-height: 100vh;
+  display: flex; flex: 1;
 }
 
 /* Left panel */

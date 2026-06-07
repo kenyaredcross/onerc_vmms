@@ -192,8 +192,12 @@ async function submit() {
   submitting.value = true
   try {
     const payload = { ...form.value, consent_to_use_of_bio_data: 1, accepted_volunteer_terms: 1 }
-    const res = await http.post('/api/method/onerc_vmms.api.volunteer.register_volunteer',
-      new URLSearchParams({ data: JSON.stringify(payload) }))
+    const params = new URLSearchParams()
+    params.append('data', JSON.stringify(payload))
+    const res = await http.post(
+      '/api/method/onerc_vmms.api.volunteer.register_volunteer',
+      params
+    )
     submittedId.value = res.data.message.name
     step.value = 4
   } catch (err) {
@@ -203,7 +207,7 @@ async function submit() {
 </script>
 
 <style scoped>
-.reg-wrap { display: flex; justify-content: center; padding: 32px 16px 64px; min-height: 100vh; }
+.reg-wrap { display: flex; justify-content: center; padding: 32px 16px 64px; flex: 1; }
 .reg-card { width: 100%; max-width: 680px; background: var(--c-surface); border-radius: var(--radius-xl); border: 1px solid var(--c-border); box-shadow: var(--shadow-md); }
 .reg-header { padding: 28px 32px 0; }
 .reg-header__title { font-size: 22px; font-weight: 800; color: var(--c-text); }
