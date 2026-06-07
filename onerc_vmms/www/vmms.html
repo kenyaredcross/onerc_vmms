@@ -4,11 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OneRC VMMS</title>
-  <script>window.csrf_token = "{{ frappe.session.csrf_token }}";</script>
-  <link rel="stylesheet" href="/assets/onerc_vmms/assets/assets/index-BYbckkPI.css">
+  <script>
+    window.csrf_token = "{{ frappe.session.csrf_token }}";
+    window.frappe_user = "{{ frappe.session.user }}";
+  </script>
+  <link rel="stylesheet" href="/assets/onerc_vmms/vmms/assets/index.css">
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="/assets/onerc_vmms/assets/assets/index-BNmMiYnv.js"></script>
+  <script type="module" src="/assets/onerc_vmms/vmms/assets/index.js"></script>
 </body>
 </html>

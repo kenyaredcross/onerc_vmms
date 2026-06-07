@@ -1,0 +1,1 @@
+import{d as e,m as t,r as n,v as r}from"./index.js";var i={},a={class:`p-page`};function o(n,i){return r(),t(`div`,a,[...i[0]||=[e(`h1`,null,`NotFoundPage`,-1),e(`p`,null,`Coming soon…`,-1)]])}var s=n(i,[[`render`,o],[`__scopeId`,`data-v-236e7417`]]);export{s as default};
