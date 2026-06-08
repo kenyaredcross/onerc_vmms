@@ -18,6 +18,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 	refresh: function (frm) {
 		frm.page.clear_indicator();
 		!frm.doc.__islocal ? addActionsButtons(frm) : null;
+		frm.employees_datatable.destroy();
 
 		frm.trigger("set_primary_action");
 
@@ -302,6 +303,8 @@ frappe.ui.form.on("Deployment Request Tool", {
 			args: {
 				advanced_filters: frm.advanced_filters || [],
 			},
+			freeze: true,
+			freeze_message: __("Fetching eligible personnel..."),
 			doc: frm.doc,
 		}).then((r) => {
 			const columns = frm.events.get_employees_datatable_columns();
