@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
   const proxyHost = targetUrl.hostname
 
   return {
+    base: '/vmms/',
     plugins: [vue()],
     resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
     server: {

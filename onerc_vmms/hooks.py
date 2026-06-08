@@ -252,8 +252,13 @@ app_license = "mit"
 
 
 
+website_route_rules = [
+    {"from_route": "/vmms/<path:subpath>", "to_route": "vmms/index"},
+]
+
 guest_methods = [
     "onerc_vmms.api.volunteer.get_volunteers",
     "onerc_vmms.api.bootstrap.get_app_bootstrap",
+    "onerc_vmms.api.membership.verify_member",
 ]
 
