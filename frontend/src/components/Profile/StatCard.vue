@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="bg-surface-white rounded-lg shadow-md p-6 flex items-center space-x-4 hover:shadow-lg transition-shadow duration-200"
+		class="bg-surface-white rounded-lg border border-outline-gray-2 p-6 flex items-center space-x-4 hover:shadow-lg transition-shadow duration-200"
 	>
 		<div :class="['p-3 rounded-full', color]">
 			<component :is="iconSvg" class="w-6 h-6 text-white" />

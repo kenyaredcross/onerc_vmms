@@ -581,3 +581,35 @@ def get_payment_gateway_from_mop(mode_of_payment: str, company: str) -> str:
         pass
 
     return payment_gateway
+
+
+@frappe.whitelist()
+def process_qr_scan(membership_name: str) -> dict[str, str]:
+    VM_DOC = "VM Membership"
+
+    membership = frappe.db.exists(VM_DOC, membership_name)
+    if not membership:
+        frappe.throw(_("Membership in QR Code is invalid"))
+
+    try:
+        membership_data: dict = frappe.db.get_value(
+            VM_DOC,
+            membership_name,
+            ["member", "member_name", "status", "membership_type"],
+            as_dict=True,
+        )
+    except Exception:
+        log_throw_error(_("Error fetching membership details"))
+
+    else:
+        from frappe import get_desk_link
+
+        if membership_data:
+            membership_data["membership_desk_link"] = get_desk_link(
+                VM_DOC, membership_name
+            )
+            membership_data["member_desk_link"] = get_desk_link(
+                "VM Member", membership_data["member"]
+            )
+
+        return membership_data

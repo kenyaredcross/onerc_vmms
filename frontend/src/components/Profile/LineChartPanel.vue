@@ -1,10 +1,9 @@
 <template>
-	<div class="bg-surface-white rounded-lg shadow-md p-4 sm:p-6">
+	<div class="bg-surface-white rounded-lg border border-outline-gray-2 p-4 sm:p-6">
 		<div
 			class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3"
 		>
-			<h3 class="text-lg font-semibold text-ink-gray-1-800">Energy Points Trend</h3>
-
+			<h3 class="text-lg font-semibold text-ink-gray-8">Energy Points Trend</h3>
 			<div class="flex flex-wrap gap-2">
 				<select
 					v-model="filter"

@@ -1,6 +1,6 @@
 <template>
 	<div class="flex h-full flex-col gap-1 relative bg-surface-white">
-		<div class="h-full pb-10 mb-5 bg-surface-white" id="scrollContainer">
+		<div class="h-full pb-10 mb-8 bg-surface-white" id="scrollContainer">
 			<slot />
 		</div>
 
@@ -23,7 +23,7 @@
 						:src="link.logo"
 						class="h-4 w-4 object-contain"
 					/>
-					<span class="text-sm text-ink-gray-8">{{ __(link.name) }}</span>
+					<span class="text-sm text-ink-gray-8">{{ __(link.title) }}</span>
 				</div>
 			</div>
 
@@ -67,7 +67,6 @@ import * as icons from "lucide-vue-next";
 import { computed, ref, toRaw, watch } from "vue";
 import { useRouter } from "vue-router";
 import { sideBarApps } from "../utils/appsNavigate";
-import { useTheme } from "frappe-ui";
 
 const { logout, user } = sessionStore();
 let { isLoggedIn } = sessionStore();
@@ -101,18 +100,18 @@ const addOtherLinks = () => {
 			...sideBarApps(),
 
 			{
-				name: "Events",
+				title: "Events",
 				icon: "CalendarDays",
 				to: "Events",
 			},
 			{
-				name: "Profile",
+				title: "Profile",
 				icon: "User",
 				to: "Profile",
 			},
 
 			{
-				name: "Log out",
+				title: "Log out",
 				icon: "LogOut",
 			},
 		);

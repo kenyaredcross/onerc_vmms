@@ -12,12 +12,19 @@
  "link_to": "",
  "link_type": "External",
  "logo_url": "/assets/onerc_vmms/frontend/vmms.png",
- "modified": "2026-06-04 17:48:36.875219",
+ "modified": "2026-06-08 09:32:06.532128",
  "modified_by": "Administrator",
  "name": "VMMS Portal",
  "owner": "Administrator",
  "parent_icon": "OneRC",
  "restrict_removal": 0,
- "roles": [],
+ "roles": [
+  {
+   "role": "Volunteer"
+  },
+  {
+   "role": "VM Member"
+  }
+ ],
  "standard": 1
 }

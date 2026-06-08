@@ -9,11 +9,18 @@
  "idx": 2,
  "label": "OneRC",
  "link_type": "Workspace Sidebar",
- "modified": "2026-06-05 15:21:19.197002",
+ "modified": "2026-06-08 09:31:06.222892",
  "modified_by": "Administrator",
  "name": "OneRC",
  "owner": "Administrator",
  "restrict_removal": 0,
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "County Coordinator"
+  }
+ ],
  "standard": 1
 }

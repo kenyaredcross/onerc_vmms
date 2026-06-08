@@ -1,9 +1,9 @@
 <template>
 	<NoPermission v-if="!isLoggedIn" :page="__('Profile')" />
-	<div v-if="loading" class="text-center py-20 bg-surface-white rounded-xl shadow-lg">
+	<div v-if="loading" class="text-center py-20 bg-surface-white rounded-xl">
 		<div class="flex flex-col items-center justify-center">
 			<svg
-				class="animate-spin h-8 w-8 text-red-600 mb-3"
+				class="animate-spin h-8 w-8 text-ink-red-4 mb-3"
 				xmlns="http://www.w3.org/2000/svg"
 				fill="none"
 				viewBox="0 0 24 24"
@@ -26,16 +26,16 @@
 		</div>
 	</div>
 
-	<div v-else class="bg-surface-white shadow-xl rounded-xl p-4 sm:p-6 lg:p-8">
+	<div v-else class="bg-surface-white rounded-xl p-4 sm:p-6 lg:p-8">
 		<ProfileHeader :allow-edit="false" :form="form" class="mb-6 md:mb-10" />
 		<div class="flex justify-between items-center mb-6">
-			<h2 class="text-2xl font-bold text-ink-gray-1-800">
+			<h2 class="text-2xl font-bold text-ink-gray-8">
 				{{ __("Profile Overview") }}
 			</h2>
 
 			<router-link
 				:to="{ name: 'Profile' }"
-				class="flex items-center gap-2 px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-md"
+				class="flex items-center gap-2 px-5 py-2 bg-red-600 text-ink-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
 			>
 				<LogIn class="w-5 h-5" />
 				{{ __("Edit Profile") }}

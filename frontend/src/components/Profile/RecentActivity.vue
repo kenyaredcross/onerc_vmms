@@ -1,8 +1,8 @@
 <template>
-	<div class="bg-surface-white rounded-lg shadow-md p-6">
-		<h3 class="text-lg font-semibold text-ink-gray-1-800 mb-4">Recent Activity</h3>
+	<div class="bg-surface-white rounded-lg border border-outline-gray-2 p-6">
+		<h3 class="text-lg font-semibold text-ink-gray-8 mb-4">Recent Activity</h3>
 
-		<div v-if="activities.length === 0" class="text-center py-8 text-ink-gray-1-500">
+		<div v-if="activities.length === 0" class="text-center py-8 text-ink-gray-8">
 			No activities to show
 		</div>
 
@@ -10,7 +10,7 @@
 			<div
 				v-for="activity in activities"
 				:key="activity.name"
-				class="border-l-4 border-purple-500 pl-4 py-3 hover:bg-surface-gray-50 transition-colors rounded-r"
+				class="border-l-4 border-purple-500 pl-4 py-3 hover:bg-surface-gray-5 transition-colors rounded-r"
 			>
 				<div class="flex justify-between items-start">
 					<div class="flex-1">
