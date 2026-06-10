@@ -255,6 +255,12 @@ def create_link_doc(data: dict):
         doc = frappe.get_doc(data).insert(ignore_permissions=True)
         frappe.db.commit()
         return {"status": "success", "name": doc.name}
+    except frappe.DuplicateEntryError:
+        frappe.db.rollback()
+        return {
+            "status": "error",
+            "message": "A record with the same name already exists",
+        }
 
     except Exception as e:
         frappe.log_error(message=frappe.get_traceback(), title="Create Link Doc Error")
