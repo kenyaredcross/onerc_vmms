@@ -446,8 +446,6 @@ function openCreateLocation(typedText, close) {
 	showCreateLocation.value = true;
 }
 function closeEntryDialog(name) {
-    console.log(name);
-    
 	const isLocation = showCreateLocation.value;
 	localModel.value[isLocation ? "administrative_location" : "sub_location"] = name;
 	(isLocation ? showCreateLocation : showCreateSubLocation).value = false;
