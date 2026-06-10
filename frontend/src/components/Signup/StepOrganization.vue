@@ -173,6 +173,7 @@
 					:label="__('Location')"
 					doctype="Administrative Location"
 					:filters="localModel.sub_county ? { sub_county: localModel.sub_county } : {}"
+					:onCreate="openCreateLocation"
 				/>
 			</div>
 
@@ -186,8 +187,23 @@
 							? { location: localModel.administrative_location }
 							: {}
 					"
+					:onCreate="openCreateSubLocation"
 				/>
 			</div>
+
+			<CreateNewEntryDialog
+				v-model="showCreateLocation"
+				doctype="Administrative Location"
+				:initialData="createLocationInitial"
+				@created="closeEntryDialog"
+			/>
+
+			<CreateNewEntryDialog
+				v-model="showCreateSubLocation"
+				doctype="Sub Location"
+				:initialData="createSubLocationInitial"
+				@created="closeEntryDialog"
+			/>
 		</div>
 		<h2 class="text-xl font-bold text-red-700 mb-4">
 			{{ __("Identification") }}
@@ -270,9 +286,10 @@
 </template>
 
 <script setup>
+import CreateNewEntryDialog from "@/components/Modals/CreateNewEntryDialog.vue";
 import Link from "@/components/Controls/Link.vue";
 import { FormControl } from "frappe-ui";
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps({
 	modelValue: { type: Object, required: true },
@@ -409,9 +426,40 @@ function validateForm() {
 	return Object.keys(stepErrors[0]).length === 0;
 }
 
-import { onMounted, ref } from "vue";
+import { onMounted } from "vue";
 
 const ready = ref(false);
+
+const showCreateLocation = ref(false);
+const createLocationInitial = ref({});
+
+const showCreateSubLocation = ref(false);
+const createSubLocationInitial = ref({});
+
+function openCreateLocation(typedText, close) {
+	createLocationInitial.value = {
+		location_name: typedText || "",
+		sub_county: localModel.value.sub_county || "",
+		county: localModel.value.county || "",
+	};
+	close();
+	showCreateLocation.value = true;
+}
+function closeEntryDialog(name) {
+    console.log(name);
+    
+	const isLocation = showCreateLocation.value;
+	localModel.value[isLocation ? "administrative_location" : "sub_location"] = name;
+	(isLocation ? showCreateLocation : showCreateSubLocation).value = false;
+}
+function openCreateSubLocation(typedText, close) {
+	createSubLocationInitial.value = {
+		sub_location_name: typedText || "",
+		location: localModel.value.administrative_location || "",
+	};
+	close();
+	showCreateSubLocation.value = true;
+}
 
 onMounted(() => {
 	setTimeout(() => {
