@@ -7,13 +7,13 @@
 			<div>
 				<Link
 					v-model="localModel.company"
-					:label="__('Branch / County')"
+					:label="__('Branch / LGA')"
 					doctype="Company"
 					:required="true"
 					:filters="{ is_group: 0 }"
 				/>
-				<p v-if="errors[0]?.['Branch / County']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Branch / County"] }}
+				<p v-if="errors[0]?.['Branch / LGA']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["Branch / LGA"] }}
 				</p>
 			</div>
 			<div>
@@ -106,22 +106,22 @@
 			<div>
 				<FormControl
 					v-model="localModel.has_insurance"
-					:label="__('KRCS Insurance')"
+					:label="__('GRCS Insurance')"
 					type="select"
 					:options="yesNoOptions"
-					title="Select 'Yes' if you are insured through KRCS"
-					aria-describedby="krcs-insurance-desc"
+					title="Select 'Yes' if you are insured through GRCS"
+					aria-describedby="grcs-insurance-desc"
 				/>
-				<p id="krcs-insurance-desc" class="text-sm text-gray-600 mt-1">
-					<span title="KRCS = Kenya Red Cross Society" class="mr-2 text-xs">ⓘ</span>
+				<p id="grcs-insurance-desc" class="text-sm text-gray-600 mt-1">
+					<span title="GRCS = Gambia Red Cross Society" class="mr-2 text-xs">ⓘ</span>
 					{{
 						__(
-							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS)."
+							"Indicate whether you have insurance with the Gambia Red Cross Society (GRCS)."
 						)
 					}}
 				</p>
-				<p v-if="errors[0]?.['KRCS Insurance']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["KRCS Insurance"] }}
+				<p v-if="errors[0]?.['GRCS Insurance']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["GRCS Insurance"] }}
 				</p>
 			</div>
 		</div>
@@ -133,24 +133,24 @@
 			<div>
 				<Link
 					v-model="localModel.county"
-					:label="__('County of Residence')"
+					:label="__('LGA of Residence')"
 					doctype="County"
 					:required="true"
 				/>
-				<p v-if="errors[0]?.['County of Residence']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["County of Residence"] }}
+				<p v-if="errors[0]?.['LGA of Residence']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["LGA of Residence"] }}
 				</p>
 			</div>
 			<div>
 				<Link
 					v-model="localModel.sub_county"
-					:label="__('Sub County')"
+					:label="__('District')"
 					doctype="Sub County"
 					:required="true"
 					:filters="localModel.county ? { county: localModel.county } : {}"
 				/>
-				<p v-if="errors[0]?.['Sub County']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Sub County"] }}
+				<p v-if="errors[0]?.['District']" class="text-sm text-red-600 mt-1">
+					{{ errors[0]?.["District"] }}
 				</p>
 			</div>
 
@@ -256,8 +256,8 @@
 					:required="true"
 					:filters="
 						localModel.citizenship === 'Citizen'
-							? [['name', '=', 'Kenya']]
-							: [['name', '!=', 'Kenya']]
+							? [['name', '=', 'Gambia']]
+							: [['name', '!=', 'Gambia']]
 					"
 				/>
 				<p v-if="errors[0]?.['Country of Citizenship']" class="text-sm text-red-600 mt-1">
@@ -339,12 +339,12 @@ function validateForm() {
 	const stepErrors = { 0: {} };
 	const form = localModel.value;
 
-	if (!form.company) stepErrors[0]["Branch / County"] = "Branch is required";
-	if (!form.county) stepErrors[0]["County of Residence"] = "County of residence is required";
+	if (!form.company) stepErrors[0]["Branch / LGA"] = "Branch is required";
+	if (!form.county) stepErrors[0]["LGA of Residence"] = "LGA of residence is required";
 	if (!form.phone_number) stepErrors[0]["Phone Number"] = "Phone number is required";
 	if (!form.email_id) stepErrors[0]["Email Address"] = "Email address is required";
 	if (!form.gender) stepErrors[0]["Gender"] = "Gender is required";
-	if (!form.sub_county) stepErrors[0]["Sub County"] = "This field is required";
+	if (!form.sub_county) stepErrors[0]["District"] = "This field is required";
 
 	if (!form.ward) stepErrors[0]["Ward"] = "Ward is required";
 	if (!form.citizenship) stepErrors[0]["Citizenship"] = "This field is required";
@@ -408,7 +408,7 @@ function validateForm() {
 						"Identification Number must be 5–20 characters (letters, numbers, hyphens allowed)";
 		}
 	}
-	const phoneRegex = /^(?:\+254|0)(?:7\d{8}|1\d{8})$/;
+	const phoneRegex = /^(?:\+220)?\d{7}$/;
 
 	if (form.mpesa_mobile_phone) {
 		const phone = form.mpesa_mobile_phone.toString().replace(/\s+/g, "");
@@ -512,7 +512,7 @@ watch(
 	() => localModel.value.citizenship,
 	(newVal, oldVal) => {
 		if (ready.value && oldVal !== newVal) {
-			localModel.value.country_of_citizenship = newVal === "Citizen" ? "Kenya" : "";
+			localModel.value.country_of_citizenship = newVal === "Citizen" ? "Gambia" : "";
 		}
 	}
 );

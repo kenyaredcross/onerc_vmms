@@ -62,14 +62,14 @@
 				<Link
 					doctype="County"
 					v-model="form.county"
-					:label="__('County')"
+					:label="__('LGA')"
 					:readOnly="true"
 				/>
 				<Link
 					v-if="form.county"
 					doctype="Sub County"
 					v-model="form.sub_county"
-					:label="__('Sub County')"
+					:label="__('District')"
 					:filters="{ county: form.county }"
 					:readOnly="true"
 				/>

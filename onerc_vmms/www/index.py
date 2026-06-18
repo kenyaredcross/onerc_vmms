@@ -21,7 +21,7 @@ def get_context(context):
     # Set page metadata
     context.no_header = True
     context.no_breadcrumbs = True
-    context.title = "OneRC — Kenya Red Cross Society"
+    context.title = "OneRC — Gambia Red Cross Society"
 
     # Allow guest access
     context.hide_login = False

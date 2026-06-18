@@ -61,7 +61,7 @@ Internal Opportunity Openings can define _Required Skills_ which, once verified 
 | **Marital Status**             | Select | Single, Married, Divorced, Widowed, Other                              |
 | **Number of Dependants**       | Int    | Number of dependant family members                                     |
 | **Place of Work**              | Data   | Current or previous workplace                                          |
-| **Has Insurance (KRCS)**       | Select | Insurance coverage status                                              |
+| **Has Insurance (GRCS)**       | Select | Insurance coverage status                                              |
 | **Gender**                     | Link   | Gender identification                                                  |
 | **Date of Birth**              | Date   | Applicant's birth date                                                 |
 | **Reason to Join**             | Select | Motivation: Humanitarian, Skill Development, Social Cohesion, Personal |
@@ -86,8 +86,8 @@ Internal Opportunity Openings can define _Required Skills_ which, once verified 
 
 | Field                       | Type   | Description                               |
 | --------------------------- | ------ | ----------------------------------------- |
-| **County**                  | Link   | Administrative county                     |
-| **Sub County**              | Link   | Sub-county administrative division        |
+| **LGA**                     | Link   | Administrative LGA                        |
+| **District**                | Link   | District administrative division          |
 | **Administrative Location** | Link   | Specific administrative location          |
 | **Ward**                    | Link   | Local ward information                    |
 | **Access to Internet**      | Select | Internet availability: Yes, No, Sometimes |

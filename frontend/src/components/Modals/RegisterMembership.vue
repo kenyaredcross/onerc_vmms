@@ -93,8 +93,8 @@
 						<FormControl
 							v-if="!is_renew"
 							type="autocomplete"
-							label="Branch / County"
-							placeholder="Select branch or county to register with"
+							label="Branch / LGA"
+							placeholder="Select branch or LGA to register with"
 							class="w-full mb-4"
 							:options="branches.data"
 							v-model="branch"
@@ -103,8 +103,8 @@
 						<FormControl
 							v-if="is_renew"
 							type="text"
-							label="Branch / County"
-							placeholder="Select branch or county to register with"
+							label="Branch / LGA"
+							placeholder="Select branch or LGA to register with"
 							class="w-full mb-4"
 							:value="props.renew_branch"
 							v-model="branch"

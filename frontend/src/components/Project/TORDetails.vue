@@ -355,7 +355,7 @@ const formatCurrency = (val) => {
 	if (val == null || val === "") return "";
 	return new Intl.NumberFormat(undefined, {
 		style: "currency",
-		currency: "KES",
+		currency: "GMD",
 	}).format(val);
 };
 </script>

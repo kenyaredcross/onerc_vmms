@@ -57,10 +57,10 @@ The Deployment Request Tool includes **Quick Filters** and **Advanced Filters** 
 Used for broad matching:
 
 - Region
-- Branch (County of Membership)
+- Branch (LGA of Membership)
 - Personnel Type
 - Designation
-- County / Subcounty / Ward
+- LGA / District / Ward
 - Courses, Skills, Licenses
 
 ### Advanced Filters

@@ -118,7 +118,7 @@ function payMembership() {
 	}
 
 	if (!isValidPhone(membershipForm.phone_number)) {
-		createMembership.error = "Please enter a valid Kenyan phone number.eg. (+254123456789)";
+		createMembership.error = "Please enter a valid Gambian phone number e.g. (+2207654321)";
 		return;
 	}
 	createMembership.error = "";
@@ -142,12 +142,12 @@ watch(registerDialog, (newValue) => {
 });
 
 useHead({
-	title: "Manage Membership | Kenya Red Cross VMMS",
+	title: "Manage Membership | Gambia Red Cross Society VMMS",
 	meta: [
 		{
 			name: "description",
 			content:
-				"View your current Kenya Red Cross membership status, renew your existing plan, or select a new membership type to join the organization.",
+				"View your current Gambia Red Cross Society membership status, renew your existing plan, or select a new membership type to join the organization.",
 		},
 	],
 });

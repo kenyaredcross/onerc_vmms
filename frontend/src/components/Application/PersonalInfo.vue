@@ -24,8 +24,8 @@
 				:label="__('Country of Citizenship')"
 				:filters="
 					form.citizenship === 'Citizen'
-						? [['name', '=', 'Kenya']]
-						: [['name', '!=', 'Kenya']]
+						? [['name', '=', 'Gambia']]
+						: [['name', '!=', 'Gambia']]
 				"
 				:required="true"
 			/>
@@ -43,12 +43,12 @@
 		<h2 class="text-xl font-semibold border-t pt-6 mt-6">{{ __("Contact & Location") }}</h2>
 
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-			<Link doctype="County" v-model="form.county" :label="__('County')" />
+			<Link doctype="County" v-model="form.county" :label="__('LGA')" />
 			<Link
 				v-if="form.county"
 				doctype="Sub County"
 				v-model="form.sub_county"
-				:label="__('Sub County')"
+				:label="__('District')"
 				:filters="{ county: form.county }"
 			/>
 			<Link

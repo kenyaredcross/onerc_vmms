@@ -839,12 +839,12 @@ const getCompanyAbbr = (name) =>
 		: "NA";
 
 useHead({
-	title: "Job Application Details | Kenya Red Cross ",
+	title: "Job Application Details | Gambia Red Cross Society ",
 	meta: [
 		{
 			name: "description",
 			content:
-				"View and manage your job application details for Kenya Red Cross opportunities. Track your application status and updates.",
+				"View and manage your job application details for Gambia Red Cross Society opportunities. Track your application status and updates.",
 		},
 	],
 });

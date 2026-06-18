@@ -114,12 +114,12 @@ const downloadContract = (contractName) => {
 };
 
 useHead({
-	title: "Deployment Assignment Details | Kenya Red Cross",
+	title: "Deployment Assignment Details | Gambia Red Cross Society",
 	meta: [
 		{
 			name: "description",
 			content:
-				"View details for your assigned Kenya Red Cross deployment, including progress, timeline, and assignment decision (Accept/Reject).",
+				"View details for your assigned Gambia Red Cross Society deployment, including progress, timeline, and assignment decision (Accept/Reject).",
 		},
 	],
 });

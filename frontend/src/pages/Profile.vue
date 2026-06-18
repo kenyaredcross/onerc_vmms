@@ -168,12 +168,12 @@ onMounted(() => {
 });
 
 useHead({
-	title: "Edit Profile | Kenya Red Cross VMMS",
+	title: "Edit Profile | Gambia Red Cross Society VMMS",
 	meta: [
 		{
 			name: "description",
 			content:
-				"Manage your personal information, health details, qualifications, skills, and important documents within the Kenya Red Cross VMMS.",
+				"Manage your personal information, health details, qualifications, skills, and important documents within the Gambia Red Cross Society VMMS.",
 		},
 	],
 });

@@ -80,7 +80,7 @@
 							doctype="Company Item"
 							v-model="selectedBranches"
 							:mainField="'company'"
-							:label="__('County')"
+							:label="__('LGA')"
 							:filters="branchFilters"
 							class="w-full"
 							@change="updateJobs"
@@ -268,12 +268,12 @@ watch(jobs, () => {
 	}
 });
 useHead({
-	title: "Opportunities | Kenya Red Cross",
+	title: "Opportunities | Gambia Red Cross Society",
 	meta: [
 		{
 			name: "description",
 			content:
-				"Explore open opportunities with the Kenya Red Cross. Filter by location, profession, and designation, or manage your applications.",
+				"Explore open opportunities with the Gambia Red Cross Society. Filter by location, profession, and designation, or manage your applications.",
 		},
 	],
 });

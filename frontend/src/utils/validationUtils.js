@@ -8,7 +8,7 @@ const isPhoneNumberValid = (phone) => {
 	if (!phone) return true;
 	const cleanPhone = phone.toString().replace(/\s+/g, "");
 
-	const phoneRegex = /^(?:\+254|0)(7\d{8}|1\d{8})$/;
+	const phoneRegex = /^(?:\+220)?\d{7}$/;
 	return phoneRegex.test(cleanPhone);
 };
 

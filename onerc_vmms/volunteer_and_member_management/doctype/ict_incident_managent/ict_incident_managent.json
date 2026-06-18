@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-03-27 14:02:22.667361",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "name_of_incident",
+  "column_break_hput",
+  "date_incident_occured",
+  "section_break_hecz",
+  "describe_the_incident"
+ ],
+ "fields": [
+  {
+   "fieldname": "name_of_incident",
+   "fieldtype": "Data",
+   "label": "Name of Incident"
+  },
+  {
+   "fieldname": "column_break_hput",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_incident_occured",
+   "fieldtype": "Date",
+   "label": "Date Incident Occured"
+  },
+  {
+   "fieldname": "section_break_hecz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "describe_the_incident",
+   "fieldtype": "Small Text",
+   "label": "Describe the Incident"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-27 14:03:04.862715",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "ICT Incident Managent",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

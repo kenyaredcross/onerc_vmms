@@ -1,6 +1,6 @@
 app_name = "onerc_vmms"
 app_title = "Volunteer and Member Management"
-app_publisher = "Kenya Red Cross Society"
+app_publisher = "Gambia Red Cross Society"
 app_description = "Volunteer and Member Management"
 app_email = "digital@redcross.or.ke"
 app_license = "gpl-3.0"

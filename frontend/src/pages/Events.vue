@@ -93,12 +93,12 @@ watchDebounced(
 );
 
 useHead({
-	title: "Upcoming Events | Kenya Red Cross VMMS",
+	title: "Upcoming Events | Gambia Red Cross Society VMMS",
 	meta: [
 		{
 			name: "description",
 			content:
-				"Discover and register for upcoming Kenya Red Cross events, activities, and training sessions in your area. Search by name or location.",
+				"Discover and register for upcoming Gambia Red Cross Society events, activities, and training sessions in your area. Search by name or location.",
 		},
 	],
 });

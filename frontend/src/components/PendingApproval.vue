@@ -9,7 +9,7 @@
 				<p class="text-lg text-gray-600 max-w-lg">
 					{{ __("Thank you for your interest in joining the") }}
 					<span class="font-semibold text-red-500">{{
-						__("Kenya Red Cross Society")
+						__("Gambia Red Cross Society")
 					}}</span
 					>. {{ __("Your application is now") }}
 					<span class="text-red-500 font-semibold">{{ __("under review") }}</span>

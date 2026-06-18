@@ -289,12 +289,12 @@ const filteredApplications = computed(() => {
 });
 
 useHead({
-	title: "My Applications | Kenya Red Cross VMMS",
+	title: "My Applications | Gambia Red Cross Society VMMS",
 	meta: [
 		{
 			name: "description",
 			content:
-				"Track and manage all your applications for Kenya Red Cross job and volunteer opportunities. View application status, details, and history.",
+				"Track and manage all your applications for Gambia Red Cross Society job and volunteer opportunities. View application status, details, and history.",
 		},
 	],
 });

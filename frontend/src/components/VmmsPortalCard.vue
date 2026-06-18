@@ -13,7 +13,7 @@
 				<span
 					class="text-4xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent"
 				>
-					{{ __("KES") }} {{ __(membershipType.amount) }}
+					{{ __("GMD") }} {{ __(membershipType.amount) }}
 				</span>
 				<span class="text-base sm:text-sm font-semibold text-gray-500">{{
 					__("/year")

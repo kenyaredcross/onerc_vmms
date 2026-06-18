@@ -12,7 +12,7 @@ Users access the **Member Portal** to apply for membership.
 
 1. Log in or create an account.
 2. Navigate to the **Membership Page**.
-3. Select a **Plan** and **Branch/County** (mapped to ERPNext _Company_).
+3. Select a **Plan** and **Branch/LGA** (mapped to ERPNext _Company_).
 4. Submit the **Membership Application**, ready for payment.
 
 ---

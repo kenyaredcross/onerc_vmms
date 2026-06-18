@@ -28,8 +28,8 @@ Additionally, the extended profile supports dynamic updates, enabling users to c
 
 | Field                       | Type   | Description                               |
 | --------------------------- | ------ | ----------------------------------------- |
-| **County**                  | Link   | Administrative county                     |
-| **Sub County**              | Link   | Sub-county administrative division        |
+| **LGA**                     | Link   | Administrative LGA                        |
+| **District**                | Link   | District administrative division          |
 | **Access to Internet**      | Select | Internet availability: Yes, No, Sometimes |
 | **Administrative Location** | Link   | Specific administrative location          |
 | **Ward**                    | Link   | Local ward information                    |

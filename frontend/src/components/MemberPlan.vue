@@ -65,7 +65,7 @@
 								<div class="text-2xl font-bold text-gray-900">
 									{{ __(membership.amount) }}
 								</div>
-								<div class="text-xs text-gray-700">{{ __("KES") }}</div>
+								<div class="text-xs text-gray-700">{{ __("GMD") }}</div>
 							</div>
 							<Button
 								v-if="
@@ -136,7 +136,7 @@
 						<p class="text-red-50 leading-relaxed opacity-90 text-sm">
 							{{
 								__(
-									"Join Kenya Red Cross Society and support your community through life-saving services while gaining valuable skills.",
+									"Join Gambia Red Cross Society and support your community through life-saving services while gaining valuable skills.",
 								)
 							}}
 						</p>

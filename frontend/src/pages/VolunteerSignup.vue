@@ -791,12 +791,12 @@ watch(
 );
 
 useHead({
-	title: "Volunteer Signup | Kenya Red Cross",
+	title: "Volunteer Signup | Gambia Red Cross Society",
 	meta: [
 		{
 			name: "description",
 			content:
-				"Join the Kenya Red Cross as a volunteer and make a difference in your community. Sign up to contribute your skills, time, and compassion.",
+				"Join the Gambia Red Cross Society as a volunteer and make a difference in your community. Sign up to contribute your skills, time, and compassion.",
 		},
 	],
 });
