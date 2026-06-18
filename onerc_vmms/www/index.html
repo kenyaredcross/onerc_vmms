@@ -3,334 +3,228 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OneRC — Gambia Red Cross Society</title>
-  <meta name="description" content="OneRC is the unified digital gateway for the Gambia Red Cross Society — volunteers, members, and staff.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <title>Gambia Red Cross Society — Volunteer &amp; Member Portal</title>
+  <meta name="description" content="Register, find opportunities, and manage your volunteer journey with Gambia Red Cross Society.">
   <style>
-    :root {
-      --red:        #EE2A28;
-      --red-dark:   #C41E1C;
-      --red-xdark:  #8B1514;
-      --red-tint:   #FDF0F0;
-      --ink:        #111111;
-      --ink-700:    #2C2C2C;
-      --ink-500:    #565656;
-      --ink-300:    #909090;
-      --ink-100:    #E6E6E6;
-      --ink-50:     #F5F5F5;
-      --white:      #FFFFFF;
-      --amber:      #D97706;
-      --amber-bg:   #FFFBEB;
-      --amber-border:#FCD34D;
-      --font:       'DM Sans', 'Helvetica Neue', Arial, sans-serif;
-      --radius-sm:  3px;
-      --radius:     5px;
-      --radius-lg:  8px;
-      --ease:       200ms ease;
-      --header-h:   60px;
-    }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body { font-family: var(--font); color: var(--ink); background: var(--white); -webkit-font-smoothing: antialiased; }
-    a { color: inherit; text-decoration: none; }
-    button { cursor: pointer; font-family: inherit; border: none; background: none; }
-
-    /* ── HEADER ── */
-    .site-header {
-      position: fixed; top: 0; left: 0; right: 0;
-      height: var(--header-h);
-      background: var(--white);
-      border-bottom: 2.5px solid var(--red);
-      z-index: 500;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 28px;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #333;
+      background: #fff;
+      -webkit-font-smoothing: antialiased;
     }
+    a { text-decoration: none; color: inherit; }
 
-    .header-logo {
-      display: flex; align-items: center; gap: 14px;
+    /* ── TOP BAR ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid #e8e8e8;
     }
-
-    .header-logo img {
-      height: 36px;
-      width: auto;
+    .logo-mark {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .logo-mark .one { color: #011E41; }
+    .logo-mark .rc  { color: #EE2435; }
+    .logo-sub {
       display: block;
-    }
-
-    .header-divider {
-      width: 1px; height: 28px;
-      background: var(--ink-100);
-      flex-shrink: 0;
-    }
-
-    .header-onerc {
-      display: flex; flex-direction: column; line-height: 1;
-    }
-
-    .header-onerc__name {
-      font-size: 1rem;
+      font-size: 0.5rem;
       font-weight: 700;
-      letter-spacing: -0.04em;
-      color: var(--ink);
-    }
-
-    .header-onerc__name span { color: var(--red); }
-
-    .header-onerc__sub {
-      font-size: 0.6rem;
-      font-weight: 500;
-      letter-spacing: 0.09em;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: var(--ink-300);
-      margin-top: 3px;
+      color: #aaa;
+      margin-top: 4px;
     }
-
-    .header-right { display: flex; align-items: center; gap: 8px; }
-
-    /* ── BUTTONS ── */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      gap: 7px; padding: 11px 22px;
-      font-size: 0.875rem; font-weight: 600; letter-spacing: 0.01em;
-      border-radius: var(--radius); border: 2px solid transparent;
-      transition: all var(--ease); white-space: nowrap; line-height: 1;
-      font-family: inherit; cursor: pointer;
+    .topbar-login {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #011E41;
+      border: 1.5px solid #011E41;
+      border-radius: 4px;
+      padding: 7px 18px;
+      transition: background 0.15s, color 0.15s;
     }
-    .btn-primary { background: var(--red); color: var(--white); border-color: var(--red); }
-    .btn-primary:hover { background: var(--red-dark); border-color: var(--red-dark); transform: translateY(-1px); }
-    .btn-outline-w { background: transparent; color: var(--white); border-color: rgba(255,255,255,0.5); }
-    .btn-outline-w:hover { background: rgba(255,255,255,0.12); border-color: var(--white); }
-    .btn-ghost { background: transparent; color: var(--ink-500); border: 2px solid var(--ink-100); }
-    .btn-ghost:hover { background: var(--ink-50); color: var(--ink); border-color: var(--ink-300); }
-    .btn-full { width: 100%; }
+    .topbar-login:hover { background: #011E41; color: #fff; }
 
-    /* ── LANDING ── */
-    #view-landing { padding-top: var(--header-h); }
-
-    .landing-panels {
-      display: flex; flex: 1;
-      min-height: calc(100vh - var(--header-h));
-    }
-
-    /* Panel base */
-    .panel {
-      flex: 1;
+    /* ── HERO ── */
+    .hero {
       position: relative;
-      display: flex; flex-direction: column; justify-content: flex-end;
-      padding: 44px 36px;
-      overflow: hidden;
-      transition: flex 400ms cubic-bezier(0.4, 0, 0.2, 1);
+      height: 65vh;
+      min-height: 420px;
+      background: #011E41 url('/assets/onerc_vmms/images/index-cover.jpg') center/cover no-repeat;
+      display: flex;
+      align-items: flex-end;
     }
-
-    @media (min-width: 769px) {
-      .panel:hover { flex: 1.22; }
-      .panel:hover .panel__photo { transform: scale(1.05); }
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(1, 30, 65, 0.92) 0%,
+        rgba(1, 30, 65, 0.45) 45%,
+        rgba(1, 30, 65, 0.10) 100%
+      );
     }
-
-    @media (max-width: 768px) {
-      .landing-panels { flex-direction: column; }
-      .panel { min-height: 350px; }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      padding: 44px 40px;
+      max-width: 700px;
     }
-
-    .panel__photo {
-      position: absolute; inset: 0;
-      background-size: cover; background-position: center;
-      transition: transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .panel--join .panel__photo {
-      background-image: url('/assets/onerc_vmms/images/panel-join.jpg');
-    }
-    .panel--volunteer .panel__photo {
-      background-image: url('/assets/onerc_vmms/images/panel-volunteer.jpg');
-    }
-    .panel--staff .panel__photo {
-      background-image: url('/assets/onerc_vmms/images/panel-staff.jpg');
-    }
-
-    .panel__overlay {
-      position: absolute; inset: 0;
-    }
-
-    .panel--join .panel__overlay {
-      background: linear-gradient(to top, rgba(6,6,6,0.92) 0%, rgba(6,6,6,0.45) 45%, rgba(6,6,6,0.10) 100%);
-    }
-
-    .panel--volunteer .panel__overlay {
-      background: linear-gradient(to top, rgba(130,12,10,0.90) 0%, rgba(80,10,8,0.48) 45%, rgba(10,4,4,0.12) 100%);
-    }
-
-    .panel--staff .panel__overlay {
-      background: linear-gradient(to top, rgba(10,10,14,0.94) 0%, rgba(20,20,30,0.50) 45%, rgba(10,10,14,0.12) 100%);
-    }
-
-    .panel-sep {
-      width: 1px;
-      background: rgba(255,255,255,0.12);
-      flex-shrink: 0; z-index: 1;
-    }
-
-    @media (max-width: 768px) {
-      .panel-sep { display: none; }
-    }
-
-    .panel__content {
-      position: relative; z-index: 1;
-      color: var(--white);
-    }
-
-    .panel__eyebrow {
-      display: inline-block;
-      font-size: 0.65rem; font-weight: 700;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      color: rgba(255,255,255,0.55);
-      border: 1px solid rgba(255,255,255,0.20);
-      padding: 4px 10px; border-radius: var(--radius-sm);
-      margin-bottom: 16px;
-    }
-
-    .panel--volunteer .panel__eyebrow {
-      color: rgba(255,200,200,0.70);
-      border-color: rgba(255,180,180,0.25);
-    }
-
-    .panel__title {
-      font-size: clamp(1.55rem, 2.5vw, 2.4rem);
+    .hero-label {
+      display: block;
+      font-size: 0.65rem;
       font-weight: 700;
-      letter-spacing: -0.04em;
-      line-height: 1.05;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.65);
+      margin-bottom: 14px;
+    }
+    .hero-heading {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 14px;
+    }
+    .hero-sub {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.72);
+      line-height: 1.55;
+      margin-bottom: 28px;
+    }
+    .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      display: inline-block;
+      padding: 12px 26px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 2px solid transparent;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary { background: #EE2435; color: #fff; border-color: #EE2435; }
+    .btn-outline { background: transparent; color: #fff; border-color: rgba(255,255,255,0.6); }
+    .btn-outline:hover { border-color: #fff; opacity: 1; }
+
+    /* ── QUICK LINKS ── */
+    .quicklinks {
+      background: #F5F5F5;
+      padding: 56px 32px;
+    }
+    .quicklinks-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .card {
+      display: block;
+      background: #fff;
+      border-radius: 6px;
+      border-top: 4px solid #EE2435;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+      padding: 28px 24px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .card:hover {
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.11);
+      transform: translateY(-2px);
+    }
+    .card h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #011E41;
       margin-bottom: 8px;
     }
-
-    .panel__sub {
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.65);
-      margin-bottom: 28px;
-      line-height: 1.45;
+    .card p {
+      font-size: 0.875rem;
+      color: #666;
+      line-height: 1.55;
+      margin-bottom: 20px;
+    }
+    .card-cta {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #EE2435;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
-    .panel__btns {
-      display: flex; flex-direction: column; gap: 8px;
+    /* ── FOOTER ── */
+    footer {
+      background: #011E41;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: center;
+      padding: 22px 16px;
+      font-size: 0.78rem;
     }
 
-    .btn-sm {
-      padding: 9px 18px;
-      font-size: 0.82rem;
-    }
-
-    /* Footer */
-    .site-footer {
-      padding: 20px 28px;
-      background: var(--ink-50);
-      border-top: 1px solid var(--ink-100);
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 12px;
-    }
-
-    .footer-note {
-      font-size: 0.75rem;
-      color: var(--ink-500);
-      line-height: 1.5;
-    }
-
-    .footer-note a {
-      color: var(--red);
-      text-decoration: underline;
-    }
-
-    .footer-domain {
-      font-size: 0.7rem;
-      color: var(--ink-300);
-      font-weight: 500;
-      letter-spacing: 0.03em;
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .topbar { padding: 0 16px; }
+      .hero { height: 50vh; min-height: 340px; }
+      .hero-content { padding: 28px 20px; }
+      .hero-heading { font-size: 1.75rem; }
+      .quicklinks { padding: 40px 16px; }
+      .quicklinks-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-<!-- ======================================================
-     VIEW 1: LANDING PAGE
-====================================================== -->
-<div id="view-landing">
+<header class="topbar">
+  <div>
+    <div class="logo-mark"><span class="one">One</span><span class="rc">RC</span></div>
+    <span class="logo-sub">Digital Gateway</span>
+  </div>
+  <a href="/vmms/login" class="topbar-login">Log In</a>
+</header>
 
-  <header class="site-header" role="banner">
-    <div class="header-logo">
-      <img src="/assets/onerc_vmms/frontend/vmms.png" alt="Gambia Red Cross Society logo">
-      <div class="header-divider"></div>
-      <div class="header-onerc">
-        <div class="header-onerc__name">One<span>RC</span></div>
-        <div class="header-onerc__sub">Digital Gateway</div>
-      </div>
+<section class="hero">
+  <div class="hero-content">
+    <span class="hero-label">Gambia Red Cross Society</span>
+    <h1 class="hero-heading">Volunteer &amp; Member Portal</h1>
+    <p class="hero-sub">Register, find opportunities, and manage your volunteer journey</p>
+    <div class="hero-buttons">
+      <a href="/vmms/login#signup" class="btn btn-primary">Sign Up</a>
+      <a href="/vmms/login" class="btn btn-outline">Log In</a>
     </div>
-    
-  </header>
+  </div>
+</section>
 
-  <main class="landing-panels" role="main">
+<section class="quicklinks">
+  <div class="quicklinks-grid">
+    <a href="/vmms/opportunities" class="card">
+      <h3>Opportunities</h3>
+      <p>Browse volunteer and service opportunities</p>
+      <span class="card-cta">Explore &rarr;</span>
+    </a>
+    <a href="/vmms/events" class="card">
+      <h3>Events</h3>
+      <p>View upcoming events and activities</p>
+      <span class="card-cta">View Events &rarr;</span>
+    </a>
+  </div>
+</section>
 
-    <!-- Panel 1: Join -->
-    <section class="panel panel--join" aria-label="Join the Gambia Red Cross Society">
-      <div class="panel__photo" role="img" aria-label="Community volunteers"></div>
-      <div class="panel__overlay"></div>
-      <div class="panel__content">
-        <span class="panel__eyebrow">Get Started</span>
-        <h2 class="panel__title">Join Us</h2>
-        <p class="panel__sub">Become part of the GRCS family — explore volunteer opportunities and membership options.</p>
-        <div class="panel__btns">
-          <a href="/vmms#/opportunities" class="btn btn-outline-w">Browse Opportunities</a>
-          <a href="/vmms#/about" class="btn btn-outline-w btn-sm">Learn More</a>
-        </div>
-      </div>
-    </section>
-
-    <div class="panel-sep"></div>
-
-    <!-- Panel 2: Volunteers & Members -->
-    <section class="panel panel--volunteer" aria-label="Volunteer and Member portal">
-      <div class="panel__photo" role="img" aria-label="GRCS volunteers in action"></div>
-      <div class="panel__overlay"></div>
-      <div class="panel__content">
-        <span class="panel__eyebrow">Active Members</span>
-        <h2 class="panel__title">Volunteers & Members</h2>
-        <p class="panel__sub">Access your profile, training, opportunities, and manage your volunteer activities.</p>
-        <a href="/vmms" class="btn btn-primary">Go to VMMS</a>
-      </div>
-    </section>
-
-    <div class="panel-sep"></div>
-
-    <!-- Panel 3: Staff -->
-    <section class="panel panel--staff" aria-label="Staff portal">
-      <div class="panel__photo" role="img" aria-label="GRCS staff workspace"></div>
-      <div class="panel__overlay"></div>
-      <div class="panel__content">
-        <span class="panel__eyebrow">Staff Access</span>
-        <h2 class="panel__title">I am a Staff</h2>
-        <p class="panel__sub">Access staff services, systems, and internal resources.</p>
-        <a href="https://one.redcross.or.ke" target="_blank" rel="noopener noreferrer" class="btn btn-outline-w">Staff Sign In</a>
-      </div>
-    </section>
-
-  </main>
-
- <footer class="site-footer" role="contentinfo">
-    <p class="footer-note">
-      OneRC is a concept we are actively developing. Your honest, anonymous feedback matters to us. &nbsp;
-      <a href="#" target="_blank" rel="noopener noreferrer">Share Feedback →</a>
-    </p>
-    <span class="footer-domain" aria-hidden="true">onerc.redcross.or.ke</span>
-  </footer>
-
-</div>
-
-<script>
-'use strict';
-
-// Staff sign-in link is configured to redirect to https://one.redcross.co.ke
-// ALL users (logged in or not) see the portal first
-// They choose where to go from here
-</script>
+<footer>
+  <p>&copy; 2026 Gambia Red Cross Society. Powered by OneRC.</p>
+</footer>
 
 </body>
 </html>

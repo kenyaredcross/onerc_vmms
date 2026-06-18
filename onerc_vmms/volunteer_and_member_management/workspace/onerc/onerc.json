@@ -318,7 +318,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-03-13 03:16:23.073583",
+ "modified": "2026-06-18 13:30:18.010260",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "OneRC",
@@ -328,7 +328,7 @@
  "public": 1,
  "quick_lists": [],
  "roles": [],
- "sequence_id": 51.0,
+ "sequence_id": 35.0,
  "shortcuts": [
   {
    "color": "Green",
