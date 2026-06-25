@@ -1,35 +1,5 @@
 <template>
 	<div class="space-y-8">
-		<!-- <div
-			v-if="!props.job?.screening_questions?.length"
-			class="text-center py-10 px-6 rounded-lg bg-emerald-50 border-2 border-emerald-200 text-emerald-800"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-12 w-12 mx-auto mb-3"
-				fill="none"
-				viewBox="0 0 24 24"
-				stroke="currentColor"
-				stroke-width="1.5"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-				/>
-			</svg>
-			<h3 class="text-xl font-semibold mb-1">
-				{{ __("No Additional Information Required") }}
-			</h3>
-			<p class="text-sm">
-				{{
-					__(
-						"This opportunity does not require any supplementary information at this time. Click 'Save & Continue' to proceed to the review step.",
-					)
-				}}
-			</p>
-		</div> -->
-
 		<div
 			v-for="(q, index) in visibleQuestions"
 			:key="q.question_id"
@@ -189,10 +159,24 @@ if (props.job?.screening_questions?.length) {
 			(r) => r.question_id === q.question_id,
 		);
 
+		let initialAnswer = existing?.answer || "";
+		if (
+			q.question_type === "MultiSelect" &&
+			typeof initialAnswer === "string" &&
+			initialAnswer
+		) {
+			initialAnswer = initialAnswer
+				.split("\n")
+				.map((item) => item.trim())
+				.filter((item) => item);
+		} else if (q.question_type === "MultiSelect" && !Array.isArray(initialAnswer)) {
+			initialAnswer = [];
+		}
+
 		responses.value[q.question_id] = {
 			question_id: q.question_id,
 			question: q.question,
-			answer: existing?.answer || "",
+			answer: initialAnswer,
 			attachment: existing?.attachment || null,
 		};
 	});
@@ -214,7 +198,12 @@ watch(
 					attachment: r.attachment || null,
 				};
 			})
-			.filter((r) => r.answer || r.attachment);
+			.filter((r) => {
+				if (Array.isArray(r.answer)) {
+					return r.answer.length > 0 || r.attachment;
+				}
+				return r.answer || r.attachment;
+			});
 	},
 	{ deep: true, immediate: true },
 );
@@ -238,7 +227,8 @@ if (props.job?.screening_questions?.length) {
 				() => {
 					const shouldShow = visibleQuestions.value.includes(q);
 					if (!shouldShow) {
-						responses.value[q.question_id].answer = "";
+						responses.value[q.question_id].answer =
+							q.question_type === "MultiSelect" ? [] : "";
 						responses.value[q.question_id].attachment = null;
 					}
 				},
