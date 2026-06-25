@@ -307,25 +307,24 @@
 				</table>
 			</div>
 		</section>
-
-		<div class="mt-6 text-center">
-			<div class="flex justify-center">
-				<a
-					:href="torUrl ? torUrl : null"
-					:target="torUrl ? '_blank' : null"
-					rel="noopener noreferrer"
-					role="button"
-					:aria-disabled="!torUrl"
-					:class="[
-						'flex-1 text-center px-6 py-3 rounded-lg font-semibold transition-colors',
-						torUrl
-							? 'bg-green-600 hover:bg-green-700 text-white'
-							: 'bg-green-600/40 text-white pointer-events-none opacity-60 cursor-not-allowed',
-					]"
-				>
-					{{ __("Download TOR") }}
-				</a>
-			</div>
+	</div>
+	<div v-if="torUrl" class="mt-6 text-center">
+		<div class="flex justify-center">
+			<a
+				:href="torUrl ? torUrl : null"
+				:target="torUrl ? '_blank' : null"
+				rel="noopener noreferrer"
+				role="button"
+				:aria-disabled="!torUrl"
+				:class="[
+					'flex-1 text-center px-6 py-3 rounded-lg font-semibold transition-colors',
+					torUrl
+						? 'bg-green-600 hover:bg-green-700 text-white'
+						: 'bg-green-600/40 text-white pointer-events-none opacity-60 cursor-not-allowed',
+				]"
+			>
+				{{ __("Download TOR") }}
+			</a>
 		</div>
 	</div>
 </template>

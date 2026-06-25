@@ -38,7 +38,7 @@ frappe.ui.form.on("Personnel Deployment Request", {
 							});
 						}).addClass("btn-primary");
 					}
-				}
+				},
 			);
 		}
 
@@ -139,34 +139,18 @@ frappe.ui.form.on("Personnel Deployment Request", {
 });
 
 async function render_tor_preview(frm) {
-	if (!frm.doc.terms_of_reference) {
-		frm.set_df_property("tor", "options", "");
-		frm.refresh_field("tor");
-		return;
-	}
+	if (!frm.doc.tor_url) return;
 
-	const tor_name = frm.doc.terms_of_reference;
-	const doctype = "Personnel Terms of Reference";
-	const base_url = window.location.origin;
-
-	let pdf_url = `${base_url}/api/method/onerc_vmms.volunteer_and_member_management.utils.download_pdf?doctype=${encodeURIComponent(
-		doctype
-	)}&name=${encodeURIComponent(tor_name)}`;
-
-	pdf_url += "&settings=%7B%7D&_lang=en";
+	const pdf_url = frm.doc.tor_url;
 
 	const preview_html = `
-    <div style="text-align: right; margin-bottom: 10px;">
-      <a href="${pdf_url}" target="_blank" class="btn btn-primary btn-sm" style="margin-right: 5px;">View Full</a>
-      <a href="${pdf_url}" download class="btn btn-secondary btn-sm">Download</a>
-    </div>
-    <iframe src="${pdf_url}" style="width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 8px;"></iframe>
-  `;
+		<div style="text-align: right; margin-bottom: 10px;">
+			<a href="${pdf_url}" target="_blank" class="btn btn-primary btn-sm" style="margin-right: 5px;">View Full</a>
+			<a href="${pdf_url}" download class="btn btn-secondary btn-sm">Download</a>
+		</div>
+		<iframe src="${pdf_url}" style="width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 8px;"></iframe>
+	`;
 
 	frm.set_df_property("tor", "options", preview_html);
-	if (frm.doc.tor_url !== pdf_url) {
-		frm.doc.tor_url = pdf_url;
-		frm.save();
-	}
 	frm.refresh_field("tor");
 }

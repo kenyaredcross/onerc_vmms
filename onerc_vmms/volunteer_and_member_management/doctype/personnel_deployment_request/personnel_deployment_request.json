@@ -27,6 +27,7 @@
   "notes",
   "terms_section",
   "terms_of_reference",
+  "tor_attachment",
   "tor_url",
   "tor",
   "amended_from"
@@ -148,7 +149,6 @@
    "fieldtype": "Link",
    "label": "Terms of Reference",
    "options": "Personnel Terms of Reference",
-   "reqd": 1,
    "search_index": 1
   },
   {
@@ -193,54 +193,23 @@
    "label": "Deployment Status",
    "options": "Pending\nAccepted\nRejected\nCancelled",
    "reqd": 1
+  },
+  {
+   "fieldname": "tor_attachment",
+   "fieldtype": "Attach",
+   "label": "TOR Attachment"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_calendar_and_gantt": 1,
  "is_submittable": 1,
- "links": [
-  {
-   "group": "Support",
-   "link_doctype": "Issue",
-   "link_fieldname": "personnel_deployment_assignment"
-  },
-  {
-   "group": "Activity",
-   "link_doctype": "Timesheet",
-   "link_fieldname": "personnel_deployment_assignment"
-  },
-  {
-   "group": "Material",
-   "link_doctype": "Material Request",
-   "link_fieldname": "personnel_deployment_assignment"
-  },
-  {
-   "group": "Claims",
-   "link_doctype": "Expense Claim",
-   "link_fieldname": "personnel_deployment_assignment"
-  },
-  {
-   "group": "Claims",
-   "link_doctype": "Employee Advance",
-   "link_fieldname": "personnel_deployment_assignment"
-  },
-  {
-   "group": "Attendance",
-   "link_doctype": "Attendance",
-   "link_fieldname": "personnel_deployment_request"
-  },
-  {
-   "group": "Contract",
-   "link_doctype": "Contract",
-   "link_fieldname": "personnel_deployment_assignment"
-  }
- ],
- "modified": "2025-11-12 17:03:30.380400",
+ "links": [],
+ "modified": "2026-06-25 09:02:38.789377",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Personnel Deployment Request",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
