@@ -23,6 +23,29 @@ from frappe.utils import random_string
 
 
 class VMMembership(Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+
+        amount: DF.Float
+        company: DF.Link
+        currency: DF.Link | None
+        from_date: DF.Date
+        is_existing_member: DF.Check
+        member: DF.Link | None
+        member_name: DF.Data | None
+        member_since_date: DF.Date | None
+        membership_type: DF.Link
+        naming_series: DF.Literal["VM-MSH-.YYYY.-"]
+        paid: DF.Check
+        qr_code: DF.AttachImage | None
+        status: DF.Literal["Draft", "Pending", "Active", "Rejected", "Expired"]
+        to_date: DF.Date | None
+    # end: auto-generated types
     def validate(self):
         if not self.member or not frappe.db.exists("VM Member", self.member):
             # for web forms
