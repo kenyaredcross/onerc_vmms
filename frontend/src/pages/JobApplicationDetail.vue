@@ -495,8 +495,17 @@ function validateAdditionalInformation(form) {
 	if (questions.length) {
 		questions.forEach((q) => {
 			const response = Object.values(responses).find((r) => r.question === q.question);
-			const answer = response?.answer ?? "";
-			if (q.is_required && !answer.trim()) {
+			let answer = response?.answer ?? "";
+
+			if (q.question_type === "MultiSelect" && typeof answer === "string") {
+				const items = answer
+					.split("\n")
+					.map((item) => item.trim())
+					.filter((item) => item);
+				answer = items.length > 0 ? items : "";
+			}
+
+			if (q.is_required && (!answer || (Array.isArray(answer) && answer.length === 0))) {
 				errors.push(`"${q.question}" is required.`);
 			}
 		});

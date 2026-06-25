@@ -159,10 +159,24 @@ if (props.job?.screening_questions?.length) {
 			(r) => r.question_id === q.question_id,
 		);
 
+		let initialAnswer = existing?.answer || "";
+		if (
+			q.question_type === "MultiSelect" &&
+			typeof initialAnswer === "string" &&
+			initialAnswer
+		) {
+			initialAnswer = initialAnswer
+				.split("\n")
+				.map((item) => item.trim())
+				.filter((item) => item);
+		} else if (q.question_type === "MultiSelect" && !Array.isArray(initialAnswer)) {
+			initialAnswer = [];
+		}
+
 		responses.value[q.question_id] = {
 			question_id: q.question_id,
 			question: q.question,
-			answer: existing?.answer || "",
+			answer: initialAnswer,
 			attachment: existing?.attachment || null,
 		};
 	});
@@ -184,7 +198,12 @@ watch(
 					attachment: r.attachment || null,
 				};
 			})
-			.filter((r) => r.answer || r.attachment);
+			.filter((r) => {
+				if (Array.isArray(r.answer)) {
+					return r.answer.length > 0 || r.attachment;
+				}
+				return r.answer || r.attachment;
+			});
 	},
 	{ deep: true, immediate: true },
 );
@@ -208,7 +227,8 @@ if (props.job?.screening_questions?.length) {
 				() => {
 					const shouldShow = visibleQuestions.value.includes(q);
 					if (!shouldShow) {
-						responses.value[q.question_id].answer = "";
+						responses.value[q.question_id].answer =
+							q.question_type === "MultiSelect" ? [] : "";
 						responses.value[q.question_id].attachment = null;
 					}
 				},
