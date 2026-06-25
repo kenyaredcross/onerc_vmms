@@ -26,11 +26,13 @@ frappe.ui.form.on("Job Opening", {
 					frm.add_custom_button(
 						__("Send Rejection Emails"),
 						() => show_rejection_dialog(frm, r.message),
-						__("Actions")
+						__("Actions"),
 					);
 				}
 			},
 		});
+
+		update_screening_questions_scoring_property(frm);
 	},
 
 	validate: function (frm) {
@@ -39,7 +41,7 @@ frappe.ui.form.on("Job Opening", {
 				frappe.msgprint({
 					title: __("Missing Skills"),
 					message: __(
-						"At least one Required Skill must be added for Internal opportunities."
+						"At least one Required Skill must be added for Internal opportunities.",
 					),
 					indicator: "red",
 				});
@@ -54,7 +56,7 @@ frappe.ui.form.on("Job Opening", {
 			frappe.msgprint({
 				title: __("Invalid Date"),
 				message: __(
-					"The Closing Date must be before the Shortlisted Rejection Notification Date."
+					"The Closing Date must be before the Shortlisted Rejection Notification Date.",
 				),
 				indicator: "red",
 			});
@@ -160,6 +162,8 @@ frappe.ui.form.on("Job Opening", {
 					}
 				});
 
+				update_question_identifiers(frm);
+				update_screening_questions_scoring_property(frm);
 				frappe.show_alert(__("Fields copied from Job Opening Template"));
 			},
 		});
@@ -174,6 +178,143 @@ frappe.ui.form.on("Job Opening", {
 	},
 });
 
+frappe.ui.form.on("Job Application Screening Questions", {
+	screening_questions_add: function (frm, cdt, cdn) {
+		update_question_identifiers(frm);
+	},
+
+	screening_questions_remove: function (frm, cdt, cdn) {
+		update_question_identifiers(frm);
+	},
+
+	question_type: function (frm, cdt, cdn) {
+		validate_expected_answers(frm, cdt, cdn);
+	},
+
+	options: function (frm, cdt, cdn) {
+		validate_expected_answers(frm, cdt, cdn);
+	},
+
+	is_knock_off: function (frm, cdt, cdn) {
+		let row = frappe.get_doc(cdt, cdn);
+
+		if (row.is_knock_off) {
+			frappe.model.set_value(cdt, cdn, "is_required", 1);
+		}
+
+		let should_enable = row.is_knock_off || row.expected_answer;
+		frappe.model.set_value(cdt, cdn, "enable_scoring", should_enable ? 1 : 0);
+	},
+
+	expected_answer: function (frm, cdt, cdn) {
+		validate_expected_answers(frm, cdt, cdn);
+	},
+});
+
+function validate_expected_answers(frm, cdt, cdn) {
+	let row = frappe.get_doc(cdt, cdn);
+	if (!row.expected_answer) {
+		let should_enable = row.is_knock_off || row.expected_answer;
+		frappe.model.set_value(cdt, cdn, "enable_scoring", should_enable ? 1 : 0);
+		return;
+	}
+
+	let raw_answers = row.expected_answer
+		.split("\n")
+		.map((ans) => ans.trim())
+		.filter(Boolean);
+	let raw_options = row.options
+		? row.options
+				.split("\n")
+				.map((opt) => opt.trim())
+				.filter(Boolean)
+		: [];
+
+	if (row.question_type === "Yes/No") {
+		let invalid = raw_answers.filter((ans) => !["Yes", "No"].includes(ans));
+		if (invalid.length > 0 || raw_answers.length > 1) {
+			frappe.msgprint({
+				title: __("Validation Error"),
+				message: __(
+					"For Yes/No questions, the Expected Answer can only be a single line containing either 'Yes' or 'No'.",
+				),
+				indicator: "red",
+			});
+			frappe.model.set_value(cdt, cdn, "expected_answer", "");
+			return;
+		}
+	}
+
+	if (row.question_type === "Select") {
+		if (raw_answers.length > 1) {
+			frappe.msgprint({
+				title: __("Validation Error"),
+				message: __(
+					"For Select questions, only one single answer line from the Options config is allowed.",
+				),
+				indicator: "red",
+			});
+			frappe.model.set_value(cdt, cdn, "expected_answer", "");
+			return;
+		}
+		if (raw_options.length > 0 && !raw_options.includes(raw_answers[0])) {
+			frappe.msgprint({
+				title: __("Validation Error"),
+				message: __(
+					"The Expected Answer '{0}' does not match any row configured in the Options text field.",
+					[raw_answers[0]],
+				),
+				indicator: "red",
+			});
+			frappe.model.set_value(cdt, cdn, "expected_answer", "");
+			return;
+		}
+	}
+
+	if (row.question_type === "MultiSelect") {
+		if (raw_options.length > 0) {
+			let invalid_opts = raw_answers.filter((ans) => !raw_options.includes(ans));
+			if (invalid_opts.length > 0) {
+				frappe.msgprint({
+					title: __("Validation Error"),
+					message: __(
+						"The following items in your Expected Answer are missing from the Options rows field: <br><br><b>{0}</b>",
+						[invalid_opts.join(", ")],
+					),
+					indicator: "red",
+				});
+				frappe.model.set_value(cdt, cdn, "expected_answer", "");
+				return;
+			}
+		}
+	}
+
+	let should_enable = row.is_knock_off || row.expected_answer;
+	frappe.model.set_value(cdt, cdn, "enable_scoring", should_enable ? 1 : 0);
+}
+
+function update_question_identifiers(frm) {
+	if (!frm.doc.screening_questions) return;
+
+	frm.doc.screening_questions.forEach((row, index) => {
+		const expected_id = `Q${index + 1}`;
+		if (row.question_id !== expected_id) {
+			frappe.model.set_value(row.doctype, row.name, "question_id", expected_id);
+		}
+	});
+}
+
+function update_screening_questions_scoring_property(frm) {
+	if (!frm.doc.screening_questions) return;
+
+	frm.doc.screening_questions.forEach((row) => {
+		const should_enable = row.is_knock_off || row.expected_answer;
+		if (should_enable && !row.enable_scoring) {
+			frappe.model.set_value(row.doctype, row.name, "enable_scoring", 1);
+		}
+	});
+}
+
 function show_rejection_dialog(frm, applicants) {
 	const d = new frappe.ui.Dialog({
 		title: __("Send Rejection Emails"),
@@ -183,7 +324,7 @@ function show_rejection_dialog(frm, applicants) {
 				options:
 					"<p class='text-muted mb-3'>" +
 					__(
-						"Only the applicants listed in the table below will receive rejection emails. You may remove applicants you do not wish to notify."
+						"Only the applicants listed in the table below will receive rejection emails. You may remove applicants you do not wish to notify.",
 					) +
 					"</p>",
 			},
