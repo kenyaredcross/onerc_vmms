@@ -53,15 +53,15 @@
 <script setup>
 import { useHead } from "@vueuse/head";
 import { createResource, ErrorMessage, toast } from "frappe-ui";
-import { inject, reactive, ref, watch } from "vue";
+import { reactive, ref, watch } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import Member from "../components/MemberPlan.vue";
 import RegisterMembership from "../components/Modals/RegisterMembership.vue";
 import NoPermission from "../components/NoPermission.vue";
 import VmmsPortalCard from "../components/VmmsPortalCard.vue";
 import { membershipStore } from "../stores/membership";
-import { isValidPhone } from "../utils/volunteer";
 import { sessionStore } from "../stores/session";
+import { isValidPhone } from "../utils/volunteer";
 
 const { membershipTypes, currentMembership } = membershipStore();
 const { isLoggedIn } = sessionStore();

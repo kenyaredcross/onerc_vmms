@@ -60,10 +60,11 @@
 				</div>
 			</div>
 			<div v-else>
-				<div v-if="!paymentStatus" class="py-4">
+				<div v-if="!paymentStatus && !applicationSubmitted" class="py-4">
 					<form action="" @submit.prevent="submit">
 						<div
-							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
+							class="grid grid-cols-1 gap-4 mb-4 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
+							:class="{ 'sm:grid-cols-2': !isExistingMember || props.is_renew }"
 						>
 							<div class="space-y-1">
 								<FormControl
@@ -77,7 +78,7 @@
 								/>
 							</div>
 
-							<div class="space-y-1">
+							<div v-if="!isExistingMember || props.is_renew" class="space-y-1">
 								<FormControl
 									type="number"
 									label="Amount"
@@ -88,6 +89,21 @@
 									readonly
 								/>
 							</div>
+						</div>
+
+						<div v-if="!props.is_renew" class="mb-4 flex items-center gap-2">
+							<input
+								id="is_existing_member"
+								type="checkbox"
+								v-model="isExistingMember"
+								class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+							/>
+							<label
+								for="is_existing_member"
+								class="text-sm font-medium text-gray-700"
+							>
+								I am an existing member (Not registered on portal)
+							</label>
 						</div>
 
 						<FormControl
@@ -111,15 +127,27 @@
 							readonly
 						/>
 
-						<FormControl
-							type="text"
-							label="Phone Number (MPesa Phone Number to be used for payment)"
-							placeholder="eg. 0712345678"
-							class="w-full"
-							v-model="membershipForm.phone"
-							required
-						/>
-						<PaymentInfoAlert class="mt-2" v-if="checkSTK" />
+						<div v-if="isExistingMember && !props.is_renew" class="space-y-1 mb-4">
+							<Uploader
+								label="Proof of Membership (Receipt / Certificate / Card)"
+								:fileTypes="['.jpg', '.jpeg', '.png', '.pdf']"
+								:onSuccess="(data) => (membershipForm.proof_attachment = data)"
+							/>
+						</div>
+
+						<div v-else class="space-y-4">
+							<div>
+								<FormControl
+									type="text"
+									label="Phone Number (MPesa Phone Number to be used for payment)"
+									placeholder="eg. 0712345678"
+									class="w-full"
+									v-model="membershipForm.phone"
+									required
+								/>
+								<PaymentInfoAlert class="mt-2" v-if="checkSTK" />
+							</div>
+						</div>
 
 						<ErrorMessage
 							v-if="createMembership.error"
@@ -137,9 +165,11 @@
 								{{
 									props.is_renew
 										? "Renew"
-										: confirmPayment
-											? "Processing Payment...."
-											: "Register"
+										: isExistingMember
+											? "Apply"
+											: confirmPayment
+												? "Processing Payment...."
+												: "Register"
 								}}
 							</Button>
 						</div>
@@ -149,7 +179,11 @@
 				<PaymentStatus
 					v-else
 					@close="registerDialog = false"
-					message="Membership processed successfully"
+					:message="
+						isExistingMember
+							? 'Membership application submitted successfully for verification'
+							: 'Membership processed successfully'
+					"
 					title="Membership"
 					returnUrl="/vmms/membership"
 					urlName="Membership"
@@ -158,17 +192,18 @@
 		</template>
 	</Dialog>
 </template>
+
 <script setup>
-import { Dialog, FormControl, Button, createResource, ErrorMessage, toast } from "frappe-ui";
-import { reactive, ref, toRaw, watch, watchEffect } from "vue";
-import { isValidPhone } from "../../utils/volunteer";
-import { membershipStore } from "../../stores/membership";
-import PaymentStatus from "../PaymentStatus.vue";
+import { Button, createResource, Dialog, ErrorMessage, FormControl, toast } from "frappe-ui";
 import { AlertTriangle } from "lucide-vue-next";
+import { reactive, ref, toRaw, watch, watchEffect } from "vue";
 import router from "../../router";
+import { membershipStore } from "../../stores/membership";
+import { paymentListener } from "../../utils/payment";
+import { isValidPhone } from "../../utils/volunteer";
 import ProgressSpinner from "../Common/ProgressSpinner.vue";
 import PaymentInfoAlert from "../PaymentInfoAlert.vue";
-import { paymentListener } from "../../utils/payment";
+import PaymentStatus from "../PaymentStatus.vue";
 
 const registerDialog = defineModel();
 const branch = ref("");
@@ -176,13 +211,17 @@ const close = defineEmits(["close"]);
 const confirmPayment = ref(false);
 const invoice = ref("");
 const paymentStatus = ref(false);
+const applicationSubmitted = ref(false);
 const checkSTK = ref(false);
+const isExistingMember = ref(false);
 
 const membershipForm = reactive({
 	phone: "",
 	amount: 0,
 	membership_type: "",
 	branch: "",
+	is_existing_member: false,
+	proof_attachment: null,
 });
 
 const { currentMembership } = membershipStore();
@@ -210,6 +249,24 @@ watch(branch, (newValue) => {
 	} else {
 		membershipForm.branch = "";
 	}
+	if (createMembership.error && membershipForm.branch) {
+		createMembership.error = "";
+	}
+});
+
+watch(isExistingMember, (newValue) => {
+	membershipForm.is_existing_member = newValue;
+	createMembership.error = "";
+
+	if (newValue) {
+		membershipForm.phone = "";
+		checkSTK.value = false;
+	} else {
+		membershipForm.proof_attachment = null;
+		if (userDetails.data) {
+			membershipForm.phone = userDetails.data.mobile_no || "";
+		}
+	}
 });
 
 const branches = createResource({
@@ -227,13 +284,29 @@ const createMembership = createResource({
 });
 
 function submit() {
-	if ((!props.is_renew && !branch.value) || !membershipForm.phone) {
-		createMembership.error = "Please fill in all fields before submitting.";
+	if (!props.is_renew && !membershipForm.branch) {
+		createMembership.error = "Please select a branch or county.";
 		return;
 	}
-	if (!isValidPhone(membershipForm.phone)) {
-		createMembership.error = "Please enter a valid phone number.";
-		return;
+
+	if (isExistingMember.value && !props.is_renew) {
+		if (
+			!membershipForm.proof_attachment ||
+			(Array.isArray(membershipForm.proof_attachment) &&
+				membershipForm.proof_attachment.length === 0)
+		) {
+			createMembership.error = "Please upload a proof of membership.";
+			return;
+		}
+	} else {
+		if (!membershipForm.phone) {
+			createMembership.error = "Please enter your phone number.";
+			return;
+		}
+		if (!isValidPhone(membershipForm.phone)) {
+			createMembership.error = "Please enter a valid phone number.";
+			return;
+		}
 	}
 
 	createMembership.error = "";
@@ -242,13 +315,20 @@ function submit() {
 		{},
 		{
 			onSuccess(data) {
-				checkSTK.value = true;
-				toast.success(
-					"Payment initiated Successfully! You will receive a payment prompt shortly on your phone.",
-				);
-				createMembership.error = "";
-				confirmPayment.value = true;
-				initiatePaymentListener(data);
+				if (isExistingMember.value && !props.is_renew) {
+					toast.success("Application submitted successfully for verification.");
+					applicationSubmitted.value = true;
+					paymentStatus.value = true;
+					currentMembership.reload();
+				} else {
+					checkSTK.value = true;
+					toast.success(
+						"Payment initiated Successfully! You will receive a payment prompt shortly on your phone.",
+					);
+					createMembership.error = "";
+					confirmPayment.value = true;
+					initiatePaymentListener(data);
+				}
 			},
 		},
 	);
@@ -271,10 +351,15 @@ function initiatePaymentListener(data) {
 watch(registerDialog, (isOpen) => {
 	if (!isOpen) {
 		branch.value = "";
+		membershipForm.branch = "";
 		membershipForm.phone = "";
+		membershipForm.is_existing_member = false;
+		membershipForm.proof_attachment = null;
+		isExistingMember.value = false;
 		createMembership.error = "";
 		confirmPayment.value = false;
 		paymentStatus.value = false;
+		applicationSubmitted.value = false;
 		invoice.value = "";
 		props.is_renew = false;
 		checkSTK.value = false;
@@ -299,7 +384,9 @@ const userDetails = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.get_user_details",
 	cache: "user_details",
 	onSuccess(data) {
-		membershipForm.phone = data.mobile_no || "";
+		if (!isExistingMember.value) {
+			membershipForm.phone = data.mobile_no || "";
+		}
 	},
 });
 </script>
