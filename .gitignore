@@ -13,3 +13,5 @@ onerc_vmms/public/frontend
 onerc_vmms/www/vmms.html
 
 frontend/dev-dist
+
+.claude/*

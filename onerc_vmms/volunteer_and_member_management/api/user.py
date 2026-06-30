@@ -1,26 +1,19 @@
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 
 from ..utils import set_field_value
-from datetime import datetime, date
+from datetime import date
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 5)
 def create_user(**kwargs):
+    if frappe.db.exists("User", {"email": kwargs.get("email")}):
+        frappe.throw("User already exists with this email")
 
     try:
         frappe.db.begin()
-        if frappe.db.exists("User", {"email": kwargs.get("email")}):
-            frappe.throw("User already exists with this email")
-
-        # if frappe.db.get_creation_count("User", 60) > 300:
-        #     return frappe.respond_as_web_page(
-        #         _("Temporarily Disabled"),
-        #         _(
-        #             "Too many users signed up recently, so the registration is disabled. Please try back in an hour"
-        #         ),
-        #         http_status_code=429,
-        #     )
 
         user = frappe.get_doc(
             {
@@ -52,17 +45,18 @@ def create_user(**kwargs):
                 "allow": "User",
                 "for_value": user.name,
                 "is_default": 1,
+                "apply_to_all_doctypes": 1,
             }
         )
 
         user_permission.insert(ignore_permissions=True)
 
-        frappe.db.commit()
-
     except Exception as e:
         frappe.db.rollback()
         frappe.log_error(frappe.get_traceback(), "Error signing up")
         frappe.throw("Error signing up")
+    else:
+        frappe.db.commit()
 
 
 @frappe.whitelist(allow_guest=True)
