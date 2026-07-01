@@ -20,8 +20,8 @@ jobs:
         with:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: navariltd
-          repositories: navari_csf_ke
+          owner: kenyaredcross
+          repositories: onerc_vmms
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Setup Dependencies
         run: npm install @semantic-release/git @semantic-release/exec --no-save
