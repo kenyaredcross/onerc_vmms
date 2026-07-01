@@ -93,6 +93,7 @@ jobs:
       - name: Get Dependencies
         working-directory: /home/runner/frappe-bench
         run: |
+          bench get-app payments --branch version-16
           bench get-app erpnext --branch version-16
           bench get-app lms --branch main
           bench get-app hrms --branch version-16
@@ -103,7 +104,7 @@ jobs:
         run: |
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
-          bench --site test_site install-app erpnext lms hrms onerc_vmms
+          bench --site test_site install-app payments erpnext lms hrms onerc_vmms
           bench build
         env:
           CI: 'Yes'
