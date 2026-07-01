@@ -97,7 +97,7 @@ watch(
 	() => props.modelValue,
 	async (val) => {
 		if (val) await loadFields();
-	},
+	}
 );
 
 async function loadFields() {
@@ -105,7 +105,7 @@ async function loadFields() {
 	try {
 		const res = await getDoctypeInfoResource.submit({ doctype: props.doctype });
 		doctypeFields.value = res.fields.filter(
-			(f) => !f.hidden && !f.read_only && f.fieldtype !== "Column Break",
+			(f) => !f.hidden && !f.read_only && f.fieldtype !== "Column Break"
 		);
 		formData.value = {};
 		doctypeFields.value.forEach((f) => (formData.value[f.fieldname] = ""));

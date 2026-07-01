@@ -51,6 +51,8 @@ ignore = [
     "F405", # can't detect undefined names from * import
     "F722", # syntax error in forward type annotation
     "W191", # indentation contains tabs
+    "F841", # unused variable
+    "RUF010", # replace with conversion flag
 ]
 typing-modules = ["frappe.types.DF"]
 

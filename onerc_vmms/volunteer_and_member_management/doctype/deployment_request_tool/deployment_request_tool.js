@@ -309,9 +309,6 @@ frappe.ui.form.on("Deployment Request Tool", {
 		}).then((r) => {
 			const columns = frm.events.get_employees_datatable_columns();
 			frm.events.render_employees_datatable(frm, r.message || []);
-
-			if (r.message) {
-			}
 		});
 	},
 
@@ -465,7 +462,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 	confirm_deployment: function (frm, selected_employees) {
 		frappe.confirm(
 			__("Send request to {0} personnel(s) for this project?", [selected_employees.length]),
-			() => frm.events.bulk_deploy_employees(frm, selected_employees),
+			() => frm.events.bulk_deploy_employees(frm, selected_employees)
 		);
 	},
 
@@ -494,7 +491,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 					message += "<ul>";
 					failure.forEach((f) => {
 						const employeeData = frm.employees_datatable.datamanager.data.find(
-							(d) => d.employee === f.employee,
+							(d) => d.employee === f.employee
 						);
 						const employeeName =
 							(employeeData && employeeData.employee_name) || f.employee_name || "";
@@ -531,7 +528,7 @@ async function render_tor_preview(frm) {
 	const base_url = window.location.origin;
 
 	let pdf_url = `${base_url}/api/method/onerc_vmms.volunteer_and_member_management.utils.download_pdf?doctype=${encodeURIComponent(
-		doctype,
+		doctype
 	)}&name=${encodeURIComponent(tor_name)}`;
 
 	pdf_url += "&settings=%7B%7D&_lang=en";

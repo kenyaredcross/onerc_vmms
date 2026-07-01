@@ -53,7 +53,7 @@ const props = withDefaults(
 		maxHeight: "250px",
 		showLineNumbers: true,
 		completions: null,
-	},
+	}
 );
 const emit = defineEmits(["update:modelValue", "save"]);
 
@@ -64,7 +64,7 @@ watch(
 	(newVal) => {
 		code.value = typeof newVal === "string" ? newVal : JSON.stringify(newVal, null, 2);
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 watch(code, (val) => {
@@ -121,7 +121,7 @@ watch(
 	async () => {
 		await setLanguageExtension();
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 const extensions = computed(() => {

@@ -20,9 +20,13 @@
 
 	<Popover :show="iosInstallMessage" placement="bottom">
 		<template #body>
-			<div class="m-3 rounded-xl bg-surface-white border border-outline-gray-1 shadow-lg overflow-hidden">
+			<div
+				class="m-3 rounded-xl bg-surface-white border border-outline-gray-1 shadow-lg overflow-hidden"
+			>
 				<!-- Header -->
-				<div class="flex items-center justify-between px-4 py-3 border-b border-outline-gray-1">
+				<div
+					class="flex items-center justify-between px-4 py-3 border-b border-outline-gray-1"
+				>
 					<span class="text-sm font-semibold text-ink-gray-9">
 						{{ __("Install VMMS") }}
 					</span>
@@ -37,13 +41,17 @@
 				<!-- Body -->
 				<div class="px-4 py-3 space-y-2">
 					<p class="text-sm text-ink-gray-7">
-						{{ __("Get the app on your iPhone for easy access & a better experience.") }}
+						{{
+							__("Get the app on your iPhone for easy access & a better experience.")
+						}}
 					</p>
 					<p class="text-sm text-ink-gray-6 flex items-center gap-1 flex-wrap">
 						<span>{{ __("Tap") }}</span>
 						<FeatherIcon name="share" class="w-4 h-4 text-ink-blue-2 shrink-0" />
 						<span>{{ __("then") }}</span>
-						<span class="font-medium text-ink-gray-8">{{ __("'Add to Home Screen'") }}</span>
+						<span class="font-medium text-ink-gray-8">{{
+							__("'Add to Home Screen'")
+						}}</span>
 					</p>
 				</div>
 			</div>

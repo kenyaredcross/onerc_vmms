@@ -8,445 +8,419 @@ from datetime import timedelta
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import get_link_to_form, getdate, pretty_date, get_datetime
+from frappe.utils import get_datetime, get_link_to_form, getdate, pretty_date
 from hrms.hr.utils import validate_bulk_tool_fields
+from pypika import Criterion
 
 from ...utils import get_company_descendants
-from pypika import Criterion
 
 
 class DeploymentRequestTool(Document):
-    # begin: auto-generated types
-    # This code is auto-generated. Do not modify anything in this block.
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
 
-    from typing import TYPE_CHECKING
+	from typing import TYPE_CHECKING
 
-    if TYPE_CHECKING:
-        from frappe.types import DF
-        from hrms.hr.doctype.designation_skill.designation_skill import DesignationSkill
-        from lms.lms.doctype.related_courses.related_courses import RelatedCourses
-        from onerc_vmms.volunteer_and_member_management.doctype.administrative_location_table.administrative_location_table import (
-            AdministrativeLocationTable,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import (
-            CompanyItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.county_table.county_table import (
-            CountyTable,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import (
-            DepartmentItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import (
-            DesignationItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import (
-            EmploymentTypeItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.notification_channel_item.notification_channel_item import (
-            NotificationChannelItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import (
-            PersonnelLicenceItem,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.sub_county_table.sub_county_table import (
-            SubCountyTable,
-        )
-        from onerc_vmms.volunteer_and_member_management.doctype.ward_table.ward_table import (
-            WardTable,
-        )
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from hrms.hr.doctype.designation_skill.designation_skill import DesignationSkill
+		from lms.lms.doctype.related_courses.related_courses import RelatedCourses
 
-        administrative_location: DF.TableMultiSelect[AdministrativeLocationTable]
-        branch: DF.TableMultiSelect[CompanyItem]
-        company: DF.Link
-        county: DF.TableMultiSelect[CountyTable]
-        courses: DF.TableMultiSelect[RelatedCourses]
-        department: DF.TableMultiSelect[DepartmentItem]
-        designation: DF.TableMultiSelect[DesignationItem]
-        email_template: DF.Link | None
-        employment_type: DF.TableMultiSelect[EmploymentTypeItem]
-        expected_end_date: DF.Datetime
-        expected_start_date: DF.Datetime
-        filter_criteria: DF.Link | None
-        future_deployment: DF.Check
-        future_deployment_date: DF.Date | None
-        is_future_deployed: DF.Check
-        licences: DF.TableMultiSelect[PersonnelLicenceItem]
-        location: DF.Link | None
-        notes: DF.TextEditor | None
-        notification_channels: DF.TableMultiSelect[NotificationChannelItem]
-        number_of_volunteers_required: DF.Int
-        project: DF.Link
-        region: DF.TableMultiSelect[CompanyItem]
-        require_contract_before_deployment: DF.Check
-        skills: DF.TableMultiSelect[DesignationSkill]
-        sub_county: DF.TableMultiSelect[SubCountyTable]
-        task: DF.Link | None
-        terms_of_reference: DF.Link
-        title: DF.Data
-        tor_url: DF.SmallText | None
-        ward: DF.TableMultiSelect[WardTable]
+		from onerc_vmms.volunteer_and_member_management.doctype.administrative_location_table.administrative_location_table import (
+			AdministrativeLocationTable,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.company_item.company_item import (
+			CompanyItem,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.county_table.county_table import (
+			CountyTable,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.department_item.department_item import (
+			DepartmentItem,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.designation_item.designation_item import (
+			DesignationItem,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.employment_type_item.employment_type_item import (
+			EmploymentTypeItem,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.notification_channel_item.notification_channel_item import (
+			NotificationChannelItem,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.personnel_licence_item.personnel_licence_item import (
+			PersonnelLicenceItem,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.sub_county_table.sub_county_table import (
+			SubCountyTable,
+		)
+		from onerc_vmms.volunteer_and_member_management.doctype.ward_table.ward_table import (
+			WardTable,
+		)
 
-    # end: auto-generated types
-    def validate(self):
-        self.validate_deployment_dates()
-        if self.future_deployment:
-            self.validate_future_deployment()
+		administrative_location: DF.TableMultiSelect[AdministrativeLocationTable]
+		branch: DF.TableMultiSelect[CompanyItem]
+		company: DF.Link
+		county: DF.TableMultiSelect[CountyTable]
+		courses: DF.TableMultiSelect[RelatedCourses]
+		department: DF.TableMultiSelect[DepartmentItem]
+		designation: DF.TableMultiSelect[DesignationItem]
+		email_template: DF.Link | None
+		employment_type: DF.TableMultiSelect[EmploymentTypeItem]
+		expected_end_date: DF.Datetime
+		expected_start_date: DF.Datetime
+		filter_criteria: DF.Link | None
+		future_deployment: DF.Check
+		future_deployment_date: DF.Date | None
+		is_future_deployed: DF.Check
+		licences: DF.TableMultiSelect[PersonnelLicenceItem]
+		location: DF.Link | None
+		notes: DF.TextEditor | None
+		notification_channels: DF.TableMultiSelect[NotificationChannelItem]
+		number_of_volunteers_required: DF.Int
+		project: DF.Link
+		region: DF.TableMultiSelect[CompanyItem]
+		require_contract_before_deployment: DF.Check
+		skills: DF.TableMultiSelect[DesignationSkill]
+		sub_county: DF.TableMultiSelect[SubCountyTable]
+		task: DF.Link | None
+		terms_of_reference: DF.Link
+		title: DF.Data
+		tor_url: DF.SmallText | None
+		ward: DF.TableMultiSelect[WardTable]
 
-    def validate_deployment_dates(self):
-        start_date = getdate(self.expected_start_date)
-        end_date = getdate(self.expected_end_date)
-        if start_date and end_date:
-            if end_date < start_date:
-                frappe.throw("Expected end date cannot be before expected start date.")
-            elif start_date < getdate():
-                frappe.throw("Expected start date cannot be in the past.")
+	# end: auto-generated types
+	def validate(self):
+		self.validate_deployment_dates()
+		if self.future_deployment:
+			self.validate_future_deployment()
 
-    def validate_future_deployment(self):
-        self.validate_future_deployment_date()
-        if not self._get_employees():
-            frappe.throw(
-                "This is a future deployment but no employees match the criteria. Please adjust the criteria"
-            )
-        frappe.msgprint(
-            f"This deployment is marked as a future deployment."
-            f"On the specified future deployment date {frappe.bold(self.future_deployment_date)} the system will attempt to deploy personnel matching the criteria."
-        )
+	def validate_deployment_dates(self):
+		start_date = getdate(self.expected_start_date)
+		end_date = getdate(self.expected_end_date)
+		if start_date and end_date:
+			if end_date < start_date:
+				frappe.throw("Expected end date cannot be before expected start date.")
+			elif start_date < getdate():
+				frappe.throw("Expected start date cannot be in the past.")
 
-    def validate_future_deployment_date(self):
-        future_date = getdate(self.future_deployment_date)
-        if (
-            future_date < getdate()
-            or future_date > getdate(self.expected_start_date)
-        ):
-            frappe.throw("Future deployment date cannot be in the past.")
+	def validate_future_deployment(self):
+		self.validate_future_deployment_date()
+		if not self._get_employees():
+			frappe.throw(
+				"This is a future deployment but no employees match the criteria. Please adjust the criteria"
+			)
+		frappe.msgprint(
+			f"This deployment is marked as a future deployment."
+			f"On the specified future deployment date {frappe.bold(self.future_deployment_date)} the system will attempt to deploy personnel matching the criteria."
+		)
 
-    def validate_fields(self, employees: list):
-        mandatory_fields = [
-            "project",
-            "expected_start_date",
-            "expected_end_date",
-        ]
-        validate_bulk_tool_fields(
-            self,
-            mandatory_fields,
-            employees,
-            "expected_start_date",
-            "expected_end_date",
-        )
+	def validate_future_deployment_date(self):
+		future_date = getdate(self.future_deployment_date)
+		if future_date < getdate() or future_date > getdate(self.expected_start_date):
+			frappe.throw("Future deployment date cannot be in the past.")
 
-        number_of_volunteers_required = int(self.number_of_volunteers_required or 0)
-        assigned_count = frappe.db.count(
-            "Personnel Deployment Request",
-            {"deployment": self.name, "deployment_status": "Accepted"},
-        )
-        if assigned_count >= number_of_volunteers_required:
-            frappe.throw(
-                f"Cannot deploy personnel. The number of personnel required ({number_of_volunteers_required}) has already been met."
-            )
+	def validate_fields(self, employees: list):
+		mandatory_fields = [
+			"project",
+			"expected_start_date",
+			"expected_end_date",
+		]
+		validate_bulk_tool_fields(
+			self,
+			mandatory_fields,
+			employees,
+			"expected_start_date",
+			"expected_end_date",
+		)
 
-    @frappe.whitelist()
-    def deploy_employees(self, employees: list):
-        self.validate_fields(employees)
-        return self.create_deployment_assignments(employees)
+		number_of_volunteers_required = int(self.number_of_volunteers_required or 0)
+		assigned_count = frappe.db.count(
+			"Personnel Deployment Request",
+			{"deployment": self.name, "deployment_status": "Accepted"},
+		)
+		if assigned_count >= number_of_volunteers_required:
+			frappe.throw(
+				f"Cannot deploy personnel. The number of personnel required ({number_of_volunteers_required}) has already been met."
+			)
 
-    def create_deployment_assignments(self, employees: list) -> dict:
-        failure = []
-        success = []
-        savepoint = "before_deployment_creation"
+	@frappe.whitelist()
+	def deploy_employees(self, employees: list):
+		self.validate_fields(employees)
+		return self.create_deployment_assignments(employees)
 
-        for employee in employees:
-            try:
-                existing = frappe.get_all(
-                    "Personnel Deployment Request",
-                    filters={
-                        "employee": employee,
-                        "deployment": self.name,
-                        "deployment_status": ["in", ["Pending", "Accepted"]],
-                    },
-                    fields=["name", "deployment_status"],
-                )
+	def create_deployment_assignments(self, employees: list) -> dict:
+		failure = []
+		success = []
+		savepoint = "before_deployment_creation"
 
-                if existing:
-                    failure.append(
-                        {
-                            "employee": employee,
-                            "reason": f"Existing {existing[0].deployment_status} assignment (<a href='{frappe.utils.get_url_to_form('Personnel Deployment Request', existing[0].name)}' target='_blank'>{existing[0].name}</a>) found.",
-                        }
-                    )
-                    continue
+		for employee in employees:
+			try:
+				existing = frappe.get_all(
+					"Personnel Deployment Request",
+					filters={
+						"employee": employee,
+						"deployment": self.name,
+						"deployment_status": ["in", ["Pending", "Accepted"]],
+					},
+					fields=["name", "deployment_status"],
+				)
 
-                frappe.db.savepoint(savepoint)
-                assignment = frappe.new_doc("Personnel Deployment Request")
+				if existing:
+					failure.append(
+						{
+							"employee": employee,
+							"reason": f"Existing {existing[0].deployment_status} assignment (<a href='{frappe.utils.get_url_to_form('Personnel Deployment Request', existing[0].name)}' target='_blank'>{existing[0].name}</a>) found.",
+						}
+					)
+					continue
 
-                fields_to_copy = {
-                    "project": self.project,
-                    "task": self.task,
-                    "location": self.location,
-                    "company": self.company,
-                    "expected_start_date": self.expected_start_date,
-                    "expected_end_date": self.expected_end_date,
-                    "notes": self.notes,
-                    "require_contract_before_deployment": self.require_contract_before_deployment,
-                    "terms_of_reference": self.terms_of_reference,
-                    "tor_url": self.tor_url,
-                }
+				frappe.db.savepoint(savepoint)
+				assignment = frappe.new_doc("Personnel Deployment Request")
 
-                if self.get("deployment_request_term_template"):
-                    fields_to_copy["deployment_request_term_template"] = (
-                        self.deployment_request_term_template
-                    )
+				fields_to_copy = {
+					"project": self.project,
+					"task": self.task,
+					"location": self.location,
+					"company": self.company,
+					"expected_start_date": self.expected_start_date,
+					"expected_end_date": self.expected_end_date,
+					"notes": self.notes,
+					"require_contract_before_deployment": self.require_contract_before_deployment,
+					"terms_of_reference": self.terms_of_reference,
+					"tor_url": self.tor_url,
+				}
 
-                assignment.employee = employee
-                assignment.deployment = self.name
-                assignment.status = "Pending"
+				if self.get("deployment_request_term_template"):
+					fields_to_copy["deployment_request_term_template"] = self.deployment_request_term_template
 
-                for field, value in fields_to_copy.items():
-                    assignment.set(field, value)
+				assignment.employee = employee
+				assignment.deployment = self.name
+				assignment.status = "Pending"
 
-                assignment.insert()
+				for field, value in fields_to_copy.items():
+					assignment.set(field, value)
 
-                success.append(
-                    {
-                        "doc": get_link_to_form(
-                            "Personnel Deployment Request", assignment.name
-                        ),
-                        "employee": employee,
-                    }
-                )
+				assignment.insert()
 
-            except Exception as e:
-                frappe.db.rollback(save_point=savepoint)
-                frappe.log_error(
-                    f"Personnel Deployment Request failed for employee {employee}.",
-                    str(e),
-                )
-                failure.append({"employee": employee, "reason": str(e)})
+				success.append(
+					{
+						"doc": get_link_to_form("Personnel Deployment Request", assignment.name),
+						"employee": employee,
+					}
+				)
 
-        return {"success": success, "failure": failure}
+			except Exception as e:
+				frappe.db.rollback(save_point=savepoint)
+				frappe.log_error(
+					f"Personnel Deployment Request failed for employee {employee}.",
+					str(e),
+				)
+				failure.append({"employee": employee, "reason": str(e)})
 
-    @frappe.whitelist()
-    def _get_employees(self) -> list[dict]:
-        query = self.build_employee_query()
+		return {"success": success, "failure": failure}
 
-        result = query.run(as_dict=True)
-        return result
+	@frappe.whitelist()
+	def _get_employees(self) -> list[dict]:
+		query = self.build_employee_query()
 
-    def filters_registry(self) -> list[dict[str, str] | str]:
-        filters = [
-            {"region": "company"},
-            {"branch": "company"},
-            "employment_type",
-            "designation",
-            "county",
-            "sub_county",
-            "ward",
-            {"administrative_location": "location"},
-            {"courses": "course"},
-            {"skills": "skill"},
-            {"licences": "licence"},
-        ]
+		result = query.run(as_dict=True)
+		return result
 
-        return filters
+	def filters_registry(self) -> list[dict[str, str] | str]:
+		filters = [
+			{"region": "company"},
+			{"branch": "company"},
+			"employment_type",
+			"designation",
+			"county",
+			"sub_county",
+			"ward",
+			{"administrative_location": "location"},
+			{"courses": "course"},
+			{"skills": "skill"},
+			{"licences": "licence"},
+		]
 
-    def build_filters(self) -> list[dict]:
-        result = []
+		return filters
 
-        try:
-            for filter_field in self.filters_registry():
-                if isinstance(filter_field, dict):
-                    for self_field, doctype_field in filter_field.items():
-                        dict_values = getattr(self, self_field, None)
-                        if dict_values:
-                            result.append(
-                                {
-                                    self_field: [
-                                        getattr(val, doctype_field)
-                                        for val in dict_values
-                                    ]
-                                }
-                            )
-                else:
-                    str_values = getattr(self, filter_field, None)
-                    if str_values:
-                        result.append(
-                            {
-                                filter_field: [
-                                    getattr(val, filter_field) for val in str_values
-                                ]
-                            }
-                        )
-        except Exception:
-            frappe.log_error(
-                "Error building filters for Deployment Request Tool",
-                frappe.get_traceback(),
-            )
-            frappe.throw("An error occurred while building filters.")
-        else:
-            return result
+	def build_filters(self) -> list[dict]:
+		result = []
 
-    def match_filters_to_doctype(self) -> list[dict]:
-        result = [
-            {
-                "Employee": [
-                    "region",
-                    "branch",
-                    "employment_type",
-                    "designation",
-                ]
-            },
-            {
-                "User": [
-                    "county",
-                    "sub_county",
-                    "ward",
-                    "administrative_location",
-                ]
-            },
-            {"LMS Enrollment": ["courses"]},
-            {"Employee Skill": ["skills"]},
-            {"Personnel Licence": ["licences"]},
-        ]
+		try:
+			for filter_field in self.filters_registry():
+				if isinstance(filter_field, dict):
+					for self_field, doctype_field in filter_field.items():
+						dict_values = getattr(self, self_field, None)
+						if dict_values:
+							result.append({self_field: [getattr(val, doctype_field) for val in dict_values]})
+				else:
+					str_values = getattr(self, filter_field, None)
+					if str_values:
+						result.append({filter_field: [getattr(val, filter_field) for val in str_values]})
+		except Exception:
+			frappe.log_error(
+				"Error building filters for Deployment Request Tool",
+				frappe.get_traceback(),
+			)
+			frappe.throw("An error occurred while building filters.")
+		else:
+			return result
 
-        return result
+	def match_filters_to_doctype(self) -> list[dict]:
+		result = [
+			{
+				"Employee": [
+					"region",
+					"branch",
+					"employment_type",
+					"designation",
+				]
+			},
+			{
+				"User": [
+					"county",
+					"sub_county",
+					"ward",
+					"administrative_location",
+				]
+			},
+			{"LMS Enrollment": ["courses"]},
+			{"Employee Skill": ["skills"]},
+			{"Personnel Licence": ["licences"]},
+		]
 
-    def build_employee_query(self):
-        from frappe.query_builder import DocType
+		return result
 
-        employee = DocType("Employee")
-        user = DocType("User")
-        lms_enrollment = DocType("LMS Enrollment")
-        emp_skill_map = DocType("Employee Skill Map")
-        emp_skill = DocType("Employee Skill")
-        emp_licence = DocType("Personnel Licence")
+	def build_employee_query(self):
+		from frappe.query_builder import DocType
 
-        doctype_criteria = set()
-        for val in self.match_filters_to_doctype():
-            for doctype, fields in val.items():
-                if any(getattr(self, field, None) for field in fields):
-                    doctype_criteria.add(doctype)
+		employee = DocType("Employee")
+		user = DocType("User")
+		lms_enrollment = DocType("LMS Enrollment")
+		emp_skill_map = DocType("Employee Skill Map")
+		emp_skill = DocType("Employee Skill")
+		emp_licence = DocType("Personnel Licence")
 
-        query = (
-            frappe.qb.from_(employee)
-            .select(
-                employee.name,
-                employee.company,
-                employee.date_of_joining,
-                employee.department,
-                employee.designation,
-                employee.employment_type,
-                employee.employee,
-                employee.employee_name,
-                employee.status,
-                employee.user_id,
-            )
-            .distinct()
-        )
+		doctype_criteria = set()
+		for val in self.match_filters_to_doctype():
+			for doctype, fields in val.items():
+				if any(getattr(self, field, None) for field in fields):
+					doctype_criteria.add(doctype)
 
-        if "User" in doctype_criteria:
-            query = query.join(user).on(employee.user_id == user.name)
+		query = (
+			frappe.qb.from_(employee)
+			.select(
+				employee.name,
+				employee.company,
+				employee.date_of_joining,
+				employee.department,
+				employee.designation,
+				employee.employment_type,
+				employee.employee,
+				employee.employee_name,
+				employee.status,
+				employee.user_id,
+			)
+			.distinct()
+		)
 
-        if "LMS Enrollment" in doctype_criteria:
-            if "User" not in doctype_criteria:
-                query = query.join(user).on(employee.user_id == user.name)
-            query = query.join(lms_enrollment).on(lms_enrollment.member == user.name)
+		if "User" in doctype_criteria:
+			query = query.join(user).on(employee.user_id == user.name)
 
-        if "Employee Skill" in doctype_criteria:
-            query = (
-                query.join(emp_skill_map)
-                .on(emp_skill_map.employee == employee.name)
-                .join(emp_skill)
-                .on(emp_skill.parent == emp_skill_map.name)
-            )
+		if "LMS Enrollment" in doctype_criteria:
+			if "User" not in doctype_criteria:
+				query = query.join(user).on(employee.user_id == user.name)
+			query = query.join(lms_enrollment).on(lms_enrollment.member == user.name)
 
-        if "Personnel Licence" in doctype_criteria:
-            if (
-                "User" not in doctype_criteria
-                and "LMS Enrollment" not in doctype_criteria
-            ):
-                query = query.join(user).on(employee.user_id == user.name)
-            query = query.join(emp_licence).on(emp_licence.parent == user.name)
+		if "Employee Skill" in doctype_criteria:
+			query = (
+				query.join(emp_skill_map)
+				.on(emp_skill_map.employee == employee.name)
+				.join(emp_skill)
+				.on(emp_skill.parent == emp_skill_map.name)
+			)
 
-        field_to_table = {
-            "region": employee.company,
-            "branch": employee.company,
-            "employment_type": employee.employment_type,
-            "designation": employee.designation,
-            "county": user.county,
-            "sub_county": user.sub_county,
-            "ward": user.ward,
-            "administrative_location": user.location,
-            "courses": lms_enrollment.course,
-            "skills": emp_skill.skill,
-            "licences": emp_licence.license_type,
-        }
+		if "Personnel Licence" in doctype_criteria:
+			if "User" not in doctype_criteria and "LMS Enrollment" not in doctype_criteria:
+				query = query.join(user).on(employee.user_id == user.name)
+			query = query.join(emp_licence).on(emp_licence.parent == user.name)
 
-        query = query.where(employee.status == "Active")
+		field_to_table = {
+			"region": employee.company,
+			"branch": employee.company,
+			"employment_type": employee.employment_type,
+			"designation": employee.designation,
+			"county": user.county,
+			"sub_county": user.sub_county,
+			"ward": user.ward,
+			"administrative_location": user.location,
+			"courses": lms_enrollment.course,
+			"skills": emp_skill.skill,
+			"licences": emp_licence.license_type,
+		}
 
-        conditions = self.build_condition_list(field_to_table)
-        if conditions:
-            query = query.where(Criterion.all(conditions))
+		query = query.where(employee.status == "Active")
 
-        return query
+		conditions = self.build_condition_list(field_to_table)
+		if conditions:
+			query = query.where(Criterion.all(conditions))
 
-    def build_condition_list(self, field_to_table_map: dict) -> list[Criterion]:
+		return query
 
-        conditions = []
+	def build_condition_list(self, field_to_table_map: dict) -> list[Criterion]:
+		conditions = []
 
-        try:
-            filters = self.build_filters()
-            if not filters:
-                return conditions
+		try:
+			filters = self.build_filters()
+			if not filters:
+				return conditions
 
-            for filter_dict in filters:
-                for field, values in filter_dict.items():
-                    table_field = field_to_table_map.get(field)
-                    if table_field and values:
-                        conditions.append(table_field.isin(values))
-        except Exception:
-            frappe.log_error(
-                "Error building condition list for Deployment Request Tool",
-                frappe.get_traceback(),
-            )
-            frappe.throw("An error occurred while building condition list.")
+			for filter_dict in filters:
+				for field, values in filter_dict.items():
+					table_field = field_to_table_map.get(field)
+					if table_field and values:
+						conditions.append(table_field.isin(values))
+		except Exception:
+			frappe.log_error(
+				"Error building condition list for Deployment Request Tool",
+				frappe.get_traceback(),
+			)
+			frappe.throw("An error occurred while building condition list.")
 
-        else:
-            return conditions
+		else:
+			return conditions
 
 
 def deploy_future_requests() -> None:
-    deployments = frappe.get_all(
-        "Deployment Request Tool",
-        filters={
-            "future_deployment": 1,
-            "future_deployment_date": getdate(),
-            "is_future_deployed": 0,
-        },
-        pluck="name",
-    )
+	deployments = frappe.get_all(
+		"Deployment Request Tool",
+		filters={
+			"future_deployment": 1,
+			"future_deployment_date": getdate(),
+			"is_future_deployed": 0,
+		},
+		pluck="name",
+	)
 
-    if not deployments:
-        return
+	if not deployments:
+		return
 
-    for deployment in deployments:
-        try:
+	for deployment in deployments:
+		try:
+			doc: DeploymentRequestTool = frappe.get_doc("Deployment Request Tool", deployment)
 
-            doc: DeploymentRequestTool = frappe.get_doc(
-                "Deployment Request Tool", deployment
-            )
+			employees = doc._get_employees()
+			if not employees:
+				return
 
-            employees = doc._get_employees()
-            if not employees:
-                return
-
-            doc.deploy_employees(employees)
-        except Exception:
-            frappe.log_error(
-                f"Error processing future deployment request: {deployment}",
-                frappe.get_traceback(),
-            )
-        else:
-            doc.db_set("is_future_deployed", 1, update_modified=False)
+			doc.deploy_employees(employees)
+		except Exception:
+			frappe.log_error(
+				f"Error processing future deployment request: {deployment}",
+				frappe.get_traceback(),
+			)
+		else:
+			doc.db_set("is_future_deployed", 1, update_modified=False)
 
 
 # def filter_by_availability(self, employees: list, expected_start_date, expected_end_date) -> list:

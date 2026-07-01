@@ -23,7 +23,7 @@
 				<p class="text-ink-gray-1-600 max-w-md">
 					{{
 						__(
-							"Your time and passion can help change lives. Join us today and help build stronger, safer communities for everyone.",
+							"Your time and passion can help change lives. Join us today and help build stronger, safer communities for everyone."
 						)
 					}}
 				</p>

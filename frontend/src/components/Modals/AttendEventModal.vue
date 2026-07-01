@@ -145,7 +145,7 @@ function submit() {
 				toast.success("You have successfully registered for the event.");
 				clearResponses();
 			},
-		},
+		}
 	);
 }
 </script>

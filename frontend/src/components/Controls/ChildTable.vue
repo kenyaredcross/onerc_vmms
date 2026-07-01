@@ -150,7 +150,7 @@
 									<template
 										v-else-if="
 											['Attach', 'Attach Image', 'Image'].includes(
-												field.fieldtype,
+												field.fieldtype
 											)
 										"
 									>
@@ -342,7 +342,7 @@
 								<template
 									v-else-if="
 										['Attach', 'Attach Image', 'Image'].includes(
-											field.fieldtype,
+											field.fieldtype
 										)
 									"
 								>
@@ -500,7 +500,7 @@
 														handleLinkedFieldChange(
 															editModalRowIndex,
 															field,
-															editModalData,
+															editModalData
 														)
 													"
 												/>
@@ -539,12 +539,12 @@
 													handleLinkedFieldChange(
 														editModalRowIndex,
 														field,
-														editModalData,
+														editModalData
 													)
 												"
 												:class="{
 													'border-red-500': validationErrors.get(
-														editModalRowIndex || -1,
+														editModalRowIndex || -1
 													)?.[field.fieldname],
 												}"
 											/>
@@ -561,7 +561,7 @@
 													__(
 														validationErrors.get(editModalRowIndex)?.[
 															field.fieldname
-														],
+														]
 													)
 												}}
 											</p>
@@ -838,7 +838,7 @@ function getFieldProps(field, rowIndex) {
 				const dynamicFilters = props.fieldQueries[field.fieldname](
 					row,
 					rowsRef.value,
-					props.formData,
+					props.formData
 				);
 				baseFilters = { ...baseFilters, ...dynamicFilters };
 			}
@@ -913,7 +913,7 @@ async function fetchLinkedFieldData(linkDoctype, linkName, targetField) {
 	} catch (error) {
 		console.error(
 			`Error fetching linked field: ${linkDoctype}/${linkName}.${targetField}`,
-			error,
+			error
 		);
 		return null;
 	}
@@ -925,7 +925,7 @@ async function handleLinkedFieldChange(rowIndex, changedField, dataRef) {
 	const currentRow = dataRef || rowsRef.value[rowIndex];
 
 	const fieldsToUpdate = doctypeFields.value.filter(
-		(f) => f.fetch_from && f.fetch_from.startsWith(`${changedField.fieldname}.`),
+		(f) => f.fetch_from && f.fetch_from.startsWith(`${changedField.fieldname}.`)
 	);
 
 	for (const field of fieldsToUpdate) {
@@ -939,7 +939,7 @@ async function handleLinkedFieldChange(rowIndex, changedField, dataRef) {
 				const fetchedValue = await fetchLinkedFieldData(
 					linkDoctype,
 					linkName,
-					targetField,
+					targetField
 				);
 
 				if (dataRef) {
@@ -967,7 +967,7 @@ async function handleLinkedFieldChange(rowIndex, changedField, dataRef) {
 				const fetchedValue = await fetchLinkedFieldData(
 					linkDoctype,
 					linkName,
-					targetField,
+					targetField
 				);
 				if (dataRef) {
 					dataRef[changedField.fieldname] = fetchedValue;
@@ -1028,7 +1028,7 @@ const doctypeFields = computed(() => {
 
 const visibleFields = computed(() => {
 	const baseFields = doctypeFields.value.filter(
-		(f) => !["Section Break", "Column Break"].includes(f.fieldtype),
+		(f) => !["Section Break", "Column Break"].includes(f.fieldtype)
 	);
 
 	const listViewFields = baseFields.filter((field) => {
@@ -1106,7 +1106,7 @@ onMounted(() => {
 		() => {
 			if (doctypeMeta.data) initializeRows();
 		},
-		{ immediate: true },
+		{ immediate: true }
 	);
 });
 
@@ -1118,7 +1118,7 @@ watch(
 		});
 		emit("validationErrors", validationErrors.value);
 	},
-	{ deep: true, immediate: true },
+	{ deep: true, immediate: true }
 );
 
 watch(
@@ -1133,7 +1133,7 @@ watch(
 			}
 		}
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 watch(
@@ -1154,7 +1154,7 @@ watch(
 			});
 		});
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 function validateRow(rowIndex) {
@@ -1394,7 +1394,7 @@ watch(
 			}
 		});
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 // Add this watch specifically for modal data changes
@@ -1406,6 +1406,6 @@ watch(
 			validateModalData(editModalRowIndex.value, newData);
 		}
 	},
-	{ deep: true },
+	{ deep: true }
 );
 </script>

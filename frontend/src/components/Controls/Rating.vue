@@ -76,6 +76,6 @@ watch(
 	() => props.modelValue,
 	(newVal) => {
 		rating.value = newVal;
-	},
+	}
 );
 </script>

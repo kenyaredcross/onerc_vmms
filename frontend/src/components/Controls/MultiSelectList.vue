@@ -112,7 +112,7 @@ const options = computed(() => filterOptions.data || []);
 const filteredOptions = computed(() =>
 	query.value
 		? options.value.filter((o) => o.label?.toLowerCase().includes(query.value.toLowerCase()))
-		: options.value,
+		: options.value
 );
 
 function toggleValue(value) {

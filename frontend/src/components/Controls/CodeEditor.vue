@@ -158,14 +158,14 @@ watch(
 	() => props.type,
 	() => {
 		setupEditor();
-	},
+	}
 );
 
 watch(
 	() => props.modelValue,
 	() => {
 		resetEditor(props.modelValue as string);
-	},
+	}
 );
 
 defineExpose({ resetEditor });

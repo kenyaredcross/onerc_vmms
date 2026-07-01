@@ -116,7 +116,7 @@
 					<span title="KRCS = Kenya Red Cross Society" class="mr-2 text-xs">ⓘ</span>
 					{{
 						__(
-							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS).",
+							"Indicate whether you have insurance with the Kenya Red Cross Society (KRCS)."
 						)
 					}}
 				</p>
@@ -277,7 +277,7 @@
 			<p class="italic text-sm">
 				{{
 					__(
-						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy.",
+						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy."
 					)
 				}}
 			</p>
@@ -446,8 +446,8 @@ function openCreateLocation(typedText, close) {
 	showCreateLocation.value = true;
 }
 function closeEntryDialog(name) {
-    console.log(name);
-    
+	console.log(name);
+
 	const isLocation = showCreateLocation.value;
 	localModel.value[isLocation ? "administrative_location" : "sub_location"] = name;
 	(isLocation ? showCreateLocation : showCreateSubLocation).value = false;
@@ -475,7 +475,7 @@ watch(
 				localModel.value.county = newVal;
 			}
 		}
-	},
+	}
 );
 
 watch(
@@ -487,7 +487,7 @@ watch(
 			localModel.value.administrative_location = "";
 			localModel.value.sub_location = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -498,7 +498,7 @@ watch(
 			localModel.value.sub_location = "";
 			localModel.value.ward = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -507,7 +507,7 @@ watch(
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.sub_location = "";
 		}
-	},
+	}
 );
 
 watch(
@@ -516,7 +516,7 @@ watch(
 		if (ready.value && oldVal !== newVal) {
 			localModel.value.country_of_citizenship = newVal === "Citizen" ? "Kenya" : "";
 		}
-	},
+	}
 );
 
 watch(localModel, validateForm, { deep: true, immediate: true });

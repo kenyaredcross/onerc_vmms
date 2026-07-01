@@ -23,7 +23,7 @@
 			<p class="text-sm text-yellow-700">
 				{{
 					__(
-						"A signed contract is required before you can accept this deployment. Please wait, or contact the deployment manager for assistance.",
+						"A signed contract is required before you can accept this deployment. Please wait, or contact the deployment manager for assistance."
 					)
 				}}
 			</p>

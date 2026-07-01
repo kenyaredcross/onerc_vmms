@@ -34,7 +34,7 @@
 			>
 				{{
 					__(
-						"This site is being updated. You will not be able to make any changes. Full access will be restored shortly.",
+						"This site is being updated. You will not be able to make any changes. Full access will be restored shortly."
 					)
 				}}
 			</div>
@@ -57,7 +57,7 @@
 							>
 								{{
 									__(
-										"This site is being updated. You will not be able to make any changes. Full access will be restored shortly.",
+										"This site is being updated. You will not be able to make any changes. Full access will be restored shortly."
 									)
 								}}
 							</div>

@@ -108,7 +108,9 @@
 			</form>
 
 			<!-- Footer -->
-			<div class="px-8 py-4 border-t border-outline-gray-1 text-center text-sm text-ink-gray-5">
+			<div
+				class="px-8 py-4 border-t border-outline-gray-1 text-center text-sm text-ink-gray-5"
+			>
 				<span>{{
 					isLogin ? __("Don't have an account?") : __("Already have an account?")
 				}}</span>
@@ -127,7 +129,7 @@
 		:options="{
 			title: __('Successfully Registered'),
 			message: __(
-				'We have sent you an email with a link to set your password. Please check your inbox (and spam folder) to complete your registration.',
+				'We have sent you an email with a link to set your password. Please check your inbox (and spam folder) to complete your registration.'
 			),
 			size: 'lg',
 			icon: { name: 'check-circle', appearance: 'success' },
@@ -200,7 +202,7 @@ function submit() {
 						router.push({ name: "Dashboard" });
 					}
 				},
-			},
+			}
 		);
 	} else {
 		createSignUp.submit({

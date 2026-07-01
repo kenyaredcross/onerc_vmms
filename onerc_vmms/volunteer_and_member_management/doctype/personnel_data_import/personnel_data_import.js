@@ -28,7 +28,9 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 		this.wrapper.html(`
             <div class="import-preview-wrapper" style="margin-top: 15px;">
                 <div class="preview-header d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="uppercase p-2 text-muted" style="margin:0;">${__("File Data Preview")}</h6>
+                    <h6 class="uppercase p-2 text-muted" style="margin:0;">${__(
+						"File Data Preview"
+					)}</h6>
                     <div class="table-actions d-flex" style="gap: 5px;"></div>
                 </div>
                 <div class="table-preview border rounded shadow-sm" style="overflow: hidden;"></div>
@@ -84,7 +86,9 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 				{};
 			user_saved =
 				JSON.parse(this.frm.doc.user_template_options || "{}").column_to_field_map || {};
-		} catch (e) {}
+		} catch (e) {
+			// ignore malformed template options
+		}
 
 		let column_width = mode === "Both" ? "col-4" : "col-6";
 		let field_width = mode === "Both" ? "33%" : "50%";
@@ -113,7 +117,7 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 				{
 					fieldtype: "HTML",
 					options: `<div style="padding-top: 8px; font-weight: bold; font-size: 12px;">${header}</div>`,
-				},
+				}
 			);
 
 			if (mode === "User" || mode === "Both") {
@@ -126,7 +130,7 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 						fieldtype: "Autocomplete",
 						options: [skip_option].concat(user_opts),
 						default: current_user,
-					},
+					}
 				);
 			}
 
@@ -140,7 +144,7 @@ onerc_vmms.data_import.ImportPreview = class ImportPreview {
 						fieldtype: "Autocomplete",
 						options: [skip_option].concat(emp_opts),
 						default: current_emp,
-					},
+					}
 				);
 			}
 		});
@@ -266,7 +270,7 @@ function get_fields_as_options(doctype) {
 					description: value,
 				};
 			});
-		}),
+		})
 	);
 }
 
@@ -290,7 +294,7 @@ frappe.ui.form.on("Personnel Data Import", {
 					__("Importing"),
 					data.current,
 					data.total,
-					__("Processing row {0} of {1}").format(data.current, data.total),
+					__("Processing row {0} of {1}").format(data.current, data.total)
 				);
 			}
 		});
@@ -345,7 +349,7 @@ frappe.ui.form.on("Personnel Data Import", {
 				if (field) {
 					field.$wrapper.empty();
 					let $container = $('<div class="unified-preview-container"></div>').appendTo(
-						field.$wrapper,
+						field.$wrapper
 					);
 					frm.import_preview = new onerc_vmms.data_import.ImportPreview({
 						wrapper: $container,
@@ -355,11 +359,11 @@ frappe.ui.form.on("Personnel Data Import", {
 							remap_columns: (emp_map, user_map) => {
 								frm.set_value(
 									"employee_template_options",
-									JSON.stringify({ column_to_field_map: emp_map }),
+									JSON.stringify({ column_to_field_map: emp_map })
 								);
 								frm.set_value(
 									"user_template_options",
-									JSON.stringify({ column_to_field_map: user_map }),
+									JSON.stringify({ column_to_field_map: user_map })
 								);
 								frm.save().then(() => frm.trigger("import_file"));
 							},
@@ -424,7 +428,9 @@ frappe.ui.form.on("Personnel Data Import", {
 			.map((warning) => {
 				let header = "";
 				if (columns && warning.col) {
-					let column_number = `<span class="text-uppercase">${__("Column {0}", [warning.col])}</span>`;
+					let column_number = `<span class="text-uppercase">${__("Column {0}", [
+						warning.col,
+					])}</span>`;
 					let column_header = columns[warning.col].header_title;
 					header = `${column_number} (${column_header})`;
 				}
@@ -436,7 +442,7 @@ frappe.ui.form.on("Personnel Data Import", {
 			.join("");
 
 		frm.get_field("import_warnings").$wrapper.html(
-			`<div class="row"><div class="col-sm-10 warnings">${html}</div></div>`,
+			`<div class="row"><div class="col-sm-10 warnings">${html}</div></div>`
 		);
 	},
 
@@ -461,10 +467,10 @@ frappe.ui.form.on("Personnel Data Import", {
 								"onerc_vmms.volunteer_and_member_management.doctype.personnel_data_import.personnel_data_import.export_errored_rows";
 							window.open(
 								`${frappe.request.url}?cmd=${method}&name=${frm.doc.name}`,
-								"_blank",
+								"_blank"
 							);
 						},
-						__("Actions"),
+						__("Actions")
 					);
 				}
 
@@ -503,14 +509,18 @@ frappe.ui.form.on("Personnel Data Import", {
 
 						return `<tr>
 							<td>${JSON.parse(log.row_indexes).join(", ")}</td>
-							<td><div class="indicator ${log.success ? "green" : "red"}">${log.success ? __("Success") : __("Failure")}</div></td>
+							<td><div class="indicator ${log.success ? "green" : "red"}">${
+							log.success ? __("Success") : __("Failure")
+						}</div></td>
 							<td>${html}</td>
 						</tr>`;
 					})
 					.join("");
 
 				if (!rows && frm.doc.show_failed_logs) {
-					rows = `<tr><td class="text-center text-muted" colspan=3>${__("No failed logs")}</td></tr>`;
+					rows = `<tr><td class="text-center text-muted" colspan=3>${__(
+						"No failed logs"
+					)}</td></tr>`;
 				}
 
 				frm.get_field("import_log_preview").$wrapper.html(`
@@ -539,7 +549,7 @@ frappe.ui.form.on("Personnel Data Import", {
 					frm.trigger("render_import_log");
 				} else {
 					frm.add_custom_button(__("Export Import Log"), () =>
-						frm.trigger("export_import_log"),
+						frm.trigger("export_import_log")
 					);
 				}
 			},

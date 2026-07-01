@@ -87,7 +87,7 @@ export default {
 									const value = context.raw;
 									const total = context.chart.data.datasets.reduce(
 										(sum, d) => sum + d.data[0],
-										0,
+										0
 									);
 									const percentage =
 										total > 0 ? ((value / total) * 100).toFixed(1) : 0;

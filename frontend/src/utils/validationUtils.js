@@ -24,7 +24,7 @@ const isRowEffectivelyEmpty = (row) => {
 			row[key] === undefined ||
 			row[key] === "" ||
 			(Array.isArray(row[key]) && row[key].length === 0) ||
-			(typeof row[key] === "object" && Object.keys(row[key]).length === 0),
+			(typeof row[key] === "object" && Object.keys(row[key]).length === 0)
 	);
 };
 const getFieldLabel = (field) => field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());

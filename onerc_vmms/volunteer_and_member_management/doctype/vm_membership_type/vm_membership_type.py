@@ -7,58 +7,59 @@ from frappe.model.document import Document
 
 
 class VMMembershipType(Document):
-    # begin: auto-generated types
-    # This code is auto-generated. Do not modify anything in this block.
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
 
-    from typing import TYPE_CHECKING
+	from typing import TYPE_CHECKING
 
-    if TYPE_CHECKING:
-        from frappe.types import DF
-        from onerc_vmms.vm_payments.doctype.vm_payment_gateway.vm_payment_gateway import VMPaymentGateway
-        from onerc_vmms.volunteer_and_member_management.doctype.membership_benefit.membership_benefit import MembershipBenefit
+	if TYPE_CHECKING:
+		from frappe.types import DF
 
-        amount: DF.Float
-        benefits: DF.Table[MembershipBenefit]
-        billing_cycle: DF.Literal["", "Monthly", "Yearly", "One Off"]
-        currency: DF.Link | None
-        linked_item: DF.Link | None
-        lower_age_limit: DF.Int
-        membership_package: DF.Link | None
-        membership_type: DF.Data
-        payment_gateways: DF.Table[VMPaymentGateway]
-        requires_age_requirement: DF.Check
-        template: DF.Link | None
-        upper_age_limit: DF.Int
-    # end: auto-generated types
+		from onerc_vmms.vm_payments.doctype.vm_payment_gateway.vm_payment_gateway import VMPaymentGateway
+		from onerc_vmms.volunteer_and_member_management.doctype.membership_benefit.membership_benefit import (
+			MembershipBenefit,
+		)
 
-    def validate(self):
-        self.created_linked_item()
-        if self.linked_item:
-            is_stock_item = frappe.db.get_value(
-                "Item", self.linked_item, "is_stock_item"
-            )
-            if is_stock_item:
-                frappe.throw(_("The Linked Item should be a service item"))
+		amount: DF.Float
+		benefits: DF.Table[MembershipBenefit]
+		billing_cycle: DF.Literal["", "Monthly", "Yearly", "One Off"]
+		currency: DF.Link | None
+		linked_item: DF.Link | None
+		lower_age_limit: DF.Int
+		membership_package: DF.Link | None
+		membership_type: DF.Data
+		payment_gateways: DF.Table[VMPaymentGateway]
+		requires_age_requirement: DF.Check
+		template: DF.Link | None
+		upper_age_limit: DF.Int
+	# end: auto-generated types
 
-    def created_linked_item(self):
-        if not self.linked_item:
-            item = frappe.db.exists("Item", "Membership")
+	def validate(self):
+		self.created_linked_item()
+		if self.linked_item:
+			is_stock_item = frappe.db.get_value("Item", self.linked_item, "is_stock_item")
+			if is_stock_item:
+				frappe.throw(_("The Linked Item should be a service item"))
 
-            if item:
-                item = frappe.get_doc("Item", "Membership")
+	def created_linked_item(self):
+		if not self.linked_item:
+			item = frappe.db.exists("Item", "Membership")
 
-            else:
-                item = frappe.get_doc(
-                    {
-                        "doctype": "Item",
-                        "item_name": "Membership",
-                        "item_code": "Membership",
-                        "is_stock_item": 0,
-                        "item_group": "Services",
-                        "stock_uom": "Nos",
-                    }
-                )
+			if item:
+				item = frappe.get_doc("Item", "Membership")
 
-                item.insert(ignore_permissions=True)
+			else:
+				item = frappe.get_doc(
+					{
+						"doctype": "Item",
+						"item_name": "Membership",
+						"item_code": "Membership",
+						"is_stock_item": 0,
+						"item_group": "Services",
+						"stock_uom": "Nos",
+					}
+				)
 
-            self.linked_item = item.name
+				item.insert(ignore_permissions=True)
+
+			self.linked_item = item.name

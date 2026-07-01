@@ -61,7 +61,7 @@
 										{{
 											__(
 												app?.job_opening_details?.job_title ||
-													app.job_title,
+													app.job_title
 											)
 										}}
 									</h2>
@@ -73,8 +73,8 @@
 											app.docstatus === 2
 												? __("Cancelled")
 												: app.docstatus === 0
-													? __("Draft")
-													: __(app.status)
+												? __("Draft")
+												: __(app.status)
 										}}
 									</span>
 								</div>
@@ -170,7 +170,7 @@ watch(
 	(email) => {
 		if (email) applications.reload();
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 const redirectToLogin = () => router.push({ name: "Login" });
@@ -269,7 +269,7 @@ const filteredApplications = computed(() => {
 		return applications.data.filter((app) => app.docstatus === 2);
 	} else {
 		return applications.data.filter(
-			(app) => app.docstatus === 1 && app.status?.toLowerCase() === tabValue,
+			(app) => app.docstatus === 1 && app.status?.toLowerCase() === tabValue
 		);
 	}
 });
