@@ -105,7 +105,7 @@ jobs:
         run: |
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
-          bench --site test_site install-app payments erpnext lms hrms onerc_vmms
+          bench --site test_site install-app payments lending erpnext lms hrms onerc_vmms
           bench build
         env:
           CI: 'Yes'
