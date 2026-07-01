@@ -94,6 +94,7 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: |
           bench get-app payments --branch version-16
+          bench get-app lending --branch version-16
           bench get-app erpnext --branch version-16
           bench get-app lms --branch main
           bench get-app hrms --branch version-16
