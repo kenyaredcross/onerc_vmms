@@ -157,7 +157,7 @@ const branchFilters = computed(() => {
 
 	if (selectedRegions.value?.length) {
 		const companyNames = selectedRegions.value.map((item) =>
-			typeof item === "string" ? item : item.company,
+			typeof item === "string" ? item : item.company
 		);
 
 		baseFilter.parent_company = ["in", companyNames];
@@ -205,7 +205,7 @@ const updateFilters = () => {
 
 	if (selectedRegions.value?.length) {
 		const regionNames = selectedRegions.value.map((item) =>
-			typeof item === "string" ? item : item.company,
+			typeof item === "string" ? item : item.company
 		);
 		filters.value.region = regionNames;
 	} else {
@@ -214,7 +214,7 @@ const updateFilters = () => {
 
 	if (selectedBranches.value?.length) {
 		const companyNames = selectedBranches.value.map((item) =>
-			typeof item === "string" ? item : item.company,
+			typeof item === "string" ? item : item.company
 		);
 		filters.value.company = companyNames;
 	} else {

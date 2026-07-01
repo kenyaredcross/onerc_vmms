@@ -9,7 +9,7 @@
 				<p>
 					{{
 						__(
-							"By confirming, you acknowledge that you have read the contract details and terms of reference, and that you accept the deployment.",
+							"By confirming, you acknowledge that you have read the contract details and terms of reference, and that you accept the deployment."
 						)
 					}}
 				</p>

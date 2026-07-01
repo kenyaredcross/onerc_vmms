@@ -23,8 +23,8 @@ export const usersStore = defineStore("vmms-users", () => {
 		auto: true,
 		cache: ["roles"],
 		onSuccess: (data) => {
-            isVolunteer.value = Boolean(data.is_volunteer);
-            isMember.value = Boolean(data.is_member);
+			isVolunteer.value = Boolean(data.is_volunteer);
+			isMember.value = Boolean(data.is_member);
 		},
 	});
 

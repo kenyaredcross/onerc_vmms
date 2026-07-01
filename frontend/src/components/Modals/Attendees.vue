@@ -9,7 +9,7 @@
 			<h3 class="text-2xl font-semibold text-ink-gray-9">Attendees</h3>
 			<span class="text-ink-gray-1-800">{{
 				__(
-					"Your tickets will automatically be sent to you and your guests. You will simply need to fill in their Name, Email address and phone number.",
+					"Your tickets will automatically be sent to you and your guests. You will simply need to fill in their Name, Email address and phone number."
 				)
 			}}</span>
 			<br />
@@ -19,7 +19,7 @@
 				<AlertCircle :size="16" class="flex-shrink-0" />
 				<span>{{
 					__(
-						"The First record is for the primary ticket holder and will be prompted for payment",
+						"The First record is for the primary ticket holder and will be prompted for payment"
 					)
 				}}</span>
 			</div>

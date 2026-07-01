@@ -116,21 +116,21 @@ watch(
 		form.sub_county = null;
 		form.administrative_location = null;
 		form.ward = null;
-	},
+	}
 );
 
 watch(
 	() => form.sub_county,
 	() => {
 		form.administrative_location = null;
-	},
+	}
 );
 
 watch(
 	() => form.citizenship,
 	() => {
 		form.country_of_citizenship = null;
-	},
+	}
 );
 
 onMounted(async () => {

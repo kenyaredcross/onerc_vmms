@@ -10,7 +10,7 @@
 				<p class="text-green-700 mb-3">
 					{{
 						__(
-							"Payment initiated successfully. Please complete the payment on your phone and confirm the payment after completing it.",
+							"Payment initiated successfully. Please complete the payment on your phone and confirm the payment after completing it."
 						)
 					}}
 				</p>

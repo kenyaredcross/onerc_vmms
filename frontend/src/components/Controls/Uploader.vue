@@ -225,7 +225,7 @@ const props = withDefaults(
 		customUploadComponent: null,
 		customPreviewComponent: null,
 		customProgressComponent: null,
-	},
+	}
 );
 
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -259,7 +259,7 @@ async function uploadFile(file: File) {
 			headers: {
 				"X-Frappe-CSRF-Token": (window as any).csrf_token,
 			},
-		},
+		}
 	);
 
 	if (!response.ok) {
@@ -299,7 +299,7 @@ const supportedFormatsText = computed(() =>
 	normalizeFileTypes.value
 		.map((t) => t.replace(".", ""))
 		.join(", ")
-		.toUpperCase(),
+		.toUpperCase()
 );
 
 function fileMatchesAllowed(file: File) {
@@ -342,14 +342,14 @@ const validateFiles = (files: File[]): File[] => {
 
 		if (!fileMatchesAllowed(file)) {
 			toast.error(
-				`File ${file.name} has unsupported format. Supported formats: ${supportedFormatsText.value}`,
+				`File ${file.name} has unsupported format. Supported formats: ${supportedFormatsText.value}`
 			);
 			continue;
 		}
 
 		const isDuplicate = uploadedFiles.value.some(
 			(uploadedFile) =>
-				(uploadedFile.file_name || uploadedFile.name || uploadedFile) === file.name,
+				(uploadedFile.file_name || uploadedFile.name || uploadedFile) === file.name
 		);
 
 		if (isDuplicate) {
@@ -408,7 +408,7 @@ const handleFiles = async (files: File[]) => {
 							file_name: file.name,
 							file_url: data || "",
 							file_size: file.size,
-						};
+					  };
 
 			uploadedFiles.value.push(fileObj);
 			item.progress = 100;
@@ -519,7 +519,7 @@ watch(
 	() => {
 		initFromModelValue();
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 defineExpose({

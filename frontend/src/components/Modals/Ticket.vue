@@ -158,7 +158,7 @@ const props = defineProps({
 });
 
 const hasRegistrationQuestions = computed(
-	() => props.eventDetails?.event_registration_questions?.length > 0,
+	() => props.eventDetails?.event_registration_questions?.length > 0
 );
 const ticketTotal = computed(() => {
 	return ticketData.price * numberOfTickets.value;

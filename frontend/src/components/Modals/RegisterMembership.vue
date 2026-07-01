@@ -245,7 +245,7 @@ watch(branch, (newValue) => {
 				onError: () => {
 					showPaymentOptions.value = false;
 				},
-			},
+			}
 		);
 		membershipForm.branch = selectedBranch.value;
 	} else {
@@ -289,7 +289,7 @@ function submit() {
 					}, 3000);
 				}
 			},
-		},
+		}
 	);
 }
 
@@ -317,7 +317,7 @@ function getPaymentGateways() {
 			onError(error) {
 				console.error("Failed to fetch payment gateways:", error);
 			},
-		},
+		}
 	);
 }
 

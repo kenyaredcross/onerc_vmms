@@ -83,8 +83,8 @@
 								__(
 									dayjs(
 										project.expected_start_date ||
-											project.project?.expected_start_date,
-									).format("MMM D, YYYY"),
+											project.project?.expected_start_date
+									).format("MMM D, YYYY")
 								)
 							}}
 						</p>
@@ -107,8 +107,8 @@
 								__(
 									dayjs(
 										project.expected_end_date ||
-											project.project?.expected_end_date,
-									).format("MMM D, YYYY"),
+											project.project?.expected_end_date
+									).format("MMM D, YYYY")
 								)
 							}}
 						</p>
@@ -136,9 +136,8 @@
 								calculateDuration(
 									project.expected_start_date ||
 										project.project?.expected_start_date,
-									project.expected_end_date ||
-										project.project?.expected_end_date,
-								),
+									project.expected_end_date || project.project?.expected_end_date
+								)
 							)
 						}}
 					</p>

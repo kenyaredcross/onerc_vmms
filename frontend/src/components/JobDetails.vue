@@ -98,7 +98,7 @@
 								{{
 									__(
 										job.data.designation?.designation_name ||
-											job.data.designation?.name,
+											job.data.designation?.name
 									)
 								}}
 							</p>

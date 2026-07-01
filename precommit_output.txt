@@ -1,0 +1,381 @@
+trim trailing whitespace.................................................[42mPassed[m
+check for merge conflicts................................................[42mPassed[m
+check python ast.........................................................[42mPassed[m
+check json...............................................................[42mPassed[m
+check toml...............................................................[42mPassed[m
+check yaml...............................................................[42mPassed[m
+debug statements (python)................................................[42mPassed[m
+Run ruff import sorter...................................................[42mPassed[m
+Run ruff linter..........................................................[41mFailed[m
+[2m- hook id: ruff[m
+[2m- exit code: 1[m
+
+[1monerc_vmms/volunteer_and_member_management/api/events.py[0m[36m:[0m151[36m:[0m8[36m:[0m [1;31mB020[0m Loop control variable `talk` overrides iterable it iterates
+[1;38;5;12m    |[0m
+[1;38;5;12m149 |[0m             speakers = []
+[1;38;5;12m150 |[0m 
+[1;38;5;12m151 |[0m             for talk in talk.speakers:
+[1;38;5;12m    |[0m[1;38;5;9m                 ^^^^[0m [1;38;5;9mB020[0m
+[1;38;5;12m152 |[0m                 speaker = frappe.get_doc("Speaker Profile", talk.speaker)
+[1;38;5;12m153 |[0m                 speakers.append(speaker.as_dict())
+[1;38;5;12m    |[0m
+
+[1monerc_vmms/volunteer_and_member_management/api/membership.py[0m[36m:[0m14[36m:[0m21[36m:[0m [1;31mF811[0m Redefinition of unused `log_throw_error` from line 12
+[1;38;5;12m   |[0m
+[1;38;5;12m12 |[0m from ...volunteer_and_member_management.utils import log_throw_error
+[1;38;5;12m13 |[0m from ..api.user import get_user_details
+[1;38;5;12m14 |[0m from ..utils import log_throw_error
+[1;38;5;12m   |[0m[1;38;5;9m                     ^^^^^^^^^^^^^^^[0m [1;38;5;9mF811[0m
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Remove definition: `log_throw_error`
+
+[1monerc_vmms/volunteer_and_member_management/api/membership.py[0m[36m:[0m69[36m:[0m6[36m:[0m [1;31mB007[0m Loop control variable `key` not used within loop body
+[1;38;5;12m   |[0m
+[1;38;5;12m68 |[0m     filtered_memberships = []
+[1;38;5;12m69 |[0m     for key, group in membership_groups.items():
+[1;38;5;12m   |[0m[1;38;5;9m         ^^^[0m [1;38;5;9mB007[0m
+[1;38;5;12m70 |[0m         statuses = [m.status for m in group]
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Rename unused `key` to `_key`
+
+[1monerc_vmms/volunteer_and_member_management/api/membership.py[0m[36m:[0m205[36m:[0m7[36m:[0m [1;31mUP030[0m Use implicit references for positional format fields
+[1;38;5;12m    |[0m
+[1;38;5;12m203 |[0m                   frappe.throw(
+[1;38;5;12m204 |[0m                       _(
+[1;38;5;12m205 |[0m                           "Your age does not meet the requirements for this membership type. It should be between {0} and {1} years.".format(
+[1;38;5;12m    |[0m  [1;38;5;9m_________________________^[0m
+[1;38;5;12m206 |[0m [1;38;5;9m|[0m                             membership_type_doc.lower_age_limit,
+[1;38;5;12m207 |[0m [1;38;5;9m|[0m                             membership_type_doc.upper_age_limit,
+[1;38;5;12m208 |[0m [1;38;5;9m|[0m                         )
+[1;38;5;12m    |[0m [1;38;5;9m|[0m[1;38;5;9m_________________________^[0m [1;38;5;9mUP030[0m
+[1;38;5;12m209 |[0m                       )
+[1;38;5;12m210 |[0m                   )
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Remove explicit positional indices
+
+[1monerc_vmms/volunteer_and_member_management/api/membership.py[0m[36m:[0m205[36m:[0m7[36m:[0m [1;31mUP032[0m [[36m*[0m] Use f-string instead of `format` call
+[1;38;5;12m    |[0m
+[1;38;5;12m203 |[0m                   frappe.throw(
+[1;38;5;12m204 |[0m                       _(
+[1;38;5;12m205 |[0m                           "Your age does not meet the requirements for this membership type. It should be between {0} and {1} years.".format(
+[1;38;5;12m    |[0m  [1;38;5;9m_________________________^[0m
+[1;38;5;12m206 |[0m [1;38;5;9m|[0m                             membership_type_doc.lower_age_limit,
+[1;38;5;12m207 |[0m [1;38;5;9m|[0m                             membership_type_doc.upper_age_limit,
+[1;38;5;12m208 |[0m [1;38;5;9m|[0m                         )
+[1;38;5;12m    |[0m [1;38;5;9m|[0m[1;38;5;9m_________________________^[0m [1;38;5;9mUP032[0m
+[1;38;5;12m209 |[0m                       )
+[1;38;5;12m210 |[0m                   )
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to f-string
+
+[1monerc_vmms/volunteer_and_member_management/doctype/personnel_data_import/personnel_data_import.py[0m[36m:[0m68[36m:[0m9[36m:[0m [1;31mF811[0m [[36m*[0m] Redefinition of unused `json` from line 1
+[1;38;5;12m   |[0m
+[1;38;5;12m66 |[0m @frappe.whitelist()
+[1;38;5;12m67 |[0m def export_errored_rows(name):
+[1;38;5;12m68 |[0m     import json
+[1;38;5;12m   |[0m[1;38;5;9m            ^^^^[0m [1;38;5;9mF811[0m
+[1;38;5;12m69 |[0m 
+[1;38;5;12m70 |[0m     from frappe.utils.csvutils import build_csv_response
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Remove definition: `json`
+
+[1monerc_vmms/volunteer_and_member_management/doctype/personnel_data_import/personnel_data_import.py[0m[36m:[0m90[36m:[0m3[36m:[0m [1;31mE722[0m Do not use bare `except`
+[1;38;5;12m   |[0m
+[1;38;5;12m88 |[0m             msg_list = json.loads(log.messages or "[]")
+[1;38;5;12m89 |[0m             readable_msg = "; ".join([m.get("message", "") for m in msg_list if m.get("message")])
+[1;38;5;12m90 |[0m         except:
+[1;38;5;12m   |[0m[1;38;5;9m         ^^^^^^[0m [1;38;5;9mE722[0m
+[1;38;5;12m91 |[0m             readable_msg = log.messages
+[1;38;5;12m   |[0m
+
+[1monerc_vmms/volunteer_and_member_management/doctype/personnel_data_import/personnel_data_import.py[0m[36m:[0m95[36m:[0m3[36m:[0m [1;31mE722[0m Do not use bare `except`
+[1;38;5;12m   |[0m
+[1;38;5;12m93 |[0m         try:
+[1;38;5;12m94 |[0m             rows = ", ".join(map(str, json.loads(log.row_indexes or "[]")))
+[1;38;5;12m95 |[0m         except:
+[1;38;5;12m   |[0m[1;38;5;9m         ^^^^^^[0m [1;38;5;9mE722[0m
+[1;38;5;12m96 |[0m             rows = log.row_indexes
+[1;38;5;12m   |[0m
+
+[1monerc_vmms/volunteer_and_member_management/doctype/vm_membership/vm_membership.py[0m[36m:[0m420[36m:[0m13[36m:[0m [1;31mUP030[0m Use implicit references for positional format fields
+[1;38;5;12m    |[0m
+[1;38;5;12m419 |[0m     except Exception as e:
+[1;38;5;12m420 |[0m         message = "{0}\n\n{1}\n\n{2}: {3}".format(e, frappe.get_traceback(), _("Payment ID"), payment.id)
+[1;38;5;12m    |[0m[1;38;5;9m                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mUP030[0m
+[1;38;5;12m421 |[0m         log = frappe.log_error(message, _("Error creating membership entry for {0}").format(member.name))
+[1;38;5;12m422 |[0m         notify_failure(log)
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Remove explicit positional indices
+
+[1monerc_vmms/volunteer_and_member_management/doctype/vm_membership/vm_membership.py[0m[36m:[0m453[36m:[0m5[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+[1;38;5;12m    |[0m
+[1;38;5;12m452 |[0m def get_additional_notes(member, subscription):
+[1;38;5;12m453 |[0m     if type(subscription.notes) == dict:
+[1;38;5;12m    |[0m[1;38;5;9m        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mE721[0m
+[1;38;5;12m454 |[0m         for k, v in subscription.notes.items():
+[1;38;5;12m455 |[0m             notes = "\n".join("{}: {}".format(k, v))
+[1;38;5;12m    |[0m
+
+[1monerc_vmms/volunteer_and_member_management/doctype/vm_membership/vm_membership.py[0m[36m:[0m455[36m:[0m22[36m:[0m [1;31mUP032[0m [[36m*[0m] Use f-string instead of `format` call
+[1;38;5;12m    |[0m
+[1;38;5;12m453 |[0m     if type(subscription.notes) == dict:
+[1;38;5;12m454 |[0m         for k, v in subscription.notes.items():
+[1;38;5;12m455 |[0m             notes = "\n".join("{}: {}".format(k, v))
+[1;38;5;12m    |[0m[1;38;5;9m                               ^^^^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mUP032[0m
+[1;38;5;12m456 |[0m 
+[1;38;5;12m457 |[0m             # extract member name from notes
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to f-string
+
+[1monerc_vmms/volunteer_and_member_management/doctype/vm_membership/vm_membership.py[0m[36m:[0m467[36m:[0m7[36m:[0m [1;31mE721[0m Use `is` and `is not` for type comparisons, or `isinstance()` for isinstance checks
+[1;38;5;12m    |[0m
+[1;38;5;12m465 |[0m         member.add_comment("Comment", notes)
+[1;38;5;12m466 |[0m 
+[1;38;5;12m467 |[0m     elif type(subscription.notes) == str:
+[1;38;5;12m    |[0m[1;38;5;9m          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mE721[0m
+[1;38;5;12m468 |[0m         member.add_comment("Comment", subscription.notes)
+[1;38;5;12m    |[0m
+
+[1monerc_vmms/volunteer_and_member_management/doctype/vm_membership/vm_membership.py[0m[36m:[0m475[36m:[0m13[36m:[0m [1;31mUP030[0m Use implicit references for positional format fields
+[1;38;5;12m    |[0m
+[1;38;5;12m473 |[0m   def notify_failure(log):
+[1;38;5;12m474 |[0m       try:
+[1;38;5;12m475 |[0m           content = """
+[1;38;5;12m    |[0m  [1;38;5;9m___________________^[0m
+[1;38;5;12m476 |[0m [1;38;5;9m|[0m             Dear System Manager,
+[1;38;5;12m477 |[0m [1;38;5;9m|[0m             Razorpay webhook for creating renewing membership subscription failed due to some reason.
+[1;38;5;12m478 |[0m [1;38;5;9m|[0m             Please check the following error log linked below
+[1;38;5;12m479 |[0m [1;38;5;9m|[0m             Error Log: {0}
+[1;38;5;12m480 |[0m [1;38;5;9m|[0m             Regards, Administrator
+[1;38;5;12m481 |[0m [1;38;5;9m|[0m         """.format(get_link_to_form("Error Log", log.name))
+[1;38;5;12m    |[0m [1;38;5;9m|[0m[1;38;5;9m___________________________________________________________^[0m [1;38;5;9mUP030[0m
+[1;38;5;12m482 |[0m   
+[1;38;5;12m483 |[0m           sendmail_to_system_managers(
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Remove explicit positional indices
+
+[1monerc_vmms/volunteer_and_member_management/doctype/vm_membership/vm_membership.py[0m[36m:[0m505[36m:[0m2[36m:[0m [1;31mF811[0m Redefinition of unused `today` from line 19
+[1;38;5;12m    |[0m
+[1;38;5;12m504 |[0m def set_expired_status():
+[1;38;5;12m505 |[0m     today = nowdate()
+[1;38;5;12m    |[0m[1;38;5;9m     ^^^^^[0m [1;38;5;9mF811[0m
+[1;38;5;12m506 |[0m     memberships = frappe.get_all(
+[1;38;5;12m507 |[0m         "VM Membership",
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Remove definition: `today`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m2[36m:[0m1[36m:[0m [1;31mUP035[0m `typing.Dict` is deprecated, use `dict` instead
+[1;38;5;12m  |[0m
+[1;38;5;12m1 |[0m import json
+[1;38;5;12m2 |[0m from typing import Any, Dict, List, Optional
+[1;38;5;12m  |[0m[1;38;5;9m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mUP035[0m
+[1;38;5;12m3 |[0m 
+[1;38;5;12m4 |[0m import frappe
+[1;38;5;12m  |[0m
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m2[36m:[0m1[36m:[0m [1;31mUP035[0m `typing.List` is deprecated, use `list` instead
+[1;38;5;12m  |[0m
+[1;38;5;12m1 |[0m import json
+[1;38;5;12m2 |[0m from typing import Any, Dict, List, Optional
+[1;38;5;12m  |[0m[1;38;5;9m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mUP035[0m
+[1;38;5;12m3 |[0m 
+[1;38;5;12m4 |[0m import frappe
+[1;38;5;12m  |[0m
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m25[36m:[0m12[36m:[0m [1;31mUP006[0m [[36m*[0m] Use `dict` instead of `Dict` for type annotation
+[1;38;5;12m   |[0m
+[1;38;5;12m23 |[0m                 continue
+[1;38;5;12m24 |[0m 
+[1;38;5;12m25 |[0m             config: Dict[str, Any] = get_rejection_config(opening, settings)
+[1;38;5;12m   |[0m[1;38;5;9m                     ^^^^[0m [1;38;5;9mUP006[0m
+[1;38;5;12m26 |[0m             today_date = getdate(today())
+[1;38;5;12m27 |[0m             closing_date = getattr(opening, "closed_on", None) or getattr(opening, "closes_on", None)
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Replace with `dict`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m38[36m:[0m17[36m:[0m [1;31mUP006[0m [[36m*[0m] Use `list` instead of `List` for type annotation
+[1;38;5;12m   |[0m
+[1;38;5;12m36 |[0m                 today_date == shortlisted_rejection_notification_date
+[1;38;5;12m37 |[0m             ):
+[1;38;5;12m38 |[0m                 applicants: List[Dict[str, Any]] = get_rejected_applicants(job_opening=opening.name)
+[1;38;5;12m   |[0m[1;38;5;9m                             ^^^^[0m [1;38;5;9mUP006[0m
+[1;38;5;12m39 |[0m                 if not applicants:
+[1;38;5;12m40 |[0m                     continue
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Replace with `list`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m38[36m:[0m22[36m:[0m [1;31mUP006[0m [[36m*[0m] Use `dict` instead of `Dict` for type annotation
+[1;38;5;12m   |[0m
+[1;38;5;12m36 |[0m                 today_date == shortlisted_rejection_notification_date
+[1;38;5;12m37 |[0m             ):
+[1;38;5;12m38 |[0m                 applicants: List[Dict[str, Any]] = get_rejected_applicants(job_opening=opening.name)
+[1;38;5;12m   |[0m[1;38;5;9m                                  ^^^^[0m [1;38;5;9mUP006[0m
+[1;38;5;12m39 |[0m                 if not applicants:
+[1;38;5;12m40 |[0m                     continue
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Replace with `dict`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m49[36m:[0m40[36m:[0m [1;31mUP007[0m [[36m*[0m] Use `X | Y` for type annotations
+[1;38;5;12m   |[0m
+[1;38;5;12m49 |[0m def is_auto_rejection_enabled(opening: Optional[Document]) -> bool:
+[1;38;5;12m   |[0m[1;38;5;9m                                        ^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mUP007[0m
+[1;38;5;12m50 |[0m     """Check if automatic rejection notifications are enabled."""
+[1;38;5;12m51 |[0m     if opening and hasattr(opening, "enable_automatic_rejection_notifications"):
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to `X | Y`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m56[36m:[0m35[36m:[0m [1;31mUP007[0m [[36m*[0m] Use `X | Y` for type annotations
+[1;38;5;12m   |[0m
+[1;38;5;12m56 |[0m def get_rejection_config(opening: Optional[Document], settings: Document) -> Dict[str, Any]:
+[1;38;5;12m   |[0m[1;38;5;9m                                   ^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mUP007[0m
+[1;38;5;12m57 |[0m     """Fetch config values for rejection notifications from Job Opening or fallback to VM Settings."""
+[1;38;5;12m58 |[0m     return {
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to `X | Y`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m56[36m:[0m78[36m:[0m [1;31mUP006[0m [[36m*[0m] Use `dict` instead of `Dict` for type annotation
+[1;38;5;12m   |[0m
+[1;38;5;12m56 |[0m def get_rejection_config(opening: Optional[Document], settings: Document) -> Dict[str, Any]:
+[1;38;5;12m   |[0m[1;38;5;9m                                                                              ^^^^[0m [1;38;5;9mUP006[0m
+[1;38;5;12m57 |[0m     """Fetch config values for rejection notifications from Job Opening or fallback to VM Settings."""
+[1;38;5;12m58 |[0m     return {
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Replace with `dict`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m79[36m:[0m15[36m:[0m [1;31mUP007[0m [[36m*[0m] Use `X | Y` for type annotations
+[1;38;5;12m   |[0m
+[1;38;5;12m77 |[0m @frappe.whitelist()
+[1;38;5;12m78 |[0m def get_rejected_applicants(
+[1;38;5;12m79 |[0m     job_opening: Optional[str] = None, job_applicant: Optional[str] = None
+[1;38;5;12m   |[0m[1;38;5;9m                  ^^^^^^^^^^^^^[0m [1;38;5;9mUP007[0m
+[1;38;5;12m80 |[0m ) -> List[Dict[str, Any]]:
+[1;38;5;12m81 |[0m     """Fetch all rejected applicants matching given filters."""
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to `X | Y`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m79[36m:[0m52[36m:[0m [1;31mUP007[0m [[36m*[0m] Use `X | Y` for type annotations
+[1;38;5;12m   |[0m
+[1;38;5;12m77 |[0m @frappe.whitelist()
+[1;38;5;12m78 |[0m def get_rejected_applicants(
+[1;38;5;12m79 |[0m     job_opening: Optional[str] = None, job_applicant: Optional[str] = None
+[1;38;5;12m   |[0m[1;38;5;9m                                                       ^^^^^^^^^^^^^[0m [1;38;5;9mUP007[0m
+[1;38;5;12m80 |[0m ) -> List[Dict[str, Any]]:
+[1;38;5;12m81 |[0m     """Fetch all rejected applicants matching given filters."""
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to `X | Y`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m80[36m:[0m6[36m:[0m [1;31mUP006[0m [[36m*[0m] Use `list` instead of `List` for type annotation
+[1;38;5;12m   |[0m
+[1;38;5;12m78 |[0m def get_rejected_applicants(
+[1;38;5;12m79 |[0m     job_opening: Optional[str] = None, job_applicant: Optional[str] = None
+[1;38;5;12m80 |[0m ) -> List[Dict[str, Any]]:
+[1;38;5;12m   |[0m[1;38;5;9m      ^^^^[0m [1;38;5;9mUP006[0m
+[1;38;5;12m81 |[0m     """Fetch all rejected applicants matching given filters."""
+[1;38;5;12m82 |[0m     filters: Dict[str, Any] = {
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Replace with `list`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m80[36m:[0m11[36m:[0m [1;31mUP006[0m [[36m*[0m] Use `dict` instead of `Dict` for type annotation
+[1;38;5;12m   |[0m
+[1;38;5;12m78 |[0m def get_rejected_applicants(
+[1;38;5;12m79 |[0m     job_opening: Optional[str] = None, job_applicant: Optional[str] = None
+[1;38;5;12m80 |[0m ) -> List[Dict[str, Any]]:
+[1;38;5;12m   |[0m[1;38;5;9m           ^^^^[0m [1;38;5;9mUP006[0m
+[1;38;5;12m81 |[0m     """Fetch all rejected applicants matching given filters."""
+[1;38;5;12m82 |[0m     filters: Dict[str, Any] = {
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Replace with `dict`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m82[36m:[0m11[36m:[0m [1;31mUP006[0m [[36m*[0m] Use `dict` instead of `Dict` for type annotation
+[1;38;5;12m   |[0m
+[1;38;5;12m80 |[0m ) -> List[Dict[str, Any]]:
+[1;38;5;12m81 |[0m     """Fetch all rejected applicants matching given filters."""
+[1;38;5;12m82 |[0m     filters: Dict[str, Any] = {
+[1;38;5;12m   |[0m[1;38;5;9m              ^^^^[0m [1;38;5;9mUP006[0m
+[1;38;5;12m83 |[0m         "status": "Rejected",
+[1;38;5;12m84 |[0m         "applicant_notified_of_application_status": 0,
+[1;38;5;12m   |[0m
+   [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Replace with `dict`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m118[36m:[0m59[36m:[0m [1;31mUP007[0m [[36m*[0m] Use `X | Y` for type annotations
+[1;38;5;12m    |[0m
+[1;38;5;12m117 |[0m @frappe.whitelist()
+[1;38;5;12m118 |[0m def send_rejection_emails(applicants: Any, template_name: Optional[str] = None) -> None:
+[1;38;5;12m    |[0m[1;38;5;9m                                                           ^^^^^^^^^^^^^[0m [1;38;5;9mUP007[0m
+[1;38;5;12m119 |[0m     """
+[1;38;5;12m120 |[0m     Enqueue send_rejection_email tasks.
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to `X | Y`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m137[36m:[0m9[36m:[0m [1;31mUP038[0m Use `X | Y` in `isinstance` call instead of `(X, Y)`
+[1;38;5;12m    |[0m
+[1;38;5;12m135 |[0m     if isinstance(parsed, dict):
+[1;38;5;12m136 |[0m         parsed = [parsed]
+[1;38;5;12m137 |[0m     if not isinstance(parsed, (list, tuple)):
+[1;38;5;12m    |[0m[1;38;5;9m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mUP038[0m
+[1;38;5;12m138 |[0m         parsed = [parsed]
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to `X | Y`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m163[36m:[0m52[36m:[0m [1;31mUP007[0m [[36m*[0m] Use `X | Y` for type annotations
+[1;38;5;12m    |[0m
+[1;38;5;12m162 |[0m @frappe.whitelist()
+[1;38;5;12m163 |[0m def send_rejection_email(name: str, template_name: Optional[str] = None) -> bool:
+[1;38;5;12m    |[0m[1;38;5;9m                                                    ^^^^^^^^^^^^^[0m [1;38;5;9mUP007[0m
+[1;38;5;12m164 |[0m     """Send rejection email using a given Email Template."""
+[1;38;5;12m165 |[0m     try:
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to `X | Y`
+
+[1monerc_vmms/volunteer_and_member_management/overrides/server/job_opening.py[0m[36m:[0m178[36m:[0m12[36m:[0m [1;31mUP006[0m [[36m*[0m] Use `dict` instead of `Dict` for type annotation
+[1;38;5;12m    |[0m
+[1;38;5;12m176 |[0m         template: Document = frappe.get_doc("Email Template", template_name)
+[1;38;5;12m177 |[0m 
+[1;38;5;12m178 |[0m         context: Dict[str, Any] = {"doc": app}
+[1;38;5;12m    |[0m[1;38;5;9m                  ^^^^[0m [1;38;5;9mUP006[0m
+[1;38;5;12m179 |[0m 
+[1;38;5;12m180 |[0m         subject: str = frappe.render_template(template.subject or "Application Update", context)
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Replace with `dict`
+
+[1monerc_vmms/volunteer_and_member_management/utils.py[0m[36m:[0m138[36m:[0m9[36m:[0m [1;31mUP038[0m Use `X | Y` in `isinstance` call instead of `(X, Y)`
+[1;38;5;12m    |[0m
+[1;38;5;12m136 |[0m         return []
+[1;38;5;12m137 |[0m 
+[1;38;5;12m138 |[0m     if not isinstance(companies, (list, tuple)):
+[1;38;5;12m    |[0m[1;38;5;9m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1;38;5;9mUP038[0m
+[1;38;5;12m139 |[0m         companies = [companies]
+[1;38;5;12m    |[0m
+    [1;38;5;12m=[0m [1;38;5;14mhelp[0m: Convert to `X | Y`
+
+Found 32 errors.
+[[36m*[0m] 17 fixable with the `--fix` option (5 hidden fixes can be enabled with the `--unsafe-fixes` option).
+
+Run ruff formatter.......................................................[42mPassed[m
+prettier.................................................................[42mPassed[m
+eslint...................................................................[41mFailed[m
+[2m- hook id: eslint[m
+[2m- exit code: 1[m
+
+[0m[0m
+[0m[4m/home/mukuna/Desktop/bench/v-16/apps/onerc_vmms/onerc_vmms/volunteer_and_member_management/doctype/personnel_data_import/personnel_data_import.js[24m[0m
+[0m    [2m5:1[22m   [31merror[39m  'onerc_vmms' is not defined  [2mno-undef[22m[0m
+[0m   [2m89:15[22m  [31merror[39m  Empty block statement        [2mno-empty[22m[0m
+[0m  [2m352:31[22m  [31merror[39m  'onerc_vmms' is not defined  [2mno-undef[22m[0m
+[0m[0m
+[0m[31m[1m✖ 3 problems (3 errors, 0 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m
+[0m[0m
+[0m[4m/home/mukuna/Desktop/bench/v-16/apps/onerc_vmms/onerc_vmms/volunteer_and_member_management/doctype/vm_member/vm_member.js[24m[0m
+[0m  [2m54:4[22m  [31merror[39m  'erpnext' is not defined  [2mno-undef[22m[0m
+[0m[0m
+[0m[31m[1m✖ 1 problem (1 error, 0 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m
+[0m[0m
+[0m[4m/home/mukuna/Desktop/bench/v-16/apps/onerc_vmms/onerc_vmms/volunteer_and_member_management/doctype/deployment_request_tool/deployment_request_tool.js[24m[0m
+[0m  [2m313:19[22m  [31merror[39m  Empty block statement  [2mno-empty[22m[0m
+[0m  [2m454:3[22m   [31merror[39m  'hrms' is not defined  [2mno-undef[22m[0m
+[0m[0m
+[0m[31m[1m✖ 2 problems (2 errors, 0 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m
+

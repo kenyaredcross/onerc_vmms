@@ -48,8 +48,8 @@
 							project.deployment_status === 'Pending'
 								? 'orange'
 								: project.deployment_status === 'Rejected'
-									? 'red'
-									: 'green'
+								? 'red'
+								: 'green'
 						"
 						class="px-3 py-1"
 						size="lg"

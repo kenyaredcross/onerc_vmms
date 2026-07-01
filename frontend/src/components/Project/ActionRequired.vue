@@ -7,7 +7,7 @@
 		<p class="text-sm text-ink-gray-1-700 font-medium mb-2">
 			{{
 				__(
-					"Important: Please review the official deployment information before you decide.",
+					"Important: Please review the official deployment information before you decide."
 				)
 			}}
 		</p>

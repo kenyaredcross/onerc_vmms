@@ -11,7 +11,7 @@
 	</Tooltip>
 </template>
 <script setup>
-import { Avatar, Tooltip } from 'frappe-ui'
+import { Avatar, Tooltip } from "frappe-ui";
 const props = defineProps({
 	user: {
 		type: Object,
@@ -20,5 +20,5 @@ const props = defineProps({
 	size: {
 		type: String,
 	},
-})
+});
 </script>

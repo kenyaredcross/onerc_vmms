@@ -105,7 +105,7 @@ watch(
 	(newForm) => {
 		syncLocalForm(newForm);
 	},
-	{ immediate: true, deep: true },
+	{ immediate: true, deep: true }
 );
 
 function getChangedFields() {

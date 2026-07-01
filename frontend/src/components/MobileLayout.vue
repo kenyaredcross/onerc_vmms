@@ -32,7 +32,7 @@
 			>
 				<button
 					v-for="tab in sidebarLinks.filter(
-						(link) => !['Profile', 'Events'].includes(link.label),
+						(link) => !['Profile', 'Events'].includes(link.label)
 					)"
 					:key="tab.label"
 					:class="isVisible(tab) ? 'flex' : 'hidden'"
@@ -113,7 +113,7 @@ const addOtherLinks = () => {
 			{
 				title: "Log out",
 				icon: "LogOut",
-			},
+			}
 		);
 	} else {
 		otherLinks.value.push(
@@ -125,7 +125,7 @@ const addOtherLinks = () => {
 			{
 				name: "Log in",
 				icon: "LogIn",
-			},
+			}
 		);
 	}
 };

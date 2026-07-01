@@ -186,7 +186,7 @@ function parseOptions(optStr) {
 if (props.job?.screening_questions?.length) {
 	props.job.screening_questions.forEach((q) => {
 		const existing = props.form.screening_question_responses?.find(
-			(r) => r.question_id === q.question_id,
+			(r) => r.question_id === q.question_id
 		);
 
 		responses.value[q.question_id] = {
@@ -216,7 +216,7 @@ watch(
 			})
 			.filter((r) => r.answer || r.attachment);
 	},
-	{ deep: true, immediate: true },
+	{ deep: true, immediate: true }
 );
 
 const visibleQuestions = computed(() =>
@@ -227,7 +227,7 @@ const visibleQuestions = computed(() =>
 		return Array.isArray(dep.answer)
 			? dep.answer.includes(q.show_if_answer_is)
 			: dep.answer === q.show_if_answer_is;
-	}),
+	})
 );
 
 if (props.job?.screening_questions?.length) {
@@ -241,7 +241,7 @@ if (props.job?.screening_questions?.length) {
 						responses.value[q.question_id].answer = "";
 						responses.value[q.question_id].attachment = null;
 					}
-				},
+				}
 			);
 		}
 	});

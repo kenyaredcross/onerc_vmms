@@ -211,7 +211,7 @@ const linkDoctypeMeta = createResource({
 			? {
 					doctype: linkDoctype.value,
 					with_parent: 0,
-				}
+			  }
 			: null;
 	},
 	cache: () => [linkDoctype.value],
@@ -228,7 +228,7 @@ watch(
 			linkDoctypeMeta.reload();
 		}
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 const childtableEntries = createResource({
@@ -318,7 +318,7 @@ const resolveValues = async () => {
 			if (linkLabelsResource.data?.length) {
 				displayValues.value = resolved.map((item) => {
 					const match = linkLabelsResource.data.find(
-						(opt) => opt.name === item[linkFieldName.value],
+						(opt) => opt.name === item[linkFieldName.value]
 					);
 					return {
 						...item,
@@ -341,7 +341,7 @@ watch(
 			resolveValues();
 		}
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 onMounted(() => {
@@ -374,7 +374,7 @@ watchDebounced(
 		text.value = val;
 		reload(val);
 	},
-	{ debounce: 300, immediate: true },
+	{ debounce: 300, immediate: true }
 );
 
 const filterOptions = createResource({
@@ -401,7 +401,7 @@ watch(
 		if (!meta) return;
 		const linkField =
 			meta.docs[0].fields.find(
-				(f) => f.fieldname === linkFieldName.value && f.fieldtype === "Link",
+				(f) => f.fieldname === linkFieldName.value && f.fieldtype === "Link"
 			) || meta.docs[0].fields.find((f) => f.fieldtype === "Link");
 
 		if (linkField) {
@@ -411,7 +411,7 @@ watch(
 			filterOptions.reload();
 		}
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 const options = computed(() => {
@@ -491,7 +491,7 @@ watch(
 			filterOptions.reload();
 		}
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 const removeValue = (index) => {

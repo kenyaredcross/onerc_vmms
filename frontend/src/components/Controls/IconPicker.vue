@@ -68,7 +68,7 @@ const iconArray = ref(
 		.reduce((result, key) => {
 			result[key] = icons[key];
 			return result;
-		}, {}),
+		}, {})
 );
 
 const props = defineProps({

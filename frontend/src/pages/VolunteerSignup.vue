@@ -64,8 +64,8 @@
 									i < currentStep
 										? 'bg-red-600 border-red-600 text-white shadow-md hover:shadow-lg'
 										: i === currentStep
-											? 'bg-surface-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
-											: 'bg-surface-gray-200 border-outline-gray-300 text-ink-gray-1-500 hover:border-outline-gray-400 hover:bg-surface-gray-300',
+										? 'bg-surface-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
+										: 'bg-surface-gray-200 border-outline-gray-300 text-ink-gray-1-500 hover:border-outline-gray-400 hover:bg-surface-gray-300',
 								]"
 							>
 								<span class="text-lg">{{ i + 1 }}</span>
@@ -115,7 +115,7 @@
 							v-if="currentStep < steps.length - 1"
 							@click="nextStep"
 							variant="solid"
-                            theme="red"
+							theme="red"
 							:loading="saveInProgress"
 						>
 							{{ __("Save & Continue") }}
@@ -390,7 +390,7 @@ watch(
 			}
 		});
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 function populateFormFromUser(userData) {
@@ -544,7 +544,7 @@ const confirmSubmit = async () => {
 				submitInProgress.value = false;
 				toast.error(err.messages?.[0] || "Submission failed");
 			},
-		},
+		}
 	);
 };
 
@@ -788,7 +788,7 @@ watch(
 
 		flatErrors.value = Object.keys(stepErrors).length > 0 ? stepErrors : null;
 	},
-	{ deep: true, immediate: true },
+	{ deep: true, immediate: true }
 );
 
 useHead({

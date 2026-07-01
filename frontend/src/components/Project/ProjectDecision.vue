@@ -9,7 +9,7 @@
 			<p class="text-sm text-ink-gray-1-700 font-medium mb-2">
 				{{
 					__(
-						"Important: Please review the official deployment information before you decide.",
+						"Important: Please review the official deployment information before you decide."
 					)
 				}}
 			</p>
@@ -29,7 +29,7 @@
 		<p class="text-sm text-ink-gray-1-500 italic mb-6">
 			{{
 				__(
-					"Your decision to accept this deployment confirms your agreement to the terms outlined.",
+					"Your decision to accept this deployment confirms your agreement to the terms outlined."
 				)
 			}}
 		</p>
