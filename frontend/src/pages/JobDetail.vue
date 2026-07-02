@@ -24,14 +24,10 @@
 <script setup>
 import { useHead } from "@vueuse/head";
 import { Breadcrumbs, createResource, usePageMeta } from "frappe-ui";
-import { computed, inject } from "vue";
-import { useRouter } from "vue-router";
+import { computed } from "vue";
 import JobDetails from "../components/JobDetails.vue";
 import { sessionStore } from "../stores/session";
 
-const router = useRouter();
-const user = inject("$user");
-const dayjs = inject("$dayjs");
 const { brand } = sessionStore();
 const props = defineProps({
 	job: {
@@ -45,33 +41,6 @@ const job = createResource({
 	cache: ["job", props.job],
 	auto: true,
 });
-
-const jobApplication = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.doc.get_list",
-	makeParams() {
-		return {
-			doctype: "Job Applicant",
-			filters: {
-				job_title: props.job,
-				email_id: user.data?.email,
-			},
-			fields: ["name"],
-		};
-	},
-	auto: true,
-	reloadOn: () => !!user.data?.email,
-});
-
-const isApplied = computed(() => jobApplication.data?.length > 0);
-const applicationId = computed(() => jobApplication.data?.[0]?.name || null);
-
-const redirectToLogin = () => {
-	const currentPath = router.currentRoute.value.fullPath;
-	router.push({
-		name: "Login",
-		query: { "redirect-to": currentPath },
-	});
-};
 
 usePageMeta(() => ({
 	title: job.data?.job_title,

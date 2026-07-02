@@ -2,6 +2,10 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from onerc_vmms.volunteer_and_member_management.services.user import (
+	ensure_user_self_permission,
+)
+
 
 @frappe.whitelist()
 def after_insert(doc: Document, method: str) -> None:
@@ -106,6 +110,11 @@ def create_user_for_employee(doc: Document) -> str:
 		user.role_profile_name = "Volunteer"
 		user.module_profile = "Volunteer"
 		user.save(ignore_permissions=True)
+
+		# Volunteers/employees are created outside the public signup flow, so the
+		# self-scoping User Permission must be enforced here too - otherwise these
+		# users can read every User record.
+		ensure_user_self_permission(user.name)
 
 		frappe.db.commit()
 		return user.name

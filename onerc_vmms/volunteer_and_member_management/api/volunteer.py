@@ -1,6 +1,8 @@
 import frappe
+from frappe import _
 
 from ..utils import get_current_fiscal_year, get_dates_for_day_of_week, get_shift_types
+from .doc import _convert_table_multiselect
 from .user import get_user_info
 
 
@@ -254,3 +256,17 @@ def create_schedule(schedule_name, weekly_availability):
 			schedule_doc.day = day_name
 			schedule_doc.shift_type = shift
 			schedule_doc.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def get_my_volunteer_application():
+	email = frappe.session.user
+	if email == "Guest":
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+	name = frappe.db.get_value("Job Applicant", {"email_id": email, "is_volunteer": 1}, "name")
+	if not name:
+		return None
+
+	doc = frappe.get_doc("Job Applicant", name)
+	return _convert_table_multiselect(doc)
