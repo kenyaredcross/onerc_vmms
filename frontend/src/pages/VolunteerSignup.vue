@@ -64,8 +64,8 @@
 									i < currentStep
 										? 'bg-red-600 border-red-600 text-white shadow-md hover:shadow-lg'
 										: i === currentStep
-											? 'bg-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
-											: 'bg-gray-200 border-gray-300 text-gray-500 hover:border-gray-400 hover:bg-gray-300',
+										? 'bg-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
+										: 'bg-gray-200 border-gray-300 text-gray-500 hover:border-gray-400 hover:bg-gray-300',
 								]"
 							>
 								<span class="text-lg">{{ i + 1 }}</span>
@@ -389,7 +389,7 @@ watch(
 			}
 		});
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 function populateFormFromUser(userData) {
@@ -483,17 +483,8 @@ function getCurrentStepData(onlyChanges = false) {
 }
 
 const jobApplication = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.doc.search_doctype",
-	makeParams() {
-		return {
-			doctype: "Job Applicant",
-			filters: {
-				email_id: user.data?.email,
-				is_volunteer: true,
-			},
-			first: true,
-		};
-	},
+	url: "onerc_vmms.volunteer_and_member_management.api.volunteer.get_my_volunteer_application",
+
 	auto: true,
 	reloadOn: () => !!user.data?.email,
 	onSuccess(data) {
@@ -543,7 +534,7 @@ const confirmSubmit = async () => {
 				submitInProgress.value = false;
 				toast.error(err.messages?.[0] || "Submission failed");
 			},
-		},
+		}
 	);
 };
 
@@ -787,7 +778,7 @@ watch(
 
 		flatErrors.value = Object.keys(stepErrors).length > 0 ? stepErrors : null;
 	},
-	{ deep: true, immediate: true },
+	{ deep: true, immediate: true }
 );
 
 useHead({
