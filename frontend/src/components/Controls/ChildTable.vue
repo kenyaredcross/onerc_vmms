@@ -888,12 +888,11 @@ async function fetchLinkedFieldData(linkDoctype, linkName, targetField) {
 	if (!linkName) return null;
 
 	const linkedDoc = createResource({
-		url: "onerc_vmms.volunteer_and_member_management.api.doc.search_doctype",
+		url: "frappe.client.get_value",
 		params: {
 			doctype: linkDoctype,
-			name: linkName,
-			fields: [targetField],
-			ignore_permissions: 1,
+			filters: linkName,
+			fieldname: targetField,
 		},
 		auto: false,
 	});

@@ -279,3 +279,13 @@ export_python_type_annotations = True
 website_route_rules = [
 	{"from_route": "/vmms/<path:app_path>", "to_route": "vmms"},
 ]
+
+
+fixtures = [
+	{
+		"doctype": "Role",
+		"filters": [
+			["name", "=", "Vmms Guest"],
+		],
+	},
+]

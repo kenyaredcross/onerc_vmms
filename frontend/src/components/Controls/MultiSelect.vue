@@ -175,13 +175,15 @@ const childtableMeta = createResource({
 	url: "frappe.desk.form.load.getdoctype",
 	params: {
 		doctype: props.doctype,
-		with_parent: 1,
+
+		with_parent: 0,
 	},
 	cache: [props.doctype],
 	auto: true,
 	onSuccess(data) {
+		const doc = data.docs.find((d) => d.name === props.doctype) || data.docs[0];
 		if (!linkFieldName.value) {
-			const linkField = data.docs[0].fields.find((f) => f.fieldtype === "Link");
+			const linkField = doc.fields.find((f) => f.fieldtype === "Link");
 			if (linkField) {
 				linkFieldName.value = linkField.fieldname;
 				linkDoctype.value = linkField.options;
@@ -189,7 +191,7 @@ const childtableMeta = createResource({
 				console.error("[MultiSelect] No link field found in childtable:", props.doctype);
 			}
 		} else {
-			const field = data.docs[0].fields.find((f) => f.fieldname === linkFieldName.value);
+			const field = doc.fields.find((f) => f.fieldname === linkFieldName.value);
 
 			if (field && field.fieldtype === "Link") {
 				linkDoctype.value = field.options;
@@ -399,10 +401,11 @@ watch(
 	() => childtableMeta.data,
 	async (meta) => {
 		if (!meta) return;
+		const doc = meta.docs.find((d) => d.name === props.doctype) || meta.docs[0];
 		const linkField =
-			meta.docs[0].fields.find(
+			doc.fields.find(
 				(f) => f.fieldname === linkFieldName.value && f.fieldtype === "Link"
-			) || meta.docs[0].fields.find((f) => f.fieldtype === "Link");
+			) || doc.fields.find((f) => f.fieldtype === "Link");
 
 		if (linkField) {
 			linkDoctype.value = linkField.options;

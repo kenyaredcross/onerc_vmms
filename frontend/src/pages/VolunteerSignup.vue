@@ -484,17 +484,8 @@ function getCurrentStepData(onlyChanges = false) {
 }
 
 const jobApplication = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.doc.search_doctype",
-	makeParams() {
-		return {
-			doctype: "Job Applicant",
-			filters: {
-				email_id: user.data?.email,
-				is_volunteer: true,
-			},
-			first: true,
-		};
-	},
+	url: "onerc_vmms.volunteer_and_member_management.api.volunteer.get_my_volunteer_application",
+
 	auto: true,
 	reloadOn: () => !!user.data?.email,
 	onSuccess(data) {

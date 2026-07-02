@@ -4,56 +4,29 @@ import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
 
+from ..services.user import create_vmms_user
 from ..utils import set_field_value
 
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 5)
 def create_user(**kwargs):
-	if frappe.db.exists("User", {"email": kwargs.get("email")}):
-		frappe.throw("User already exists with this email")
-
 	try:
 		frappe.db.begin()
-
-		user = frappe.get_doc(
-			{
-				"doctype": "User",
-				"email": kwargs.get("email") or "",
-				"first_name": kwargs.get("first_name") or "",
-				"last_name": kwargs.get("last_name") or "",
-				"full_name": f'{kwargs.get("first_name") or ""} {kwargs.get("last_name") or ""}',
-				"phone": kwargs.get("phone") or "",
-				"gender": kwargs.get("gender") or "",
-				"enabled": 1,
-				"default_app": "onerc_vmms",
-			}
+		create_vmms_user(
+			email=kwargs.get("email"),
+			first_name=kwargs.get("first_name"),
+			last_name=kwargs.get("last_name"),
+			phone=kwargs.get("phone"),
+			gender=kwargs.get("gender"),
 		)
-
-		user.insert(ignore_permissions=True)
-
-		if not frappe.db.exists("Role", "Vmms Guest"):
-			frappe.get_doc({"doctype": "Role", "role_name": "Vmms Guest"}).insert(ignore_permissions=True)
-
-		user.add_roles("Vmms Guest")
-
-		user_permission = frappe.get_doc(
-			{
-				"doctype": "User Permission",
-				"user": user.name,
-				"allow": "User",
-				"for_value": user.name,
-				"is_default": 1,
-				"apply_to_all_doctypes": 1,
-			}
-		)
-
-		user_permission.insert(ignore_permissions=True)
-
-	except Exception as e:
+	except frappe.ValidationError:
+		frappe.db.rollback()
+		raise
+	except Exception:
 		frappe.db.rollback()
 		frappe.log_error(frappe.get_traceback(), "Error signing up")
-		frappe.throw("Error signing up")
+		frappe.throw(_("Error signing up"))
 	else:
 		frappe.db.commit()
 

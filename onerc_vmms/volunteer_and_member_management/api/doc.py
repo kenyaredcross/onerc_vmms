@@ -13,91 +13,40 @@ from frappe.desk.search import (
 from frappe.model.db_query import get_order_by
 from frappe.utils.data import make_filter_tuple
 
-
-@frappe.whitelist(allow_guest=True)
-def get_list(
-	doctype,
-	fields=None,
-	filters=None,
-	order_by=None,
-	limit_start=0,
-	limit_page_length=20,
-):
-	"""
-	Override standard get_list to allow fetching lists with ignore_permissions=True
-	"""
-	if not doctype:
-		frappe.throw(_("Doctype is required"))
-
-	if isinstance(fields, str):
-		fields = json.loads(fields)
-
-	if isinstance(filters, str):
-		filters = json.loads(filters)
-
-	if isinstance(order_by, str) and order_by == "null":
-		order_by = None
-
-	results = frappe.get_list(
-		doctype=doctype,
-		fields=fields,
-		filters=filters,
-		order_by=order_by,
-		start=limit_start,
-		page_length=limit_page_length,
-		ignore_permissions=True,
-	)
-
-	return results
+SEARCHABLE_REFERENCE_DOCTYPES = frozenset(
+	{
+		"Administrative Location",
+		"Company",
+		"Country",
+		"County",
+		"Designation",
+		"Disability",
+		"Disability Category",
+		"Driving Licence Class",
+		"Gender",
+		"Identification Document Type",
+		"Language",
+		"Location",
+		"Personnel License Type",
+		"Profession",
+		"Sub County",
+		"Sub Location",
+		"Supporting Document Type",
+		"Ward",
+	}
+)
 
 
-@frappe.whitelist(allow_guest=True)
-def search_doctype(
-	doctype: str,
-	name: str | None = None,
-	filters: str | None | dict | list = None,
-	first: bool = False,
-):
-	"""
-	Search for a doctype by name or filters.
-	If name is provided, it will return the document with that name.
-	If filters are provided, it will return documents matching those filters.
-	"""
-	if not doctype:
-		frappe.throw(_("Doctype is required"))
-
-	if not frappe.db.exists("DocType", doctype):
-		frappe.throw(_("Invalid Doctype: {0}").format(doctype))
-
-	if name:
-		return frappe.get_doc(doctype, name)
-
-	if isinstance(filters, str):
-		filters = json.loads(filters)
-
-	results = frappe.get_all(doctype, filters=filters, as_list=False)
-
-	if first:
-		data = frappe.get_doc(doctype, results[0].name) if results else None
-		if data:
-			return _convert_table_multiselect(data)
-
-	return results
-
-
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def search_widget(
 	doctype: str,
 	txt: str,
-	query: str | None = None,
 	searchfield: str | None = None,
 	start: int = 0,
 	page_length: int = 10,
 	filters: str | None | dict | list = None,
-	filter_fields=None,
 	as_dict: bool = False,
 	reference_doctype: str | None = None,
-	ignore_permissions: bool = True,
 ):
 	start = cint(start)
 
@@ -111,9 +60,7 @@ def search_widget(
 		searchfield = "name"
 
 	standard_queries = frappe.get_hooks().standard_queries or {}
-
-	if not query and doctype in standard_queries:
-		query = standard_queries[doctype][-1]
+	query = standard_queries[doctype][-1] if doctype in standard_queries else None
 
 	if query:
 		try:
@@ -127,7 +74,6 @@ def search_widget(
 				filters,
 				as_dict=as_dict,
 				reference_doctype=reference_doctype,
-				ignore_user_permissions=True,
 			)
 		except Exception:
 			return []
@@ -173,8 +119,6 @@ def search_widget(
 		filters.append([doctype, "disabled", "!=", 1])
 
 	fields = get_std_fields_list(meta, searchfield or "name")
-	if filter_fields:
-		fields = list(set(fields + json.loads(filter_fields)))
 	formatted_fields = [f"`tab{meta.name}`.`{f.strip()}`" for f in fields]
 
 	if meta.show_title_field_in_link and meta.title_field:
@@ -183,7 +127,7 @@ def search_widget(
 	order_by_based_on_meta = get_order_by(doctype, meta)
 	order_by = f"`tab{doctype}`.idx desc, {order_by_based_on_meta}"
 
-	ignore_permissions = True
+	ignore_permissions = doctype in SEARCHABLE_REFERENCE_DOCTYPES
 
 	values = frappe.get_list(
 		doctype,
@@ -214,32 +158,28 @@ def search_widget(
 	return values
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def custom_search_link(
 	doctype: str,
 	txt: str,
-	query: str | None = None,
 	filters: str | dict | list | None = None,
 	page_length: int = 10,
 	searchfield: str | None = None,
 	reference_doctype: str | None = None,
-	ignore_permissions: bool = False,
 ) -> list[LinkSearchResults]:
 	results = search_widget(
 		doctype,
 		txt.strip(),
-		query,
 		searchfield=searchfield,
 		page_length=page_length,
 		filters=filters,
 		reference_doctype=reference_doctype,
-		ignore_permissions=ignore_permissions,
 	)
 
 	return build_for_autosuggest(results, doctype=doctype)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_link_doc(data: dict):
 	try:
 		doctype = data.get("doctype")
@@ -265,7 +205,7 @@ def create_link_doc(data: dict):
 		return {"status": "error", "message": str(e)}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_doc_info(doctype: str):
 	"""
 	Get doctype metadata: fields, labels, and other configurations
