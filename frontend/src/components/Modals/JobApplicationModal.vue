@@ -401,7 +401,7 @@ function submitResume() {
 				toast.success(
 					applicationId.value
 						? "Application updated successfully"
-						: "Application submitted successfully",
+						: "Application submitted successfully"
 				);
 				router.push({ name: "Dashboard" });
 			},
@@ -409,7 +409,7 @@ function submitResume() {
 			onError(err) {
 				toast.error(err.messages?.[0] || err);
 			},
-		},
+		}
 	);
 }
 
@@ -423,6 +423,6 @@ watch(
 			});
 		}
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 </script>

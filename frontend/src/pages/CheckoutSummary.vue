@@ -189,8 +189,8 @@
 											handlePay.loading
 												? __("Initialising Payment")
 												: confirmPaymentStatus.loading
-													? __("Confirming Payment")
-													: __("Proceed to Pay")
+												? __("Confirming Payment")
+												: __("Proceed to Pay")
 										}}
 									</Button>
 								</div>
@@ -262,7 +262,7 @@ const handlePay = createResource({
 		if (data) {
 			checkSTK.value = true;
 			toast.success(
-				"Payment initiated successfully. Please complete the payment on your phone.",
+				"Payment initiated successfully. Please complete the payment on your phone."
 			);
 			invoice.value = data.invoice;
 			eventBooking.value = data.event_booking;
@@ -283,11 +283,10 @@ function initiatePaymentListener(data) {
 		confirmPaymentStatus.loading = false;
 		status === "Completed"
 			? ((paymentStatus.value = true),
-				attendeeBooking.clearBookingData(),
-				toast.success("Payment successful! Your ticket has been booked."))
+			  attendeeBooking.clearBookingData(),
+			  toast.success("Payment successful! Your ticket has been booked."))
 			: ((checkSTK.value = false),
-				(handlePay.error =
-					"There was an error processing your payment. Please try again."));
+			  (handlePay.error = "There was an error processing your payment. Please try again."));
 	});
 }
 

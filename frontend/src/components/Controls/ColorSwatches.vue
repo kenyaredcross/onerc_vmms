@@ -22,7 +22,9 @@
 									modelValue
 										? {
 												backgroundColor:
-													theme.backgroundColor[modelValue.toLowerCase()][400],
+													theme.backgroundColor[
+														modelValue.toLowerCase()
+													][400],
 										  }
 										: {}
 								"
@@ -47,7 +49,7 @@
 			<template #body="{ close }">
 				<div class="rounded-lg bg-surface-white p-3 border w-fit mt-2">
 					<div class="text-xs text-ink-gray-5 mb-1.5">
-						{{ __('Swatches') }}
+						{{ __("Swatches") }}
 					</div>
 					<div class="grid grid-cols-7 gap-2">
 						<div
@@ -55,14 +57,13 @@
 							:key="color"
 							class="size-5 rounded-full cursor-pointer"
 							:style="{
-								backgroundColor:
-									theme.backgroundColor[color.toLowerCase()][400],
+								backgroundColor: theme.backgroundColor[color.toLowerCase()][400],
 							}"
 							@click="
 								(e) => {
-									emit('update:modelValue', color)
-									close()
-									emit('change', color)
+									emit('update:modelValue', color);
+									close();
+									emit('change', color);
 								}
 							"
 						></div>
@@ -76,33 +77,33 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { Button, FormControl, Popover } from 'frappe-ui'
-import { computed } from 'vue'
-import { Palette, X } from 'lucide-vue-next'
-import { theme } from '@/utils/theme'
+import { Button, FormControl, Popover } from "frappe-ui";
+import { computed } from "vue";
+import { Palette, X } from "lucide-vue-next";
+import { theme } from "@/utils/theme";
 
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(["update:modelValue", "change"]);
 
 const props = defineProps<{
-	modelValue: string
-	label: string
-	description?: string
-}>()
+	modelValue: string;
+	label: string;
+	description?: string;
+}>();
 
 const colors = computed(() => {
 	return [
-		'Red',
-		'Blue',
-		'Green',
-		'Amber',
-		'Purple',
-		'Cyan',
-		'Orange',
-		'Violet',
-		'Pink',
-		'Teal',
-		'Gray',
-		'Yellow',
-	]
-})
+		"Red",
+		"Blue",
+		"Green",
+		"Amber",
+		"Purple",
+		"Cyan",
+		"Orange",
+		"Violet",
+		"Pink",
+		"Teal",
+		"Gray",
+		"Yellow",
+	];
+});
 </script>

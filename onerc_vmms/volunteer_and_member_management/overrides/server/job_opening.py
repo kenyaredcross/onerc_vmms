@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import frappe
 from frappe import _
@@ -134,7 +134,7 @@ def send_rejection_emails(applicants: Any, template_name: str | None = None) -> 
 
 	if isinstance(parsed, dict):
 		parsed = [parsed]
-	if not isinstance(parsed, (list, tuple)):
+	if not isinstance(parsed, list | tuple):
 		parsed = [parsed]
 
 	for applicant in parsed:

@@ -311,6 +311,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 			frm.events.render_employees_datatable(frm, r.message || []);
 
 			if (r.message) {
+				// no additional handling required
 			}
 		});
 	},
@@ -465,7 +466,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 	confirm_deployment: function (frm, selected_employees) {
 		frappe.confirm(
 			__("Send request to {0} personnel(s) for this project?", [selected_employees.length]),
-			() => frm.events.bulk_deploy_employees(frm, selected_employees),
+			() => frm.events.bulk_deploy_employees(frm, selected_employees)
 		);
 	},
 
@@ -494,7 +495,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 					message += "<ul>";
 					failure.forEach((f) => {
 						const employeeData = frm.employees_datatable.datamanager.data.find(
-							(d) => d.employee === f.employee,
+							(d) => d.employee === f.employee
 						);
 						const employeeName =
 							(employeeData && employeeData.employee_name) || f.employee_name || "";

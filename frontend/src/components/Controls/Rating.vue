@@ -20,13 +20,13 @@
 </template>
 
 <script setup>
-import { Star } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
+import { Star } from "lucide-vue-next";
+import { ref, watch } from "vue";
 
 const props = defineProps({
 	id: {
 		type: String,
-		default: '',
+		default: "",
 	},
 	modelValue: {
 		type: Number,
@@ -34,48 +34,48 @@ const props = defineProps({
 	},
 	label: {
 		type: String,
-		default: '',
+		default: "",
 	},
 	size: {
 		type: String,
-		default: 'md',
+		default: "md",
 	},
-})
+});
 
 const iconClasses = (index) => {
 	let classes = [
 		{
-			sm: 'size-4',
-			md: 'size-5',
-			lg: 'size-6',
-			xl: 'size-7',
+			sm: "size-4",
+			md: "size-5",
+			lg: "size-6",
+			xl: "size-7",
 		}[props.size],
-	]
+	];
 	if (index <= hoveredRating.value && index > rating.value) {
-		classes.push('fill-yellow-200')
+		classes.push("fill-yellow-200");
 	} else if (index <= rating.value) {
-		classes.push('fill-yellow-500')
+		classes.push("fill-yellow-500");
 	}
-	return classes.join(' ')
-}
+	return classes.join(" ");
+};
 
-const emit = defineEmits(['update:modelValue'])
-const rating = ref(props.modelValue)
-const hoveredRating = ref(0)
+const emit = defineEmits(["update:modelValue"]);
+const rating = ref(props.modelValue);
+const hoveredRating = ref(0);
 
 let emitChange = (value) => {
-	emit('update:modelValue', value)
-}
+	emit("update:modelValue", value);
+};
 
 function markRating(index) {
-	emitChange(index)
-	rating.value = index
+	emitChange(index);
+	rating.value = index;
 }
 
 watch(
 	() => props.modelValue,
 	(newVal) => {
-		rating.value = newVal
+		rating.value = newVal;
 	}
-)
+);
 </script>

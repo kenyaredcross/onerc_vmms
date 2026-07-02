@@ -27,7 +27,9 @@ class JobApplicationScreeningQuestions(Document):
 		parenttype: DF.Data
 		question: DF.SmallText
 		question_id: DF.Data
-		question_type: DF.Literal["Text", "Select", "MultiSelect", "Rating", "Upload", "Date", "Yes/No", "Email", "Phone"]
+		question_type: DF.Literal[
+			"Text", "Select", "MultiSelect", "Rating", "Upload", "Date", "Yes/No", "Email", "Phone"
+		]
 		show_if_answer_is: DF.SmallText | None
 		weight: DF.Float
 	# end: auto-generated types

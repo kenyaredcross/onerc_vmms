@@ -108,7 +108,7 @@
 		:options="{
 			title: __('Successfully Registered'),
 			message: __(
-				'We have sent you an email with a link to set your password. Please check your inbox (and spam folder) to complete your registration.',
+				'We have sent you an email with a link to set your password. Please check your inbox (and spam folder) to complete your registration.'
 			),
 			size: 'lg',
 			icon: {
@@ -184,7 +184,7 @@ function submit() {
 						router.push({ name: "Dashboard" });
 					}
 				},
-			},
+			}
 		);
 	} else {
 		createSignUp.submit({

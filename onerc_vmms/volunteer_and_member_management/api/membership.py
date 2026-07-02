@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 import frappe
 from frappe import _
@@ -61,7 +62,7 @@ def get_current_membership():
 		membership_groups[key].append(membership_item)
 
 	filtered_memberships = []
-	for key, group in membership_groups.items():
+	for _key, group in membership_groups.items():
 		statuses = [m.status for m in group]
 
 		if "Active" in statuses or "Pending" in statuses:
@@ -85,7 +86,6 @@ def get_current_membership():
 
 @frappe.whitelist()
 def membership_certificate_template(membership_type: str) -> str:
-
 	error_message = "Error printing membership certificate"
 	if not membership_type:
 		frappe.throw(error_message)
@@ -109,7 +109,6 @@ def membership_certificate_template(membership_type: str) -> str:
 
 @frappe.whitelist()
 def confirm_payment(invoice_name: str) -> str:
-
 	error_message = "Error confirming payment"
 
 	if not invoice_name:
@@ -130,14 +129,13 @@ def confirm_payment(invoice_name: str) -> str:
 
 @frappe.whitelist()
 def initiate_membership_registration(
-	phone: str = None,
+	phone: str | None = None,
 	amount: float = 0.0,
-	membership_type: str = None,
-	branch: str = None,
+	membership_type: str | None = None,
+	branch: str | None = None,
 	is_existing_member: bool = False,
-	proof_attachment: any = None,
+	proof_attachment: Any = None,
 ) -> str:
-
 	try:
 		membership_id = create_membership(phone, amount, membership_type, branch, is_existing_member)
 
@@ -170,7 +168,6 @@ def initiate_membership_registration(
 def create_membership(
 	phone: str, amount: float, membership_type: str, branch: str, is_existing_member: bool = False
 ) -> str:
-
 	membership_type_doc = frappe.get_doc("VM Membership Type", membership_type)
 	if not membership_type_doc:
 		frappe.throw(_("Error creating membership"))
@@ -241,7 +238,6 @@ def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
 
 
 def create_member() -> "Document":
-
 	member = frappe.get_doc(
 		{
 			"doctype": "VM Member",
@@ -285,7 +281,6 @@ def renew_membership(**kwargs):
 
 @frappe.whitelist()
 def validate_membership_eligibility():
-
 	user_info = get_user_details()
 
 	missing_fields = []

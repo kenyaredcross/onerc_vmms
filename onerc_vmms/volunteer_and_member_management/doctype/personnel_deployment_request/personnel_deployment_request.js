@@ -38,7 +38,7 @@ frappe.ui.form.on("Personnel Deployment Request", {
 							});
 						}).addClass("btn-primary");
 					}
-				},
+				}
 			);
 		}
 

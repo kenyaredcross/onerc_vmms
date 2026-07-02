@@ -8,8 +8,8 @@
 </template>
 
 <script setup>
-import { Calendar } from 'lucide-vue-next'
-import { getFormattedDateRange } from '@/utils'
+import { Calendar } from "lucide-vue-next";
+import { getFormattedDateRange } from "@/utils";
 
 const props = defineProps({
 	startDate: {
@@ -18,5 +18,5 @@ const props = defineProps({
 	endDate: {
 		type: String,
 	},
-})
+});
 </script>

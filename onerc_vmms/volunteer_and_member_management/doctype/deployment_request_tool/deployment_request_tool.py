@@ -383,7 +383,6 @@ class DeploymentRequestTool(Document):
 		return query
 
 	def build_condition_list(self, field_to_table_map: dict) -> list[Criterion]:
-
 		conditions = []
 
 		try:

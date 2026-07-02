@@ -27,9 +27,9 @@ export const usersStore = defineStore("vmms-users", () => {
 		auto: true,
 	});
 
-  return {
-    userResource,
-    roleResource,
-    presentSlots,
-  };
+	return {
+		userResource,
+		roleResource,
+		presentSlots,
+	};
 });
