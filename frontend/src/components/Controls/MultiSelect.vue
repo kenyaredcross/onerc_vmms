@@ -175,13 +175,15 @@ const childtableMeta = createResource({
 	url: "frappe.desk.form.load.getdoctype",
 	params: {
 		doctype: props.doctype,
-		with_parent: 1,
+
+		with_parent: 0,
 	},
 	cache: [props.doctype],
 	auto: true,
 	onSuccess(data) {
+		const doc = data.docs.find((d) => d.name === props.doctype) || data.docs[0];
 		if (!linkFieldName.value) {
-			const linkField = data.docs[0].fields.find((f) => f.fieldtype === "Link");
+			const linkField = doc.fields.find((f) => f.fieldtype === "Link");
 			if (linkField) {
 				linkFieldName.value = linkField.fieldname;
 				linkDoctype.value = linkField.options;
@@ -189,7 +191,7 @@ const childtableMeta = createResource({
 				console.error("[MultiSelect] No link field found in childtable:", props.doctype);
 			}
 		} else {
-			const field = data.docs[0].fields.find((f) => f.fieldname === linkFieldName.value);
+			const field = doc.fields.find((f) => f.fieldname === linkFieldName.value);
 
 			if (field && field.fieldtype === "Link") {
 				linkDoctype.value = field.options;
@@ -211,7 +213,7 @@ const linkDoctypeMeta = createResource({
 			? {
 					doctype: linkDoctype.value,
 					with_parent: 0,
-				}
+			  }
 			: null;
 	},
 	cache: () => [linkDoctype.value],
@@ -228,7 +230,7 @@ watch(
 			linkDoctypeMeta.reload();
 		}
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 const childtableEntries = createResource({
@@ -318,7 +320,7 @@ const resolveValues = async () => {
 			if (linkLabelsResource.data?.length) {
 				displayValues.value = resolved.map((item) => {
 					const match = linkLabelsResource.data.find(
-						(opt) => opt.name === item[linkFieldName.value],
+						(opt) => opt.name === item[linkFieldName.value]
 					);
 					return {
 						...item,
@@ -341,7 +343,7 @@ watch(
 			resolveValues();
 		}
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 onMounted(() => {
@@ -374,7 +376,7 @@ watchDebounced(
 		text.value = val;
 		reload(val);
 	},
-	{ debounce: 300, immediate: true },
+	{ debounce: 300, immediate: true }
 );
 
 const filterOptions = createResource({
@@ -399,10 +401,11 @@ watch(
 	() => childtableMeta.data,
 	async (meta) => {
 		if (!meta) return;
+		const doc = meta.docs.find((d) => d.name === props.doctype) || meta.docs[0];
 		const linkField =
-			meta.docs[0].fields.find(
-				(f) => f.fieldname === linkFieldName.value && f.fieldtype === "Link",
-			) || meta.docs[0].fields.find((f) => f.fieldtype === "Link");
+			doc.fields.find(
+				(f) => f.fieldname === linkFieldName.value && f.fieldtype === "Link"
+			) || doc.fields.find((f) => f.fieldtype === "Link");
 
 		if (linkField) {
 			linkDoctype.value = linkField.options;
@@ -411,7 +414,7 @@ watch(
 			filterOptions.reload();
 		}
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 const options = computed(() => {
@@ -491,7 +494,7 @@ watch(
 			filterOptions.reload();
 		}
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 const removeValue = (index) => {
