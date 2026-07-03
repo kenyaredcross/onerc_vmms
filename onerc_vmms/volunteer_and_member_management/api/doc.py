@@ -35,6 +35,16 @@ SEARCHABLE_REFERENCE_DOCTYPES = frozenset(
 		"Ward",
 	}
 )
+CREATABLE_LINK_DOCTYPES = frozenset(
+	{
+		"Administrative Location",
+		"Location",
+		"Sub Location",
+		"County",
+		"Sub County",
+		"Ward",
+	}
+)
 
 
 @frappe.whitelist()
@@ -179,15 +189,15 @@ def custom_search_link(
 	return build_for_autosuggest(results, doctype=doctype)
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def create_link_doc(data: dict):
 	try:
 		doctype = data.get("doctype")
 		if not doctype:
 			return {"status": "error", "message": "Missing 'doctype' in data"}
 
-		if not frappe.db.exists("DocType", doctype):
-			return {"status": "error", "message": f"Invalid doctype: {doctype}"}
+		if doctype not in CREATABLE_LINK_DOCTYPES:
+			frappe.throw(f"Cannot create records of type {doctype}", frappe.PermissionError)
 
 		doc = frappe.get_doc(data).insert(ignore_permissions=True)
 		frappe.db.commit()
@@ -199,10 +209,10 @@ def create_link_doc(data: dict):
 			"message": "A record with the same name already exists",
 		}
 
-	except Exception as e:
+	except Exception:
 		frappe.log_error(message=frappe.get_traceback(), title="Create Link Doc Error")
 		frappe.db.rollback()
-		return {"status": "error", "message": str(e)}
+		return {"status": "error", "message": _("Could not create the record.")}
 
 
 @frappe.whitelist()
@@ -237,9 +247,9 @@ def get_doc_info(doctype: str):
 			"issingle": meta.issingle,
 		}
 
-	except Exception as e:
+	except Exception:
 		frappe.log_error(frappe.get_traceback(), "get_doc_info API Error")
-		frappe.throw(_("Error fetching doctype info: {0}").format(str(e)))
+		frappe.throw(_("Error fetching doctype info."))
 
 
 def _convert_table_multiselect(doc):

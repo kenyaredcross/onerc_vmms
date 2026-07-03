@@ -135,7 +135,7 @@ def get_company_descendants(company=None, company_list=None, include_parent=True
 	if not companies:
 		return []
 
-	if not isinstance(companies, list | tuple):
+	if not isinstance(companies, (list | tuple)):
 		companies = [companies]
 
 	descendants_set = set()

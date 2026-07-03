@@ -148,8 +148,8 @@ def get_event_details(event_name: str | int) -> dict:
 
 			speakers = []
 
-			for talk_speaker in talk.speakers:
-				speaker = frappe.get_doc("Speaker Profile", talk_speaker.speaker)
+			for _talk in talk.speakers:
+				speaker = frappe.get_doc("Speaker Profile", _talk.speaker)
 				speakers.append(speaker.as_dict())
 
 			event["speakers"] = speakers

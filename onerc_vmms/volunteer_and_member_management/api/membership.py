@@ -4,6 +4,7 @@ from typing import Any
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname
 
 from ..api.user import get_user_details
@@ -128,6 +129,7 @@ def confirm_payment(invoice_name: str) -> str:
 
 
 @frappe.whitelist()
+@rate_limit(limit=10, seconds=60 * 5)
 def initiate_membership_registration(
 	phone: str | None = None,
 	amount: float = 0.0,
@@ -164,7 +166,6 @@ def initiate_membership_registration(
 		log_throw_error("Error initiating membership registration")
 
 
-@frappe.whitelist(allow_guest=True)
 def create_membership(
 	phone: str, amount: float, membership_type: str, branch: str, is_existing_member: bool = False
 ) -> str:
@@ -268,6 +269,7 @@ def check_conflicting_memberships(member_doc: "Document", company: str) -> None:
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60 * 5)
 def renew_membership(**kwargs):
 	try:
 		membership = frappe.get_doc("VM Membership", kwargs.get("id"))
