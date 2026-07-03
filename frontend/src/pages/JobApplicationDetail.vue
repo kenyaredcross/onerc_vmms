@@ -62,10 +62,10 @@
 						currentStep === step.originalIndex
 							? 'border-red-600 text-red-700 bg-red-50/50'
 							: step.originalIndex < currentStep
-								? 'border-green-600 text-green-600 hover:text-red-500 hover:border-red-200'
-								: step.originalIndex <= maxCompletedStep + 1
-									? 'border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-300'
-									: 'border-gray-100 text-gray-400 cursor-not-allowed',
+							? 'border-green-600 text-green-600 hover:text-red-500 hover:border-red-200'
+							: step.originalIndex <= maxCompletedStep + 1
+							? 'border-gray-200 text-gray-600 hover:text-red-600 hover:border-red-300'
+							: 'border-gray-100 text-gray-400 cursor-not-allowed',
 					]"
 				>
 					<svg
@@ -154,7 +154,7 @@
 					<p class="text-gray-600">
 						{{
 							__(
-								"Thank you for your application. You can review your submitted details here.",
+								"Thank you for your application. You can review your submitted details here."
 							)
 						}}
 					</p>
@@ -242,7 +242,7 @@ const validationErrors = ref([]);
 const flatErrors = computed(() => {
 	if (!validationErrors.value.length) return [];
 	return validationErrors.value.flatMap((err) =>
-		typeof err === "string" ? [err] : Object.values(err).flat(),
+		typeof err === "string" ? [err] : Object.values(err).flat()
 	);
 });
 
@@ -716,7 +716,7 @@ const goToStep = (index) => {
 			router.replace({ hash: steps[index].hash });
 		} else {
 			toast.error(
-				"This submitted application is read-only and can only view the Review tab.",
+				"This submitted application is read-only and can only view the Review tab."
 			);
 		}
 		return;
@@ -759,7 +759,7 @@ watch(
 	(newHash) => {
 		const index = steps.findIndex((s) => s.hash === newHash);
 		if (index >= 0) currentStep.value = index;
-	},
+	}
 );
 
 watch(
@@ -770,7 +770,7 @@ watch(
 			job.reload();
 		}
 	},
-	{ deep: true },
+	{ deep: true }
 );
 
 const handleStepAction = () => {
@@ -809,7 +809,7 @@ const saveApplicationDraft = () => {
 			onError: (err) =>
 				toast.error(err.messages?.[0] || "Failed to save application stage."),
 			onSettled: () => (isSaving.value = false),
-		},
+		}
 	);
 };
 
@@ -828,11 +828,11 @@ const submitApplication = () => {
 				}
 			},
 			onError: (err) => {
-				(toast.error(err.messages?.[0] || "Failed to submit application."),
-					window.location.reload());
+				toast.error(err.messages?.[0] || "Failed to submit application."),
+					window.location.reload();
 			},
 			onSettled: () => (isSaving.value = false),
-		},
+		}
 	);
 };
 

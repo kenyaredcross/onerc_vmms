@@ -264,7 +264,7 @@ function filterOptions(options) {
 	return options.filter((option) => {
 		let searchTexts = [option.label, option.value];
 		return searchTexts.some((text) =>
-			(text || "").toString().toLowerCase().includes(query.value.toLowerCase()),
+			(text || "").toString().toLowerCase().includes(query.value.toLowerCase())
 		);
 	});
 }

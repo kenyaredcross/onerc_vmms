@@ -17,28 +17,28 @@
 	</div>
 </template>
 <script setup>
-import { Button } from 'frappe-ui'
+import { Button } from "frappe-ui";
 
 const props = defineProps({
 	title: {
 		type: String,
-		default: 'Not Permitted',
+		default: "Not Permitted",
 	},
 	text: {
 		type: String,
-		default: 'You are not permitted to access this page.',
+		default: "You are not permitted to access this page.",
 	},
 	buttonLabel: {
 		type: String,
-		default: 'Login',
+		default: "Login",
 	},
 	buttonLink: {
 		type: String,
-		default: '/login',
+		default: "/login",
 	},
-})
+});
 
 const redirect = () => {
-	window.location.href = props.buttonLink
-}
+	window.location.href = props.buttonLink;
+};
 </script>

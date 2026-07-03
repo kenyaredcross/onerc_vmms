@@ -420,7 +420,7 @@
 							:label="__('Upload New Profile Image')"
 							:description="
 								__(
-									'Recommended: Square image, minimum 200x200 pixels. PNG, JPG, GIF up to 10MB',
+									'Recommended: Square image, minimum 200x200 pixels. PNG, JPG, GIF up to 10MB'
 								)
 							"
 						/>
@@ -577,7 +577,7 @@ watch(
 		localForm.full_name = newForm.full_name || "";
 		localForm.title = newForm.title || "";
 	},
-	{ immediate: true, deep: true },
+	{ immediate: true, deep: true }
 );
 
 function openCoverUploader() {

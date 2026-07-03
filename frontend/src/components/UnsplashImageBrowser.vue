@@ -20,12 +20,10 @@
 							/>
 						</div>
 						<FileUploader @success="(file) => $emit('select', file.file_url)">
-							<template
-								v-slot="{ file, progress, uploading, openFileSelector }"
-							>
+							<template v-slot="{ file, progress, uploading, openFileSelector }">
 								<div class="w-full text-center">
 									<Button @click="openFileSelector" :loading="uploading">
-										{{ uploading ? `Uploading ${progress}%` : 'Upload Image' }}
+										{{ uploading ? `Uploading ${progress}%` : "Upload Image" }}
 									</Button>
 								</div>
 							</template>
@@ -49,9 +47,9 @@
 						</Button>
 					</div>
 					<div class="mt-2 text-center text-sm text-ink-gray-4">
-						{{ __('Image search powered by') }}
+						{{ __("Image search powered by") }}
 						<a class="underline" target="_blank" href="https://unsplash.com">
-							{{ __('Unsplash') }}
+							{{ __("Unsplash") }}
 						</a>
 					</div>
 				</div>
@@ -62,29 +60,29 @@
 
 <script>
 // import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
-import { Popover, FileUploader, Button } from 'frappe-ui'
+import { Popover, FileUploader, Button } from "frappe-ui";
 
 export default {
-	name: 'UnsplashImageBrowser',
+	name: "UnsplashImageBrowser",
 	components: {
 		Popover,
 		FileUploader,
 	},
-	emits: ['select'],
+	emits: ["select"],
 	resources: {
 		images() {
 			return {
-				url: 'gameplan.api.get_unsplash_photos',
+				url: "gameplan.api.get_unsplash_photos",
 				params: { keyword: this.search },
 				auto: true,
 				debounce: 500,
-			}
+			};
 		},
 	},
 	data() {
 		return {
-			search: '',
-		}
+			search: "",
+		};
 	},
-}
+};
 </script>

@@ -49,7 +49,7 @@ function generateYears() {
 	const years = [];
 	for (let i = currentYear; i >= currentYear - 5; i--) years.push(i);
 	availableYears.value = years;
-} 
+}
 
 function updateHeatmap() {
 	loading.value = true;

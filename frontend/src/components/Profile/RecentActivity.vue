@@ -79,7 +79,7 @@ function fetchActivities() {
 		.then(() => {
 			const data = resource.data || [];
 			activities.value.push(
-				...data.map((a) => ({ ...a, formatted_message: formatActivityMessage(a) })),
+				...data.map((a) => ({ ...a, formatted_message: formatActivityMessage(a) }))
 			);
 			hasMore.value = data.length === props.limit;
 			loadingMore.value = false;
@@ -103,7 +103,9 @@ function getBadgeClass(type) {
 		Revert: "bg-orange-100 text-orange-800",
 		Review: "bg-purple-100 text-purple-800",
 	};
-	return `px-2 py-1 text-xs font-semibold rounded ${classes[type] || "bg-gray-100 text-gray-800"}`;
+	return `px-2 py-1 text-xs font-semibold rounded ${
+		classes[type] || "bg-gray-100 text-gray-800"
+	}`;
 }
 
 function formatDate(date) {

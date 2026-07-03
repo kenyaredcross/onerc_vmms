@@ -64,15 +64,15 @@ const query = ref("");
 const error = ref(null);
 
 const normalizedOptions = computed(() =>
-	props.options.map((opt) => (typeof opt === "string" ? { label: opt, value: opt } : opt)),
+	props.options.map((opt) => (typeof opt === "string" ? { label: opt, value: opt } : opt))
 );
 
 const filteredOptions = computed(() =>
 	query.value
 		? normalizedOptions.value.filter((o) =>
-				o.label?.toLowerCase().includes(query.value.toLowerCase()),
-			)
-		: normalizedOptions.value,
+				o.label?.toLowerCase().includes(query.value.toLowerCase())
+		  )
+		: normalizedOptions.value
 );
 
 function toggleValue(value) {

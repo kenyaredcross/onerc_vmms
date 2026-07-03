@@ -7,6 +7,36 @@ from frappe.rate_limiter import rate_limit
 from ..services.user import create_vmms_user
 from ..utils import set_field_value
 
+SELF_EDITABLE_USER_FIELDS = frozenset(
+	{
+		"first_name",
+		"middle_name",
+		"last_name",
+		"phone",
+		"mobile_no",
+		"gender",
+		"birth_date",
+		"marital_status",
+		"blood_group",
+		"citizenship",
+		"country_of_citizenship",
+		"identification_type",
+		"id_number",
+		"passport_number",
+		"number_of_dependants",
+		"administrative_location",
+		"sub_county",
+		"county",
+		"ward",
+		"access_to_internet",
+		"profession",
+		"user_image",
+		"location",
+		"language",
+		"time_zone",
+	}
+)
+
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60 * 5)
@@ -191,6 +221,11 @@ def update_user_details(**data):
 		user_doc = frappe.get_doc("User", frappe.session.user)
 
 		for fieldname, value in data.items():
+			# Only allow a fixed set of self-service profile fields. This is the security
+			# boundary: without it, a user could set `roles`, `role_profile_name` or
+			# `user_type` and escalate to System Manager (save uses ignore_permissions).
+			if fieldname not in SELF_EDITABLE_USER_FIELDS:
+				continue
 			if user_doc.meta.has_field(fieldname):
 				fieldtype = user_doc.meta.get_field(fieldname).fieldtype
 				set_field_value(user_doc, fieldname, value, fieldtype)
@@ -200,6 +235,7 @@ def update_user_details(**data):
 
 		return {"message": _("Profile updated successfully")}
 
-	except Exception as e:
+	except Exception:
 		frappe.db.rollback()
-		frappe.log_error("User Profile Update Error", str(e))
+		frappe.log_error(frappe.get_traceback(), "User Profile Update Error")
+		frappe.throw(_("Could not update your profile. Please try again."))

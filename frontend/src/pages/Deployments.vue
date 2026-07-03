@@ -100,7 +100,7 @@ watch(
 	(newHash) => {
 		currentTab.value = denormalizeHashToTab(newHash);
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 const updateTabAndHash = (newTabValue) => {

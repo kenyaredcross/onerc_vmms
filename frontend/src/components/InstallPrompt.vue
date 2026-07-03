@@ -38,7 +38,7 @@
 						<span>
 							{{
 								__(
-									"Get the app on your iPhone for easy access & a better experience",
+									"Get the app on your iPhone for easy access & a better experience"
 								)
 							}}
 						</span>

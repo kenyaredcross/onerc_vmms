@@ -166,10 +166,10 @@
 									props.is_renew
 										? "Renew"
 										: isExistingMember
-											? "Apply"
-											: confirmPayment
-												? "Processing Payment...."
-												: "Register"
+										? "Apply"
+										: confirmPayment
+										? "Processing Payment...."
+										: "Register"
 								}}
 							</Button>
 						</div>
@@ -323,14 +323,14 @@ function submit() {
 				} else {
 					checkSTK.value = true;
 					toast.success(
-						"Payment initiated Successfully! You will receive a payment prompt shortly on your phone.",
+						"Payment initiated Successfully! You will receive a payment prompt shortly on your phone."
 					);
 					createMembership.error = "";
 					confirmPayment.value = true;
 					initiatePaymentListener(data);
 				}
 			},
-		},
+		}
 	);
 }
 

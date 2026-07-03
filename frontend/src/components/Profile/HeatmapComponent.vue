@@ -68,7 +68,7 @@
 											"
 											@mouseenter="
 												!dataPoint.isEmpty &&
-												showTooltip(dataPoint, $event)
+													showTooltip(dataPoint, $event)
 											"
 											@mouseleave="hideTooltip"
 											@click="
@@ -344,7 +344,7 @@ export default {
 		watch(
 			() => props.heatmapData,
 			() => processedData.value,
-			{ deep: true },
+			{ deep: true }
 		);
 
 		return {
