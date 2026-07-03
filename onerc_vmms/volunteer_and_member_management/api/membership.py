@@ -3,6 +3,7 @@ from datetime import datetime
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname
 
 from onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership import (
@@ -111,26 +112,7 @@ def membership_certificate_template(membership_type: str) -> str:
 
 
 @frappe.whitelist()
-def confirm_payment(invoice_name: str) -> str:
-	error_message = "Error confirming payment"
-
-	if not invoice_name:
-		frappe.throw(_(error_message))
-
-	try:
-		invoice = frappe.get_doc("Sales Invoice", invoice_name)
-
-		if invoice.status == "Paid" and invoice.outstanding_amount == 0:
-			return "paid"
-
-		return "unpaid"
-
-	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
-		frappe.throw(_("Error confirming payment: {0}").format(str(e)))
-
-
-@frappe.whitelist()
+@rate_limit(limit=10, seconds=60 * 5)
 def initiate_membership_registration(
 	amount: float, membership_type: str, branch: str, payment_gateway: str
 ) -> str:
@@ -240,6 +222,7 @@ def check_conflicting_memberships(member_doc: "Document", company: str) -> None:
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=60 * 5)
 def renew_membership(**kwargs):
 	try:
 		membership = frappe.get_doc("VM Membership", kwargs.get("id"))

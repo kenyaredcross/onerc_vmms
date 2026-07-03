@@ -1,9 +1,11 @@
 import frappe
 from frappe import _, cint
+from frappe.rate_limiter import rate_limit
 from frappe.utils.file_manager import save_file
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=20, seconds=60 * 5)
 def upload_file():
 	try:
 		if "file" not in frappe.request.files:
