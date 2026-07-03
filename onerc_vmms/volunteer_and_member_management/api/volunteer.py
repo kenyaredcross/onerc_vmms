@@ -6,7 +6,6 @@ from .doc import _convert_table_multiselect
 from .user import get_user_info
 
 
-@frappe.whitelist()
 def create_volunteer(user_details):
 	volunteer = frappe.new_doc("Employee")
 	volunteer.first_name = user_details.fullname
