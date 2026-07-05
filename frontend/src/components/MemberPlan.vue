@@ -257,7 +257,7 @@ function getCertificate(membershipId?: string) {
 			onSuccess() {
 				loadCertificate.value = null;
 				window.open(
-					`/api/method/onerc_vmms.volunteer_and_member_management.utils.download_pdf?doctype=VM Membership&name=${membershipId}&format=${membershipTypeCert.value}`,
+					`/api/method/frappe.utils.print_format.download_pdf?doctype=VM Membership&name=${membershipId}&format=${membershipTypeCert.value}`,
 					"_blank"
 				);
 			},

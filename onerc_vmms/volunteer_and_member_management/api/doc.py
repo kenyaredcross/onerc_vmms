@@ -189,7 +189,7 @@ def custom_search_link(
 	return build_for_autosuggest(results, doctype=doctype)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_link_doc(data: dict):
 	try:
 		doctype = data.get("doctype")

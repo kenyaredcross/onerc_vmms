@@ -38,7 +38,9 @@ SELF_EDITABLE_USER_FIELDS = frozenset(
 )
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public signup; rate-limited & validated
 @rate_limit(limit=5, seconds=60 * 5)
 def create_user(**kwargs):
 	try:
@@ -61,7 +63,9 @@ def create_user(**kwargs):
 		frappe.db.commit()
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- returns Guest for anonymous; self-scoped otherwise
 def get_user_info():
 	if frappe.session.user == "Guest":
 		return "Guest"

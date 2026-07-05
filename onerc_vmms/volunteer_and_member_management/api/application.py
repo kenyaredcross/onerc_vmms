@@ -29,7 +29,9 @@ def _apply_application_fields(application, fields: dict) -> None:
 			set_field_value(application, fieldname, value, fieldtype)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public job board listing, read-only
 def get_job_openings(filters=None, orFilters=None):
 	if not filters:
 		filters = {}
@@ -126,7 +128,9 @@ def get_job_openings(filters=None, orFilters=None):
 	return jobs
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public job posting detail, read-only
 def get_job_details(job):
 	job_doc = frappe.get_doc("Job Opening", job)
 
@@ -173,7 +177,9 @@ def _update_application(application_id: str, fields: dict) -> dict:
 	}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public application flow; fields allow-listed & rate-limited
 @rate_limit(limit=30, seconds=60 * 5)
 def update_job_application(id: str, **kwargs) -> dict:
 	try:
@@ -183,7 +189,9 @@ def update_job_application(id: str, **kwargs) -> dict:
 		return {"success": False, "error": _("Could not update the application.")}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public application flow; rate-limited
 @rate_limit(limit=20, seconds=60 * 5)
 def submit_job_application(id: str | None = None) -> dict:
 	try:
@@ -202,7 +210,9 @@ def submit_job_application(id: str | None = None) -> dict:
 		return {"error": _("Could not submit the application.")}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public application flow; fields allow-listed & rate-limited
 @rate_limit(limit=20, seconds=60 * 5)
 def create_job_application(job_opening: str | None = None, id: str | None = None, **kwargs) -> dict:
 	try:
