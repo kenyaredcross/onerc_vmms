@@ -103,7 +103,7 @@ class DeploymentRequestTool(Document):
 
 				self.tor_url = (
 					f"{base_url}/api/method/"
-					f"onerc_vmms.volunteer_and_member_management.utils.download_pdf"
+					f"frappe.utils.print_format.download_pdf"
 					f"?doctype=Personnel%20Terms%20of%20Reference"
 					f"&name={quote(self.terms_of_reference)}"
 				)
