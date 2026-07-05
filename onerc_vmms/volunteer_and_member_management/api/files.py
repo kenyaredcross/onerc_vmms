@@ -4,7 +4,9 @@ from frappe.rate_limiter import rate_limit
 from frappe.utils.file_manager import save_file
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public signup upload; rate-limited
 @rate_limit(limit=20, seconds=60 * 5)
 def upload_file():
 	try:
