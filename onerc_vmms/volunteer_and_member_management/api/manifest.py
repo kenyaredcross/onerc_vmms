@@ -4,7 +4,9 @@ import frappe
 from requests import Response
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public PWA manifest, static content
 def get_pwa_manifest():
 	title = frappe.db.get_single_value("Website Settings", "app_name") or "VMMS"
 

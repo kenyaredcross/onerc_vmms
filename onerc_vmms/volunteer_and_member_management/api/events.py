@@ -8,7 +8,7 @@ from frappe import _
 from .user import get_user_info
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public events listing, read-only
 def get_events(search=None, event_type="upcoming") -> list[dict[str, any]]:
 	user_info = get_user_info()
 
@@ -67,7 +67,7 @@ class EventRegistrationPayload:
 	registration_responses: list[dict[str, any]]
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public event registration flow
 def register_event(payload: dict) -> None:
 	payload_object = EventRegistrationPayload(**payload)
 	attendee = payload_object.attendee
@@ -111,7 +111,7 @@ def register_event(payload: dict) -> None:
 		frappe.throw("Event Registration Error")
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public event detail, read-only
 def get_event_details(event_name: str | int) -> dict:
 	try:
 		event = frappe.get_doc("Buzz Event", {"route": event_name}).as_dict()
@@ -184,7 +184,7 @@ class TicketPaymentPayload:
 	registration_responses: list[dict[str, any]]
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public ticket payment flow
 def handle_ticket_payment(payload: dict) -> dict:
 	if not payload:
 		frappe.throw(_("Error processing ticket payment."))
@@ -241,39 +241,9 @@ def create_event_booking(
 		frappe.throw(_(error_message))
 
 
-@frappe.whitelist(allow_guest=True)
-def confirm_payment(invoice_name: str, event_booking: str, confirm_payment_manual: bool) -> str:
-	def helper():
-		frappe.set_user("Administrator")
-		error_message = "Error confirming payment"
-
-		if not invoice_name:
-			frappe.throw(_(error_message))
-
-		try:
-			invoice = frappe.get_doc("Sales Invoice", invoice_name)
-
-			if invoice.status == "Paid" and invoice.outstanding_amount == 0:
-				ev_booking = frappe.get_doc("Event Booking", event_booking)
-				ev_booking.submit()
-
-				return "paid"
-
-			return "unpaid"
-
-		except Exception as e:
-			frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
-			frappe.throw(_("Error confirming payment: {0}").format(str(e)))
-		finally:
-			frappe.set_user(frappe.session.user)
-
-	if confirm_payment_manual:
-		time.sleep(10)
-		return helper()
-	return helper()
-
-
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public ticket type lookup, read-only
 def get_event_ticket_type(ticket_id: str | int) -> dict[str, any]:
 	if not ticket_id or not frappe.db.exists("Event Ticket Type", ticket_id):
 		frappe.throw("This ticket type does not exist.")

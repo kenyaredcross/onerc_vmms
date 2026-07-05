@@ -218,7 +218,7 @@ def update_meta_info(type, route, meta_tags):
 				new_tag.insert()
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public i18n strings, read-only
 def get_translations():
 	if frappe.session.user != "Guest":
 		language = frappe.db.get_value("User", frappe.session.user, "language")
@@ -227,7 +227,9 @@ def get_translations():
 	return get_all_translations(language)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public branding assets, read-only
 def get_branding():
 	"""Get branding details."""
 	branding_settings = frappe.get_single("VM Settings")
@@ -381,38 +383,6 @@ def create_or_update_skill_map(employee, skills):
 	frappe.db.commit()
 
 	return doc.name
-
-
-@frappe.whitelist(allow_guest=True)
-def download_pdf(
-	doctype: str,
-	name: str,
-	format=None,
-	doc=None,
-	no_letterhead=0,
-	language=None,
-	letterhead=None,
-	pdf_generator: Literal["wkhtmltopdf", "chrome"] | None = None,
-):
-	doc = doc or frappe.get_doc(doctype, name)
-
-	frappe.has_permission = lambda *a, **kw: True
-
-	with print_language(language):
-		pdf_file = frappe.get_print(
-			doctype,
-			name,
-			format,
-			doc=doc,
-			as_pdf=True,
-			letterhead=letterhead,
-			no_letterhead=no_letterhead,
-			pdf_generator=pdf_generator,
-		)
-
-	frappe.local.response.filename = "{name}.pdf".format(name=name.replace(" ", "-").replace("/", "-"))
-	frappe.local.response.filecontent = pdf_file
-	frappe.local.response.type = "pdf"
 
 
 def disable_energy_point_email_notifications(user):
