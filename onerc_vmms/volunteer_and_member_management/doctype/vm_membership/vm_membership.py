@@ -224,8 +224,12 @@ class VMMembership(Document):
 
 		email_args = {
 			"recipients": [email],
-			"message": frappe.render_template(email_template.get("response"), context),
-			"subject": frappe.render_template(email_template.get("subject"), context),
+			"message": frappe.render_template(
+				email_template.get("response"), context
+			),  # nosemgrep: frappe-ssti -- template from admin-managed Email Template, not user input
+			"subject": frappe.render_template(
+				email_template.get("subject"), context
+			),  # nosemgrep: frappe-ssti -- template from admin-managed Email Template, not user input
 			"attachments": attachments,
 			"reference_doctype": self.doctype,
 			"reference_name": self.name,
@@ -460,10 +464,14 @@ def verify_signature(data, endpoint="VM Membership"):
 	controller = frappe.get_doc("Razorpay Settings")
 
 	controller.verify_signature(data, signature, key)
-	frappe.set_user(settings.creation_user)
+	frappe.set_user(
+		settings.creation_user
+	)  # nosemgrep: frappe-setuser -- webhook; runs only after Razorpay signature verification
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- Razorpay webhook; signature-verified in process_request_data
 def trigger_razorpay_subscription(*args, **kwargs):
 	data = frappe.request.get_data(as_text=True)
 	data = process_request_data(data)

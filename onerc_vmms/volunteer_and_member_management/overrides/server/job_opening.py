@@ -177,8 +177,12 @@ def send_rejection_email(name: str, template_name: str | None = None) -> bool:
 
 		context: dict[str, Any] = {"doc": app}
 
-		subject: str = frappe.render_template(template.subject or "Application Update", context)
-		message: str = frappe.render_template(template.response or "", context)
+		subject: str = frappe.render_template(
+			template.subject or "Application Update", context
+		)  # nosemgrep: frappe-ssti -- template from admin-managed Email Template, not user input
+		message: str = frappe.render_template(
+			template.response or "", context
+		)  # nosemgrep: frappe-ssti -- template from admin-managed Email Template, not user input
 
 		frappe.sendmail(
 			recipients=[app.email_id],

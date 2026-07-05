@@ -11,7 +11,9 @@ from ..api.user import get_user_details
 from ..utils import log_throw_error
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public membership types listing, read-only
 def get_membership_types():
 	memberships = frappe.get_all(
 		"VM Membership Type",
@@ -268,7 +270,9 @@ def check_conflicting_memberships(member_doc: "Document", company: str) -> None:
 		frappe.throw(_("You have a pending membership for this branch. Please complete the payment."))
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public membership renewal; rate-limited
 @rate_limit(limit=10, seconds=60 * 5)
 def renew_membership(**kwargs):
 	try:
