@@ -95,3 +95,10 @@ frappe.ui.form.on("VM Membership", {
 		frm.add_fetch("membership_type", "amount", "amount");
 	},
 });
+
+function validateMembership(frm) {
+	if (frm.doc.status === "Active" && !frm.doc.qr_code) {
+		let messgae = "An Active Membership requires Approval. Please Approve it first";
+		frappe.throw(__(messgae));
+	}
+}
