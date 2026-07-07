@@ -102,6 +102,7 @@ frappe.ui.form.on("VM Membership", {
 
 function validateMembership(frm) {
 	if (frm.doc.status === "Active" && !frm.doc.qr_code) {
-		frappe.throw("An Active Membership requires Approval. Please Approve it first");
+		let messgae = "An Active Membership requires Approval. Please Approve it first";
+		frappe.throw(__(messgae));
 	}
 }
