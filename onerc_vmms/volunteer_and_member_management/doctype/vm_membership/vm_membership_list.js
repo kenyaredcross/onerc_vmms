@@ -3,6 +3,8 @@ frappe.listview_settings["VM Membership"] = {
 		if (frappe.user_roles.includes("System Manager")) {
 			addScanButton(listview);
 		}
+
+		listview.filter_area.add([[listview.doctype, "status", "!=", "Draft"]]);
 	},
 };
 
@@ -13,11 +15,10 @@ function addScanButton(listview) {
 			multiple: false,
 			on_scan: async (data) => {
 				const { decodedText } = data;
-				const parsed = Function(`return (${decodedText})`)();
 
 				const response = await frappe.call({
 					method: "onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership.process_qr_scan",
-					args: { membership_name: parsed.membership },
+					args: { scanned_data: decodedText },
 				});
 
 				if (response && response.message) {

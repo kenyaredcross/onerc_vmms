@@ -338,3 +338,39 @@ def get_pgw_for_company(company: str) -> bool:
 	if not frappe.db.exists("Payment Gateway Account", {"company": company}):
 		frappe.throw(_("Payment cannot be processed for this branch at the moment. Please contact support."))
 	return True
+
+
+@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public QR verification;
+@rate_limit(limit=30, seconds=60 * 5)
+def verify_membership_qr(membership: str | None = None, token: str | None = None) -> dict:
+	from frappe.utils import format_date
+
+	from onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership import (
+		verify_qr_token,
+	)
+
+	invalid_msg = _("This QR code or verification link is invalid")
+
+	if not verify_qr_token(membership, token):
+		frappe.throw(invalid_msg)
+
+	data = frappe.db.get_value(
+		"VM Membership",
+		membership,
+		["member_name", "membership_type", "status", "from_date", "to_date"],
+		as_dict=True,
+	)
+	if not data:
+		frappe.throw(invalid_msg)
+
+	status = "Expired" if (data.status == "Expired") else data.status
+
+	return {
+		"membership": membership,
+		"member_name": data.member_name,
+		"membership_type": data.membership_type,
+		"status": status,
+		"is_valid": status == "Active",
+		"valid_from": format_date(data.from_date) if data.from_date else None,
+		"valid_until": format_date(data.to_date) if data.to_date else None,
+	}

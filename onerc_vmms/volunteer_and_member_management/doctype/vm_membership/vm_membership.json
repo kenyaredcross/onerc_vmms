@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_bulk_edit": 1,
  "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2025-10-22 12:31:55.961487",
@@ -133,6 +134,7 @@
   {
    "fieldname": "qr_code",
    "fieldtype": "Attach Image",
+   "hidden": 1,
    "label": "QR Code"
   }
  ],
@@ -151,8 +153,8 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2026-05-26 10:53:23.851921",
- "modified_by": "mukunajohn329@gmail.com",
+ "modified": "2026-07-06 20:40:01.163619",
+ "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Membership",
  "naming_rule": "By \"Naming Series\" field",
@@ -192,5 +194,6 @@
    "color": "Cyan",
    "title": "Expired"
   }
- ]
+ ],
+ "track_changes": 1
 }
