@@ -5,6 +5,7 @@ import { frappeRequest, FrappeUI, pageMetaPlugin, setConfig } from "frappe-ui";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
 import App from "./App.vue";
+import ProgressSpinner from "./components/Common/ProgressSpinner.vue";
 import "./index.css";
 import router from "./router";
 import { initSocket } from "./socket";
@@ -15,6 +16,8 @@ const head = createHead();
 let pinia = createPinia();
 let app = createApp(App);
 setConfig("resourceFetcher", frappeRequest);
+
+app.component("ProgressSpinner", ProgressSpinner);
 
 app.use(head);
 app.use(FrappeUI);

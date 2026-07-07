@@ -31,7 +31,8 @@ router.beforeEach((to, from, next) => {
 		to.query.fromLesson ||
 		to.path === "/persona" ||
 		to.path === "/welcome" ||
-		to.path === "/login"
+		to.path === "/login" ||
+		to.path === "/verify-membership"
 	) {
 		noSidebar.value = true;
 	} else {

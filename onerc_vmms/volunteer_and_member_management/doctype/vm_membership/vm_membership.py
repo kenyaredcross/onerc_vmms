@@ -215,15 +215,7 @@ class VMMembership(Document):
 
 	@frappe.whitelist()
 	def approve_membership(self):
-		qr_data_to_encode = frappe._dict(
-			{
-				"membership": self.name,
-				"member": self.member_name,
-				"membership_type": self.membership_type,
-				"status": self.status,
-			}
-		)
-		qr_data = make_qr_code(qr_data_to_encode)
+		qr_data = make_qr_code(get_verification_url(self.name))
 
 		qr_code_file = frappe.get_doc(
 			{
@@ -239,15 +231,16 @@ class VMMembership(Document):
 
 		self.status = "Active"
 
-		return self.save(ignore_permissions=True)
+		return self.save()
 
 
-def make_qr_code(data: dict[str, any]) -> bytes:
+def make_qr_code(data: str) -> bytes:
 	import io
 
 	import qrcode
 	from qrcode.image.styledpil import StyledPilImage
-	from qrcode.image.styles.moduledrawers.pil import HorizontalBarsDrawer
+	from qrcode.image.styles.colormasks import RadialGradiantColorMask
+	from qrcode.image.styles.moduledrawers.pil import RoundedModuleDrawer
 
 	qr = qrcode.QRCode(
 		version=1,
@@ -258,10 +251,56 @@ def make_qr_code(data: dict[str, any]) -> bytes:
 	qr.add_data(data)
 	qr.make(fit=True)
 
-	img = qr.make_image(image_factory=StyledPilImage, module_drawer=HorizontalBarsDrawer())
+	img = qr.make_image(
+		image_factory=StyledPilImage,
+		module_drawer=RoundedModuleDrawer(),
+		color_mask=RadialGradiantColorMask(
+			back_color=(255, 255, 255),
+			center_color=(178, 24, 43),
+			edge_color=(110, 0, 20),
+		),
+	)
 	output = io.BytesIO()
 	img.save(output, format="PNG")
 	return output.getvalue()
+
+
+def get_qr_token(membership_name: str) -> str:
+	"""HMAC token proving the QR code was issued by this site (prevents forged QR codes)."""
+	import hashlib
+	import hmac
+
+	from frappe.utils.password import get_encryption_key
+
+	return hmac.new(get_encryption_key().encode(), membership_name.encode(), hashlib.sha256).hexdigest()[:32]
+
+
+def verify_qr_token(membership_name: str, token: str) -> bool:
+	import hmac
+
+	if not membership_name or not token:
+		return False
+	return hmac.compare_digest(get_qr_token(membership_name), str(token))
+
+
+def get_verification_url(membership_name: str) -> str:
+	from urllib.parse import urlencode
+
+	from frappe.utils import get_url
+
+	query = urlencode({"membership": membership_name, "token": get_qr_token(membership_name)})
+	return get_url(f"/vmms/verify-membership?{query}")
+
+
+def parse_scanned_qr(scanned_data: str) -> tuple[str, str]:
+	"""Extract membership name and token from a scanned verification URL."""
+	from urllib.parse import parse_qs, urlparse
+
+	try:
+		query = parse_qs(urlparse(scanned_data or "").query)
+		return query.get("membership", [""])[0], query.get("token", [""])[0]
+	except ValueError:
+		return "", ""
 
 
 def get_cycle_dates(start_date, billing_cycle, cycles=1):
@@ -574,11 +613,14 @@ def get_payment_gateway_from_mop(mode_of_payment: str, company: str) -> str:
 
 
 @frappe.whitelist()
-def process_qr_scan(membership_name: str) -> dict[str, str]:
+def process_qr_scan(scanned_data: str) -> dict[str, str]:
 	VM_DOC = "VM Membership"
 
-	membership = frappe.db.exists(VM_DOC, membership_name)
-	if not membership:
+	if not frappe.has_permission(VM_DOC, "read"):
+		frappe.throw(_("You are not permitted to scan memberships"), frappe.PermissionError)
+
+	membership_name, token = parse_scanned_qr(scanned_data)
+	if not verify_qr_token(membership_name, token) or not frappe.db.exists(VM_DOC, membership_name):
 		frappe.throw(_("Membership in QR Code is invalid"))
 
 	try:

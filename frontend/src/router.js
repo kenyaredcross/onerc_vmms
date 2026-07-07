@@ -51,6 +51,12 @@ const routes = [
 		meta: { requiresAuth: false },
 	},
 	{
+		name: "VerifyMembership",
+		path: "/verify-membership",
+		component: () => import("@/pages/VerifyMembership.vue"),
+		meta: { requiresAuth: false },
+	},
+	{
 		name: "Events",
 		path: "/events",
 		component: () => import("@/pages/Events.vue"),
