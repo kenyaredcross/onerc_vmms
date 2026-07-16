@@ -3,7 +3,7 @@ from frappe import _
 from frappe.rate_limiter import rate_limit
 from frappe.utils import now_datetime
 
-from ..utils import set_field_value
+from ..utils import set_field_value, validate_session_user
 
 PROTECTED_APPLICANT_FIELDS = frozenset(
 	{
@@ -24,6 +24,7 @@ def _apply_application_fields(application, fields: dict) -> None:
 	for fieldname, value in fields.items():
 		if fieldname in PROTECTED_APPLICANT_FIELDS:
 			continue
+
 		if application.meta.has_field(fieldname):
 			fieldtype = application.meta.get_field(fieldname).fieldtype
 			set_field_value(application, fieldname, value, fieldtype)
@@ -43,13 +44,6 @@ def get_job_openings(filters=None, orFilters=None):
 	or_filters = orFilters or []
 
 	user = frappe.session.user
-
-	# employee_exists = frappe.db.exists(
-	#     "Employee", {"user_id": user, "status": "Active"}
-	# )
-
-	# if not employee_exists:
-	#     filters["opportunity_type"] = "Guest"
 
 	regions = None
 	if "region" in filters:
@@ -128,10 +122,26 @@ def get_job_openings(filters=None, orFilters=None):
 	return jobs
 
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public job posting detail, read-only
-def get_job_details(job):
+@frappe.whitelist(allow_guest=True)  # nosemgrep
+def get_job_details(job: str):
+	is_public = frappe.db.exists(
+		"Job Opening",
+		{
+			"name": job,
+			"publish": 1,
+			"status": "Open",
+			"posted_on": ["<=", now_datetime()],
+		},
+	)
+	if not is_public:
+		user = frappe.session.user
+		user_email = frappe.db.get_value("User", user, "email") if user != "Guest" else None
+		has_applied = bool(user_email) and frappe.db.exists(
+			"Job Applicant", {"job_title": job, "email_id": user_email}
+		)
+		if not has_applied:
+			frappe.throw(_("Job Opening not found"), frappe.DoesNotExistError)
+
 	job_doc = frappe.get_doc("Job Opening", job)
 
 	if not job_doc:
@@ -166,7 +176,9 @@ def get_job_details(job):
 
 def _update_application(application_id: str, fields: dict) -> dict:
 	"""Internal: apply allowed fields to an existing application and save it."""
+
 	application = frappe.get_doc("Job Applicant", application_id)
+	validate_session_user(application.email_id)
 	_apply_application_fields(application, fields)
 	application.save(ignore_permissions=True)
 	frappe.db.commit()
@@ -177,9 +189,7 @@ def _update_application(application_id: str, fields: dict) -> dict:
 	}
 
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public application flow; fields allow-listed & rate-limited
+@frappe.whitelist()
 @rate_limit(limit=30, seconds=60 * 5)
 def update_job_application(id: str, **kwargs) -> dict:
 	try:
@@ -189,9 +199,7 @@ def update_job_application(id: str, **kwargs) -> dict:
 		return {"success": False, "error": _("Could not update the application.")}
 
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public application flow; rate-limited
+@frappe.whitelist()
 @rate_limit(limit=20, seconds=60 * 5)
 def submit_job_application(id: str | None = None) -> dict:
 	try:
@@ -199,9 +207,13 @@ def submit_job_application(id: str | None = None) -> dict:
 			return {"error": "Invalid Job Application ID"}
 
 		application = frappe.get_doc("Job Applicant", id)
+		validate_session_user(application.email_id)
+		if application.docstatus in (1, 2):
+			return
 
 		application.flags.ignore_permissions = True
 		application.submit()
+
 		frappe.db.commit()
 		return {"message": "Application submitted successfully"}
 
@@ -210,9 +222,7 @@ def submit_job_application(id: str | None = None) -> dict:
 		return {"error": _("Could not submit the application.")}
 
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public application flow; fields allow-listed & rate-limited
+@frappe.whitelist()
 @rate_limit(limit=20, seconds=60 * 5)
 def create_job_application(job_opening: str | None = None, id: str | None = None, **kwargs) -> dict:
 	try:
@@ -227,7 +237,7 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 				company = job_opening_data or company
 
 		if not company:
-			frappe.throw("Company is required")
+			frappe.throw(_("Company is required"))
 
 		user_id = frappe.session.user
 		user_doc = None
@@ -302,11 +312,12 @@ def fetch_applications(email: str):
 	if not email:
 		frappe.throw(_("Email is required to fetch job applications."))
 
-	# Prevent enumerating other people's applications: a caller may only fetch their own
-	# unless they are an administrator.
 	session_email = frappe.db.get_value("User", frappe.session.user, "email")
 	if frappe.session.user != "Administrator" and email != session_email:
-		frappe.throw(_("You are not permitted to view these applications."), frappe.PermissionError)
+		frappe.throw(
+			_("You are not permitted to view these applications."),
+			frappe.PermissionError,
+		)
 
 	applicants = frappe.get_all(
 		"Job Applicant",

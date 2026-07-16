@@ -396,3 +396,11 @@ def disable_energy_point_email_notifications(user):
 def log_throw_error(message: str) -> None:
 	frappe.log_error(title=message, message=frappe.get_traceback())
 	frappe.throw(_(message))
+
+
+def validate_session_user(owner: str) -> None:
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Authentication required."), frappe.PermissionError)
+
+	if frappe.session.user != owner:
+		frappe.throw(_("Access Denied"), frappe.PermissionError)
