@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 from ..utils import log_throw_error
 from .volunteer import get_current_volunteer
@@ -75,7 +76,7 @@ def fetch_assigned_projects():
 
 
 @frappe.whitelist()
-def get_assignment_details(assignment_name):
+def get_assignment_details(assignment_name: str):
 	from ..utils import validate_session_user
 
 	assignment = frappe.get_doc(
@@ -123,19 +124,22 @@ def get_assignment_details(assignment_name):
 
 	assignment["project"] = project
 	assignment["deployment_details"] = deployment.as_dict()
-	tor = frappe.get_doc("Personnel Terms of Reference", deployment.terms_of_reference)
-	assignment["term_details"] = tor.as_dict()
+	assignment["term_details"] = (
+		frappe.get_doc("Personnel Terms of Reference", deployment.terms_of_reference).as_dict()
+		if deployment.terms_of_reference
+		else None
+	)
 
 	return assignment
 
 
 @frappe.whitelist()
-def accept_assignment(name, accepted=True, contract_name=None):
+def accept_assignment(name: str, accepted: bool = True, contract_name: str | None = None):
 	PDR_DOC = "Personnel Deployment Request"
 
 	PDR_id = frappe.db.exists(PDR_DOC, name)
 	if not PDR_id:
-		frappe.throw("Personnel Deployment Request not found", frappe.DoesNotExistError)
+		frappe.throw(_("Personnel Deployment Request not found"), frappe.DoesNotExistError)
 
 	from ..utils import validate_session_user
 
@@ -153,9 +157,8 @@ def accept_assignment(name, accepted=True, contract_name=None):
 	if contract_name:
 		linked_pdr = frappe.db.get_value("Contract", contract_name, "personnel_deployment_assignment")
 		if linked_pdr != assignee.name:
-			frappe.throw("Access Denied", frappe.PermissionError)
+			frappe.throw(_("Access Denied"), frappe.PermissionError)
 		frappe.db.set_value("Contract", contract_name, {"is_signed": 1})
-	frappe.db.commit()
 
 
 @frappe.whitelist()

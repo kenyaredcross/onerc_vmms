@@ -30,10 +30,9 @@ def _apply_application_fields(application, fields: dict) -> None:
 			set_field_value(application, fieldname, value, fieldtype)
 
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public job board listing, read-only
-def get_job_openings(filters=None, orFilters=None):
+# nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method -- public job board listing, read-only
+@frappe.whitelist(allow_guest=True)
+def get_job_openings(filters: dict | None = None, orFilters: list | None = None):
 	if not filters:
 		filters = {}
 	filters["publish"] = 1
@@ -122,7 +121,8 @@ def get_job_openings(filters=None, orFilters=None):
 	return jobs
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep
+# nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method -- public job detail; limited to published open postings or the caller's own applications
+@frappe.whitelist(allow_guest=True)
 def get_job_details(job: str):
 	is_public = frappe.db.exists(
 		"Job Opening",
