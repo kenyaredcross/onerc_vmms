@@ -1,5 +1,6 @@
 import frappe
 from frappe.model.document import Document
+from frappe.utils.html_utils import sanitize_html
 
 from .job_opening import send_rejection_email
 
@@ -209,6 +210,11 @@ def on_submit(doc, method):
 
 
 def validate(doc, method):
+	# Applicant-authored rich text: strip any executable HTML before it is stored,
+	# so a malicious cover letter can never run in a reviewer's session.
+	if doc.get("cover_letter"):
+		doc.cover_letter = sanitize_html(doc.cover_letter)
+
 	if doc.job_title:
 		job_opening = frappe.get_doc("Job Opening", doc.job_title)
 		if job_opening.job_title != doc.opportunity_name:

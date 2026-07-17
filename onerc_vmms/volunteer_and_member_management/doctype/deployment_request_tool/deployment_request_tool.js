@@ -271,7 +271,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 		frm.refresh_field("terms_of_reference");
 
 		frm.call({
-			method: "onerc_vmms.volunteer_and_member_management.utils.get_company_descendants",
+			method: "onerc_vmms.volunteer_and_member_management.utils.utils.get_company_descendants",
 			args: {
 				company: frm.doc.company,
 			},
@@ -527,7 +527,7 @@ async function render_tor_preview(frm) {
 	const doctype = "Personnel Terms of Reference";
 	const base_url = window.location.origin;
 
-	let pdf_url = `${base_url}/api/method/onerc_vmms.volunteer_and_member_management.utils.download_pdf?doctype=${encodeURIComponent(
+	let pdf_url = `${base_url}/api/method/onerc_vmms.volunteer_and_member_management.utils.utils.download_pdf?doctype=${encodeURIComponent(
 		doctype
 	)}&name=${encodeURIComponent(tor_name)}`;
 

@@ -1,5 +1,6 @@
 import frappe
 
+from ..utils.utils import log_throw_error
 from .volunteer import get_current_volunteer
 
 
@@ -75,6 +76,8 @@ def fetch_assigned_projects():
 
 @frappe.whitelist()
 def get_assignment_details(assignment_name):
+	from ..utils.permission import validate_session_user
+
 	assignment = frappe.get_doc(
 		"Personnel Deployment Request",
 		assignment_name,
@@ -82,6 +85,8 @@ def get_assignment_details(assignment_name):
 
 	if not assignment:
 		return {}
+
+	validate_session_user(assignment.get("user"))
 
 	if assignment.get("require_contract_before_deployment") == 1:
 		contract = None
@@ -126,19 +131,32 @@ def get_assignment_details(assignment_name):
 
 @frappe.whitelist()
 def accept_assignment(name, accepted=True, contract_name=None):
-	try:
-		if frappe.db.exists("Contract", contract_name):
-			frappe.db.set_value("Contract", contract_name, {"is_signed": 1})
+	PDR_DOC = "Personnel Deployment Request"
 
-		assignee = frappe.get_doc("Personnel Deployment Request", name, ignore_permissions=True)
-		assignee.deployment_status = "Accepted" if accepted else "Rejected"
+	PDR_id = frappe.db.exists(PDR_DOC, name)
+	if not PDR_id:
+		frappe.throw("Personnel Deployment Request not found", frappe.DoesNotExistError)
+
+	from ..utils.permission import validate_session_user
+
+	assignee = frappe.get_doc("Personnel Deployment Request", PDR_id, ignore_permissions=True)
+	validate_session_user(assignee.user)
+
+	assignee.deployment_status = "Accepted" if accepted else "Rejected"
+
+	try:
 		assignee.save(ignore_permissions=True)
 		frappe.db.commit()
-
-	except Exception as e:
+	except Exception:
 		frappe.db.rollback()
-		frappe.log_error(frappe.get_traceback(), "Accept Assignment Error")
-		frappe.throw("Accept Assignment Error")
+		log_throw_error("Erro Accepting Assignment")
+
+	if contract_name:
+		linked_pdr = frappe.db.get_value("Contract", contract_name, "personnel_deployment_assignment")
+		if linked_pdr != assignee.name:
+			frappe.throw_permission_error()
+		frappe.db.set_value("Contract", contract_name, {"is_signed": 1})
+		frappe.db.commit()
 
 
 @frappe.whitelist()

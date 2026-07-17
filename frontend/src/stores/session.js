@@ -43,7 +43,7 @@ export const sessionStore = defineStore("vmms-session", () => {
 	});
 
 	const branding = createResource({
-		url: "onerc_vmms.volunteer_and_member_management.utils.get_branding",
+		url: "onerc_vmms.volunteer_and_member_management.utils.utils.get_branding",
 		cache: "brand",
 		auto: true,
 		onSuccess(data) {

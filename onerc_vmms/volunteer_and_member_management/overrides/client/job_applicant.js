@@ -151,7 +151,7 @@ frappe.ui.form.on("Job Applicant", {
 									d.hide();
 
 									await frappe.call({
-										method: "onerc_vmms.volunteer_and_member_management.utils.create_or_update_skill_map",
+										method: "onerc_vmms.volunteer_and_member_management.utils.utils.create_or_update_skill_map",
 										args: {
 											employee: employee_name,
 											skills: values,

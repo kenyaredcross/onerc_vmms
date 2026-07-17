@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.query_builder.functions import Count
 from frappe.utils import today
 
 from onerc_vmms.volunteer_and_member_management.doctype.deployment_request_tool.deployment_request_tool import (
@@ -95,12 +96,25 @@ class PersonnelDeploymentRequest(Document):
 		if self.deployment_status == "Accepted" and (
 			not self.get_doc_before_save() or self.get_doc_before_save().deployment_status != "Accepted"
 		):
+			if not self.deployment:
+				return
+
+			frappe.db.get_value("Deployment Request Tool", self.deployment, "name", for_update=True)
+
 			deployment_request = frappe.get_doc("Deployment Request Tool", self.deployment)
 			number_of_volunteers_required = int(deployment_request.number_of_volunteers_required or 0)
-			assigned_count = frappe.db.count(
-				"Personnel Deployment Request",
-				{"deployment": self.deployment, "deployment_status": "Accepted"},
-			)
+
+			pdr = frappe.qb.DocType("Personnel Deployment Request")
+			assigned_count = (
+				frappe.qb.from_(pdr)
+				.select(Count(pdr.name))
+				.where(pdr.deployment == self.deployment)
+				.where(pdr.deployment_status == "Accepted")
+				.where(pdr.name != self.name)
+				.for_update()
+				.run()
+			)[0][0]
+
 			if assigned_count > number_of_volunteers_required - 1:
 				frappe.throw(
 					f"Cannot accept this assignment. The number of personnel required ({number_of_volunteers_required}) has already been met."

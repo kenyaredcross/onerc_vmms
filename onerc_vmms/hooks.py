@@ -173,7 +173,6 @@ doc_events = {
 	},
 	"GL Entry": {
 		"after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
-		"on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
 	},
 	"Job Applicant": {
 		"before_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.before_submit",

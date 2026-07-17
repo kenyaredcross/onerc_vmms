@@ -1,7 +1,11 @@
 import frappe
 from frappe import _
 
-from ..utils import get_current_fiscal_year, get_dates_for_day_of_week, get_shift_types
+from ..utils.utils import (
+	get_current_fiscal_year,
+	get_dates_for_day_of_week,
+	get_shift_types,
+)
 from .doc import _convert_table_multiselect
 from .user import get_user_info
 
@@ -118,8 +122,22 @@ def get_present_slots():
 	return None
 
 
+def validate_volunteer(volunteer: str) -> None:
+	vol_doc_name = frappe.db.exists("Employee", {"name": volunteer, "is_volunteer": 1})
+	if not vol_doc_name:
+		frappe.throw(_("Volunteer Does not Exist", frappe.DoesNotExistError))
+
+	volunteer_user_id = frappe.db.get_value("Employee", vol_doc_name, "user_id")
+	if not volunteer_user_id:
+		frappe.throw(_("Error fethcing volunteer details", frappe.ValidationError))
+	from ..utils.permission import validate_session_user
+
+	validate_session_user(volunteer_user_id)
+
+
 @frappe.whitelist()
-def create_availability_slot(slot_data):
+def create_availability_slot(slot_data: dict):
+	validate_volunteer(slot_data.get("employee"))
 	try:
 		if frappe.db.exists(
 			"Volunteer Availability Slot",
@@ -162,12 +180,13 @@ def create_availability_slot(slot_data):
 
 
 @frappe.whitelist()
-def create_availability_schedule(slot_data):
+def create_availability_schedule(slot_data: dict):
 	"""
 	Creates Personnel Availability Schedule and generates Weekly Schedule Patterns
 	"""
 	try:
 		employee = slot_data.get("employee")
+		validate_volunteer(employee)
 		fiscal_year = get_current_fiscal_year()
 		weekly_availability = slot_data.get("weekly_availability", {})
 		available_on_holidays = slot_data.get("available_on_holidays", False)

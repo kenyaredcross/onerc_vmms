@@ -358,7 +358,7 @@
 							class="p-5 sm:p-8 bg-surface-gray-1 rounded-xl border border-outline-gray-1"
 						>
 							<div
-								v-html="__(job.data.description)"
+								v-html="sanitizeRichHtml(__(job.data.description))"
 								class="frappe-editor-content prose prose-sm sm:prose-base max-w-none"
 							></div>
 						</div>
@@ -386,6 +386,7 @@ import {
 } from "lucide-vue-next";
 import { inject } from "vue";
 import NewJobApplication from "../pages/NewJobApplication.vue";
+import { sanitizeRichHtml } from "../utils/sanitizeHtml";
 
 const props = defineProps({
 	job: Object,
