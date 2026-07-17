@@ -75,7 +75,7 @@ def fetch_assigned_projects():
 
 
 @frappe.whitelist()
-def get_assignment_details(assignment_name):
+def get_assignment_details(assignment_name: str):
 	from ..utils.permission import validate_session_user
 
 	assignment = frappe.get_doc(
@@ -130,7 +130,7 @@ def get_assignment_details(assignment_name):
 
 
 @frappe.whitelist()
-def accept_assignment(name, accepted=True, contract_name=None):
+def accept_assignment(name: str, accepted: bool = True, contract_name: str | None = None):
 	PDR_DOC = "Personnel Deployment Request"
 
 	PDR_id = frappe.db.exists(PDR_DOC, name)
