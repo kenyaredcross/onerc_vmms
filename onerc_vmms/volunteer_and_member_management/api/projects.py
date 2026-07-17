@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 from ..utils.utils import log_throw_error
 from .volunteer import get_current_volunteer
@@ -135,7 +136,7 @@ def accept_assignment(name: str, accepted: bool = True, contract_name: str | Non
 
 	PDR_id = frappe.db.exists(PDR_DOC, name)
 	if not PDR_id:
-		frappe.throw("Personnel Deployment Request not found", frappe.DoesNotExistError)
+		frappe.throw(_("Personnel Deployment Request not found"), frappe.DoesNotExistError)
 
 	from ..utils.permission import validate_session_user
 
@@ -146,7 +147,6 @@ def accept_assignment(name: str, accepted: bool = True, contract_name: str | Non
 
 	try:
 		assignee.save(ignore_permissions=True)
-		frappe.db.commit()
 	except Exception:
 		frappe.db.rollback()
 		log_throw_error("Erro Accepting Assignment")
@@ -156,7 +156,6 @@ def accept_assignment(name: str, accepted: bool = True, contract_name: str | Non
 		if linked_pdr != assignee.name:
 			frappe.throw_permission_error()
 		frappe.db.set_value("Contract", contract_name, {"is_signed": 1})
-		frappe.db.commit()
 
 
 @frappe.whitelist()

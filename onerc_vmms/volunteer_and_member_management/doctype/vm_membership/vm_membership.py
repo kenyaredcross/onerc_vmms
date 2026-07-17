@@ -59,7 +59,7 @@ class VMMembership(Document):
 	def get_membership_type(self) -> Document:
 		doc_name = frappe.db.exists("VM Membership Type", self.membership_type)
 		if not doc_name:
-			frappe.throw("Membership Type Not found", frappe.DoesNotExistError)
+			frappe.throw(_("Membership Type Not found"), frappe.DoesNotExistError)
 		return frappe.get_doc("VM Membership Type", doc_name)
 
 	def validate_member(self):
