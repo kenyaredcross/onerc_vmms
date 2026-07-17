@@ -11,6 +11,7 @@ from frappe.desk.search import (
 	sanitize_searchfield,
 )
 from frappe.model.db_query import get_order_by
+from frappe.rate_limiter import rate_limit
 from frappe.utils.data import make_filter_tuple
 
 SEARCHABLE_REFERENCE_DOCTYPES = frozenset(
@@ -48,7 +49,33 @@ CREATABLE_LINK_DOCTYPES = frozenset(
 
 
 @frappe.whitelist()
+@rate_limit(limit=120, seconds=60)
 def search_widget(
+	doctype: str,
+	txt: str,
+	searchfield: str | None = None,
+	start: int = 0,
+	page_length: int = 10,
+	filters: str | None | dict | list = None,
+	as_dict: bool = False,
+	reference_doctype: str | None = None,
+):
+	# Rate-limited HTTP wrapper. Reference lookups run with ignore_permissions so
+	# onboarding forms can populate their dropdowns, so the endpoint is throttled to
+	# deter bulk enumeration of the allow-listed reference data (e.g. Company).
+	return _search_widget(
+		doctype,
+		txt,
+		searchfield=searchfield,
+		start=start,
+		page_length=page_length,
+		filters=filters,
+		as_dict=as_dict,
+		reference_doctype=reference_doctype,
+	)
+
+
+def _search_widget(
 	doctype: str,
 	txt: str,
 	searchfield: str | None = None,
@@ -169,6 +196,7 @@ def search_widget(
 
 
 @frappe.whitelist()
+@rate_limit(limit=120, seconds=60)
 def custom_search_link(
 	doctype: str,
 	txt: str,
@@ -177,7 +205,7 @@ def custom_search_link(
 	searchfield: str | None = None,
 	reference_doctype: str | None = None,
 ) -> list[LinkSearchResults]:
-	results = search_widget(
+	results = _search_widget(
 		doctype,
 		txt.strip(),
 		searchfield=searchfield,
@@ -190,6 +218,7 @@ def custom_search_link(
 
 
 @frappe.whitelist()
+@rate_limit(limit=30, seconds=60 * 5)
 def create_link_doc(data: dict):
 	try:
 		doctype = data.get("doctype")
@@ -221,6 +250,12 @@ def get_doc_info(doctype: str):
 	Get doctype metadata: fields, labels, and other configurations
 	"""
 	try:
+		if doctype not in CREATABLE_LINK_DOCTYPES:
+			frappe.throw(
+				_("Cannot fetch metadata for {0}").format(doctype),
+				frappe.PermissionError,
+			)
+
 		if not frappe.db.exists("DocType", doctype):
 			frappe.throw(_("Invalid Doctype: {0}").format(doctype))
 

@@ -1,12 +1,32 @@
+import os
+
 import frappe
 from frappe import _, cint
 from frappe.rate_limiter import rate_limit
 from frappe.utils.file_manager import save_file
 
+ALLOWED_UPLOAD_TYPES = {
+	".pdf": frozenset({"application/pdf"}),
+	".png": frozenset({"image/png"}),
+	".jpg": frozenset({"image/jpeg", "image/pjpeg"}),
+	".jpeg": frozenset({"image/jpeg", "image/pjpeg"}),
+	".docx": frozenset({"application/vnd.openxmlformats-officedocument.wordprocessingml.document"}),
+}
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public signup upload; rate-limited
+
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+
+
+ALLOWED_MAGIC_BYTES = {
+	".pdf": (b"%PDF",),
+	".png": (b"\x89PNG\r\n\x1a\n",),
+	".jpg": (b"\xff\xd8\xff",),
+	".jpeg": (b"\xff\xd8\xff",),
+	".docx": (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"),
+}
+
+
+@frappe.whitelist()
 @rate_limit(limit=20, seconds=60 * 5)
 def upload_file():
 	try:
@@ -15,17 +35,42 @@ def upload_file():
 
 		upload = frappe.request.files["file"]
 		filename = frappe.request.form.get("filename") or upload.filename
-		doctype = frappe.request.form.get("doctype")
-		docname = frappe.request.form.get("docname")
-		folder = frappe.request.form.get("folder")
-		is_private = cint(frappe.request.form.get("is_private", 0))
+
+		if not filename:
+			frappe.throw(_("Invalid file name"))
+
+		extension = os.path.splitext(filename)[1].lower()
+		allowed_content_types = ALLOWED_UPLOAD_TYPES.get(extension)
+		if allowed_content_types is None:
+			frappe.throw(_(f"File type {extension or filename} is not allowed"))
+
+		content_type = (upload.content_type or "").split(";")[0].strip().lower()
+		if content_type not in allowed_content_types:
+			frappe.throw(_("File type is not allowed"))
+
+		# Read at most MAX_UPLOAD_SIZE + 1 bytes so an oversized upload can't be
+		# pulled fully into memory, then enforce the real size limit on actual bytes.
+		content = upload.stream.read(MAX_UPLOAD_SIZE + 1)
+		if not content:
+			frappe.throw(_("The file is empty"))
+		if len(content) > MAX_UPLOAD_SIZE:
+			frappe.throw(
+				_("File is too large. Maximum size is {0} MB.").format(MAX_UPLOAD_SIZE // (1024 * 1024))
+			)
+
+		# Verify the real content signature — the extension and declared MIME are
+		# both client-supplied and cannot be trusted on their own.
+		if not any(content.startswith(sig) for sig in ALLOWED_MAGIC_BYTES.get(extension, ())):
+			frappe.throw(_("File content does not match its type"))
+
+		is_private = cint(frappe.request.form.get("is_private", 1))
 
 		file_doc = save_file(
 			fname=filename,
-			content=upload.stream.read(),
-			dt=doctype,
-			dn=docname,
-			folder=folder,
+			content=content,
+			dt=None,
+			dn=None,
+			folder=frappe.request.form.get("folder"),
 			is_private=is_private,
 		)
 
@@ -36,9 +81,9 @@ def upload_file():
 			"file_name": file_doc.file_name,
 		}
 
-	except Exception as e:
+	except Exception:
 		frappe.log_error(frappe.get_traceback(), _("Upload File Failed"))
-		frappe.throw(_("Upload failed: {0}").format(str(e)))
+		frappe.throw(_("Upload failed"))
 
 
 def _attach_file(doc, file_info, field_name=None):

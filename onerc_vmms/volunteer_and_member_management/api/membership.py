@@ -10,13 +10,11 @@ from onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_members
 	VMMembership,
 )
 
-from ...volunteer_and_member_management.utils import log_throw_error
 from ..api.user import get_user_details
+from ..utils.utils import log_throw_error
 
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public membership types listing, read-only
+@frappe.whitelist(allow_guest=True)  # nosemgrep:
 def get_membership_types():
 	memberships = frappe.get_all(
 		"VM Membership Type",
@@ -32,9 +30,6 @@ def get_membership_types():
 
 @frappe.whitelist()
 def get_current_membership():
-	if frappe.session.user == "Guest":
-		return []
-
 	member = frappe.db.get_value(
 		"VM Member",
 		{"email_id": frappe.session.user},
@@ -125,7 +120,6 @@ def initiate_membership_registration(
 	return payment_link
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public membership signup flow
 def create_membership(
 	amount: float,
 	membership_type: str,
@@ -221,20 +215,6 @@ def check_conflicting_memberships(member_doc: "Document", company: str) -> None:
 		frappe.throw(_("You already have an active membership for this branch."))
 	elif membership == "Pending":
 		frappe.throw(_("You have a pending membership for this branch."))
-
-
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public membership renewal; rate-limited
-@rate_limit(limit=10, seconds=60 * 5)
-def renew_membership(**kwargs):
-	try:
-		membership = frappe.get_doc("VM Membership", kwargs.get("id"))
-		_, invoice = membership.initiate_payment(phone_number=kwargs.get("phone_number"))
-
-		return invoice
-	except Exception:
-		log_throw_error("Error renewing membership")
 
 
 @frappe.whitelist()

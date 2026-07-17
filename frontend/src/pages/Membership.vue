@@ -67,29 +67,11 @@ import { sessionStore } from "../stores/session";
 
 const { membershipTypes, currentMembership } = membershipStore();
 const { isLoggedIn } = sessionStore();
-const membershipId = ref("");
 
 const registerDialog = ref(false);
-const payNow = ref(false);
 const membershipForm = reactive({
 	membership_type: "",
 	amount: 0,
-});
-
-const renewMembership = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.user.renew_membership",
-	makeParams() {
-		return {
-			id: membershipId.value,
-			phone_number: membershipForm.phone_number,
-		};
-	},
-	onSuccess() {
-		toast.success("Membership payment initiated successfully! Check your phone for a prompt.");
-	},
-	onError(error) {
-		toast.error(error.message || "Failed to initiate membership payment.");
-	},
 });
 
 function cleanUpMembershipForm() {
@@ -102,14 +84,6 @@ function selectMembershipType(membershipType) {
 	membershipForm.membership_type = membershipType.membership_type;
 	membershipForm.amount = membershipType.amount;
 	registerDialog.value = true;
-}
-
-function submit() {
-	if (!membershipForm.branch) {
-		createMembership.error = "Please select a branch";
-		return;
-	}
-	createMembership.submit({ ...membershipForm });
 }
 
 watch(registerDialog, (newValue) => {

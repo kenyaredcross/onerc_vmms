@@ -65,6 +65,8 @@ def get_dates_for_day_of_week(start_date, end_date, day_name):
 
 @frappe.whitelist()
 def get_interviewers():
+	frappe.has_permission("Interview", "read", throw=True)
+
 	settings = frappe.get_single("VM Settings")
 	allowed_roles = [r.role for r in settings.interview_roles]
 
@@ -157,7 +159,9 @@ def get_companies():
 
 
 @frappe.whitelist()
-def get_meta_info(type, route):
+def get_meta_info(type: str, route: str):
+	frappe.has_permission("Website Route Meta", "write", throw=True)
+
 	if frappe.db.exists("Website Meta Tag", {"parent": f"{type}/{route}"}):
 		meta_tags = frappe.get_all(
 			"Website Meta Tag",
@@ -173,7 +177,9 @@ def get_meta_info(type, route):
 
 
 @frappe.whitelist()
-def update_meta_info(type, route, meta_tags):
+def update_meta_info(type: str, route: str, meta_tags: list):
+	frappe.has_permission("Website Route Meta", "write", throw=True)
+
 	parent_name = f"{type}/{route}"
 	if not isinstance(meta_tags, list):
 		frappe.throw(_("Meta tags should be a list."))
@@ -346,7 +352,7 @@ def set_field_value(doc, fieldname, value, fieldtype=None):
 
 
 @frappe.whitelist()
-def create_or_update_skill_map(employee, skills):
+def create_or_update_skill_map(employee: str, skills: str | list | dict):
 	import json
 
 	if isinstance(skills, str):
@@ -354,6 +360,10 @@ def create_or_update_skill_map(employee, skills):
 
 	if isinstance(skills, dict):
 		skills = [{"skill": k, "rating": v} for k, v in skills.items()]
+
+	from ..api.volunteer import validate_volunteer
+
+	validate_volunteer(employee)
 
 	existing = frappe.db.get_value("Employee Skill Map", {"employee": employee}, "name")
 

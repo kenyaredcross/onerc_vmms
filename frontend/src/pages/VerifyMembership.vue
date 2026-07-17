@@ -150,7 +150,7 @@
 
 <script setup>
 import { Badge, Button, createResource, FeatherIcon } from "frappe-ui";
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 import vmmsLogo from "../assets/images/vmms.png";
 import ProgressSpinner from "../components/Common/ProgressSpinner.vue";

@@ -4,7 +4,7 @@
 import frappe
 from frappe.model.document import Document
 
-from ...utils import disable_energy_point_email_notifications
+from ...utils.utils import disable_energy_point_email_notifications
 
 
 class VMSettings(Document):

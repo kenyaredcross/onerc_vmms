@@ -209,7 +209,6 @@
 <script setup>
 import { createResource, FeatherIcon } from "frappe-ui";
 import Button from "frappe-ui/src/components/Button/Button.vue";
-import Card from "frappe-ui/src/components/Card.vue";
 import Dialog from "frappe-ui/src/components/Dialog/Dialog.vue";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
 import Input from "frappe-ui/src/components/Input.vue";

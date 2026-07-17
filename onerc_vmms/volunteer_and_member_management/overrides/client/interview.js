@@ -4,7 +4,7 @@
 frappe.ui.form.on("Interview", {
 	refresh(frm) {
 		frappe.call({
-			method: "onerc_vmms.volunteer_and_member_management.utils.get_interviewers",
+			method: "onerc_vmms.volunteer_and_member_management.utils.utils.get_interviewers",
 			callback: function (r) {
 				if (r.message) {
 					frm.allowed_interviewers = r.message;
