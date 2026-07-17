@@ -110,17 +110,6 @@ const routes = [
 		component: () => import("@/pages/EventDetail.vue"),
 		props: true,
 	},
-	{
-		name: "EventRegistration",
-		path: "/event/registration/:eventRoute",
-		component: () => import("@/pages/EventRegistration.vue"),
-		props: true,
-	},
-	{
-		name: "CheckoutSummary",
-		path: "/checkout-summary",
-		component: () => import("@/pages/CheckoutSummary.vue"),
-	},
 ];
 
 let router = createRouter({
@@ -146,7 +135,6 @@ router.beforeEach(async (to, from, next) => {
 
 	if (!isLoggedIn) {
 		if (to.meta.requiresAuth) {
-			// Remember where the user was headed so Login can send them back there.
 			return next({ name: "Login", query: { "redirect-to": to.fullPath } });
 		} else {
 			return next();
