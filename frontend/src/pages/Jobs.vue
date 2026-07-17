@@ -131,7 +131,6 @@ import { computed, inject, onMounted, ref, watch } from "vue";
 import { sessionStore } from "../stores/session";
 import JobApplication from "./JobApplication.vue";
 
-const user = inject("$user");
 const { brand } = sessionStore();
 
 const job_location = ref(null);
@@ -140,11 +139,9 @@ const profession = ref(null);
 const searchQuery = ref("");
 const selectedRegions = ref([]);
 const selectedBranches = ref([]);
-const showFilters = ref(false);
 const filters = ref({});
 const orFilters = ref({});
 const jobCount = ref(0);
-const readOnlyMode = window.read_only_mode;
 const currentTab = ref("Open");
 
 const jobTabs = computed(() => [

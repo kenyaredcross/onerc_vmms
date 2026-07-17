@@ -65,29 +65,11 @@ import { isValidPhone } from "../utils/volunteer";
 
 const { membershipTypes, currentMembership } = membershipStore();
 const { isLoggedIn } = sessionStore();
-const membershipId = ref("");
 
 const registerDialog = ref(false);
-const payNow = ref(false);
 const membershipForm = reactive({
 	membership_type: "",
 	amount: 0,
-});
-
-const renewMembership = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.user.renew_membership",
-	makeParams() {
-		return {
-			id: membershipId.value,
-			phone_number: membershipForm.phone_number,
-		};
-	},
-	onSuccess() {
-		toast.success("Membership payment initiated successfully! Check your phone for a prompt.");
-	},
-	onError(error) {
-		toast.error(error.message || "Failed to initiate membership payment.");
-	},
 });
 
 function cleanUpMembershipForm() {

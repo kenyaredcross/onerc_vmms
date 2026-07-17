@@ -115,12 +115,7 @@
 							class="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700"
 						>
 							<strong>{{ __("Cover Letter") }}:</strong>
-							<div
-								v-html="
-									app.cover_letter.substring(0, 150) +
-									(app.cover_letter.length > 150 ? '...' : '')
-								"
-							></div>
+							<div v-html="coverLetterPreview(app.cover_letter)"></div>
 						</div>
 
 						<div
@@ -165,6 +160,14 @@ import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { sessionStore } from "../stores/session";
 import { usersStore } from "../stores/user";
+import NoPermission from "../components/NoPermission.vue";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
+
+const coverLetterPreview = (text) => {
+	if (!text) return "";
+	const truncated = text.substring(0, 150) + (text.length > 150 ? "..." : "");
+	return sanitizeHtml(truncated);
+};
 
 const { userResource } = usersStore();
 const { isLoggedIn } = sessionStore();

@@ -25,7 +25,7 @@ function translate(message) {
 
 function fetchTranslations(lang) {
 	createResource({
-		url: "onerc_vmms.volunteer_and_member_management.utils.get_translations",
+		url: "onerc_vmms.volunteer_and_member_management.utils.utils.get_translations",
 		cache: "translations",
 		auto: true,
 		transform: (data) => {

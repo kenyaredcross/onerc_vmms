@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 
-from ..utils import log_throw_error
+from ..utils.utils import log_throw_error
 from .volunteer import get_current_volunteer
 
 
@@ -76,8 +76,8 @@ def fetch_assigned_projects():
 
 
 @frappe.whitelist()
-def get_assignment_details(assignment_name: str):
-	from ..utils import validate_session_user
+def get_assignment_details(assignment_name):
+	from ..utils.permission import validate_session_user
 
 	assignment = frappe.get_doc(
 		"Personnel Deployment Request",
@@ -134,14 +134,14 @@ def get_assignment_details(assignment_name: str):
 
 
 @frappe.whitelist()
-def accept_assignment(name: str, accepted: bool = True, contract_name: str | None = None):
+def accept_assignment(name, accepted=True, contract_name=None):
 	PDR_DOC = "Personnel Deployment Request"
 
 	PDR_id = frappe.db.exists(PDR_DOC, name)
 	if not PDR_id:
-		frappe.throw(_("Personnel Deployment Request not found"), frappe.DoesNotExistError)
+		frappe.throw("Personnel Deployment Request not found", frappe.DoesNotExistError)
 
-	from ..utils import validate_session_user
+	from ..utils.permission import validate_session_user
 
 	assignee = frappe.get_doc("Personnel Deployment Request", PDR_id, ignore_permissions=True)
 	validate_session_user(assignee.user)
@@ -150,15 +150,17 @@ def accept_assignment(name: str, accepted: bool = True, contract_name: str | Non
 
 	try:
 		assignee.save(ignore_permissions=True)
+		frappe.db.commit()
 	except Exception:
 		frappe.db.rollback()
-		log_throw_error("Error Accepting Assignment")
+		log_throw_error("Erro Accepting Assignment")
 
 	if contract_name:
 		linked_pdr = frappe.db.get_value("Contract", contract_name, "personnel_deployment_assignment")
 		if linked_pdr != assignee.name:
-			frappe.throw(_("Access Denied"), frappe.PermissionError)
+			frappe.throw_permission_error()
 		frappe.db.set_value("Contract", contract_name, {"is_signed": 1})
+		frappe.db.commit()
 
 
 @frappe.whitelist()

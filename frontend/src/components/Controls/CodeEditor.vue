@@ -15,7 +15,7 @@
 		<span
 			class="mt-1 text-xs text-ink-gray-5"
 			v-show="description"
-			v-html="description"
+			v-html="sanitizeHtml(description)"
 		></span>
 		<Button v-if="showSaveButton" @click="emit('save', aceEditor?.getValue())" class="mt-3">
 			{{ __("Save") }}
@@ -29,6 +29,7 @@ import "ace-builds/src-min-noconflict/theme-chrome";
 import "ace-builds/src-min-noconflict/theme-twilight";
 import { PropType, onMounted, ref, watch } from "vue";
 import { Button } from "frappe-ui";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 const isDark = ref(false);
 

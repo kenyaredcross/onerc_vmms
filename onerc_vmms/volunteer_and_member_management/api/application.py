@@ -3,7 +3,8 @@ from frappe import _
 from frappe.rate_limiter import rate_limit
 from frappe.utils import now_datetime
 
-from ..utils import set_field_value, validate_session_user
+from ..utils.permission import validate_session_user
+from ..utils.utils import set_field_value
 
 PROTECTED_APPLICANT_FIELDS = frozenset(
 	{
@@ -23,7 +24,7 @@ def _apply_application_fields(application, fields: dict) -> None:
 	"""Write only non-protected, real fields onto a Job Applicant document."""
 	for fieldname, value in fields.items():
 		if fieldname in PROTECTED_APPLICANT_FIELDS:
-			continue
+			frappe.throw_permission_error()
 
 		if application.meta.has_field(fieldname):
 			fieldtype = application.meta.get_field(fieldname).fieldtype
@@ -121,8 +122,7 @@ def get_job_openings(filters: dict | None = None, orFilters: list | None = None)
 	return jobs
 
 
-# nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method -- public job detail; limited to published open postings or the caller's own applications
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep:
 def get_job_details(job: str):
 	is_public = frappe.db.exists(
 		"Job Opening",
@@ -257,15 +257,13 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 				kwargs["phone_number"] = user_doc.phone or user_doc.mobile_no or ""
 
 		email_id = kwargs.get("email_id")
-		if (
-			email_id
-			and job_opening
-			and frappe.db.exists("Job Applicant", {"job_title": job_opening, "email_id": email_id})
-		):
-			return {
-				"success": False,
-				"message": "You have already applied for this position.",
-			}
+		if email_id and job_opening:
+			frappe.db.get_value("Job Opening", job_opening, "name", for_update=True)
+			if frappe.db.exists("Job Applicant", {"job_title": job_opening, "email_id": email_id}):
+				return {
+					"success": False,
+					"message": "You have already applied for this position.",
+				}
 
 		surname = kwargs.get("surname", "")
 		other_names = kwargs.get("other_names", "")
@@ -293,6 +291,14 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 
 		return _update_application(job_application.name, update_fields)
 
+	except frappe.DuplicateEntryError:
+		# A racing insert beat us to it (or a future unique constraint fired);
+		# respond idempotently instead of surfacing a hard error.
+		frappe.db.rollback()
+		return {
+			"success": False,
+			"message": "You have already applied for this position.",
+		}
 	except Exception as e:
 		frappe.db.rollback()
 		frappe.log_error(frappe.get_traceback(), "Job Application Submission Error")
