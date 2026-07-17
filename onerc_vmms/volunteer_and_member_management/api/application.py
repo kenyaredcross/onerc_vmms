@@ -24,7 +24,7 @@ def _apply_application_fields(application, fields: dict) -> None:
 	"""Write only non-protected, real fields onto a Job Applicant document."""
 	for fieldname, value in fields.items():
 		if fieldname in PROTECTED_APPLICANT_FIELDS:
-			frappe.throw_permission_error()
+			continue
 
 		if application.meta.has_field(fieldname):
 			fieldtype = application.meta.get_field(fieldname).fieldtype
@@ -122,7 +122,8 @@ def get_job_openings(filters: dict | None = None, orFilters: list | None = None)
 	return jobs
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep:
+# nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method -- public job detail; limited to published open postings or the caller's own applications
+@frappe.whitelist(allow_guest=True)
 def get_job_details(job: str):
 	is_public = frappe.db.exists(
 		"Job Opening",

@@ -159,7 +159,7 @@ def get_companies():
 
 
 @frappe.whitelist()
-def get_meta_info(type, route):
+def get_meta_info(type: str, route: str):
 	frappe.has_permission("Website Route Meta", "write", throw=True)
 
 	if frappe.db.exists("Website Meta Tag", {"parent": f"{type}/{route}"}):
@@ -177,7 +177,7 @@ def get_meta_info(type, route):
 
 
 @frappe.whitelist()
-def update_meta_info(type, route, meta_tags):
+def update_meta_info(type: str, route: str, meta_tags: list | str):
 	frappe.has_permission("Website Route Meta", "write", throw=True)
 
 	parent_name = f"{type}/{route}"
@@ -352,7 +352,7 @@ def set_field_value(doc, fieldname, value, fieldtype=None):
 
 
 @frappe.whitelist()
-def create_or_update_skill_map(employee, skills):
+def create_or_update_skill_map(employee: str, skills: list | dict | str):
 	import json
 
 	if isinstance(skills, str):
@@ -406,11 +406,3 @@ def disable_energy_point_email_notifications(user):
 def log_throw_error(message: str) -> None:
 	frappe.log_error(title=message, message=frappe.get_traceback())
 	frappe.throw(_(message))
-
-
-def validate_session_user(owner: str) -> None:
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Authentication required."), frappe.PermissionError)
-
-	if frappe.session.user != owner:
-		frappe.throw(_("Access Denied"), frappe.PermissionError)

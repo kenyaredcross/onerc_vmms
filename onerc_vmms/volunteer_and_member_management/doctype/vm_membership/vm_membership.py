@@ -19,7 +19,7 @@ from frappe.utils import (
 	today,
 )
 
-from ...utils import log_throw_error
+from ...utils.utils import log_throw_error
 from ..vm_member.vm_member import create_member
 
 
@@ -54,12 +54,12 @@ class VMMembership(Document):
 	def validate_life_member(self):
 		membership_type = self.get_membership_type()
 		if membership_type.billing_cycle == "One Off" and self.status == "Expired":
-			frappe.throw("One off type Memebership cannot expired")
+			frappe.throw(_("One Off type Membership cannot expire"))
 
 	def get_membership_type(self) -> Document:
 		doc_name = frappe.db.exists("VM Membership Type", self.membership_type)
 		if not doc_name:
-			frappe.throw("Membership Type Not found", frappe.DoesNotExistError)
+			frappe.throw(_("Membership Type Not found"), frappe.DoesNotExistError)
 		return frappe.get_doc("VM Membership Type", doc_name)
 
 	def validate_member(self):

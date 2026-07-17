@@ -7,4 +7,4 @@ def validate_session_user(owner: str) -> None:
 		frappe.throw(_("Authentication required."), frappe.PermissionError)
 
 	if frappe.session.user != owner:
-		frappe.throw_permission_error()
+		frappe.throw(_("Access Denied"), frappe.PermissionError)
