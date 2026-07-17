@@ -19,7 +19,7 @@ from frappe.utils import (
 	today,
 )
 
-from ...utils import log_throw_error
+from ...utils.utils import log_throw_error
 from ..vm_member.vm_member import create_member
 
 
@@ -48,6 +48,21 @@ class VMMembership(Document):
 
 	# end: auto-generated types
 	def validate(self):
+		self.validate_member()
+		self.validate_life_member()
+
+	def validate_life_member(self):
+		membership_type = self.get_membership_type()
+		if membership_type.billing_cycle == "One Off" and self.status == "Expired":
+			frappe.throw(_("One Off type Membership cannot expire"))
+
+	def get_membership_type(self) -> Document:
+		doc_name = frappe.db.exists("VM Membership Type", self.membership_type)
+		if not doc_name:
+			frappe.throw(_("Membership Type Not found"), frappe.DoesNotExistError)
+		return frappe.get_doc("VM Membership Type", doc_name)
+
+	def validate_member(self):
 		if not self.member or not frappe.db.exists("VM Member", self.member):
 			# for web forms
 			user_type = frappe.db.get_value("User", frappe.session.user, "user_type")
@@ -252,6 +267,9 @@ class VMMembership(Document):
 
 	@frappe.whitelist()
 	def approve_membership(self):
+		if self.status == "Active":
+			return self
+
 		qr_data = make_qr_code(get_verification_url(self.name))
 
 		qr_code_file = frappe.get_doc(
@@ -605,7 +623,7 @@ def process_request_data(data):
 def get_company_for_memberships():
 	company = frappe.db.get_single_value("VM Settings", "company")
 	if not company:
-		from ...utils import get_company
+		from ...utils.utils import get_company
 
 		company = get_company()
 	return company
@@ -678,9 +696,15 @@ def set_expired_status():
 		return
 
 	for m in memberships:
-		frappe.db.set_value("VM Membership", m.name, "status", "Expired")
-
-	frappe.db.commit()
+		try:
+			frappe.db.set_value("VM Membership", m.name, "status", "Expired")
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(
+				frappe.get_traceback(),
+				f"Failed to set expired status for VM Membership {m.name}",
+			)
 
 
 def get_last_membership(member):

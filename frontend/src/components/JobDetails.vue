@@ -361,8 +361,8 @@
 							class="p-8 bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-gray-200"
 						>
 							<div
-								v-html="__(job.data.description)"
-								class="prose prose-lg max-w-none text-gray-700 prose-headings:font-black prose-headings:text-gray-900 prose-p:leading-relaxed prose-a:text-red-600 prose-a:font-semibold hover:prose-a:text-red-700 prose-strong:text-gray-900 prose-strong:font-bold prose-ul:list-disc prose-ol:list-decimal prose-table:table-fixed prose-td:p-3 prose-th:p-3 prose-td:border prose-th:border prose-td:border-gray-300 prose-th:border-gray-300 prose-th:bg-gray-100 prose-th:font-bold"
+								v-html="sanitizeRichHtml(__(job.data.description))"
+								class="frappe-editor-content prose prose-sm sm:prose-base max-w-none"
 							></div>
 						</div>
 					</section>
@@ -388,6 +388,7 @@ import {
 } from "lucide-vue-next";
 import { inject } from "vue";
 import NewJobApplication from "../pages/NewJobApplication.vue";
+import { sanitizeRichHtml } from "../utils/sanitizeHtml";
 
 const props = defineProps({
 	job: Object,

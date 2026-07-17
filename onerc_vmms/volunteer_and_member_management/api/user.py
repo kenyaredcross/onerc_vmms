@@ -5,7 +5,7 @@ from frappe import _
 from frappe.rate_limiter import rate_limit
 
 from ..services.user import create_vmms_user
-from ..utils import set_field_value
+from ..utils.utils import set_field_value
 
 SELF_EDITABLE_USER_FIELDS = frozenset(
 	{

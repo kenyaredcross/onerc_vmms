@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 
-from ..utils import log_throw_error
+from ..utils.utils import log_throw_error
 from .volunteer import get_current_volunteer
 
 
@@ -77,7 +77,7 @@ def fetch_assigned_projects():
 
 @frappe.whitelist()
 def get_assignment_details(assignment_name: str):
-	from ..utils import validate_session_user
+	from ..utils.permission import validate_session_user
 
 	assignment = frappe.get_doc(
 		"Personnel Deployment Request",
@@ -141,7 +141,7 @@ def accept_assignment(name: str, accepted: bool = True, contract_name: str | Non
 	if not PDR_id:
 		frappe.throw(_("Personnel Deployment Request not found"), frappe.DoesNotExistError)
 
-	from ..utils import validate_session_user
+	from ..utils.permission import validate_session_user
 
 	assignee = frappe.get_doc("Personnel Deployment Request", PDR_id, ignore_permissions=True)
 	validate_session_user(assignee.user)

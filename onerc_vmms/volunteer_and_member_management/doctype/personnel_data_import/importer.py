@@ -5,6 +5,10 @@ from frappe import _
 from frappe.utils.csvutils import get_csv_content_from_google_sheets, read_csv_content
 from frappe.utils.xlsxutils import read_xls_file_from_attached_file, read_xlsx_file_from_attached_file
 
+from onerc_vmms.volunteer_and_member_management.services.user import (
+	ensure_user_self_permission,
+)
+
 INVALID_VALUES = ("", None)
 
 
@@ -237,6 +241,8 @@ class PersonnelDataImporter:
 					else:
 						user_id = self.upsert_user_base(u_base)
 						self.insert_child_rows(frappe.get_doc("User", user_id), u_child)
+
+					ensure_user_self_permission(user_id)
 					docname = user_id
 
 			if self.import_mode in ["Employee", "Both"]:

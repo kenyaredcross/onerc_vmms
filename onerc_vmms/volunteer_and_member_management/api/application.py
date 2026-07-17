@@ -3,7 +3,8 @@ from frappe import _
 from frappe.rate_limiter import rate_limit
 from frappe.utils import now_datetime
 
-from ..utils import set_field_value, validate_session_user
+from ..utils.permission import validate_session_user
+from ..utils.utils import set_field_value
 
 PROTECTED_APPLICANT_FIELDS = frozenset(
 	{
@@ -257,15 +258,13 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 				kwargs["phone_number"] = user_doc.phone or user_doc.mobile_no or ""
 
 		email_id = kwargs.get("email_id")
-		if (
-			email_id
-			and job_opening
-			and frappe.db.exists("Job Applicant", {"job_title": job_opening, "email_id": email_id})
-		):
-			return {
-				"success": False,
-				"message": "You have already applied for this position.",
-			}
+		if email_id and job_opening:
+			frappe.db.get_value("Job Opening", job_opening, "name", for_update=True)
+			if frappe.db.exists("Job Applicant", {"job_title": job_opening, "email_id": email_id}):
+				return {
+					"success": False,
+					"message": "You have already applied for this position.",
+				}
 
 		surname = kwargs.get("surname", "")
 		other_names = kwargs.get("other_names", "")
@@ -293,6 +292,14 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 
 		return _update_application(job_application.name, update_fields)
 
+	except frappe.DuplicateEntryError:
+		# A racing insert beat us to it (or a future unique constraint fired);
+		# respond idempotently instead of surfacing a hard error.
+		frappe.db.rollback()
+		return {
+			"success": False,
+			"message": "You have already applied for this position.",
+		}
 	except Exception as e:
 		frappe.db.rollback()
 		frappe.log_error(frappe.get_traceback(), "Job Application Submission Error")

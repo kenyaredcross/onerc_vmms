@@ -620,7 +620,7 @@ export const cleanError = (message) => {
 };
 
 export const getMetaInfo = (type, route, meta) => {
-	call("onerc_vmms.volunteer_and_member_management.utils.get_meta_info", {
+	call("onerc_vmms.volunteer_and_member_management.utils.utils.get_meta_info", {
 		type: type,
 		route: route,
 	}).then((data) => {
@@ -637,7 +637,7 @@ export const getMetaInfo = (type, route, meta) => {
 };
 
 export const updateMetaInfo = (type, route, meta) => {
-	call("onerc_vmms.volunteer_and_member_management.utils.update_meta_info", {
+	call("onerc_vmms.volunteer_and_member_management.utils.utils.update_meta_info", {
 		type: type,
 		route: route,
 		meta_tags: [

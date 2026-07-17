@@ -21,8 +21,11 @@
 								}}{{ activity.points }} pts</span
 							>
 						</div>
-						<p class="text-gray-700 text-sm" v-html="activity.formatted_message"></p>
-						<p v-if="activity.user" class="text-xs text-gray-500 mt-1">
+						<p
+							class="text-ink-gray-1-700 text-sm"
+							v-html="sanitizeHtml(activity.formatted_message)"
+						></p>
+						<p v-if="activity.user" class="text-xs text-ink-gray-1-500 mt-1">
 							From: {{ activity.user }}
 						</p>
 					</div>
@@ -47,6 +50,7 @@
 <script setup>
 import { createResource } from "frappe-ui";
 import { onMounted, ref } from "vue";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 const props = defineProps({
 	userId: { type: String, required: true },
@@ -64,13 +68,27 @@ const resource = createResource({
 	auto: false,
 });
 
+function escapeHtml(value) {
+	return String(value ?? "")
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+}
+
 function formatActivityMessage(activity) {
-	let msg = activity.reason || "";
+	let msg = escapeHtml(activity.reason || "");
 	if (activity.reference_doctype && activity.reference_name) {
-		const link = `<a href="/app/${activity.reference_doctype}/${activity.reference_name}" class="text-blue-600 hover:underline">${activity.reference_name}</a>`;
-		msg = msg.replace(activity.reference_name, link);
+		const href = `/app/${encodeURIComponent(activity.reference_doctype)}/${encodeURIComponent(
+			activity.reference_name
+		)}`;
+		const link = `<a href="${href}" class="text-blue-600 hover:underline">${escapeHtml(
+			activity.reference_name
+		)}</a>`;
+		msg = msg.replace(escapeHtml(activity.reference_name), () => link);
 	}
-	return msg || `${activity.type} points awarded`;
+	return msg || `${escapeHtml(activity.type)} points awarded`;
 }
 
 function fetchActivities() {

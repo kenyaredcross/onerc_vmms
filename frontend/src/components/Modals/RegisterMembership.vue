@@ -270,7 +270,7 @@ watch(isExistingMember, (newValue) => {
 });
 
 const branches = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.utils.get_companies",
+	url: "onerc_vmms.volunteer_and_member_management.utils.utils.get_companies",
 	auto: true,
 	cache: "branches",
 	transform: (data) => data.map((item) => ({ label: item.name, value: item.name })),

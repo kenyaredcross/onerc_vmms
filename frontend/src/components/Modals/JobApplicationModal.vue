@@ -196,7 +196,7 @@
 								}}</label>
 								<Uploader
 									label="Upload Resume"
-									:fileTypes="['.pdf', '.docx', '.doc']"
+									:fileTypes="['.pdf', '.docx']"
 									:onSuccess="(file) => (resume = file)"
 								/>
 							</div>
@@ -210,7 +210,7 @@
 							</label>
 							<Uploader
 								label="Upload Documents"
-								:fileTypes="['.pdf', '.docx', '.doc', '.jpg', '.png']"
+								:fileTypes="['.pdf', '.docx', '.jpg', '.png']"
 								:multi="true"
 								:onSuccess="handleDocumentUpload"
 							/>

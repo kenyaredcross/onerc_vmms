@@ -106,7 +106,7 @@
 													option.description != option.label
 												"
 												class="text-xs text-ink-gray-7"
-												v-html="__(option.description)"
+												v-html="sanitizeHtml(__(option.description))"
 											></div>
 										</div>
 									</slot>
@@ -133,6 +133,7 @@
 import { Combobox, ComboboxInput, ComboboxOption, ComboboxOptions } from "@headlessui/vue";
 import { ChevronDown, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, onUnmounted, ref, useAttrs, useSlots, watch } from "vue";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 
 const props = defineProps({
 	modelValue: {

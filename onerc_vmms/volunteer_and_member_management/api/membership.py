@@ -8,12 +8,10 @@ from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname
 
 from ..api.user import get_user_details
-from ..utils import log_throw_error
+from ..utils.utils import log_throw_error
 
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public membership types listing, read-only
+@frappe.whitelist(allow_guest=True)  # nosemgrep:
 def get_membership_types():
 	memberships = frappe.get_all(
 		"VM Membership Type",
@@ -29,9 +27,6 @@ def get_membership_types():
 
 @frappe.whitelist()
 def get_current_membership():
-	if frappe.session.user == "Guest":
-		return []
-
 	member = frappe.db.get_value(
 		"VM Member",
 		{"email_id": frappe.session.user},

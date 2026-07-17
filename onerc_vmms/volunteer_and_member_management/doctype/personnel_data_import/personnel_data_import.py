@@ -98,7 +98,6 @@ def export_errored_rows(name):
 	build_csv_response(csv_rows, f"Error_Log_{name}")
 
 
-@frappe.whitelist()
 def execute_import_chunk(data_import_name, start_index, end_index):
 	doc = frappe.get_doc("Personnel Data Import", data_import_name)
 	importer = PersonnelDataImporter("Employee", "User", data_import=doc)

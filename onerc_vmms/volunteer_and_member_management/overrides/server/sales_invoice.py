@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-from ...utils import check_and_renew_membership
+from ...utils.utils import check_and_renew_membership
 
 
 @frappe.whitelist()
