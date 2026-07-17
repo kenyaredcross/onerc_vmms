@@ -54,7 +54,7 @@ class VMMembership(Document):
 	def validate_life_member(self):
 		membership_type = self.get_membership_type()
 		if membership_type.billing_cycle == "One Off" and self.status == "Expired":
-			frappe.throw("One off type Memebership cannot expired")
+			frappe.throw(_("One off type Memebership cannot expired"))
 
 	def get_membership_type(self) -> Document:
 		doc_name = frappe.db.exists("VM Membership Type", self.membership_type)
