@@ -8,8 +8,8 @@
 			<p class="text-gray-600 mb-8">
 				{{
 					__(
-						"Please log in to access your opportunity application details. Your application information is protected and only available to authenticated users.",
-					) 
+						"Please log in to access your opportunity application details. Your application information is protected and only available to authenticated users."
+					)
 				}}
 			</p>
 			<Button
@@ -76,7 +76,7 @@
 										{{
 											__(
 												app?.job_opening_details?.job_title ||
-													app.job_title,
+													app.job_title
 											)
 										}}
 									</h2>
@@ -88,8 +88,8 @@
 											app.docstatus === 2
 												? __("Cancelled")
 												: app.docstatus === 0
-													? __("Draft")
-													: __(app.status)
+												? __("Draft")
+												: __(app.status)
 										}}
 									</span>
 								</div>
@@ -115,12 +115,7 @@
 							class="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700"
 						>
 							<strong>{{ __("Cover Letter") }}:</strong>
-							<div
-								v-html="
-									app.cover_letter.substring(0, 150) +
-									(app.cover_letter.length > 150 ? '...' : '')
-								"
-							></div>
+							<div v-html="coverLetterPreview(app.cover_letter)"></div>
 						</div>
 
 						<div
@@ -165,6 +160,14 @@ import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { sessionStore } from "../stores/session";
 import { usersStore } from "../stores/user";
+import NoPermission from "../components/NoPermission.vue";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
+
+const coverLetterPreview = (text) => {
+	if (!text) return "";
+	const truncated = text.substring(0, 150) + (text.length > 150 ? "..." : "");
+	return sanitizeHtml(truncated);
+};
 
 const { userResource } = usersStore();
 const { isLoggedIn } = sessionStore();
@@ -184,7 +187,7 @@ watch(
 	(email) => {
 		if (email) applications.reload();
 	},
-	{ immediate: true },
+	{ immediate: true }
 );
 
 const redirectToLogin = () => router.push({ name: "Login" });
@@ -283,7 +286,7 @@ const filteredApplications = computed(() => {
 		return applications.data.filter((app) => app.docstatus === 2);
 	} else {
 		return applications.data.filter(
-			(app) => app.docstatus === 1 && app.status?.toLowerCase() === tabValue,
+			(app) => app.docstatus === 1 && app.status?.toLowerCase() === tabValue
 		);
 	}
 });

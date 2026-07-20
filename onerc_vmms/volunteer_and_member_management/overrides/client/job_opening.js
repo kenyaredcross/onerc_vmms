@@ -26,7 +26,7 @@ frappe.ui.form.on("Job Opening", {
 					frm.add_custom_button(
 						__("Send Rejection Emails"),
 						() => show_rejection_dialog(frm, r.message),
-						__("Actions"),
+						__("Actions")
 					);
 				}
 			},
@@ -41,7 +41,7 @@ frappe.ui.form.on("Job Opening", {
 				frappe.msgprint({
 					title: __("Missing Skills"),
 					message: __(
-						"At least one Required Skill must be added for Internal opportunities.",
+						"At least one Required Skill must be added for Internal opportunities."
 					),
 					indicator: "red",
 				});
@@ -56,7 +56,7 @@ frappe.ui.form.on("Job Opening", {
 			frappe.msgprint({
 				title: __("Invalid Date"),
 				message: __(
-					"The Closing Date must be before the Shortlisted Rejection Notification Date.",
+					"The Closing Date must be before the Shortlisted Rejection Notification Date."
 				),
 				indicator: "red",
 			});
@@ -236,7 +236,7 @@ function validate_expected_answers(frm, cdt, cdn) {
 			frappe.msgprint({
 				title: __("Validation Error"),
 				message: __(
-					"For Yes/No questions, the Expected Answer can only be a single line containing either 'Yes' or 'No'.",
+					"For Yes/No questions, the Expected Answer can only be a single line containing either 'Yes' or 'No'."
 				),
 				indicator: "red",
 			});
@@ -250,7 +250,7 @@ function validate_expected_answers(frm, cdt, cdn) {
 			frappe.msgprint({
 				title: __("Validation Error"),
 				message: __(
-					"For Select questions, only one single answer line from the Options config is allowed.",
+					"For Select questions, only one single answer line from the Options config is allowed."
 				),
 				indicator: "red",
 			});
@@ -262,7 +262,7 @@ function validate_expected_answers(frm, cdt, cdn) {
 				title: __("Validation Error"),
 				message: __(
 					"The Expected Answer '{0}' does not match any row configured in the Options text field.",
-					[raw_answers[0]],
+					[raw_answers[0]]
 				),
 				indicator: "red",
 			});
@@ -279,7 +279,7 @@ function validate_expected_answers(frm, cdt, cdn) {
 					title: __("Validation Error"),
 					message: __(
 						"The following items in your Expected Answer are missing from the Options rows field: <br><br><b>{0}</b>",
-						[invalid_opts.join(", ")],
+						[invalid_opts.join(", ")]
 					),
 					indicator: "red",
 				});
@@ -324,7 +324,7 @@ function show_rejection_dialog(frm, applicants) {
 				options:
 					"<p class='text-muted mb-3'>" +
 					__(
-						"Only the applicants listed in the table below will receive rejection emails. You may remove applicants you do not wish to notify.",
+						"Only the applicants listed in the table below will receive rejection emails. You may remove applicants you do not wish to notify."
 					) +
 					"</p>",
 			},

@@ -120,13 +120,13 @@ watchDebounced(
 		text.value = val;
 		reload(val);
 	},
-	{ debounce: 300, immediate: true },
+	{ debounce: 300, immediate: true }
 );
 
 watchDebounced(
 	() => props.doctype,
 	() => reload(""),
-	{ debounce: 300, immediate: true },
+	{ debounce: 300, immediate: true }
 );
 
 const serializeFilters = (f) => {
@@ -179,7 +179,7 @@ const labelClasses = computed(() => [
 watch(
 	() => props.filters,
 	() => reload(autocomplete.value?.query || ""),
-	{ immediate: true, deep: true },
+	{ immediate: true, deep: true }
 );
 </script>
 

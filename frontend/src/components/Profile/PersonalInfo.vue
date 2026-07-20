@@ -138,7 +138,7 @@
 			<p class="italic text-sm">
 				{{
 					__(
-						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy.",
+						"I consent to the use of my bio data for identification and verification purposes as per the organization's data protection policy."
 					)
 				}}
 			</p>
@@ -260,7 +260,7 @@ watch(
 	(newForm) => {
 		syncLocalForm(newForm);
 	},
-	{ immediate: true, deep: true },
+	{ immediate: true, deep: true }
 );
 
 function getChangedFields() {
@@ -392,7 +392,7 @@ async function handleSave() {
 	const validationErrors = validateForm(localForm, formConfig);
 	if (Object.keys(validationErrors).length > 0) {
 		flatErrors.value = Object.entries(validationErrors).map(
-			([field, message]) => `${field}: ${message}`,
+			([field, message]) => `${field}: ${message}`
 		);
 		showErrorDialog.value = true;
 		return;
@@ -409,7 +409,7 @@ watch(
 		localForm.administrative_location = null;
 		localForm.ward = null;
 		localForm.sub_location = null;
-	},
+	}
 );
 
 watch(
@@ -418,20 +418,20 @@ watch(
 		localForm.administrative_location = null;
 		localForm.ward = null;
 		localForm.sub_location = null;
-	},
+	}
 );
 
 watch(
 	() => localForm.administrative_location,
 	() => {
 		localForm.sub_location = null;
-	},
+	}
 );
 
 watch(
 	() => localForm.citizenship,
 	() => {
 		localForm.country_of_citizenship = null;
-	},
+	}
 );
 </script>

@@ -14,7 +14,7 @@
 					<p class="text-gray-700 leading-relaxed">
 						{{
 							__(
-								"Please fill in the following registration information. Fields marked with * are mandatory.",
+								"Please fill in the following registration information. Fields marked with * are mandatory."
 							)
 						}}
 					</p>
@@ -64,7 +64,7 @@
 									populateResponses(
 										question.question_id,
 										question.question,
-										$event,
+										$event
 									)
 								"
 								class="w-full"
@@ -81,7 +81,7 @@
 									populateResponses(
 										question.question_id,
 										question.question,
-										$event,
+										$event
 									)
 								"
 							/>
@@ -177,11 +177,11 @@ const textInputType = (eventDetailQuestionType) => {
 };
 const handleRegister = () => {
 	const requiredQuestions = props.eventDetail.data.event_registration_questions.filter(
-		(question) => question.is_required,
+		(question) => question.is_required
 	);
 	for (const reqQuestion of requiredQuestions) {
 		const answer = responses.value.find(
-			(resp) => resp.question_id === reqQuestion.question_id,
+			(resp) => resp.question_id === reqQuestion.question_id
 		);
 		if (!answer || !answer.response || answer.response.length === 0) {
 			errorMessage.value = `Please provide input to the following question(s): "${reqQuestion.question}"`;

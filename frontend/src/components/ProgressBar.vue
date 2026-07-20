@@ -11,8 +11,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Tooltip } from 'frappe-ui'
+import { computed } from "vue";
+import { Tooltip } from "frappe-ui";
 
 const props = defineProps({
 	progress: {
@@ -21,24 +21,24 @@ const props = defineProps({
 	},
 	size: {
 		type: String,
-		default: 'sm',
+		default: "sm",
 	},
-})
+});
 
 const progressBarWidth = computed(() => {
-	const formattedPercentage = Math.min(Math.ceil(props.progress), 100)
-	return `${formattedPercentage}%`
-})
+	const formattedPercentage = Math.min(Math.ceil(props.progress), 100);
+	return `${formattedPercentage}%`;
+});
 
 const progressBarHeight = computed(() => {
-	if (props.size === 'sm') {
-		return 'h-1'
+	if (props.size === "sm") {
+		return "h-1";
 	}
-	if (props.size === 'md') {
-		return 'h-2'
+	if (props.size === "md") {
+		return "h-2";
 	}
-	if (props.size === 'lg') {
-		return 'h-3'
+	if (props.size === "lg") {
+		return "h-3";
 	}
-})
+});
 </script>

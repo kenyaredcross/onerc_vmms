@@ -76,7 +76,7 @@ const isCollapsed = reactive({
 const localForm = reactive({
 	supporting_documents: [],
 	attachments: [],
-}); 
+});
 
 const documentValidationConfig = [
 	{
@@ -105,7 +105,7 @@ watch(
 	(newForm) => {
 		syncLocalForm(newForm);
 	},
-	{ immediate: true, deep: true },
+	{ immediate: true, deep: true }
 );
 
 function getChangedFields() {

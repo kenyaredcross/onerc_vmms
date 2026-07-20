@@ -38,7 +38,7 @@ frappe.ui.form.on("Personnel Deployment Request", {
 							});
 						}).addClass("btn-primary");
 					}
-				},
+				}
 			);
 		}
 
@@ -141,7 +141,15 @@ frappe.ui.form.on("Personnel Deployment Request", {
 async function render_tor_preview(frm) {
 	if (!frm.doc.tor_url) return;
 
-	const pdf_url = frm.doc.tor_url;
+	const tor_name = frm.doc.terms_of_reference;
+	const doctype = "Personnel Terms of Reference";
+	const base_url = window.location.origin;
+
+	let pdf_url = `${base_url}/api/method/onerc_vmms.volunteer_and_member_management.utils.utils.download_pdf?doctype=${encodeURIComponent(
+		doctype
+	)}&name=${encodeURIComponent(tor_name)}`;
+
+	pdf_url += "&settings=%7B%7D&_lang=en";
 
 	const preview_html = `
 		<div style="text-align: right; margin-bottom: 10px;">

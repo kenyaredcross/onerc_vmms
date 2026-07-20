@@ -92,7 +92,7 @@ const ErrorRenderer = defineComponent({
 						class: "text-sm text-red-700 flex items-start gap-2",
 						style: { marginLeft: `${level * 12}px` },
 					},
-					[h("span", { class: "text-red-500 mt-0.5" }, "•"), h("span", value)],
+					[h("span", { class: "text-red-500 mt-0.5" }, "•"), h("span", value)]
 				);
 			}
 
@@ -122,7 +122,7 @@ const ErrorRenderer = defineComponent({
 									h(
 										"div",
 										{ class: "font-medium text-red-800 mb-2" },
-										`Row ${index + 1}`,
+										`Row ${index + 1}`
 									),
 									h(
 										"div",
@@ -135,13 +135,13 @@ const ErrorRenderer = defineComponent({
 													h(
 														"span",
 														{ class: "text-red-500 mt-0.5" },
-														"→",
+														"→"
 													),
 													h("div", { class: "flex-1 text-sm" }, [
 														h(
 															"strong",
 															{ class: "text-red-800" },
-															`${formatFieldName(subField)}: `,
+															`${formatFieldName(subField)}: `
 														),
 														h(ErrorRenderer, {
 															value: subValue,
@@ -149,11 +149,11 @@ const ErrorRenderer = defineComponent({
 															fieldName: subField,
 														}),
 													]),
-												],
-											),
-										),
+												]
+											)
+										)
 									),
-								],
+								]
 							);
 						}
 
@@ -161,7 +161,7 @@ const ErrorRenderer = defineComponent({
 							h("span", { class: "text-red-500 mt-0.5" }, "•"),
 							h("span", { class: "text-sm text-red-700" }, String(item)),
 						]);
-					}),
+					})
 				);
 			}
 
@@ -182,7 +182,7 @@ const ErrorRenderer = defineComponent({
 									h(
 										"strong",
 										{ class: "text-red-800" },
-										`${formatFieldName(key)}: `,
+										`${formatFieldName(key)}: `
 									),
 									h("div", { class: "ml-2 mt-1" }, [
 										h(ErrorRenderer, {
@@ -192,9 +192,9 @@ const ErrorRenderer = defineComponent({
 										}),
 									]),
 								]),
-							]),
-						),
-					),
+							])
+						)
+					)
 				);
 			}
 
@@ -204,7 +204,7 @@ const ErrorRenderer = defineComponent({
 					class: "text-sm text-red-700 flex items-start gap-2",
 					style: { marginLeft: `${level * 12}px` },
 				},
-				[h("span", { class: "text-red-500 mt-0.5" }, "•"), h("span", String(value))],
+				[h("span", { class: "text-red-500 mt-0.5" }, "•"), h("span", String(value))]
 			);
 		};
 	},

@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import Chart from "chart.js/auto";
+
 export default {
 	name: "HorizontalBarChart",
 	props: {
@@ -49,11 +51,7 @@ export default {
 		}
 	},
 	methods: {
-		async initChart() {
-			if (!window.Chart) {
-				await this.loadChartJS();
-			}
-
+		initChart() {
 			const ctx = this.$refs.chartCanvas.getContext("2d");
 
 			const dataset =
@@ -87,7 +85,7 @@ export default {
 									const value = context.raw;
 									const total = context.chart.data.datasets.reduce(
 										(sum, d) => sum + d.data[0],
-										0,
+										0
 									);
 									const percentage =
 										total > 0 ? ((value / total) * 100).toFixed(1) : 0;
@@ -129,20 +127,6 @@ export default {
 			}));
 
 			this.chartInstance.update();
-		},
-
-		loadChartJS() {
-			return new Promise((resolve, reject) => {
-				if (window.Chart) {
-					resolve();
-					return;
-				}
-				const script = document.createElement("script");
-				script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js";
-				script.onload = resolve;
-				script.onerror = reject;
-				document.head.appendChild(script);
-			});
 		},
 	},
 };

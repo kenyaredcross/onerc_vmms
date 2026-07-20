@@ -29,7 +29,7 @@ function apply_company_filters_from_tor(frm, tor_name) {
 		const torCompany = r.message.company;
 
 		frappe.call({
-			method: "onerc_vmms.volunteer_and_member_management.utils.get_company_descendants",
+			method: "onerc_vmms.volunteer_and_member_management.utils.utils.get_company_descendants",
 			args: { company: torCompany },
 			callback: function (resp) {
 				const allowedCompanies =

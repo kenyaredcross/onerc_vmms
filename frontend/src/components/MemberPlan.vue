@@ -21,8 +21,8 @@
 									membership.status === 'Active'
 										? 'green'
 										: membership.status === 'Pending'
-											? 'orange'
-											: 'red'
+										? 'orange'
+										: 'red'
 								"
 							>
 								{{ __(membership.status) }}
@@ -136,7 +136,7 @@
 						<p class="text-red-50 leading-relaxed opacity-90 text-sm">
 							{{
 								__(
-									"Join Kenya Red Cross Society and support your community through life-saving services while gaining valuable skills.",
+									"Join Kenya Red Cross Society and support your community through life-saving services while gaining valuable skills."
 								)
 							}}
 						</p>
@@ -254,10 +254,10 @@ function getCertificate(membershipId?: string) {
 				loadCertificate.value = null;
 				window.open(
 					`/api/method/frappe.utils.print_format.download_pdf?doctype=VM Membership&name=${membershipId}&format=${membershipTypeCert.value}`,
-					"_blank",
+					"_blank"
 				);
 			},
-		},
+		}
 	);
 }
 </script>

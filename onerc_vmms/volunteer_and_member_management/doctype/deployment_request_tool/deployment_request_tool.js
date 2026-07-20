@@ -271,7 +271,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 		frm.refresh_field("terms_of_reference");
 
 		frm.call({
-			method: "onerc_vmms.volunteer_and_member_management.utils.get_company_descendants",
+			method: "onerc_vmms.volunteer_and_member_management.utils.utils.get_company_descendants",
 			args: {
 				company: frm.doc.company,
 			},
@@ -311,6 +311,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 			frm.events.render_employees_datatable(frm, r.message || []);
 
 			if (r.message) {
+				// no additional handling required
 			}
 		});
 	},
@@ -465,7 +466,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 	confirm_deployment: function (frm, selected_employees) {
 		frappe.confirm(
 			__("Send request to {0} personnel(s) for this project?", [selected_employees.length]),
-			() => frm.events.bulk_deploy_employees(frm, selected_employees),
+			() => frm.events.bulk_deploy_employees(frm, selected_employees)
 		);
 	},
 
@@ -494,7 +495,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 					message += "<ul>";
 					failure.forEach((f) => {
 						const employeeData = frm.employees_datatable.datamanager.data.find(
-							(d) => d.employee === f.employee,
+							(d) => d.employee === f.employee
 						);
 						const employeeName =
 							(employeeData && employeeData.employee_name) || f.employee_name || "";
@@ -522,7 +523,15 @@ frappe.ui.form.on("Deployment Request Tool", {
 async function render_tor_preview(frm) {
 	if (!frm.doc.tor_url) return;
 
-	const pdf_url = frm.doc.tor_url;
+	const tor_name = frm.doc.terms_of_reference;
+	const doctype = "Personnel Terms of Reference";
+	const base_url = window.location.origin;
+
+	let pdf_url = `${base_url}/api/method/onerc_vmms.volunteer_and_member_management.utils.utils.download_pdf?doctype=${encodeURIComponent(
+		doctype
+	)}&name=${encodeURIComponent(tor_name)}`;
+
+	pdf_url += "&settings=%7B%7D&_lang=en";
 
 	const preview_html = `
 		<div style="text-align: right; margin-bottom: 10px;">

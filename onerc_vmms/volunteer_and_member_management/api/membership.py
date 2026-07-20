@@ -1,15 +1,17 @@
 from datetime import datetime
+from typing import Any
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname
 
 from ..api.user import get_user_details
-from ..utils import log_throw_error
+from ..utils.utils import log_throw_error
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep:
 def get_membership_types():
 	memberships = frappe.get_all(
 		"VM Membership Type",
@@ -25,9 +27,6 @@ def get_membership_types():
 
 @frappe.whitelist()
 def get_current_membership():
-	if frappe.session.user == "Guest":
-		return []
-
 	member = frappe.db.get_value(
 		"VM Member",
 		{"email_id": frappe.session.user},
@@ -61,7 +60,7 @@ def get_current_membership():
 		membership_groups[key].append(membership_item)
 
 	filtered_memberships = []
-	for key, group in membership_groups.items():
+	for _key, group in membership_groups.items():
 		statuses = [m.status for m in group]
 
 		if "Active" in statuses or "Pending" in statuses:
@@ -85,7 +84,6 @@ def get_current_membership():
 
 @frappe.whitelist()
 def membership_certificate_template(membership_type: str) -> str:
-
 	error_message = "Error printing membership certificate"
 	if not membership_type:
 		frappe.throw(error_message)
@@ -109,7 +107,6 @@ def membership_certificate_template(membership_type: str) -> str:
 
 @frappe.whitelist()
 def confirm_payment(invoice_name: str) -> str:
-
 	error_message = "Error confirming payment"
 
 	if not invoice_name:
@@ -129,15 +126,15 @@ def confirm_payment(invoice_name: str) -> str:
 
 
 @frappe.whitelist()
+@rate_limit(limit=10, seconds=60 * 5)
 def initiate_membership_registration(
-	phone: str = None,
+	phone: str | None = None,
 	amount: float = 0.0,
-	membership_type: str = None,
-	branch: str = None,
+	membership_type: str | None = None,
+	branch: str | None = None,
 	is_existing_member: bool = False,
-	proof_attachment: any = None,
+	proof_attachment: Any = None,
 ) -> str:
-
 	try:
 		membership_id = create_membership(phone, amount, membership_type, branch, is_existing_member)
 
@@ -166,11 +163,13 @@ def initiate_membership_registration(
 		log_throw_error("Error initiating membership registration")
 
 
-@frappe.whitelist(allow_guest=True)
 def create_membership(
-	phone: str, amount: float, membership_type: str, branch: str, is_existing_member: bool = False
+	phone: str,
+	amount: float,
+	membership_type: str,
+	branch: str,
+	is_existing_member: bool = False,
 ) -> str:
-
 	membership_type_doc = frappe.get_doc("VM Membership Type", membership_type)
 	if not membership_type_doc:
 		frappe.throw(_("Error creating membership"))
@@ -241,7 +240,6 @@ def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
 
 
 def create_member() -> "Document":
-
 	member = frappe.get_doc(
 		{
 			"doctype": "VM Member",
@@ -271,7 +269,10 @@ def check_conflicting_memberships(member_doc: "Document", company: str) -> None:
 		frappe.throw(_("You have a pending membership for this branch. Please complete the payment."))
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(
+	allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- public membership renewal; rate-limited
+@rate_limit(limit=10, seconds=60 * 5)
 def renew_membership(**kwargs):
 	try:
 		membership = frappe.get_doc("VM Membership", kwargs.get("id"))
@@ -285,7 +286,6 @@ def renew_membership(**kwargs):
 
 @frappe.whitelist()
 def validate_membership_eligibility():
-
 	user_info = get_user_details()
 
 	missing_fields = []
@@ -316,4 +316,40 @@ def validate_membership_eligibility():
 	return {
 		"eligible": True,
 		"missing_fields": [],
+	}
+
+
+@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public QR verification;
+@rate_limit(limit=30, seconds=60 * 5)
+def verify_membership_qr(membership: str | None = None, token: str | None = None) -> dict:
+	from frappe.utils import format_date
+
+	from onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership import (
+		verify_qr_token,
+	)
+
+	invalid_msg = _("This QR code or verification link is invalid")
+
+	if not verify_qr_token(membership, token):
+		frappe.throw(invalid_msg)
+
+	data = frappe.db.get_value(
+		"VM Membership",
+		membership,
+		["member_name", "membership_type", "status", "from_date", "to_date"],
+		as_dict=True,
+	)
+	if not data:
+		frappe.throw(invalid_msg)
+
+	status = "Expired" if (data.status == "Expired") else data.status
+
+	return {
+		"membership": membership,
+		"member_name": data.member_name,
+		"membership_type": data.membership_type,
+		"status": status,
+		"is_valid": status == "Active",
+		"valid_from": format_date(data.from_date) if data.from_date else None,
+		"valid_until": format_date(data.to_date) if data.to_date else None,
 	}

@@ -9,42 +9,43 @@ no_cache = 1
 
 
 def get_context():
-    csrf_token = frappe.sessions.get_csrf_token()
-    frappe.db.commit()
-    context = frappe._dict()
-    context.boot = get_boot()
-    context.boot.csrf_token = csrf_token
-    if frappe.session.user != "Guest":
-        capture("active_site", "vmms")
+	csrf_token = frappe.sessions.get_csrf_token()
+	frappe.db.commit()
+	context = frappe._dict()
+	context.boot = get_boot()
+	context.boot.csrf_token = csrf_token
+	if frappe.session.user != "Guest":
+		capture("active_site", "vmms")
 
-    return context
+	return context
 
 
-@frappe.whitelist(methods=["POST"], allow_guest=True)
+@frappe.whitelist(
+	methods=["POST"], allow_guest=True
+)  # nosemgrep: guest-whitelisted-method -- guarded by developer_mode check
 def get_context_for_dev():
-    if not frappe.conf.developer_mode:
-        frappe.throw("This method is only meant for developer mode")
-    return get_boot()
+	if not frappe.conf.developer_mode:
+		frappe.throw("This method is only meant for developer mode")
+	return get_boot()
 
 
 def get_boot():
-
-    return frappe._dict(
-        {
-            "frappe_version": frappe.__version__,
-            "default_route": get_default_route(),
-            "site_name": frappe.local.site,
-            "read_only_mode": frappe.flags.read_only,
-            "setup_complete": cint(frappe.get_system_settings("setup_complete")),
-            "sysdefaults": frappe.defaults.get_defaults(),
-            "timezone": {
-                "system": get_system_timezone(),
-                "user": frappe.db.get_value("User", frappe.session.user, "time_zone")
-                or get_system_timezone(),
-            },
-        }
-    )
+	return frappe._dict(
+		{
+			"frappe_version": frappe.__version__,
+			"default_route": get_default_route(),
+			"site_name": frappe.local.site,
+			"read_only_mode": frappe.flags.read_only,
+			"setup_complete": cint(frappe.get_system_settings("setup_complete")),
+			"sysdefaults": frappe.defaults.get_defaults(),
+			"timezone": {
+				"system": get_system_timezone(),
+				"user": frappe.db.get_value("User", frappe.session.user, "time_zone")
+				or get_system_timezone(),
+			},
+		}
+	)
 
 
 def get_default_route():
-    return "/vmms"
+	return "/vmms"

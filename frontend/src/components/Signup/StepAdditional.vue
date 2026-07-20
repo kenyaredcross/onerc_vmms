@@ -378,6 +378,6 @@ watch(
 	() => {
 		validateComponentFields();
 	},
-	{ deep: true },
+	{ deep: true }
 );
 </script>

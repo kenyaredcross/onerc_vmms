@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import Chart from "chart.js/auto";
+
 export default {
 	name: "LineChartComponent",
 	props: {
@@ -32,9 +34,7 @@ export default {
 		if (this.chartInstance) this.chartInstance.destroy();
 	},
 	methods: {
-		async initChart() {
-			if (!window.Chart) await this.loadChartJS();
-
+		initChart() {
 			const ctx = this.$refs.chartCanvas.getContext("2d");
 
 			const colors = [
@@ -132,20 +132,6 @@ export default {
 			}));
 
 			this.chartInstance.update();
-		},
-
-		loadChartJS() {
-			return new Promise((resolve, reject) => {
-				if (window.Chart) {
-					resolve();
-					return;
-				}
-				const script = document.createElement("script");
-				script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js";
-				script.onload = resolve;
-				script.onerror = reject;
-				document.head.appendChild(script);
-			});
 		},
 	},
 };

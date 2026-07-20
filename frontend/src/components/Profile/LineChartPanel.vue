@@ -88,7 +88,7 @@ function updateChart() {
 				? {
 						labels: chartResource.data.labels || [],
 						datasets: chartResource.data.datasets || [],
-					}
+				  }
 				: { labels: [], datasets: [] };
 			loading.value = false;
 		})

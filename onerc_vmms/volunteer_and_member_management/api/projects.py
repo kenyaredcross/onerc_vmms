@@ -1,5 +1,7 @@
 import frappe
+from frappe import _
 
+from ..utils.utils import log_throw_error
 from .volunteer import get_current_volunteer
 
 
@@ -74,7 +76,8 @@ def fetch_assigned_projects():
 
 
 @frappe.whitelist()
-def get_assignment_details(assignment_name):
+def get_assignment_details(assignment_name: str):
+	from ..utils.permission import validate_session_user
 
 	assignment = frappe.get_doc(
 		"Personnel Deployment Request",
@@ -83,6 +86,8 @@ def get_assignment_details(assignment_name):
 
 	if not assignment:
 		return {}
+
+	validate_session_user(assignment.get("user"))
 
 	if assignment.get("require_contract_before_deployment") == 1:
 		contract = None
@@ -119,32 +124,41 @@ def get_assignment_details(assignment_name):
 
 	assignment["project"] = project
 	assignment["deployment_details"] = deployment.as_dict()
-	tor = (
+	assignment["term_details"] = (
 		frappe.get_doc("Personnel Terms of Reference", deployment.terms_of_reference).as_dict()
 		if deployment.terms_of_reference
 		else None
 	)
-	assignment["term_details"] = tor
 
 	return assignment
 
 
 @frappe.whitelist()
-def accept_assignment(name, accepted=True, contract_name=None):
+def accept_assignment(name: str, accepted: bool = True, contract_name: str | None = None):
+	PDR_DOC = "Personnel Deployment Request"
+
+	PDR_id = frappe.db.exists(PDR_DOC, name)
+	if not PDR_id:
+		frappe.throw(_("Personnel Deployment Request not found"), frappe.DoesNotExistError)
+
+	from ..utils.permission import validate_session_user
+
+	assignee = frappe.get_doc("Personnel Deployment Request", PDR_id, ignore_permissions=True)
+	validate_session_user(assignee.user)
+
+	assignee.deployment_status = "Accepted" if accepted else "Rejected"
 
 	try:
-		if frappe.db.exists("Contract", contract_name):
-			frappe.db.set_value("Contract", contract_name, {"is_signed": 1})
-
-		assignee = frappe.get_doc("Personnel Deployment Request", name, ignore_permissions=True)
-		assignee.deployment_status = "Accepted" if accepted else "Rejected"
 		assignee.save(ignore_permissions=True)
-		frappe.db.commit()
-
 	except Exception:
 		frappe.db.rollback()
-		frappe.log_error(frappe.get_traceback(), "Accept Assignment Error")
-		frappe.throw("Accept Assignment Error")
+		log_throw_error("Error Accepting Assignment")
+
+	if contract_name:
+		linked_pdr = frappe.db.get_value("Contract", contract_name, "personnel_deployment_assignment")
+		if linked_pdr != assignee.name:
+			frappe.throw(_("Access Denied"), frappe.PermissionError)
+		frappe.db.set_value("Contract", contract_name, {"is_signed": 1})
 
 
 @frappe.whitelist()

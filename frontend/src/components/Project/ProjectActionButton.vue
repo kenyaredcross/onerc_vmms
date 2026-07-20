@@ -28,7 +28,9 @@ const iconComponent = computed(() => {
 });
 
 const openDoctype = () => {
-	const url = `/app/${props.doctype.toLowerCase().replace(/ /g, "-")}/new?personnel_deployment_request=${props.project.name}`;
+	const url = `/app/${props.doctype
+		.toLowerCase()
+		.replace(/ /g, "-")}/new?personnel_deployment_request=${props.project.name}`;
 	window.open(url, "_blank");
 };
 </script>

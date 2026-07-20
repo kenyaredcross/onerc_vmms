@@ -1,6 +1,6 @@
 <template>
 	<div class="w-full space-y-8">
-		<div v-if="!user.data?.name" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+		<div v-if="!isLoggedIn" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
 			<h3 class="text-xl font-semibold text-gray-800 mb-6">
 				{{ __("Authentication Required") }}
 			</h3>
@@ -65,7 +65,7 @@
 			<div v-else class="text-gray-700">
 				{{
 					__(
-						"Your application for volunteering is currently under review. Please come back later to apply for this opportunity.",
+						"Your application for volunteering is currently under review. Please come back later to apply for this opportunity."
 					)
 				}}
 			</div>
@@ -97,11 +97,13 @@ import { Button, createResource, toast } from "frappe-ui";
 import { LogIn } from "lucide-vue-next";
 import { computed, inject, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { sessionStore } from "../stores/session";
 
 const route = useRoute();
 const router = useRouter();
 const user = inject("$user");
 const jobId = route.params?.job || "";
+const { isLoggedIn } = sessionStore();
 
 const job = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.application.get_job_details",
@@ -168,7 +170,7 @@ const submitApplication = () => {
 				});
 			},
 			onError: (err) => toast.error(err.messages?.[0] || err),
-		},
+		}
 	);
 };
 
@@ -191,7 +193,7 @@ useHead({
 	title: computed(() =>
 		job.data?.job_title
 			? `Start Application for ${job.data.job_title} | Kenya Red Cross`
-			: "Start Application | Kenya Red Cross",
+			: "Start Application | Kenya Red Cross"
 	),
 	meta: [
 		{
@@ -199,7 +201,7 @@ useHead({
 			content: computed(() =>
 				job.data?.job_title
 					? `Ready to apply for ${job.data.job_title}? Log in or create an account to begin your application with the Kenya Red Cross.`
-					: "Access the application form to apply for this job or volunteer opportunity at the Kenya Red Cross VMMS.",
+					: "Access the application form to apply for this job or volunteer opportunity at the Kenya Red Cross VMMS."
 			),
 		},
 	],

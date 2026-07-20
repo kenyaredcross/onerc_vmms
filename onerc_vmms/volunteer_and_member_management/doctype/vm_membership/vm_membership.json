@@ -14,7 +14,6 @@
   "membership_type",
   "company",
   "status",
-  "is_existing_member",
   "membership_validity_section",
   "from_date",
   "to_date",
@@ -105,6 +104,7 @@
   {
    "fieldname": "company",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Company",
    "options": "Company",
    "reqd": 1
@@ -135,12 +135,6 @@
    "fieldname": "qr_code",
    "fieldtype": "Attach Image",
    "label": "QR Code"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_existing_member",
-   "fieldtype": "Check",
-   "label": "Is Existing Member"
   }
  ],
  "grid_page_length": 50,
@@ -158,7 +152,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2026-06-25 09:53:47.586884",
+ "modified": "2026-07-07 14:50:49.281851",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Membership",

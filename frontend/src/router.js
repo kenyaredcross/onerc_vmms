@@ -14,6 +14,7 @@ const routes = [
 		path: "/dashboard",
 		name: "Dashboard",
 		component: () => import("@/pages/Dashboard.vue"),
+		meta: { requiresAuth: true },
 	},
 	{
 		path: "/opportunities",
@@ -48,6 +49,12 @@ const routes = [
 		name: "Welcome",
 		path: "/welcome",
 		component: () => import("@/pages/VmmsPortal.vue"),
+		meta: { requiresAuth: false },
+	},
+	{
+		name: "VerifyMembership",
+		path: "/verify-membership",
+		component: () => import("@/pages/VerifyMembership.vue"),
 		meta: { requiresAuth: false },
 	},
 	{
@@ -103,17 +110,6 @@ const routes = [
 		component: () => import("@/pages/EventDetail.vue"),
 		props: true,
 	},
-	{
-		name: "EventRegistration",
-		path: "/event/registration/:eventRoute",
-		component: () => import("@/pages/EventRegistration.vue"),
-		props: true,
-	},
-	{
-		name: "CheckoutSummary",
-		path: "/checkout-summary",
-		component: () => import("@/pages/CheckoutSummary.vue"),
-	},
 ];
 
 let router = createRouter({
@@ -139,44 +135,15 @@ router.beforeEach(async (to, from, next) => {
 
 	if (!isLoggedIn) {
 		if (to.meta.requiresAuth) {
-			return next({ name: "Login" });
+			return next({ name: "Login", query: { "redirect-to": to.fullPath } });
 		} else {
 			return next();
 		}
 	}
 
-	router.beforeEach(async (to, from, next) => {
-		const { userResource } = usersStore();
-		let { isLoggedIn } = sessionStore();
-
-		if (to.meta.requiresAuth === false) {
-			return next();
-		}
-
-		try {
-			if (isLoggedIn) {
-				await userResource.promise;
-			}
-		} catch (error) {
-			isLoggedIn = false;
-		}
-
-		if (!isLoggedIn) {
-			if (to.meta.requiresAuth) {
-				return next({ name: "Login" });
-			} else {
-				return next();
-			}
-		}
-
-		if (to.meta.requiresVolunteer) {
-			if (!userResource?.data?.is_volunteer) {
-				return next({ name: "Dashboard" });
-			}
-		}
-
-		return next();
-	});
+	if (to.meta.requiresVolunteer && !userResource?.data?.is_volunteer) {
+		return next({ name: "Dashboard" });
+	}
 
 	return next();
 });

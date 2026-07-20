@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import frappe
 from frappe import _
@@ -7,23 +7,22 @@ from frappe.model.document import Document
 from frappe.utils import add_days, getdate, time_diff_in_seconds, today
 
 
-@frappe.whitelist()
 def send_opportunity_applicant_rejections() -> None:
-	try:
-		settings: Document = frappe.get_single("VM Settings")
-		closed_openings = frappe.get_all(
-			"Job Opening",
-			filters={"status": "Closed"},
-			fields=["name"],
-		)
+	settings: Document = frappe.get_single("VM Settings")
+	closed_openings = frappe.get_all(
+		"Job Opening",
+		filters={"status": "Closed"},
+		fields=["name"],
+	)
+	today_date = getdate(today())
 
-		for opening_data in closed_openings:
+	for opening_data in closed_openings:
+		try:
 			opening: Document = frappe.get_doc("Job Opening", opening_data.name)
 			if not is_auto_rejection_enabled(opening):
 				continue
 
 			config: dict[str, Any] = get_rejection_config(opening, settings)
-			today_date = getdate(today())
 			closing_date = getattr(opening, "closed_on", None) or getattr(opening, "closes_on", None)
 			shortlisted_rejection_notification_date = config.get("shortlisted_rejection_notification_date")
 			notify_unshortlisted_applicants_after = config.get("notify_unshortlisted_applicants_after")
@@ -40,10 +39,11 @@ def send_opportunity_applicant_rejections() -> None:
 					continue
 
 				send_rejection_emails(applicants, template_name=config["rejection_email_template"])
-
-	except Exception:
-		frappe.log_error("Job Applicant -> Send Rejections Error", frappe.get_traceback())
-		frappe.throw("An error occurred while sending rejection notifications.")
+		except Exception:
+			frappe.log_error(
+				f"Job Applicant -> Send Rejections Error for {opening_data.name}",
+				frappe.get_traceback(),
+			)
 
 
 def is_auto_rejection_enabled(opening: Document | None) -> bool:
@@ -79,6 +79,8 @@ def get_rejected_applicants(
 	job_opening: str | None = None, job_applicant: str | None = None
 ) -> list[dict[str, Any]]:
 	"""Fetch all rejected applicants matching given filters."""
+	frappe.has_permission("Job Applicant", "read", throw=True)
+
 	filters: dict[str, Any] = {
 		"status": "Rejected",
 		"applicant_notified_of_application_status": 0,
@@ -89,7 +91,7 @@ def get_rejected_applicants(
 	if job_applicant:
 		filters["name"] = job_applicant
 
-	return frappe.get_all(
+	return frappe.get_list(
 		"Job Applicant",
 		filters=filters,
 		fields=[
@@ -124,6 +126,7 @@ def send_rejection_emails(applicants: Any, template_name: str | None = None) -> 
 	  - a dict with a "name" key fallback)
 	  - an object with a .name attribute
 	"""
+	frappe.has_permission("Job Applicant", "write", throw=True)
 
 	parsed = applicants
 	if isinstance(applicants, str):
@@ -134,7 +137,7 @@ def send_rejection_emails(applicants: Any, template_name: str | None = None) -> 
 
 	if isinstance(parsed, dict):
 		parsed = [parsed]
-	if not isinstance(parsed, (list, tuple)):
+	if not isinstance(parsed, list | tuple):
 		parsed = [parsed]
 
 	for applicant in parsed:
@@ -162,6 +165,8 @@ def send_rejection_emails(applicants: Any, template_name: str | None = None) -> 
 @frappe.whitelist()
 def send_rejection_email(name: str, template_name: str | None = None) -> bool:
 	"""Send rejection email using a given Email Template."""
+	frappe.has_permission("Job Applicant", "write", throw=True)
+
 	try:
 		app: Document = frappe.get_doc("Job Applicant", name)
 
@@ -177,8 +182,12 @@ def send_rejection_email(name: str, template_name: str | None = None) -> bool:
 
 		context: dict[str, Any] = {"doc": app}
 
-		subject: str = frappe.render_template(template.subject or "Application Update", context)
-		message: str = frappe.render_template(template.response or "", context)
+		subject: str = frappe.render_template(
+			template.subject or "Application Update", context
+		)  # nosemgrep: frappe-ssti -- template from admin-managed Email Template, not user input
+		message: str = frappe.render_template(
+			template.response or "", context
+		)  # nosemgrep: frappe-ssti -- template from admin-managed Email Template, not user input
 
 		frappe.sendmail(
 			recipients=[app.email_id],
@@ -192,6 +201,7 @@ def send_rejection_email(name: str, template_name: str | None = None) -> bool:
 
 	except Exception:
 		frappe.log_error(
+			frappe.get_traceback(),
 			f"Failed to send rejection email for Job Applicant {name}",
 			frappe.get_traceback(),
 		)

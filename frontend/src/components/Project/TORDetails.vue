@@ -52,7 +52,7 @@
 			</h2>
 			<div
 				class="prose prose-red max-w-none text-[15px] leading-relaxed [&_h1]:!text-red-700 [&_h2]:!text-red-700 [&_h3]:!text-red-700"
-				v-html="termDetails.mission_background"
+				v-html="sanitizeRichHtml(termDetails.mission_background)"
 			></div>
 		</section>
 
@@ -330,6 +330,8 @@
 </template>
 
 <script setup>
+import { sanitizeRichHtml } from "../../utils/sanitizeHtml";
+
 const props = defineProps({
 	termDetails: {
 		type: Object,

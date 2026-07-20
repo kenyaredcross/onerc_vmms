@@ -12,13 +12,13 @@ required_apps = ["erpnext", "lms", "hrms"]
 
 
 add_to_apps_screen = [
-    {
-        "name": "vmms",
-        "logo": "/assets/onerc_vmms/frontend/vmms.png",
-        "title": "VMMS",
-        "route": "/vmms",
-        "has_permission": "onerc_vmms.volunteer_and_member_management.api.permission.check_app_permission",
-    }
+	{
+		"name": "vmms",
+		"logo": "/assets/onerc_vmms/frontend/vmms.png",
+		"title": "VMMS",
+		"route": "/vmms",
+		"has_permission": "onerc_vmms.volunteer_and_member_management.api.permission.check_app_permission",
+	}
 ]
 
 # Includes in <head>
@@ -44,23 +44,21 @@ add_to_apps_screen = [
 
 # include js in doctype views
 doctype_js = {
-    # "Project": "volunteer_and_member_management/overrides/client/project.js",
-    "Attendance": "volunteer_and_member_management/overrides/client/attendance.js",
-    "Employee Advance": "volunteer_and_member_management/overrides/client/employee_advance.js",
-    "Expense Claim": "volunteer_and_member_management/overrides/client/expense_claim.js",
-    "Timesheet": "volunteer_and_member_management/overrides/client/timesheet.js",
-    "Job Opening": "volunteer_and_member_management/overrides/client/job_opening.js",
-    "Employee Onboarding": "volunteer_and_member_management/overrides/client/employee_onboarding.js",
-    "Employee": "volunteer_and_member_management/overrides/client/employee.js",
-    "Job Applicant": "volunteer_and_member_management/overrides/client/job_applicant.js",
-    "Contract": "volunteer_and_member_management/overrides/client/contract.js",
-    "Interview": "volunteer_and_member_management/overrides/client/interview.js",
-    "Interview Round": "volunteer_and_member_management/overrides/client/interview_round.js",
+	# "Project": "volunteer_and_member_management/overrides/client/project.js",
+	"Attendance": "volunteer_and_member_management/overrides/client/attendance.js",
+	"Employee Advance": "volunteer_and_member_management/overrides/client/employee_advance.js",
+	"Expense Claim": "volunteer_and_member_management/overrides/client/expense_claim.js",
+	"Timesheet": "volunteer_and_member_management/overrides/client/timesheet.js",
+	"Job Opening": "volunteer_and_member_management/overrides/client/job_opening.js",
+	"Employee Onboarding": "volunteer_and_member_management/overrides/client/employee_onboarding.js",
+	"Employee": "volunteer_and_member_management/overrides/client/employee.js",
+	"Job Applicant": "volunteer_and_member_management/overrides/client/job_applicant.js",
+	"Contract": "volunteer_and_member_management/overrides/client/contract.js",
+	"Interview": "volunteer_and_member_management/overrides/client/interview.js",
+	"Interview Round": "volunteer_and_member_management/overrides/client/interview_round.js",
 }
 
-doctype_list_js = {
-    "Job Applicant": "volunteer_and_member_management/overrides/client/job_applicant_list.js"
-}
+doctype_list_js = {"Job Applicant": "volunteer_and_member_management/overrides/client/job_applicant_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -79,8 +77,8 @@ home_page = "index"
 # website user home page (by Role)
 # Everyone starts at the portal page
 role_home_page = {
-    "Guest": "index",
-    "System User": "index",
+	"Guest": "index",
+	"System User": "index",
 }
 
 # All users see the OneRC portal landing page first
@@ -160,53 +158,48 @@ role_home_page = {
 # Hook on document methods and events
 
 doc_events = {
-    "LMS Enrollment": {
-        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.lms_enrollment.on_update"
-    },
-    "Employee": {
-        "after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.employee.after_insert"
-    },
-    "Employee Onboarding": {
-        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.employee_onboarding.on_update",
-        "on_update_after_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.employee_onboarding.on_update_after_submit",
-    },
-    "Job Opening": {
-        "validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.validate"
-    },
-    "Sales Invoice": {
-        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
-        "on_update_after_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
-    },
-    "GL Entry": {
-        "after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
-        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
-    },
-    "Job Applicant": {
-        "before_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.before_submit",
-        "on_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.on_submit",
-        "validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.validate",
-    },
-    "Language": {
-        "before_naming": "onerc_vmms.volunteer_and_member_management.overrides.server.language.before_validate"
-    },
-    "User": {
-        "on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.user.on_update"
-    },
+	"LMS Enrollment": {
+		"on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.lms_enrollment.on_update"
+	},
+	"Employee": {
+		"after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.employee.after_insert"
+	},
+	"Employee Onboarding": {
+		"on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.employee_onboarding.on_update",
+		"on_update_after_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.employee_onboarding.on_update_after_submit",
+	},
+	"Job Opening": {
+		"validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.validate"
+	},
+	"Sales Invoice": {
+		"on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
+		"on_update_after_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.sales_invoice.on_update",
+	},
+	"GL Entry": {
+		"after_insert": "onerc_vmms.volunteer_and_member_management.overrides.server.gl_entry.on_update",
+	},
+	"Job Applicant": {
+		"before_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.before_submit",
+		"on_submit": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.on_submit",
+		"validate": "onerc_vmms.volunteer_and_member_management.overrides.server.job_applicant.validate",
+	},
+	"Language": {
+		"before_naming": "onerc_vmms.volunteer_and_member_management.overrides.server.language.before_validate"
+	},
+	"User": {"on_update": "onerc_vmms.volunteer_and_member_management.overrides.server.user.on_update"},
 }
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
-    "daily": [
-        "onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership.set_expired_status",
-        "onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.send_opportunity_applicant_rejections",
-    ],
-    "cron": {
-        "*/1 * * * *": [
-            "onerc_vmms.volunteer_and_member_management.overrides.server.email.email_flush"
-        ],
-    },
+	"daily": [
+		"onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership.set_expired_status",
+		"onerc_vmms.volunteer_and_member_management.overrides.server.job_opening.send_opportunity_applicant_rejections",
+	],
+	"cron": {
+		"*/1 * * * *": ["onerc_vmms.volunteer_and_member_management.overrides.server.email.email_flush"],
+	},
 }
 
 # Testing
@@ -286,5 +279,15 @@ export_python_type_annotations = True
 # }
 
 website_route_rules = [
-    {"from_route": "/vmms/<path:app_path>", "to_route": "vmms"},
+	{"from_route": "/vmms/<path:app_path>", "to_route": "vmms"},
+]
+
+
+fixtures = [
+	{
+		"doctype": "Role",
+		"filters": [
+			["name", "=", "Vmms Guest"],
+		],
+	},
 ]

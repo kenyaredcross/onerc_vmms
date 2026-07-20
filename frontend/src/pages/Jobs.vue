@@ -131,7 +131,6 @@ import { computed, inject, onMounted, ref, watch } from "vue";
 import { sessionStore } from "../stores/session";
 import JobApplication from "./JobApplication.vue";
 
-const user = inject("$user");
 const { brand } = sessionStore();
 
 const job_location = ref(null);
@@ -140,11 +139,9 @@ const profession = ref(null);
 const searchQuery = ref("");
 const selectedRegions = ref([]);
 const selectedBranches = ref([]);
-const showFilters = ref(false);
 const filters = ref({});
 const orFilters = ref({});
 const jobCount = ref(0);
-const readOnlyMode = window.read_only_mode;
 const currentTab = ref("Open");
 
 const jobTabs = computed(() => [
@@ -157,7 +154,7 @@ const branchFilters = computed(() => {
 
 	if (selectedRegions.value?.length) {
 		const companyNames = selectedRegions.value.map((item) =>
-			typeof item === "string" ? item : item.company,
+			typeof item === "string" ? item : item.company
 		);
 
 		baseFilter.parent_company = ["in", companyNames];
@@ -205,7 +202,7 @@ const updateFilters = () => {
 
 	if (selectedRegions.value?.length) {
 		const regionNames = selectedRegions.value.map((item) =>
-			typeof item === "string" ? item : item.company,
+			typeof item === "string" ? item : item.company
 		);
 		filters.value.region = regionNames;
 	} else {
@@ -214,7 +211,7 @@ const updateFilters = () => {
 
 	if (selectedBranches.value?.length) {
 		const companyNames = selectedBranches.value.map((item) =>
-			typeof item === "string" ? item : item.company,
+			typeof item === "string" ? item : item.company
 		);
 		filters.value.company = companyNames;
 	} else {

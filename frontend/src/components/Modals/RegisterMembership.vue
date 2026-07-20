@@ -166,10 +166,10 @@
 									props.is_renew
 										? "Renew"
 										: isExistingMember
-											? "Apply"
-											: confirmPayment
-												? "Processing Payment...."
-												: "Register"
+										? "Apply"
+										: confirmPayment
+										? "Processing Payment...."
+										: "Register"
 								}}
 							</Button>
 						</div>
@@ -270,7 +270,7 @@ watch(isExistingMember, (newValue) => {
 });
 
 const branches = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.utils.get_companies",
+	url: "onerc_vmms.volunteer_and_member_management.utils.utils.get_companies",
 	auto: true,
 	cache: "branches",
 	transform: (data) => data.map((item) => ({ label: item.name, value: item.name })),
@@ -323,14 +323,14 @@ function submit() {
 				} else {
 					checkSTK.value = true;
 					toast.success(
-						"Payment initiated Successfully! You will receive a payment prompt shortly on your phone.",
+						"Payment initiated Successfully! You will receive a payment prompt shortly on your phone."
 					);
 					createMembership.error = "";
 					confirmPayment.value = true;
 					initiatePaymentListener(data);
 				}
 			},
-		},
+		}
 	);
 }
 
