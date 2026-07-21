@@ -15,10 +15,15 @@
 				>
 					{{ __("KES") }} {{ __(membershipType.amount) }}
 				</span>
-				<span class="text-base sm:text-sm font-semibold text-gray-500">{{
-					__("/year")
-				}}</span>
+				<span
+					v-if="priceSuffix"
+					class="text-base sm:text-sm font-semibold text-gray-500"
+					>{{ priceSuffix }}</span
+				>
 			</div>
+			<p v-if="billingNote" class="mt-1.5 text-xs font-medium text-gray-500">
+				{{ billingNote }}
+			</p>
 		</div>
 
 		<div class="flex-1 mb-6">
@@ -80,8 +85,20 @@
 <script setup>
 import { Button } from "frappe-ui";
 import { ArrowRight, Check } from "lucide-vue-next";
+import { computed } from "vue";
 
 const props = defineProps({
 	membershipType: Object,
+});
+
+const priceSuffix = computed(() => {
+	if (props.membershipType?.billing_cycle === "Monthly") return __("/month");
+	if (props.membershipType?.billing_cycle === "One Off") return "";
+	return __("/year");
+});
+
+const billingNote = computed(() => {
+	if (props.membershipType?.billing_cycle !== "One Off") return "";
+	return __("One-off payment — lifetime membership, no renewals");
 });
 </script>
