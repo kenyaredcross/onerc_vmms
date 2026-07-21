@@ -110,6 +110,17 @@ const routes = [
 		component: () => import("@/pages/EventDetail.vue"),
 		props: true,
 	},
+	{
+		name: "EventRegistration",
+		path: "/event/registration/:eventRoute",
+		component: () => import("@/pages/EventRegistration.vue"),
+		props: true,
+	},
+	{
+		name: "CheckoutSummary",
+		path: "/checkout-summary",
+		component: () => import("@/pages/CheckoutSummary.vue"),
+	},
 ];
 
 let router = createRouter({
