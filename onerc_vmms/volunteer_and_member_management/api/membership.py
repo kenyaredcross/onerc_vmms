@@ -8,7 +8,7 @@ from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, get_fullname
 
 from ..api.user import get_user_details
-from ..utils import log_throw_error
+from ..utils.utils import log_throw_error
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep:
