@@ -490,13 +490,24 @@ def set_expired_status():
 			"status": ["not in", ["Cancelled", "Expired"]],
 			"to_date": ["<", today],
 		},
-		fields=["name"],
+		fields=["name", "membership_type"],
 	)
 
 	if not memberships:
 		return
 
+	one_off_types = set(
+		frappe.get_all(
+			"VM Membership Type",
+			filters={"billing_cycle": "One Off"},
+			pluck="name",
+		)
+	)
+
 	for m in memberships:
+		if m.membership_type in one_off_types:
+			continue
+
 		try:
 			frappe.db.set_value("VM Membership", m.name, "status", "Expired")
 			frappe.db.commit()
