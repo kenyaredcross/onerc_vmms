@@ -1,12 +1,9 @@
 <template>
 	<NoPermission v-if="user?.data == 'Guest'" :page="__('Dashboard')" />
 
-	<div
-		v-if="user?.data && user?.data !== 'Guest'"
-		class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 lg:py-8"
-	>
+	<div v-if="isLoggedIn" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 lg:py-8">
 		<header
-			class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 bg-surface-white rounded-xl border border-outline-gray-2"
+			class="mb-2 flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 bg-surface-white rounded-xl border border-outline-gray-2"
 		>
 			<!-- Title -->
 			<h1
@@ -23,11 +20,11 @@
 
 			<!-- Action Buttons & Notifications -->
 			<div
-				class="flex flex-wrap sm:flex-nowrap items-center gap-2 md:gap-4 w-full sm:w-auto justify-end"
+				class="flex flex-wrap sm:flex-nowrap items-center gap-2 md:gap-4 w-full sm:w-auto justify-end mb-2"
 			>
 				<!-- Volunteer Action -->
 				<div
-					v-if="roleResource?.data?.is_volunteer"
+					v-if="isVolunteer"
 					class="flex flex-wrap sm:flex-nowrap items-center gap-2 justify-end"
 				>
 					<div
@@ -63,7 +60,7 @@
 				</div>
 
 				<!-- Profile Menu -->
-				<div class="relative flex-shrink-0">
+				<div v-if="isVolunteer" class="relative flex-shrink-0">
 					<button
 						@click="isOpen = !isOpen"
 						:class="[

@@ -104,6 +104,12 @@ const routes = [
 		props: true,
 		meta: { requiresAuth: true },
 	},
+	{
+		name: "NotFound",
+		path: "/:pathMatch(.*)*",
+		component: () => import("@/pages/NotFound.vue"),
+		meta: { requiresAuth: false },
+	},
 ];
 
 let router = createRouter({
@@ -112,7 +118,8 @@ let router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-	const { userResource } = usersStore();
+	const userStore = usersStore();
+	const { userResource, roleResource } = userStore;
 	let { isLoggedIn } = sessionStore();
 
 	if (to.meta.requiresAuth === false) {
@@ -129,14 +136,23 @@ router.beforeEach(async (to, from, next) => {
 
 	if (!isLoggedIn) {
 		if (to.meta.requiresAuth) {
-			// Remember where the user was headed so Login can send them back there.
 			return next({ name: "Login", query: { "redirect-to": to.fullPath } });
 		} else {
 			return next();
 		}
 	}
 
-	if (to.meta.requiresVolunteer && !userResource?.data?.is_volunteer) {
+	try {
+		await roleResource.promise;
+	} catch (error) {
+		console.error(error);
+	}
+
+	if (to.meta.requiresVolunteer && !userStore.isVolunteer) {
+		return next({ name: "Dashboard" });
+	}
+
+	if (to.name == "Profile" && !userStore.isVolunteer) {
 		return next({ name: "Dashboard" });
 	}
 

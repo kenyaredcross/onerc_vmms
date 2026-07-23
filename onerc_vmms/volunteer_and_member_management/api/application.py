@@ -24,7 +24,7 @@ def _apply_application_fields(application, fields: dict) -> None:
 	"""Write only non-protected, real fields onto a Job Applicant document."""
 	for fieldname, value in fields.items():
 		if fieldname in PROTECTED_APPLICANT_FIELDS:
-			frappe.throw_permission_error()
+			continue
 
 		if application.meta.has_field(fieldname):
 			fieldtype = application.meta.get_field(fieldname).fieldtype
@@ -283,6 +283,7 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 			"email_id": email_id,
 			"company": company,
 			"status": "Open",
+			"is_volunteer": 0 if job_opening else 1,
 		}
 
 		if job_opening:
@@ -290,7 +291,6 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 
 		job_application = frappe.get_doc(minimal_doc_data)
 		job_application.insert(ignore_permissions=True)
-		frappe.db.commit()
 
 		update_fields = kwargs.copy()
 		update_fields.pop("email_id", None)
