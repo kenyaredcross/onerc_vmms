@@ -105,6 +105,12 @@ const routes = [
 		meta: { requiresAuth: true },
 	},
 	{
+		name: "NotFound",
+		path: "/:pathMatch(.*)*",
+		component: () => import("@/pages/NotFound.vue"),
+		meta: { requiresAuth: false },
+	},
+	{
 		name: "EventDetail",
 		path: "/event/:id",
 		component: () => import("@/pages/EventDetail.vue"),
@@ -129,7 +135,8 @@ let router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-	const { userResource } = usersStore();
+	const userStore = usersStore();
+	const { userResource, roleResource } = userStore;
 	let { isLoggedIn } = sessionStore();
 
 	if (to.meta.requiresAuth === false) {
@@ -152,7 +159,17 @@ router.beforeEach(async (to, from, next) => {
 		}
 	}
 
-	if (to.meta.requiresVolunteer && !userResource?.data?.is_volunteer) {
+	try {
+		await roleResource.promise;
+	} catch (error) {
+		console.error(error);
+	}
+
+	if (to.meta.requiresVolunteer && !userStore.isVolunteer) {
+		return next({ name: "Dashboard" });
+	}
+
+	if (to.name == "Profile" && !userStore.isVolunteer) {
 		return next({ name: "Dashboard" });
 	}
 

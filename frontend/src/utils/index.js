@@ -388,11 +388,9 @@ export function getUserTimezone() {
 	}
 }
 
-export function getSidebarLinks({ user }) {
-	const isVolunteer = Boolean(user?.is_volunteer);
-
+export function getSidebarLinks(isVolunteer) {
 	return [
-		{
+		isVolunteer && {
 			label: "Profile",
 			icon: "User",
 			to: "Profile",
