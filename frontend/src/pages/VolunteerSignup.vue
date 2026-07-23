@@ -50,7 +50,13 @@
 						<div
 							v-for="(step, i) in steps"
 							:key="i"
+							role="button"
+							tabindex="0"
+							:title="step.title"
 							class="flex-1 flex flex-col items-center text-center relative group cursor-pointer"
+							@click="goToStep(i)"
+							@keydown.enter="goToStep(i)"
+							@keydown.space.prevent="goToStep(i)"
 						>
 							<div
 								v-if="i < steps.length"
@@ -74,7 +80,7 @@
 					</div>
 				</div>
 
-				<section v-if="currentStep === 0">
+				<section v-show="currentStep === 0">
 					<StepOrganization
 						v-model="form"
 						:errors="errors"
@@ -82,7 +88,7 @@
 						@change="trackChanges"
 					/>
 				</section>
-				<section v-if="currentStep === 1">
+				<section v-show="currentStep === 1">
 					<StepAdditional
 						v-model="form"
 						:errors="errors"
@@ -90,7 +96,7 @@
 						@change="trackChanges"
 					/>
 				</section>
-				<section v-if="currentStep === 2">
+				<section v-show="currentStep === 2">
 					<StepDocuments
 						v-model="form"
 						:documents="documents"
@@ -98,7 +104,7 @@
 						@change="trackChanges"
 					/>
 				</section>
-				<section v-if="currentStep === 3">
+				<section v-show="currentStep === 3">
 					<ReviewApplication :form="form" />
 				</section>
 
@@ -261,6 +267,8 @@ const showSubmitDialog = ref(false);
 const showErrorDialog = ref(false);
 const loading = ref(true);
 
+let saveFailed = false;
+
 const originalFormData = ref({});
 const hasUnsavedChanges = ref(false);
 const changedFields = ref(new Set());
@@ -301,8 +309,6 @@ const form = reactive({
 	gender: "",
 	consent_to_use_of_bio_data: false,
 	profile_photo: null,
-	_current_step: 0,
-	_current_progress: 0,
 });
 
 const errors = reactive({});
@@ -465,13 +471,10 @@ function getCurrentStepData(onlyChanges = false) {
 		}
 	});
 
-	if (form.company) {
-		currentStepData.county = form.company;
-	}
-
 	currentStepData.is_volunteer = true;
-	currentStepData._current_step = currentStep.value;
-	currentStepData._current_progress = Math.round(progressPercentage.value);
+
+	currentStepData.current_step = currentStep.value;
+	currentStepData.current_progress = Math.round(progressPercentage.value);
 
 	if (user.data?.email) {
 		currentStepData.email_id = user.data.email;
@@ -498,12 +501,23 @@ const jobApplication = createResource({
 
 			if (applicationStatus.value === "Draft") {
 				populateForm(application);
+
+				const savedStep = Number(application.current_step);
+				const hasHash = /step-\d+/.test(window.location.hash);
+				if (
+					!hasHash &&
+					Number.isInteger(savedStep) &&
+					savedStep >= 0 &&
+					savedStep < steps.length
+				) {
+					currentStep.value = savedStep;
+					updateHash(savedStep);
+				}
 			}
 		} else {
 			form.email_id = user.data?.email || "";
 		}
 
-		// Fetch user details to fill missing fields
 		userDetailsResource.submit();
 	},
 });
@@ -545,6 +559,13 @@ const createApplication = createResource({
 		return getCurrentStepData(false);
 	},
 	onSuccess(data) {
+		if (!data?.name) {
+			saveFailed = true;
+			saveInProgress.value = false;
+			toast.error(data?.message || "Failed to save application");
+			return;
+		}
+
 		applicationId.value = data.name;
 		toast.success("Application saved successfully");
 		saveInProgress.value = false;
@@ -555,6 +576,7 @@ const createApplication = createResource({
 	},
 	onError(error) {
 		console.error("Create application error:", error);
+		saveFailed = true;
 		toast.error("Failed to save application");
 		saveInProgress.value = false;
 	},
@@ -570,6 +592,13 @@ const updateApplication = createResource({
 		};
 	},
 	onSuccess(data) {
+		if (data?.success === false) {
+			saveFailed = true;
+			saveInProgress.value = false;
+			toast.error(data?.message || "Failed to update application");
+			return;
+		}
+
 		toast.success("Application updated successfully");
 		saveInProgress.value = false;
 
@@ -579,6 +608,7 @@ const updateApplication = createResource({
 	},
 	onError(error) {
 		console.error("Update application error:", error);
+		saveFailed = true;
 		toast.error("Failed to update application");
 		saveInProgress.value = false;
 	},
@@ -672,10 +702,11 @@ function validateStep(stepIndex) {
 
 async function saveApplication() {
 	if (!hasUnsavedChanges.value && applicationId.value) {
-		return;
+		return true;
 	}
 
 	saveInProgress.value = true;
+	saveFailed = false;
 
 	try {
 		if (!applicationId.value) {
@@ -684,8 +715,11 @@ async function saveApplication() {
 			await updateApplication.submit();
 		}
 	} catch (error) {
+		saveFailed = true;
 		saveInProgress.value = false;
 	}
+
+	return !saveFailed;
 }
 
 function updateHash(step) {
@@ -739,7 +773,10 @@ async function nextStep() {
 		return;
 	}
 
-	await saveApplication();
+	const saved = await saveApplication();
+	if (!saved) {
+		return;
+	}
 
 	if (!saveInProgress.value && currentStep.value < steps.length - 1) {
 		currentStep.value++;
@@ -768,10 +805,6 @@ onUnmounted(() => {
 	window.removeEventListener("hashchange", handleHashChange);
 });
 
-watch(currentStep, (newStep) => {
-	form._current_step = newStep;
-	form._current_progress = Math.round(progressPercentage.value);
-});
 watch(
 	[errors, currentStep],
 	([newErrors, newStep]) => {
