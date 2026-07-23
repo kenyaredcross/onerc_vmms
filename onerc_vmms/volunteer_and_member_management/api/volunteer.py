@@ -282,9 +282,17 @@ def get_my_volunteer_application():
 	if email == "Guest":
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
-	name = frappe.db.get_value("Job Applicant", {"email_id": email, "is_volunteer": 1}, "name")
-	if not name:
+	applications = frappe.get_all(
+		"Job Applicant",
+		filters={"email_id": email, "is_volunteer": 1, "docstatus": ("!=", 2)},
+		pluck="name",
+		order_by="docstatus asc, modified desc",
+		limit=1,
+	)
+	if not applications:
 		return None
+
+	name = applications[0]
 
 	doc = frappe.get_doc("Job Applicant", name)
 	return _convert_table_multiselect(doc)
