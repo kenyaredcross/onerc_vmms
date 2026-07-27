@@ -279,14 +279,21 @@ const handlePay = createResource({
 function initiatePaymentListener(data) {
 	const paymentInstance = paymentListener;
 	paymentInstance.saveToken(data.payment_token);
-	paymentInstance.listenForPayment().then((status) => {
+	paymentInstance.listenForPayment(data.payment_token).then((status) => {
 		confirmPaymentStatus.loading = false;
-		status === "Completed"
-			? ((paymentStatus.value = true),
-			  attendeeBooking.clearBookingData(),
-			  toast.success("Payment successful! Your ticket has been booked."))
-			: ((checkSTK.value = false),
-			  (handlePay.error = "There was an error processing your payment. Please try again."));
+
+		if (status === "Completed") {
+			paymentStatus.value = true;
+			attendeeBooking.clearBookingData();
+			toast.success("Payment successful! Your ticket has been booked.");
+		} else if (status === "Timeout") {
+			checkSTK.value = false;
+			handlePay.error =
+				"We haven't received confirmation for this payment yet. If you completed it on your phone, please check your bookings in a moment before paying again.";
+		} else {
+			checkSTK.value = false;
+			handlePay.error = "There was an error processing your payment. Please try again.";
+		}
 	});
 }
 

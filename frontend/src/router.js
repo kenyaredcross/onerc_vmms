@@ -169,10 +169,6 @@ router.beforeEach(async (to, from, next) => {
 		return next({ name: "Dashboard" });
 	}
 
-	if (to.name == "Profile" && !userStore.isVolunteer) {
-		return next({ name: "Dashboard" });
-	}
-
 	return next();
 });
 

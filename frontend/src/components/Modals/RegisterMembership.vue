@@ -61,7 +61,7 @@
 			</div>
 			<div v-else>
 				<div v-if="!paymentStatus && !applicationSubmitted" class="py-4">
-					<form action="" @submit.prevent="submit">
+					<form action="" novalidate @submit.prevent="submit">
 						<div
 							class="grid grid-cols-1 gap-4 mb-4 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
 							:class="{ 'sm:grid-cols-2': !isExistingMember || props.is_renew }"
@@ -157,6 +157,7 @@
 						<div class="mt-4 gap-2 flex items-end justify-end">
 							<Button
 								type="submit"
+								name="membership-submit"
 								variant="solid"
 								theme="green"
 								:loading="createMembership.loading || confirmPayment"
@@ -283,7 +284,9 @@ const createMembership = createResource({
 	},
 });
 
-function submit() {
+function submit(event) {
+	if (event?.submitter && event.submitter.name !== "membership-submit") return;
+
 	if (!props.is_renew && !membershipForm.branch) {
 		createMembership.error = "Please select a branch or county.";
 		return;
@@ -315,6 +318,7 @@ function submit() {
 		{},
 		{
 			onSuccess(data) {
+				console.log(" daddddd", data);
 				if (isExistingMember.value && !props.is_renew) {
 					toast.success("Application submitted successfully for verification.");
 					applicationSubmitted.value = true;
@@ -336,9 +340,13 @@ function submit() {
 
 function initiatePaymentListener(data) {
 	paymentListener.saveToken(data);
-	paymentListener.listenForPayment().then((status) => {
+	paymentListener.listenForPayment(data).then((status) => {
 		if (status === "Completed") {
 			handlePaymentStatus();
+		} else if (status === "Timeout") {
+			checkSTK.value = false;
+			createMembership.error =
+				"We haven't received confirmation for this payment yet. If you completed it on your phone, refresh this page in a moment to see your membership.";
 		} else {
 			checkSTK.value = false;
 			toast.error("Payment failed or was cancelled. Please try again.");
