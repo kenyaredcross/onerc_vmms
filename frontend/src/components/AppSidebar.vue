@@ -117,6 +117,6 @@ const redirectToWebsite = () => {
 };
 
 const apps = computed(() => {
-	return sideBarApps().filter((app) => userStore.isVolunteer || app.name !== "frappe");
+	return sideBarApps();
 });
 </script>
