@@ -36,6 +36,7 @@ class VMMembership(Document):
 		company: DF.Link
 		currency: DF.Link | None
 		from_date: DF.Date
+		is_existing_member: DF.Check
 		member: DF.Link | None
 		member_name: DF.Data | None
 		member_since_date: DF.Date | None

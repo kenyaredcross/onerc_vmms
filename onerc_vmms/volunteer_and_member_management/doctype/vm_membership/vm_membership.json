@@ -15,6 +15,7 @@
   "membership_type",
   "company",
   "status",
+  "is_existing_member",
   "membership_validity_section",
   "from_date",
   "to_date",
@@ -136,6 +137,14 @@
    "fieldtype": "Attach Image",
    "hidden": 1,
    "label": "QR Code"
+  },
+  {
+   "default": "0",
+   "description": "Applicant was already a member off-portal. Verify the attached proof of membership before activating; no payment is collected.",
+   "fieldname": "is_existing_member",
+   "fieldtype": "Check",
+   "label": "Existing Member",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -153,7 +162,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2026-07-06 20:40:01.163619",
+ "modified": "2026-07-27 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Membership",

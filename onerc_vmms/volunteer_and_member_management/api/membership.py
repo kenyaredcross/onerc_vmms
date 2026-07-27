@@ -1,10 +1,11 @@
 from datetime import datetime
+from typing import Any
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.rate_limiter import rate_limit
-from frappe.utils import add_to_date, get_fullname
+from frappe.utils import add_to_date, get_fullname, sbool
 
 from onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership import (
 	VMMembership,
@@ -183,8 +184,30 @@ def confirm_payment(invoice_name: str) -> str:
 @frappe.whitelist()
 @rate_limit(limit=10, seconds=60 * 5)
 def initiate_membership_registration(
-	amount: float, membership_type: str, branch: str, payment_gateway: str
+	amount: float,
+	membership_type: str,
+	branch: str,
+	payment_gateway: str | None = None,
+	is_existing_member: Any = False,
+	proof_attachment: Any = None,
 ) -> str:
+	"""Register a membership.
+
+	Existing members (already members off-portal) skip payment entirely: they upload a proof of
+	membership instead and their application is left Pending for a reviewer to verify.
+	"""
+	if sbool(is_existing_member):
+		if not proof_attachment:
+			frappe.throw(_("Please upload a proof of membership"))
+
+		membership = create_membership(0, membership_type, branch, is_existing_member=True)
+		attach_proof_of_membership(membership, proof_attachment)
+
+		return "Application Submitted"
+
+	if not payment_gateway:
+		frappe.throw(_("Please select a payment method"))
+
 	membership = create_membership(amount, membership_type, branch)
 
 	payment_link = get_payment_link(membership, payment_gateway)
@@ -196,6 +219,7 @@ def create_membership(
 	amount: float,
 	membership_type: str,
 	branch: str,
+	is_existing_member: bool = False,
 ) -> VMMembership:
 	if not frappe.db.exists("VM Membership Type", membership_type):
 		frappe.throw(_("The specified membership type does not exist"))
@@ -221,10 +245,11 @@ def create_membership(
 				"membership_type": membership_type,
 				"amount": amount,
 				"company": branch,
-				"status": "Draft",
+				"status": "Pending" if is_existing_member else "Draft",
 				"from_date": from_date,
 				"to_date": add_to_date(from_date, years=1, days=-1),
 				"member_since_date": from_date,
+				"is_existing_member": int(is_existing_member),
 			}
 		)
 
@@ -233,6 +258,34 @@ def create_membership(
 
 	except Exception:
 		log_throw_error("Error creating membership")
+
+
+def attach_proof_of_membership(membership_doc: "VMMembership", proof_attachment: Any) -> None:
+	"""Attach the files an existing member uploaded as proof to their membership application.
+
+	Only files the current user uploaded can be attached, so a crafted `file_url` cannot be used to
+	pull somebody else's private file into this membership.
+	"""
+	attachments = proof_attachment if isinstance(proof_attachment, list) else [proof_attachment]
+
+	for attachment in attachments:
+		file_url = attachment if isinstance(attachment, str) else (attachment or {}).get("file_url")
+		if not file_url:
+			continue
+
+		file_name = frappe.db.get_value(
+			"File",
+			{"file_url": file_url, "owner": frappe.session.user},
+			"name",
+		)
+		if not file_name:
+			frappe.throw(_("The uploaded proof of membership could not be found"))
+
+		file_doc = frappe.get_doc("File", file_name)
+		file_doc.attached_to_doctype = "VM Membership"
+		file_doc.attached_to_name = membership_doc.name
+		file_doc.is_private = 1
+		file_doc.save(ignore_permissions=True)
 
 
 def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
