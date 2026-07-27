@@ -318,7 +318,6 @@ function submit(event) {
 		{},
 		{
 			onSuccess(data) {
-				console.log(" daddddd", data);
 				if (isExistingMember.value && !props.is_renew) {
 					toast.success("Application submitted successfully for verification.");
 					applicationSubmitted.value = true;
