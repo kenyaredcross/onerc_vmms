@@ -160,7 +160,7 @@ def initiate_membership_registration(
 
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Error initiating membership registration")
-		log_throw_error("Error initiating membership registration")
+		frappe.throw("Error initiating membership registration")
 
 
 def create_membership(
@@ -188,22 +188,20 @@ def create_membership(
 		from_date = datetime.today().date()
 		status = "Pending" if is_existing_member else "Draft"
 
-		membership_data = {
-			"doctype": "VM Membership",
-			"member": member.name,
-			"membership_type": membership_type,
-			"amount": amount,
-			"company": branch,
-			"status": status,
-			"from_date": from_date,
-			"member_since_date": from_date,
-			"is_existing_member": is_existing_member,
-		}
-
-		if membership_type_doc.billing_cycle != "One Off":
-			membership_data["to_date"] = add_to_date(from_date, years=1, days=-1)
-
-		membership = frappe.get_doc(membership_data)
+		membership = frappe.get_doc(
+			{
+				"doctype": "VM Membership",
+				"member": member.name,
+				"membership_type": membership_type,
+				"amount": amount,
+				"company": branch,
+				"status": status,
+				"from_date": from_date,
+				"to_date": add_to_date(from_date, years=1, days=-1),
+				"member_since_date": from_date,
+				"is_existing_member": is_existing_member,
+			}
+		)
 
 		membership.insert(ignore_permissions=True)
 		return membership.name

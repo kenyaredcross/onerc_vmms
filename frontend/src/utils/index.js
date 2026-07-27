@@ -390,7 +390,7 @@ export function getUserTimezone() {
 
 export function getSidebarLinks(isVolunteer) {
 	return [
-		isVolunteer && {
+		{
 			label: "Profile",
 			icon: "User",
 			to: "Profile",

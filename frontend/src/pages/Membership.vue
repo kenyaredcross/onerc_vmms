@@ -76,7 +76,6 @@ function cleanUpMembershipForm() {
 	registerDialog.value = false;
 	membershipForm.membership_type = "";
 	membershipForm.amount = 0;
-	payNow.value = false;
 }
 
 function selectMembershipType(membershipType) {
