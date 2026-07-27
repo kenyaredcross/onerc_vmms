@@ -9,7 +9,6 @@ from urllib.parse import quote
 
 import frappe
 from frappe.model.document import Document
-from frappe.query_builder.functions import Count
 from frappe.utils import get_datetime, get_link_to_form, getdate, pretty_date
 from hrms.hr.utils import validate_bulk_tool_fields
 from pypika import Criterion
@@ -168,19 +167,6 @@ class DeploymentRequestTool(Document):
 		success = []
 		savepoint = "before_deployment_creation"
 
-		required = int(self.number_of_volunteers_required or 0)
-		frappe.db.get_value("Deployment Request Tool", self.name, "name", for_update=True)
-		pdr = frappe.qb.DocType("Personnel Deployment Request")
-		active_count = (
-			frappe.qb.from_(pdr)
-			.select(Count(pdr.name))
-			.where(pdr.deployment == self.name)
-			.where(pdr.deployment_status.isin(["Pending", "Accepted"]))
-			.for_update()
-			.run()
-		)[0][0]
-		remaining = required - active_count
-
 		for employee in employees:
 			try:
 				existing = frappe.get_all(
@@ -198,15 +184,6 @@ class DeploymentRequestTool(Document):
 						{
 							"employee": employee,
 							"reason": f"Existing {existing[0].deployment_status} assignment (<a href='{frappe.utils.get_url_to_form('Personnel Deployment Request', existing[0].name)}' target='_blank'>{existing[0].name}</a>) found.",
-						}
-					)
-					continue
-
-				if remaining <= 0:
-					failure.append(
-						{
-							"employee": employee,
-							"reason": f"Deployment capacity reached. The number of personnel required ({required}) has already been met.",
 						}
 					)
 					continue
@@ -239,7 +216,6 @@ class DeploymentRequestTool(Document):
 					assignment.set(field, value)
 
 				assignment.insert()
-				remaining -= 1
 
 				success.append(
 					{
