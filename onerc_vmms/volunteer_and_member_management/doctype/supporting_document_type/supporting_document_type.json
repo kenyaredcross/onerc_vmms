@@ -6,18 +6,20 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_rosg"
+  "is_required"
  ],
  "fields": [
   {
-   "fieldname": "section_break_rosg",
-   "fieldtype": "Section Break"
+   "default": "0",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "label": "Is Required"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-28 16:30:59.564220",
+ "modified": "2026-07-27 15:52:49.162388",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Supporting Document Type",

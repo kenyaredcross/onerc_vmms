@@ -101,6 +101,8 @@
 						v-model="form"
 						:documents="documents"
 						:errors="errors"
+						:requiredTypes="requiredDocumentTypes.data || []"
+						@update:errors="handleErrorsUpdate"
 						@change="trackChanges"
 					/>
 				</section>
@@ -272,6 +274,14 @@ const originalFormData = ref({});
 const hasUnsavedChanges = ref(false);
 const changedFields = ref(new Set());
 const flatErrors = ref("");
+
+const DOCUMENTS_STEP = 2;
+
+const requiredDocumentTypes = createResource({
+	url: "onerc_vmms.volunteer_and_member_management.api.application.get_required_supporting_document_types",
+	auto: true,
+	cache: "required_supporting_document_types",
+});
 
 const form = reactive({
 	email_id: "",
@@ -689,14 +699,52 @@ function handleErrorsUpdate(newErrors = {}) {
 	});
 }
 
-function validateStep(stepIndex) {
-	let valid = true;
+function getMissingDocumentTypes() {
+	const required = requiredDocumentTypes.data || [];
+	if (!required.length) return [];
 
-	if (flatErrors.value) {
-		return false;
+	const attached = new Set(
+		(form.supporting_documents || [])
+			.filter((row) => row?.type && row?.attachment)
+			.map((row) => row.type)
+	);
+
+	return required.filter((type) => !attached.has(type));
+}
+
+function validateDocumentsStep() {
+	const missing = getMissingDocumentTypes();
+
+	const newErrors = { ...errors };
+	const stepErrors = { ...(newErrors[DOCUMENTS_STEP] || {}) };
+
+	if (missing.length) {
+		stepErrors["Required Documents"] = missing.map((type) =>
+			__("Please attach your {0}").format(type)
+		);
+	} else {
+		delete stepErrors["Required Documents"];
 	}
 
-	return valid;
+	if (Object.keys(stepErrors).length) {
+		newErrors[DOCUMENTS_STEP] = stepErrors;
+	} else {
+		delete newErrors[DOCUMENTS_STEP];
+	}
+
+	handleErrorsUpdate(newErrors);
+
+	return missing.length === 0;
+}
+
+function validateStep(stepIndex) {
+	if (stepIndex === DOCUMENTS_STEP) {
+		validateDocumentsStep();
+	}
+
+	const stepErrors = errors[stepIndex];
+
+	return !stepErrors || Object.keys(stepErrors).length === 0;
 }
 
 async function saveApplication() {
