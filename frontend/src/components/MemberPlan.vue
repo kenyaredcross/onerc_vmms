@@ -78,7 +78,6 @@
 								theme="red"
 								size="sm"
 								class="rounded-lg px-5 py-2"
-								:loading="loadCertificate === membership.name"
 								@click="openRenewDialog(membership)"
 							>
 								{{
@@ -105,7 +104,7 @@
 							</Popover>
 						</div>
 					</div>
-					<ErrorMessage :message="certificate.error" class="text-center mt-2" />
+					<ErrorMessage :message="certificateError" class="text-center mt-2" />
 				</div>
 			</div>
 
@@ -184,7 +183,7 @@ const { roleResource } = usersStore();
 
 const renew = ref(false);
 const errorMessage = ref("");
-const loadCertificate = ref<string | null>(null);
+const certificateError = ref("");
 
 interface Membership {
 	name?: string;
@@ -204,7 +203,6 @@ const selectedMembership = reactive({
 	company: "",
 });
 
-const membershipTypeCert = ref("");
 const membershipList = createResource<Membership[]>({
 	url: "onerc_vmms.volunteer_and_member_management.api.membership.get_current_membership",
 	auto: true,
@@ -221,19 +219,11 @@ function formatDate(dateStr?: string): string {
 	});
 }
 
-const certificate = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.membership.membership_certificate_template",
-	makeParams() {
-		return {
-			membership_type: membershipTypeCert.value,
-		};
-	},
-});
+const CERTIFICATE_ENDPOINT =
+	"onerc_vmms.volunteer_and_member_management.api.membership.download_membership_certificate";
 
 function openRenewDialog(membership: Membership) {
 	if (membership.status === "Active") {
-		membershipTypeCert.value = membership.membership_type || "";
-
 		getCertificate(membership.name);
 
 		return;
@@ -250,18 +240,12 @@ function openRenewDialog(membership: Membership) {
 }
 
 function getCertificate(membershipId?: string) {
-	loadCertificate.value = membershipId || null;
-	certificate.submit(
-		{},
-		{
-			onSuccess() {
-				loadCertificate.value = null;
-				window.open(
-					`/api/method/frappe.utils.print_format.download_pdf?doctype=VM Membership&name=${membershipId}&format=${membershipTypeCert.value}`,
-					"_blank"
-				);
-			},
-		}
+	if (!membershipId) return;
+
+	certificateError.value = "";
+	window.open(
+		`/api/method/${CERTIFICATE_ENDPOINT}?membership=${encodeURIComponent(membershipId)}`,
+		"_blank"
 	);
 }
 </script>

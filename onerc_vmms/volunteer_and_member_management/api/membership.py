@@ -109,6 +109,78 @@ def membership_certificate_template(membership_type: str) -> str:
 
 
 @frappe.whitelist()
+@rate_limit(limit=20, seconds=60)
+def download_membership_certificate(membership: str) -> None:
+	denied = _("You are not allowed to download this certificate")
+
+	if not membership:
+		frappe.throw(denied, frappe.PermissionError)
+
+	member = frappe.db.get_value("VM Member", {"email_id": frappe.session.user}, "name")
+	if not member:
+		frappe.throw(denied, frappe.PermissionError)
+
+	membership_doc = frappe.db.get_value(
+		"VM Membership",
+		{"name": membership, "member": member},
+		["name", "status", "membership_type"],
+		as_dict=True,
+	)
+	if not membership_doc:
+		frappe.throw(denied, frappe.PermissionError)
+
+	if membership_doc.status != "Active":
+		frappe.throw(_("A certificate is only available for an active membership"))
+
+	print_format = frappe.db.get_value("VM Membership Type", membership_doc.membership_type, "template")
+	if not print_format:
+		frappe.log_error(
+			f"No certificate template set on VM Membership Type {membership_doc.membership_type}",
+			"Membership Certificate Template Missing",
+		)
+		frappe.throw(_("This membership has no certificate template configured"))
+
+	doc = frappe.get_doc("VM Membership", membership_doc.name)
+
+	previous_flag = frappe.flags.ignore_print_permissions
+	frappe.flags.ignore_print_permissions = True
+	try:
+		pdf = frappe.get_print(
+			"VM Membership",
+			membership_doc.name,
+			print_format,
+			doc=doc,
+			as_pdf=True,
+		)
+	finally:
+		frappe.flags.ignore_print_permissions = previous_flag
+
+	frappe.local.response.filename = f"{membership_doc.name.replace('/', '-')}.pdf"
+	frappe.local.response.filecontent = pdf
+	frappe.local.response.type = "pdf"
+
+
+@frappe.whitelist()
+def confirm_payment(invoice_name: str) -> str:
+	error_message = "Error confirming payment"
+
+	if not invoice_name:
+		frappe.throw(_(error_message))
+
+	try:
+		invoice = frappe.get_doc("Sales Invoice", invoice_name)
+
+		if invoice.status == "Paid" and invoice.outstanding_amount == 0:
+			return "paid"
+
+		return "unpaid"
+
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
+		frappe.throw(_("Error confirming payment: {0}").format(str(e)))
+
+
+@frappe.whitelist()
 @rate_limit(limit=10, seconds=60 * 5)
 def initiate_membership_registration(
 	amount: float, membership_type: str, branch: str, payment_gateway: str
