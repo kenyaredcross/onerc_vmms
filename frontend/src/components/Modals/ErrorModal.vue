@@ -102,7 +102,6 @@ const ErrorRenderer = defineComponent({
 					value.map((item, index) => {
 						if (typeof item === "string") {
 							return h("div", { class: "flex items-start gap-2", key: index }, [
-								h("span", { class: "text-red-500 mt-0.5" }, "•"),
 								h("span", { class: "text-sm text-red-700" }, item),
 							]);
 						}

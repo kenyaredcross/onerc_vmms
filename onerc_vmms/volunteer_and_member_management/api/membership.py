@@ -1,10 +1,11 @@
 from datetime import datetime
+from typing import Any
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.rate_limiter import rate_limit
-from frappe.utils import add_to_date, get_fullname
+from frappe.utils import add_to_date, get_fullname, sbool
 
 from onerc_vmms.volunteer_and_member_management.doctype.vm_membership.vm_membership import (
 	VMMembership,
@@ -109,10 +110,99 @@ def membership_certificate_template(membership_type: str) -> str:
 
 
 @frappe.whitelist()
+@rate_limit(limit=20, seconds=60)
+def download_membership_certificate(membership: str) -> None:
+	denied = _("You are not allowed to download this certificate")
+
+	if not membership:
+		frappe.throw(denied, frappe.PermissionError)
+
+	member = frappe.db.get_value("VM Member", {"email_id": frappe.session.user}, "name")
+	if not member:
+		frappe.throw(denied, frappe.PermissionError)
+
+	membership_doc = frappe.db.get_value(
+		"VM Membership",
+		{"name": membership, "member": member},
+		["name", "status", "membership_type"],
+		as_dict=True,
+	)
+	if not membership_doc:
+		frappe.throw(denied, frappe.PermissionError)
+
+	if membership_doc.status != "Active":
+		frappe.throw(_("A certificate is only available for an active membership"))
+
+	print_format = frappe.db.get_value("VM Membership Type", membership_doc.membership_type, "template")
+	if not print_format:
+		frappe.log_error(
+			f"No certificate template set on VM Membership Type {membership_doc.membership_type}",
+			"Membership Certificate Template Missing",
+		)
+		frappe.throw(_("This membership has no certificate template configured"))
+
+	doc = frappe.get_doc("VM Membership", membership_doc.name)
+
+	previous_flag = frappe.flags.ignore_print_permissions
+	frappe.flags.ignore_print_permissions = True
+	try:
+		pdf = frappe.get_print(
+			"VM Membership",
+			membership_doc.name,
+			print_format,
+			doc=doc,
+			as_pdf=True,
+		)
+	finally:
+		frappe.flags.ignore_print_permissions = previous_flag
+
+	frappe.local.response.filename = f"{membership_doc.name.replace('/', '-')}.pdf"
+	frappe.local.response.filecontent = pdf
+	frappe.local.response.type = "pdf"
+
+
+@frappe.whitelist()
+def confirm_payment(invoice_name: str) -> str:
+	error_message = "Error confirming payment"
+
+	if not invoice_name:
+		frappe.throw(_(error_message))
+
+	try:
+		invoice = frappe.get_doc("Sales Invoice", invoice_name)
+
+		if invoice.status == "Paid" and invoice.outstanding_amount == 0:
+			return "paid"
+
+		return "unpaid"
+
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
+		frappe.throw(_("Error confirming payment: {0}").format(str(e)))
+
+
+@frappe.whitelist()
 @rate_limit(limit=10, seconds=60 * 5)
 def initiate_membership_registration(
-	amount: float, membership_type: str, branch: str, payment_gateway: str
+	amount: float,
+	membership_type: str,
+	branch: str,
+	payment_gateway: str | None = None,
+	is_existing_member: Any = False,
+	proof_attachment: Any = None,
 ) -> str:
+	if sbool(is_existing_member):
+		if not proof_attachment:
+			frappe.throw(_("Please upload a proof of membership"))
+
+		membership = create_membership(0, membership_type, branch, is_existing_member=True)
+		attach_proof_of_membership(membership, proof_attachment)
+
+		return "Application Submitted"
+
+	if not payment_gateway:
+		frappe.throw(_("Please select a payment method"))
+
 	membership = create_membership(amount, membership_type, branch)
 
 	payment_link = get_payment_link(membership, payment_gateway)
@@ -124,6 +214,7 @@ def create_membership(
 	amount: float,
 	membership_type: str,
 	branch: str,
+	is_existing_member: bool = False,
 ) -> VMMembership:
 	if not frappe.db.exists("VM Membership Type", membership_type):
 		frappe.throw(_("The specified membership type does not exist"))
@@ -142,25 +233,51 @@ def create_membership(
 	from_date = datetime.today().date()
 
 	try:
-		membership = frappe.get_doc(
-			{
-				"doctype": "VM Membership",
-				"member": member.name,
-				"membership_type": membership_type,
-				"amount": amount,
-				"company": branch,
-				"status": "Draft",
-				"from_date": from_date,
-				"to_date": add_to_date(from_date, years=1, days=-1),
-				"member_since_date": from_date,
-			}
-		)
+		membership_data = {
+			"doctype": "VM Membership",
+			"member": member.name,
+			"membership_type": membership_type,
+			"amount": amount,
+			"company": branch,
+			"status": "Pending" if is_existing_member else "Draft",
+			"from_date": from_date,
+			"member_since_date": from_date,
+			"is_existing_member": int(is_existing_member),
+		}
+
+		if membership_type_doc.billing_cycle != "One Off":
+			membership_data["to_date"] = add_to_date(from_date, years=1, days=-1)
+
+		membership = frappe.get_doc(membership_data)
 
 		membership.insert(ignore_permissions=True)
 		return membership
 
 	except Exception:
 		log_throw_error("Error creating membership")
+
+
+def attach_proof_of_membership(membership_doc: "VMMembership", proof_attachment: Any) -> None:
+	attachments = proof_attachment if isinstance(proof_attachment, list) else [proof_attachment]
+
+	for attachment in attachments:
+		file_url = attachment if isinstance(attachment, str) else (attachment or {}).get("file_url")
+		if not file_url:
+			continue
+
+		file_name = frappe.db.get_value(
+			"File",
+			{"file_url": file_url, "owner": frappe.session.user},
+			"name",
+		)
+		if not file_name:
+			frappe.throw(_("The uploaded proof of membership could not be found"))
+
+		file_doc = frappe.get_doc("File", file_name)
+		file_doc.attached_to_doctype = "VM Membership"
+		file_doc.attached_to_name = membership_doc.name
+		file_doc.is_private = 1
+		file_doc.save(ignore_permissions=True)
 
 
 def validate_membership_age_eligibility(membership_type_doc: Document) -> None:

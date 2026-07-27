@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils.html_utils import sanitize_html
 
@@ -187,9 +188,30 @@ def update_screening_scores(doc: Document):
 		frappe.log_error("Job Applicant -> Screening Score Update Error", frappe.get_traceback())
 
 
+def validate_required_supporting_documents(doc: Document):
+	required_types = frappe.get_all(
+		"Supporting Document Type",
+		filters={"is_required": 1},
+		pluck="name",
+		order_by="name asc",
+	)
+	if not required_types:
+		return
+
+	attached = {row.type for row in (doc.get("supporting_documents") or []) if row.type and row.attachment}
+
+	missing = [doc_type for doc_type in required_types if doc_type not in attached]
+	if missing:
+		frappe.throw(
+			_(f"Please attach the following required documents before submitting: {missing}"),
+			title=_("Missing Required Documents"),
+		)
+
+
 def before_submit(doc, method):
-	"""Run before submit: handle scoring and eligibility."""
-	if not doc.is_volunteer:
+	if doc.is_volunteer:
+		validate_required_supporting_documents(doc)
+	else:
 		update_screening_scores(doc)
 
 
@@ -210,8 +232,6 @@ def on_submit(doc, method):
 
 
 def validate(doc, method):
-	# Applicant-authored rich text: strip any executable HTML before it is stored,
-	# so a malicious cover letter can never run in a reviewer's session.
 	if doc.get("cover_letter"):
 		doc.cover_letter = sanitize_html(doc.cover_letter)
 

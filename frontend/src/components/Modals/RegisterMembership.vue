@@ -57,10 +57,20 @@
 				</div>
 			</div>
 			<div v-else>
-				<div class="py-4">
+				<div v-if="applicationSubmitted" class="py-4">
+					<PaymentStatus
+						title="Membership Application"
+						message="Your application has been submitted for verification"
+						returnUrl="/vmms/membership"
+						urlName="Membership"
+						@close="registerDialog = false"
+					/>
+				</div>
+				<div v-else class="py-4">
 					<form action="" @submit.prevent="submit">
 						<div
-							class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-surface-red-4 border border-outline-red-1 rounded-2xl shadow-sm"
+							class="grid grid-cols-1 gap-4 mb-6 p-4 bg-surface-red-4 border border-outline-red-1 rounded-2xl shadow-sm"
+							:class="{ 'sm:grid-cols-2': !isExistingMember }"
 						>
 							<div class="space-y-1">
 								<FormControl
@@ -74,7 +84,7 @@
 								/>
 							</div>
 
-							<div class="space-y-1">
+							<div v-if="!isExistingMember" class="space-y-1">
 								<FormControl
 									type="number"
 									label="Amount"
@@ -85,6 +95,21 @@
 									readonly
 								/>
 							</div>
+						</div>
+
+						<div v-if="!props.is_renew" class="mb-4 flex items-center gap-2">
+							<input
+								id="is_existing_member"
+								type="checkbox"
+								v-model="isExistingMember"
+								class="h-4 w-4 rounded border-outline-gray-3 text-ink-red-3 focus:ring-outline-red-3"
+							/>
+							<label
+								for="is_existing_member"
+								class="text-sm font-medium text-ink-gray-7"
+							>
+								{{ __("I am an existing member (Not registered on portal)") }}
+							</label>
 						</div>
 
 						<FormControl
@@ -109,7 +134,57 @@
 							required
 						/>
 
-						<div>
+						<div v-if="isExistingMember" class="space-y-2">
+							<p class="text-sm font-medium text-ink-gray-5">
+								{{ __("Proof of Membership (Receipt / Certificate / Card)") }}
+							</p>
+							<FileUploader
+								:fileTypes="['.jpg', '.jpeg', '.png', '.pdf']"
+								:uploadArgs="{ private: true }"
+								:validateFile="validateProofFile"
+								@success="onProofUploaded"
+							>
+								<template
+									v-slot="{ file, uploading, progress, error, openFileSelector }"
+								>
+									<div class="flex items-center gap-3">
+										<Button
+											type="button"
+											variant="subtle"
+											:loading="uploading"
+											@click="openFileSelector"
+										>
+											{{
+												uploading
+													? `${__("Uploading")} ${progress}%`
+													: membershipForm.proof_attachment
+													? __("Replace File")
+													: __("Upload File")
+											}}
+										</Button>
+										<span
+											v-if="membershipForm.proof_attachment && !uploading"
+											class="text-sm text-ink-gray-6 truncate"
+										>
+											{{
+												membershipForm.proof_attachment.file_name ||
+												file?.name
+											}}
+										</span>
+									</div>
+									<ErrorMessage v-if="error" class="mt-2" :message="error" />
+								</template>
+							</FileUploader>
+							<p class="text-xs text-ink-gray-5">
+								{{
+									__(
+										"No payment is required. Your application will be reviewed and activated once your proof of membership is verified."
+									)
+								}}
+							</p>
+						</div>
+
+						<div v-else>
 							<ProgressSpinner
 								v-if="validateBranchPGW.loading"
 								:message="'Validating payment for branch selection...'"
@@ -120,7 +195,7 @@
 							/>
 						</div>
 
-						<div v-show="showPaymentOptions">
+						<div v-show="showPaymentOptions && !isExistingMember">
 							<ProgressSpinner
 								v-if="paymentGateways.loading"
 								:message="'Fetching Payment Methods'"
@@ -173,7 +248,7 @@
 								class="rounded-lg px-6"
 								@click="submit"
 							>
-								Proceed
+								{{ isExistingMember ? __("Apply") : __("Proceed") }}
 							</Button>
 						</div>
 						<ErrorMessage v-if="formError" class="mt-2" :message="formError" />
@@ -191,6 +266,7 @@
 <script setup>
 import {
 	Dialog,
+	FileUploader,
 	FormControl,
 	Button,
 	createResource,
@@ -201,19 +277,27 @@ import {
 import { reactive, ref, toRaw, watch, watchEffect } from "vue";
 import { AlertTriangle } from "lucide-vue-next";
 import router from "../../router";
+import { membershipStore } from "../../stores/membership";
 import ProgressSpinner from "../Common/ProgressSpinner.vue";
+import PaymentStatus from "../PaymentStatus.vue";
 
 const registerDialog = defineModel();
 const branch = ref("");
 const close = defineEmits(["close"]);
 const formError = ref("");
 const showPaymentOptions = ref(false);
+const isExistingMember = ref(false);
+const applicationSubmitted = ref(false);
+
+const { currentMembership } = membershipStore();
 
 const membershipForm = reactive({
 	amount: 0,
 	membership_type: "",
 	branch: "",
 	payment_gateway: "",
+	is_existing_member: false,
+	proof_attachment: null,
 });
 
 const props = defineProps({
@@ -236,22 +320,56 @@ watch(branch, (newValue) => {
 	const selectedBranch = toRaw(newValue);
 
 	if (selectedBranch) {
-		validateBranchPGW.submit(
-			{ company: selectedBranch.value },
-			{
-				onSuccess: () => {
-					showPaymentOptions.value = true;
-				},
-				onError: () => {
-					showPaymentOptions.value = false;
-				},
-			}
-		);
 		membershipForm.branch = selectedBranch.value;
+		checkBranchPaymentSupport();
 	} else {
 		membershipForm.branch = "";
 	}
 });
+
+watch(isExistingMember, (newValue) => {
+	membershipForm.is_existing_member = newValue;
+	formError.value = "";
+	createMembership.error = "";
+
+	if (newValue) {
+		membershipForm.payment_gateway = "";
+		showPaymentOptions.value = false;
+		validateBranchPGW.error = null;
+	} else {
+		membershipForm.proof_attachment = null;
+		checkBranchPaymentSupport();
+	}
+});
+
+function checkBranchPaymentSupport() {
+	if (isExistingMember.value || !membershipForm.branch) return;
+
+	validateBranchPGW.submit(
+		{ company: membershipForm.branch },
+		{
+			onSuccess: () => {
+				showPaymentOptions.value = true;
+			},
+			onError: () => {
+				showPaymentOptions.value = false;
+			},
+		}
+	);
+}
+
+function validateProofFile(file) {
+	const extension = file.name.split(".").pop().toLowerCase();
+	if (!["jpg", "jpeg", "png", "pdf"].includes(extension)) {
+		return __("Only JPG, PNG or PDF files are allowed.");
+	}
+}
+
+function onProofUploaded(file) {
+	membershipForm.proof_attachment = file;
+	formError.value = "";
+	createMembership.error = "";
+}
 
 const validateBranchPGW = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.membership.get_pgw_for_company",
@@ -272,18 +390,21 @@ const createMembership = createResource({
 });
 
 function submit() {
-	if (!props.is_renew && !branch.value) {
-		return;
-	}
-
 	if (!validateForm()) return;
 
 	createMembership.submit(
 		{},
 		{
-			onSuccess: (data) => {
+			onSuccess(data) {
+				if (isExistingMember.value) {
+					toast.success(__("Application submitted successfully for verification."));
+					applicationSubmitted.value = true;
+					currentMembership.reload();
+					return;
+				}
+
 				if (data) {
-					toast.success("Redirecting you to the payment page...");
+					toast.success(__("Redirecting you to the payment page..."));
 					setTimeout(() => {
 						window.location.href = data;
 					}, 3000);
@@ -297,6 +418,12 @@ watch(registerDialog, (isOpen) => {
 	if (!isOpen) {
 		branch.value = "";
 		formError.value = "";
+		isExistingMember.value = false;
+		applicationSubmitted.value = false;
+		membershipForm.is_existing_member = false;
+		membershipForm.proof_attachment = null;
+		membershipForm.payment_gateway = "";
+		showPaymentOptions.value = false;
 		props.is_renew = false;
 	} else {
 		membershipEligibility.fetch();
@@ -335,19 +462,28 @@ const membershipEligibility = createResource({
 
 function validateForm() {
 	formError.value = "";
+
 	const labels = {
 		amount: "Amount",
 		membership_type: "Membership Type",
 		branch: "Branch / County",
 		payment_gateway: "Payment Method",
+		proof_attachment: "Proof of Membership",
 	};
-	for (const [key, value] of Object.entries(membershipForm)) {
-		if (!value) {
+
+	// Existing members apply with a proof of membership instead of paying, so the amount and
+	// payment method are not part of their submission.
+	const requiredFields = isExistingMember.value
+		? ["membership_type", "branch", "proof_attachment"]
+		: ["amount", "membership_type", "branch", "payment_gateway"];
+
+	for (const key of requiredFields) {
+		if (!membershipForm[key]) {
 			formError.value = `${labels[key] ?? key} is required.`;
 			return false;
 		}
 	}
-	formError.value = "";
+
 	return true;
 }
 </script>
