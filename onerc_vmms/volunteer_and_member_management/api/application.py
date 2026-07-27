@@ -218,6 +218,9 @@ def submit_job_application(id: str | None = None) -> dict:
 		frappe.db.commit()
 		return {"message": "Application submitted successfully"}
 
+	except frappe.ValidationError:
+		raise
+
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Job Application Submission Error")
 		return {"error": _("Could not submit the application.")}
@@ -383,3 +386,13 @@ def get_job_application(name=None):
 	except Exception as e:
 		frappe.log_error(str(e), "Error fetching job application")
 		return {"error": "Failed to retrieve application details"}
+
+
+@frappe.whitelist()
+def get_required_supporting_document_types() -> list[str]:
+	return frappe.get_all(
+		"Supporting Document Type",
+		filters={"is_required": 1},
+		pluck="name",
+		order_by="name asc",
+	)
