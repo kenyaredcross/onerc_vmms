@@ -30,6 +30,9 @@
   "tor",
   "section_break_rmvn",
   "notes",
+  "section_break_ndsi",
+  "clear_filters",
+  "column_break_kyys",
   "quick_filters_section",
   "affiliation_column",
   "region",
@@ -47,8 +50,6 @@
   "skills",
   "licences",
   "filter_criteria",
-  "column_break_npzo",
-  "filter_list",
   "select_employees_section",
   "employee_list",
   "notification_templates_tab",
@@ -199,6 +200,12 @@
    "label": "Quick Filters"
   },
   {
+   "depends_on": "eval: doc.region?.length || doc.branch?.length || doc.department?.length || doc.employment_type?.length || doc.designation?.length || doc.county?.length || doc.sub_county?.length || doc.ward?.length || doc.administrative_location?.length || doc.courses?.length || doc.skills?.length || doc.licences?.length",
+   "fieldname": "clear_filters",
+   "fieldtype": "Button",
+   "label": "Clear Filters"
+  },
+  {
    "description": "Represents where the person is officially assigned within the organization.",
    "fieldname": "affiliation_column",
    "fieldtype": "Column Break",
@@ -296,11 +303,6 @@
    "options": "Volunteer Deployment Criteria"
   },
   {
-   "fieldname": "filter_list",
-   "fieldtype": "HTML",
-   "label": "Filter List"
-  },
-  {
    "fieldname": "select_employees_section",
    "fieldtype": "Section Break",
    "label": "Select Employees"
@@ -342,10 +344,6 @@
    "mandatory_depends_on": "eval:doc.future_deployment"
   },
   {
-   "fieldname": "column_break_npzo",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "0",
    "fieldname": "is_future_deployed",
    "fieldtype": "Check",
@@ -358,6 +356,14 @@
    "fieldtype": "Attach",
    "label": "TOR Attachment",
    "options": "PDF"
+  },
+  {
+   "fieldname": "section_break_ndsi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_kyys",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
@@ -399,7 +405,7 @@
    "link_fieldname": "personnel_deployment_request"
   }
  ],
- "modified": "2026-06-25 08:53:50.190286",
+ "modified": "2026-07-29 19:27:32.540028",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "Deployment Request Tool",
