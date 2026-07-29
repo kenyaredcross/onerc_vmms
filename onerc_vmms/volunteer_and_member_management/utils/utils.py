@@ -418,8 +418,8 @@ def system_session():
 		yield system_user
 		return
 
-	# nosemgrep
-	frappe.set_user(system_user)
+	frappe.set_user(system_user)  # nosemgrep
+
 	try:
 		yield system_user
 	finally:
