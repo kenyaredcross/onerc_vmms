@@ -280,7 +280,8 @@ const branches = createResource({
 const createMembership = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.membership.initiate_membership_registration",
 	makeParams() {
-		return { ...membershipForm };
+		const { amount, ...params } = membershipForm;
+		return params;
 	},
 });
 
