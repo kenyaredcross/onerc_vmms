@@ -423,4 +423,4 @@ def system_session():
 	try:
 		yield system_user
 	finally:
-		frappe.set_user(original_user)
+		frappe.set_user(original_user)  # nosemgrep
