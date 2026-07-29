@@ -11,9 +11,38 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_datetime, get_link_to_form, getdate, pretty_date
 from hrms.hr.utils import validate_bulk_tool_fields
-from pypika import Criterion
 
 from ...utils.utils import get_company_descendants
+
+EMPLOYEE = "Employee"
+USER = "User"
+
+EMPLOYEE_FIELDS = (
+	"name",
+	"company",
+	"date_of_joining",
+	"department",
+	"designation",
+	"employment_type",
+	"employee",
+	"employee_name",
+	"status",
+	"user_id",
+)
+
+EMPLOYEE_FILTERS = (
+	("region", "company", "company"),
+	("branch", "company", "company"),
+	("employment_type", "employment_type", "employment_type"),
+	("designation", "designation", "designation"),
+)
+
+USER_FILTERS = (
+	("county", "county", "county"),
+	("sub_county", "sub_county", "sub_county"),
+	("ward", "ward", "ward"),
+	("administrative_location", "location", "location"),
+)
 
 
 class DeploymentRequestTool(Document):
@@ -236,174 +265,94 @@ class DeploymentRequestTool(Document):
 
 	@frappe.whitelist()
 	def _get_employees(self) -> list[dict]:
-		query = self.build_employee_query()
+		employees = self.fetch_employees()
+		if not employees:
+			return []
 
-		result = query.run(as_dict=True)
-		return result
+		allowed_users = self.get_allowed_user_ids()
+		if allowed_users is not None:
+			employees = [emp for emp in employees if emp.user_id in allowed_users]
 
-	def filters_registry(self) -> list[dict[str, str] | str]:
-		filters = [
-			{"region": "company"},
-			{"branch": "company"},
-			"employment_type",
-			"designation",
-			"county",
-			"sub_county",
-			"ward",
-			{"administrative_location": "location"},
-			{"courses": "course"},
-			{"skills": "skill"},
-			{"licences": "licence"},
-		]
+		skilled_employees = self.get_employees_with_skills()
+		if skilled_employees is not None:
+			employees = [emp for emp in employees if emp.name in skilled_employees]
 
-		return filters
+		return employees
 
-	def build_filters(self) -> list[dict]:
-		result = []
+	def get_filter_values(self, table_field: str, row_field: str) -> list[str]:
+		return [value for row in (self.get(table_field) or []) if (value := row.get(row_field))]
 
-		try:
-			for filter_field in self.filters_registry():
-				if isinstance(filter_field, dict):
-					for self_field, doctype_field in filter_field.items():
-						dict_values = getattr(self, self_field, None)
-						if dict_values:
-							result.append({self_field: [getattr(val, doctype_field) for val in dict_values]})
-				else:
-					str_values = getattr(self, filter_field, None)
-					if str_values:
-						result.append({filter_field: [getattr(val, filter_field) for val in str_values]})
-		except Exception:
-			frappe.log_error(
-				"Error building filters for Deployment Request Tool",
-				frappe.get_traceback(),
-			)
-			frappe.throw("An error occurred while building filters.")
-		else:
-			return result
+	def fetch_employees(self) -> list[dict]:
+		filters = [[EMPLOYEE, "status", "=", "Active"]]
 
-	def match_filters_to_doctype(self) -> list[dict]:
-		result = [
-			{
-				"Employee": [
-					"region",
-					"branch",
-					"employment_type",
-					"designation",
-				]
-			},
-			{
-				"User": [
-					"county",
-					"sub_county",
-					"ward",
-					"administrative_location",
-				]
-			},
-			{"LMS Enrollment": ["courses"]},
-			{"Employee Skill": ["skills"]},
-			{"Personnel Licence": ["licences"]},
-		]
+		for table_field, row_field, employee_field in EMPLOYEE_FILTERS:
+			values = self.get_filter_values(table_field, row_field)
+			if values:
+				filters.append([EMPLOYEE, employee_field, "in", values])
 
-		return result
-
-	def build_employee_query(self):
-		from frappe.query_builder import DocType
-
-		employee = DocType("Employee")
-		user = DocType("User")
-		lms_enrollment = DocType("LMS Enrollment")
-		emp_skill_map = DocType("Employee Skill Map")
-		emp_skill = DocType("Employee Skill")
-		emp_licence = DocType("Personnel Licence")
-
-		doctype_criteria = set()
-		for val in self.match_filters_to_doctype():
-			for doctype, fields in val.items():
-				if any(getattr(self, field, None) for field in fields):
-					doctype_criteria.add(doctype)
-
-		query = (
-			frappe.qb.from_(employee)
-			.select(
-				employee.name,
-				employee.company,
-				employee.date_of_joining,
-				employee.department,
-				employee.designation,
-				employee.employment_type,
-				employee.employee,
-				employee.employee_name,
-				employee.status,
-				employee.user_id,
-			)
-			.distinct()
+		return frappe.get_list(
+			EMPLOYEE,
+			filters=filters,
+			fields=list(EMPLOYEE_FIELDS),
+			limit_page_length=0,
 		)
 
-		if "User" in doctype_criteria:
-			query = query.join(user).on(employee.user_id == user.name)
+	def get_allowed_user_ids(self) -> set[str] | None:
+		allowed = None
 
-		if "LMS Enrollment" in doctype_criteria:
-			if "User" not in doctype_criteria:
-				query = query.join(user).on(employee.user_id == user.name)
-			query = query.join(lms_enrollment).on(lms_enrollment.member == user.name)
+		user_filters = [
+			[USER, user_field, "in", values]
+			for table_field, row_field, user_field in USER_FILTERS
+			if (values := self.get_filter_values(table_field, row_field))
+		]
+		if user_filters:
+			allowed = set(frappe.get_list(USER, filters=user_filters, pluck="name", limit_page_length=0))
 
-		if "Employee Skill" in doctype_criteria:
-			query = (
-				query.join(emp_skill_map)
-				.on(emp_skill_map.employee == employee.name)
-				.join(emp_skill)
-				.on(emp_skill.parent == emp_skill_map.name)
+		courses = self.get_filter_values("courses", "course")
+		if courses:
+			enrolled = set(
+				frappe.get_list(
+					"LMS Enrollment",
+					filters={"course": ["in", courses]},
+					pluck="member",
+					limit_page_length=0,
+				)
 			)
+			allowed = enrolled if allowed is None else allowed & enrolled
 
-		if "Personnel Licence" in doctype_criteria:
-			if "User" not in doctype_criteria and "LMS Enrollment" not in doctype_criteria:
-				query = query.join(user).on(employee.user_id == user.name)
-			query = query.join(emp_licence).on(emp_licence.parent == user.name)
-
-		field_to_table = {
-			"region": employee.company,
-			"branch": employee.company,
-			"employment_type": employee.employment_type,
-			"designation": employee.designation,
-			"county": user.county,
-			"sub_county": user.sub_county,
-			"ward": user.ward,
-			"administrative_location": user.location,
-			"courses": lms_enrollment.course,
-			"skills": emp_skill.skill,
-			"licences": emp_licence.license_type,
-		}
-
-		query = query.where(employee.status == "Active")
-
-		conditions = self.build_condition_list(field_to_table)
-		if conditions:
-			query = query.where(Criterion.all(conditions))
-
-		return query
-
-	def build_condition_list(self, field_to_table_map: dict) -> list[Criterion]:
-		conditions = []
-
-		try:
-			filters = self.build_filters()
-			if not filters:
-				return conditions
-
-			for filter_dict in filters:
-				for field, values in filter_dict.items():
-					table_field = field_to_table_map.get(field)
-					if table_field and values:
-						conditions.append(table_field.isin(values))
-		except Exception:
-			frappe.log_error(
-				"Error building condition list for Deployment Request Tool",
-				frappe.get_traceback(),
+		licences = self.get_filter_values("licences", "licence")
+		if licences:
+			holders = set(
+				frappe.get_all(
+					"Personnel Licence",
+					filters={"license_type": ["in", licences], "parenttype": USER},
+					pluck="parent",
+				)
 			)
-			frappe.throw("An error occurred while building condition list.")
+			allowed = holders if allowed is None else allowed & holders
 
-		else:
-			return conditions
+		return allowed
+
+	def get_employees_with_skills(self) -> set[str] | None:
+		skills = self.get_filter_values("skills", "skill")
+		if not skills:
+			return None
+
+		skill_maps = frappe.get_all(
+			"Employee Skill",
+			filters={"skill": ["in", skills], "parenttype": "Employee Skill Map"},
+			pluck="parent",
+		)
+		if not skill_maps:
+			return set()
+
+		return set(
+			frappe.get_all(
+				"Employee Skill Map",
+				filters={"name": ["in", skill_maps]},
+				pluck="employee",
+			)
+		)
 
 
 def deploy_future_requests() -> None:
