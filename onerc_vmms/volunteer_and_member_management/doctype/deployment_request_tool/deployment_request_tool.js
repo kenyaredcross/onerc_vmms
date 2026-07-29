@@ -1,6 +1,21 @@
 // Copyright (c) 2025, Frappe and contributors
 // For license information, please see license.txt
 
+const QUICK_FILTER_TABLES = [
+	"region",
+	"branch",
+	"department",
+	"employment_type",
+	"designation",
+	"county",
+	"sub_county",
+	"ward",
+	"administrative_location",
+	"courses",
+	"skills",
+	"licences",
+];
+
 frappe.ui.form.on("Deployment Request Tool", {
 	setup: function (frm) {
 		frm.trigger("set_query");
@@ -73,6 +88,19 @@ frappe.ui.form.on("Deployment Request Tool", {
 		});
 
 		render_tor_preview(frm);
+	},
+
+	clear_filters(frm) {
+		QUICK_FILTER_TABLES.forEach((fieldname) => {
+			frm.clear_table(fieldname);
+			frm.refresh_field(fieldname);
+		});
+
+		frm.events.set_sub_county_filter(frm);
+		frm.events.set_ward_filter(frm);
+		frm.events.set_location_filter(frm);
+
+		frm.refresh_dependency();
 	},
 
 	region(frm) {
@@ -568,3 +596,11 @@ function addActionsButtons(frm) {
 		frm.change_custom_button_type(action, null, type);
 	});
 }
+
+frappe.ui.form.on(
+	"Deployment Request Tool",
+	QUICK_FILTER_TABLES.reduce((handlers, fieldname) => {
+		handlers[fieldname] = (frm) => frm.refresh_dependency();
+		return handlers;
+	}, {})
+);
