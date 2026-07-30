@@ -3,7 +3,6 @@ from frappe import _
 from frappe.model.document import Document
 
 
-@frappe.whitelist()
 def on_update(doc: Document, method: str) -> None:
 	activities = doc.activities
 	for activity in activities:
@@ -41,7 +40,6 @@ def on_update(doc: Document, method: str) -> None:
 						frappe.db.commit()
 
 
-@frappe.whitelist()
 def on_update_after_submit(doc: Document, method: str) -> None:
 	if doc.boarding_status == "Completed":
 		courses = [activity.course for activity in doc.activities if activity.course]
