@@ -93,16 +93,16 @@ import { usersStore } from "@/stores/user";
 import { getSidebarLinks } from "@/utils";
 import { Tooltip } from "frappe-ui";
 import { CircleAlert, Zap } from "lucide-vue-next";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { sessionStore } from "../stores/session";
 import { sideBarApps } from "../utils/appsNavigate";
 import AppsNavigation from "./AppsNavigation.vue";
 
-let { userResource } = usersStore();
+const userStore = usersStore();
 
 const { isLoggedIn } = sessionStore();
 
-const sidebarLinks = computed(() => getSidebarLinks({ user: userResource?.data }));
+const sidebarLinks = computed(() => getSidebarLinks(userStore.isVolunteer));
 
 let sidebarStore = useSidebar();
 const readOnlyMode = window.read_only_mode;
@@ -116,5 +116,7 @@ const redirectToWebsite = () => {
 	window.open("https://github.com/kenyaredcross/onerc_vmms", "_blank");
 };
 
-const apps = ref(sideBarApps());
+const apps = computed(() => {
+	return sideBarApps();
+});
 </script>

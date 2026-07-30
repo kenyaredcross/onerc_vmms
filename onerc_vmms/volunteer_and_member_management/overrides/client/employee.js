@@ -11,24 +11,7 @@ frappe.ui.form.on("Employee", {
 			frm.set_value("date_of_joining", frappe.datetime.get_today());
 		}
 
-		frappe.db
-			.get_value("VM Member", { email_id: frm.doc.personal_email }, "name")
-			.then((r) => {
-				if (!(r && r.message && r.message.name)) {
-					frm.add_custom_button(__("Create Member"), () => {
-						frm.call({
-							method: "onerc_vmms.volunteer_and_member_management.api.membership.create_member",
-							args: { name: frm.doc.name },
-						}).then(() => {
-							frappe.show_alert({
-								message: __("Member created successfully"),
-								indicator: "green",
-							});
-							frm.reload_doc();
-						});
-					});
-				}
-			});
+		addCreateMemberButton(frm);
 	},
 
 	job_applicant(frm) {
@@ -36,6 +19,33 @@ frappe.ui.form.on("Employee", {
 		fetchJobApplicantDetails(frm);
 	},
 });
+
+function addCreateMemberButton(frm) {
+	if (frm.is_new()) return;
+
+	if (!frm.doc.personal_email && !frm.doc.user_id) return;
+
+	frappe.db.get_value("VM Member", { volunteer: frm.doc.name }, "name").then((r) => {
+		if (r && r.message && r.message.name) return;
+
+		frm.add_custom_button(__("Create Member"), () => {
+			frm.call({
+				method: "onerc_vmms.volunteer_and_member_management.api.membership.create_member_from_employee",
+				args: { employee: frm.doc.name },
+				freeze: true,
+				freeze_message: __("Creating Member..."),
+			}).then((res) => {
+				if (!res || !res.message) return;
+
+				frappe.show_alert({
+					message: __("Member {0} created successfully", [res.message]),
+					indicator: "green",
+				});
+				frm.reload_doc();
+			});
+		});
+	});
+}
 
 function fetchJobApplicantDetails(frm) {
 	frappe.model.with_doc("Job Applicant", frm.doc.job_applicant, function () {

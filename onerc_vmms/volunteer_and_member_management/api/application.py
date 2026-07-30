@@ -218,6 +218,9 @@ def submit_job_application(id: str | None = None) -> dict:
 		frappe.db.commit()
 		return {"message": "Application submitted successfully"}
 
+	except frappe.ValidationError:
+		raise
+
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Job Application Submission Error")
 		return {"error": _("Could not submit the application.")}
@@ -258,12 +261,37 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 				kwargs["phone_number"] = user_doc.phone or user_doc.mobile_no or ""
 
 		email_id = kwargs.get("email_id")
+		validate_session_user(email_id)
 		if email_id and job_opening:
 			frappe.db.get_value("Job Opening", job_opening, "name", for_update=True)
 			if frappe.db.exists("Job Applicant", {"job_title": job_opening, "email_id": email_id}):
 				return {
 					"success": False,
 					"message": "You have already applied for this position.",
+				}
+
+		update_fields = kwargs.copy()
+		update_fields.pop("email_id", None)
+		update_fields.pop("surname", None)
+		update_fields.pop("other_names", None)
+
+		if not job_opening and email_id:
+			if user_id and user_id != "Guest":
+				frappe.db.get_value("User", user_id, "name", for_update=True)
+
+			existing = frappe.get_all(
+				"Job Applicant",
+				filters={"email_id": email_id, "is_volunteer": 1, "docstatus": ("!=", 2)},
+				fields=["name", "docstatus"],
+				order_by="docstatus asc, modified desc",
+				limit=1,
+			)
+			if existing:
+				if existing[0].docstatus == 0:
+					return _update_application(existing[0].name, update_fields)
+				return {
+					"success": False,
+					"message": "You have already submitted a volunteer application.",
 				}
 
 		surname = kwargs.get("surname", "")
@@ -276,6 +304,7 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 			"email_id": email_id,
 			"company": company,
 			"status": "Open",
+			"is_volunteer": 0 if job_opening else 1,
 		}
 
 		if job_opening:
@@ -283,12 +312,6 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 
 		job_application = frappe.get_doc(minimal_doc_data)
 		job_application.insert(ignore_permissions=True)
-		frappe.db.commit()
-
-		update_fields = kwargs.copy()
-		update_fields.pop("email_id", None)
-		update_fields.pop("surname", None)
-		update_fields.pop("other_names", None)
 
 		return _update_application(job_application.name, update_fields)
 
@@ -383,3 +406,13 @@ def get_job_application(name=None):
 	except Exception as e:
 		frappe.log_error(str(e), "Error fetching job application")
 		return {"error": "Failed to retrieve application details"}
+
+
+@frappe.whitelist()
+def get_required_supporting_document_types() -> list[str]:
+	return frappe.get_all(
+		"Supporting Document Type",
+		filters={"is_required": 1},
+		pluck="name",
+		order_by="name asc",
+	)

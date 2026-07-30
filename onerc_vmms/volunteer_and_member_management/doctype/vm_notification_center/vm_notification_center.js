@@ -80,8 +80,6 @@ frappe.ui.form.on("VM Notification Center", {
 	buildFilterPayload: (filters) => {
 		const payload = [];
 		payload.push(filters);
-
-		console.log("payload", payload);
 	},
 	region: (frm) => {
 		frm.set_value("branch", "");

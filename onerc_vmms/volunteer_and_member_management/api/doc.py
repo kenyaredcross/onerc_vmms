@@ -60,9 +60,6 @@ def search_widget(
 	as_dict: bool = False,
 	reference_doctype: str | None = None,
 ):
-	# Rate-limited HTTP wrapper. Reference lookups run with ignore_permissions so
-	# onboarding forms can populate their dropdowns, so the endpoint is throttled to
-	# deter bulk enumeration of the allow-listed reference data (e.g. Company).
 	return _search_widget(
 		doctype,
 		txt,
@@ -196,7 +193,6 @@ def _search_widget(
 
 
 @frappe.whitelist()
-@rate_limit(limit=120, seconds=60)
 def custom_search_link(
 	doctype: str,
 	txt: str,

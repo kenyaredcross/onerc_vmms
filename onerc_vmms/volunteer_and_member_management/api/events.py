@@ -111,6 +111,100 @@ def register_event(payload: dict) -> None:
 		frappe.throw("Event Registration Error")
 
 
+@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public event detail, read-only
+def get_event_details(event_name: str | int) -> dict:
+	if not event_name:
+		frappe.throw(_("This event does not exist."))
+
+	name = frappe.db.get_value("Buzz Event", {"route": event_name, "is_published": 1}) or frappe.db.get_value(
+		"Buzz Event", {"name": event_name, "is_published": 1}
+	)
+	if not name:
+		frappe.throw(_("This event does not exist."))
+
+	event = frappe.get_doc("Buzz Event", name).as_dict()
+	event.update(frappe.db.get_value("Buzz Event", name, ["event_access", "is_ticketed"], as_dict=True) or {})
+	validate_event_access(event.get("event_access"))
+
+	event["about"] = frappe.utils.strip_html_tags(event["about"]) if event.get("about") else ""
+	event["short_description"] = (
+		frappe.utils.strip_html_tags(event["short_description"]) if event.get("short_description") else ""
+	)
+
+	if event.get("host"):
+		host = frappe.get_doc("Event Host", event.host).as_dict()
+		host["about"] = frappe.utils.strip_html_tags(host.get("about") or "")
+		event["host"] = host
+
+	event["tickets"] = frappe.get_all(
+		"Event Ticket Type",
+		filters={"event": name, "is_published": 1},
+		fields=[
+			"name",
+			"title",
+			"price",
+			"currency",
+			"ticket_type",
+			"ticket_capacity",
+			"max_tickets_available",
+		],
+		order_by="price asc",
+	)
+
+	event["event_registration_questions"] = frappe.get_all(
+		"Event Registration Question",
+		filters={"parent": name, "parenttype": "Buzz Event"},
+		fields=["name", "question", "question_type", "options", "is_required", "help_text"],
+		order_by="idx asc",
+	)
+
+	event["speakers"] = get_event_speakers(event)
+
+	event["sponsors"] = frappe.get_all(
+		"Event Sponsor",
+		filters={"event": name},
+		fields=["company_name", "company_logo", "website"],
+	)
+
+	event["is_past_event"] = bool(event.get("end_date")) and event["end_date"] < datetime.now().date()
+
+	return event
+
+
+def validate_event_access(event_access: str | None) -> None:
+	"""Mirror the visibility rules get_events applies to the listing.
+
+	Public and Private events are listed to everyone; Members Only events are
+	restricted to members.
+	"""
+	if event_access != "Members Only":
+		return
+
+	user_info = get_user_info()
+	if user_info == "Guest" or not user_info.get("is_member"):
+		frappe.throw(_("This event is only open to members."), frappe.PermissionError)
+
+
+def get_event_speakers(event: dict) -> list[dict[str, any]]:
+	speaker_names = [row.speaker for row in event.get("featured_speakers") or [] if row.speaker]
+
+	for sched in event.get("schedule") or []:
+		if not sched.talk:
+			continue
+		talk = frappe.get_doc("Event Talk", sched.talk)
+		speaker_names.extend([row.speaker for row in talk.speakers if row.speaker])
+
+	speakers = []
+	seen = set()
+	for speaker_name in speaker_names:
+		if speaker_name in seen:
+			continue
+		seen.add(speaker_name)
+		speakers.append(frappe.get_doc("Speaker Profile", speaker_name).as_dict())
+
+	return speakers
+
+
 @dataclass
 class TicketPaymentPayload:
 	event_name: str | int

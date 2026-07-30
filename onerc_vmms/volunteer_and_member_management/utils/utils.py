@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 from datetime import timedelta
 from typing import Literal
 
@@ -406,3 +407,20 @@ def disable_energy_point_email_notifications(user):
 def log_throw_error(message: str) -> None:
 	frappe.log_error(title=message, message=frappe.get_traceback())
 	frappe.throw(_(message))
+
+
+@contextmanager
+def system_session():
+	original_user = frappe.session.user
+	system_user = "Administrator"
+
+	if original_user == system_user:
+		yield system_user
+		return
+
+	frappe.set_user(system_user)  # nosemgrep
+
+	try:
+		yield system_user
+	finally:
+		frappe.set_user(original_user)  # nosemgrep
