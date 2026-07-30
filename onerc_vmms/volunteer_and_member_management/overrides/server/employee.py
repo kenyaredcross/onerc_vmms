@@ -7,7 +7,6 @@ from onerc_vmms.volunteer_and_member_management.services.user import (
 )
 
 
-@frappe.whitelist()
 def after_insert(doc: Document, method: str) -> None:
 	"""
 	Handle after_insert event for Employee document

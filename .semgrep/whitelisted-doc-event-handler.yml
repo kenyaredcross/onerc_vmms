@@ -1,0 +1,35 @@
+rules:
+  - id: whitelisted-doc-event-handler
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @frappe.whitelist(...)
+              def $FUNC(doc, method, ...):
+                  ...
+          - pattern: |
+              @frappe.whitelist(...)
+              def $FUNC(doc: $T1, method: $T2, ...):
+                  ...
+          - pattern: |
+              @frappe.whitelist(...)
+              def $FUNC(doc, method: $T2, ...):
+                  ...
+          - pattern: |
+              @frappe.whitelist(...)
+              def $FUNC(doc: $T1, method, ...):
+                  ...
+    message: >-
+      Document event handler `$FUNC(doc, method)` is decorated with @frappe.whitelist(),
+      which publishes it at /api/method/<dotted.path> for any authenticated user. Frappe
+      calls doc_events handlers internally via frappe.get_attr(handler)(doc, method), so the
+      decorator is not needed for the hook to fire. Over HTTP the `doc` argument is
+      unvalidated request JSON that is never loaded from the database, so any caller
+      controls the document the handler acts on -- and these handlers typically write with
+      ignore_permissions=True. Remove the @frappe.whitelist() decorator. If this really is
+      meant to be a public endpoint, give it a distinct name and add an explicit
+      frappe.has_permission() check on a document loaded by name.
+    languages: [python]
+    severity: ERROR
+    paths:
+      include:
+        - "*.py"
