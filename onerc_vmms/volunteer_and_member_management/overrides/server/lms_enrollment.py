@@ -1,9 +1,7 @@
 import frappe
-from frappe import _
 from frappe.model.document import Document
 
 
-@frappe.whitelist()
 def on_update(doc: Document, method: str) -> None:
 	if doc.doctype != "LMS Enrollment":
 		return
