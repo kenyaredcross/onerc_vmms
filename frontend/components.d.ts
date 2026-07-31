@@ -30,6 +30,7 @@ declare module 'vue' {
     CreateNewEntryDialog: typeof import('./src/components/Modals/CreateNewEntryDialog.vue')['default']
     DateRange: typeof import('./src/components/Common/DateRange.vue')['default']
     DesktopLayout: typeof import('./src/components/DesktopLayout.vue')['default']
+    DocumentRequirementCard: typeof import('./src/components/Signup/DocumentRequirementCard.vue')['default']
     EducationBackground: typeof import('./src/components/Application/EducationBackground.vue')['default']
     EmptyState: typeof import('./src/components/EmptyState.vue')['default']
     EnergyPointsDashboard: typeof import('./src/components/Profile/EnergyPointsDashboard.vue')['default']

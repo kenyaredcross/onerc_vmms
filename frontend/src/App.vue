@@ -20,7 +20,7 @@
 <script setup>
 import { usersStore } from "@/stores/user";
 import { Dialogs } from "@/utils/dialogs";
-import { FrappeUIProvider } from "frappe-ui";
+import { FrappeUIProvider, useTheme } from "frappe-ui";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import DesktopLayout from "./components/DesktopLayout.vue";
@@ -28,6 +28,8 @@ import InstallPrompt from "./components/InstallPrompt.vue";
 import MobileLayout from "./components/MobileLayout.vue";
 import NoSidebarLayout from "./components/NoSidebarLayout.vue";
 import { useScreenSize } from "./utils/composables";
+
+useTheme();
 
 const { isMobile } = useScreenSize();
 const router = useRouter();
