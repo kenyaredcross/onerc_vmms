@@ -1,105 +1,282 @@
 <template>
 	<section>
-		<h2 class="text-xl font-bold text-red-700 mb-4">
-			{{ __("Documents ") }}
-		</h2>
-		<!-- <div class="grid grid-cols-1 gap-6">
-      <div class="space-y-2">
-        <span class="text-gray-700"> Profile Photo </span>
-        <Uploader
-          label="Upload Profile Photo"
-          :fileTypes="['.jpg', '.png']"
-          :onSuccess="(f) => (localModel.profile_photo = f)"
-        />
-      </div>
-    </div> -->
-
-		<div
-			v-if="requiredTypes.length"
-			class="p-4 bg-amber-50 border border-amber-200 rounded-lg"
-		>
-			<p class="text-sm font-semibold text-amber-900 mb-2">
-				{{ __("The following documents are required") }}
-			</p>
-			<ul class="space-y-1">
-				<li
-					v-for="type in requiredTypes"
-					:key="type"
-					class="flex items-center gap-2 text-sm"
-					:class="missingTypes.includes(type) ? 'text-amber-800' : 'text-green-700'"
+		<!-- Header: title + "N of M required uploaded" counter + thin progress bar -->
+		<div class="mb-5">
+			<div class="flex items-center justify-between gap-4">
+				<h2 class="text-xl font-bold text-red-700">
+					{{ __("Supporting Documents") }}
+				</h2>
+				<span
+					v-if="requiredTypes.length"
+					class="text-sm font-medium flex items-center gap-1.5"
+					:class="allRequiredDone ? 'text-green-700' : 'text-gray-600'"
 				>
-					<component
-						:is="missingTypes.includes(type) ? AlertCircle : CheckCircle2"
-						class="w-4 h-4 flex-shrink-0"
-					/>
-					<span>{{ __(type) }}</span>
-					<span v-if="missingTypes.includes(type)" class="text-xs">
-						{{ __("— not attached yet") }}
-					</span>
-				</li>
-			</ul>
+					<CheckCircle2 v-if="allRequiredDone" class="w-4 h-4" />
+					{{ uploadedRequiredCount }} {{ __("of") }} {{ requiredTypes.length }}
+					{{ __("required uploaded") }}
+				</span>
+			</div>
+
+			<div
+				v-if="requiredTypes.length"
+				class="mt-2 w-full h-1 bg-gray-200 rounded-full overflow-hidden"
+			>
+				<div
+					class="h-1 rounded-full transition-all duration-300"
+					:class="allRequiredDone ? 'bg-green-600' : 'bg-red-600'"
+					:style="{ width: `${requiredProgress}%` }"
+				></div>
+			</div>
 		</div>
 
-		<div class="mt-6">
-			<ChildTable
-				v-model="localModel.supporting_documents"
-				doctype="Supporting Document"
-				:autoEditGrid="true"
-				label="Supporting Documents"
-				@validationErrors="onChildErrors('supporting_documents', $event)"
-			/>
+		<!-- One card per configured document type (required first, then optional) -->
+		<div v-if="displayTypes.length">
+			<div class="space-y-3">
+				<DocumentRequirementCard
+					v-for="type in pagedTypes"
+					:key="`doc-${type}`"
+					:title="type"
+					:required="requiredSet.has(type)"
+					:model-value="attachmentByType[type] || null"
+					@update:model-value="(v) => setAttachment(type, v)"
+				>
+					<template v-if="type === 'Other'" #beforeState>
+						<FormControl
+							type="text"
+							:label="__('Document name')"
+							:model-value="docNameByType[type] || ''"
+							:placeholder="__('e.g. Reference letter')"
+							class="mb-3"
+							@update:model-value="(v) => setDocName(type, v)"
+						/>
+					</template>
+				</DocumentRequirementCard>
+			</div>
+
+			<!-- Pagination (only when more than one page of documents) -->
+			<div v-if="totalPages > 1" class="mt-4 flex items-center justify-center gap-3">
+				<Button
+					variant="ghost"
+					size="sm"
+					:disabled="currentPage === 1"
+					@click="currentPage--"
+				>
+					<ChevronLeft class="w-4 h-4 mr-1" />
+					{{ __("Previous") }}
+				</Button>
+				<span class="text-xs text-gray-600">
+					{{ __("Page {0} of {1}").format(currentPage, totalPages) }}
+				</span>
+				<Button
+					variant="ghost"
+					size="sm"
+					:disabled="currentPage === totalPages"
+					@click="currentPage++"
+				>
+					{{ __("Next") }}
+					<ChevronRight class="w-4 h-4 ml-1" />
+				</Button>
+			</div>
+		</div>
+
+		<!-- No document types configured at all -->
+		<div
+			v-else
+			class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center"
+		>
+			<FileText class="mx-auto h-7 w-7 text-gray-400" />
+			<p class="mt-2 text-sm font-medium text-gray-700">
+				{{ __("No documents required") }}
+			</p>
+			<p class="mt-0.5 text-xs text-gray-500">
+				{{ __("There are no supporting documents to upload for your application.") }}
+			</p>
+		</div>
+
+		<!-- Footer: autosave note (left), readiness summary (right) -->
+		<div class="mt-6 flex items-center justify-between gap-4 border-t pt-4">
+			<p class="text-xs text-gray-500">
+				{{ __("Files upload immediately. Your application is saved when you continue.") }}
+			</p>
+			<span
+				v-if="requiredTypes.length"
+				class="text-xs font-medium flex items-center gap-1.5"
+				:class="allRequiredDone ? 'text-green-700' : 'text-amber-700'"
+			>
+				<component
+					:is="allRequiredDone ? CheckCircle2 : AlertCircle"
+					class="w-3.5 h-3.5"
+				/>
+				{{
+					allRequiredDone
+						? __("All required documents uploaded")
+						: __("{0} of {1} required uploaded").format(
+								uploadedRequiredCount,
+								requiredTypes.length
+						  )
+				}}
+			</span>
 		</div>
 	</section>
 </template>
 
 <script setup>
-import { AlertCircle, CheckCircle2 } from "lucide-vue-next";
-import { computed } from "vue";
-import ChildTable from "../Controls/ChildTable.vue";
+import { Button, FormControl, createResource } from "frappe-ui";
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, FileText } from "lucide-vue-next";
+import { computed, ref, watch } from "vue";
+import DocumentRequirementCard from "./DocumentRequirementCard.vue";
 
-const STEP_INDEX = 2;
+const PAGE_SIZE = 5;
 
 const props = defineProps({
 	modelValue: { type: Object, required: true },
+	// Kept for interface compatibility with the wizard (unused here).
 	errors: { type: Object, default: () => ({}) },
+	documents: { type: Array, default: () => [] },
 	requiredTypes: { type: Array, default: () => [] },
 });
 
-const missingTypes = computed(() => {
-	const attached = new Set(
-		(props.modelValue?.supporting_documents || [])
-			.filter((row) => row?.type && row?.attachment)
-			.map((row) => row.type)
-	);
-
-	return props.requiredTypes.filter((type) => !attached.has(type));
-});
-
-const emit = defineEmits(["update:modelValue", "update:errors"]);
+const emit = defineEmits(["update:modelValue"]);
 
 const localModel = computed({
 	get: () => props.modelValue,
 	set: (val) => emit("update:modelValue", val),
 });
 
-function onChildErrors(tableName, errMap) {
-	const tableErrors = Object.fromEntries(errMap);
-	const newErrors = { ...props.errors };
+// Full list of configured document types, fetched through the same volunteer-safe
+// endpoint the link picker uses (ignore_permissions for this doctype). Empty query
+// returns all rows up to page_length. Required-ness comes from `requiredTypes`.
+const allTypesResource = createResource({
+	url: "onerc_vmms.volunteer_and_member_management.api.doc.custom_search_link",
+	method: "POST",
+	auto: true,
+	params: { doctype: "Supporting Document Type", txt: "", page_length: 500 },
+	transform: (data) => (data || []).map((o) => o.value).filter(Boolean),
+});
 
-	const stepErrors = { ...(newErrors[STEP_INDEX] || {}) };
+const requiredSet = computed(() => new Set(props.requiredTypes));
 
-	if (Object.keys(tableErrors).length > 0) {
-		stepErrors[tableName] = tableErrors;
-	} else {
-		delete stepErrors[tableName];
-	}
-
-	if (Object.keys(stepErrors).length > 0) {
-		newErrors[STEP_INDEX] = stepErrors;
-	} else {
-		delete newErrors[STEP_INDEX];
-	}
-
-	emit("update:errors", newErrors);
+function currentRows() {
+	return Array.isArray(localModel.value?.supporting_documents)
+		? localModel.value.supporting_documents
+		: [];
 }
+
+// Cards to show: every required type first, then every other configured type,
+// then any type already saved on the application (so nothing gets orphaned).
+const displayTypes = computed(() => {
+	const fetched = allTypesResource.data || [];
+	const fromRows = currentRows()
+		.map((r) => r?.type)
+		.filter(Boolean);
+
+	const seen = new Set();
+	const out = [];
+	for (const t of [...props.requiredTypes, ...fetched, ...fromRows]) {
+		if (t && !seen.has(t)) {
+			seen.add(t);
+			out.push(t);
+		}
+	}
+	return out;
+});
+
+// --- Pagination (5 documents per page) ---
+const currentPage = ref(1);
+const totalPages = computed(() => Math.max(1, Math.ceil(displayTypes.value.length / PAGE_SIZE)));
+const pagedTypes = computed(() => {
+	const start = (currentPage.value - 1) * PAGE_SIZE;
+	return displayTypes.value.slice(start, start + PAGE_SIZE);
+});
+
+// Keep the current page in range if the list shrinks.
+watch(totalPages, (pages) => {
+	if (currentPage.value > pages) currentPage.value = pages;
+});
+
+// --- Local editing state, derived from form.supporting_documents ---
+const attachmentByType = ref({});
+const docNameByType = ref({});
+let selfUpdate = false;
+
+function seedFromModel() {
+	const rows = currentRows();
+	const aMap = {};
+	const nMap = {};
+	for (const type of displayTypes.value) {
+		const withFile = rows.find((r) => r?.type === type && r?.attachment);
+		aMap[type] = withFile ? withFile.attachment : null;
+		const anyRow = rows.find((r) => r?.type === type);
+		nMap[type] = anyRow?.document_name || "";
+	}
+	attachmentByType.value = aMap;
+	docNameByType.value = nMap;
+}
+
+function buildRows() {
+	const rows = [];
+	for (const type of displayTypes.value) {
+		const attachment = attachmentByType.value[type];
+		if (!attachment) continue;
+		const row = { type, attachment };
+		if (type === "Other" && docNameByType.value[type]) {
+			row.document_name = docNameByType.value[type];
+		}
+		rows.push(row);
+	}
+	return rows;
+}
+
+function syncModel() {
+	const rows = buildRows();
+	if (JSON.stringify(rows) === JSON.stringify(currentRows())) return;
+	selfUpdate = true;
+	localModel.value = { ...localModel.value, supporting_documents: rows };
+}
+
+function setAttachment(type, value) {
+	attachmentByType.value = { ...attachmentByType.value, [type]: value || null };
+}
+
+function setDocName(type, value) {
+	docNameByType.value = { ...docNameByType.value, [type]: value || "" };
+}
+
+// --- Counters (required only — those are the mandatory ones) ---
+const uploadedRequiredCount = computed(
+	() => props.requiredTypes.filter((type) => !!attachmentByType.value[type]).length
+);
+const requiredProgress = computed(() => {
+	const total = props.requiredTypes.length;
+	if (!total) return 0;
+	return Math.round((uploadedRequiredCount.value / total) * 100);
+});
+const allRequiredDone = computed(
+	() =>
+		props.requiredTypes.length > 0 &&
+		uploadedRequiredCount.value === props.requiredTypes.length
+);
+
+// --- Reactive wiring ---
+seedFromModel();
+
+watch([attachmentByType, docNameByType], syncModel, { deep: true });
+
+// Re-seed when the type list or required list arrives/refreshes (both load async).
+watch([() => allTypesResource.data, () => props.requiredTypes], seedFromModel, {
+	deep: true,
+});
+
+// Re-seed only on external changes (e.g. draft load); ignore our own emits.
+watch(
+	() => localModel.value?.supporting_documents,
+	() => {
+		if (selfUpdate) {
+			selfUpdate = false;
+			return;
+		}
+		seedFromModel();
+	},
+	{ deep: true }
+);
 </script>
