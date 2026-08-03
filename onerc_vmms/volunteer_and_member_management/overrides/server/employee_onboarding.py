@@ -22,7 +22,6 @@ def on_update(doc: Document, method: str) -> None:
 					new_enrollment.member_name = applicant.applicant_name
 					new_enrollment.course = course
 					new_enrollment.save(ignore_permissions=True)
-					frappe.db.commit()
 
 				employee = frappe.db.get_value("Employee", {"job_applicant": job_applicant}, "name")
 				if employee:
@@ -37,7 +36,6 @@ def on_update(doc: Document, method: str) -> None:
 					if not training_exists:
 						employee_doc.append("trainings", {"course": course})
 						employee_doc.save(ignore_permissions=True)
-						frappe.db.commit()
 
 
 def on_update_after_submit(doc: Document, method: str) -> None:

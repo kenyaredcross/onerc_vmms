@@ -21,6 +21,8 @@
 				<ProjectDecision
 					v-if="project.deployment_status === 'Pending' && !showContractAlert"
 					:project="project"
+					:loading="decisionLoading"
+					:error="decisionError"
 					@accept="handleAccept"
 					@reject="$emit('reject', project.name)"
 					@download-contract="$emit('download-contract', $event)"
@@ -29,11 +31,7 @@
 		</div>
 	</div>
 
-	<AcceptDialog
-		v-model="acceptDialog"
-		:loading="assignmentDecisionLoading"
-		@confirm="handleConfirm"
-	/>
+	<AcceptDialog v-model="acceptDialog" :loading="decisionLoading" @confirm="handleConfirm" />
 </template>
 
 <script setup>
@@ -52,12 +50,19 @@ const props = defineProps({
 		type: Object,
 		required: true,
 	},
+	decisionLoading: {
+		type: Boolean,
+		default: false,
+	},
+	decisionError: {
+		type: String,
+		default: "",
+	},
 });
 
 const emit = defineEmits(["accept", "reject", "download-contract"]);
 
 const acceptDialog = ref(false);
-const assignmentDecisionLoading = ref(false);
 
 const showContractAlert = computed(() => {
 	return (

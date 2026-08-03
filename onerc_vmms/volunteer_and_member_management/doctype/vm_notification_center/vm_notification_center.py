@@ -247,10 +247,11 @@ class VMNotificationCenter(Document):
 	def get_recipients_nos(self) -> list[str]:
 		recipient_list = self.get_recipient_list()
 		recipient_nos = [r["phone"] for r in recipient_list if r.get("phone")]
-		frappe.log_error(
-			message=f"No phone numbers found for recipients: {recipient_list}",
-			title=f"No Recipient Phone Numbers {len(recipient_nos)}",
-		)
+		if not recipient_nos:
+			frappe.log_error(
+				message=f"No phone numbers found for {len(recipient_list)} matched recipients.",
+				title="No Recipient Phone Numbers",
+			)
 		self.db_set("total_recipients", len(recipient_nos), update_modified=False)
 		self.reload()
 

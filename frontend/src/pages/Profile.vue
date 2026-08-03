@@ -81,7 +81,7 @@
 import { useHead } from "@vueuse/head";
 import { createResource, toast } from "frappe-ui";
 import { Grid } from "lucide-vue-next";
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, onUnmounted, reactive, ref } from "vue";
 
 import ErrorModal from "@/components/Modals/ErrorModal.vue";
 import CitizenshipDocuments from "@/components/Profile/CitizenshipDocuments.vue";
@@ -164,6 +164,12 @@ onMounted(() => {
 	userDetailsResource.fetch();
 	if (typeof window !== "undefined") {
 		window.addEventListener("hashchange", updateTabFromHash);
+	}
+});
+
+onUnmounted(() => {
+	if (typeof window !== "undefined") {
+		window.removeEventListener("hashchange", updateTabFromHash);
 	}
 });
 

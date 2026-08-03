@@ -8,7 +8,7 @@ from frappe.utils import cint
 from ..services import membership_service as service
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep: guest-whitelisted-method -- public price list
+@frappe.whitelist()  # nosemgrep: guest-whitelisted-method -- public price list
 def get_membership_types():
 	return service.list_membership_types()
 
@@ -63,12 +63,6 @@ def initiate_membership_registration(
 		frappe.throw(_("Error initiating membership registration"))
 
 	return result
-
-
-@frappe.whitelist()
-@rate_limit(limit=10, seconds=60 * 5)
-def renew_membership(**kwargs):
-	return service.renew(kwargs.get("id"), kwargs.get("phone_number"))
 
 
 @frappe.whitelist()

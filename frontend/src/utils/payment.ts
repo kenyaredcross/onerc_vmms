@@ -47,8 +47,8 @@ class PaymentListener {
         settled = true;
 
         clearTimeout(timer);
-      
         $socket.off(this.SOCKET_EVENT, handler);
+        $socket.disconnect();
         this.clearToken();
 
         resolve(status);
