@@ -30,7 +30,6 @@ def after_insert(doc: Document, method: str) -> None:
 
 		if needs_save:
 			doc.save(ignore_permissions=True)
-			frappe.db.commit()
 
 		restrict_user_access(doc)
 
@@ -78,7 +77,6 @@ def ensure_job_offer_for_volunteer(job_applicant: str) -> None:
 
 	job_offer.insert(ignore_permissions=True)
 	job_offer.submit()
-	frappe.db.commit()
 
 
 def create_user_for_employee(doc: Document) -> str:
@@ -115,7 +113,6 @@ def create_user_for_employee(doc: Document) -> str:
 		# users can read every User record.
 		ensure_user_self_permission(user.name)
 
-		frappe.db.commit()
 		return user.name
 
 	except Exception as e:
@@ -199,8 +196,6 @@ def restrict_user_access(doc: Document) -> None:
 				}
 			)
 			company_permission.insert(ignore_permissions=True)
-
-		frappe.db.commit()
 
 	except Exception as e:
 		frappe.log_error(f"Error restricting access for {doc.user_id}", f"{str(e)}")

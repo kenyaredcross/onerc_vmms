@@ -118,6 +118,30 @@ def mark_applicant_notified(applicant_name: str) -> None:
 	)
 
 
+def claim_rejection_notification(applicant_name: str) -> bool:
+	already_notified = frappe.db.get_value(
+		"Job Applicant",
+		applicant_name,
+		"applicant_notified_of_application_status",
+		for_update=True,
+	)
+	if already_notified:
+		return False
+
+	mark_applicant_notified(applicant_name)
+	return True
+
+
+def release_rejection_notification(applicant_name: str) -> None:
+	frappe.db.set_value(
+		"Job Applicant",
+		applicant_name,
+		{
+			"applicant_notified_of_application_status": 0,
+		},
+	)
+
+
 @frappe.whitelist()
 def send_rejection_emails(applicants: Any, template_name: str | None = None) -> None:
 	"""
@@ -154,13 +178,15 @@ def send_rejection_emails(applicants: Any, template_name: str | None = None) -> 
 		if not name:
 			continue
 
+		if not claim_rejection_notification(name):
+			continue
+
 		frappe.enqueue(
 			send_rejection_email,
 			queue="default",
 			name=name,
 			template_name=template_name,
 			timeout=600,
-			job_name=f"send_rejection_email:{name}",
 		)
 
 
@@ -202,10 +228,8 @@ def send_rejection_email(name: str, template_name: str | None = None) -> bool:
 		return True
 
 	except Exception:
-		frappe.log_error(
-			frappe.get_traceback(),
-			f"Failed to send rejection email for Job Applicant {name}",
-		)
+		release_rejection_notification(name)
+		frappe.log_error(f"Failed to send rejection email for Job Applicant {name}", frappe.get_traceback())
 		return False
 
 

@@ -88,29 +88,6 @@ def get_interviewers():
 	return users_with_roles
 
 
-@frappe.whitelist()
-def get_expense_and_advance_approvers():
-	allowed_roles = ["Expense Approver", "HR Manager"]
-
-	users_with_roles = frappe.get_all(
-		"User",
-		filters={
-			"name": [
-				"in",
-				frappe.get_all(
-					"Has Role",
-					filters={"role": ["in", allowed_roles]},
-					pluck="parent",
-				),
-			],
-			"enabled": 1,
-		},
-		pluck="name",
-	)
-
-	return users_with_roles
-
-
 def check_and_renew_membership(invoice_id: str) -> None:
 	if not invoice_id or not frappe.db.exists("Sales Invoice", invoice_id):
 		return
@@ -124,15 +101,6 @@ def check_and_renew_membership(invoice_id: str) -> None:
 
 @frappe.whitelist()
 def get_company_descendants(company=None, company_list=None, include_parent=True):
-	"""
-	Retrieves the name of all descendants (children, grandchildren, etc.)
-	of one or more given Company names.
-
-	:param company: The name (string) of a parent Company or a list of company names.
-	:param company_list: Optional list of company names (alternative to `company`).
-	:param include_parent: If True, each parent company's name is included in the list.
-	:returns: A list of strings, where each string is the name of a descendant Company.
-	"""
 	companies = company_list if company_list is not None else company
 	if not companies:
 		return []
@@ -237,17 +205,16 @@ def get_translations():
 	allow_guest=True
 )  # nosemgrep: guest-whitelisted-method -- public branding assets, read-only
 def get_branding():
-	"""Get branding details."""
-	branding_settings = frappe.get_single("VM Settings")
+	brand_name, logo = frappe.db.get_value("VM Settings", "VM Settings", ["brand_name", "logo"]) or (
+		None,
+		None,
+	)
 
-	if branding_settings:
-		if branding_settings.get("app_logo"):
-			file_info = get_file_info(branding_settings.get("app_logo"))
-			branding_settings.update({"app_logo": json.loads(json.dumps(file_info))})
-		else:
-			branding_settings.update({"app_logo": None})
-
-		return branding_settings
+	return {
+		"brand_name": brand_name,
+		"logo": logo,
+		"app_logo": None,
+	}
 
 
 @frappe.whitelist()
@@ -352,9 +319,7 @@ def set_field_value(doc, fieldname, value, fieldtype=None):
 
 
 @frappe.whitelist()
-def create_or_update_skill_map(employee: str, skills: str | list | dict):
-	import json
-
+def create_or_update_skill_map(employee: str, skills: list | dict | str):
 	if isinstance(skills, str):
 		skills = json.loads(skills)
 

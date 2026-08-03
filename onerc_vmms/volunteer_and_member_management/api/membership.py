@@ -15,7 +15,7 @@ from ..api.user import get_user_details
 from ..utils.utils import log_throw_error
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep:
+@frappe.whitelist()  # nosemgrep: guest-whitelisted-method -- public price list
 def get_membership_types():
 	memberships = frappe.get_all(
 		"VM Membership Type",
@@ -229,6 +229,8 @@ def create_membership(
 	else:
 		member = frappe.get_doc("VM Member", member)
 
+	frappe.db.get_value("VM Member", member.name, "name", for_update=True)
+
 	check_conflicting_memberships(member, branch)
 	from_date = datetime.today().date()
 
@@ -258,8 +260,12 @@ def create_membership(
 
 
 def attach_proof_of_membership(membership_doc: "VMMembership", proof_attachment: Any) -> None:
+	if not proof_attachment:
+		frappe.throw(_("Proof of existing membership is required"))
+
 	attachments = proof_attachment if isinstance(proof_attachment, list) else [proof_attachment]
 
+	attached_count = 0
 	for attachment in attachments:
 		file_url = attachment if isinstance(attachment, str) else (attachment or {}).get("file_url")
 		if not file_url:
@@ -278,6 +284,10 @@ def attach_proof_of_membership(membership_doc: "VMMembership", proof_attachment:
 		file_doc.attached_to_name = membership_doc.name
 		file_doc.is_private = 1
 		file_doc.save(ignore_permissions=True)
+		attached_count += 1
+
+	if not attached_count:
+		frappe.throw(_("Proof of existing membership is required"))
 
 
 def validate_membership_age_eligibility(membership_type_doc: Document) -> None:
@@ -314,7 +324,9 @@ def create_member() -> "Document":
 
 		return member
 	except Exception:
-		log_throw_error("Error creating member")
+		frappe.db.rollback()
+		frappe.log_error(frappe.get_traceback(), "Error initiating membership registration")
+		frappe.throw(_("Error initiating membership registration"))
 
 
 def check_conflicting_memberships(member_doc: "Document", company: str) -> None:

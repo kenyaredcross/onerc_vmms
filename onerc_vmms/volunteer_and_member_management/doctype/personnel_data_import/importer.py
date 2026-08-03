@@ -224,6 +224,9 @@ class PersonnelDataImporter:
 				)
 
 	def import_single_row(self, row):
+		savepoint = "before_row_import"
+		frappe.db.savepoint(savepoint)
+
 		try:
 			user_id = None
 			docname = None
@@ -265,6 +268,7 @@ class PersonnelDataImporter:
 			self.log(row["row_number"], True, _("Import Successful"), docname=docname)
 			return True
 		except Exception as e:
+			frappe.db.rollback(save_point=savepoint)
 			self.log(row["row_number"], False, str(e), exception=frappe.get_traceback())
 			return False
 

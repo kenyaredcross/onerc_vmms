@@ -55,7 +55,7 @@
 
 <script setup>
 import { useHead } from "@vueuse/head";
-import { createResource, ErrorMessage, toast } from "frappe-ui";
+import { ErrorMessage } from "frappe-ui";
 import { reactive, ref, watch } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import Member from "../components/MemberPlan.vue";

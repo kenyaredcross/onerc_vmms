@@ -27,12 +27,16 @@ class PaymentListener {
     const $socket = initSocket();
 
     return new Promise((resolve) => {
-      $socket.on(this.SOCKET_EVENT, (data) => {
-        if (data?.expected_token === this.expectedToken) {
-          const status = data.status;
+      let settled = false;
 
-          this.clearToken();
-          $socket.off(this.SOCKET_EVENT);
+      const finish = (status: PaymentResult) => {
+        if (settled) return;
+        settled = true;
+
+        clearTimeout(timer);
+        $socket.off(this.SOCKET_EVENT, handler);
+        $socket.disconnect();
+        this.clearToken();
 
           resolve(status);
         }

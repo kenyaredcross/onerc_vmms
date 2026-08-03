@@ -67,7 +67,9 @@ class PersonnelDataImport(Document):
 def export_errored_rows(name):
 	from frappe.utils.csvutils import build_csv_response
 
-	logs = frappe.get_all(
+	frappe.get_doc("Personnel Data Import", name).check_permission("read")
+
+	logs = frappe.get_list(
 		"Data Import Log",
 		fields=["log_index", "row_indexes", "messages", "docname", "exception"],
 		filters={"data_import": name, "success": 0},
@@ -155,7 +157,9 @@ def form_start_import(data_import):
 
 @frappe.whitelist()
 def get_import_logs(data_import: str):
-	return frappe.get_all(
+	frappe.get_doc("Personnel Data Import", data_import).check_permission("read")
+
+	return frappe.get_list(
 		"Data Import Log",
 		fields=["docname", "log_index", "success", "messages", "row_indexes", "exception"],
 		filters={"data_import": data_import},
