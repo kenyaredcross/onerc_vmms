@@ -12,6 +12,7 @@ from frappe.model.document import Document
 from frappe.utils import (
 	add_months,
 	add_years,
+	flt,
 	get_link_to_form,
 	getdate,
 	nowdate,
@@ -76,7 +77,6 @@ class VMMembership(Document):
 	def validate_membership_period(self):
 		self._apply_membership_period_logic()
 		self.save(ignore_permissions=True)
-		frappe.db.commit()
 
 	def _apply_membership_period_logic(self):
 		if not self.status == "Draft":
@@ -420,18 +420,21 @@ def make_payment_request(membership, member, plan, phone_number=None):
 	try:
 		invoice = None
 		mop = frappe.db.get_value("VM Settings", "VM Settings", "membership_mode_of_payment")
-		if not frappe.db.exists(
+
+		reusable_invoice = frappe.db.get_value(
 			"Sales Invoice",
-			{"membership": membership.name, "docstatus": ["!=", 2]},
-		):
-			invoice = make_invoice(membership, member, plan)
-		else:
-			invoice_id = frappe.db.get_value(
-				"Sales Invoice",
-				{"membership": membership.name, "docstatus": ["!=", 2]},
-				"name",
-			)
-			invoice = frappe.get_doc("Sales Invoice", invoice_id)
+			{
+				"membership": membership.name,
+				"docstatus": ["!=", 2],
+				"outstanding_amount": [">", 0],
+			},
+			"name",
+		)
+		invoice = (
+			frappe.get_doc("Sales Invoice", reusable_invoice)
+			if reusable_invoice
+			else make_invoice(membership, member, plan)
+		)
 
 		payment_gateway = get_payment_gateway_from_mop(mop, membership.company)
 		payment_gateway_account = frappe.db.get_value(
@@ -451,6 +454,18 @@ def make_payment_request(membership, member, plan, phone_number=None):
 					membership.currency
 				)
 			)
+
+		for stale_request in frappe.get_all(
+			"Payment Request",
+			filters={
+				"reference_doctype": "Sales Invoice",
+				"reference_name": invoice.name,
+				"docstatus": 1,
+				"outstanding_amount": [">", 0],
+			},
+			pluck="name",
+		):
+			frappe.get_doc("Payment Request", stale_request).cancel()
 
 		payment_request = frappe.get_doc(
 			{
@@ -481,20 +496,21 @@ def make_payment_request(membership, member, plan, phone_number=None):
 		if phone_number:
 			payment_request.phone_number = phone_number
 
-		payment_request.flags.ignore_validate = True
 		payment_request.insert(ignore_permissions=True)
 		payment_request.submit()
 
 		frappe.msgprint(_("Payment Request created successfully"))
 		return payment_request, invoice
 
+	except frappe.ValidationError:
+		raise
+
 	except Exception as e:
 		message = f"{e}\n\n{frappe.get_traceback()}"
 		log = frappe.log_error(_("Error creating payment request for {0}").format(member.name), message)
-		frappe.msgprint(
-			_("Failed to create payment request. Please check the error log: {0}").format(log.name)
-		)
-		return None
+		# Throw rather than return: every caller unpacks the result as a 2-tuple, and this
+		# also lets the caller's rollback run instead of leaving a half-built payment.
+		frappe.throw(_("Failed to create payment request. Please check the error log: {0}").format(log.name))
 
 
 def get_member_based_on_subscription(subscription_id, email=None, customer_id=None):
@@ -682,40 +698,27 @@ def get_plan_from_razorpay_id(plan_id):
 
 
 def set_expired_status():
-	today = nowdate()
-	memberships = frappe.get_all(
-		"VM Membership",
-		filters={
-			"status": ["not in", ["Cancelled", "Expired"]],
-			"to_date": ["<", today],
-		},
-		fields=["name", "membership_type"],
+	membership = frappe.qb.DocType("VM Membership")
+
+	query = (
+		frappe.qb.update(membership)
+		.set(membership.status, "Expired")
+		.set(membership.modified, frappe.utils.now())
+		.set(membership.modified_by, frappe.session.user)
+		.where(membership.to_date < nowdate())
+		.where(membership.status.notin(["Rejected", "Expired"]))
 	)
 
-	if not memberships:
-		return
-
-	one_off_types = set(
-		frappe.get_all(
-			"VM Membership Type",
-			filters={"billing_cycle": "One Off"},
-			pluck="name",
-		)
+	one_off_types = frappe.get_all(
+		"VM Membership Type",
+		filters={"billing_cycle": "One Off"},
+		pluck="name",
 	)
+	if one_off_types:
+		query = query.where(membership.membership_type.notin(one_off_types))
 
-	for m in memberships:
-		if m.membership_type in one_off_types:
-			continue
-
-		try:
-			frappe.db.set_value("VM Membership", m.name, "status", "Expired")
-			frappe.db.commit()
-		except Exception:
-			frappe.db.rollback()
-			frappe.log_error(
-				frappe.get_traceback(),
-				f"Failed to set expired status for VM Membership {m.name}",
-			)
+	query.run()
+	frappe.db.commit()
 
 
 def get_last_membership(member):

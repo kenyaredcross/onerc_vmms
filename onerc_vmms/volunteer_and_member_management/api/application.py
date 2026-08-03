@@ -1,7 +1,8 @@
 import frappe
 from frappe import _
+from frappe.query_builder.functions import Count
 from frappe.rate_limiter import rate_limit
-from frappe.utils import now_datetime
+from frappe.utils import cint, now_datetime
 
 from ..utils.permission import validate_session_user
 from ..utils.utils import set_field_value
@@ -16,8 +17,36 @@ PROTECTED_APPLICANT_FIELDS = frozenset(
 		"applicant_notified_of_application_status",
 		"job_title",
 		"company",
+		"eligibility_status",
+		"total_score",
+		"screening_score_percent",
+		"rejection_reason",
 	}
 )
+
+
+COMPUTED_SCREENING_RESPONSE_FIELDS = frozenset(
+	{
+		"score_obtained",
+		"max_score",
+		"expected_answer",
+	}
+)
+
+
+def _strip_computed_screening_fields(value):
+	"""Remove server-computed columns from client-supplied screening response rows."""
+	if not isinstance(value, list):
+		return value
+
+	return [
+		(
+			{k: v for k, v in row.items() if k not in COMPUTED_SCREENING_RESPONSE_FIELDS}
+			if isinstance(row, dict)
+			else row
+		)
+		for row in value
+	]
 
 
 def _apply_application_fields(application, fields: dict) -> None:
@@ -26,14 +55,39 @@ def _apply_application_fields(application, fields: dict) -> None:
 		if fieldname in PROTECTED_APPLICANT_FIELDS:
 			continue
 
+		if fieldname == "screening_question_responses":
+			value = _strip_computed_screening_fields(value)
+
 		if application.meta.has_field(fieldname):
 			fieldtype = application.meta.get_field(fieldname).fieldtype
 			set_field_value(application, fieldname, value, fieldtype)
 
 
+JOB_OPENING_LIST_FIELDS = [
+	"name",
+	"job_title",
+	"company",
+	"designation",
+	"duration",
+	"description",
+	"posted_on",
+	"closes_on",
+	"creation",
+	"publish_applications_received",
+]
+
+DEFAULT_JOB_PAGE_LENGTH = 100
+
+
 # nosemgrep: frappe-semgrep-rules.rules.security.guest-whitelisted-method -- public job board listing, read-only
 @frappe.whitelist(allow_guest=True)
-def get_job_openings(filters: dict | None = None, orFilters: list | None = None):
+@rate_limit(limit=120, seconds=60)
+def get_job_openings(
+	filters: dict | None = None,
+	orFilters: list | None = None,
+	limit_start: int = 0,
+	limit_page_length: int = DEFAULT_JOB_PAGE_LENGTH,
+):
 	if not filters:
 		filters = {}
 	filters["publish"] = 1
@@ -90,20 +144,15 @@ def get_job_openings(filters: dict | None = None, orFilters: list | None = None)
 	elif companies:
 		filters["company"] = ["in", companies]
 
-	job_names = frappe.get_all(
+	jobs = frappe.get_all(
 		"Job Opening",
 		filters=filters,
 		or_filters=or_filters,
-		fields=["name"],
+		fields=JOB_OPENING_LIST_FIELDS,
 		order_by="creation desc",
+		limit_start=cint(limit_start),
+		limit_page_length=cint(limit_page_length),
 	)
-
-	jobs = []
-	for j in job_names:
-		try:
-			jobs.append(frappe.get_doc("Job Opening", j.name).as_dict())
-		except Exception:
-			frappe.log_error(frappe.get_traceback(), "Failed to fetch Job Opening doc")
 
 	if user != "Guest":
 		user_email = frappe.db.get_value("User", user, "email")
@@ -115,9 +164,24 @@ def get_job_openings(filters: dict | None = None, orFilters: list | None = None)
 			)
 			jobs = [job for job in jobs if job.name not in applied_jobs]
 
+	# One aggregate for the whole page instead of a COUNT per row.
+	applicant_counts = {}
+	if jobs:
+		applicant = frappe.qb.DocType("Job Applicant")
+		applicant_counts = {
+			row.job_title: row.total
+			for row in (
+				frappe.qb.from_(applicant)
+				.select(applicant.job_title, Count(applicant.name).as_("total"))
+				.where(applicant.job_title.isin([job.name for job in jobs]))
+				.groupby(applicant.job_title)
+				.run(as_dict=True)
+			)
+		}
+
 	for job in jobs:
 		job.description = frappe.utils.strip_html_tags(job.description) if job.description else ""
-		job.applicants = frappe.db.count("Job Applicant", {"job_title": job.name})
+		job.applicants = applicant_counts.get(job.name, 0)
 
 	return jobs
 
@@ -181,6 +245,7 @@ def _update_application(application_id: str, fields: dict) -> dict:
 	application = frappe.get_doc("Job Applicant", application_id)
 	validate_session_user(application.email_id)
 	_apply_application_fields(application, fields)
+	validate_session_user(application.email_id)
 	application.save(ignore_permissions=True)
 	frappe.db.commit()
 	return {
@@ -281,7 +346,11 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 
 			existing = frappe.get_all(
 				"Job Applicant",
-				filters={"email_id": email_id, "is_volunteer": 1, "docstatus": ("!=", 2)},
+				filters={
+					"email_id": email_id,
+					"is_volunteer": 1,
+					"docstatus": ("!=", 2),
+				},
 				fields=["name", "docstatus"],
 				order_by="docstatus asc, modified desc",
 				limit=1,

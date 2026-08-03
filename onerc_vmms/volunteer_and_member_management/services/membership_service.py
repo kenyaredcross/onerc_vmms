@@ -153,6 +153,8 @@ def create_membership(membership_type: str, branch: str, is_existing_member: boo
 	member = get_session_member()
 	member = frappe.get_doc(MEMBER, member) if member else create_member()
 
+	frappe.db.get_value(MEMBER, member.name, "name", for_update=True)
+
 	check_conflicting_memberships(member, branch)
 
 	from_date = datetime.today().date()
@@ -244,10 +246,11 @@ def create_member_from_employee(employee_id: str) -> str:
 
 def attach_membership_proof(membership_id: str, proof_attachment) -> None:
 	if not proof_attachment:
-		return
+		frappe.throw(_("Proof of existing membership is required"))
 
 	attachments = proof_attachment if isinstance(proof_attachment, list) else [proof_attachment]
 
+	attached_count = 0
 	for attachment in attachments:
 		file_url = attachment if isinstance(attachment, str) else (attachment or {}).get("file_url")
 		if not file_url:
@@ -272,6 +275,7 @@ def attach_membership_proof(membership_id: str, proof_attachment) -> None:
 					"is_private": 1,
 				},
 			)
+			attached_count += 1
 			continue
 
 		frappe.get_doc(
@@ -283,6 +287,10 @@ def attach_membership_proof(membership_id: str, proof_attachment) -> None:
 				"is_private": 1,
 			}
 		).insert(ignore_permissions=True)
+		attached_count += 1
+
+	if not attached_count:
+		frappe.throw(_("Proof of existing membership is required"))
 
 
 def start_payment(membership_id: str, phone_number: str) -> str:
@@ -290,13 +298,6 @@ def start_payment(membership_id: str, phone_number: str) -> str:
 	payment_request, _invoice = _initiate_payment(membership_id, phone_number)
 
 	return payment_request.payment_token
-
-
-def renew(membership_id: str, phone_number: str | None):
-	"""Renew an existing membership belonging to the logged-in user. Returns the invoice."""
-	_payment_request, invoice = _initiate_payment(membership_id, validate_phone(phone_number))
-
-	return invoice
 
 
 def _initiate_payment(membership_id: str, phone_number: str) -> tuple[Document, Document]:

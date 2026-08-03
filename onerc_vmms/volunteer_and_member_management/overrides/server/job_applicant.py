@@ -3,7 +3,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils.html_utils import sanitize_html
 
-from .job_opening import send_rejection_email
+from .job_opening import claim_rejection_notification, send_rejection_email
 
 SKIP_CHILD_FIELDS = [
 	"name",
@@ -110,102 +110,105 @@ def update_user_from_applicant(doc: Document):
 
 
 def update_screening_scores(doc: Document):
-	try:
-		total_score = 0
-		max_total_score = 0
-		knock_off_failed = False
-		failed_knock_off_questions = []
-		responses = doc.screening_question_responses
+	total_score = 0
+	max_total_score = 0
+	knock_off_failed = False
+	failed_knock_off_questions = []
+	responses = doc.screening_question_responses
 
-		for resp in responses:
-			question = frappe.get_doc(
-				"Job Application Screening Questions",
-				{"question_id": resp.question_id, "parent": doc.job_title},
-			)
-
-			score = 0
-			max_score = question.max_score or 0
-
-			if getattr(question, "enable_scoring", False):
-				if question.is_required and not resp.answer:
-					score = 0
-				elif resp.answer and question.expected_answer:
-					if question.question_type == "MultiSelect":
-						user_answers = set(ans.strip() for ans in resp.answer.split("\n") if ans.strip())
-						expected_answers = set(
-							ans.strip() for ans in question.expected_answer.split("\n") if ans.strip()
-						)
-
-						if user_answers.intersection(expected_answers):
-							score = min(max_score, question.weight)
-						else:
-							score = 0
-					else:
-						user_ans = resp.answer.strip()
-						expected_ans = question.expected_answer.strip()
-						score = min(max_score, question.weight) if user_ans == expected_ans else 0
-			else:
-				max_score = 0
-
-			resp.score_obtained = score
-			resp.max_score = max_score
-			resp.expected_answer = question.expected_answer
-
-			total_score += score
-			max_total_score += max_score
-
-			if getattr(question, "is_knock_off", False) and score == 0:
-				knock_off_failed = True
-				failed_knock_off_questions.append(question.question or resp.question_id)
-
-		screening_score_percent = (total_score / max_total_score) * 100 if max_total_score > 0 else 0
-
-		doc.total_score = total_score
-		doc.screening_score_percent = screening_score_percent
-
-		minimum_pass_score = frappe.get_value(
-			"Job Opening",
-			doc.job_title,
-			"minimum_pass_score",
-		) or frappe.get_value(
-			"VM Settings",
-			None,
-			"minimum_pass_score",
+	for resp in responses:
+		question_name = frappe.db.exists(
+			"Job Application Screening Questions",
+			{"question_id": resp.question_id, "parent": doc.job_title},
 		)
-
-		try:
-			min_pass = float(minimum_pass_score) if minimum_pass_score is not None else 70.0
-			score = float(screening_score_percent) if screening_score_percent is not None else None
-		except (TypeError, ValueError):
-			min_pass = 70.0
-			score = None
-
-		if knock_off_failed:
-			doc.eligibility_status = "Not Eligible"
-			doc.status = "Rejected"
-
-			questions_str = ", ".join(failed_knock_off_questions)
-			doc.rejection_reason = (
-				f"Failed critical knock-off requirements during screening. "
-				f"Unmet criteria: [{questions_str}]. "
-				f"Overall screening score achieved: {screening_score_percent:.1f}%."
+		if not question_name:
+			frappe.throw(
+				_("Screening response refers to an unknown question: {0}").format(resp.question_id),
+				title=_("Invalid Screening Response"),
 			)
-		else:
-			if score is not None and min_pass is not None:
-				if score >= min_pass:
-					doc.eligibility_status = "Eligible"
-				else:
-					doc.eligibility_status = "Pending Review"
-					doc.status = "Rejected"
-					doc.rejection_reason = (
-						f"Screening score of {score:.1f}% falls below the required minimum "
-						f"passing threshold of {min_pass:.1f}%."
+
+		question = frappe.get_doc("Job Application Screening Questions", question_name)
+
+		score = 0
+		max_score = question.max_score or 0
+
+		if getattr(question, "enable_scoring", False):
+			if question.is_required and not resp.answer:
+				score = 0
+			elif resp.answer and question.expected_answer:
+				if question.question_type == "MultiSelect":
+					user_answers = set(ans.strip() for ans in resp.answer.split("\n") if ans.strip())
+					expected_answers = set(
+						ans.strip() for ans in question.expected_answer.split("\n") if ans.strip()
 					)
+
+					if user_answers.intersection(expected_answers):
+						score = min(max_score, question.weight)
+					else:
+						score = 0
+				else:
+					user_ans = resp.answer.strip()
+					expected_ans = question.expected_answer.strip()
+					score = min(max_score, question.weight) if user_ans == expected_ans else 0
+		else:
+			max_score = 0
+
+		resp.score_obtained = score
+		resp.max_score = max_score
+		resp.expected_answer = question.expected_answer
+
+		total_score += score
+		max_total_score += max_score
+
+		if getattr(question, "is_knock_off", False) and score == 0:
+			knock_off_failed = True
+			failed_knock_off_questions.append(question.question or resp.question_id)
+
+	screening_score_percent = (total_score / max_total_score) * 100 if max_total_score > 0 else 0
+
+	doc.total_score = total_score
+	doc.screening_score_percent = screening_score_percent
+
+	minimum_pass_score = frappe.get_value(
+		"Job Opening",
+		doc.job_title,
+		"minimum_pass_score",
+	) or frappe.get_value(
+		"VM Settings",
+		None,
+		"minimum_pass_score",
+	)
+
+	try:
+		min_pass = float(minimum_pass_score) if minimum_pass_score is not None else 70.0
+		score = float(screening_score_percent) if screening_score_percent is not None else None
+	except (TypeError, ValueError):
+		min_pass = 70.0
+		score = None
+
+	if knock_off_failed:
+		doc.eligibility_status = "Not Eligible"
+		doc.status = "Rejected"
+
+		questions_str = ", ".join(failed_knock_off_questions)
+		doc.rejection_reason = (
+			f"Failed critical knock-off requirements during screening. "
+			f"Unmet criteria: [{questions_str}]. "
+			f"Overall screening score achieved: {screening_score_percent:.1f}%."
+		)
+	else:
+		if score is not None and min_pass is not None:
+			if score >= min_pass:
+				doc.eligibility_status = "Eligible"
 			else:
 				doc.eligibility_status = "Pending Review"
-
-	except Exception:
-		frappe.log_error("Job Applicant -> Screening Score Update Error", frappe.get_traceback())
+				doc.status = "Rejected"
+				doc.rejection_reason = (
+					f"Screening score of {score:.1f}% falls below the required minimum "
+					f"passing threshold of {min_pass:.1f}%."
+				)
+		else:
+			doc.eligibility_status = "Pending Review"
 
 
 def validate_required_supporting_documents(doc: Document):
@@ -239,7 +242,11 @@ def on_submit(doc, method):
 	try:
 		update_user_from_applicant(doc)
 		job_opening = frappe.get_doc("Job Opening", doc.job_title)
-		if job_opening.send_rejection_email_immediately and doc.status == "Rejected":
+		if (
+			job_opening.send_rejection_email_immediately
+			and doc.status == "Rejected"
+			and claim_rejection_notification(doc.name)
+		):
 			frappe.enqueue(
 				send_rejection_email,
 				name=doc.name,
