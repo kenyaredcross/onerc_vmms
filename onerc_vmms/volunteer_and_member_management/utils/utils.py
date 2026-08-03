@@ -101,7 +101,11 @@ def check_and_renew_membership(invoice_id: str) -> None:
 
 
 @frappe.whitelist()
-def get_company_descendants(company=None, company_list=None, include_parent=True):
+def get_company_descendants(
+	company: str | None = None,
+	company_list: list | None = None,
+	include_parent: bool = True,
+):
 	companies = company_list if company_list is not None else company
 	if not companies:
 		return []
@@ -202,9 +206,7 @@ def get_translations():
 	return get_all_translations(language)
 
 
-@frappe.whitelist(
-	allow_guest=True
-)  # nosemgrep: guest-whitelisted-method -- public branding assets, read-only
+@frappe.whitelist(allow_guest=True)  # nosemgrep
 def get_branding():
 	brand_name, logo = frappe.db.get_value("VM Settings", "VM Settings", ["brand_name", "logo"]) or (
 		None,

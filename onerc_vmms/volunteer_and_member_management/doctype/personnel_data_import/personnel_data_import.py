@@ -48,7 +48,14 @@ class PersonnelDataImport(Document):
 		if total_rows == 0:
 			frappe.throw(_("No data found to import"))
 
-		self.db_set({"status": "In Progress", "total": total_rows, "successes": 0, "failures": 0})
+		self.db_set(
+			{
+				"status": "In Progress",
+				"total": total_rows,
+				"successes": 0,
+				"failures": 0,
+			}
+		)
 
 		path = "onerc_vmms.volunteer_and_member_management.doctype.personnel_data_import.personnel_data_import.execute_import_chunk"
 
@@ -64,7 +71,7 @@ class PersonnelDataImport(Document):
 
 
 @frappe.whitelist()
-def export_errored_rows(name):
+def export_errored_rows(name: str):
 	from frappe.utils.csvutils import build_csv_response
 
 	frappe.get_doc("Personnel Data Import", name).check_permission("read")
@@ -161,7 +168,14 @@ def get_import_logs(data_import: str):
 
 	return frappe.get_list(
 		"Data Import Log",
-		fields=["docname", "log_index", "success", "messages", "row_indexes", "exception"],
+		fields=[
+			"docname",
+			"log_index",
+			"success",
+			"messages",
+			"row_indexes",
+			"exception",
+		],
 		filters={"data_import": data_import},
 		order_by="log_index desc",
 		limit_page_length=100,
