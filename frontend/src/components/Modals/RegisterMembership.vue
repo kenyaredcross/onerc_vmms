@@ -8,187 +8,191 @@
 		</template>
 
 		<template #body-content>
-			<ProgressSpinner
-				v-if="membershipEligibility.loading"
-				:message="'Processing membership validity'"
-			/>
-			<ErrorMessage
-				v-else-if="membershipEligibility.error"
-				:message="membershipEligibility.error"
-			/>
-			<div v-else-if="!membershipEligibility.data.eligible">
-				<div
-					class="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg shadow-sm"
-				>
-					<div class="flex items-start space-x-3">
-						<div class="flex-shrink-0">
-							<AlertTriangle class="w-6 h-6 text-yellow-600" />
-						</div>
-						<div>
-							<h4 class="text-lg font-semibold text-yellow-800 mb-2">
-								Profile Incomplete
-							</h4>
-							<p class="text-yellow-700 mb-3">
-								To become a member, please complete your profile with all required
-								information. This ensures we can properly process your membership
-								application.
-							</p>
-							<div class="mb-2">
-								<p class="text-base font-semibold text-yellow-800">
-									Missing Fields:
-								</p>
-								<ul class="list-disc list-inside text-yellow-700">
-									<li
-										v-for="field in membershipEligibility.data.missing_fields"
-										:key="field"
-									>
-										{{
-											__(field).charAt(0).toUpperCase() + __(field).slice(1)
-										}}
-									</li>
-								</ul>
+			<div :aria-busy="membershipEligibility.loading">
+				<ProgressSpinner
+					v-if="membershipEligibility.loading"
+					:message="'Processing membership validity'"
+				/>
+				<ErrorMessage
+					v-else-if="membershipEligibility.error"
+					:message="membershipEligibility.error"
+				/>
+				<div v-else-if="!membershipEligibility.data.eligible">
+					<div
+						class="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg shadow-sm"
+					>
+						<div class="flex items-start space-x-3">
+							<div class="flex-shrink-0">
+								<AlertTriangle class="w-6 h-6 text-yellow-600" />
 							</div>
-							<Button
-								variant="solid"
-								theme="red"
-								@click="router.push({ name: 'Profile' })"
-							>
-								Complete Profile
-							</Button>
+							<div>
+								<h4 class="text-lg font-semibold text-yellow-800 mb-2">
+									Profile Incomplete
+								</h4>
+								<p class="text-yellow-700 mb-3">
+									To become a member, please complete your profile with all
+									required information. This ensures we can properly process your
+									membership application.
+								</p>
+								<div class="mb-2">
+									<p class="text-base font-semibold text-yellow-800">
+										Missing Fields:
+									</p>
+									<ul class="list-disc list-inside text-yellow-700">
+										<li
+											v-for="field in membershipEligibility.data
+												.missing_fields"
+											:key="field"
+										>
+											{{
+												__(field).charAt(0).toUpperCase() +
+												__(field).slice(1)
+											}}
+										</li>
+									</ul>
+								</div>
+								<Button
+									variant="solid"
+									theme="red"
+									@click="router.push({ name: 'Profile' })"
+								>
+									Complete Profile
+								</Button>
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-			<div v-else>
-				<div v-if="!paymentStatus && !applicationSubmitted" class="py-4">
-					<form action="" novalidate @submit.prevent="submit">
-						<div
-							class="grid grid-cols-1 gap-4 mb-4 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
-							:class="{ 'sm:grid-cols-2': !isExistingMember || props.is_renew }"
-						>
-							<div class="space-y-1">
-								<FormControl
-									type="text"
-									label="Membership Type"
-									placeholder="Select membership type"
-									class="w-full text-sm"
-									v-model="membershipForm.membership_type"
-									:value="props.membership_type"
-									readonly
-								/>
-							</div>
-
-							<div v-if="!isExistingMember || props.is_renew" class="space-y-1">
-								<FormControl
-									type="number"
-									label="Amount"
-									placeholder="Enter amount"
-									class="w-full text-sm"
-									v-model="membershipForm.amount"
-									:value="props.amount"
-									readonly
-								/>
-							</div>
-						</div>
-
-						<div v-if="!props.is_renew" class="mb-4 flex items-center gap-2">
-							<input
-								id="is_existing_member"
-								type="checkbox"
-								v-model="isExistingMember"
-								class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-							/>
-							<label
-								for="is_existing_member"
-								class="text-sm font-medium text-gray-700"
+				<div v-else>
+					<div v-if="!paymentStatus && !applicationSubmitted" class="py-4">
+						<form action="" novalidate @submit.prevent="submit">
+							<div
+								class="grid grid-cols-1 gap-4 mb-4 p-4 bg-red-200 border border-red-100 rounded-2xl shadow-sm"
+								:class="{ 'sm:grid-cols-2': !isExistingMember || props.is_renew }"
 							>
-								I am an existing member (Not registered on portal)
-							</label>
-						</div>
+								<div class="space-y-1">
+									<FormControl
+										type="text"
+										label="Membership Type"
+										placeholder="Select membership type"
+										class="w-full text-sm"
+										v-model="membershipForm.membership_type"
+										:value="props.membership_type"
+										readonly
+									/>
+								</div>
 
-						<FormControl
-							v-if="!is_renew"
-							type="autocomplete"
-							label="Branch / County"
-							placeholder="Select branch or county to register with"
-							class="w-full mb-4"
-							:options="branches.data"
-							v-model="branch"
-						/>
-
-						<FormControl
-							v-if="is_renew"
-							type="text"
-							label="Branch / County"
-							placeholder="Select branch or county to register with"
-							class="w-full mb-4"
-							:value="props.renew_branch"
-							v-model="branch"
-							readonly
-						/>
-
-						<div v-if="isExistingMember && !props.is_renew" class="space-y-1 mb-4">
-							<Uploader
-								label="Proof of Membership (Receipt / Certificate / Card)"
-								:fileTypes="['.jpg', '.jpeg', '.png', '.pdf']"
-								:onSuccess="(data) => (membershipForm.proof_attachment = data)"
-							/>
-						</div>
-
-						<div v-else class="space-y-4">
-							<div>
-								<FormControl
-									type="text"
-									label="Phone Number (MPesa Phone Number to be used for payment)"
-									placeholder="eg. 0712345678"
-									class="w-full"
-									v-model="membershipForm.phone"
-									required
-								/>
-								<PaymentInfoAlert class="mt-2" v-if="checkSTK" />
+								<div v-if="!isExistingMember || props.is_renew" class="space-y-1">
+									<FormControl
+										type="number"
+										label="Amount"
+										placeholder="Enter amount"
+										class="w-full text-sm"
+										v-model="membershipForm.amount"
+										:value="props.amount"
+										readonly
+									/>
+								</div>
 							</div>
-						</div>
 
-						<ErrorMessage
-							v-if="createMembership.error"
-							class="text-center border rounded-md p-2 border-red-500 bg-red-50 text-sm my-3"
-							:message="createMembership.error"
-						/>
-						<div class="mt-4 gap-2 flex items-end justify-end">
-							<Button
-								type="submit"
-								name="membership-submit"
-								variant="solid"
-								theme="green"
-								:loading="createMembership.loading || confirmPayment"
-								class="rounded-lg px-6"
-							>
-								{{
-									props.is_renew
-										? "Renew"
-										: isExistingMember
-										? "Apply"
-										: confirmPayment
-										? "Processing Payment...."
-										: "Register"
-								}}
-							</Button>
-						</div>
-					</form>
+							<div v-if="!props.is_renew" class="mb-4 flex items-center gap-2">
+								<input
+									id="is_existing_member"
+									type="checkbox"
+									v-model="isExistingMember"
+									class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+								/>
+								<label
+									for="is_existing_member"
+									class="text-sm font-medium text-gray-700"
+								>
+									I am an existing member (Not registered on portal)
+								</label>
+							</div>
+
+							<FormControl
+								v-if="!is_renew"
+								type="autocomplete"
+								label="Branch / County"
+								placeholder="Select branch or county to register with"
+								class="w-full mb-4"
+								:options="branches.data"
+								v-model="branch"
+							/>
+
+							<FormControl
+								v-if="is_renew"
+								type="text"
+								label="Branch / County"
+								placeholder="Select branch or county to register with"
+								class="w-full mb-4"
+								:value="props.renew_branch"
+								v-model="branch"
+								readonly
+							/>
+
+							<div v-if="isExistingMember && !props.is_renew" class="space-y-1 mb-4">
+								<Uploader
+									label="Proof of Membership (Receipt / Certificate / Card)"
+									:fileTypes="['.jpg', '.jpeg', '.png', '.pdf']"
+									:onSuccess="(data) => (membershipForm.proof_attachment = data)"
+								/>
+							</div>
+
+							<div v-else class="space-y-4">
+								<div>
+									<FormControl
+										type="text"
+										label="Phone Number (MPesa Phone Number to be used for payment)"
+										placeholder="eg. 0712345678"
+										class="w-full"
+										v-model="membershipForm.phone"
+										required
+									/>
+									<PaymentInfoAlert class="mt-2" v-if="checkSTK" />
+								</div>
+							</div>
+
+							<ErrorMessage
+								v-if="createMembership.error"
+								class="text-center border rounded-md p-2 border-red-500 bg-red-50 text-sm my-3"
+								:message="createMembership.error"
+							/>
+							<div class="mt-4 gap-2 flex items-end justify-end">
+								<Button
+									type="submit"
+									name="membership-submit"
+									variant="solid"
+									theme="green"
+									:loading="createMembership.loading || confirmPayment"
+									class="rounded-lg px-6"
+								>
+									{{
+										props.is_renew
+											? "Renew"
+											: isExistingMember
+											? "Apply"
+											: confirmPayment
+											? "Processing Payment...."
+											: "Register"
+									}}
+								</Button>
+							</div>
+						</form>
+					</div>
+
+					<PaymentStatus
+						v-else
+						@close="registerDialog = false"
+						:message="
+							isExistingMember
+								? 'Membership application submitted successfully for verification'
+								: 'Membership processed successfully'
+						"
+						title="Membership"
+						returnUrl="/vmms/membership"
+						urlName="Membership"
+					/>
 				</div>
-
-				<PaymentStatus
-					v-else
-					@close="registerDialog = false"
-					:message="
-						isExistingMember
-							? 'Membership application submitted successfully for verification'
-							: 'Membership processed successfully'
-					"
-					title="Membership"
-					returnUrl="/vmms/membership"
-					urlName="Membership"
-				/>
 			</div>
 		</template>
 	</Dialog>

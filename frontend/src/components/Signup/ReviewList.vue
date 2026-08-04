@@ -4,7 +4,7 @@
 		<ul v-if="items && items.length" class="list-disc ml-4 mt-1 text-gray-800">
 			<li v-for="(item, i) in items" :key="i">{{ item }}</li>
 		</ul>
-		<p v-else class="mt-1 text-gray-400">—</p>
+		<p v-else class="mt-1 text-gray-500">—</p>
 	</div>
 </template>
 

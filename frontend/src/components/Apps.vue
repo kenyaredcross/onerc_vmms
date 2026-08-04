@@ -26,7 +26,7 @@
 						class="flex flex-col gap-1.5 rounded justify-center items-center py-2 px-3 hover:bg-surface-gray-2"
 					>
 						<img class="size-8" :src="app.logo" />
-						<div class="text-sm text-ink-gray-7" @click="app.onClick">
+						<div class="text-sm text-ink-gray-7">
 							{{ __(app.title) }}
 						</div>
 					</a>

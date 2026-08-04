@@ -17,7 +17,7 @@
 			]"
 			class="mb-6 max-w-4xl mx-auto"
 		/>
-		<div class="max-w-4xl mx-auto">
+		<div class="max-w-4xl mx-auto" :aria-busy="eventDetail.loading">
 			<div v-if="eventDetail.loading" class="flex items-center justify-center py-20">
 				<ProgressSpinner />
 			</div>

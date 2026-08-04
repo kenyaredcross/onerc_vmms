@@ -6,7 +6,7 @@
 	</div>
 
 	<div v-if="!isLoggedIn" class="text-center py-20">
-		<LogIn class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+		<LogIn class="w-16 h-16 text-gray-500 mx-auto mb-4" />
 		<h2 class="text-3xl font-bold text-gray-900 mb-4">{{ __("Login Required") }}</h2>
 		<p class="text-gray-600 mb-8">
 			{{ __("Please log in to submit your volunteer application.") }}
@@ -31,7 +31,7 @@
 		v-else-if="!alreadyApplied || (alreadyApplied && applicationStatus === 'Draft')"
 		class="min-h-screen flex flex-col"
 	>
-		<main class="flex-1 container mx-auto px-4 py-4">
+		<div class="flex-1 container mx-auto px-4 py-4">
 			<div class="bg-white shadow-lg rounded p-6">
 				<div class="w-full mb-10">
 					<div
@@ -139,7 +139,7 @@
 					</div>
 				</div>
 			</div>
-		</main>
+		</div>
 	</div>
 
 	<Dialog v-model="showSubmitDialog">

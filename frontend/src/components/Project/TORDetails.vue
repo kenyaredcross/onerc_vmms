@@ -330,6 +330,7 @@
 </template>
 
 <script setup>
+import { formatDate } from "@/utils/dayjs";
 import { sanitizeRichHtml } from "../../utils/sanitizeHtml";
 
 const props = defineProps({
@@ -342,15 +343,6 @@ const props = defineProps({
 		required: false,
 	},
 });
-
-const formatDate = (date) => {
-	if (!date) return "";
-	return new Date(date).toLocaleDateString(undefined, {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-};
 
 const formatCurrency = (val) => {
 	if (val == null || val === "") return "";

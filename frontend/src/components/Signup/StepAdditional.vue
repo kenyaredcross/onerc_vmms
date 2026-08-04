@@ -11,10 +11,12 @@
 					type="select"
 					:required="true"
 					:options="internetOptions"
+					v-bind="fieldProps('Access To Internet')"
 				/>
-				<p v-if="errors[1]?.['Access To Internet']" class="text-sm text-red-600 mt-1">
-					{{ errors[1]?.["Access To Internet"] }}
-				</p>
+				<FieldError
+					:id="errorId('Access To Internet')"
+					:message="errorFor('Access To Internet')"
+				/>
 			</div>
 			<div>
 				<Link
@@ -22,10 +24,9 @@
 					:label="__('Profession')"
 					:required="true"
 					doctype="Profession"
+					v-bind="fieldProps('Profession')"
 				/>
-				<p v-if="errors[1]?.['Profession']" class="text-sm text-red-600 mt-1">
-					{{ errors[1]?.["Profession"] }}
-				</p>
+				<FieldError :id="errorId('Profession')" :message="errorFor('Profession')" />
 			</div>
 			<div>
 				<FormControl
@@ -34,30 +35,33 @@
 					type="select"
 					:required="true"
 					:options="reasonsOptions"
+					v-bind="fieldProps('Reason To Join Krcs')"
 				/>
-				<p v-if="errors[1]?.['Reason To Join Krcs']" class="text-sm text-red-600 mt-1">
-					{{ errors[1]?.["Reason To Join Krcs"] }}
-				</p>
+				<FieldError
+					:id="errorId('Reason To Join Krcs')"
+					:message="errorFor('Reason To Join Krcs')"
+				/>
 			</div>
 			<div>
 				<MultiSelect
 					v-model="localModel.languages"
 					doctype="Volunteer Language"
 					:label="__('Languages')"
+					v-bind="fieldProps('Languages')"
 				/>
-				<p v-if="errors[1]?.['Languages']" class="text-sm text-red-600 mt-1">
-					{{ errors[1]?.["Languages"] }}
-				</p>
+				<FieldError :id="errorId('Languages')" :message="errorFor('Languages')" />
 			</div>
 			<div>
 				<MultiSelect
 					v-model="localModel.driving_licence"
 					:label="__('Driving Licence')"
 					doctype="Driving Licences"
+					v-bind="fieldProps('Driving Licence')"
 				/>
-				<p v-if="errors[1]?.['Driving Licence']" class="text-sm text-red-600 mt-1">
-					{{ errors[1]?.["Driving Licence"] }}
-				</p>
+				<FieldError
+					:id="errorId('Driving Licence')"
+					:message="errorFor('Driving Licence')"
+				/>
 			</div>
 
 			<div class="w-full md:col-span-2 space-y-6">
@@ -118,6 +122,7 @@
 <script setup>
 import Link from "@/components/Controls/Link.vue";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
+import { useFieldErrors } from "@/composables/useFieldErrors";
 import {
 	isDateValid,
 	isEmailValid,
@@ -127,6 +132,7 @@ import {
 import { FormControl } from "frappe-ui";
 import { computed, onMounted, watch } from "vue";
 import ChildTable from "../Controls/ChildTable.vue";
+import FieldError from "./FieldError.vue";
 
 const props = defineProps({
 	modelValue: { type: Object, required: true },
@@ -139,6 +145,8 @@ const localModel = computed({
 	get: () => props.modelValue,
 	set: (val) => emit("update:modelValue", val),
 });
+
+const { errorId, errorFor, fieldProps } = useFieldErrors(() => props.errors, 1);
 
 const requiredSimpleFields = ["access_to_internet", "profession", "reason_to_join_krcs"];
 

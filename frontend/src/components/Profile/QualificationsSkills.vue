@@ -36,105 +36,67 @@
 			</div>
 		</div>
 
-		<div class="border rounded-lg shadow-sm">
-			<div
-				class="flex justify-between items-center p-4 cursor-pointer"
-				@click="toggleCollapse('education')"
-			>
-				<h2 class="text-lg font-semibold">{{ __("Education & Work History") }}</h2>
-				<svg
-					:class="{ 'rotate-180': !isCollapsed.education }"
-					class="w-5 h-5 text-gray-500 transition-transform duration-200"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-					xmlns="http://www.w3.org/2000/svg"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M19 9l-7 7-7-7"
-					></path>
-				</svg>
-			</div>
-			<div v-show="!isCollapsed.education" class="p-4 pt-0 space-y-4">
-				<ChildTable
-					v-model="localForm.education"
-					doctype="Employee Education"
-					:label="__('Education History')"
-					:autoEditGrid="false"
-				/>
-				<ChildTable
-					v-model="localForm.work_experience"
-					doctype="Work Experience"
-					:label="__('Work Experience')"
-					:autoEditGrid="false"
-				/>
-				<ChildTable
-					v-model="localForm.work_references"
-					doctype="Professional Reference"
-					:label="__('Work References')"
-					:autoEditGrid="false"
-				/>
-			</div>
-		</div>
+		<CollapsibleSection
+			:title="__('Education & Work History')"
+			:default-open="true"
+			body-class="p-4 pt-0 space-y-4"
+		>
+			<ChildTable
+				v-model="localForm.education"
+				doctype="Employee Education"
+				:label="__('Education History')"
+				:autoEditGrid="false"
+			/>
+			<ChildTable
+				v-model="localForm.work_experience"
+				doctype="Work Experience"
+				:label="__('Work Experience')"
+				:autoEditGrid="false"
+			/>
+			<ChildTable
+				v-model="localForm.work_references"
+				doctype="Professional Reference"
+				:label="__('Work References')"
+				:autoEditGrid="false"
+			/>
+		</CollapsibleSection>
 
-		<div class="border rounded-lg shadow-sm">
-			<div
-				class="flex justify-between items-center p-4 cursor-pointer"
-				@click="toggleCollapse('skills')"
-			>
-				<h2 class="text-lg font-semibold">{{ __("Skills, Licences & Courses") }}</h2>
-				<svg
-					:class="{ 'rotate-180': !isCollapsed.skills }"
-					class="w-5 h-5 text-gray-500 transition-transform duration-200"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-					xmlns="http://www.w3.org/2000/svg"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M19 9l-7 7-7-7"
-					></path>
-				</svg>
-			</div>
-			<div v-show="!isCollapsed.skills" class="p-4 pt-0 space-y-4 grid grid-cols-1 gap-4">
-				<MultiSelect
-					v-model="localForm.driving_licence"
-					doctype="Driving Licences"
-					:label="__('Driving Licence Classes')"
-				/>
-				<ChildTable
-					v-model="localForm.additional_skills"
-					doctype="Additional Skill"
-					:label="__('Skills')"
-					:autoEditGrid="false"
-				/>
-				<ChildTable
-					v-model="localForm.courses"
-					doctype="User External Course"
-					:label="__('Certifications and Trainings')"
-					:autoEditGrid="false"
-				/>
-				<ChildTable
-					v-model="localForm.licences"
-					doctype="Personnel Licence"
-					:label="__('Professional Licences')"
-					:autoEditGrid="false"
-				/>
-			</div>
-		</div>
+		<CollapsibleSection
+			:title="__('Skills, Licences & Courses')"
+			body-class="p-4 pt-0 space-y-4 grid grid-cols-1 gap-4"
+		>
+			<MultiSelect
+				v-model="localForm.driving_licence"
+				doctype="Driving Licences"
+				:label="__('Driving Licence Classes')"
+			/>
+			<ChildTable
+				v-model="localForm.additional_skills"
+				doctype="Additional Skill"
+				:label="__('Skills')"
+				:autoEditGrid="false"
+			/>
+			<ChildTable
+				v-model="localForm.courses"
+				doctype="User External Course"
+				:label="__('Certifications and Trainings')"
+				:autoEditGrid="false"
+			/>
+			<ChildTable
+				v-model="localForm.licences"
+				doctype="Personnel Licence"
+				:label="__('Professional Licences')"
+				:autoEditGrid="false"
+			/>
+		</CollapsibleSection>
 		<div class="flex justify-end">
 			<button
 				v-if="hasChanges"
+				type="button"
 				@click="handleSave"
-				variant="solid"
-				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
-				:loading="saveInProgress"
+				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 disabled:active:scale-100"
+				:disabled="saveInProgress"
+				:aria-busy="saveInProgress"
 			>
 				<span>{{ __("Save") }}</span>
 				<svg
@@ -160,6 +122,7 @@
 </template>
 
 <script setup>
+import CollapsibleSection from "@/components/CollapsibleSection.vue";
 import ChildTable from "@/components/Controls/ChildTable.vue";
 import Link from "@/components/Controls/Link.vue";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
@@ -182,12 +145,6 @@ const saveInProgress = ref(false);
 const originalFormData = ref({});
 const showErrorDialog = ref(false);
 const flatErrors = ref([]);
-
-const isCollapsed = reactive({
-	education: false,
-	skills: true,
-	licences: true,
-});
 
 const localForm = reactive({
 	profession: null,
@@ -347,10 +304,6 @@ function getChangedFields() {
 const hasChanges = computed(() => {
 	return Object.keys(getChangedFields()).length > 0;
 });
-
-function toggleCollapse(section) {
-	isCollapsed[section] = !isCollapsed[section];
-}
 
 const saveUserResource = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.update_user_details",

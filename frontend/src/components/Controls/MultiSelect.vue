@@ -29,6 +29,8 @@
 							"
 							@keydown.delete.capture.stop="removeLastValue"
 							:placeholder="__(props.label) || __('Select...')"
+							:aria-invalid="attrs['aria-invalid']"
+							:aria-describedby="attrs['aria-describedby']"
 						/>
 
 						<div
@@ -135,10 +137,12 @@
 <script setup>
 import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/vue";
 import { createResource, Popover, Button } from "frappe-ui";
-import { ref, computed, nextTick, watch, onMounted } from "vue";
+import { ref, computed, nextTick, useAttrs, watch, onMounted } from "vue";
 import { watchDebounced } from "@vueuse/core";
 import { X, Plus } from "lucide-vue-next";
 import CreateNewEntryDialog from "../Modals/CreateNewEntryDialog.vue";
+
+const attrs = useAttrs();
 
 const props = defineProps({
 	label: String,

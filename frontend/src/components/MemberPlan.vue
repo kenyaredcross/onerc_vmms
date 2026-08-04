@@ -45,7 +45,7 @@
 									{{ __("Started") }}
 								</p>
 								<p class="text-sm font-semibold">
-									{{ __(formatDate(membership.from_date)) }}
+									{{ formatDate(membership.from_date) }}
 								</p>
 							</div>
 							<div v-if="membership.type_details?.billing_cycle !== 'One Off'">
@@ -55,7 +55,7 @@
 									{{ __("Renewal") }}
 								</p>
 								<p class="text-sm font-semibold">
-									{{ __(formatDate(membership.to_date)) }}
+									{{ formatDate(membership.to_date) }}
 								</p>
 							</div>
 						</div>
@@ -169,6 +169,7 @@
 </template>
 
 <script lang="ts" setup>
+import { formatDate } from "@/utils/dayjs";
 import { Badge, Button, createResource, ErrorMessage, Popover } from "frappe-ui";
 import { reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
@@ -204,16 +205,6 @@ const membershipList = createResource<Membership[]>({
 	auto: true,
 	cache: ["currentMembership"],
 });
-
-function formatDate(dateStr?: string): string {
-	if (!dateStr) return "";
-	const date = new Date(dateStr);
-	return date.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
-}
 
 const CERTIFICATE_ENDPOINT =
 	"onerc_vmms.volunteer_and_member_management.api.membership.download_membership_certificate";

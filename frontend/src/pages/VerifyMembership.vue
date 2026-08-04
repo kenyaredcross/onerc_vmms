@@ -73,7 +73,7 @@
 				<Button><RouterLink to="/"></RouterLink></Button>
 			</div>
 
-			<div class="w-full max-w-md">
+			<div class="w-full max-w-md" :aria-busy="verification.loading">
 				<div v-if="verification.loading" class="flex flex-col items-center gap-3 py-20">
 					<ProgressSpinner :message="'Verifying Membership'" />
 				</div>

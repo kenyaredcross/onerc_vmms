@@ -34,7 +34,7 @@
 				class="hidden"
 			/>
 			<div class="text-center mb-4 pointer-events-none">
-				<Cloud class="mx-auto h-12 w-12 text-gray-400" />
+				<Cloud class="mx-auto h-12 w-12 text-gray-500" />
 				<div class="mt-4 text-sm text-gray-600">
 					<span class="font-medium text-blue-600">Click to upload</span>
 					or drag and drop

@@ -43,7 +43,7 @@
 						<p class="text-xs text-gray-500">
 							{{ __("Posted On:") }}
 							<span class="font-semibold text-gray-900">{{
-								__(dayjs(job.posted_on).format("MMM D"))
+								dayjs(job.posted_on).format("MMM D")
 							}}</span>
 						</p>
 					</div>
@@ -59,7 +59,7 @@
 						<p class="text-xs text-gray-500">
 							{{ __("Closes On:") }}
 							<span class="font-semibold text-gray-900">{{
-								__(dayjs(job.closes_on).format("MMM D"))
+								dayjs(job.closes_on).format("MMM D")
 							}}</span>
 						</p>
 					</div>
@@ -87,9 +87,7 @@
 			<div class="flex items-center justify-between gap-4">
 				<div v-if="job.creation" class="flex items-center gap-1.5 text-xs text-gray-500">
 					<History class="w-3 h-3" />
-					<span
-						>{{ __(dayjs().diff(dayjs(job.creation), "day")) }}{{ __("d ago") }}</span
-					>
+					<span>{{ dayjs().diff(dayjs(job.creation), "day") }}{{ __("d ago") }}</span>
 				</div>
 
 				<div

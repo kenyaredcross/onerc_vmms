@@ -28,7 +28,7 @@
 					<div class="text-2xl font-bold text-gray-900">
 						{{ ticket.price }}
 					</div>
-					<div class="text-xs text-gray-400 font-medium">
+					<div class="text-xs text-gray-500 font-medium">
 						{{ ticket.currency }}
 					</div>
 				</div>
@@ -36,7 +36,13 @@
 		</div>
 
 		<div class="flex justify-end mt-4">
-			<Button class="w-1/2 flex items-center gap-2" theme="red" variant="solid">
+			<Button
+				class="w-1/2 flex items-center gap-2"
+				theme="red"
+				variant="solid"
+				tabindex="-1"
+				aria-hidden="true"
+			>
 				<ChevronRight />
 			</Button>
 		</div>

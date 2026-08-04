@@ -1,8 +1,8 @@
 <template>
 	<div class="flex h-full flex-col gap-2 relative">
-		<div class="h-full pb-10 mb-5" id="scrollContainer">
+		<main id="scrollContainer" tabindex="-1" class="h-full pb-10 mb-5 focus:outline-none">
 			<slot />
-		</div>
+		</main>
 
 		<div class="relative z-20">
 			<div
@@ -10,10 +10,11 @@
 				v-if="showMenu"
 				ref="menu"
 			>
-				<div
+				<button
 					v-for="link in otherLinks"
 					:key="link.label"
-					class="flex items-center space-x-2 cursor-pointer hover:underline"
+					type="button"
+					class="w-full text-left flex items-center space-x-2 cursor-pointer hover:underline"
 					@click="handleClick(link)"
 				>
 					<component :is="icons[link.icon]" class="h-4 w-4 stroke-1.5 text-red-600" />
@@ -23,11 +24,12 @@
 						:src="link.logo"
 						class="h-4 w-4 object-contain"
 					/>
-					<div class="">{{ __(link.name) }}</div>
-				</div>
+					<span>{{ __(link.name) }}</span>
+				</button>
 			</div>
 
-			<div
+			<nav
+				:aria-label="__('Main')"
 				class="fixed bottom-0 left-0 w-full flex items-center justify-between border-t border-outline-gray-2 bg-surface-white standalone:pb-4 z-10"
 			>
 				<button
@@ -54,7 +56,7 @@
 					<component :is="icons['List']" class="h-6 w-6 stroke-1.5 text-ink-gray-5" />
 					<span class="text-xs">{{ __("More") }}</span>
 				</button>
-			</div>
+			</nav>
 		</div>
 	</div>
 </template>

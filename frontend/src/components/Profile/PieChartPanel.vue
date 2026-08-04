@@ -4,8 +4,9 @@
 			<h3 class="text-lg font-semibold text-gray-800">Type Distribution</h3>
 			<select
 				v-model="field"
+				:aria-label="__('Group distribution by')"
 				@change="updateChart"
-				class="text-sm border border-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+				class="text-sm border border-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-red-500 focus:border-transparent"
 			>
 				<option value="type">Type</option>
 				<option value="reference_doctype">Reference Doctype</option>
@@ -15,15 +16,14 @@
 		<div class="">
 			<PieChartComponent :chart-data="chartData" v-if="!loading" />
 			<div v-else class="flex items-center justify-center h-full">
-				<div
-					class="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500"
-				></div>
+				<ProgressSpinner size="md" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
+import ProgressSpinner from "../Common/ProgressSpinner.vue";
 import { createResource } from "frappe-ui";
 import { onMounted, ref } from "vue";
 import PieChartComponent from "./PieChartComponent.vue";

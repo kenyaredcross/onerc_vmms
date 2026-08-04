@@ -4,7 +4,7 @@
 			<h1 class="text-3xl font-bold">{{ __("Events") }}</h1>
 		</header>
 	</div>
-	<div class="md:mx-auto">
+	<div class="md:mx-auto" :aria-busy="events.loading">
 		<div
 			class="md:w-1/2 mx-auto flex flex-col md:flex-row items-center gap-2 justify-start mb-2 px-4"
 		>

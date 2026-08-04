@@ -18,7 +18,7 @@
 			</div>
 		</header>
 
-		<main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+		<div class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
 			<div class="flex justify-start mb-6 lg:mb-8">
 				<TabButtons
 					:buttons="jobTabs"
@@ -43,7 +43,7 @@
 							@input="updateJobs"
 						>
 							<template #prefix>
-								<Search class="w-5 h-5 text-gray-400" />
+								<Search class="w-5 h-5 text-gray-500" />
 							</template>
 						</FormControl>
 						<Link
@@ -115,7 +115,7 @@
 			<div v-else-if="currentTab === 'My Applications'">
 				<JobApplication />
 			</div>
-		</main>
+		</div>
 	</div>
 </template>
 

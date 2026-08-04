@@ -8,14 +8,14 @@
 				{{ __("Please create an account to submit your application") }}
 			</p>
 
-			<div
-				variant="solid"
+			<button
+				type="button"
 				class="bg-red-600 hover:bg-red-700 w-fit text-white px-8 py-3 flex items-center gap-3 rounded-xl shadow-lg cursor-pointer"
 				@click="redirectToLogin"
 			>
 				<LogIn class="w-5 h-5" />
 				{{ __("Sign Up") }}
-			</div>
+			</button>
 		</div>
 		<div
 			v-else-if="isApplied"
