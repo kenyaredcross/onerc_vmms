@@ -68,6 +68,7 @@
 </template>
 
 <script setup>
+import { formatDate as formatDisplayDate } from "@/utils/dayjs";
 import { Badge } from "frappe-ui";
 
 const props = defineProps({
@@ -96,12 +97,5 @@ const getPriorityTheme = (priority) => {
 	return priorityMap[priority] || "gray";
 };
 
-const formatDate = (dateString) => {
-	if (!dateString) return "Not set";
-	return new Date(dateString).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-};
+const formatDate = (dateString) => formatDisplayDate(dateString) || "Not set";
 </script>

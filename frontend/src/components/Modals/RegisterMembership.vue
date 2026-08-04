@@ -7,257 +7,269 @@
 		</template>
 
 		<template #body-content>
-			<ProgressSpinner
-				v-if="membershipEligibility.loading"
-				:message="'Processing membership validity'"
-			/>
-			<ErrorMessage
-				v-else-if="membershipEligibility.error"
-				:message="membershipEligibility.error"
-			/>
-			<div v-else-if="!membershipEligibility.data.eligible">
-				<div class="p-6 rounded-lg shadow-sm">
-					<div class="flex items-start space-x-3">
-						<div class="flex-shrink-0">
-							<AlertTriangle class="w-6 h-6 text-yellow-600" />
-						</div>
-						<div>
-							<h4 class="text-lg font-semibold text-yellow-800 mb-2">
-								Profile Incomplete
-							</h4>
-							<p class="text-yellow-700 mb-3">
-								To become a member, please complete your profile with all required
-								information. This ensures we can properly process your membership
-								application.
-							</p>
-							<div class="mb-2">
-								<p class="text-base font-semibold text-yellow-800">
-									Missing Fields:
-								</p>
-								<ul class="list-disc list-inside text-yellow-700">
-									<li
-										v-for="field in membershipEligibility.data.missing_fields"
-										:key="field"
-									>
-										{{
-											__(field).charAt(0).toUpperCase() + __(field).slice(1)
-										}}
-									</li>
-								</ul>
+			<div :aria-busy="membershipEligibility.loading">
+				<ProgressSpinner
+					v-if="membershipEligibility.loading"
+					:message="'Processing membership validity'"
+				/>
+				<ErrorMessage
+					v-else-if="membershipEligibility.error"
+					:message="membershipEligibility.error"
+				/>
+				<div v-else-if="!membershipEligibility.data.eligible">
+					<div class="p-6 rounded-lg shadow-sm">
+						<div class="flex items-start space-x-3">
+							<div class="flex-shrink-0">
+								<AlertTriangle class="w-6 h-6 text-yellow-600" />
 							</div>
-							<Button
-								variant="solid"
-								theme="red"
-								@click="router.push({ name: 'Profile' })"
-							>
-								Complete Profile
-							</Button>
+							<div>
+								<h4 class="text-lg font-semibold text-yellow-800 mb-2">
+									Profile Incomplete
+								</h4>
+								<p class="text-yellow-700 mb-3">
+									To become a member, please complete your profile with all
+									required information. This ensures we can properly process your
+									membership application.
+								</p>
+								<div class="mb-2">
+									<p class="text-base font-semibold text-yellow-800">
+										Missing Fields:
+									</p>
+									<ul class="list-disc list-inside text-yellow-700">
+										<li
+											v-for="field in membershipEligibility.data
+												.missing_fields"
+											:key="field"
+										>
+											{{
+												__(field).charAt(0).toUpperCase() +
+												__(field).slice(1)
+											}}
+										</li>
+									</ul>
+								</div>
+								<Button
+									variant="solid"
+									theme="red"
+									@click="router.push({ name: 'Profile' })"
+								>
+									Complete Profile
+								</Button>
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-			<div v-else>
-				<div v-if="applicationSubmitted" class="py-4">
-					<PaymentStatus
-						title="Membership Application"
-						message="Your application has been submitted for verification"
-						returnUrl="/vmms/membership"
-						urlName="Membership"
-						@close="registerDialog = false"
-					/>
-				</div>
-				<div v-else class="py-4">
-					<form action="" @submit.prevent="submit">
-						<div
-							class="grid grid-cols-1 gap-4 mb-6 p-4 bg-surface-red-4 border border-outline-red-1 rounded-2xl shadow-sm"
-							:class="{ 'sm:grid-cols-2': !isExistingMember }"
-						>
-							<div class="space-y-1">
-								<FormControl
-									type="text"
-									label="Membership Type"
-									placeholder="Select membership type"
-									class="w-full text-sm text-ink-gray-8"
-									v-model="membershipForm.membership_type"
-									:value="props.membership_type"
-									readonly
-								/>
+				<div v-else>
+					<div v-if="applicationSubmitted" class="py-4">
+						<PaymentStatus
+							title="Membership Application"
+							message="Your application has been submitted for verification"
+							returnUrl="/vmms/membership"
+							urlName="Membership"
+							@close="registerDialog = false"
+						/>
+					</div>
+					<div v-else class="py-4">
+						<form action="" @submit.prevent="submit">
+							<div
+								class="grid grid-cols-1 gap-4 mb-6 p-4 bg-surface-red-4 border border-outline-red-1 rounded-2xl shadow-sm"
+								:class="{ 'sm:grid-cols-2': !isExistingMember }"
+							>
+								<div class="space-y-1">
+									<FormControl
+										type="text"
+										label="Membership Type"
+										placeholder="Select membership type"
+										class="w-full text-sm text-ink-gray-8"
+										v-model="membershipForm.membership_type"
+										:value="props.membership_type"
+										readonly
+									/>
+								</div>
+
+								<div v-if="!isExistingMember" class="space-y-1">
+									<FormControl
+										type="number"
+										label="Amount"
+										placeholder="Enter amount"
+										class="w-full text-sm"
+										v-model="membershipForm.amount"
+										:value="props.amount"
+										readonly
+									/>
+								</div>
 							</div>
 
-							<div v-if="!isExistingMember" class="space-y-1">
-								<FormControl
-									type="number"
-									label="Amount"
-									placeholder="Enter amount"
-									class="w-full text-sm"
-									v-model="membershipForm.amount"
-									:value="props.amount"
-									readonly
+							<div v-if="!props.is_renew" class="mb-4 flex items-center gap-2">
+								<input
+									id="is_existing_member"
+									type="checkbox"
+									v-model="isExistingMember"
+									class="h-4 w-4 rounded border-outline-gray-3 text-ink-red-3 focus:ring-outline-red-3"
 								/>
-							</div>
-						</div>
-
-						<div v-if="!props.is_renew" class="mb-4 flex items-center gap-2">
-							<input
-								id="is_existing_member"
-								type="checkbox"
-								v-model="isExistingMember"
-								class="h-4 w-4 rounded border-outline-gray-3 text-ink-red-3 focus:ring-outline-red-3"
-							/>
-							<label
-								for="is_existing_member"
-								class="text-sm font-medium text-ink-gray-7"
-							>
-								{{ __("I am an existing member (Not registered on portal)") }}
-							</label>
-						</div>
-
-						<FormControl
-							v-if="!is_renew"
-							type="autocomplete"
-							label="Branch / County"
-							placeholder="Select branch or county to register with"
-							class="w-full mb-4"
-							:options="branches.data"
-							v-model="branch"
-						/>
-
-						<FormControl
-							v-if="is_renew"
-							type="text"
-							label="Branch / County"
-							placeholder="Select branch or county to register with"
-							class="w-full mb-4"
-							:value="props.renew_branch"
-							v-model="branch"
-							readonly
-							required
-						/>
-
-						<div v-if="isExistingMember" class="space-y-2">
-							<p class="text-sm font-medium text-ink-gray-5">
-								{{ __("Proof of Membership (Receipt / Certificate / Card)") }}
-							</p>
-							<FileUploader
-								:fileTypes="['.jpg', '.jpeg', '.png', '.pdf']"
-								:uploadArgs="{ private: true }"
-								:validateFile="validateProofFile"
-								@success="onProofUploaded"
-							>
-								<template
-									v-slot="{ file, uploading, progress, error, openFileSelector }"
+								<label
+									for="is_existing_member"
+									class="text-sm font-medium text-ink-gray-7"
 								>
-									<div class="flex items-center gap-3">
-										<Button
-											type="button"
-											variant="subtle"
-											:loading="uploading"
-											@click="openFileSelector"
-										>
-											{{
-												uploading
-													? `${__("Uploading")} ${progress}%`
-													: membershipForm.proof_attachment
-													? __("Replace File")
-													: __("Upload File")
-											}}
-										</Button>
-										<span
-											v-if="membershipForm.proof_attachment && !uploading"
-											class="text-sm text-ink-gray-6 truncate"
-										>
-											{{
-												membershipForm.proof_attachment.file_name ||
-												file?.name
-											}}
-										</span>
-									</div>
-									<ErrorMessage v-if="error" class="mt-2" :message="error" />
-								</template>
-							</FileUploader>
-							<p class="text-xs text-ink-gray-5">
-								{{
-									__(
-										"No payment is required. Your application will be reviewed and activated once your proof of membership is verified."
-									)
-								}}
-							</p>
-						</div>
+									{{ __("I am an existing member (Not registered on portal)") }}
+								</label>
+							</div>
 
-						<div v-else>
-							<ProgressSpinner
-								v-if="validateBranchPGW.loading"
-								:message="'Validating payment for branch selection...'"
+							<FormControl
+								v-if="!is_renew"
+								type="autocomplete"
+								label="Branch / County"
+								placeholder="Select branch or county to register with"
+								class="w-full mb-4"
+								:options="branches.data"
+								v-model="branch"
 							/>
-							<ErrorMessage
-								v-else-if="validateBranchPGW.error"
-								:message="validateBranchPGW.error"
-							/>
-						</div>
 
-						<div v-show="showPaymentOptions && !isExistingMember">
-							<ProgressSpinner
-								v-if="paymentGateways.loading"
-								:message="'Fetching Payment Methods'"
+							<FormControl
+								v-if="is_renew"
+								type="text"
+								label="Branch / County"
+								placeholder="Select branch or county to register with"
+								class="w-full mb-4"
+								:value="props.renew_branch"
+								v-model="branch"
+								readonly
+								required
 							/>
-							<ErrorMessage
-								v-else-if="paymentGateways.error"
-								:message="paymentGateways.error"
-							/>
-							<div v-else-if="paymentGateways.data">
-								<p class="mt-4 mb-2 text-sm font-medium text-ink-gray-5">
-									{{ __("Select a Payment Method:") }}
+
+							<div v-if="isExistingMember" class="space-y-2">
+								<p class="text-sm font-medium text-ink-gray-5">
+									{{ __("Proof of Membership (Receipt / Certificate / Card)") }}
 								</p>
-								<ul class="space-y-2">
-									<li
-										v-for="pgw in paymentGateways.data"
-										:key="pgw"
-										@click="membershipForm.payment_gateway = pgw"
-										class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200"
-										:class="
-											membershipForm.payment_gateway === pgw
-												? 'border-outline-red-3 bg-surface-red-1 text-ink-red-3 font-semibold'
-												: 'border-outline-gray-2 bg-surface-white text-ink-gray-7 hover:border-outline-red-2 hover:bg-surface-red-1'
-										"
+								<FileUploader
+									:fileTypes="['.jpg', '.jpeg', '.png', '.pdf']"
+									:uploadArgs="{ private: true }"
+									:validateFile="validateProofFile"
+									@success="onProofUploaded"
+								>
+									<template
+										v-slot="{
+											file,
+											uploading,
+											progress,
+											error,
+											openFileSelector,
+										}"
 									>
-										<span
-											class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+										<div class="flex items-center gap-3">
+											<Button
+												type="button"
+												variant="subtle"
+												:loading="uploading"
+												@click="openFileSelector"
+											>
+												{{
+													uploading
+														? `${__("Uploading")} ${progress}%`
+														: membershipForm.proof_attachment
+														? __("Replace File")
+														: __("Upload File")
+												}}
+											</Button>
+											<span
+												v-if="
+													membershipForm.proof_attachment && !uploading
+												"
+												class="text-sm text-ink-gray-6 truncate"
+											>
+												{{
+													membershipForm.proof_attachment.file_name ||
+													file?.name
+												}}
+											</span>
+										</div>
+										<ErrorMessage v-if="error" class="mt-2" :message="error" />
+									</template>
+								</FileUploader>
+								<p class="text-xs text-ink-gray-5">
+									{{
+										__(
+											"No payment is required. Your application will be reviewed and activated once your proof of membership is verified."
+										)
+									}}
+								</p>
+							</div>
+
+							<div v-else>
+								<ProgressSpinner
+									v-if="validateBranchPGW.loading"
+									:message="'Validating payment for branch selection...'"
+								/>
+								<ErrorMessage
+									v-else-if="validateBranchPGW.error"
+									:message="validateBranchPGW.error"
+								/>
+							</div>
+
+							<div v-show="showPaymentOptions && !isExistingMember">
+								<ProgressSpinner
+									v-if="paymentGateways.loading"
+									:message="'Fetching Payment Methods'"
+								/>
+								<ErrorMessage
+									v-else-if="paymentGateways.error"
+									:message="paymentGateways.error"
+								/>
+								<div v-else-if="paymentGateways.data">
+									<p class="mt-4 mb-2 text-sm font-medium text-ink-gray-5">
+										{{ __("Select a Payment Method:") }}
+									</p>
+									<ul class="space-y-2">
+										<li
+											v-for="pgw in paymentGateways.data"
+											:key="pgw"
+											@click="membershipForm.payment_gateway = pgw"
+											class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200"
 											:class="
 												membershipForm.payment_gateway === pgw
-													? 'border-outline-red-3'
-													: 'border-outline-gray-3'
+													? 'border-outline-red-3 bg-surface-red-1 text-ink-red-3 font-semibold'
+													: 'border-outline-gray-2 bg-surface-white text-ink-gray-7 hover:border-outline-red-2 hover:bg-surface-red-1'
 											"
 										>
 											<span
-												v-if="membershipForm.payment_gateway === pgw"
-												class="w-2 h-2 rounded-full bg-surface-red-4"
-											></span>
-										</span>
-										{{ __(pgw) }}
-									</li>
-								</ul>
+												class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+												:class="
+													membershipForm.payment_gateway === pgw
+														? 'border-outline-red-3'
+														: 'border-outline-gray-3'
+												"
+											>
+												<span
+													v-if="membershipForm.payment_gateway === pgw"
+													class="w-2 h-2 rounded-full bg-surface-red-4"
+												></span>
+											</span>
+											{{ __(pgw) }}
+										</li>
+									</ul>
+								</div>
 							</div>
-						</div>
 
-						<div class="mt-4 gap-2 flex items-end justify-end">
-							<Button
-								type="button"
-								variant="solid"
-								theme="red"
-								:loading="createMembership.loading"
-								class="rounded-lg px-6"
-								@click="submit"
-							>
-								{{ isExistingMember ? __("Apply") : __("Proceed") }}
-							</Button>
-						</div>
-						<ErrorMessage v-if="formError" class="mt-2" :message="formError" />
-						<ErrorMessage
-							v-else-if="createMembership.error"
-							class="mt-2"
-							:message="createMembership.error"
-						/>
-					</form>
+							<div class="mt-4 gap-2 flex items-end justify-end">
+								<Button
+									type="button"
+									variant="solid"
+									theme="red"
+									:loading="createMembership.loading"
+									class="rounded-lg px-6"
+									@click="submit"
+								>
+									{{ isExistingMember ? __("Apply") : __("Proceed") }}
+								</Button>
+							</div>
+							<ErrorMessage v-if="formError" class="mt-2" :message="formError" />
+							<ErrorMessage
+								v-else-if="createMembership.error"
+								class="mt-2"
+								:message="createMembership.error"
+							/>
+						</form>
+					</div>
 				</div>
 			</div>
 		</template>

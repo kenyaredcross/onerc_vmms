@@ -3,7 +3,7 @@
 		<PendingApproval />
 	</div>
 	<div v-else class="min-h-screen flex flex-col">
-		<main class="flex-1 container mx-auto px-6 py-10">
+		<div class="flex-1 container mx-auto px-6 py-10">
 			<div class="bg-surface-white shadow-lg rounded-2xl p-8">
 				<div v-if="loading" class="text-center py-10">
 					<p>{{ __("Loading application...") }}</p>
@@ -243,7 +243,7 @@
 					</div>
 				</div>
 			</div>
-		</main>
+		</div>
 	</div>
 </template>
 

@@ -1,14 +1,19 @@
 <template>
 	<Dialog v-model="setAvailability" :options="{ size: '5xl' }">
 		<template #body-title>
-			<h3 class="text-xl font-bold text-ink-gray-8">Set Your Weekly Availability</h3>
+			<h3 class="text-xl font-bold text-ink-gray-8">
+				{{ __("Set Your Weekly Availability") }}
+			</h3>
 		</template>
 
 		<template #body-content>
 			<div class="p-4 bg-surface-red-4 rounded-lg mb-6">
 				<p class="text-ink-red-4">
-					Select the shifts you're available for each day of the week. This will be your
-					ongoing weekly availability pattern.
+					{{
+						__(
+							"Select the shifts you're available for each day of the week. This will be your ongoing weekly availability pattern."
+						)
+					}}
 				</p>
 			</div>
 
@@ -16,12 +21,13 @@
 				<table class="w-full border-collapse border">
 					<thead>
 						<tr>
-							<th class="border p-3 text-left font-bold text-ink-gray-8">
-								Days/Shifts
+							<th scope="col" class="border p-3 text-left font-bold text-ink-gray-8">
+								{{ __("Days/Shifts") }}
 							</th>
 							<th
 								v-for="shift in shifts.data"
 								:key="shift.name"
+								scope="col"
 								class="border p-3 text-center font-bold text-ink-gray-8"
 							>
 								<div>
@@ -36,9 +42,12 @@
 					</thead>
 					<tbody>
 						<tr v-for="day in daysList" :key="day.value">
-							<td class="border p-3 font-semibold text-ink-gray-8">
+							<th
+								scope="row"
+								class="border p-3 text-left font-semibold text-ink-gray-8"
+							>
 								{{ day.label }}
-							</td>
+							</th>
 							<td
 								v-for="shift in shifts.data"
 								:key="`${day.value}-${shift.name}`"
@@ -49,6 +58,7 @@
 									:id="`${day.value}-${shift.name}`"
 									v-model="availability[day.value]"
 									:value="shift.name"
+									:aria-label="`${day.label} ${shift.name}`"
 									class="w-6 h-6 focus:ring-red-500 text-red-600 rounded"
 								/>
 							</td>
@@ -65,21 +75,23 @@
 					class="w-5 h-5 text-red-600 rounded focus:ring-red-500"
 				/>
 				<label for="available_on_holidays" class="text-ink-gray-1-800 text-base">
-					Available on Holidays
+					{{ __("Available on Holidays") }}
 				</label>
 			</div>
 
 			<div class="mt-4 flex flex-wrap gap-2">
 				<Button variant="outline" theme="red" @click="selectAllShifts">
-					Select All
+					{{ __("Select All") }}
 				</Button>
-				<Button variant="outline" theme="red" @click="clearAllShifts"> Clear All </Button>
+				<Button variant="outline" theme="red" @click="clearAllShifts">
+					{{ __("Clear All") }}
+				</Button>
 			</div>
 		</template>
 
 		<template #actions>
 			<div class="flex flex-row justify-end space-x-2 w-full items-center">
-				<Button variant="outline" theme="gray" @click="cancel"> Close </Button>
+				<Button variant="outline" theme="gray" @click="cancel">{{ __("Close") }}</Button>
 				<Button
 					variant="solid"
 					theme="red"
@@ -87,7 +99,7 @@
 					@click="submitAvailability"
 					:disabled="totalSelectedShifts === 0 && !availableOnHolidays"
 				>
-					Save
+					{{ __("Save") }}
 				</Button>
 			</div>
 			<ErrorMessage :message="newSlot.error" class="mt-2 text-center" />

@@ -7,6 +7,7 @@
 				<div class="flex items-center gap-2">
 					<input
 						type="checkbox"
+						:aria-label="__('Select all rows')"
 						@change="toggleSelectAll"
 						:checked="allSelected"
 						:disabled="rowsRef.length === 0"
@@ -73,6 +74,7 @@
 						<div class="flex items-center gap-2">
 							<input
 								type="checkbox"
+								:aria-label="`${__('Select row')} ${rowIndex + 1}`"
 								:checked="selectedRows.has(rowIndex)"
 								@change="toggleRowSelection(rowIndex)"
 								class="cursor-pointer"
@@ -84,6 +86,7 @@
 						<Button
 							variant="ghost"
 							size="sm"
+							:aria-label="`${__('Edit row')} ${rowIndex + 1}`"
 							@click.stop="openEditModal(rowIndex)"
 							class="!p-1"
 						>
@@ -117,7 +120,19 @@
 
 							<div
 								class="w-full cursor-pointer min-h-[32px] flex items-center"
+								:role="field.read_only ? null : 'button'"
+								:tabindex="field.read_only ? null : 0"
 								@click="
+									field.read_only
+										? null
+										: startEditing(rowIndex, field.fieldname)
+								"
+								@keydown.enter.prevent="
+									field.read_only
+										? null
+										: startEditing(rowIndex, field.fieldname)
+								"
+								@keydown.space.prevent="
 									field.read_only
 										? null
 										: startEditing(rowIndex, field.fieldname)
@@ -141,6 +156,7 @@
 									<template v-if="field.fieldtype === 'Check'">
 										<input
 											type="checkbox"
+											:aria-label="__(field.label)"
 											:checked="row[field.fieldname]"
 											disabled
 											class="cursor-pointer"
@@ -254,6 +270,7 @@
 					<div class="w-8 flex items-center justify-center">
 						<input
 							type="checkbox"
+							:aria-label="__('Select all rows')"
 							@change="toggleSelectAll"
 							:checked="allSelected"
 							:disabled="rowsRef.length === 0"
@@ -290,6 +307,7 @@
 					<div class="w-8 flex items-center justify-center">
 						<input
 							type="checkbox"
+							:aria-label="`${__('Select row')} ${rowIndex + 1}`"
 							:checked="selectedRows.has(rowIndex)"
 							@change="toggleRowSelection(rowIndex)"
 							class="cursor-pointer"
@@ -301,7 +319,15 @@
 							v-show="!isFieldHidden(field, row)"
 							class="w-full"
 							:class="{ 'cursor-pointer': !field.read_only }"
+							:role="field.read_only ? null : 'button'"
+							:tabindex="field.read_only ? null : 0"
 							@click="
+								field.read_only ? null : startEditing(rowIndex, field.fieldname)
+							"
+							@keydown.enter.prevent="
+								field.read_only ? null : startEditing(rowIndex, field.fieldname)
+							"
+							@keydown.space.prevent="
 								field.read_only ? null : startEditing(rowIndex, field.fieldname)
 							"
 						>
@@ -333,6 +359,7 @@
 								<template v-if="field.fieldtype === 'Check'">
 									<input
 										type="checkbox"
+										:aria-label="__(field.label)"
 										:checked="row[field.fieldname]"
 										disabled
 										class="cursor-pointer"
@@ -372,7 +399,12 @@
 					<div
 						class="flex items-center justify-end opacity-90 group-hover:opacity-100 transition-opacity"
 					>
-						<Button variant="ghost" size="sm" @click.stop="openEditModal(rowIndex)">
+						<Button
+							variant="ghost"
+							size="sm"
+							:aria-label="`${__('Edit row')} ${rowIndex + 1}`"
+							@click.stop="openEditModal(rowIndex)"
+						>
 							<Edit class="size-4 text-ink-gray-7 stroke-1.5" />
 						</Button>
 					</div>
@@ -440,29 +472,15 @@
 			</div>
 		</div>
 
-		<div
-			v-if="editModalOpen"
-			class="fixed inset-0 z-10 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4"
-			@click.self="closeEditModal"
-		>
-			<div
-				class="bg-surface-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col m-2"
-			>
-				<div
-					class="flex items-center justify-between p-3 sm:p-4 border-b bg-surface-gray-1"
-				>
-					<h3 class="text-base sm:text-lg font-semibold text-ink-gray-7">
-						{{ __("Edit Row") }} {{ (editModalRowIndex || 0) + 1 }}
-					</h3>
-					<button
-						@click="cancelEditModal"
-						class="text-ink-gray-5 hover:text-ink-gray-7 transition-colors p-1"
-					>
-						<X class="size-4 sm:size-5" />
-					</button>
-				</div>
+		<Dialog v-model="editModalOpenModel" :options="{ size: '4xl' }">
+			<template #body-title>
+				<h3 class="text-base sm:text-lg font-semibold text-ink-gray-7">
+					{{ __("Edit Row") }} {{ (editModalRowIndex || 0) + 1 }}
+				</h3>
+			</template>
 
-				<div class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+			<template #body-content>
+				<div class="max-h-[70vh] overflow-y-auto">
 					<template
 						v-for="(section, sIndex) in getModalLayoutForRow(editModalData)"
 						:key="sIndex"
@@ -572,10 +590,10 @@
 						</div>
 					</template>
 				</div>
+			</template>
 
-				<div
-					class="flex items-center justify-end gap-2 p-3 sm:p-4 border-t bg-surface-gray-1 flex-wrap"
-				>
+			<template #actions>
+				<div class="flex items-center justify-end gap-2 flex-wrap">
 					<Button
 						@click="cancelEditModal"
 						variant="ghost"
@@ -593,13 +611,21 @@
 						{{ __("Save Changes") }}
 					</Button>
 				</div>
-			</div>
-		</div>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup>
-import { Button, createResource, FormControl, Textarea, TextEditor, TextInput } from "frappe-ui";
+import {
+	Button,
+	createResource,
+	Dialog,
+	FormControl,
+	Textarea,
+	TextEditor,
+	TextInput,
+} from "frappe-ui";
 import { Copy, Edit, Plus, Trash2, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import LinkControl from "./Link.vue";
@@ -624,6 +650,13 @@ const editingRow = ref(null);
 const editingField = ref(null);
 const editInputRef = ref(null);
 const editModalOpen = ref(false);
+const editModalOpenModel = computed({
+	get: () => editModalOpen.value,
+	set: (val) => {
+		if (val) editModalOpen.value = true;
+		else closeEditModal();
+	},
+});
 const editModalRowIndex = ref(null);
 const editModalData = ref({});
 const isUpdating = ref(false);

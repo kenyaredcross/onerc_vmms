@@ -154,7 +154,7 @@
 			>
 				<History class="w-3.5 h-3.5" />
 				<span>
-					{{ __("Created") }} {{ __(dayjs().diff(dayjs(project.creation), "day"))
+					{{ __("Created") }} {{ dayjs().diff(dayjs(project.creation), "day")
 					}}{{ __("d ago") }}
 				</span>
 			</div>

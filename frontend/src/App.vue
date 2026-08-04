@@ -1,5 +1,13 @@
 <template>
 	<FrappeUIProvider>
+		<a
+			href="#scrollContainer"
+			class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-surface-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-ink-gray-9 focus:shadow-lg focus:ring-2 focus:ring-red-500"
+			@click.prevent="focusMainContent"
+		>
+			{{ __("Skip to main content") }}
+		</a>
+
 		<div class="text-base text-ink-gray-8 h-full bg-surface-white">
 			<InstallPrompt v-if="isMobile" />
 			<Layout>
@@ -23,6 +31,13 @@ import { useScreenSize } from "./utils/composables";
 
 const { isMobile } = useScreenSize();
 const router = useRouter();
+
+function focusMainContent() {
+	const main = document.getElementById("scrollContainer");
+	if (!main) return;
+	main.focus();
+	main.scrollTo?.({ top: 0 });
+}
 const noSidebar = ref(false);
 const { userResource } = usersStore();
 

@@ -378,7 +378,7 @@ export function getUserTimezone() {
 		const supportedTimezones = getTimezones();
 
 		if (supportedTimezones.includes(timezone)) {
-			return timezone; // e.g., 'Asia/Calcutta', 'America/New_York', etc.
+			return timezone;
 		} else {
 			throw Error("unsupported timezone");
 		}
@@ -390,7 +390,7 @@ export function getUserTimezone() {
 
 export function getSidebarLinks(isVolunteer) {
 	return [
-		isVolunteer && {
+		{
 			label: "Profile",
 			icon: "User",
 			to: "Profile",

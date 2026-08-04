@@ -71,9 +71,6 @@
 													showTooltip(dataPoint, $event)
 											"
 											@mouseleave="hideTooltip"
-											@click="
-												!dataPoint.isEmpty && handleCellClick(dataPoint)
-											"
 										>
 											<div v-if="!dataPoint.isEmpty" class="cell-glow"></div>
 										</div>
@@ -333,10 +330,6 @@ export default {
 			tooltip.value.show = false;
 		}
 
-		function handleCellClick(dataPoint) {
-			console.log("Clicked:", dataPoint);
-		}
-
 		function __(text) {
 			return window.__ ? window.__(text) : text;
 		}
@@ -361,7 +354,6 @@ export default {
 			getTooltip,
 			showTooltip,
 			hideTooltip,
-			handleCellClick,
 			__,
 		};
 	},

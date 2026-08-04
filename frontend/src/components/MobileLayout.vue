@@ -1,8 +1,12 @@
 <template>
-	<div class="flex h-full flex-col gap-1 relative bg-surface-white">
-		<div class="h-full pb-10 mb-8 bg-surface-white" id="scrollContainer">
+	<div class="flex h-full flex-col gap-2 relative">
+		<main
+			id="scrollContainer"
+			tabindex="-1"
+			class="h-full pb-10 mb-8 bg-surface-white focus:outline-none"
+		>
 			<slot />
-		</div>
+		</main>
 
 		<div class="relative z-20">
 			<div
@@ -10,10 +14,11 @@
 				ref="menu"
 				class="fixed bottom-16 right-2 w-[80%] rounded-xl bg-surface-white border border-outline-gray-1 shadow-lg p-4 space-y-3"
 			>
-				<div
+				<button
 					v-for="link in otherLinks"
 					:key="link.label"
-					class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-surface-gray-1 transition-colors"
+					type="button"
+					class="w-full text-left flex items-center space-x-2 cursor-pointer hover:underline"
 					@click="handleClick(link)"
 				>
 					<component :is="icons[link.icon]" class="h-4 w-4 shrink-0 text-ink-red-3" />
@@ -23,12 +28,13 @@
 						:src="link.logo"
 						class="h-4 w-4 object-contain"
 					/>
-					<span class="text-sm text-ink-gray-8">{{ __(link.title) }}</span>
-				</div>
+					<span>{{ __(link.name) }}</span>
+				</button>
 			</div>
 
-			<div
-				class="fixed bottom-0 left-0 w-full flex items-center justify-between border-t border-outline-gray-1 bg-surface-white standalone:pb-4 z-10"
+			<nav
+				:aria-label="__('Main')"
+				class="fixed bottom-0 left-0 w-full flex items-center justify-between border-t border-outline-gray-2 bg-surface-white standalone:pb-4 z-10"
 			>
 				<button
 					v-for="tab in sidebarLinks.filter(
@@ -54,7 +60,7 @@
 					<component :is="icons['List']" class="h-6 w-6 stroke-1.5 text-ink-gray-5" />
 					<span class="text-xs text-ink-gray-6">{{ __("More") }}</span>
 				</button>
-			</div>
+			</nav>
 		</div>
 	</div>
 </template>

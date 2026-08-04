@@ -1,22 +1,22 @@
 <template>
 	<div class="bg-surface-white rounded-lg border border-outline-gray-2 p-6">
-		<h3 class="text-lg font-semibold text-ink-gray-8 mb-4">Recent Activity</h3>
+		<h3 class="text-lg font-semibold text-ink-gray-8 mb-4">{{ __("Recent Activity") }}</h3>
 
 		<div v-if="activities.length === 0" class="text-center py-8 text-ink-gray-8">
-			No activities to show
+			{{ __("No activities to show") }}
 		</div>
 
 		<div v-else class="space-y-4">
 			<div
 				v-for="activity in activities"
 				:key="activity.name"
-				class="border-l-4 border-purple-500 pl-4 py-3 hover:bg-surface-gray-5 transition-colors rounded-r"
+				class="border-l-4 border-red-500 pl-4 py-3 hover:bg-surface-gray-5 transition-colors rounded-r"
 			>
 				<div class="flex justify-between items-start">
 					<div class="flex-1">
 						<div class="flex items-center gap-2 mb-1">
 							<span :class="getBadgeClass(activity.type)">{{ activity.type }}</span>
-							<span class="text-sm font-semibold text-purple-600"
+							<span class="text-sm font-semibold text-red-600"
 								>{{ activity.points > 0 ? "+" : ""
 								}}{{ activity.points }} pts</span
 							>
@@ -40,7 +40,7 @@
 			v-if="hasMore"
 			@click="loadMore"
 			:disabled="loadingMore"
-			class="mt-4 w-full py-2 text-purple-600 hover:text-purple-700 font-medium hover:bg-purple-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+			class="mt-4 w-full py-2 text-red-600 hover:text-red-700 font-medium hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 		>
 			{{ loadingMore ? "Loading..." : "Show More Activity" }}
 		</button>
@@ -48,6 +48,7 @@
 </template>
 
 <script setup>
+import { formatDateTime as formatDate } from "@/utils/dayjs";
 import { createResource } from "frappe-ui";
 import { onMounted, ref } from "vue";
 import { sanitizeHtml } from "../../utils/sanitizeHtml";
@@ -124,16 +125,6 @@ function getBadgeClass(type) {
 	return `px-2 py-1 text-xs font-semibold rounded ${
 		classes[type] || "bg-surface-gray-100 text-ink-gray-1-800"
 	}`;
-}
-
-function formatDate(date) {
-	const d = new Date(date);
-	return d.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
 }
 
 onMounted(() => {

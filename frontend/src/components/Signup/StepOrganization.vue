@@ -11,10 +11,12 @@
 					doctype="Company"
 					:required="true"
 					:filters="{ is_group: 0 }"
+					v-bind="fieldProps('Branch / County')"
 				/>
-				<p v-if="errors[0]?.['Branch / County']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Branch / County"] }}
-				</p>
+				<FieldError
+					:id="errorId('Branch / County')"
+					:message="errorFor('Branch / County')"
+				/>
 			</div>
 			<div>
 				<FormControl
@@ -22,16 +24,18 @@
 					label="Phone Number"
 					type="tel"
 					required
+					v-bind="fieldProps('Phone Number')"
 				/>
-				<p v-if="errors[0]?.['Phone Number']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Phone Number"] }}
-				</p>
+				<FieldError :id="errorId('Phone Number')" :message="errorFor('Phone Number')" />
 			</div>
 			<div>
-				<FormControl v-model="localModel.email_id" label="Email Address" required />
-				<p v-if="errors[0]?.['Email Address']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Email Address"] }}
-				</p>
+				<FormControl
+					v-model="localModel.email_id"
+					label="Email Address"
+					required
+					v-bind="fieldProps('Email Address')"
+				/>
+				<FieldError :id="errorId('Email Address')" :message="errorFor('Email Address')" />
 			</div>
 		</div>
 
@@ -41,10 +45,9 @@
 					v-model="localModel.date_of_birth"
 					:label="__('Date of Birth')"
 					type="date"
+					v-bind="fieldProps('Date of Birth')"
 				/>
-				<p v-if="errors[0]?.['Date of Birth']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Date of Birth"] }}
-				</p>
+				<FieldError :id="errorId('Date of Birth')" :message="errorFor('Date of Birth')" />
 			</div>
 
 			<div>
@@ -53,10 +56,9 @@
 					:label="__('Gender')"
 					doctype="Gender"
 					:required="true"
+					v-bind="fieldProps('Gender')"
 				/>
-				<p v-if="errors[0]?.['Gender']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Gender"] }}
-				</p>
+				<FieldError :id="errorId('Gender')" :message="errorFor('Gender')" />
 			</div>
 			<div>
 				<FormControl
@@ -64,33 +66,36 @@
 					:label="__('Marital Status')"
 					type="select"
 					:options="maritalOptions"
+					v-bind="fieldProps('Marital Status')"
 				/>
-				<p v-if="errors[0]?.['Marital Status']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Marital Status"] }}
-				</p>
+				<FieldError
+					:id="errorId('Marital Status')"
+					:message="errorFor('Marital Status')"
+				/>
 			</div>
 			<div>
 				<FormControl
 					v-model="localModel.number_of_dependants"
 					:label="__('Number of Dependants')"
 					type="number"
+					v-bind="fieldProps('Number of Dependants')"
 				/>
-				<p v-if="errors[0]?.['Number of Dependants']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Number of Dependants"] }}
-				</p>
+				<FieldError
+					:id="errorId('Number of Dependants')"
+					:message="errorFor('Number of Dependants')"
+				/>
 			</div>
 			<div>
 				<FormControl
 					v-model="localModel.mpesa_mobile_phone"
 					:label="__('Mobile Money (M-Pesa) phone if different')"
 					type="tel"
+					v-bind="fieldProps('Mobile Money (M-Pesa) phone if different')"
 				/>
-				<p
-					v-if="errors[0]?.['Mobile Money (M-Pesa) phone if different']"
-					class="text-sm text-red-600 mt-1"
-				>
-					{{ errors[0]?.["Mobile Money (M-Pesa) phone if different"] }}
-				</p>
+				<FieldError
+					:id="errorId('Mobile Money (M-Pesa) phone if different')"
+					:message="errorFor('Mobile Money (M-Pesa) phone if different')"
+				/>
 			</div>
 			<div>
 				<FormControl
@@ -98,10 +103,9 @@
 					:label="__('Blood Group')"
 					type="select"
 					:options="bloodGroupOptions"
+					v-bind="fieldProps('Blood Group')"
 				/>
-				<p v-if="errors[0]?.['Blood Group']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Blood Group"] }}
-				</p>
+				<FieldError :id="errorId('Blood Group')" :message="errorFor('Blood Group')" />
 			</div>
 			<div>
 				<FormControl
@@ -110,7 +114,7 @@
 					type="select"
 					:options="yesNoOptions"
 					title="Select 'Yes' if you are insured through KRCS"
-					aria-describedby="krcs-insurance-desc"
+					v-bind="fieldProps('KRCS Insurance', 'krcs-insurance-desc')"
 				/>
 				<p id="krcs-insurance-desc" class="text-sm text-ink-gray-1-600 mt-1">
 					<span title="KRCS = Kenya Red Cross Society" class="mr-2 text-xs">ⓘ</span>
@@ -120,9 +124,10 @@
 						)
 					}}
 				</p>
-				<p v-if="errors[0]?.['KRCS Insurance']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["KRCS Insurance"] }}
-				</p>
+				<FieldError
+					:id="errorId('KRCS Insurance')"
+					:message="errorFor('KRCS Insurance')"
+				/>
 			</div>
 		</div>
 
@@ -136,10 +141,12 @@
 					:label="__('County of Residence')"
 					doctype="County"
 					:required="true"
+					v-bind="fieldProps('County of Residence')"
 				/>
-				<p v-if="errors[0]?.['County of Residence']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["County of Residence"] }}
-				</p>
+				<FieldError
+					:id="errorId('County of Residence')"
+					:message="errorFor('County of Residence')"
+				/>
 			</div>
 			<div>
 				<Link
@@ -148,10 +155,9 @@
 					doctype="Sub County"
 					:required="true"
 					:filters="localModel.county ? { county: localModel.county } : {}"
+					v-bind="fieldProps('Sub County')"
 				/>
-				<p v-if="errors[0]?.['Sub County']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Sub County"] }}
-				</p>
+				<FieldError :id="errorId('Sub County')" :message="errorFor('Sub County')" />
 			</div>
 
 			<div>
@@ -161,10 +167,9 @@
 					doctype="Ward"
 					:required="true"
 					:filters="localModel.sub_county ? { sub_county: localModel.sub_county } : {}"
+					v-bind="fieldProps('Ward')"
 				/>
-				<p v-if="errors[0]?.['Ward']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Ward"] }}
-				</p>
+				<FieldError :id="errorId('Ward')" :message="errorFor('Ward')" />
 			</div>
 
 			<div>
@@ -216,10 +221,9 @@
 					type="select"
 					:options="citizenshipOptions"
 					:required="true"
+					v-bind="fieldProps('Citizenship')"
 				/>
-				<p v-if="errors[0]?.['Citizenship']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Citizenship"] }}
-				</p>
+				<FieldError :id="errorId('Citizenship')" :message="errorFor('Citizenship')" />
 			</div>
 
 			<div>
@@ -228,13 +232,12 @@
 					v-model="localModel.identification_type"
 					:label="__('Identification Document Type')"
 					:required="true"
+					v-bind="fieldProps('Identification Document Type')"
 				/>
-				<p
-					v-if="errors[0]?.['Identification Document Type']"
-					class="text-sm text-red-600 mt-1"
-				>
-					{{ errors[0]?.["Identification Document Type"] }}
-				</p>
+				<FieldError
+					:id="errorId('Identification Document Type')"
+					:message="errorFor('Identification Document Type')"
+				/>
 			</div>
 			<div>
 				<FormControl
@@ -242,10 +245,12 @@
 					:label="__('Identification Number')"
 					type="text"
 					:required="true"
+					v-bind="fieldProps('Identification Number')"
 				/>
-				<p v-if="errors[0]?.['Identification Number']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Identification Number"] }}
-				</p>
+				<FieldError
+					:id="errorId('Identification Number')"
+					:message="errorFor('Identification Number')"
+				/>
 			</div>
 
 			<div>
@@ -259,10 +264,12 @@
 							? [['name', '=', 'Kenya']]
 							: [['name', '!=', 'Kenya']]
 					"
+					v-bind="fieldProps('Country of Citizenship')"
 				/>
-				<p v-if="errors[0]?.['Country of Citizenship']" class="text-sm text-red-600 mt-1">
-					{{ errors[0]?.["Country of Citizenship"] }}
-				</p>
+				<FieldError
+					:id="errorId('Country of Citizenship')"
+					:message="errorFor('Country of Citizenship')"
+				/>
 			</div>
 		</div>
 
@@ -288,8 +295,10 @@
 <script setup>
 import CreateNewEntryDialog from "@/components/Modals/CreateNewEntryDialog.vue";
 import Link from "@/components/Controls/Link.vue";
+import { useFieldErrors } from "@/composables/useFieldErrors";
 import { FormControl } from "frappe-ui";
 import { computed, ref, watch } from "vue";
+import FieldError from "./FieldError.vue";
 
 const props = defineProps({
 	modelValue: { type: Object, required: true },
@@ -302,6 +311,8 @@ const localModel = computed({
 	get: () => props.modelValue,
 	set: (val) => emit("update:modelValue", val),
 });
+
+const { errorId, errorFor, fieldProps } = useFieldErrors(() => props.errors, 0);
 
 const maritalOptions = [
 	{ label: "Single", value: "Single" },

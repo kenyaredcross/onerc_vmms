@@ -1,6 +1,8 @@
 <template>
 	<div class="border rounded-lg bg-surface-white shadow-sm">
 		<button
+			type="button"
+			:aria-expanded="isOpen"
 			@click="toggle"
 			class="flex justify-between items-center w-full p-4 text-left font-semibold text-ink-gray-1-700 hover:bg-surface-gray-50 transition duration-150"
 		>
@@ -21,7 +23,7 @@
 				></path>
 			</svg>
 		</button>
-		<div v-show="isOpen" class="p-6 border-t">
+		<div v-show="isOpen" :class="bodyClass">
 			<slot></slot>
 		</div>
 	</div>
@@ -38,6 +40,10 @@ const props = defineProps({
 	defaultOpen: {
 		type: Boolean,
 		default: false,
+	},
+	bodyClass: {
+		type: String,
+		default: "p-6 border-t",
 	},
 });
 

@@ -36,11 +36,12 @@
 							</div>
 						</template>
 						<template #suffix>
-							<Button variant="ghost">
-								<X
-									class="size-3 text-ink-gray-5"
-									@click="emit('update:modelValue', null)"
-								/>
+							<Button
+								variant="ghost"
+								:aria-label="__('Clear colour')"
+								@click="emit('update:modelValue', null)"
+							>
+								<X class="size-3 text-ink-gray-5" />
 							</Button>
 						</template>
 					</FormControl>
@@ -52,21 +53,24 @@
 						{{ __("Swatches") }}
 					</div>
 					<div class="grid grid-cols-7 gap-2">
-						<div
+						<button
 							v-for="color in colors"
 							:key="color"
+							type="button"
 							class="size-5 rounded-full cursor-pointer"
+							:aria-label="__(color)"
+							:aria-pressed="modelValue === color"
 							:style="{
 								backgroundColor: theme.backgroundColor[color.toLowerCase()][400],
 							}"
 							@click="
-								(e) => {
+								() => {
 									emit('update:modelValue', color);
 									close();
 									emit('change', color);
 								}
 							"
-						></div>
+						></button>
 					</div>
 				</div>
 			</template>

@@ -1,45 +1,25 @@
 <template>
 	<div class="space-y-6">
-		<div class="border rounded-lg shadow-sm">
-			<div
-				class="flex justify-between items-center p-4 cursor-pointer"
-				@click="toggleCollapse('docs')"
-			>
-				<h2 class="text-lg font-semibold">
-					{{ __("Supporting Documents & Attachments") }}
-				</h2>
-				<svg
-					:class="{ 'rotate-180': !isCollapsed.docs }"
-					class="w-5 h-5 text-ink-gray-1-500 transition-transform duration-200"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-					xmlns="http://www.w3.org/2000/svg"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M19 9l-7 7-7-7"
-					/>
-				</svg>
-			</div>
-			<div v-show="!isCollapsed.docs" class="p-4 pt-0 space-y-4">
-				<ChildTable
-					v-model="localForm.supporting_documents"
-					doctype="Supporting Document"
-					:label="__('Supporting Documents')"
-					:autoEditGrid="false"
-				/>
-			</div>
-		</div>
+		<CollapsibleSection
+			:title="__('Supporting Documents & Attachments')"
+			:default-open="true"
+			body-class="p-4 pt-0 space-y-4"
+		>
+			<ChildTable
+				v-model="localForm.supporting_documents"
+				doctype="Supporting Document"
+				:label="__('Supporting Documents')"
+				:autoEditGrid="false"
+			/>
+		</CollapsibleSection>
 		<div class="flex justify-end">
 			<button
 				v-if="hasChanges"
+				type="button"
 				@click="handleSave"
-				variant="solid"
-				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95"
-				:loading="saveInProgress"
+				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 disabled:active:scale-100"
+				:disabled="saveInProgress"
+				:aria-busy="saveInProgress"
 			>
 				{{ __("Save") }}
 			</button>
@@ -49,6 +29,7 @@
 </template>
 
 <script setup>
+import CollapsibleSection from "@/components/CollapsibleSection.vue";
 import ChildTable from "@/components/Controls/ChildTable.vue";
 import { validateForm } from "@/utils/validationUtils.js";
 import { createResource, toast } from "frappe-ui";
@@ -68,10 +49,6 @@ const saveInProgress = ref(false);
 const originalFormData = ref({});
 const showErrorDialog = ref(false);
 const flatErrors = ref([]);
-
-const isCollapsed = reactive({
-	docs: false,
-});
 
 const localForm = reactive({
 	supporting_documents: [],
@@ -123,10 +100,6 @@ function getChangedFields() {
 const hasChanges = computed(() => {
 	return Object.keys(getChangedFields()).length > 0;
 });
-
-function toggleCollapse(section) {
-	isCollapsed[section] = !isCollapsed[section];
-}
 
 const saveDocsResource = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.user.update_user_details",

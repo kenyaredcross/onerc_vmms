@@ -31,7 +31,7 @@
 		v-else-if="!alreadyApplied || (alreadyApplied && applicationStatus === 'Draft')"
 		class="min-h-screen flex flex-col"
 	>
-		<main class="flex-1 container mx-auto px-4 py-4">
+		<div class="flex-1 container mx-auto px-4 py-4">
 			<div class="bg-surface-white shadow-lg rounded p-6">
 				<div class="w-full mb-10">
 					<div
@@ -140,7 +140,7 @@
 					</div>
 				</div>
 			</div>
-		</main>
+		</div>
 	</div>
 
 	<Dialog v-model="showSubmitDialog">

@@ -17,7 +17,7 @@
 			</div>
 		</header>
 
-		<main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+		<div class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
 			<div
 				class="flex justify-start mb-6 lg:mb-8 overflow-x-auto whitespace-nowrap -mx-4 sm:mx-0 p-2 sm:p-0"
 			>
@@ -52,7 +52,7 @@
 			</div>
 
 			<EmptyState v-else :type="__('Deployments')" />
-		</main>
+		</div>
 	</div>
 </template>
 

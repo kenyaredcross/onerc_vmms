@@ -17,6 +17,8 @@
 								:class="inputClasses"
 								@click="toggleDropdown"
 								:disabled="attrs.readonly"
+								:aria-invalid="attrs['aria-invalid']"
+								:aria-describedby="attrs['aria-describedby']"
 							>
 								<div class="flex items-center">
 									<slot name="prefix" />
@@ -59,7 +61,9 @@
 							:placeholder="__('Search')"
 						/>
 						<button
+							type="button"
 							class="absolute right-1.5 inline-flex h-7 w-7 items-center justify-center"
+							:aria-label="__('Clear selection')"
 							@click="selectedValue = null"
 						>
 							<X class="h-4 w-4 stroke-1.5 text-ink-gray-7" />

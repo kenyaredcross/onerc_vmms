@@ -4,6 +4,7 @@
 			v-model="query"
 			type="text"
 			:placeholder="__(props.label) || __('Select...')"
+			:aria-label="__(props.label) || __('Select...')"
 			autocomplete="off"
 			class="form-input w-full rounded-md border-outline-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:ring focus:ring-red-200"
 		/>

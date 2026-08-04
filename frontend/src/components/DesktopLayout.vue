@@ -2,14 +2,19 @@
 	<div class="relative flex h-full flex-col">
 		<div class="h-full flex-1">
 			<div class="flex h-screen text-base bg-surface-white">
-				<div
+				<nav
+					:aria-label="__('Main')"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
 					<AppSidebar />
-				</div>
-				<div class="w-full overflow-auto mx-auto" id="scrollContainer">
+				</nav>
+				<main
+					id="scrollContainer"
+					tabindex="-1"
+					class="w-full overflow-auto mx-auto focus:outline-none"
+				>
 					<slot />
-				</div>
+				</main>
 			</div>
 		</div>
 	</div>

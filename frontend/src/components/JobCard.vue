@@ -90,9 +90,7 @@
 					class="flex items-center gap-1.5 text-xs text-ink-gray-1-500"
 				>
 					<History class="w-3 h-3" />
-					<span
-						>{{ __(dayjs().diff(dayjs(job.creation), "day")) }}{{ __("d ago") }}</span
-					>
+					<span>{{ dayjs().diff(dayjs(job.creation), "day") }}{{ __("d ago") }}</span>
 				</div>
 
 				<div

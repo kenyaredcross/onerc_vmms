@@ -36,6 +36,7 @@ declare module 'vue' {
     ErrorModal: typeof import('./src/components/Modals/ErrorModal.vue')['default']
     EventCalendar: typeof import('./src/components/EventCalendar.vue')['default']
     EventCard: typeof import('./src/components/EventCard.vue')['default']
+    FieldError: typeof import('./src/components/Signup/FieldError.vue')['default']
     FrappeCloudIcon: typeof import('./src/components/Icons/FrappeCloudIcon.vue')['default']
     HealthDisabilities: typeof import('./src/components/Profile/HealthDisabilities.vue')['default']
     HeatmapComponent: typeof import('./src/components/Profile/HeatmapComponent.vue')['default']

@@ -1,5 +1,5 @@
 <template>
-	<div class="relative z-1 bg-surface-gray-1 rounded-2xl">
+	<div class="relative z-1 bg-surface-gray-1 rounded-2xl overflow-hidden">
 		<div class="relative z-1 w-full h-48 sm:h-64 bg-surface-gray-100">
 			<img
 				v-if="form?.cover_image"
@@ -9,7 +9,7 @@
 			/>
 			<div
 				v-else
-				class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-400 border-2 border-dashed border-outline-gray-300"
+				class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-600 border-2 border-dashed border-outline-gray-300"
 			>
 				<svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
@@ -67,7 +67,7 @@
 						/>
 						<div
 							v-else
-							class="flex items-center justify-center w-full h-full text-ink-gray-1-400"
+							class="flex items-center justify-center w-full h-full text-ink-gray-1-600"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -87,6 +87,7 @@
 					<button
 						@click="openProfileUploader"
 						v-if="allowEdit"
+						:aria-label="__('Edit profile image')"
 						class="absolute bottom-1 right-1 bg-surface-white p-1 sm:p-1.5 rounded-full shadow hover:bg-surface-gray-50 text-ink-gray-1-700 transition"
 					>
 						<svg
@@ -143,35 +144,19 @@
 			</div>
 		</div>
 
-		<div
-			v-if="showCoverUploader"
-			class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-			@click.self="closeCoverUploader"
+		<Dialog
+			v-model="showCoverUploader"
+			:options="{ size: '4xl' }"
+			:disable-outside-click-to-close="saveInProgress"
 		>
-			<div
-				class="bg-surface-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
-			>
-				<div class="flex items-center justify-between p-4 border-b">
-					<h2 class="text-lg font-semibold text-ink-gray-1-900">
-						{{ __("Edit Cover Image") }}
-					</h2>
-					<button
-						@click="closeCoverUploader"
-						class="text-ink-gray-1-400 hover:text-ink-gray-1-600 transition"
-						:disabled="saveInProgress"
-					>
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							></path>
-						</svg>
-					</button>
-				</div>
+			<template #body-title>
+				<h2 class="text-lg font-semibold text-ink-gray-1-900">
+					{{ __("Edit Cover Image") }}
+				</h2>
+			</template>
 
-				<div class="flex-1 overflow-y-auto p-6">
+			<template #body-content>
+				<div class="max-h-[70vh] overflow-y-auto">
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<div class="flex items-center justify-between mb-3">
@@ -190,7 +175,7 @@
 								/>
 								<div
 									v-else
-									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-400"
+									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-600"
 								>
 									<svg
 										class="w-12 h-12 mb-2"
@@ -225,7 +210,7 @@
 								/>
 								<div
 									v-else
-									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-400"
+									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-600"
 								>
 									<svg
 										class="w-12 h-12 mb-2"
@@ -260,10 +245,10 @@
 						/>
 					</div>
 				</div>
+			</template>
 
-				<div
-					class="flex items-center justify-between gap-3 p-4 border-t bg-surface-gray-50"
-				>
+			<template #actions>
+				<div class="flex items-center justify-between gap-3">
 					<button
 						v-if="form?.cover_image"
 						@click="deleteCoverImage"
@@ -305,38 +290,22 @@
 						</button>
 					</div>
 				</div>
-			</div>
-		</div>
+			</template>
+		</Dialog>
 
-		<div
-			v-if="showProfileUploader"
-			class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-			@click.self="closeProfileUploader"
+		<Dialog
+			v-model="showProfileUploader"
+			:options="{ size: '4xl' }"
+			:disable-outside-click-to-close="saveInProgress"
 		>
-			<div
-				class="bg-surface-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
-			>
-				<div class="flex items-center justify-between p-4 border-b">
-					<h2 class="text-lg font-semibold text-ink-gray-1-900">
-						{{ __("Edit Profile Image") }}
-					</h2>
-					<button
-						@click="closeProfileUploader"
-						class="text-ink-gray-1-400 hover:text-ink-gray-1-600 transition"
-						:disabled="saveInProgress"
-					>
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							></path>
-						</svg>
-					</button>
-				</div>
+			<template #body-title>
+				<h2 class="text-lg font-semibold text-ink-gray-1-900">
+					{{ __("Edit Profile Image") }}
+				</h2>
+			</template>
 
-				<div class="flex-1 overflow-y-auto p-6">
+			<template #body-content>
+				<div class="max-h-[70vh] overflow-y-auto">
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div class="flex flex-col items-center">
 							<div class="flex items-center justify-between w-full mb-3">
@@ -355,7 +324,7 @@
 								/>
 								<div
 									v-else
-									class="flex items-center justify-center w-full h-full text-ink-gray-1-400"
+									class="flex items-center justify-center w-full h-full text-ink-gray-1-600"
 								>
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
@@ -390,7 +359,7 @@
 								/>
 								<div
 									v-else
-									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-400"
+									class="flex flex-col items-center justify-center w-full h-full text-ink-gray-1-600"
 								>
 									<svg
 										class="w-12 h-12 mb-2"
@@ -430,10 +399,10 @@
 						/>
 					</div>
 				</div>
+			</template>
 
-				<div
-					class="flex items-center justify-between gap-3 p-4 border-t bg-surface-gray-50"
-				>
+			<template #actions>
+				<div class="flex items-center justify-between gap-3">
 					<button
 						v-if="form?.user_image"
 						@click="deleteProfileImage"
@@ -475,16 +444,22 @@
 						</button>
 					</div>
 				</div>
-			</div>
-		</div>
+			</template>
+		</Dialog>
 
-		<div
-			v-if="deleteConfirm.open"
-			class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4"
-			@click.self="closeDeleteConfirm"
+		<Dialog
+			v-model="deleteConfirmOpen"
+			:options="{ size: 'sm' }"
+			:disable-outside-click-to-close="saveInProgress"
 		>
-			<div class="bg-surface-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
-				<div class="p-6 text-center">
+			<template #body-title>
+				<h3 class="text-lg font-medium text-ink-gray-1-900">
+					{{ __("Confirm Deletion") }}
+				</h3>
+			</template>
+
+			<template #body-content>
+				<div class="text-center">
 					<svg
 						class="w-16 h-16 mx-auto text-red-500"
 						fill="none"
@@ -498,19 +473,16 @@
 							d="M12 9v2m0 4h.01m-6.938 4h13.856a2 2 0 001.995-1.858L21 5H3l.012 13.142A2 2 0 004.062 19z"
 						></path>
 					</svg>
-					<h3 class="mt-4 text-lg font-medium text-ink-gray-1-900">
-						{{ __("Confirm Deletion") }}
-					</h3>
-					<p class="mt-2 text-sm text-ink-gray-1-500">
+					<p class="mt-4 text-sm text-ink-gray-1-500">
 						{{ __("Are you sure you want to delete your") }}
 						<span class="font-semibold">{{ __(deleteConfirm.type) }}</span>
 						{{ __("image? This action cannot be undone.") }}
 					</p>
 				</div>
+			</template>
 
-				<div
-					class="flex justify-end gap-3 p-4 border-t border-outline-gray-2 bg-surface-gray-50"
-				>
+			<template #actions>
+				<div class="flex justify-end gap-3">
 					<button
 						@click="closeDeleteConfirm"
 						:disabled="saveInProgress"
@@ -532,15 +504,15 @@
 						<template v-else> {{ __("Delete") }} </template>
 					</button>
 				</div>
-			</div>
-		</div>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup>
 import Uploader from "@/components/Controls/Uploader.vue";
-import { createResource, toast } from "frappe-ui";
-import { reactive, ref, watch } from "vue";
+import { createResource, Dialog, toast } from "frappe-ui";
+import { computed, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 const props = defineProps({
@@ -568,6 +540,14 @@ const saveInProgress = ref(false);
 const deleteConfirm = reactive({
 	open: false,
 	type: null,
+});
+
+const deleteConfirmOpen = computed({
+	get: () => deleteConfirm.open,
+	set: (val) => {
+		if (val) deleteConfirm.open = true;
+		else closeDeleteConfirm();
+	},
 });
 
 const localForm = reactive({

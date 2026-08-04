@@ -7,8 +7,9 @@
 			<div class="flex flex-wrap gap-2">
 				<select
 					v-model="filter"
+					:aria-label="__('Energy points type')"
 					@change="updateChart"
-					class="text-sm border border-outline-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+					class="text-sm border border-outline-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-red-500 focus:border-transparent"
 				>
 					<option value="All">All</option>
 					<option value="Auto">Auto</option>
@@ -19,8 +20,9 @@
 
 				<select
 					v-model="timespan"
+					:aria-label="__('Timespan')"
 					@change="updateChart"
-					class="text-sm border border-outline-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+					class="text-sm border border-outline-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-red-500 focus:border-transparent"
 				>
 					<option value="Last Week">Last Week</option>
 					<option value="Last Month">Last Month</option>
@@ -33,15 +35,14 @@
 		<div class="h-60 sm:h-64 w-full">
 			<LineChartComponent :chart-data="chartData" v-if="!loading" />
 			<div v-else class="flex items-center justify-center h-full">
-				<div
-					class="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500"
-				></div>
+				<ProgressSpinner size="md" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
+import ProgressSpinner from "../Common/ProgressSpinner.vue";
 import { createResource } from "frappe-ui";
 import { onMounted, ref } from "vue";
 import LineChartComponent from "./LineChartComponent.vue";

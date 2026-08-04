@@ -16,22 +16,23 @@
 		</p>
 
 		<div class="flex gap-4">
-			<div
-				variant="solid"
+			<button
+				type="button"
 				class="bg-red-600 hover:bg-red-700 text-white px-8 py-3 flex items-center gap-3 rounded-xl shadow-lg cursor-pointer"
 				@click="redirectToLogin"
 			>
 				<LogIn class="w-5 h-5" />
 				{{ __("Login") }}
-			</div>
+			</button>
 
-			<div
+			<button
+				type="button"
 				class="bg-surface-white border border-red-600 text-red-600 px-8 py-3 flex items-center gap-3 rounded-xl cursor-pointer hover:bg-red-50"
 				@click="redirectToSignup"
 			>
 				<UserPlus class="w-5 h-5" />
 				{{ __("Sign up") }}
-			</div>
+			</button>
 		</div>
 	</div>
 </template>

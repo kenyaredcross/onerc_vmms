@@ -16,6 +16,8 @@
 				:filterable="false"
 				:readonly="attrs.readonly || props.readOnly"
 				class="relative !z-100"
+				:aria-invalid="attrs['aria-invalid']"
+				:aria-describedby="attrs['aria-describedby']"
 			>
 				<template #target="{ open, togglePopover }">
 					<slot name="target" v-bind="{ open, togglePopover }" />

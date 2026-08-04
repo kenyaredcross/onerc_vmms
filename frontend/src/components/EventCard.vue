@@ -1,8 +1,12 @@
 <template>
 	<div class="w-full max-w-xs mx-auto">
 		<div
+			role="button"
+			tabindex="0"
 			@click="navigateEvent(event)"
-			class="flex flex-col rounded-2xl overflow-hidden border hover:shadow-2xl transition-all duration-500 bg-surface-white cursor-pointer"
+			@keydown.enter="navigateEvent(event)"
+			@keydown.space.prevent="navigateEvent(event)"
+			class="w-full text-left flex flex-col rounded-2xl overflow-hidden border hover:shadow-2xl transition-all duration-500 bg-surface-white cursor-pointer"
 		>
 			<div class="relative w-full h-48">
 				<img
@@ -26,14 +30,10 @@
 							class="flex flex-col items-center justify-center text-red-600 font-semibold leading-tight"
 						>
 							<span class="uppercase text-xs">
-								{{
-									new Date(event.start_date).toLocaleDateString(undefined, {
-										month: "short",
-									})
-								}}
+								{{ formatDate(event.start_date, "MMM") }}
 							</span>
 							<span class="text-2xl font-bold">
-								{{ new Date(event.start_date).getDate() }}
+								{{ formatDate(event.start_date, "D") }}
 							</span>
 						</div>
 					</div>
@@ -60,7 +60,9 @@
 	<PrivateEvent v-model="dialog" />
 </template>
 <script lang="ts" setup>
-import { Clock, MapPin } from "lucide-vue-next";
+import { formatDate } from "@/utils/dayjs";
+import { Badge, Button, Dialog } from "frappe-ui";
+import { Calendar, Clock, MapPin } from "lucide-vue-next";
 import { onMounted, ref } from "vue";
 import PrivateEvent from "./Modals/PrivateEvent.vue";
 
