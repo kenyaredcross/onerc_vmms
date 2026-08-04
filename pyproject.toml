@@ -49,6 +49,7 @@ ignore = [
     "W191", # indentation contains tabs
     "F841", # unused variable
     "RUF010", # replace with conversion flag
+    "UP038", # 
 ]
 typing-modules = ["frappe.types.DF"]
 

@@ -6,6 +6,7 @@ from frappe.utils import cint, now_datetime
 
 from ..utils.permission import validate_session_user
 from ..utils.utils import set_field_value
+from .files import link_files_to_document
 
 PROTECTED_APPLICANT_FIELDS = frozenset(
 	{
@@ -247,6 +248,7 @@ def _update_application(application_id: str, fields: dict) -> dict:
 	_apply_application_fields(application, fields)
 	validate_session_user(application.email_id)
 	application.save(ignore_permissions=True)
+	link_files_to_document(application)
 	frappe.db.commit()
 	return {
 		"success": True,
@@ -381,12 +383,11 @@ def create_job_application(job_opening: str | None = None, id: str | None = None
 
 		job_application = frappe.get_doc(minimal_doc_data)
 		job_application.insert(ignore_permissions=True)
+		link_files_to_document(job_application)
 
 		return _update_application(job_application.name, update_fields)
 
 	except frappe.DuplicateEntryError:
-		# A racing insert beat us to it (or a future unique constraint fired);
-		# respond idempotently instead of surfacing a hard error.
 		frappe.db.rollback()
 		return {
 			"success": False,
