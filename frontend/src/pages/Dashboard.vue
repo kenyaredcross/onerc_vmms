@@ -37,7 +37,12 @@
 					</button>
 
 					<!-- Notifications -->
-					<div class="relative cursor-pointer" @click="showNotificationDialog = true">
+					<button
+						type="button"
+						class="relative cursor-pointer"
+						:aria-label="__('Notifications')"
+						@click="showNotificationDialog = true"
+					>
 						<div
 							class="relative transition duration-200"
 							:class="{ 'animate-wiggle': hasNotification }"
@@ -51,12 +56,19 @@
 								style="animation-iteration-count: 1"
 							></span>
 						</div>
-					</div>
+					</button>
 				</div>
 
 				<!-- Profile Menu -->
-				<div v-if="isVolunteer" class="relative flex-shrink-0">
+				<div
+					v-if="isVolunteer"
+					ref="profileMenu"
+					class="relative flex-shrink-0"
+					@keydown.escape="closeProfileMenu"
+				>
 					<button
+						ref="profileMenuButton"
+						type="button"
 						@click="isOpen = !isOpen"
 						:class="[
 							'flex items-center justify-center w-11 h-11 rounded-full shadow-xl transition-all duration-300 ease-in-out',
@@ -64,8 +76,8 @@
 								? 'bg-red-600 ring-4 ring-red-300/50 text-white'
 								: 'bg-gray-200 hover:bg-red-500 hover:text-white text-gray-700',
 						]"
-						aria-label="Toggle profile menu"
-						aria-expanded="[isOpen ? 'true' : 'false']"
+						:aria-label="__('Toggle profile menu')"
+						:aria-expanded="isOpen"
 					>
 						<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
 							<path
@@ -82,16 +94,14 @@
 						leave-from-class="transform opacity-100 scale-100 translate-y-0"
 						leave-to-class="transform opacity-0 scale-95 translate-y-2"
 					>
-						<div
+						<nav
 							v-show="isOpen"
 							class="absolute right-0 mt-4 w-56 bg-white rounded-xl border border-gray-100 shadow-2xl py-2 z-50 origin-top-right ring-1 ring-black ring-opacity-5"
-							role="menu"
-							aria-orientation="vertical"
+							:aria-label="__('Profile menu')"
 						>
 							<router-link
 								:to="{ name: 'Profile' }"
 								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
-								role="menuitem"
 								@click="isOpen = false"
 							>
 								<LogIn class="w-5 h-5" />{{ __("Edit Profile") }}
@@ -102,18 +112,17 @@
 							<router-link
 								:to="{ name: 'ProfileOverview' }"
 								class="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150 ease-in-out"
-								role="menuitem"
 								@click="isOpen = false"
 							>
 								<User class="w-5 h-5" />{{ __("Profile Overview") }}
 							</router-link>
-						</div>
+						</nav>
 					</transition>
 				</div>
 			</div>
 		</header>
 
-		<main>
+		<div :aria-busy="roleResource?.loading">
 			<div v-if="roleResource?.loading" class="py-20 text-center">
 				<ProgressSpinner :message="'Setting up Dashboard...'" />
 			</div>
@@ -165,7 +174,7 @@
 					/>
 				</section>
 			</div>
-		</main>
+		</div>
 
 		<Availability
 			v-model="setAvailability"
@@ -216,7 +225,7 @@
 import { useHead } from "@vueuse/head";
 import { Badge, Button, createResource, Dialog } from "frappe-ui";
 import { Bell, LogIn, User } from "lucide-vue-next";
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 
 import { membershipStore } from "../stores/membership";
 import { sessionStore } from "../stores/session";
@@ -232,10 +241,27 @@ import Volunteer from "../components/Volunteer.vue";
 import Welcome from "../components/Welcome.vue";
 
 const isOpen = ref(false);
+const profileMenu = ref(null);
+const profileMenuButton = ref(null);
 const showNotificationDialog = ref(false);
 const setAvailability = ref(false);
 const hasNotification = ref(false);
 const assignedProjects = ref([]);
+
+function closeProfileMenu() {
+	if (!isOpen.value) return;
+	isOpen.value = false;
+	profileMenuButton.value?.focus();
+}
+
+function onDocumentPointerDown(event) {
+	if (!isOpen.value) return;
+	if (profileMenu.value?.contains(event.target)) return;
+	isOpen.value = false;
+}
+
+onMounted(() => document.addEventListener("pointerdown", onDocumentPointerDown));
+onUnmounted(() => document.removeEventListener("pointerdown", onDocumentPointerDown));
 
 const { roleResource, userResource, presentSlots } = usersStore();
 const { events, currentMembership } = membershipStore();

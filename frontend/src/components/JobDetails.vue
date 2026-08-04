@@ -65,7 +65,7 @@
 								{{ __("Posted") }}
 							</p>
 							<p class="text-sm font-semibold text-gray-900">
-								{{ __(dayjs(job.data.creation).fromNow()) }}
+								{{ dayjs(job.data.creation).fromNow() }}
 							</p>
 							<div
 								class="absolute top-0 right-0 w-20 h-20 bg-red-100/50 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500"

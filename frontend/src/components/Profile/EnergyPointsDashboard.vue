@@ -1,7 +1,7 @@
 <template>
 	<div class="space-y-6">
 		<div v-if="loading" class="flex items-center justify-center py-20">
-			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+			<ProgressSpinner size="md" />
 		</div>
 
 		<template v-else>
@@ -23,6 +23,7 @@
 </template>
 
 <script setup>
+import ProgressSpinner from "../Common/ProgressSpinner.vue";
 import { createResource } from "frappe-ui";
 import { reactive, ref, watchEffect } from "vue";
 import HeatmapPanel from "./HeatmapPanel.vue";

@@ -1,7 +1,7 @@
 <template>
 	<div class="w-full mx-auto py-2 px-1">
 		<div v-if="!isLoggedIn" class="text-center py-20">
-			<LogIn class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+			<LogIn class="w-16 h-16 text-gray-500 mx-auto mb-4" />
 			<h2 class="text-3xl font-bold text-gray-900 mb-4">
 				{{ __("Authentication Required") }}
 			</h2>

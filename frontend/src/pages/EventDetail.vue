@@ -13,7 +13,10 @@
 		]"
 		class="my-4 max-w-4xl px-4"
 	/>
-	<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+	<div
+		class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
+		:aria-busy="eventDetail.loading"
+	>
 		<ProgressSpinner v-if="eventDetail.loading" />
 		<ErrorMessage
 			v-else-if="eventDetail.error"
@@ -230,6 +233,7 @@
 </template>
 
 <script setup>
+import { formatDate } from "@/utils/dayjs";
 import { Breadcrumbs, Button, createResource, toast } from "frappe-ui";
 import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
 import { CalendarDays, Clock, MapPin, Users } from "lucide-vue-next";
@@ -335,15 +339,6 @@ const calculateTimeRemaining = () => {
 			seconds: 0,
 		};
 	}
-};
-
-const formatDate = (dateStr) => {
-	const date = new Date(dateStr);
-	return date.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	});
 };
 
 const handleRegister = (route) => {

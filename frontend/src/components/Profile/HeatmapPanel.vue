@@ -1,11 +1,12 @@
 <template>
 	<div class="bg-white rounded-lg shadow-md p-6">
 		<div class="flex justify-between items-center mb-4">
-			<h3 class="text-lg font-semibold text-gray-800">Activity Overview</h3>
+			<h3 class="text-lg font-semibold text-gray-800">{{ __("Activity Overview") }}</h3>
 			<select
 				v-model="year"
+				:aria-label="__('Activity year')"
 				@change="updateHeatmap"
-				class="text-sm border border-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+				class="text-sm border border-gray-300 rounded pl-2 pr-6 py-1 focus:ring-2 focus:ring-red-500 focus:border-transparent"
 			>
 				<option v-for="y in availableYears" :key="y" :value="y">
 					{{ y }}
@@ -16,15 +17,14 @@
 		<div>
 			<HeatmapComponent :heatmap-data="heatmapData" :year="year" v-if="!loading" />
 			<div v-else class="flex items-center justify-center h-64">
-				<div
-					class="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500"
-				></div>
+				<ProgressSpinner size="md" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script setup>
+import ProgressSpinner from "../Common/ProgressSpinner.vue";
 import { format } from "date-fns";
 import { createResource } from "frappe-ui";
 import { onMounted, ref } from "vue";

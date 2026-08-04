@@ -92,7 +92,8 @@
 						<Input
 							required
 							name="email"
-							type="text"
+							type="email"
+							autocomplete="username"
 							:placeholder="__('johndoe@email.com')"
 							:label="__('Email')"
 							v-model="userEmail"
@@ -104,6 +105,7 @@
 									class="flex-1"
 									required
 									name="password"
+									autocomplete="current-password"
 									:type="passWordVisible ? 'text' : 'password'"
 									:placeholder="__('••••••')"
 									:label="__('Password')"
@@ -112,6 +114,10 @@
 								<button
 									type="button"
 									class="mb-0.5 p-2 rounded-lg text-ink-gray-4 hover:text-ink-gray-6 hover:bg-surface-gray-2 transition-colors"
+									:aria-label="
+										passWordVisible ? __('Hide password') : __('Show password')
+									"
+									:aria-pressed="passWordVisible"
 									@click="passWordVisible = !passWordVisible"
 								>
 									<Eye v-if="!passWordVisible" class="w-4 h-4" />
@@ -136,6 +142,7 @@
 								required
 								name="firstname"
 								type="text"
+								autocomplete="given-name"
 								:placeholder="__('John')"
 								:label="__('First Name')"
 								v-model="signUpForm.first_name"
@@ -144,6 +151,7 @@
 								required
 								name="lastname"
 								type="text"
+								autocomplete="family-name"
 								:placeholder="__('Doe')"
 								:label="__('Last Name')"
 								v-model="signUpForm.last_name"
@@ -152,7 +160,8 @@
 						<Input
 							required
 							name="email"
-							type="text"
+							type="email"
+							autocomplete="email"
 							:placeholder="__('johndoe@email.com')"
 							:label="__('Email')"
 							v-model="signUpForm.email"

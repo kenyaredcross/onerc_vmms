@@ -40,6 +40,7 @@ declare module 'vue' {
     EventCalendar: typeof import('./src/components/EventCalendar.vue')['default']
     EventCard: typeof import('./src/components/EventCard.vue')['default']
     EventQuestions: typeof import('./src/components/EventQuestions.vue')['default']
+    FieldError: typeof import('./src/components/Signup/FieldError.vue')['default']
     FrappeCloudIcon: typeof import('./src/components/Icons/FrappeCloudIcon.vue')['default']
     HealthDisabilities: typeof import('./src/components/Profile/HealthDisabilities.vue')['default']
     HeatmapComponent: typeof import('./src/components/Profile/HeatmapComponent.vue')['default']

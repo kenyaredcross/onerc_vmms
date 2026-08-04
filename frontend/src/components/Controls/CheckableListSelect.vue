@@ -1,13 +1,20 @@
 <template>
 	<div class="space-y-2">
-		<label v-if="label" :class="labelClasses" class="block font-medium text-gray-700">
+		<label
+			v-if="label"
+			:for="searchId"
+			:class="labelClasses"
+			class="block font-medium text-gray-700"
+		>
 			{{ __(label) }} <span v-if="required" class="text-red-600">*</span>
 		</label>
 
 		<input
+			:id="searchId"
 			v-model="query"
 			type="text"
 			:placeholder="__(props.label) || __('Select...')"
+			:aria-label="label ? undefined : __('Select...')"
 			autocomplete="off"
 			class="form-input w-full rounded-md border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:ring focus:ring-red-200"
 		/>
@@ -43,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, useId } from "vue";
 
 const props = defineProps({
 	label: String,
@@ -57,6 +64,8 @@ const props = defineProps({
 	required: Boolean,
 	cols: { type: Number, default: 2 },
 });
+
+const searchId = useId();
 
 const emit = defineEmits(["change"]);
 const values = defineModel();

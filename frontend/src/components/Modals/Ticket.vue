@@ -1,8 +1,10 @@
 <template>
 	<div>
 		<div class="space-y-2">
-			<h3 class="text-2xl font-bold text-gray-900">Select Your Ticket</h3>
-			<p class="text-sm text-gray-500">Choose the perfect ticket for your experience</p>
+			<h3 class="text-2xl font-bold text-gray-900">{{ __("Select Your Ticket") }}</h3>
+			<p class="text-sm text-gray-500">
+				{{ __("Choose the perfect ticket for your experience") }}
+			</p>
 		</div>
 		<div
 			:class="{
@@ -10,16 +12,27 @@
 				'grid grid-cols-1 md:grid-cols-2 gap-4': selectedTicket,
 			}"
 		>
-			<div class="mt-6 space-y-3">
+			<div class="mt-6 space-y-3" role="radiogroup" :aria-label="__('Select Your Ticket')">
 				<div
-					v-for="ticket in props.tickets"
+					v-for="(ticket, index) in props.tickets"
 					:key="ticket.id"
+					:ref="(el) => (ticketOptions[index] = el)"
+					role="radio"
+					:aria-checked="selectedTicket === ticket.name"
+					:tabindex="rovingIndex === index ? 0 : -1"
+					class="cursor-pointer"
 					:class="{
 						'border-2 border-red-500 rounded-2xl shadow-md shadow-red-100':
 							selectedTicket === ticket.name,
 						'border-gray-100 hover:border-red-300': selectedTicket !== ticket.name,
 					}"
 					@click="handleSelection(ticket)"
+					@keydown.enter.prevent="handleSelection(ticket)"
+					@keydown.space.prevent="handleSelection(ticket)"
+					@keydown.down.prevent="moveSelection(index + 1)"
+					@keydown.right.prevent="moveSelection(index + 1)"
+					@keydown.up.prevent="moveSelection(index - 1)"
+					@keydown.left.prevent="moveSelection(index - 1)"
 				>
 					<TicketCard :ticket="ticket" />
 				</div>
@@ -29,20 +42,22 @@
 				<Input
 					name="ticket_type"
 					type="text"
-					label="Ticket Type"
+					:label="__('Ticket Type')"
 					v-model="ticketData.ticket_type"
 					readonly
 				/>
 				<Input
 					name="price"
 					type="text"
-					label="Price"
+					:label="__('Price')"
 					:value="ticketTotal"
 					v-model="ticketData.price"
 					readonly
 				/>
 				<div v-if="shouldShowTicketNumber" class="flex flex-col gap-2">
-					<label class="text-sm text-gray-700 mb-2">{{ __("Number of Tickets") }}</label>
+					<label for="number-of-tickets" class="text-sm text-gray-700 mb-2">
+						{{ __("Number of Tickets") }}
+					</label>
 					<div class="flex items-center gap-3">
 						<Button
 							type="button"
@@ -54,6 +69,7 @@
 							-
 						</Button>
 						<input
+							id="number-of-tickets"
 							type="number"
 							v-model.number="numberOfTickets"
 							min="1"
@@ -185,6 +201,22 @@ const saveTicketDetails = () => {
 		total_price: ticketTotal.value,
 	};
 };
+const ticketOptions = [];
+
+const rovingIndex = computed(() => {
+	const index = props.tickets.findIndex((t) => t.name === selectedTicket.value);
+	return index === -1 ? 0 : index;
+});
+
+function moveSelection(target) {
+	const count = props.tickets.length;
+	if (!count) return;
+
+	const next = (target + count) % count;
+	handleSelection(props.tickets[next]);
+	ticketOptions[next]?.focus();
+}
+
 function handleSelection(ticket) {
 	selectedTicket.value = ticket.name;
 	payStatus.value = true;

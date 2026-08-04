@@ -43,6 +43,7 @@
 									image.urls.raw +
 									'&w=200&h=50&fit=crop&crop=entropy,faces,focalpoint'
 								"
+								:alt="image.alt_description || __('Unsplash image')"
 							/>
 						</Button>
 					</div>

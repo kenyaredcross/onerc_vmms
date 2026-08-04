@@ -43,6 +43,7 @@
 							required
 							name="first_name"
 							type="text"
+							autocomplete="name"
 							placeholder="John Doe"
 							label="Full Name"
 							v-model="attendData.full_name"
@@ -52,6 +53,7 @@
 							required
 							name="email"
 							type="email"
+							autocomplete="email"
 							placeholder="johndoe@email.com"
 							label="Email"
 							v-model="attendData.email"
@@ -60,7 +62,8 @@
 						<Input
 							required
 							name="phone"
-							type="text"
+							type="tel"
+							autocomplete="tel"
 							placeholder="0712345678"
 							label="Phone Number"
 							v-model="attendData.phone"

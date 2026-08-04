@@ -64,7 +64,7 @@
 			class="text-gray-500 text-center py-16 bg-white border border-gray-100 rounded-2xl shadow-sm"
 		>
 			<p class="text-lg font-medium mb-2">{{ __("No booked tickets found") }}</p>
-			<p class="text-sm text-gray-400">
+			<p class="text-sm text-gray-500">
 				{{ __("Once you register for an event, your tickets will appear here.") }}
 			</p>
 		</div>
