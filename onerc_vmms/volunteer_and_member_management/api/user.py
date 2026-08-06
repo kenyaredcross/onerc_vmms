@@ -34,6 +34,7 @@ SELF_EDITABLE_USER_FIELDS = frozenset(
 		"location",
 		"language",
 		"time_zone",
+		"supporting_documents",
 	}
 )
 

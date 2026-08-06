@@ -218,7 +218,8 @@ function syncModel() {
 	const rows = buildRows();
 	if (JSON.stringify(rows) === JSON.stringify(currentRows())) return;
 	selfUpdate = true;
-	localModel.value = { ...localModel.value, supporting_documents: rows };
+
+	localModel.value.supporting_documents = rows;
 }
 
 function setAttachment(type, value) {
