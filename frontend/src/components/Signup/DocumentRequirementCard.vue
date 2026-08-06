@@ -1,13 +1,11 @@
 <template>
-	<!-- bare = state area only (used inside the "add another document" wrapper) -->
 	<div
 		:class="
 			bare
 				? ''
-				: 'rounded-lg border border-outline-gray-2 bg-surface-white px-4 py-4 shadow-sm transition-colors'
+				: 'rounded-lg border border-outline-gray-2 bg-surface-base px-4 py-4 shadow-sm transition-colors'
 		"
 	>
-		<!-- Header (hidden in bare mode) -->
 		<div v-if="!bare" class="flex items-start gap-3 mb-3">
 			<div
 				class="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full"
@@ -19,7 +17,7 @@
 			<div class="flex-1 min-w-0">
 				<div class="flex items-center gap-2">
 					<div class="flex-1 min-w-0 flex items-center gap-0.5">
-						<span class="text-sm font-semibold text-ink-gray-1-800 truncate">
+						<span class="text-sm-semibold text-ink-gray-1-800 truncate">
 							{{ __(title) }}
 						</span>
 						<span
@@ -45,11 +43,8 @@
 			</div>
 		</div>
 
-		<!-- Optional per-card content (e.g. the document name field for "Other") -->
 		<slot name="beforeState" />
 
-		<!-- State area -->
-		<!-- 1) uploading -->
 		<div
 			v-if="uploading"
 			class="rounded-md border border-outline-gray-2 bg-surface-gray-50 px-3 py-3"
@@ -69,18 +64,17 @@
 			</div>
 		</div>
 
-		<!-- 2) validation / upload error (client-side only; no review-rejection status exists) -->
 		<div v-else-if="localError" class="rounded-md border border-red-200 bg-red-50 px-3 py-3">
 			<div class="flex items-start gap-2">
 				<AlertCircle class="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
 				<div class="flex-1 min-w-0">
-					<p class="text-sm font-medium text-red-700">
+					<p class="text-sm-medium text-red-700">
 						{{ __("File not accepted") }}
 					</p>
 					<p class="text-xs text-red-600 mt-0.5 break-words">{{ localError }}</p>
 					<button
 						type="button"
-						class="mt-2 text-xs font-medium text-red-700 hover:text-red-800 underline"
+						class="mt-2 text-xs-medium text-red-700 hover:text-red-800 underline"
 						@click="reset"
 					>
 						{{ __("Choose another file") }}
@@ -89,13 +83,12 @@
 			</div>
 		</div>
 
-		<!-- 3) uploaded -->
 		<div
 			v-else-if="hasFile"
 			class="rounded-md border border-outline-gray-2 bg-surface-gray-50 px-3 py-2.5 flex items-center gap-3"
 		>
 			<div
-				class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded bg-surface-white border border-outline-gray-2 text-red-600"
+				class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded bg-surface-base border border-outline-gray-2 text-red-600"
 			>
 				<FileText class="w-4 h-4" />
 			</div>
@@ -104,7 +97,7 @@
 					:href="fileUrl"
 					target="_blank"
 					rel="noopener"
-					class="block text-sm font-medium text-ink-gray-1-800 hover:text-red-700 truncate"
+					class="block text-sm-medium text-ink-gray-1-800 hover:text-red-700 truncate"
 				>
 					{{ fileName }}
 				</a>
@@ -132,7 +125,6 @@
 			</div>
 		</div>
 
-		<!-- 4) empty -->
 		<div
 			v-else
 			role="button"
@@ -185,8 +177,6 @@ import { computed, ref } from "vue";
 const props = defineProps({
 	title: { type: String, default: "" },
 	required: { type: Boolean, default: true },
-	// The attachment currently stored for this document: a file object
-	// ({ file_url, file_name, file_size, name }), a plain file_url string, or null.
 	modelValue: { type: [Object, String, null], default: null },
 	disabled: { type: Boolean, default: false },
 	bare: { type: Boolean, default: false },
@@ -194,8 +184,6 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
-// Client-side constraints — match the current grid exactly. Server-side
-// validation (files.py::upload_file) is authoritative and untouched.
 const ALLOWED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png"];
 const MAX_FILE_SIZE_MB = 10;
 const UPLOAD_URL = "/api/method/onerc_vmms.volunteer_and_member_management.api.files.upload_file";
@@ -207,9 +195,6 @@ const progress = ref(0);
 const localError = ref("");
 const dragOver = ref(false);
 
-// Extensions gate validation; the image MIME types make mobile browsers offer
-// the camera ("Take Photo") alongside the file picker. Validation still enforces
-// the extension list below, so this widens the picker options only, not what's accepted.
 const acceptAttribute = computed(() =>
 	[...ALLOWED_EXTENSIONS, "image/jpeg", "image/png"].join(",")
 );
@@ -300,7 +285,6 @@ async function handleFile(file) {
 	uploading.value = true;
 	progress.value = 0;
 
-	// Lightweight determinate feedback while the request is in flight.
 	const timer = setInterval(() => {
 		progress.value = Math.min(90, progress.value + 12);
 	}, 120);
@@ -326,8 +310,6 @@ async function handleFile(file) {
 		const data = await response.json();
 		const msg = data?.message || {};
 
-		// Same object shape the grid produced; the server normalises `attachment`
-		// to its file_url string on save, so file_size here is display-only.
 		const fileObj = {
 			file_url: msg.file_url,
 			file_name: msg.file_name || file.name,

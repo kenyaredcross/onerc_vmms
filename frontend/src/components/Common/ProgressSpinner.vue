@@ -2,7 +2,7 @@
 	<div
 		role="status"
 		aria-live="polite"
-		class="flex flex-col justify-center items-center my-auto text-center text-3xl"
+		class="flex flex-col justify-center items-center my-auto text-center text-4xl"
 	>
 		<LoaderCircle aria-hidden="true" class="animate-spin text-red-500" :class="sizeClass" />
 		<span v-if="message" class="text-base"> {{ __(message) }}</span>

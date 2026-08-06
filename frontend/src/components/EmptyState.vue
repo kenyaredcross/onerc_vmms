@@ -1,7 +1,7 @@
 <template>
 	<div class="flex items-center justify-center px-4">
 		<div
-			class="bg-surface-white rounded-2xl p-8 max-w-lg w-full text-center border border-red-200"
+			class="bg-surface-base rounded-2xl p-8 max-w-lg w-full text-center border border-red-200"
 		>
 			<div
 				class="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-red-50 mb-4"
@@ -9,7 +9,7 @@
 				<FileX class="size-8 text-red-500" />
 			</div>
 
-			<h2 class="text-xl font-semibold text-red-600 mb-2">
+			<h2 class="text-2xl-semibold text-red-600 mb-2">
 				{{ __("No {0}").format(type?.toLowerCase()) }}
 			</h2>
 

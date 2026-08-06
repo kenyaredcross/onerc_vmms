@@ -1,6 +1,6 @@
 <template>
 	<section>
-		<h2 class="text-xl font-bold text-red-700 mb-4">
+		<h2 class="text-2xl-bold text-red-700 mb-4">
 			{{ __("Personal Info") }}
 		</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -131,7 +131,7 @@
 			</div>
 		</div>
 
-		<h2 class="text-xl font-bold text-red-700 mb-4">
+		<h2 class="text-2xl-bold text-red-700 mb-4">
 			{{ __("Location Info") }}
 		</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -178,7 +178,8 @@
 					:label="__('Location')"
 					doctype="Administrative Location"
 					:filters="localModel.sub_county ? { sub_county: localModel.sub_county } : {}"
-					:onCreate="openCreateLocation"
+					creatable
+					@create="openCreateLocation"
 				/>
 			</div>
 
@@ -192,7 +193,8 @@
 							? { location: localModel.administrative_location }
 							: {}
 					"
-					:onCreate="openCreateSubLocation"
+					creatable
+					@create="openCreateSubLocation"
 				/>
 			</div>
 
@@ -210,7 +212,7 @@
 				@created="closeEntryDialog"
 			/>
 		</div>
-		<h2 class="text-xl font-bold text-red-700 mb-4">
+		<h2 class="text-2xl-bold text-red-700 mb-4">
 			{{ __("Identification") }}
 		</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -294,7 +296,7 @@
 
 <script setup>
 import CreateNewEntryDialog from "@/components/Modals/CreateNewEntryDialog.vue";
-import Link from "@/components/Controls/Link.vue";
+import { Link } from "frappe-ui/frappe";
 import { useFieldErrors } from "@/composables/useFieldErrors";
 import { FormControl } from "frappe-ui";
 import { computed, ref, watch } from "vue";
@@ -447,13 +449,12 @@ const createLocationInitial = ref({});
 const showCreateSubLocation = ref(false);
 const createSubLocationInitial = ref({});
 
-function openCreateLocation(typedText, close) {
+function openCreateLocation(typedText) {
 	createLocationInitial.value = {
 		location_name: typedText || "",
 		sub_county: localModel.value.sub_county || "",
 		county: localModel.value.county || "",
 	};
-	close();
 	showCreateLocation.value = true;
 }
 function closeEntryDialog(name) {
@@ -461,12 +462,11 @@ function closeEntryDialog(name) {
 	localModel.value[isLocation ? "administrative_location" : "sub_location"] = name;
 	(isLocation ? showCreateLocation : showCreateSubLocation).value = false;
 }
-function openCreateSubLocation(typedText, close) {
+function openCreateSubLocation(typedText) {
 	createSubLocationInitial.value = {
 		sub_location_name: typedText || "",
 		location: localModel.value.administrative_location || "",
 	};
-	close();
 	showCreateSubLocation.value = true;
 }
 

@@ -3,7 +3,7 @@
 		<template #body-title>
 			<div class="flex items-center gap-2">
 				<Lock class="w-5 h-5 text-red-600" />
-				<h3 class="text-xl font-bold text-ink-gray-1-900">Exclusive Event</h3>
+				<h3 class="text-2xl-bold text-ink-gray-1-900">Exclusive Event</h3>
 			</div>
 		</template>
 

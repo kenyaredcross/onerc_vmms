@@ -6,13 +6,13 @@
 	>
 		<ProfileHeader :allow-edit="true" :form="form" class="mb-6 md:mb-10" />
 
-		<div v-if="loading" class="text-center py-20 bg-surface-white rounded-xl shadow-lg">
+		<div v-if="loading" class="text-center py-20 bg-surface-base rounded-xl shadow-lg">
 			<ProgressSpinner size="sm" :message="__('Loading user details...')" />
 		</div>
 
-		<div v-else class="bg-surface-white shadow-xl rounded-xl p-4 sm:p-6 lg:p-8">
+		<div v-else class="bg-surface-base shadow-xl rounded-xl p-4 sm:p-6 lg:p-8">
 			<div class="flex justify-between items-center mb-6">
-				<h2 class="text-2xl font-bold text-ink-gray-1-900 dark:text-ink-gray-5">
+				<h2 class="text-3xl-bold text-ink-gray-1-900 dark:text-ink-gray-5">
 					{{ __("Edit Profile") }}
 				</h2>
 

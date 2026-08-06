@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b bg-surface-white px-4 py-3 md:px-6"
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-surface-base px-4 py-3 md:px-6"
 		>
 			<Breadcrumbs
 				class="h-7"

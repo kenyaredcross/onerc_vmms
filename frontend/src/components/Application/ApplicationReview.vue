@@ -21,7 +21,7 @@
 					doctype="Country"
 					v-model="form.country_of_citizenship"
 					:label="__('Country of Citizenship')"
-					:readOnly="true"
+					:disabled="true"
 				/>
 				<FormControl
 					v-if="form.citizenship !== 'Citizen'"
@@ -63,7 +63,7 @@
 					doctype="County"
 					v-model="form.county"
 					:label="__('County')"
-					:readOnly="true"
+					:disabled="true"
 				/>
 				<Link
 					v-if="form.county"
@@ -71,7 +71,7 @@
 					v-model="form.sub_county"
 					:label="__('Sub County')"
 					:filters="{ county: form.county }"
-					:readOnly="true"
+					:disabled="true"
 				/>
 				<FormControl
 					v-model="form.ward"
@@ -85,7 +85,7 @@
 					v-model="form.administrative_location"
 					:label="__('Location')"
 					:filters="{ sub_county: form.sub_county }"
-					:readOnly="true"
+					:disabled="true"
 				/>
 				<FormControl
 					v-model="form.access_to_internet"
@@ -103,7 +103,7 @@
 					v-model="form.profession"
 					:label="__('Profession')"
 					class="mt-4"
-					:readOnly="true"
+					:disabled="true"
 				/>
 				<ChildTable
 					v-model="form.education"
@@ -168,7 +168,7 @@
 				<div
 					v-for="(q, index) in visibleQuestions"
 					:key="q.question_id"
-					class="rounded-xl border p-5 bg-surface-white transition-all"
+					class="rounded-xl border p-5 bg-surface-base transition-all"
 					:class="{
 						'ml-8 border-blue-300 bg-blue-50': q.depends_on_question,
 					}"
@@ -227,7 +227,7 @@
 						/>
 
 						<div v-else-if="q.question_type === 'Rating'" class="flex gap-3 mt-1">
-							<span class="text-lg font-bold">
+							<span class="text-lg-bold">
 								{{ responses[q.question_id].answer || __("N/A") }}
 							</span>
 							<span
@@ -279,7 +279,7 @@
 
 <script setup>
 import ChildTable from "@/components/Controls/ChildTable.vue";
-import Link from "@/components/Controls/Link.vue";
+import { Link } from "frappe-ui/frappe";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import { FormControl } from "frappe-ui";
 import { computed, ref, watch } from "vue";

@@ -1,7 +1,7 @@
 <template>
-	<div class="bg-surface-white rounded-lg p-6">
+	<div class="bg-surface-base rounded-lg p-6">
 		<div class="flex justify-between items-center mb-4">
-			<h3 class="text-lg font-semibold text-ink-gray-8">{{ __("Activity Overview") }}</h3>
+			<h3 class="text-lg-semibold text-ink-gray-8">{{ __("Activity Overview") }}</h3>
 			<select
 				v-model="year"
 				:aria-label="__('Activity year')"

@@ -1,14 +1,14 @@
 <template>
 	<div class="flex flex-col min-h-screen bg-surface-gray-50">
 		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-2 bg-surface-white px-4 py-3 sm:px-6 shadow-sm"
+			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-2 bg-surface-base px-4 py-3 sm:px-6 shadow-sm"
 		>
 			<div class="flex items-center space-x-4">
 				<Breadcrumbs
 					class="h-7 text-sm sm:text-base text-ink-gray-1-600"
 					:items="[{ label: __('Opportunities'), route: { name: 'Jobs' } }]"
 				/>
-				<div class="hidden sm:block text-xl font-bold text-red-600">
+				<div class="hidden sm:block text-2xl-bold text-red-600">
 					{{
 						__(currentTab) === __("Open")
 							? __("{0} Open Opportunities").format(jobCount)
@@ -32,7 +32,7 @@
 			<div v-if="currentTab === 'Open'">
 				<div
 					v-if="currentTab === 'Open'"
-					class="bg-surface-white rounded-xl p-4 sm:p-6 mb-6 space-y-6"
+					class="bg-surface-base rounded-xl p-4 sm:p-6 mb-6 space-y-6"
 				>
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						<FormControl
@@ -51,21 +51,21 @@
 							v-model="designation"
 							:placeholder="__('Designation')"
 							class="w-full"
-							@change="updateJobs"
+							@update:model-value="updateJobs"
 						/>
 						<Link
 							doctype="Profession"
 							v-model="profession"
 							:placeholder="__('Profession')"
 							class="w-full"
-							@change="updateJobs"
+							@update:model-value="updateJobs"
 						/>
 						<Link
 							doctype="Location"
 							v-model="job_location"
 							:placeholder="__('Location')"
 							class="w-full"
-							@change="updateJobs"
+							@update:model-value="updateJobs"
 						/>
 						<MultiSelect
 							doctype="Company Item"
@@ -91,7 +91,7 @@
 							class="justify-center text-red-600 hover:bg-red-50 border border-red-200"
 							@click="clearFilters"
 						>
-							<span class="text-sm font-medium">{{ __("Clear All") }}</span>
+							<span class="text-sm-medium">{{ __("Clear All") }}</span>
 						</Button>
 					</div>
 				</div>
@@ -120,7 +120,7 @@
 </template>
 
 <script setup>
-import Link from "@/components/Controls/Link.vue";
+import { Link } from "frappe-ui/frappe";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import JobCard from "@/components/JobCard.vue";

@@ -6,7 +6,7 @@
 			@click="navigateEvent(event)"
 			@keydown.enter="navigateEvent(event)"
 			@keydown.space.prevent="navigateEvent(event)"
-			class="w-full text-left flex flex-col rounded-2xl overflow-hidden border hover:shadow-2xl transition-all duration-500 bg-surface-white cursor-pointer"
+			class="w-full text-left flex flex-col rounded-2xl overflow-hidden border hover:shadow-2xl transition-all duration-500 bg-surface-base cursor-pointer"
 		>
 			<div class="relative w-full h-48">
 				<img
@@ -20,7 +20,7 @@
 			</div>
 
 			<div
-				class="flex border-b rounded-2xl border-b-red-500 flex-col bg-surface-white rounded-b-3xl px-5 py-6 space-y-3"
+				class="flex border-b rounded-2xl border-b-red-500 flex-col bg-surface-base rounded-b-3xl px-5 py-6 space-y-3"
 			>
 				<div
 					class="grid grid-cols-12 items-center justify-between text-ink-gray-1-700 text-sm gap-2"
@@ -32,7 +32,7 @@
 							<span class="uppercase text-xs">
 								{{ formatDate(event.start_date, "MMM") }}
 							</span>
-							<span class="text-2xl font-bold">
+							<span class="text-3xl-bold">
 								{{ formatDate(event.start_date, "D") }}
 							</span>
 						</div>
@@ -44,7 +44,7 @@
 					</div>
 				</div>
 
-				<h2 class="text-lg font-bold text-ink-gray-1-900">{{ event.title }}</h2>
+				<h2 class="text-lg-bold text-ink-gray-1-900">{{ event.title }}</h2>
 
 				<p class="text-ink-gray-1-500 text-sm leading-snug line-clamp-2">
 					{{ event.short_description }}

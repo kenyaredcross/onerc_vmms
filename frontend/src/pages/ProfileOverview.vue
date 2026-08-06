@@ -1,19 +1,19 @@
 <template>
 	<NoPermission v-if="!isLoggedIn" :page="__('Profile')" />
-	<div v-if="loading" class="text-center py-20 bg-surface-white rounded-xl">
+	<div v-if="loading" class="text-center py-20 bg-surface-base rounded-xl">
 		<ProgressSpinner size="sm" :message="__('Loading user details...')" />
 	</div>
 
-	<div v-else class="bg-surface-white rounded-xl p-4 sm:p-6 lg:p-8">
+	<div v-else class="bg-surface-base rounded-xl p-4 sm:p-6 lg:p-8">
 		<ProfileHeader :allow-edit="false" :form="form" class="mb-6 md:mb-10" />
 		<div class="flex justify-between items-center mb-6">
-			<h2 class="text-2xl font-bold text-ink-gray-8">
+			<h2 class="text-3xl-bold text-ink-gray-8">
 				{{ __("Profile Overview") }}
 			</h2>
 
 			<router-link
 				:to="{ name: 'Profile' }"
-				class="flex items-center gap-2 px-5 py-2 bg-red-600 text-ink-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+				class="flex items-center gap-2 px-5 py-2 bg-red-600 text-ink-base rounded-lg hover:bg-red-700 transition-colors font-semibold"
 			>
 				<LogIn class="w-5 h-5" />
 				{{ __("Edit Profile") }}

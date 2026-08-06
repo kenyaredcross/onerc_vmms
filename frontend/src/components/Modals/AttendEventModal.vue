@@ -1,8 +1,8 @@
 <template>
-	<div class="max-w-3xl mx-auto my-auto p-6 bg-surface-white rounded-2xl">
+	<div class="max-w-3xl mx-auto my-auto p-6 bg-surface-base rounded-2xl">
 		<div class="flex items-center gap-4">
 			<CalendarCheck class="w-6 h-6 text-green-600" />
-			<h3 class="text-xl font-semibold text-ink-gray-1-900">
+			<h3 class="text-2xl-semibold text-ink-gray-1-900">
 				{{ registerSuccess ? "Registration Successful" : "Confirm Attendance" }}
 			</h3>
 		</div>
@@ -95,7 +95,7 @@
 
 		<div v-else class="text-center space-y-4">
 			<Check class="w-12 h-12 text-green-600 mx-auto" />
-			<h2 class="text-2xl font-semibold text-ink-gray-1-900">Registration Successful!</h2>
+			<h2 class="text-3xl-semibold text-ink-gray-1-900">Registration Successful!</h2>
 			<p class="text-ink-gray-1-700">
 				Thank you for registering! We look forward to seeing you at the event. You will
 				receive a confirmation email shortly with all the event details.

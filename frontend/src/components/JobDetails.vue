@@ -1,7 +1,7 @@
 <template>
 	<div v-if="job.data" class="min-h-screen">
 		<div class="max-w-7xl mx-auto mb-4 md:px-4 lg:px-8 md:py-6">
-			<div class="bg-surface-white rounded-2xl overflow-hidden border border-outline-gray-2">
+			<div class="bg-surface-base rounded-2xl overflow-hidden border border-outline-gray-2">
 				<!-- Hero Banner -->
 				<div
 					class="relative bg-gradient-to-r from-red-600 to-red-700 px-5 sm:px-8 py-8 sm:py-12 text-white"
@@ -17,13 +17,13 @@
 							<img
 								v-if="job.data.company_logo"
 								:src="job.data.company_logo"
-								class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-contain bg-surface-white p-3 shadow-lg cursor-pointer hover:scale-105 transition-transform duration-200"
+								class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-contain bg-surface-base p-3 shadow-lg cursor-pointer hover:scale-105 transition-transform duration-200"
 								:alt="__('Company Logo')"
 								@click="redirectToWebsite(job.data.website)"
 							/>
 							<div
 								v-else
-								class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center rounded-xl bg-surface-white text-red-600 font-black text-2xl shadow-lg select-none"
+								class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center rounded-xl bg-surface-base text-red-600 font-black text-3xl shadow-lg select-none"
 							>
 								{{ getCompanyAbbr(job.data.company) }}
 							</div>
@@ -32,19 +32,19 @@
 						<!-- Title + Tags -->
 						<div class="flex-1 min-w-0">
 							<h1
-								class="text-2xl sm:text-4xl font-black leading-tight mb-3 text-white drop-shadow"
+								class="text-3xl sm:text-5xl font-black leading-tight mb-3 text-white drop-shadow"
 							>
 								{{ __(job.data.job_title) }}
 							</h1>
 							<div class="flex flex-wrap gap-2">
 								<span
-									class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs sm:text-sm font-semibold border border-white/30"
+									class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs-semibold sm:text-sm border border-white/30"
 								>
 									{{ __(job.data.company) }}
 								</span>
 								<span
 									v-if="job.data.department"
-									class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs sm:text-sm font-semibold border border-white/30"
+									class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs-semibold sm:text-sm border border-white/30"
 								>
 									{{ __(job.data.department) }}
 								</span>
@@ -60,13 +60,11 @@
 						<div
 							class="group relative overflow-hidden bg-surface-gray-1 p-4 sm:p-5 rounded-xl border border-outline-gray-1 hover:border-outline-red-1 hover:shadow-md transition-all duration-200"
 						>
-							<CalendarDays class="w-5 h-5 text-ink-red-3 mb-2" />
-							<p
-								class="text-xs font-bold text-ink-gray-4 uppercase tracking-wider mb-1"
-							>
+							<CalendarDays class="w-5 h-5 text-ink-red-6 mb-2" />
+							<p class="text-xs-bold text-ink-gray-4 uppercase tracking-wider mb-1">
 								{{ __("Posted") }}
 							</p>
-							<p class="text-sm font-semibold text-ink-gray-9">
+							<p class="text-sm-semibold text-ink-gray-9">
 								{{ __(dayjs(job.data.creation).fromNow()) }}
 							</p>
 						</div>
@@ -74,13 +72,11 @@
 						<div
 							class="group relative overflow-hidden bg-surface-red-1 p-4 sm:p-5 rounded-xl border border-outline-gray-1 hover:border-outline-red-1 hover:shadow-md transition-all duration-200"
 						>
-							<ClipboardType class="w-5 h-5 text-ink-red-3 mb-2" />
-							<p
-								class="text-xs font-bold text-ink-gray-4 uppercase tracking-wider mb-1"
-							>
+							<ClipboardType class="w-5 h-5 text-ink-red-6 mb-2" />
+							<p class="text-xs-bold text-ink-gray-4 uppercase tracking-wider mb-1">
 								{{ __("Type") }}
 							</p>
-							<p class="text-sm font-semibold text-ink-gray-9">
+							<p class="text-sm-semibold text-ink-gray-9">
 								{{ __(job.data.employment_type) }}
 							</p>
 						</div>
@@ -88,13 +84,11 @@
 						<div
 							class="group relative overflow-hidden bg-surface-blue-1 p-4 sm:p-5 rounded-xl border border-outline-gray-1 hover:border-outline-blue-1 hover:shadow-md transition-all duration-200"
 						>
-							<Briefcase class="w-5 h-5 text-ink-blue-2 mb-2" />
-							<p
-								class="text-xs font-bold text-ink-gray-4 uppercase tracking-wider mb-1"
-							>
+							<Briefcase class="w-5 h-5 text-ink-blue-5 mb-2" />
+							<p class="text-xs-bold text-ink-gray-4 uppercase tracking-wider mb-1">
 								{{ __("Level") }}
 							</p>
-							<p class="text-sm font-semibold text-ink-gray-9">
+							<p class="text-sm-semibold text-ink-gray-9">
 								{{
 									__(
 										job.data.designation?.designation_name ||
@@ -108,13 +102,11 @@
 							v-if="job.data.minimum_years_of_experience"
 							class="group relative overflow-hidden bg-surface-green-1 p-4 sm:p-5 rounded-xl border border-outline-gray-1 hover:border-outline-green-1 hover:shadow-md transition-all duration-200"
 						>
-							<Award class="w-5 h-5 text-ink-green-3 mb-2" />
-							<p
-								class="text-xs font-bold text-ink-gray-4 uppercase tracking-wider mb-1"
-							>
+							<Award class="w-5 h-5 text-ink-green-6 mb-2" />
+							<p class="text-xs-bold text-ink-gray-4 uppercase tracking-wider mb-1">
 								{{ __("Experience") }}
 							</p>
-							<p class="text-sm font-semibold text-ink-gray-9">
+							<p class="text-sm-semibold text-ink-gray-9">
 								{{ __(job.data.minimum_years_of_experience) }}{{ __("+ Years") }}
 							</p>
 						</div>
@@ -131,7 +123,7 @@
 									class="w-9 h-9 rounded-full bg-surface-red-1 flex items-center justify-center shrink-0"
 								>
 									<svg
-										class="w-4 h-4 text-ink-red-3"
+										class="w-4 h-4 text-ink-red-6"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -151,10 +143,10 @@
 									</svg>
 								</div>
 								<div>
-									<p class="text-xs font-bold text-ink-gray-4 uppercase">
+									<p class="text-xs-bold text-ink-gray-4 uppercase">
 										{{ __("County") }}
 									</p>
-									<p class="text-sm font-semibold text-ink-gray-9">
+									<p class="text-sm-semibold text-ink-gray-9">
 										{{ __(job.data.company) }}
 									</p>
 								</div>
@@ -165,7 +157,7 @@
 									class="w-9 h-9 rounded-full bg-surface-blue-1 flex items-center justify-center shrink-0"
 								>
 									<svg
-										class="w-4 h-4 text-ink-blue-2"
+										class="w-4 h-4 text-ink-blue-5"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -179,10 +171,10 @@
 									</svg>
 								</div>
 								<div>
-									<p class="text-xs font-bold text-ink-gray-4 uppercase">
+									<p class="text-xs-bold text-ink-gray-4 uppercase">
 										{{ __("Location") }}
 									</p>
-									<p class="text-sm font-semibold text-ink-gray-9">
+									<p class="text-sm-semibold text-ink-gray-9">
 										{{ __(job.data.job_location) }}
 									</p>
 								</div>
@@ -207,10 +199,10 @@
 									</svg>
 								</div>
 								<div>
-									<p class="text-xs font-bold text-ink-gray-4 uppercase">
+									<p class="text-xs-bold text-ink-gray-4 uppercase">
 										{{ __("Profession") }}
 									</p>
-									<p class="text-sm font-semibold text-ink-gray-9">
+									<p class="text-sm-semibold text-ink-gray-9">
 										{{ __(job.data.profession) }}
 									</p>
 								</div>
@@ -226,7 +218,7 @@
 							>
 								<CheckCircle class="w-5 h-5 text-white" />
 							</div>
-							<h2 class="text-xl sm:text-2xl font-black text-ink-gray-9">
+							<h2 class="text-2xl sm:text-3xl font-black text-ink-gray-9">
 								{{ __("Core Skills Required") }}
 							</h2>
 						</div>
@@ -234,14 +226,14 @@
 							<div
 								v-for="(skill, idx) in job.data.required_skills"
 								:key="idx"
-								class="flex items-center gap-3 p-3 sm:p-4 bg-surface-white rounded-xl border border-outline-gray-1 hover:border-outline-red-1 hover:transition-all duration-200"
+								class="flex items-center gap-3 p-3 sm:p-4 bg-surface-base rounded-xl border border-outline-gray-1 hover:border-outline-red-1 hover:transition-all duration-200"
 							>
 								<div
 									class="w-7 h-7 rounded-lg bg-surface-red-1 flex items-center justify-center shrink-0"
 								>
-									<Check class="w-3.5 h-3.5 text-ink-red-3" />
+									<Check class="w-3.5 h-3.5 text-ink-red-6" />
 								</div>
-								<span class="text-sm font-medium text-ink-gray-8">{{
+								<span class="text-sm-medium text-ink-gray-8">{{
 									__(skill?.skill)
 								}}</span>
 							</div>
@@ -256,7 +248,7 @@
 							>
 								<FileText class="w-5 h-5 text-white" />
 							</div>
-							<h2 class="text-xl sm:text-2xl font-black text-ink-gray-9">
+							<h2 class="text-2xl sm:text-3xl font-black text-ink-gray-9">
 								{{ __("Qualifications") }}
 							</h2>
 						</div>
@@ -265,11 +257,11 @@
 								class="p-4 sm:p-5 bg-surface-blue-1 rounded-xl border border-outline-gray-1"
 							>
 								<p
-									class="text-xs font-black text-ink-blue-2 uppercase tracking-widest mb-1"
+									class="text-xs font-black text-ink-blue-5 uppercase tracking-widest mb-1"
 								>
 									{{ __("Minimum Qualification") }}
 								</p>
-								<p class="text-base font-bold text-ink-gray-9">
+								<p class="text-base-bold text-ink-gray-9">
 									{{ __(job.data.minimum_qualification_level) }}
 								</p>
 							</div>
@@ -281,7 +273,7 @@
 								>
 									{{ __("Field of Study") }}
 								</p>
-								<p class="text-base font-bold text-ink-gray-9">
+								<p class="text-base-bold text-ink-gray-9">
 									{{ __(job.data.preferred_field_of_study) }}
 								</p>
 							</div>
@@ -289,11 +281,11 @@
 								class="p-4 sm:p-5 bg-surface-green-1 rounded-xl border border-outline-gray-1"
 							>
 								<p
-									class="text-xs font-black text-ink-green-3 uppercase tracking-widest mb-1"
+									class="text-xs font-black text-ink-green-6 uppercase tracking-widest mb-1"
 								>
 									{{ __("Minimum GPA / Grade") }}
 								</p>
-								<p class="text-base font-bold text-ink-gray-9">
+								<p class="text-base-bold text-ink-gray-9">
 									{{ __(job.data.required_gpa__grade) }}
 								</p>
 							</div>
@@ -301,11 +293,11 @@
 								class="p-4 sm:p-5 bg-surface-amber-1 rounded-xl border border-outline-gray-1"
 							>
 								<p
-									class="text-xs font-black text-ink-amber-3 uppercase tracking-widest mb-1"
+									class="text-xs font-black text-ink-amber-6 uppercase tracking-widest mb-1"
 								>
 									{{ __("Equivalent Experience") }}
 								</p>
-								<p class="text-base font-bold text-ink-gray-9">
+								<p class="text-base-bold text-ink-gray-9">
 									{{ __(job.data.allow_equivalent_experience ? "Yes" : "No") }}
 								</p>
 							</div>
@@ -320,7 +312,7 @@
 							>
 								<Award class="w-5 h-5 text-white" />
 							</div>
-							<h2 class="text-xl sm:text-2xl font-black text-ink-gray-9">
+							<h2 class="text-2xl sm:text-3xl font-black text-ink-gray-9">
 								{{ __("Required Licenses & Certifications") }}
 							</h2>
 						</div>
@@ -328,14 +320,14 @@
 							<div
 								v-for="(lic, idx) in job.data.required_licences"
 								:key="idx"
-								class="flex items-center gap-3 p-3 sm:p-4 bg-surface-white rounded-xl border border-outline-gray-1 hover:border-outline-green-1 hover:transition-all duration-200"
+								class="flex items-center gap-3 p-3 sm:p-4 bg-surface-base rounded-xl border border-outline-gray-1 hover:border-outline-green-1 hover:transition-all duration-200"
 							>
 								<div
 									class="w-7 h-7 rounded-lg bg-surface-green-1 flex items-center justify-center shrink-0"
 								>
-									<Check class="w-3.5 h-3.5 text-ink-green-3" />
+									<Check class="w-3.5 h-3.5 text-ink-green-6" />
 								</div>
-								<span class="text-sm font-medium text-ink-gray-8">{{
+								<span class="text-sm-medium text-ink-gray-8">{{
 									__(lic?.license_type)
 								}}</span>
 							</div>
@@ -346,11 +338,11 @@
 					<section v-if="job.data.description">
 						<div class="flex items-center gap-3 mb-4">
 							<div
-								class="w-10 h-10 rounded-xl bg-surface-gray-5 flex items-center justify-center"
+								class="w-10 h-10 rounded-xl bg-surface-gray-8 flex items-center justify-center"
 							>
 								<FileText class="w-5 h-5 text-white" />
 							</div>
-							<h2 class="text-xl sm:text-2xl font-black text-ink-gray-8">
+							<h2 class="text-2xl sm:text-3xl font-black text-ink-gray-8">
 								{{ __("Opportunity Description") }}
 							</h2>
 						</div>
@@ -437,7 +429,7 @@ const hasQualification = (job) =>
 }
 
 .frappe-editor-content :deep(a) {
-	color: var(--ink-red-3) !important;
+	color: var(--ink-red-6) !important;
 }
 
 .frappe-editor-content :deep(strong) {

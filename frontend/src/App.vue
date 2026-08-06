@@ -2,22 +2,25 @@
 	<FrappeUIProvider>
 		<a
 			href="#scrollContainer"
-			class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-surface-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-ink-gray-9 focus:shadow-lg focus:ring-2 focus:ring-red-500"
+			class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[1000] focus:rounded-md focus:bg-surface-base focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-ink-gray-9 focus:shadow-lg focus:ring-2 focus:ring-red-500"
 			@click.prevent="focusMainContent"
 		>
 			{{ __("Skip to main content") }}
 		</a>
 
-		<div class="text-base text-ink-gray-8 h-full bg-surface-white">
+		<div class="text-base text-ink-gray-8 h-full bg-surface-base">
 			<InstallPrompt v-if="isMobile" />
 			<Layout>
 				<router-view />
 			</Layout>
+			<AppSettings v-if="isLoggedIn" />
 			<Dialogs />
 		</div>
 	</FrappeUIProvider>
 </template>
 <script setup>
+import AppSettings from "@/components/Settings/AppSettings.vue";
+import { sessionStore } from "@/stores/session";
 import { usersStore } from "@/stores/user";
 import { Dialogs } from "@/utils/dialogs";
 import { FrappeUIProvider, useTheme } from "frappe-ui";
@@ -42,6 +45,7 @@ function focusMainContent() {
 }
 const noSidebar = ref(false);
 const { userResource } = usersStore();
+const { isLoggedIn } = sessionStore();
 
 router.beforeEach((to, from, next) => {
 	if (

@@ -1,13 +1,13 @@
 <template>
 	<div class="space-y-6">
-		<div class="rounded-xl border p-5 bg-surface-white shadow-sm">
+		<div class="rounded-xl border p-5 bg-surface-base shadow-sm">
 			<h3 class="font-semibold text-ink-gray-1-800 mb-3">
 				{{ __("Professional Profiles") }}
 			</h3>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
 				<div>
-					<label class="block text-sm font-medium text-ink-gray-1-700 mb-1">
+					<label class="block text-sm-medium text-ink-gray-1-700 mb-1">
 						{{ __("LinkedIn Profile") }}
 					</label>
 					<FormControl
@@ -18,7 +18,7 @@
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-ink-gray-1-700 mb-1">
+					<label class="block text-sm-medium text-ink-gray-1-700 mb-1">
 						{{ __("GitHub Profile") }}
 					</label>
 					<FormControl
@@ -94,7 +94,7 @@
 				v-if="hasChanges"
 				type="button"
 				@click="handleSave"
-				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 disabled:active:scale-100"
+				class="flex items-center gap-1 px-8 py-2 text-sm-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 disabled:active:scale-100"
 				:disabled="saveInProgress"
 				:aria-busy="saveInProgress"
 			>
@@ -124,7 +124,7 @@
 <script setup>
 import CollapsibleSection from "@/components/CollapsibleSection.vue";
 import ChildTable from "@/components/Controls/ChildTable.vue";
-import Link from "@/components/Controls/Link.vue";
+import { Link } from "frappe-ui/frappe";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import { createResource, FormControl, toast } from "frappe-ui";
 import { computed, reactive, ref, watch } from "vue";

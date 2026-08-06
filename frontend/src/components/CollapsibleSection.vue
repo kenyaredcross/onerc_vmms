@@ -1,12 +1,12 @@
 <template>
-	<div class="border rounded-lg bg-surface-white shadow-sm">
+	<div class="border rounded-lg bg-surface-base shadow-sm">
 		<button
 			type="button"
 			:aria-expanded="isOpen"
 			@click="toggle"
 			class="flex justify-between items-center w-full p-4 text-left font-semibold text-ink-gray-1-700 hover:bg-surface-gray-50 transition duration-150"
 		>
-			<h2 class="text-xl font-semibold">{{ __(title) }}</h2>
+			<h2 class="text-2xl-semibold">{{ __(title) }}</h2>
 			<svg
 				class="w-5 h-5 transition-transform duration-300"
 				:class="{ 'rotate-180': isOpen }"

@@ -1,5 +1,5 @@
 <template>
-	<div class="min-h-screen bg-surface-gray-50">
+	<div class="min-h-screen bg-surface-gray-1">
 		<ProjectLoading v-if="DeploymentDetail.loading" />
 		<ProjectError v-else-if="DeploymentDetail.error" @reload="DeploymentDetail.reload()" />
 		<ProjectContent

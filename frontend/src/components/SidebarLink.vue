@@ -2,7 +2,7 @@
 	<button
 		v-if="link && !link.onlyMobile"
 		class="flex h-7 cursor-pointer items-center rounded text-ink-gray-8 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-		:class="isActive ? 'bg-surface-selected shadow-sm' : 'hover:bg-surface-gray-2'"
+		:class="isActive ? 'bg-surface-elevation-3 shadow-sm' : 'hover:bg-surface-gray-2'"
 		@click="handleClick"
 	>
 		<div
@@ -15,7 +15,7 @@
 						<component
 							:is="icons[link.icon]"
 							class="h-4 w-4 stroke-1.5 text-ink-gray-8"
-							:class="isActive ? 'text-ink-red-4' : 'text-ink-gray-8'"
+							:class="isActive ? 'text-ink-red-8' : 'text-ink-gray-8'"
 						/>
 					</span>
 				</slot>
@@ -33,12 +33,17 @@
 				class="!ml-auto block text-xs text-ink-gray-5"
 				:class="
 					isCollapsed && link.count > 9
-						? 'absolute top-[2px] right-0 bg-surface-white'
+						? 'absolute top-[2px] right-0 bg-surface-base'
 						: ''
 				"
 			>
 				{{ link.count }}
 			</span>
+			<span
+				v-else-if="link.alert"
+				class="size-2 shrink-0 rounded-full bg-surface-red-5"
+				:class="isCollapsed ? 'absolute top-0.5 right-0.5' : '!ml-auto'"
+			/>
 			<div
 				v-if="showControls && !isCollapsed"
 				class="flex items-center space-x-2 !ml-auto block text-xs text-ink-gray-5 group-hover:visible invisible"
@@ -82,7 +87,9 @@ const props = defineProps({
 });
 
 function handleClick() {
-	if (router.hasRoute(props.link.to)) {
+	if (props.link.onClick) {
+		props.link.onClick();
+	} else if (router.hasRoute(props.link.to)) {
 		router.push({ name: props.link.to });
 	} else if (props.link.to) {
 		window.location.href = `/${props.link.to}`;
@@ -90,6 +97,7 @@ function handleClick() {
 }
 
 const isActive = computed(() => {
+	if (props.link?.active !== undefined) return props.link.active;
 	return props.link?.activeFor?.includes(router.currentRoute.value.name);
 });
 

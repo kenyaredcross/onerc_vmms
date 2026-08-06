@@ -57,15 +57,15 @@ export default defineConfig({
 	},
 
 	optimizeDeps: {
+		// frappe-ui resolves `~icons/lucide/*` through a Vite plugin, and esbuild's
+		// dep pre-bundling pass does not run Vite plugins — pre-bundling it fails
+		// to resolve those imports.
+		exclude: ["frappe-ui"],
 		include: [
 			"feather-icons",
-			"showdown",
-			"highlight.js/lib/core",
-			"interactjs",
 			"vue",
 			"vue-router",
 			"pinia",
-			"frappe-ui",
 			"dayjs",
 			"date-fns",
 			"apexcharts",

@@ -2,12 +2,12 @@
 	<section>
 		<div class="mb-5">
 			<div class="flex items-center justify-between gap-4">
-				<h2 class="text-xl font-bold text-red-700">
+				<h2 class="text-2xl-bold text-red-700">
 					{{ __("Supporting Documents") }}
 				</h2>
 				<span
 					v-if="requiredTypes.length"
-					class="text-sm font-medium flex items-center gap-1.5"
+					class="text-sm-medium flex items-center gap-1.5"
 					:class="allRequiredDone ? 'text-green-700' : 'text-ink-gray-1-600'"
 				>
 					<CheckCircle2 v-if="allRequiredDone" class="w-4 h-4" />
@@ -81,7 +81,7 @@
 			class="rounded-lg border border-dashed border-outline-gray-300 bg-surface-gray-50 px-4 py-6 text-center"
 		>
 			<FileText class="mx-auto h-7 w-7 text-ink-gray-1-400" />
-			<p class="mt-2 text-sm font-medium text-ink-gray-1-700">
+			<p class="mt-2 text-sm-medium text-ink-gray-1-700">
 				{{ __("No documents required") }}
 			</p>
 			<p class="mt-0.5 text-xs text-ink-gray-1-500">
@@ -95,7 +95,7 @@
 			</p>
 			<span
 				v-if="requiredTypes.length"
-				class="text-xs font-medium flex items-center gap-1.5"
+				class="text-xs-medium flex items-center gap-1.5"
 				:class="allRequiredDone ? 'text-green-700' : 'text-amber-700'"
 			>
 				<component
@@ -139,7 +139,7 @@ const localModel = computed({
 });
 
 const allTypesResource = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.doc.custom_search_link",
+	url: "frappe.desk.search.search_link",
 	method: "POST",
 	auto: true,
 	params: { doctype: "Supporting Document Type", txt: "", page_length: 500 },

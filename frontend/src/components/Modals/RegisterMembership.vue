@@ -1,7 +1,7 @@
 <template>
 	<Dialog v-model="registerDialog">
 		<template #body-title>
-			<h3 class="text-2xl font-bold text-ink-gray-8" id="modal-title">
+			<h3 class="text-3xl-bold text-ink-gray-8" id="modal-title">
 				{{ props.is_renew ? "Renew" : "Register" }} as a Member
 			</h3>
 		</template>
@@ -23,7 +23,7 @@
 								<AlertTriangle class="w-6 h-6 text-yellow-600" />
 							</div>
 							<div>
-								<h4 class="text-lg font-semibold text-yellow-800 mb-2">
+								<h4 class="text-lg-semibold text-yellow-800 mb-2">
 									Profile Incomplete
 								</h4>
 								<p class="text-yellow-700 mb-3">
@@ -32,7 +32,7 @@
 									membership application.
 								</p>
 								<div class="mb-2">
-									<p class="text-base font-semibold text-yellow-800">
+									<p class="text-base-semibold text-yellow-800">
 										Missing Fields:
 									</p>
 									<ul class="list-disc list-inside text-yellow-700">
@@ -105,11 +105,11 @@
 									id="is_existing_member"
 									type="checkbox"
 									v-model="isExistingMember"
-									class="h-4 w-4 rounded border-outline-gray-3 text-ink-red-3 focus:ring-outline-red-3"
+									class="h-4 w-4 rounded border-outline-gray-3 text-ink-red-6 focus:ring-outline-red-4"
 								/>
 								<label
 									for="is_existing_member"
-									class="text-sm font-medium text-ink-gray-7"
+									class="text-sm-medium text-ink-gray-7"
 								>
 									{{ __("I am an existing member (Not registered on portal)") }}
 								</label>
@@ -138,7 +138,7 @@
 							/>
 
 							<div v-if="isExistingMember" class="space-y-2">
-								<p class="text-sm font-medium text-ink-gray-5">
+								<p class="text-sm-medium text-ink-gray-5">
 									{{ __("Proof of Membership (Receipt / Certificate / Card)") }}
 								</p>
 								<FileUploader
@@ -216,7 +216,7 @@
 									:message="paymentGateways.error"
 								/>
 								<div v-else-if="paymentGateways.data">
-									<p class="mt-4 mb-2 text-sm font-medium text-ink-gray-5">
+									<p class="mt-4 mb-2 text-sm-medium text-ink-gray-5">
 										{{ __("Select a Payment Method:") }}
 									</p>
 									<ul class="space-y-2">
@@ -227,15 +227,15 @@
 											class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200"
 											:class="
 												membershipForm.payment_gateway === pgw
-													? 'border-outline-red-3 bg-surface-red-1 text-ink-red-3 font-semibold'
-													: 'border-outline-gray-2 bg-surface-white text-ink-gray-7 hover:border-outline-red-2 hover:bg-surface-red-1'
+													? 'border-outline-red-4 bg-surface-red-1 text-ink-red-6 font-semibold'
+													: 'border-outline-gray-2 bg-surface-base text-ink-gray-7 hover:border-outline-red-3 hover:bg-surface-red-1'
 											"
 										>
 											<span
 												class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
 												:class="
 													membershipForm.payment_gateway === pgw
-														? 'border-outline-red-3'
+														? 'border-outline-red-4'
 														: 'border-outline-gray-3'
 												"
 											>

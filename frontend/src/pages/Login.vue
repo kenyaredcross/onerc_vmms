@@ -1,5 +1,5 @@
 <template>
-	<div class="flex min-h-screen bg-surface-white">
+	<div class="flex min-h-screen bg-surface-base">
 		<div
 			class="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-red-600 via-red-700 to-red-900 p-12 text-white lg:flex"
 		>
@@ -20,16 +20,14 @@
 					:alt="brandName"
 					class="h-12 w-12 rounded-xl object-contain shadow-lg"
 				/>
-				<span class="text-xl font-semibold tracking-wide">{{
-					__(brandName) || "VMMS"
-				}}</span>
+				<span class="text-2xl-semibold tracking-wide">{{ __(brandName) || "VMMS" }}</span>
 			</div>
 
 			<div class="relative max-w-md">
-				<p class="text-sm font-medium uppercase tracking-[0.2em] text-red-200">
+				<p class="text-sm-medium uppercase tracking-[0.2em] text-red-200">
 					{{ __("Volunteer & Member Portal") }}
 				</p>
-				<h1 class="mt-3 text-4xl font-bold leading-tight">
+				<h1 class="mt-3 text-5xl-bold leading-tight">
 					{{ __("Serve. Belong.") }}<br />
 					{{ __("Make a difference.") }}
 				</h1>
@@ -67,15 +65,15 @@
 					:alt="brandName"
 					class="h-10 w-10 rounded-lg object-contain"
 				/>
-				<span class="text-lg font-semibold text-ink-gray-9">{{ __(brandName) }}</span>
+				<span class="text-lg-semibold text-ink-gray-9">{{ __(brandName) }}</span>
 			</div>
 
 			<div
 				:class="isLogin ? 'max-w-md' : 'max-w-2xl'"
-				class="w-full rounded-2xl border border-outline-gray-1 bg-surface-white shadow-lg"
+				class="w-full rounded-2xl border border-outline-gray-1 bg-surface-base shadow-lg"
 			>
 				<div class="px-8 pt-8 pb-4 border-b border-outline-gray-1">
-					<h1 class="text-2xl font-semibold text-ink-gray-9">
+					<h1 class="text-3xl-semibold text-ink-gray-9">
 						{{ isLogin ? __("Welcome back") : __("Create an account") }}
 					</h1>
 					<p class="mt-1 text-sm text-ink-gray-5">
@@ -127,7 +125,7 @@
 							<div class="mt-1 text-right">
 								<button
 									type="button"
-									class="text-xs text-ink-red-3 hover:underline"
+									class="text-xs text-ink-red-6 hover:underline"
 									@click="forgotPassword"
 								>
 									{{ __("Forgot Password?") }}
@@ -192,7 +190,7 @@
 					}}</span>
 					<button
 						type="button"
-						class="ml-1 font-medium text-ink-red-3 hover:underline"
+						class="ml-1 font-medium text-ink-red-6 hover:underline"
 						@click="toggleForm"
 					>
 						{{ isLogin ? __("Sign up") : __("Login") }}
@@ -216,11 +214,7 @@
 </template>
 
 <script setup>
-import { createResource, FeatherIcon } from "frappe-ui";
-import Button from "frappe-ui/src/components/Button/Button.vue";
-import Dialog from "frappe-ui/src/components/Dialog/Dialog.vue";
-import ErrorMessage from "frappe-ui/src/components/ErrorMessage/ErrorMessage.vue";
-import Input from "frappe-ui/src/components/Input.vue";
+import { Button, createResource, Dialog, ErrorMessage, FeatherIcon, Input } from "frappe-ui";
 import { Eye, EyeOff } from "lucide-vue-next";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";

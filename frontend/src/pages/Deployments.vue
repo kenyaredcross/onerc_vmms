@@ -1,15 +1,15 @@
 <template>
 	<NoPermission v-if="!isLoggedIn" :page="__('Deployments')" />
-	<div v-else class="flex flex-col min-h-screen bg-surface-gray-50">
+	<div v-else class="flex flex-col min-h-screen bg-surface-gray-1">
 		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-2 bg-surface-white px-4 py-3 sm:px-6 shadow-md"
+			class="sticky top-0 z-10 flex items-center justify-between border-b border-outline-gray-2 bg-surface-base px-4 py-3 sm:px-6 shadow-md"
 		>
 			<div class="flex items-center space-x-4">
-				<h1 class="text-2xl sm:text-3xl font-bold text-ink-gray-1-800">
+				<h1 class="text-3xl-bold sm:text-4xl text-ink-gray-8">
 					{{ __("Deployments") }}
 				</h1>
-				<div class="text-lg font-bold text-red-600">
-					<span class="hidden sm:inline-block text-xl">
+				<div class="text-lg-bold text-ink-red-6">
+					<span class="hidden sm:inline-block text-2xl">
 						{{ __("{0} Deployments").format(filteredProjects.length) }}
 					</span>
 					<span class="sm:hidden text-base"> ({{ filteredProjects.length }}) </span>
@@ -26,13 +26,13 @@
 					:model-value="currentTab"
 					@update:model-value="updateTabAndHash"
 					class="min-w-max sm:w-auto"
-					active-class="bg-red-600 text-white"
-					inactive-class="text-ink-gray-1-700 hover:bg-surface-gray-100"
+					active-class="bg-surface-red-6 text-white"
+					inactive-class="text-ink-gray-7 hover:bg-surface-gray-2"
 				/>
 			</div>
 
 			<div v-if="projects.loading" class="text-center py-10">
-				<p class="text-ink-gray-1-500 text-lg">{{ __("Loading deployments...") }}</p>
+				<p class="text-ink-gray-5 text-lg">{{ __("Loading deployments...") }}</p>
 			</div>
 
 			<div v-else-if="filteredProjects.length">

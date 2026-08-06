@@ -1,15 +1,15 @@
 <template>
 	<div
-		class="relative flex flex-col w-full max-w-sm mx-auto rounded-2xl bg-surface-white border border-outline-gray-2 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden group"
+		class="relative flex flex-col w-full max-w-sm mx-auto rounded-2xl bg-surface-base border border-outline-gray-2 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden group"
 	>
 		<!-- Top accent bar -->
 		<div
-			class="h-1 w-full bg-gradient-to-r from-surface-red-4 via-surface-red-5 to-surface-red-6"
+			class="h-1 w-full bg-gradient-to-r from-surface-red-4 via-surface-red-7 to-surface-red-8"
 		/>
 
 		<!-- Header -->
 		<div class="px-5 pt-5 pb-5">
-			<h3 class="text-xl font-bold text-ink-gray-9 tracking-tight">
+			<h3 class="text-2xl-bold text-ink-gray-9 tracking-tight">
 				{{ __(membershipType.membership_type) }}
 			</h3>
 		</div>
@@ -20,23 +20,21 @@
 		<!-- Pricing -->
 		<div class="px-7 py-5">
 			<div class="flex items-end gap-1">
-				<span class="text-3xl font-extrabold text-ink-gray-9 leading-none">
+				<span class="text-4xl-black text-ink-gray-9 leading-none">
 					{{ __("KES") }} {{ __(membershipType.amount) }}
 				</span>
-				<span
-					v-if="priceSuffix"
-					class="text-base sm:text-sm font-semibold text-gray-500"
-					>{{ priceSuffix }}</span
-				>
+				<span v-if="priceSuffix" class="text-base-semibold sm:text-sm text-gray-500">{{
+					priceSuffix
+				}}</span>
 			</div>
-			<p v-if="billingNote" class="mt-1.5 text-xs font-medium text-gray-500">
+			<p v-if="billingNote" class="mt-1.5 text-xs-medium text-gray-500">
 				{{ billingNote }}
 			</p>
 		</div>
 
 		<!-- Benefits -->
 		<div class="px-7 pb-5 flex-1">
-			<p class="text-xs font-semibold text-ink-red-4 uppercase tracking-widest mb-3">
+			<p class="text-xs-semibold text-ink-red-8 uppercase tracking-widest mb-3">
 				{{ __("What's included") }}
 			</p>
 			<ul class="space-y-2.5">
@@ -48,7 +46,7 @@
 					<span
 						class="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full bg-surface-red-1 flex items-center justify-center"
 					>
-						<Check class="w-2.5 h-2.5 text-ink-red-3" />
+						<Check class="w-2.5 h-2.5 text-ink-red-6" />
 					</span>
 					<span class="text-sm text-ink-gray-6 leading-snug">
 						{{ __(benefit.benefit) }}
@@ -88,7 +86,7 @@
 			<Button
 				variant="solid"
 				theme="red"
-				class="w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-[0.98]"
+				class="w-full py-2.5 rounded-xl text-sm-semibold transition-all duration-200 active:scale-[0.98]"
 			>
 				<span class="flex items-center justify-center gap-2">
 					{{ __("Select Plan") }}

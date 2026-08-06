@@ -40,7 +40,7 @@
 
 <script setup>
 import ChildTable from "@/components/Controls/ChildTable.vue";
-import Link from "@/components/Controls/Link.vue";
+import { Link } from "frappe-ui/frappe";
 
 const props = defineProps({
 	form: {

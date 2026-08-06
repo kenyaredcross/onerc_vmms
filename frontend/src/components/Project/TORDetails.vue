@@ -1,18 +1,16 @@
 <template>
 	<div
 		v-if="termDetails"
-		class="bg-surface-white text-ink-gray-8 p-4 sm:p-6 lg:p-10 rounded-2xl shadow-lg max-w-full sm:max-w-6xl mx-auto print:max-w-full print:shadow-none print:p-0 font-sans break-words"
+		class="bg-surface-base text-ink-gray-8 rounded-2xl shadow-lg max-w-full sm:max-w-6xl mx-auto font-sans break-words overflow-y-auto overscroll-contain max-h-[75vh] p-4 sm:p-6 lg:p-10 print:max-w-full print:shadow-none print:p-0 print:overflow-visible print:max-h-none"
 	>
 		<header
-			class="border-b-4 border-red-700 pb-6 mb-8 sm:mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between"
+			class="sticky -top-4 sm:-top-6 lg:-top-10 z-10 bg-surface-base border-b-4 border-outline-red-7 pt-4 sm:pt-6 lg:pt-10 pb-6 mb-8 sm:mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between print:static"
 		>
 			<div class="w-full">
-				<h1
-					class="text-2xl sm:text-3xl font-extrabold text-red-700 uppercase tracking-wide"
-				>
+				<h1 class="text-3xl-black sm:text-4xl text-ink-red-7 uppercase tracking-wide">
 					Terms of Reference
 				</h1>
-				<p class="text-xs sm:text-sm text-ink-gray-1-600 mt-1">
+				<p class="text-xs sm:text-sm text-ink-gray-6 mt-1">
 					Reference No: <span class="font-semibold">{{ termDetails.name }}</span>
 				</p>
 			</div>
@@ -20,25 +18,25 @@
 
 		<section class="mb-8 sm:mb-10">
 			<h2
-				class="text-xl font-bold text-red-700 border-b-2 border-red-700 mb-4 pb-1 uppercase tracking-wide"
+				class="text-2xl-bold text-ink-red-7 border-b-2 border-outline-red-7 mb-4 pb-1 uppercase tracking-wide"
 			>
 				Mission Details
 			</h2>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-[15px]">
 				<p>
-					<span class="font-semibold text-ink-gray-1-800">Title of Mission:</span>
+					<span class="font-semibold text-ink-gray-8">Title of Mission:</span>
 					{{ termDetails.title_of_mission }}
 				</p>
 				<p>
-					<span class="font-semibold text-ink-gray-1-800">Region / Branch:</span>
+					<span class="font-semibold text-ink-gray-8">Region / Branch:</span>
 					{{ termDetails.company }}
 				</p>
 				<p>
-					<span class="font-semibold text-ink-gray-1-800">Expected Start Date:</span>
+					<span class="font-semibold text-ink-gray-8">Expected Start Date:</span>
 					{{ formatDate(termDetails.expected_start_date) }}
 				</p>
 				<p>
-					<span class="font-semibold text-ink-gray-1-800">Expected End Date:</span>
+					<span class="font-semibold text-ink-gray-8">Expected End Date:</span>
 					{{ formatDate(termDetails.expected_end_date) }}
 				</p>
 			</div>
@@ -46,19 +44,19 @@
 
 		<section class="mb-8 sm:mb-10">
 			<h2
-				class="text-xl font-bold text-red-700 border-b-2 border-red-700 mb-4 pb-1 uppercase tracking-wide"
+				class="text-2xl-bold text-ink-red-7 border-b-2 border-outline-red-7 mb-4 pb-1 uppercase tracking-wide"
 			>
 				Mission Background
 			</h2>
 			<div
-				class="prose prose-red max-w-none text-[15px] leading-relaxed [&_h1]:!text-red-700 [&_h2]:!text-red-700 [&_h3]:!text-red-700"
+				class="prose prose-red max-w-none text-[15px] leading-relaxed [&_h1]:!text-ink-red-7 [&_h2]:!text-ink-red-7 [&_h3]:!text-ink-red-7"
 				v-html="sanitizeRichHtml(termDetails.mission_background)"
 			></div>
 		</section>
 
 		<section v-if="termDetails.stakeholders?.length" class="mb-8 sm:mb-10">
 			<h2
-				class="text-xl font-bold text-red-700 border-b-2 border-red-700 mb-4 pb-1 uppercase tracking-wide"
+				class="text-2xl-bold text-ink-red-7 border-b-2 border-outline-red-7 mb-4 pb-1 uppercase tracking-wide"
 			>
 				Stakeholders
 			</h2>
@@ -67,17 +65,17 @@
 					<thead>
 						<tr>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Designation
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Name
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Phone Number
 							</th>
@@ -87,7 +85,7 @@
 						<tr
 							v-for="(row, i) in termDetails.stakeholders"
 							:key="i"
-							:class="{ 'bg-surface-gray-50': (i + 1) % 2 === 0 }"
+							:class="{ 'bg-surface-gray-1': (i + 1) % 2 === 0 }"
 						>
 							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.designation }}
@@ -106,7 +104,7 @@
 
 		<section v-if="termDetails.objectives?.length" class="mb-8 sm:mb-10">
 			<h2
-				class="text-xl font-bold text-red-700 border-b-2 border-red-700 mb-4 pb-1 uppercase tracking-wide"
+				class="text-2xl-bold text-ink-red-7 border-b-2 border-outline-red-7 mb-4 pb-1 uppercase tracking-wide"
 			>
 				Specific Objectives
 			</h2>
@@ -119,7 +117,7 @@
 
 		<section v-if="termDetails.expected_outputs?.length" class="mb-8 sm:mb-10">
 			<h2
-				class="text-xl font-bold text-red-700 border-b-2 border-red-700 mb-4 pb-1 uppercase tracking-wide"
+				class="text-2xl-bold text-ink-red-7 border-b-2 border-outline-red-7 mb-4 pb-1 uppercase tracking-wide"
 			>
 				Expected Outputs
 			</h2>
@@ -132,7 +130,7 @@
 
 		<section v-if="termDetails.approach_methods?.length" class="mb-8 sm:mb-10">
 			<h2
-				class="text-xl font-bold text-red-700 border-b-2 border-red-700 mb-4 pb-1 uppercase tracking-wide"
+				class="text-2xl-bold text-ink-red-7 border-b-2 border-outline-red-7 mb-4 pb-1 uppercase tracking-wide"
 			>
 				Proposed Approach
 			</h2>
@@ -141,12 +139,12 @@
 					<thead>
 						<tr>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Methodology
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Notes
 							</th>
@@ -156,7 +154,7 @@
 						<tr
 							v-for="(row, i) in termDetails.approach_methods"
 							:key="i"
-							:class="{ 'bg-surface-gray-50': (i + 1) % 2 === 0 }"
+							:class="{ 'bg-surface-gray-1': (i + 1) % 2 === 0 }"
 						>
 							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ row.methodology }}
@@ -172,7 +170,7 @@
 
 		<section v-if="termDetails.itinerary?.length" class="mb-8 sm:mb-10">
 			<h2
-				class="text-xl font-bold text-red-700 border-b-2 border-red-700 mb-4 pb-1 uppercase tracking-wide"
+				class="text-2xl-bold text-ink-red-7 border-b-2 border-outline-red-7 mb-4 pb-1 uppercase tracking-wide"
 			>
 				Itinerary
 			</h2>
@@ -181,22 +179,22 @@
 					<thead>
 						<tr>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Date
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Time
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Person Responsible
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Activity
 							</th>
@@ -206,7 +204,7 @@
 						<tr
 							v-for="(row, i) in termDetails.itinerary"
 							:key="i"
-							:class="{ 'bg-surface-gray-50': (i + 1) % 2 === 0 }"
+							:class="{ 'bg-surface-gray-1': (i + 1) % 2 === 0 }"
 						>
 							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ formatDate(row.date) }}
@@ -228,7 +226,7 @@
 
 		<section v-if="termDetails.resources?.length" class="mb-8 sm:mb-10">
 			<h2
-				class="text-xl font-bold text-red-700 border-b-2 border-red-700 mb-4 pb-1 uppercase tracking-wide"
+				class="text-2xl-bold text-ink-red-7 border-b-2 border-outline-red-7 mb-4 pb-1 uppercase tracking-wide"
 			>
 				Resources
 			</h2>
@@ -237,42 +235,42 @@
 					<thead>
 						<tr>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Date
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Resource
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Donor
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-left whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-left whitespace-nowrap"
 							>
 								Project Code
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-right whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-right whitespace-nowrap"
 							>
 								Quantity
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-right whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-right whitespace-nowrap"
 							>
 								Unit
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-right whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-right whitespace-nowrap"
 							>
 								Unit Cost
 							</th>
 							<th
-								class="bg-red-700 text-white font-semibold p-2 border border-red-700 text-right whitespace-nowrap"
+								class="bg-surface-red-2 text-ink-red-8 font-semibold p-2 border border-outline-red-3 text-right whitespace-nowrap"
 							>
 								Total Cost
 							</th>
@@ -282,7 +280,7 @@
 						<tr
 							v-for="(row, i) in termDetails.resources"
 							:key="i"
-							:class="{ 'bg-surface-gray-50': (i + 1) % 2 === 0 }"
+							:class="{ 'bg-surface-gray-1': (i + 1) % 2 === 0 }"
 						>
 							<td class="border border-outline-gray-2 p-2 break-words">
 								{{ formatDate(row.date) }}
@@ -325,8 +323,8 @@
 					:class="[
 						'flex-1 text-center px-6 py-3 rounded-lg font-semibold transition-colors',
 						torUrl
-							? 'bg-green-600 hover:bg-green-700 text-white'
-							: 'bg-green-600/40 text-white pointer-events-none opacity-60 cursor-not-allowed',
+							? 'bg-surface-green-6 hover:bg-surface-green-7 text-white'
+							: 'bg-surface-green-6/40 text-white pointer-events-none opacity-60 cursor-not-allowed',
 					]"
 				>
 					{{ __("Download TOR") }}

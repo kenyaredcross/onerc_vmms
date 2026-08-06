@@ -1,7 +1,7 @@
 <template>
-	<div class="bg-surface-white rounded-lg border border-outline-gray-2 p-6">
+	<div class="bg-surface-base rounded-lg border border-outline-gray-2 p-6">
 		<div class="flex justify-between items-center mb-4">
-			<h3 class="text-lg font-semibold text-ink-gray-1-800">Type Distribution</h3>
+			<h3 class="text-lg-semibold text-ink-gray-1-800">Type Distribution</h3>
 			<select
 				v-model="field"
 				:aria-label="__('Group distribution by')"

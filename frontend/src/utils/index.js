@@ -2,7 +2,6 @@ import { useSettings } from "@/stores/settings";
 import { CodeBox } from "@/utils/code";
 import dayjs from "@/utils/dayjs";
 import { Markdown } from "@/utils/markdownParser";
-import { theme } from "@/utils/theme";
 import { Upload } from "@/utils/upload";
 import Embed from "@editorjs/embed";
 import Header from "@editorjs/header";
@@ -391,12 +390,6 @@ export function getUserTimezone() {
 export function getSidebarLinks(isVolunteer) {
 	return [
 		{
-			label: "Profile",
-			icon: "User",
-			to: "Profile",
-			activeFor: ["Profile", "ProfileOverview"],
-		},
-		{
 			label: "Dashboard",
 			icon: "LayoutDashboard",
 			to: "Dashboard",
@@ -654,95 +647,4 @@ export const formatTimestamp = (seconds) => {
 	const minutes = String(date.getUTCMinutes()).padStart(2, "0");
 	const secs = String(date.getUTCSeconds()).padStart(2, "0");
 	return `${hours}:${minutes}:${secs}`;
-};
-
-const getRootNode = (selector = "#editor") => {
-	const root = document.querySelector(selector);
-	if (!root) {
-		console.warn(`Root node not found for selector: ${selector}`);
-	}
-	return root;
-};
-
-const createTextWalker = (root, phrase) => {
-	return document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-		acceptNode(node) {
-			return node.nodeValue.toLowerCase().includes(phrase.toLowerCase())
-				? NodeFilter.FILTER_ACCEPT
-				: NodeFilter.FILTER_SKIP;
-		},
-	});
-};
-
-const findMatchingTextNode = (walker, phrase) => {
-	const node = walker.nextNode();
-	if (!node) return null;
-
-	const startIndex = node.nodeValue.toLowerCase().indexOf(phrase.toLowerCase());
-	const endIndex = startIndex + phrase.length;
-
-	return { node, startIndex, endIndex };
-};
-
-const createHighlightSpan = (color, name) => {
-	const span = document.createElement("span");
-	span.className = "highlighted-text";
-	span.style.backgroundColor = theme.backgroundColor[color][200];
-	span.dataset.name = name;
-	return span;
-};
-
-const wrapRangeInHighlight = ({ node, startIndex, endIndex }, color, name) => {
-	const range = document.createRange();
-	range.setStart(node, startIndex);
-	range.setEnd(node, endIndex);
-
-	const span = createHighlightSpan(color, name);
-	range.surroundContents(span);
-};
-
-export const highlightText = (note, scrollIntoView = false) => {
-	if (!note?.highlighted_text) return;
-
-	const root = getRootNode();
-	if (!root) return;
-
-	const phrase = note.highlighted_text;
-	const color = note.color.toLowerCase();
-
-	const walker = createTextWalker(root, phrase);
-	const match = findMatchingTextNode(walker, phrase);
-	if (!match) return;
-
-	wrapRangeInHighlight(match, color, note.name);
-
-	if (scrollIntoView) {
-		match.node.parentElement.scrollIntoView({
-			behavior: "smooth",
-			block: "center",
-		});
-		setTimeout(() => {
-			const highlightedElements = document.querySelectorAll(".highlighted-text");
-			highlightedElements.forEach((el) => {
-				if (el.dataset.name === note.name) {
-					el.style.backgroundColor = "transparent";
-				}
-			});
-		}, 3000);
-	}
-};
-
-export const scrollToReference = (text) => {
-	highlightText({ highlighted_text: text, color: "yellow", name: "" }, true);
-};
-
-export const blockQuotesClick = () => {
-	document.querySelectorAll("blockquote").forEach((el) => {
-		el.addEventListener("click", (e) => {
-			const text = e.target.textContent || "";
-			if (text) {
-				scrollToReference(text);
-			}
-		});
-	});
 };

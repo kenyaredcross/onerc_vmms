@@ -1,115 +1,38 @@
 <template>
 	<div>
-		<div class="w-full">
-			<Combobox v-model="selectedValue" nullable>
-				<Popover class="w-full" v-model:show="showOptions">
-					<template #target="{ togglePopover }">
-						<ComboboxInput
-							v-if="!props.readOnly"
-							ref="search"
-							class="search-input form-input w-full focus-visible:!ring-0"
-							type="text"
-							:value="query"
-							@change="
-								(e) => {
-									query = e.target.value;
-									showOptions = true;
-								}
-							"
-							autocomplete="off"
-							@focus="
-								() => {
-									showOptions = true;
-								}
-							"
-							@pointerdown.capture="
-								() => {
-									showOptions = true;
-								}
-							"
-							@keydown.delete.capture.stop="removeLastValue"
-							:placeholder="__(props.label) || __('Select...')"
-							:aria-invalid="attrs['aria-invalid']"
-							:aria-describedby="attrs['aria-describedby']"
-						/>
-
-						<div
-							v-else
-							class="w-full min-h-[2.5rem] border border-outline-gray-300 rounded px-3 py-2 bg-surface-gray-100 text-ink-gray-1-700 flex items-center"
-						>
-							<span class="text-ink-gray-5">
-								{{ __(props.label) }}
-							</span>
-						</div>
+		<MultiSelect
+			v-model="selectedLinkValues"
+			v-bind="attrs"
+			:options="options"
+			:filterable="false"
+			:loading="filterOptions.loading"
+			:disabled="props.readOnly"
+			:required="props.required"
+			:label="props.label ? __(props.label) : undefined"
+			:placeholder="__(props.label) || __('Select...')"
+			:size="props.size"
+			:empty-text="__('No results')"
+			:error="error"
+			@update:query="onQuery"
+		>
+			<template v-if="props.allowCreate" #footer="{ close }">
+				<Button
+					variant="ghost"
+					class="w-full !justify-start"
+					:label="__('Add New')"
+					@click="
+						() => {
+							close();
+							showCreateDialog = true;
+						}
+					"
+				>
+					<template #prefix>
+						<Plus class="h-4 w-4 stroke-1.5" />
 					</template>
-
-					<template #body="{ isOpen, close }">
-						<div v-show="isOpen">
-							<div class="mt-1 rounded-lg bg-surface-white py-1 text-base border-2">
-								<ComboboxOptions
-									class="my-1 min-h-[6rem] max-h-[12rem] overflow-y-auto px-1.5"
-									static
-								>
-									<ComboboxOption
-										v-for="option in options"
-										:key="option.value"
-										:value="option"
-										v-slot="{ active }"
-									>
-										<li
-											:class="[
-												'flex cursor-pointer items-center rounded px-2 py-1 text-base',
-												{ 'bg-surface-gray-2': active },
-											]"
-											@click="
-												() => {
-													addValue(option);
-													closeDropdown(close);
-												}
-											"
-										>
-											<div class="flex flex-col gap-1 p-1 min-w-32">
-												<div class="text-base font-medium text-ink-gray-8">
-													{{ __(option.label) || __(option.value) }}
-												</div>
-												<div
-													v-if="option.value !== option.label"
-													class="text-sm text-ink-gray-5"
-												>
-													{{ __(option.value) }}
-												</div>
-											</div>
-										</li>
-									</ComboboxOption>
-
-									<div class="h-10"></div>
-									<div
-										v-if="props.allowCreate"
-										class="absolute bottom-2 left-1 w-[99%] pt-2 bg-surface-white border-t"
-									>
-										<Button
-											variant="ghost"
-											class="w-full !justify-start"
-											:label="__('Add New')"
-											@click="
-												() => {
-													close();
-													showCreateDialog = true;
-												}
-											"
-										>
-											<template #prefix>
-												<Plus class="h-4 w-4 stroke-1.5" />
-											</template>
-										</Button>
-									</div>
-								</ComboboxOptions>
-							</div>
-						</div>
-					</template>
-				</Popover>
-			</Combobox>
-		</div>
+				</Button>
+			</template>
+		</MultiSelect>
 
 		<div v-if="displayValues.length" class="grid grid-cols-1 gap-2 mt-1">
 			<div
@@ -135,12 +58,12 @@
 </template>
 
 <script setup>
-import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/vue";
-import { createResource, Popover, Button } from "frappe-ui";
-import { ref, computed, nextTick, useAttrs, watch, onMounted } from "vue";
-import { watchDebounced } from "@vueuse/core";
-import { X, Plus } from "lucide-vue-next";
+import { Button, createResource, debounce, MultiSelect } from "frappe-ui";
+import { Plus, X } from "lucide-vue-next";
+import { computed, onBeforeUnmount, onMounted, ref, useAttrs, watch } from "vue";
 import CreateNewEntryDialog from "../Modals/CreateNewEntryDialog.vue";
+
+defineOptions({ inheritAttrs: false });
 
 const attrs = useAttrs();
 
@@ -163,11 +86,7 @@ const props = defineProps({
 const values = defineModel();
 const emit = defineEmits(["change"]);
 
-const search = ref(null);
 const error = ref(null);
-const query = ref("");
-const text = ref("");
-const showOptions = ref(false);
 const showCreateDialog = ref(false);
 const linkFieldName = ref(props.mainField);
 const linkDoctype = ref(null);
@@ -179,7 +98,6 @@ const childtableMeta = createResource({
 	url: "frappe.desk.form.load.getdoctype",
 	params: {
 		doctype: props.doctype,
-
 		with_parent: 0,
 	},
 	cache: [props.doctype],
@@ -232,6 +150,7 @@ watch(
 	(newVal) => {
 		if (newVal) {
 			linkDoctypeMeta.reload();
+			reload("");
 		}
 	},
 	{ immediate: true }
@@ -312,7 +231,6 @@ const resolveValues = async () => {
 
 		displayValues.value = resolved;
 
-		// ✅ Only reload linkLabelsResource if ALL required parameters exist
 		if (
 			resolved.length &&
 			linkDoctype.value &&
@@ -356,37 +274,9 @@ onMounted(() => {
 	}
 });
 
-const selectedValue = computed({
-	get: () => query.value || "",
-	set: (val) => {
-		query.value = "";
-		if (val) {
-			showOptions.value = false;
-		}
-		val && addValue(val);
-	},
-});
-
-const serializeFilters = (f) => {
-	if (!f) return "{}";
-	return typeof f === "string" ? f : JSON.stringify(f);
-};
-
-watchDebounced(
-	query,
-	(val) => {
-		val = val || "";
-		if (text.value === val) return;
-		text.value = val;
-		reload(val);
-	},
-	{ debounce: 300, immediate: true }
-);
-
 const filterOptions = createResource({
-	url: "onerc_vmms.volunteer_and_member_management.api.doc.custom_search_link",
+	url: "frappe.desk.search.search_link",
 	method: "POST",
-	cache: [text.value, linkDoctype.value, serializeFilters(props.filters), props.doctype],
 	auto: false,
 	makeParams() {
 		if (!linkDoctype.value) {
@@ -394,32 +284,18 @@ const filterOptions = createResource({
 		}
 
 		return {
-			txt: text.value,
+			txt: "",
 			doctype: linkDoctype.value,
-			filters: serializeFilters(props.filters),
+			filters: props.filters,
 		};
 	},
+	transform: (data) =>
+		(data || []).map((option) => ({
+			label: option.label || option.value,
+			value: option.value,
+			description: option.description,
+		})),
 });
-
-watch(
-	() => childtableMeta.data,
-	async (meta) => {
-		if (!meta) return;
-		const doc = meta.docs.find((d) => d.name === props.doctype) || meta.docs[0];
-		const linkField =
-			doc.fields.find(
-				(f) => f.fieldname === linkFieldName.value && f.fieldtype === "Link"
-			) || doc.fields.find((f) => f.fieldtype === "Link");
-
-		if (linkField) {
-			linkDoctype.value = linkField.options;
-
-			await nextTick();
-			filterOptions.reload();
-		}
-	},
-	{ immediate: true }
-);
 
 const options = computed(() => {
 	if (!filterOptions.data) {
@@ -433,7 +309,6 @@ const options = computed(() => {
 
 function reload(val) {
 	if (!linkDoctype.value) {
-		console.warn("[MultiSelect] Cannot reload, link doctype not set");
 		return;
 	}
 
@@ -441,11 +316,35 @@ function reload(val) {
 		params: {
 			txt: val,
 			doctype: linkDoctype.value,
-			filters: serializeFilters(props.filters),
+			filters: props.filters,
 		},
 	});
 	filterOptions.reload();
 }
+
+const onQuery = debounce((val) => reload(val || ""), 300);
+
+onBeforeUnmount(() => onQuery.cancel?.());
+
+const selectedLinkValues = computed({
+	get: () => displayValues.value.map((v) => v[linkFieldName.value]).filter(Boolean),
+	set: (next) => {
+		const current = displayValues.value.map((v) => v[linkFieldName.value]);
+
+		for (const linkValue of next) {
+			if (!current.includes(linkValue)) {
+				const option = (filterOptions.data || []).find((o) => o.value === linkValue);
+				addValue(option || { value: linkValue, label: linkValue });
+			}
+		}
+
+		for (let i = current.length - 1; i >= 0; i--) {
+			if (!next.includes(current[i])) {
+				removeValue(i);
+			}
+		}
+	},
+});
 
 const addValue = (option) => {
 	error.value = null;
@@ -462,13 +361,11 @@ const addValue = (option) => {
 	}
 
 	if (displayValues.value.some((item) => item[linkFieldName.value] === linkValue)) {
-		query.value = "";
 		return;
 	}
 
 	if (props.validate && !props.validate(linkValue)) {
 		error.value = props.errorMessage(linkValue);
-		console.error("[MultiSelect] Validation failed:", error.value);
 		return;
 	}
 
@@ -486,16 +383,13 @@ const addValue = (option) => {
 	values.value = [...values.value, newRow];
 
 	emit("change", values.value);
-
-	query.value = "";
-	showOptions.value = false;
 };
 
 watch(
 	() => props.filters,
 	() => {
 		if (linkDoctype.value) {
-			filterOptions.reload();
+			reload("");
 		}
 	},
 	{ deep: true }
@@ -507,31 +401,4 @@ const removeValue = (index) => {
 
 	emit("change", values.value);
 };
-
-const closeDropdown = (closeFunction) => {
-	closeFunction();
-	showOptions.value = false;
-};
-
-const removeLastValue = () => {
-	if (query.value) return;
-	if (displayValues.value.length) {
-		removeValue(displayValues.value.length - 1);
-		nextTick(() => {
-			if (displayValues.value.length) {
-				setFocus();
-			}
-		});
-	}
-};
-
-function setFocus() {
-	search.value?.$el?.focus();
-}
-
-defineExpose({ setFocus });
-
-const labelClasses = computed(() => {
-	return [{ sm: "text-xs", md: "text-base" }[props.size || "sm"], "text-ink-gray-5"];
-});
 </script>

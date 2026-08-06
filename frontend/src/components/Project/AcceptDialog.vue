@@ -1,7 +1,7 @@
 <template>
 	<Dialog :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)">
 		<template #body-title>
-			<h3 class="text-2xl font-semibold text-ink-red-4">{{ __("Confirm Action") }}</h3>
+			<h3 class="text-3xl-semibold text-ink-red-8">{{ __("Confirm Action") }}</h3>
 		</template>
 
 		<template #body-content>
@@ -13,7 +13,7 @@
 						)
 					}}
 				</p>
-				<p class="text-sm text-ink-gray-1-500 italic">
+				<p class="text-sm text-ink-gray-5 italic">
 					{{ __("Accepting means you agree to the documents provided.") }}
 				</p>
 			</div>

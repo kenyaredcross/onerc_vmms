@@ -10,9 +10,13 @@ export let Dialogs = {
 			return h(
 				Dialog,
 				{
-					options: dialog,
-					modelValue: dialog.show,
-					"onUpdate:modelValue": (val) => (dialog.show = val),
+					key: dialog.key,
+					title: dialog.title,
+					size: dialog.size,
+					icon: dialog.icon,
+					actions: dialog.actions,
+					open: dialog.show,
+					"onUpdate:open": (val) => (dialog.show = val),
 				},
 				() => [
 					h("p", { class: "text-p-base text-ink-gray-7" }, dialog.message),
