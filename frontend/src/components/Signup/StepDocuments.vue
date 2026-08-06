@@ -231,7 +231,8 @@ function syncModel() {
 	const rows = buildRows();
 	if (JSON.stringify(rows) === JSON.stringify(currentRows())) return;
 	selfUpdate = true;
-	localModel.value = { ...localModel.value, supporting_documents: rows };
+
+	localModel.value.supporting_documents = rows;
 }
 
 function setAttachment(type, value) {
@@ -257,17 +258,14 @@ const allRequiredDone = computed(
 		uploadedRequiredCount.value === props.requiredTypes.length
 );
 
-// --- Reactive wiring ---
 seedFromModel();
 
 watch([attachmentByType, docNameByType], syncModel, { deep: true });
 
-// Re-seed when the type list or required list arrives/refreshes (both load async).
 watch([() => allTypesResource.data, () => props.requiredTypes], seedFromModel, {
 	deep: true,
 });
 
-// Re-seed only on external changes (e.g. draft load); ignore our own emits.
 watch(
 	() => localModel.value?.supporting_documents,
 	() => {
