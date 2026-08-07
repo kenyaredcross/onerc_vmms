@@ -6,7 +6,6 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "details_section",
   "membership_type",
   "membership_package",
   "linked_item",
@@ -20,7 +19,7 @@
   "upper_age_limit",
   "section_break_ilnt",
   "benefits",
-  "tab_2_tab",
+  "payments_tab",
   "payment_gateways"
  ],
  "fields": [
@@ -108,12 +107,7 @@
    "label": "Requires Age Requirement"
   },
   {
-   "fieldname": "details_section",
-   "fieldtype": "Section Break",
-   "label": "Details"
-  },
-  {
-   "fieldname": "tab_2_tab",
+   "fieldname": "payments_tab",
    "fieldtype": "Tab Break",
    "label": "Payments"
   },
@@ -133,8 +127,8 @@
    "link_fieldname": "membership_type"
   }
  ],
- "modified": "2026-05-25 22:21:13.485166",
- "modified_by": "mukunajohn329@gmail.com",
+ "modified": "2026-08-07 20:14:56.364898",
+ "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "VM Membership Type",
  "naming_rule": "By fieldname",

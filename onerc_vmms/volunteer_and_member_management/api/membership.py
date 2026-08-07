@@ -119,7 +119,7 @@ def download_membership_certificate(membership: str) -> None:
 
 	member = frappe.db.get_value("VM Member", {"email_id": frappe.session.user}, "name")
 	if not member:
-		frappe.throw(denied, frappe.PermissionError)
+		frappe.throw_permission_error()
 
 	membership_doc = frappe.db.get_value(
 		"VM Membership",
@@ -135,11 +135,14 @@ def download_membership_certificate(membership: str) -> None:
 
 	print_format = frappe.db.get_value("VM Membership Type", membership_doc.membership_type, "template")
 	if not print_format:
-		frappe.log_error(
-			f"No certificate template set on VM Membership Type {membership_doc.membership_type}",
-			"Membership Certificate Template Missing",
+		frappe.respond_as_web_page(
+			"Error Printing Certificate",
+			"<p>Membership cannot be printed at the moment.Please contact support</p>",
+			primary_action="/vmms/membership",
+			primary_label="Back",
+			indicator_color="red",
 		)
-		frappe.throw(_("This membership has no certificate template configured"))
+		return
 
 	doc = frappe.get_doc("VM Membership", membership_doc.name)
 
@@ -162,26 +165,6 @@ def download_membership_certificate(membership: str) -> None:
 
 
 @frappe.whitelist()
-def confirm_payment(invoice_name: str) -> str:
-	error_message = "Error confirming payment"
-
-	if not invoice_name:
-		frappe.throw(_(error_message))
-
-	try:
-		invoice = frappe.get_doc("Sales Invoice", invoice_name)
-
-		if invoice.status == "Paid" and invoice.outstanding_amount == 0:
-			return "paid"
-
-		return "unpaid"
-
-	except Exception as e:
-		frappe.log_error(frappe.get_traceback(), "Confirm Payment Error")
-		frappe.throw(_("Error confirming payment: {0}").format(str(e)))
-
-
-@frappe.whitelist()
 @rate_limit(limit=10, seconds=60 * 5)
 def initiate_membership_registration(
 	amount: float,
@@ -200,8 +183,19 @@ def initiate_membership_registration(
 
 		return "Application Submitted"
 
+	allowed_gateways = get_membership_type_pgws(membership_type)
+
+	if not allowed_gateways:
+		frappe.throw(
+			_("Online payment is not set up for this membership type. Please contact support."),
+			title=_("Payment Unavailable"),
+		)
+
 	if not payment_gateway:
 		frappe.throw(_("Please select a payment method"))
+
+	if payment_gateway not in allowed_gateways:
+		frappe.throw(_("That payment method is not available for this membership type"))
 
 	membership = create_membership(amount, membership_type, branch)
 
@@ -395,17 +389,14 @@ def get_membership_type_pgws(membership_type: str) -> list[str]:
 			"VM Membership Type",
 			membership_type,
 		)
+
 		if not pgw.payment_gateways:
-			frappe.log_error(
-				f"No payment gateways configured for membership type: {membership_type}",
-				"Membership Type Payment Gateway Error",
-			)
-			frappe.throw(_("This membership type cannot be paid for at the moment"))
+			return []
 
-		result = [gateway.gateway for gateway in pgw.payment_gateways]
+		return [gateway.gateway for gateway in pgw.payment_gateways]
 
-		return result
-
+	except frappe.ValidationError:
+		raise
 	except Exception:
 		log_throw_error("Error fetching payment gateways for membership type")
 

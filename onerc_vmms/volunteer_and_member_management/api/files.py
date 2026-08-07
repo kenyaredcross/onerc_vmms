@@ -141,3 +141,42 @@ def handle_attachment_files(application, files_data):
 		_attach_file(application, profile_photo, field_name="profile_photo")
 
 	return application
+
+
+def _iter_file_urls(value):
+	"""Yield every /files/ or /private/files/ URL reachable from a field value."""
+	if isinstance(value, str):
+		if value.startswith(("/files/", "/private/files/")):
+			yield value
+	elif isinstance(value, dict):
+		for item in value.values():
+			yield from _iter_file_urls(item)
+	elif isinstance(value, (list | tuple)):
+		for item in value:
+			yield from _iter_file_urls(item)
+
+
+def attach_files_to_document(doc):
+	urls = set()
+	for field, value in doc.as_dict().items():
+		if field in ("doctype", "name", "owner", "modified_by"):
+			continue
+		urls.update(_iter_file_urls(value))
+
+	if not urls:
+		return
+
+	rows = frappe.get_all(
+		"File",
+		filters={"file_url": ("in", list(urls))},
+		fields=["name", "attached_to_doctype", "attached_to_name"],
+	)
+	for row in rows:
+		if row.attached_to_doctype and row.attached_to_name:
+			continue
+		frappe.db.set_value(
+			"File",
+			row.name,
+			{"attached_to_doctype": doc.doctype, "attached_to_name": doc.name},
+			update_modified=False,
+		)

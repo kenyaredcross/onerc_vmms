@@ -2,9 +2,7 @@
 	<SettingsHeader :title="__('Profile')" class="!px-4 !pt-6 sm:!px-[4.4rem] sm:!pt-10 mb-2" />
 	<PanelBody>
 		<div class="flex flex-col gap-6">
-			<div
-				class="flex items-center gap-3 rounded-lg border border-outline-red-2 bg-surface-red-1 p-3"
-			>
+			<div class="flex items-center gap-3 rounded-lg border p-3">
 				<Avatar
 					size="2xl"
 					:label="userResource.data?.full_name"
@@ -25,7 +23,7 @@
 					:title="__('Edit Profile')"
 					:description="__('Update your personal details, skills, and documents.')"
 				>
-					<Button variant="subtle" theme="red" @click="go('Profile')">
+					<Button variant="outline" theme="red" @click="go('Profile')">
 						{{ __("Open") }}
 					</Button>
 				</SettingsRow>
@@ -33,7 +31,7 @@
 					:title="__('Profile Overview')"
 					:description="__('See how your profile appears to coordinators.')"
 				>
-					<Button variant="subtle" theme="red" @click="go('ProfileOverview')">
+					<Button variant="outline" theme="red" @click="go('ProfileOverview')">
 						{{ __("Open") }}
 					</Button>
 				</SettingsRow>

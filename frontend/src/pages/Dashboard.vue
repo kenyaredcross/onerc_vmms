@@ -1,5 +1,5 @@
 <template>
-	<NoPermission v-if="user?.data == 'Guest'" :page="__('Dashboard')" />
+	<NoPermission v-if="!isLoggedIn" :page="__('Dashboard')" />
 
 	<div v-if="isLoggedIn" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 lg:py-8">
 		<div :aria-busy="roleResource?.loading">

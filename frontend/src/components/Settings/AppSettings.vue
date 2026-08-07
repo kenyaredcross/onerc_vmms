@@ -2,19 +2,14 @@
 	<SettingsDialog v-model="settings.isSettingsOpen" v-model:tab="settings.activeTab">
 		<SettingsSidebar>
 			<SettingsNavGroup :label="__('Account')">
-				<SettingsNavItem
-					v-for="tab in tabs"
-					:key="tab.value"
-					:value="tab.value"
-					class="data-[state=active]:!bg-surface-red-2 data-[state=active]:!text-ink-red-8 data-[state=active]:!shadow-none"
-				>
+				<SettingsNavItem v-for="tab in tabs" :key="tab.value" :value="tab.value">
 					<template #prefix>
 						<span
 							:class="[
 								tab.icon,
 								'size-4 shrink-0',
 								settings.activeTab === tab.value
-									? 'text-ink-red-7'
+									? 'text-red-500'
 									: 'text-ink-gray-6',
 							]"
 						/>
