@@ -91,6 +91,7 @@
 </template>
 
 <script setup>
+import { goToSignup } from "@/utils/auth";
 import { useHead } from "@vueuse/head";
 import { Button, createResource, toast } from "frappe-ui";
 import { LogIn } from "lucide-vue-next";
@@ -172,7 +173,7 @@ const submitApplication = () => {
 };
 
 function redirectToLogin() {
-	router.push("/login#signup");
+	goToSignup();
 }
 
 const redirectToWebsite = (url) => window.open(url, "_blank");

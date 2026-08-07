@@ -39,17 +39,17 @@
 </template>
 <script lang="ts" setup>
 import { Dialog, Button } from "frappe-ui";
+import { goToLogin, goToSignup } from "@/utils/auth";
 import { Lock } from "lucide-vue-next";
 import { ref } from "vue";
-import router from "../../router";
 
 const dialog = ref(false);
 
 function redirect(login: boolean) {
 	if (login) {
-		router.push({ name: "Login" });
+		goToLogin();
 	} else {
-		router.push({ name: "Login", hash: "#signup" });
+		goToSignup();
 	}
 }
 </script>

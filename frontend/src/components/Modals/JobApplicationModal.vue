@@ -248,6 +248,7 @@
 </template>
 
 <script setup>
+import { goToLogin } from "@/utils/auth";
 import { Link } from "frappe-ui/frappe";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import Uploader from "@/components/Controls/Uploader.vue";
@@ -417,10 +418,7 @@ watch(
 	() => user.data,
 	(newVal) => {
 		if (!newVal?.name) {
-			router.push({
-				name: "Login",
-				query: { "redirect-to": router.currentRoute.value.fullPath },
-			});
+			goToLogin(router.currentRoute.value.fullPath);
 		}
 	},
 	{ immediate: true }

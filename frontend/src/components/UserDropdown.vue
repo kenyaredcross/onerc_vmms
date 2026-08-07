@@ -63,6 +63,7 @@
 </template>
 
 <script setup>
+import { goToLogin } from "@/utils/auth";
 import FrappeCloudIcon from "@/components/Icons/FrappeCloudIcon.vue";
 import { sessionStore } from "@/stores/session";
 import { useSettings } from "@/stores/settings";
@@ -149,7 +150,7 @@ const userDropdownOptions = computed(() => {
 					icon: LogIn,
 					label: "Log in",
 					onClick: () => {
-						window.location.href = "/vmms/login";
+						goToLogin();
 					},
 					condition: () => {
 						return !isLoggedIn;

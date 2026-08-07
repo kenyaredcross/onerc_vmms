@@ -91,6 +91,7 @@
 </template>
 
 <script setup>
+import { goToLogin } from "@/utils/auth";
 import NotificationPanel from "@/components/NotificationPanel.vue";
 import { useNotifications } from "@/stores/notifications";
 import { sessionStore } from "@/stores/session";
@@ -185,7 +186,7 @@ const handleClick = (tabLink) => {
 	if (tab.onClick) {
 		tab.onClick();
 	} else if (tab.name === "Log in") {
-		window.location.href = "/vmms/login";
+		goToLogin();
 	} else if (tab.name === "Log out") {
 		logout.submit().then(() => {
 			isLoggedIn = false;

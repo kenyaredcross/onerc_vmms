@@ -38,15 +38,15 @@
 </template>
 
 <script setup>
+import { goToLogin, goToSignup } from "@/utils/auth";
 import { LogIn, UserPlus } from "lucide-vue-next";
-import router from "../router";
 
 function redirectToLogin() {
-	router.push("/login");
+	goToLogin();
 }
 
 function redirectToSignup() {
-	router.push("/login#signup");
+	goToSignup();
 }
 
 defineProps({

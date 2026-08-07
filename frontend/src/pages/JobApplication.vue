@@ -137,12 +137,12 @@
 </template>
 
 <script setup>
+import { goToLogin } from "@/utils/auth";
 import { useHead } from "@vueuse/head";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { Button, createResource, TabButtons } from "frappe-ui";
 import { LogIn } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import { sessionStore } from "../stores/session";
 import { usersStore } from "../stores/user";
 import NoPermission from "../components/NoPermission.vue";
@@ -157,7 +157,6 @@ const coverLetterPreview = (text) => {
 const { userResource } = usersStore();
 const { isLoggedIn } = sessionStore();
 const user = userResource;
-const router = useRouter();
 
 const applications = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.application.fetch_applications",
@@ -175,7 +174,7 @@ watch(
 	{ immediate: true }
 );
 
-const redirectToLogin = () => router.push({ name: "Login" });
+const redirectToLogin = () => goToLogin();
 
 const getCompanyAbbr = (name) =>
 	name
