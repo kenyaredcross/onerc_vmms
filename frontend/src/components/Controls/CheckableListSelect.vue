@@ -19,10 +19,7 @@
 			class="form-input w-full rounded-md border-outline-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:ring focus:ring-red-200"
 		/>
 
-		<div
-			:class="`grid gap-1 grid-cols-${cols}`"
-			class="border rounded-md bg-surface-white p-1"
-		>
+		<div :class="`grid gap-1 grid-cols-${cols}`" class="border rounded-md bg-surface-base p-1">
 			<div
 				v-for="option in filteredOptions"
 				:key="option.value"
@@ -43,7 +40,7 @@
 				/>
 				<label
 					:for="option.value"
-					class="flex-1 text-sm font-medium text-ink-gray-1-800 cursor-pointer"
+					class="flex-1 text-sm-medium text-ink-gray-1-800 cursor-pointer"
 				>
 					{{ __(option.label) }}
 				</label>

@@ -22,7 +22,7 @@
 			class="p-2 pt-2 md:p-8 bg-surface-gray-50 rounded-2xl border border-outline-gray-2 text-center mb-20 max-w-7xl mx-auto"
 		>
 			<div
-				class="flex flex-col md:flex-row justify-center items-center gap-2 text-xl md:text-3xl font-semibold text-red-600"
+				class="flex flex-col md:flex-row justify-center items-center gap-2 text-2xl-semibold md:text-4xl text-red-600"
 			>
 				<span>{{ __("Select a New Plan") }}</span>
 				<span v-if="!currentMembership.data.length">

@@ -1,7 +1,7 @@
 <template>
 	<div class="p-5">
 		<header class="flex justify-between items-center mt-5 md:max-w-7xl md:mx-auto">
-			<h1 class="text-3xl font-bold">{{ __("Events") }}</h1>
+			<h1 class="text-4xl-bold">{{ __("Events") }}</h1>
 		</header>
 	</div>
 	<div class="md:mx-auto" :aria-busy="events.loading">

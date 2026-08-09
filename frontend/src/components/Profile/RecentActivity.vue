@@ -1,6 +1,6 @@
 <template>
-	<div class="bg-surface-white rounded-lg border border-outline-gray-2 p-6">
-		<h3 class="text-lg font-semibold text-ink-gray-8 mb-4">{{ __("Recent Activity") }}</h3>
+	<div class="bg-surface-base rounded-lg border border-outline-gray-2 p-6">
+		<h3 class="text-lg-semibold text-ink-gray-8 mb-4">{{ __("Recent Activity") }}</h3>
 
 		<div v-if="activities.length === 0" class="text-center py-8 text-ink-gray-8">
 			{{ __("No activities to show") }}
@@ -10,13 +10,13 @@
 			<div
 				v-for="activity in activities"
 				:key="activity.name"
-				class="border-l-4 border-red-500 pl-4 py-3 hover:bg-surface-gray-5 transition-colors rounded-r"
+				class="border-l-4 border-red-500 pl-4 py-3 hover:bg-surface-gray-8 transition-colors rounded-r"
 			>
 				<div class="flex justify-between items-start">
 					<div class="flex-1">
 						<div class="flex items-center gap-2 mb-1">
 							<span :class="getBadgeClass(activity.type)">{{ activity.type }}</span>
-							<span class="text-sm font-semibold text-red-600"
+							<span class="text-sm-semibold text-red-600"
 								>{{ activity.points > 0 ? "+" : ""
 								}}{{ activity.points }} pts</span
 							>

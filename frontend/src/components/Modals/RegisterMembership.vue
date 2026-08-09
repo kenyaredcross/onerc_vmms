@@ -1,7 +1,7 @@
 <template>
 	<Dialog v-model="registerDialog">
 		<template #body-title>
-			<h3 class="text-2xl font-bold text-ink-gray-8" id="modal-title">
+			<h3 class="text-3xl-bold text-ink-gray-8" id="modal-title">
 				{{ props.is_renew ? "Renew" : "Register" }} as a Member
 			</h3>
 		</template>
@@ -23,7 +23,7 @@
 								<AlertTriangle class="w-6 h-6 text-yellow-600" />
 							</div>
 							<div>
-								<h4 class="text-lg font-semibold text-yellow-800 mb-2">
+								<h4 class="text-lg-semibold text-yellow-800 mb-2">
 									Profile Incomplete
 								</h4>
 								<p class="text-yellow-700 mb-3">
@@ -32,7 +32,7 @@
 									membership application.
 								</p>
 								<div class="mb-2">
-									<p class="text-base font-semibold text-yellow-800">
+									<p class="text-base-semibold text-yellow-800">
 										Missing Fields:
 									</p>
 									<ul class="list-disc list-inside text-yellow-700">
@@ -72,7 +72,7 @@
 					<div v-else class="py-4">
 						<form action="" @submit.prevent="submit">
 							<div
-								class="grid grid-cols-1 gap-4 mb-6 p-4 bg-surface-red-4 border border-outline-red-1 rounded-2xl shadow-sm"
+								class="grid grid-cols-1 gap-4 mb-6 p-4 border rounded-2xl"
 								:class="{ 'sm:grid-cols-2': !isExistingMember }"
 							>
 								<div class="space-y-1">
@@ -99,24 +99,74 @@
 									/>
 								</div>
 							</div>
+							<div
+								v-if="noPaymentMethods"
+								class="mb-4 flex items-start gap-3 p-4 rounded-xl border border-outline-amber-2 bg-surface-amber-1"
+								role="status"
+							>
+								<AlertTriangle
+									class="w-5 h-5 text-ink-amber-3 shrink-0 mt-0.5"
+									aria-hidden="true"
+								/>
+								<div>
+									<p class="text-sm-medium text-ink-gray-8">
+										{{ __("Online payment is unavailable") }}
+									</p>
+									<p class="mt-1 text-sm text-ink-gray-6">
+										{{ paymentBlockedMessage }}
+									</p>
+								</div>
+							</div>
+
+							<div
+								v-if="paymentLookupFailed"
+								class="mb-4 flex items-start gap-3 p-4 rounded-xl border border-outline-red-2 bg-surface-red-1"
+								role="alert"
+							>
+								<AlertTriangle
+									class="w-5 h-5 text-ink-red-4 shrink-0 mt-0.5"
+									aria-hidden="true"
+								/>
+								<div class="flex-1">
+									<p class="text-sm-medium text-ink-gray-8">
+										{{ __("Could not load payment methods") }}
+									</p>
+									<p class="mt-1 text-sm text-ink-gray-6">
+										{{
+											__(
+												"We could not check which payment methods are available. Check your connection and try again."
+											)
+										}}
+									</p>
+									<Button
+										type="button"
+										variant="subtle"
+										class="mt-3"
+										:loading="paymentGateways.loading"
+										@click="getPaymentGateways"
+									>
+										{{ __("Try again") }}
+									</Button>
+								</div>
+							</div>
 
 							<div v-if="!props.is_renew" class="mb-4 flex items-center gap-2">
 								<input
 									id="is_existing_member"
 									type="checkbox"
 									v-model="isExistingMember"
-									class="h-4 w-4 rounded border-outline-gray-3 text-ink-red-3 focus:ring-outline-red-3"
+									class="h-4 w-4 rounded border-outline-gray-3 text-ink-red-6 focus:ring-outline-red-4"
 								/>
 								<label
 									for="is_existing_member"
-									class="text-sm font-medium text-ink-gray-7"
+									class="text-sm-medium text-ink-gray-7"
 								>
 									{{ __("I am an existing member (Not registered on portal)") }}
 								</label>
 							</div>
 
 							<FormControl
-								v-if="!is_renew"
+								v-if="!is_renew && !paymentUnavailable"
 								type="autocomplete"
 								label="Branch / County"
 								placeholder="Select branch or county to register with"
@@ -126,7 +176,7 @@
 							/>
 
 							<FormControl
-								v-if="is_renew"
+								v-if="is_renew && !paymentUnavailable"
 								type="text"
 								label="Branch / County"
 								placeholder="Select branch or county to register with"
@@ -138,12 +188,15 @@
 							/>
 
 							<div v-if="isExistingMember" class="space-y-2">
-								<p class="text-sm font-medium text-ink-gray-5">
+								<p class="text-sm-medium text-ink-gray-5">
 									{{ __("Proof of Membership (Receipt / Certificate / Card)") }}
 								</p>
 								<FileUploader
 									:fileTypes="['.jpg', '.jpeg', '.png', '.pdf']"
-									:uploadArgs="{ private: true }"
+									:uploadArgs="{
+										private: true,
+										upload_endpoint: PROOF_UPLOAD_ENDPOINT,
+									}"
 									:validateFile="validateProofFile"
 									@success="onProofUploaded"
 								>
@@ -215,27 +268,27 @@
 									v-else-if="paymentGateways.error"
 									:message="paymentGateways.error"
 								/>
-								<div v-else-if="paymentGateways.data">
-									<p class="mt-4 mb-2 text-sm font-medium text-ink-gray-5">
+								<div v-else-if="paymentGateways.data?.length">
+									<p class="mt-4 mb-2 text-sm-medium text-ink-gray-5">
 										{{ __("Select a Payment Method:") }}
 									</p>
 									<ul class="space-y-2">
 										<li
 											v-for="pgw in paymentGateways.data"
 											:key="pgw"
-											@click="membershipForm.payment_gateway = pgw"
+											@click="selectPaymentGateway(pgw)"
 											class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200"
 											:class="
 												membershipForm.payment_gateway === pgw
-													? 'border-outline-red-3 bg-surface-red-1 text-ink-red-3 font-semibold'
-													: 'border-outline-gray-2 bg-surface-white text-ink-gray-7 hover:border-outline-red-2 hover:bg-surface-red-1'
+													? 'border-outline-red-4 bg-surface-red-1 text-ink-red-6 font-semibold'
+													: 'border-outline-gray-2 bg-surface-base text-ink-gray-7 hover:border-outline-red-3 hover:bg-surface-red-1'
 											"
 										>
 											<span
 												class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
 												:class="
 													membershipForm.payment_gateway === pgw
-														? 'border-outline-red-3'
+														? 'border-outline-red-4'
 														: 'border-outline-gray-3'
 												"
 											>
@@ -250,7 +303,10 @@
 								</div>
 							</div>
 
-							<div class="mt-4 gap-2 flex items-end justify-end">
+							<div
+								v-if="!paymentUnavailable"
+								class="mt-4 gap-2 flex items-end justify-end"
+							>
 								<Button
 									type="button"
 									variant="solid"
@@ -284,20 +340,22 @@ import {
 	createResource,
 	ErrorMessage,
 	toast,
-	Toast,
 } from "frappe-ui";
-import { reactive, ref, toRaw, watch, watchEffect } from "vue";
+import { computed, reactive, ref, toRaw, watch } from "vue";
 import { AlertTriangle } from "lucide-vue-next";
 import router from "../../router";
 import { membershipStore } from "../../stores/membership";
 import ProgressSpinner from "../Common/ProgressSpinner.vue";
 import PaymentStatus from "../PaymentStatus.vue";
 
+const PROOF_UPLOAD_ENDPOINT =
+	"/api/method/onerc_vmms.volunteer_and_member_management.api.files.upload_file";
+
 const registerDialog = defineModel();
 const branch = ref("");
 const close = defineEmits(["close"]);
 const formError = ref("");
-const showPaymentOptions = ref(false);
+const validatedBranch = ref("");
 const isExistingMember = ref(false);
 const applicationSubmitted = ref(false);
 
@@ -322,31 +380,50 @@ const props = defineProps({
 	},
 });
 
-watchEffect(() => {
-	membershipForm.membership_type = props.membership_type;
-	membershipForm.amount = props.amount;
-	membershipForm.branch = props.renew_branch || "";
-});
+watch(
+	() => [props.membership_type, props.amount],
+	([membershipType, amount]) => {
+		membershipForm.membership_type = membershipType;
+		membershipForm.amount = amount;
+	},
+	{ immediate: true }
+);
+
+watch(
+	() => [props.is_renew, props.renew_branch],
+	([isRenew, renewBranch]) => {
+		if (isRenew && renewBranch) {
+			membershipForm.branch = renewBranch;
+			branch.value = renewBranch;
+		}
+	},
+	{ immediate: true }
+);
+
+function toBranchName(raw) {
+	const selected = toRaw(raw);
+	if (!selected) return "";
+	if (typeof selected === "string") return selected;
+	return selected.value || selected.name || selected.label || "";
+}
 
 watch(branch, (newValue) => {
-	const selectedBranch = toRaw(newValue);
+	const branchName = toBranchName(newValue);
 
-	if (selectedBranch) {
-		membershipForm.branch = selectedBranch.value;
-		checkBranchPaymentSupport();
-	} else {
-		membershipForm.branch = "";
-	}
+	if (membershipForm.branch === branchName) return;
+
+	membershipForm.branch = branchName;
+	clearErrors();
+	checkBranchPaymentSupport();
 });
 
 watch(isExistingMember, (newValue) => {
 	membershipForm.is_existing_member = newValue;
-	formError.value = "";
-	createMembership.error = "";
+	clearErrors();
 
 	if (newValue) {
 		membershipForm.payment_gateway = "";
-		showPaymentOptions.value = false;
+		validatedBranch.value = "";
 		validateBranchPGW.error = null;
 	} else {
 		membershipForm.proof_attachment = null;
@@ -354,20 +431,37 @@ watch(isExistingMember, (newValue) => {
 	}
 });
 
+const showPaymentOptions = computed(
+	() =>
+		!isExistingMember.value &&
+		!!membershipForm.branch &&
+		validatedBranch.value === membershipForm.branch
+);
+
 function checkBranchPaymentSupport() {
-	if (isExistingMember.value || !membershipForm.branch) return;
+	const target = membershipForm.branch;
+
+	validatedBranch.value = "";
+	membershipForm.payment_gateway = "";
+
+	if (isExistingMember.value || !target) return;
 
 	validateBranchPGW.submit(
-		{ company: membershipForm.branch },
+		{ company: target },
 		{
 			onSuccess: () => {
-				showPaymentOptions.value = true;
+				if (membershipForm.branch === target) validatedBranch.value = target;
 			},
 			onError: () => {
-				showPaymentOptions.value = false;
+				if (membershipForm.branch === target) validatedBranch.value = "";
 			},
 		}
 	);
+}
+
+function selectPaymentGateway(gateway) {
+	membershipForm.payment_gateway = gateway;
+	clearErrors();
 }
 
 function validateProofFile(file) {
@@ -426,23 +520,42 @@ function submit() {
 	);
 }
 
+function clearErrors() {
+	formError.value = "";
+	createMembership.error = null;
+	validateBranchPGW.error = null;
+	paymentGateways.error = null;
+}
+
+function resetState() {
+	branch.value = "";
+	isExistingMember.value = false;
+	applicationSubmitted.value = false;
+	validatedBranch.value = "";
+
+	membershipForm.branch = "";
+	membershipForm.payment_gateway = "";
+	membershipForm.is_existing_member = false;
+	membershipForm.proof_attachment = null;
+
+	validateBranchPGW.data = null;
+	paymentGateways.data = null;
+	clearErrors();
+}
+
 watch(registerDialog, (isOpen) => {
-	if (!isOpen) {
-		branch.value = "";
-		formError.value = "";
-		isExistingMember.value = false;
-		applicationSubmitted.value = false;
-		membershipForm.is_existing_member = false;
-		membershipForm.proof_attachment = null;
-		membershipForm.payment_gateway = "";
-		showPaymentOptions.value = false;
-		props.is_renew = false;
-	} else {
-		membershipEligibility.fetch();
-		getPaymentGateways();
-		createMembership.error = "";
-		formError.value = "";
+	resetState();
+
+	if (!isOpen) return;
+
+	if (props.is_renew && props.renew_branch) {
+		membershipForm.branch = props.renew_branch;
+		branch.value = props.renew_branch;
+		checkBranchPaymentSupport();
 	}
+
+	membershipEligibility.fetch();
+	getPaymentGateways();
 });
 
 function getPaymentGateways() {
@@ -453,8 +566,13 @@ function getPaymentGateways() {
 	paymentGateways.submit(
 		{},
 		{
-			onError(error) {
-				console.error("Failed to fetch payment gateways:", error);
+			onSuccess(gateways) {
+				if (
+					membershipForm.payment_gateway &&
+					!(gateways || []).includes(membershipForm.payment_gateway)
+				) {
+					membershipForm.payment_gateway = "";
+				}
 			},
 		}
 	);
@@ -466,6 +584,30 @@ const paymentGateways = createResource({
 		return { membership_type: props.membership_type };
 	},
 });
+
+const noPaymentMethods = computed(() => {
+	if (isExistingMember.value || paymentGateways.loading) return false;
+	if (paymentGateways.error) return false;
+	return Array.isArray(paymentGateways.data) && paymentGateways.data.length === 0;
+});
+
+const paymentLookupFailed = computed(
+	() => !isExistingMember.value && !paymentGateways.loading && !!paymentGateways.error
+);
+
+const paymentUnavailable = computed(
+	() => (noPaymentMethods.value || paymentLookupFailed.value) && !isExistingMember.value
+);
+
+const paymentBlockedMessage = computed(() =>
+	props.is_renew
+		? __(
+				"Online payment is not set up for this membership type, so it cannot be renewed here yet. Please contact support to renew."
+		  )
+		: __(
+				"Online payment is not set up for this membership type yet. If you are already a member, tick the box below and apply with your proof of membership instead. Otherwise please contact support."
+		  )
+);
 
 const membershipEligibility = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.membership.validate_membership_eligibility",
@@ -483,8 +625,6 @@ function validateForm() {
 		proof_attachment: "Proof of Membership",
 	};
 
-	// Existing members apply with a proof of membership instead of paying, so the amount and
-	// payment method are not part of their submission.
 	const requiredFields = isExistingMember.value
 		? ["membership_type", "branch", "proof_attachment"]
 		: ["amount", "membership_type", "branch", "payment_gateway"];
@@ -492,6 +632,14 @@ function validateForm() {
 	for (const key of requiredFields) {
 		if (!membershipForm[key]) {
 			formError.value = `${labels[key] ?? key} is required.`;
+			return false;
+		}
+	}
+
+	if (!isExistingMember.value) {
+		const offered = paymentGateways.data || [];
+		if (!offered.includes(membershipForm.payment_gateway)) {
+			formError.value = __("Please choose one of the available payment methods.");
 			return false;
 		}
 	}

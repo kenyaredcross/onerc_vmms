@@ -2,10 +2,10 @@
 	<div class="flex items-center justify-center min-h-screen">
 		<div class="text-center">
 			<div
-				class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
+				class="w-16 h-16 bg-surface-red-2 rounded-full flex items-center justify-center mx-auto mb-4"
 			>
 				<svg
-					class="w-8 h-8 text-red-600"
+					class="w-8 h-8 text-ink-red-6"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -18,7 +18,7 @@
 					/>
 				</svg>
 			</div>
-			<h3 class="text-lg font-medium text-ink-gray-1-900 mb-2">
+			<h3 class="text-lg-medium text-ink-gray-9 mb-2">
 				{{ __("Error loading deployment") }}
 			</h3>
 			<Button theme="red" @click="$emit('reload')">{{ __("Try Again") }}</Button>

@@ -1,3 +1,4 @@
+import { goToLogin } from "@/utils/auth";
 import { createRouter, createWebHistory } from "vue-router";
 import { sessionStore } from "./stores/session";
 import { usersStore } from "./stores/user";
@@ -27,12 +28,6 @@ const routes = [
 		component: () => import("@/pages/JobDetail.vue"),
 		props: true,
 	},
-	{
-		name: "Login",
-		path: "/login",
-		component: () => import("@/pages/Login.vue"),
-	},
-
 	{
 		path: "/user/profile",
 		name: "Profile",
@@ -136,7 +131,8 @@ router.beforeEach(async (to, from, next) => {
 
 	if (!isLoggedIn) {
 		if (to.meta.requiresAuth) {
-			return next({ name: "Login", query: { "redirect-to": to.fullPath } });
+			goToLogin(to.fullPath);
+			return next(false);
 		} else {
 			return next();
 		}

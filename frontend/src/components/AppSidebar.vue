@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex h-full flex-col justify-between transition-all duration-300 ease-in-out border-r bg-surface-menu-bar"
+		class="relative flex h-full flex-col justify-between transition-all duration-300 ease-in-out border-r bg-surface-sidebar"
 		:class="sidebarStore.sidebarCollapsed ? 'w-14' : 'w-56'"
 	>
 		<div
@@ -11,7 +11,16 @@
 			<div class="flex flex-col">
 				<SidebarLink
 					v-for="link in sidebarLinks"
+					:key="link.label"
 					:link="link"
+					:isCollapsed="sidebarStore.sidebarCollapsed"
+					class="mx-2 my-0.5"
+				/>
+
+				<SidebarLink
+					v-if="isLoggedIn"
+					id="notifications-btn"
+					:link="notificationsLink"
 					:isCollapsed="sidebarStore.sidebarCollapsed"
 					class="mx-2 my-0.5"
 				/>
@@ -30,7 +39,7 @@
 		<div class="m-2 flex flex-col gap-1">
 			<div
 				v-if="readOnlyMode && !sidebarStore.sidebarCollapsed"
-				class="z-10 m-2 bg-surface-modal py-2.5 px-3 text-xs text-ink-gray-7 leading-5 rounded-md"
+				class="z-10 m-2 bg-surface-elevation-2 py-2.5 px-3 text-xs text-ink-gray-7 leading-5 rounded-md"
 			>
 				{{
 					__(
@@ -53,7 +62,7 @@
 						<CircleAlert class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer" />
 						<template #body>
 							<div
-								class="max-w-[30ch] rounded bg-surface-gray-7 px-2 py-1 text-center text-p-xs text-ink-white shadow-xl"
+								class="max-w-[30ch] rounded bg-surface-gray-10 px-2 py-1 text-center text-p-xs text-ink-base shadow-xl"
 							>
 								{{
 									__(
@@ -81,13 +90,17 @@
 				</Tooltip>
 			</div>
 		</div>
+
+		<NotificationPanel v-if="isLoggedIn" />
 	</div>
 </template>
 
 <script setup>
 import CollapseSidebar from "@/components/Icons/CollapseSidebar.vue";
+import NotificationPanel from "@/components/NotificationPanel.vue";
 import SidebarLink from "@/components/SidebarLink.vue";
 import UserDropdown from "@/components/UserDropdown.vue";
+import { useNotifications } from "@/stores/notifications";
 import { useSidebar } from "@/stores/sidebar";
 import { usersStore } from "@/stores/user";
 import { getSidebarLinks } from "@/utils";
@@ -99,10 +112,19 @@ import { sideBarApps } from "../utils/appsNavigate";
 import AppsNavigation from "./AppsNavigation.vue";
 
 const userStore = usersStore();
+const notifications = useNotifications();
 
 const { isLoggedIn } = sessionStore();
 
 const sidebarLinks = computed(() => getSidebarLinks(userStore.isVolunteer));
+
+const notificationsLink = computed(() => ({
+	label: "Notifications",
+	icon: "Bell",
+	count: notifications.unreadCount || undefined,
+	active: notifications.isPanelOpen,
+	onClick: () => notifications.togglePanel(),
+}));
 
 let sidebarStore = useSidebar();
 const readOnlyMode = window.read_only_mode;

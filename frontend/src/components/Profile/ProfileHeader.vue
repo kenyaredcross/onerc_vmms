@@ -25,12 +25,12 @@
 						d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
 					></path>
 				</svg>
-				<span class="text-sm font-medium">{{ __("No Cover Image") }}</span>
+				<span class="text-sm-medium">{{ __("No Cover Image") }}</span>
 			</div>
 
 			<button
 				@click="openCoverUploader"
-				class="absolute top-3 right-3 bg-surface-white/90 hover:bg-surface-white text-ink-gray-1-700 p-2 rounded-full shadow transition"
+				class="absolute top-3 right-3 bg-surface-base/90 hover:bg-surface-base text-ink-gray-1-700 p-2 rounded-full shadow transition"
 				:aria-label="__('Edit cover image')"
 				v-if="allowEdit"
 			>
@@ -88,7 +88,7 @@
 						@click="openProfileUploader"
 						v-if="allowEdit"
 						:aria-label="__('Edit profile image')"
-						class="absolute bottom-1 right-1 bg-surface-white p-1 sm:p-1.5 rounded-full shadow hover:bg-surface-gray-50 text-ink-gray-1-700 transition"
+						class="absolute bottom-1 right-1 bg-surface-base p-1 sm:p-1.5 rounded-full shadow hover:bg-surface-gray-50 text-ink-gray-1-700 transition"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -111,10 +111,10 @@
 					class="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full"
 				>
 					<div class="text-center sm:text-left">
-						<h1 class="text-xl sm:text-3xl font-bold text-red-600 leading-tight">
+						<h1 class="text-2xl-bold sm:text-4xl text-red-600 leading-tight">
 							{{ __(form?.full_name || "Volunteer Name") }}
 						</h1>
-						<p class="text-xs sm:text-base text-ink-gray-1-500 font-medium">
+						<p class="text-xs-medium sm:text-base text-ink-gray-1-500">
 							{{ __(form?.email) }}
 						</p>
 					</div>
@@ -123,7 +123,7 @@
 						<a
 							href="/app/user-profile"
 							target="_blank"
-							class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 border border-red-700 shadow text-xs sm:text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 transition"
+							class="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 border border-red-700 shadow text-xs-medium sm:text-sm rounded-md text-white bg-red-600 hover:bg-red-700 transition"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -150,7 +150,7 @@
 			:disable-outside-click-to-close="saveInProgress"
 		>
 			<template #body-title>
-				<h2 class="text-lg font-semibold text-ink-gray-1-900">
+				<h2 class="text-lg-semibold text-ink-gray-1-900">
 					{{ __("Edit Cover Image") }}
 				</h2>
 			</template>
@@ -160,7 +160,7 @@
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<div class="flex items-center justify-between mb-3">
-								<label class="block text-sm font-medium text-ink-gray-1-700">
+								<label class="block text-sm-medium text-ink-gray-1-700">
 									{{ __("Current Cover Image") }}
 								</label>
 							</div>
@@ -196,7 +196,7 @@
 						</div>
 
 						<div>
-							<label class="block text-sm font-medium text-ink-gray-1-700 mb-3">
+							<label class="block text-sm-medium text-ink-gray-1-700 mb-3">
 								{{ __("New Cover Image") }}
 							</label>
 							<div
@@ -253,7 +253,7 @@
 						v-if="form?.cover_image"
 						@click="deleteCoverImage"
 						:disabled="saveInProgress"
-						class="px-4 py-2 text-sm font-medium text-red-600 bg-surface-white border border-red-300 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+						class="px-4 py-2 text-sm-medium text-red-600 bg-surface-base border border-red-300 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -271,14 +271,14 @@
 						<button
 							@click="closeCoverUploader"
 							:disabled="saveInProgress"
-							class="px-4 py-2 text-sm font-medium text-ink-gray-1-700 bg-surface-white border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+							class="px-4 py-2 text-sm-medium text-ink-gray-1-700 bg-surface-base border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{{ __("Cancel") }}
 						</button>
 						<button
 							@click="saveCoverImage"
 							:disabled="!coverImageModel || saveInProgress"
-							class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+							class="px-4 py-2 text-sm-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
 						>
 							<template v-if="saveInProgress">
 								<div
@@ -299,7 +299,7 @@
 			:disable-outside-click-to-close="saveInProgress"
 		>
 			<template #body-title>
-				<h2 class="text-lg font-semibold text-ink-gray-1-900">
+				<h2 class="text-lg-semibold text-ink-gray-1-900">
 					{{ __("Edit Profile Image") }}
 				</h2>
 			</template>
@@ -309,7 +309,7 @@
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div class="flex flex-col items-center">
 							<div class="flex items-center justify-between w-full mb-3">
-								<label class="block text-sm font-medium text-ink-gray-1-700">
+								<label class="block text-sm-medium text-ink-gray-1-700">
 									{{ __("Current Profile Image") }}
 								</label>
 							</div>
@@ -343,9 +343,7 @@
 						</div>
 
 						<div class="flex flex-col items-center">
-							<label
-								class="block text-sm font-medium text-ink-gray-1-700 mb-3 w-full"
-							>
+							<label class="block text-sm-medium text-ink-gray-1-700 mb-3 w-full">
 								{{ __("New Profile Image") }}
 							</label>
 							<div
@@ -407,7 +405,7 @@
 						v-if="form?.user_image"
 						@click="deleteProfileImage"
 						:disabled="saveInProgress"
-						class="px-4 py-2 text-sm font-medium text-red-600 bg-surface-white border border-red-300 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+						class="px-4 py-2 text-sm-medium text-red-600 bg-surface-base border border-red-300 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
 					>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -425,14 +423,14 @@
 						<button
 							@click="closeProfileUploader"
 							:disabled="saveInProgress"
-							class="px-4 py-2 text-sm font-medium text-ink-gray-1-700 bg-surface-white border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+							class="px-4 py-2 text-sm-medium text-ink-gray-1-700 bg-surface-base border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{{ __("Cancel") }}
 						</button>
 						<button
 							@click="saveProfileImage"
 							:disabled="!profileImageModel || saveInProgress"
-							class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+							class="px-4 py-2 text-sm-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
 						>
 							<template v-if="saveInProgress">
 								<div
@@ -453,7 +451,7 @@
 			:disable-outside-click-to-close="saveInProgress"
 		>
 			<template #body-title>
-				<h3 class="text-lg font-medium text-ink-gray-1-900">
+				<h3 class="text-lg-medium text-ink-gray-1-900">
 					{{ __("Confirm Deletion") }}
 				</h3>
 			</template>
@@ -486,14 +484,14 @@
 					<button
 						@click="closeDeleteConfirm"
 						:disabled="saveInProgress"
-						class="px-4 py-2 text-sm font-medium text-ink-gray-1-700 bg-surface-white border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50"
+						class="px-4 py-2 text-sm-medium text-ink-gray-1-700 bg-surface-base border border-outline-gray-300 rounded-lg hover:bg-surface-gray-50 transition disabled:opacity-50"
 					>
 						{{ __("Cancel") }}
 					</button>
 					<button
 						@click="executeDelete"
 						:disabled="saveInProgress"
-						class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+						class="px-4 py-2 text-sm-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
 					>
 						<template v-if="saveInProgress">
 							<div

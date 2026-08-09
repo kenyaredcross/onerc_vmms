@@ -5,7 +5,7 @@
 		</div>
 
 		<div v-else>
-			<h1 class="text-3xl font-bold text-ink-gray-1-900 mb-8">
+			<h1 class="text-4xl-bold text-ink-gray-1-900 mb-8">
 				{{ __("My Applications") }}
 			</h1>
 
@@ -57,7 +57,7 @@
 
 							<div class="flex-1">
 								<div class="flex justify-between items-start">
-									<h2 class="text-xl font-bold text-ink-gray-1-900">
+									<h2 class="text-2xl-bold text-ink-gray-1-900">
 										{{
 											__(
 												app?.job_opening_details?.job_title ||
@@ -66,7 +66,7 @@
 										}}
 									</h2>
 									<span
-										class="px-3 py-1 text-xs font-semibold rounded-full"
+										class="px-3 py-1 text-xs-semibold rounded-full"
 										:class="statusClass(app.status, app.docstatus)"
 									>
 										{{
@@ -137,12 +137,12 @@
 </template>
 
 <script setup>
+import { goToLogin } from "@/utils/auth";
 import { useHead } from "@vueuse/head";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { Button, createResource, TabButtons } from "frappe-ui";
 import { LogIn } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import { sessionStore } from "../stores/session";
 import { usersStore } from "../stores/user";
 import NoPermission from "../components/NoPermission.vue";
@@ -157,7 +157,6 @@ const coverLetterPreview = (text) => {
 const { userResource } = usersStore();
 const { isLoggedIn } = sessionStore();
 const user = userResource;
-const router = useRouter();
 
 const applications = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.application.fetch_applications",
@@ -175,7 +174,7 @@ watch(
 	{ immediate: true }
 );
 
-const redirectToLogin = () => router.push({ name: "Login" });
+const redirectToLogin = () => goToLogin();
 
 const getCompanyAbbr = (name) =>
 	name

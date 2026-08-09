@@ -1,7 +1,7 @@
 <template>
 	<Dialog v-model="showDialog">
 		<template #body-title>
-			<h2 class="text-base font-semibold text-ink-gray-9">{{ __("Install VMMS") }}</h2>
+			<h2 class="text-base-semibold text-ink-gray-9">{{ __("Install VMMS") }}</h2>
 		</template>
 		<template #body-content>
 			<p class="text-sm text-ink-gray-6">
@@ -21,13 +21,13 @@
 	<Popover :show="iosInstallMessage" placement="bottom">
 		<template #body>
 			<div
-				class="m-3 rounded-xl bg-surface-white border border-outline-gray-1 shadow-lg overflow-hidden"
+				class="m-3 rounded-xl bg-surface-base border border-outline-gray-1 shadow-lg overflow-hidden"
 			>
 				<!-- Header -->
 				<div
 					class="flex items-center justify-between px-4 py-3 border-b border-outline-gray-1"
 				>
-					<span class="text-sm font-semibold text-ink-gray-9">
+					<span class="text-sm-semibold text-ink-gray-9">
 						{{ __("Install VMMS") }}
 					</span>
 					<button
@@ -47,7 +47,7 @@
 					</p>
 					<p class="text-sm text-ink-gray-6 flex items-center gap-1 flex-wrap">
 						<span>{{ __("Tap") }}</span>
-						<FeatherIcon name="share" class="w-4 h-4 text-ink-blue-2 shrink-0" />
+						<FeatherIcon name="share" class="w-4 h-4 text-ink-blue-5 shrink-0" />
 						<span>{{ __("then") }}</span>
 						<span class="font-medium text-ink-gray-8">{{
 							__("'Add to Home Screen'")

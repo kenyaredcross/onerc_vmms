@@ -1,13 +1,13 @@
 <template>
 	<div class="">
-		<h1 class="text-3xl font-bold text-center text-red-700 py-3">
+		<h1 class="text-4xl-bold text-center text-red-700 py-3">
 			{{ __("Volunteer Signup") }}
 		</h1>
 	</div>
 
 	<div v-if="!isLoggedIn" class="text-center py-20">
 		<LogIn class="w-16 h-16 text-ink-gray-1-400 mx-auto mb-4" />
-		<h2 class="text-3xl font-bold text-ink-gray-1-900 mb-4">{{ __("Login Required") }}</h2>
+		<h2 class="text-4xl-bold text-ink-gray-1-900 mb-4">{{ __("Login Required") }}</h2>
 		<p class="text-ink-gray-1-600 mb-8">
 			{{ __("Please log in to submit your volunteer application.") }}
 		</p>
@@ -32,13 +32,13 @@
 		class="min-h-screen flex flex-col"
 	>
 		<div class="flex-1 container mx-auto px-4 py-4">
-			<div class="bg-surface-white shadow-lg rounded p-6">
+			<div class="bg-surface-base shadow-lg rounded p-6">
 				<div class="w-full mb-10">
 					<div
 						v-if="alreadyApplied && applicationStatus === 'Draft'"
 						class="text-center mb-6"
 					>
-						<h2 class="text-xl font-semibold text-orange-600">
+						<h2 class="text-2xl-semibold text-orange-600">
 							{{ __("Continue Your Draft Application") }}
 						</h2>
 						<p class="text-ink-gray-1-600 text-sm">
@@ -70,7 +70,7 @@
 									i < currentStep
 										? 'bg-red-600 border-red-600 text-white shadow-md hover:shadow-lg'
 										: i === currentStep
-										? 'bg-surface-white border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
+										? 'bg-surface-base border-red-600 text-red-600 font-bold shadow-lg scale-110 ring-4 ring-red-100'
 										: 'bg-surface-gray-200 border-outline-gray-300 text-ink-gray-1-500 hover:border-outline-gray-400 hover:bg-surface-gray-300',
 								]"
 							>
@@ -112,7 +112,7 @@
 
 				<div class="flex justify-between items-center gap-4 mt-10">
 					<div>
-						<span v-if="hasUnsavedChanges" class="text-sm text-orange-600 font-medium">
+						<span v-if="hasUnsavedChanges" class="text-sm-medium text-orange-600">
 						</span>
 					</div>
 					<div class="flex gap-4">
@@ -145,7 +145,7 @@
 
 	<Dialog v-model="showSubmitDialog">
 		<template #body-title>
-			<h2 class="text-lg font-bold text-ink-gray-1-900">
+			<h2 class="text-lg-bold text-ink-gray-1-900">
 				{{ __("Confirm Submission") }}
 			</h2>
 		</template>
@@ -154,7 +154,7 @@
 			<p class="text-ink-gray-1-700 leading-relaxed">
 				{{ __("Are you sure you want to submit this application?") }}
 			</p>
-			<p class="mt-2 text-sm text-red-600 font-medium">
+			<p class="mt-2 text-sm-medium text-red-600">
 				{{ __("You won't be able to make further edits after submission.") }}
 			</p>
 		</template>

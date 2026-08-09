@@ -4,17 +4,17 @@
 	</div>
 	<div v-else class="min-h-screen flex flex-col">
 		<div class="flex-1 container mx-auto px-6 py-10">
-			<div class="bg-surface-white shadow-lg rounded-2xl p-8">
+			<div class="bg-surface-base shadow-lg rounded-2xl p-8">
 				<div v-if="loading" class="text-center py-10">
 					<p>{{ __("Loading application...") }}</p>
 				</div>
 
 				<div v-else>
 					<section class="mb-8">
-						<h1 class="text-xl uppercase font-bold mb-4 text-center text-red-700">
+						<h1 class="text-2xl-bold uppercase mb-4 text-center text-red-700">
 							Volunteer Signup
 						</h1>
-						<h2 class="text-xl font-bold text-red-700 mb-4">
+						<h2 class="text-2xl-bold text-red-700 mb-4">
 							{{ __("Organization") }}
 						</h2>
 						<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -29,7 +29,7 @@
 					</section>
 
 					<section v-if="!showOnlyDocsProfile && !props.showOnlyDocs" class="mb-10">
-						<h2 class="text-xl font-bold text-red-700 mb-4">
+						<h2 class="text-2xl-bold text-red-700 mb-4">
 							{{ __("Personal Information") }}
 						</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -89,7 +89,7 @@
 					</section>
 
 					<section v-if="!props.showOnlyDocsProfile" class="mb-10">
-						<h2 class="text-xl font-bold text-red-700 mb-4">
+						<h2 class="text-2xl-bold text-red-700 mb-4">
 							{{ __("Additional Information") }}
 						</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
@@ -175,7 +175,7 @@
 					</section>
 
 					<section class="mb-10">
-						<h2 class="text-xl font-bold text-red-700 mb-4">
+						<h2 class="text-2xl-bold text-red-700 mb-4">
 							{{ __("Documents & Profile Photo") }}
 						</h2>
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -216,7 +216,7 @@
 							/>
 						</div>
 
-						<span class="mb-2 !pt-4 text-lg font-semibold text-ink-gray-1-800">
+						<span class="mb-2 !pt-4 text-lg-semibold text-ink-gray-1-800">
 							{{ __("Cover Letter") }}
 						</span>
 						<div
@@ -248,7 +248,8 @@
 </template>
 
 <script setup>
-import Link from "@/components/Controls/Link.vue";
+import { goToLogin } from "@/utils/auth";
+import { Link } from "frappe-ui/frappe";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import Uploader from "@/components/Controls/Uploader.vue";
 import { Button, createResource, FormControl, TextEditor, toast } from "frappe-ui";
@@ -417,10 +418,7 @@ watch(
 	() => user.data,
 	(newVal) => {
 		if (!newVal?.name) {
-			router.push({
-				name: "Login",
-				query: { "redirect-to": router.currentRoute.value.fullPath },
-			});
+			goToLogin(router.currentRoute.value.fullPath);
 		}
 	},
 	{ immediate: true }

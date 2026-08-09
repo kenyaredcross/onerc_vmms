@@ -13,7 +13,7 @@
 						:disabled="rowsRef.length === 0"
 						class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
 					/>
-					<span class="text-sm font-medium text-ink-gray-6">
+					<span class="text-sm-medium text-ink-gray-6">
 						{{
 							selectedRows.size > 0
 								? `${selectedRows.size} ${__("selected")}`
@@ -62,7 +62,7 @@
 					:class="[
 						selectedRows.has(rowIndex)
 							? 'bg-blue-50 border-blue-200'
-							: 'bg-surface-white',
+							: 'bg-surface-base',
 						editingRow === rowIndex ? 'ring-2 ring-blue-300' : '',
 						validationErrors.has(rowIndex) &&
 						Object.keys(validationErrors.get(rowIndex) || {}).length > 0
@@ -79,7 +79,7 @@
 								@change="toggleRowSelection(rowIndex)"
 								class="cursor-pointer"
 							/>
-							<span class="text-xs font-medium text-ink-gray-6">
+							<span class="text-xs-medium text-ink-gray-6">
 								{{ __("Row") }} {{ rowIndex + 1 }}
 							</span>
 						</div>
@@ -111,7 +111,7 @@
 							v-show="!isFieldHidden(field, row)"
 							class="flex flex-col gap-1"
 						>
-							<label class="text-xs text-ink-gray-5 font-medium">
+							<label class="text-xs-medium text-ink-gray-5">
 								{{ __(field.label) }}
 								<span v-if="isFieldRequired(field, row)" class="text-red-500"
 									>*</span
@@ -294,7 +294,7 @@
 					:key="`desktop-row-${rowIndex}`"
 					class="grid items-center gap-4 p-3 transition-all group"
 					:class="[
-						rowIndex % 2 === 0 ? 'bg-surface-white' : 'bg-surface-white',
+						rowIndex % 2 === 0 ? 'bg-surface-base' : 'bg-surface-base',
 						selectedRows.has(rowIndex) ? 'bg-blue-50' : '',
 						editingRow === rowIndex ? 'ring-2 ring-blue-300' : '',
 						validationErrors.has(rowIndex) &&
@@ -474,7 +474,7 @@
 
 		<Dialog v-model="editModalOpenModel" :options="{ size: '4xl' }">
 			<template #body-title>
-				<h3 class="text-base sm:text-lg font-semibold text-ink-gray-7">
+				<h3 class="text-base-semibold sm:text-lg text-ink-gray-7">
 					{{ __("Edit Row") }} {{ (editModalRowIndex || 0) + 1 }}
 				</h3>
 			</template>
@@ -490,7 +490,7 @@
 						>
 							<h4
 								v-if="section.label"
-								class="text-sm sm:text-base font-semibold text-ink-gray-7 mb-3 sm:mb-4"
+								class="text-sm-semibold sm:text-base text-ink-gray-7 mb-3 sm:mb-4"
 							>
 								{{ __(section.label) }}
 							</h4>
@@ -628,7 +628,7 @@ import {
 } from "frappe-ui";
 import { Copy, Edit, Plus, Trash2, X } from "lucide-vue-next";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import LinkControl from "./Link.vue";
+import { Link as LinkControl } from "frappe-ui/frappe";
 import Uploader from "./Uploader.vue";
 
 const props = defineProps({
@@ -862,6 +862,7 @@ function getFieldProps(field, rowIndex) {
 		case "Dynamic Link":
 			props.doctype = field.options;
 			props.description = field.description || "";
+			props.disabled = !!field.read_only;
 
 			let baseFilters =
 				typeof field.get_query === "function" ? field.get_query() : field.get_query || {};

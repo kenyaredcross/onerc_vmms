@@ -1,6 +1,6 @@
 <template>
 	<div class="border-0">
-		<label v-if="label" class="block text-sm font-medium text-ink-gray-1-700 mb-1"
+		<label v-if="label" class="block text-sm-medium text-ink-gray-1-700 mb-1"
 			>{{ label }} <span v-if="required" class="text-red-500">*</span></label
 		>
 		<p v-if="description" class="text-xs text-ink-gray-1-500 mb-2">
@@ -42,7 +42,7 @@
 				<p class="text-xs text-ink-gray-1-500 mt-1">
 					Supported formats: {{ supportedFormatsText }}
 				</p>
-				<p v-if="multi" class="text-xs text-blue-500 mt-1 font-medium">
+				<p v-if="multi" class="text-xs-medium text-blue-500 mt-1">
 					Multiple files can be selected
 				</p>
 			</div>
@@ -56,7 +56,7 @@
 		</div>
 
 		<div v-if="uploadedFiles.length" class="space-y-3">
-			<div class="text-sm font-medium text-ink-gray-1-700 mb-2" v-if="showLength">
+			<div class="text-sm-medium text-ink-gray-1-700 mb-2" v-if="showLength">
 				{{ uploadedFiles.length }} file(s)
 				{{ readOnly ? "attached" : "uploaded" }}
 			</div>
@@ -64,7 +64,7 @@
 				<div
 					v-for="(file, index) in uploadedFiles"
 					:key="(file.file_name || file.name || file.file_url) + index"
-					class="bg-surface-white p-4 rounded-md border space-y-2"
+					class="bg-surface-base p-4 rounded-md border space-y-2"
 				>
 					<component
 						v-if="customPreviewComponent"
@@ -143,8 +143,8 @@
 			v-else-if="uploading"
 			class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
 		>
-			<div class="bg-surface-white p-6 rounded-xl shadow-2xl w-full max-w-lg">
-				<h2 class="text-lg font-semibold text-ink-gray-1-800 mb-4">Uploading Files</h2>
+			<div class="bg-surface-base p-6 rounded-xl shadow-2xl w-full max-w-lg">
+				<h2 class="text-lg-semibold text-ink-gray-1-800 mb-4">Uploading Files</h2>
 
 				<div class="space-y-4 max-h-80 overflow-y-auto pr-2">
 					<div
@@ -152,7 +152,7 @@
 						:key="item.file.name + index"
 						class="space-y-1"
 					>
-						<div class="flex justify-between text-sm font-medium text-ink-gray-1-700">
+						<div class="flex justify-between text-sm-medium text-ink-gray-1-700">
 							<span class="truncate w-40">{{ item.file.name }}</span>
 							<span>{{ item.progress }}%</span>
 						</div>

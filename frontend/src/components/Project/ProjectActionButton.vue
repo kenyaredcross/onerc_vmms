@@ -1,12 +1,12 @@
 <template>
 	<button
 		@click="openDoctype"
-		class="flex items-center justify-start w-full p-4 text-sm font-semibold text-ink-gray-1-800 transition-all duration-300 bg-surface-white border border-outline-gray-2 rounded-lg hover:shadow-md hover:border-red-500 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2"
+		class="flex items-center justify-start w-full p-4 text-sm-semibold text-ink-gray-8 transition-all duration-300 bg-surface-base border border-outline-gray-2 rounded-lg hover:shadow-md hover:border-outline-red-5 hover:bg-surface-red-1 focus:outline-none focus:ring-2 focus:ring-outline-green-4 focus:ring-offset-2"
 	>
 		<component
 			:is="iconComponent"
 			:size="18"
-			class="mr-4 text-red-600 transition-colors duration-300 group-hover:text-red-800"
+			class="mr-4 text-ink-red-6 transition-colors duration-300 group-hover:text-ink-red-8"
 		/>
 		{{ label }}
 	</button>

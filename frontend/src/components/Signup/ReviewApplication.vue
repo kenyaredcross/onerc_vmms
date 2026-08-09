@@ -1,6 +1,6 @@
 <template>
 	<div class="space-y-8">
-		<h2 class="text-2xl font-bold text-red-700">
+		<h2 class="text-3xl-bold text-red-700">
 			{{ __("Review Your Application") }}
 		</h2>
 

@@ -40,7 +40,7 @@
 			<Link v-model="form.gender" :label="__('Gender')" doctype="Gender" :required="true" />
 		</div>
 
-		<h2 class="text-xl font-semibold border-t pt-6 mt-6">{{ __("Contact & Location") }}</h2>
+		<h2 class="text-2xl-semibold border-t pt-6 mt-6">{{ __("Contact & Location") }}</h2>
 
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 			<Link doctype="County" v-model="form.county" :label="__('County')" />
@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-import Link from "@/components/Controls/Link.vue";
+import { Link } from "frappe-ui/frappe";
 import { FormControl } from "frappe-ui";
 
 import { nextTick, onMounted, watch } from "vue";

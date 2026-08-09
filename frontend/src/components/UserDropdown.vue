@@ -7,16 +7,23 @@
 					isCollapsed
 						? 'px-0 w-auto'
 						: open
-						? 'bg-surface-white px-2 w-52'
+						? 'bg-surface-base px-2 w-52'
 						: 'hover:bg-surface-gray-3 px-2 w-52'
 				"
 			>
-				<img
-					v-if="branding.data?.logo"
-					:src="branding.data?.logo"
-					class="w-8 h-8 rounded flex-shrink-0"
-				/>
-				<VMMSLogo v-else class="w-8 h-8 rounded flex-shrink-0" />
+				<span class="relative flex-shrink-0">
+					<Avatar
+						size="lg"
+						shape="square"
+						:image="userResource.data?.user_image"
+						:label="userResource.data?.full_name || 'VMMS'"
+					/>
+					<span
+						v-if="needsAvailability"
+						class="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-surface-red-5 ring-2 ring-surface-sidebar"
+						:aria-label="__('Availability not set')"
+					/>
+				</span>
 				<div
 					class="flex flex-1 flex-col text-left duration-300 ease-in-out"
 					:class="
@@ -25,19 +32,19 @@
 							: 'opacity-100 ml-2 w-auto'
 					"
 				>
-					<div class="text-base font-medium text-ink-gray-9 leading-none">
+					<div
+						v-if="userResource.data"
+						class="text-base-medium text-ink-gray-9 leading-none truncate"
+					>
+						{{ __(convertToTitleCase(userResource.data?.full_name)) }}
+					</div>
+					<div class="mt-1 text-sm text-ink-gray-7 leading-none truncate">
 						<span
 							v-if="branding.data?.brand_name && branding.data?.app_name != 'Frappe'"
 						>
 							{{ __(branding.data?.brand_name) }}
 						</span>
-						<span v-else> {{ __("VMMS Portal") }} </span>
-					</div>
-					<div
-						v-if="userResource.data"
-						class="mt-1 text-sm text-ink-gray-7 leading-none"
-					>
-						{{ __(convertToTitleCase(userResource.data?.full_name)) }}
+						<span v-else>{{ __("VMMS Portal") }}</span>
 					</div>
 				</div>
 				<div
@@ -56,17 +63,17 @@
 </template>
 
 <script setup>
+import { goToLogin } from "@/utils/auth";
 import FrappeCloudIcon from "@/components/Icons/FrappeCloudIcon.vue";
-import VMMSLogo from "@/components/Icons/VMMSLogo.vue";
 import { sessionStore } from "@/stores/session";
+import { useSettings } from "@/stores/settings";
 import { usersStore } from "@/stores/user";
 import { convertToTitleCase } from "@/utils";
 import { createDialog } from "@/utils/dialogs";
-import { Dropdown } from "frappe-ui";
-import { ChevronDown, LogIn, LogOut, Sun, Moon } from "lucide-vue-next";
-import { computed, watchEffect } from "vue";
+import { Avatar, Dropdown } from "frappe-ui";
+import { ChevronDown, LogIn, LogOut, Settings } from "lucide-vue-next";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { useTheme } from "frappe-ui";
 
 const router = useRouter();
 const { logout, branding } = sessionStore();
@@ -74,23 +81,11 @@ let { userResource } = usersStore();
 let { isLoggedIn } = sessionStore();
 const frappeCloudBaseEndpoint = "https://frappecloud.com";
 const $dialog = createDialog;
+const settings = useSettings();
+const userStore = usersStore();
 
-const { currentTheme, setTheme } = useTheme();
+const needsAvailability = computed(() => userStore.isVolunteer && !userStore.presentSlots?.data);
 
-const theme = computed({
-	get() {
-		if (currentTheme.value === "light") return "light";
-		if (currentTheme.value === "dark") return "dark";
-		return "system";
-	},
-	set(value) {
-		setTheme(value);
-	},
-});
-
-const themeIcon = computed(() => {
-	return currentTheme.value === "light" ? Moon : Sun;
-});
 const props = defineProps({
 	isCollapsed: {
 		type: Boolean,
@@ -116,7 +111,7 @@ const userDropdownOptions = computed(() => {
 								{
 									label: __("Confirm"),
 									variant: "solid",
-									onClick(close) {
+									onClick({ close }) {
 										loginToFrappeCloud();
 										close();
 									},
@@ -131,11 +126,13 @@ const userDropdownOptions = computed(() => {
 					},
 				},
 				{
-					icon: themeIcon.value,
-					label: "Theme",
-					onClick: () => {
-						theme.value = theme.value === "light" ? "dark" : "light";
-					},
+					icon: Settings,
+					label: "Settings",
+					onClick: () =>
+						settings.openSettings(
+							needsAvailability.value ? "availability" : "profile"
+						),
+					condition: () => isLoggedIn,
 				},
 				{
 					icon: LogOut,
@@ -153,7 +150,7 @@ const userDropdownOptions = computed(() => {
 					icon: LogIn,
 					label: "Log in",
 					onClick: () => {
-						window.location.href = "/vmms/login";
+						goToLogin();
 					},
 					condition: () => {
 						return !isLoggedIn;

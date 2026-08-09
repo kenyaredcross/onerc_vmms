@@ -1,5 +1,5 @@
 <template>
-	<div class="text-center py-8 px-2 border rounded-lg bg-surface-white">
+	<div class="text-center py-8 px-2 border rounded-lg bg-surface-base">
 		<div class="mb-4">
 			<svg
 				class="mx-auto h-16 w-16 text-green-500"
@@ -15,7 +15,7 @@
 				/>
 			</svg>
 		</div>
-		<h3 class="text-xl font-semibold text-ink-gray-1-900 mb-2">{{ title }} Successful!</h3>
+		<h3 class="text-2xl-semibold text-ink-gray-1-900 mb-2">{{ title }} Successful!</h3>
 		<p class="text-ink-gray-1-600 mb-6">{{ message }}. Thank you for your support!</p>
 		<div>
 			<Button theme="green" variant="solid" @click="navigateToReturnUrl">

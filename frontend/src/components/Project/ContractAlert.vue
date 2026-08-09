@@ -1,9 +1,9 @@
 <template>
 	<div
-		class="w-full flex items-center justify-center rounded-lg border border-yellow-300 bg-yellow-50 px-8 py-4 text-sm font-medium text-yellow-700"
+		class="w-full flex items-center justify-center rounded-lg border border-outline-yellow-3 bg-surface-yellow-1 px-8 py-4 text-sm-medium text-ink-yellow-7"
 	>
 		<svg
-			class="h-4 w-4 mr-2 text-yellow-500"
+			class="h-4 w-4 mr-2 text-ink-yellow-5"
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"
 			viewBox="0 0 24 24"
@@ -17,10 +17,10 @@
 			/>
 		</svg>
 		<div class="flex-1">
-			<h3 class="text-sm font-semibold text-yellow-800 mb-1">
+			<h3 class="text-sm-semibold text-ink-yellow-8 mb-1">
 				{{ __("Contract Pending") }}
 			</h3>
-			<p class="text-sm text-yellow-700">
+			<p class="text-sm text-ink-yellow-7">
 				{{
 					__(
 						"A signed contract is required before you can accept this deployment. Please wait, or contact the deployment manager for assistance."

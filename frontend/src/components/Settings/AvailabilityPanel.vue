@@ -1,14 +1,22 @@
 <template>
-	<Dialog v-model="setAvailability" :options="{ size: '5xl' }">
-		<template #body-title>
-			<h3 class="text-xl font-bold text-ink-gray-8">
-				{{ __("Set Your Weekly Availability") }}
-			</h3>
-		</template>
+	<SettingsHeader class="!px-4 !pt-6 sm:!px-[4.4rem] sm:!pt-10">
+		<div class="flex items-start justify-between gap-4">
+			<div class="flex min-w-0 flex-col gap-1">
+				<h2 class="text-lg font-semibold text-ink-gray-8">{{ __("Availability") }}</h2>
+				<p class="text-base text-ink-gray-6">
+					{{ __("Set the shifts you can be deployed on each week.") }}
+				</p>
+			</div>
+			<Badge v-if="totalSelectedShifts" theme="red" variant="subtle" class="shrink-0">
+				{{ totalSelectedShifts }}
+			</Badge>
+		</div>
+	</SettingsHeader>
 
-		<template #body-content>
-			<div class="p-4 bg-surface-red-4 rounded-lg mb-6">
-				<p class="text-ink-red-4">
+	<PanelBody>
+		<div class="flex flex-col gap-6">
+			<div class="mt-2 rounded-lg bg-surface-red-1 px-3 py-2">
+				<p class="text-sm text-ink-red-8">
 					{{
 						__(
 							"Select the shifts you're available for each day of the week. This will be your ongoing weekly availability pattern."
@@ -17,25 +25,26 @@
 				</p>
 			</div>
 
-			<div class="overflow-x-auto">
-				<table class="w-full border-collapse border">
+			<div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+				<table class="w-full min-w-[20rem] border-collapse">
 					<thead>
 						<tr>
-							<th scope="col" class="border p-3 text-left font-bold text-ink-gray-8">
-								{{ __("Days/Shifts") }}
+							<th
+								scope="col"
+								class="sticky left-0 z-10 border border-outline-gray-2 bg-surface-gray-1 p-2 text-left text-sm-medium text-ink-gray-7"
+							>
+								{{ __("Day") }}
 							</th>
 							<th
 								v-for="shift in shifts.data"
 								:key="shift.name"
 								scope="col"
-								class="border p-3 text-center font-bold text-ink-gray-8"
+								class="border border-outline-gray-2 bg-surface-gray-1 p-2 text-center text-sm-medium text-ink-gray-7"
 							>
-								<div>
-									<div class="font-bold">{{ shift.name }}</div>
-									<div class="text-xs font-normal">
-										{{ formatTime(shift.start_time) }} -
-										{{ formatTime(shift.end_time) }}
-									</div>
+								<div class="whitespace-nowrap">{{ shift.name }}</div>
+								<div class="text-xs font-normal text-ink-gray-5 whitespace-nowrap">
+									{{ formatTime(shift.start_time) }} -
+									{{ formatTime(shift.end_time) }}
 								</div>
 							</th>
 						</tr>
@@ -44,22 +53,21 @@
 						<tr v-for="day in daysList" :key="day.value">
 							<th
 								scope="row"
-								class="border p-3 text-left font-semibold text-ink-gray-8"
+								class="sticky left-0 z-10 border border-outline-gray-2 bg-surface-base p-2 text-left text-sm-medium text-ink-gray-8 whitespace-nowrap"
 							>
-								{{ day.label }}
+								{{ __(day.label) }}
 							</th>
 							<td
 								v-for="shift in shifts.data"
 								:key="`${day.value}-${shift.name}`"
-								class="border p-3 text-center"
+								class="border border-outline-gray-2 p-2 text-center"
 							>
-								<input
-									type="checkbox"
+								<Checkbox
 									:id="`${day.value}-${shift.name}`"
-									v-model="availability[day.value]"
-									:value="shift.name"
+									:modelValue="availability[day.value].includes(shift.name)"
 									:aria-label="`${day.label} ${shift.name}`"
-									class="w-6 h-6 focus:ring-red-500 text-red-600 rounded"
+									class="justify-center"
+									@update:modelValue="toggleShift(day.value, shift.name)"
 								/>
 							</td>
 						</tr>
@@ -67,50 +75,55 @@
 				</table>
 			</div>
 
-			<div class="mt-6 flex items-center gap-3">
-				<input
-					id="available_on_holidays"
-					type="checkbox"
-					v-model="availableOnHolidays"
-					class="w-5 h-5 text-red-600 rounded focus:ring-red-500"
-				/>
-				<label for="available_on_holidays" class="text-ink-gray-1-800 text-base">
-					{{ __("Available on Holidays") }}
-				</label>
-			</div>
+			<SettingsRow
+				:title="__('Available on Holidays')"
+				:description="__('Include public holidays in your weekly pattern.')"
+			>
+				<Switch v-model="availableOnHolidays" />
+			</SettingsRow>
 
-			<div class="mt-4 flex flex-wrap gap-2">
-				<Button variant="outline" theme="red" @click="selectAllShifts">
-					{{ __("Select All") }}
-				</Button>
-				<Button variant="outline" theme="red" @click="clearAllShifts">
-					{{ __("Clear All") }}
-				</Button>
-			</div>
-		</template>
-
-		<template #actions>
-			<div class="flex flex-row justify-end space-x-2 w-full items-center">
-				<Button variant="outline" theme="gray" @click="cancel">{{ __("Close") }}</Button>
+			<div
+				class="flex flex-col gap-3 border-t border-outline-gray-2 pt-4 sm:flex-row sm:items-center sm:justify-between"
+			>
+				<div class="flex flex-wrap gap-2">
+					<Button variant="subtle" theme="red" @click="selectAllShifts">
+						{{ __("Select All") }}
+					</Button>
+					<Button variant="subtle" theme="gray" @click="clearAllShifts">
+						{{ __("Clear All") }}
+					</Button>
+				</div>
 				<Button
 					variant="solid"
 					theme="red"
+					class="w-full sm:w-auto"
 					:loading="newSlot.loading"
-					@click="submitAvailability"
 					:disabled="totalSelectedShifts === 0 && !availableOnHolidays"
+					@click="submitAvailability"
 				>
 					{{ __("Save") }}
 				</Button>
 			</div>
-			<ErrorMessage :message="newSlot.error" class="mt-2 text-center" />
-		</template>
-	</Dialog>
+			<ErrorMessage :message="newSlot.error" />
+		</div>
+	</PanelBody>
 </template>
 
 <script setup lang="ts">
-import { Button, createListResource, createResource, Dialog, ErrorMessage } from "frappe-ui";
+import {
+	Badge,
+	Button,
+	Checkbox,
+	createListResource,
+	createResource,
+	ErrorMessage,
+	SettingsHeader,
+	SettingsRow,
+	Switch,
+} from "frappe-ui";
 import { computed, reactive, ref } from "vue";
 import { usersStore } from "../../stores/user";
+import PanelBody from "./PanelBody.vue";
 
 interface ShiftType {
 	name: string;
@@ -131,12 +144,7 @@ interface AvailabilityResponse {
 }
 
 const { roleResource, presentSlots } = usersStore();
-const setAvailability = ref<boolean>(true);
 const availableOnHolidays = ref<boolean>(false);
-const emit = defineEmits<{
-	(e: "success"): void;
-	(e: "cancel"): void;
-}>();
 
 const shifts = createListResource<ShiftType[]>({
 	doctype: "Shift Type",
@@ -173,9 +181,7 @@ const newSlot = createResource({
 	},
 	onSuccess() {
 		availabilitySlots.reload();
-		emit("success");
 		presentSlots.reload();
-		setAvailability.value = false;
 	},
 });
 
@@ -212,9 +218,13 @@ const availabilitySlots = createResource<AvailabilityResponse>({
 	},
 });
 
-function cancel() {
-	setAvailability.value = false;
-	emit("cancel");
+function toggleShift(day: string, shiftName: string) {
+	const index = availability[day].indexOf(shiftName);
+	if (index === -1) {
+		availability[day].push(shiftName);
+	} else {
+		availability[day].splice(index, 1);
+	}
 }
 
 function resetForm() {

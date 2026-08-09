@@ -1,9 +1,7 @@
 <template>
 	<Dialog v-model="show" :options="{ size: 'lg' }">
 		<template #body-title>
-			<h3 class="text-lg font-semibold text-ink-gray-8">
-				{{ __("Create New") }} {{ doctype }}
-			</h3>
+			<h3 class="text-lg-semibold text-ink-gray-8">{{ __("Create New") }} {{ doctype }}</h3>
 		</template>
 
 		<template #body-content>
@@ -13,7 +11,7 @@
 				</div>
 				<template v-else>
 					<div v-for="field in doctypeFields" :key="field.fieldname">
-						<label class="block text-xs font-medium text-ink-gray-5 mb-1.5">
+						<label class="block text-xs-medium text-ink-gray-5 mb-1.5">
 							{{ field.label }}
 							<span v-if="field.reqd" class="text-red-500 ml-0.5">*</span>
 						</label>
@@ -40,7 +38,7 @@
 </template>
 
 <script setup>
-import Link from "@/components/Controls/Link.vue";
+import { Link } from "frappe-ui/frappe";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import {
 	Button,

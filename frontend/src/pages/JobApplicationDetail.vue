@@ -15,16 +15,16 @@
 					/>
 					<div
 						v-else
-						class="w-16 h-16 flex items-center justify-center rounded-lg bg-red-100 text-red-700 font-semibold text-xl cursor-default"
+						class="w-16 h-16 flex items-center justify-center rounded-lg bg-red-100 text-red-700 text-2xl-semibold cursor-default"
 					>
 						{{ __(getCompanyAbbr(job.data.company)) }}
 					</div>
 				</div>
 				<div>
-					<h1 class="text-3xl font-bold text-ink-gray-1-900 mb-1">
+					<h1 class="text-4xl-bold text-ink-gray-1-900 mb-1">
 						{{ __(job.data.job_title) }}
 					</h1>
-					<div class="text-lg font-medium text-red-600">
+					<div class="text-lg-medium text-red-600">
 						{{ __(job.data.company) }}
 					</div>
 					<div
@@ -40,8 +40,8 @@
 			</div>
 		</div>
 
-		<div v-if="!loading" class="bg-surface-white rounded-xl p-6 border border-outline-gray-2">
-			<h2 class="text-2xl font-bold text-red-700 mb-6">
+		<div v-if="!loading" class="bg-surface-base rounded-xl p-6 border border-outline-gray-2">
+			<h2 class="text-3xl-bold text-red-700 mb-6">
 				{{ __("Apply for this Opportunity") }}
 			</h2>
 
@@ -132,7 +132,7 @@
 
 			<div
 				v-else
-				class="mt-6 pt-4 border-t border-outline-gray-100 text-lg font-medium text-ink-gray-1-700"
+				class="mt-6 pt-4 border-t border-outline-gray-100 text-lg-medium text-ink-gray-1-700"
 			>
 				<div class="text-center py-4">
 					<div
@@ -169,7 +169,7 @@
 		</div>
 		<Dialog v-model="showSubmitDialog">
 			<template #body-title>
-				<h2 class="text-lg font-bold text-ink-gray-1-900">
+				<h2 class="text-lg-bold text-ink-gray-1-900">
 					{{ __("Confirm Submission") }}
 				</h2>
 			</template>
@@ -178,7 +178,7 @@
 				<p class="text-ink-gray-1-700 leading-relaxed">
 					{{ __("Are you sure you want to submit this application?") }}
 				</p>
-				<p class="mt-2 text-sm text-red-600 font-medium">
+				<p class="mt-2 text-sm-medium text-red-600">
 					{{ __("You won't be able to make further edits after submission.") }}
 				</p>
 			</template>

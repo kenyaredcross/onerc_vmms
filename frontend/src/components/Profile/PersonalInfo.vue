@@ -2,7 +2,7 @@
 	<div class="space-y-8">
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 			<div>
-				<h2 class="text-lg font-semibold mb-4 border-b pb-2">
+				<h2 class="text-lg-semibold mb-4 border-b pb-2">
 					{{ __("Personal Information") }}
 				</h2>
 				<div class="space-y-4">
@@ -34,7 +34,7 @@
 			</div>
 
 			<div>
-				<h2 class="text-lg font-semibold mb-4 border-b pb-2">
+				<h2 class="text-lg-semibold mb-4 border-b pb-2">
 					{{ __("Identification") }}
 				</h2>
 				<div class="space-y-4">
@@ -87,7 +87,7 @@
 			</div>
 
 			<div>
-				<h2 class="text-lg font-semibold mb-4 border-b pb-2">
+				<h2 class="text-lg-semibold mb-4 border-b pb-2">
 					{{ __("Contact & Location") }}
 				</h2>
 				<div class="space-y-4">
@@ -148,7 +148,7 @@
 				v-if="hasChanges"
 				type="button"
 				@click="handleSave"
-				class="flex items-center gap-1 px-8 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 disabled:active:scale-100"
+				class="flex items-center gap-1 px-8 py-2 text-sm-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600 disabled:active:scale-100"
 				:disabled="saveInProgress"
 				:aria-busy="saveInProgress"
 			>
@@ -176,7 +176,7 @@
 </template>
 
 <script setup>
-import Link from "@/components/Controls/Link.vue";
+import { Link } from "frappe-ui/frappe";
 import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import { FormControl, createResource, toast } from "frappe-ui";
 import { computed, reactive, ref, watch } from "vue";

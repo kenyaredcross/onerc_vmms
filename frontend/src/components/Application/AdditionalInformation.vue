@@ -18,7 +18,7 @@
 					d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
 				/>
 			</svg>
-			<h3 class="text-xl font-semibold mb-1">
+			<h3 class="text-2xl-semibold mb-1">
 				{{ __("No Additional Information Required") }}
 			</h3>
 			<p class="text-sm">
@@ -33,7 +33,7 @@
 		<div
 			v-for="(q, index) in visibleQuestions"
 			:key="q.question_id"
-			class="rounded-xl border p-5 bg-surface-white transition-all"
+			class="rounded-xl border p-5 bg-surface-base transition-all"
 			:class="{
 				'ml-8 border-blue-300 bg-blue-50': q.depends_on_question,
 			}"
@@ -129,14 +129,14 @@
 			</div>
 		</div>
 
-		<div class="rounded-xl border p-5 bg-surface-white shadow-sm">
+		<div class="rounded-xl border p-5 bg-surface-base shadow-sm">
 			<h3 class="font-semibold text-ink-gray-1-800 mb-3">
 				{{ __("Professional Profiles") }}
 			</h3>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 				<div>
-					<label class="block text-sm font-medium text-ink-gray-1-700 mb-1">
+					<label class="block text-sm-medium text-ink-gray-1-700 mb-1">
 						{{ __("LinkedIn Profile") }}
 					</label>
 					<FormControl
@@ -147,7 +147,7 @@
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-ink-gray-1-700 mb-1">
+					<label class="block text-sm-medium text-ink-gray-1-700 mb-1">
 						{{ __("GitHub Profile") }}
 					</label>
 					<FormControl
@@ -164,8 +164,7 @@
 <script setup>
 import CheckableListSelect from "@/components/Controls/CheckableListSelect.vue";
 import Uploader from "@/components/Controls/Uploader.vue";
-import { FormControl } from "frappe-ui";
-import Select from "frappe-ui/src/components/Select/Select.vue";
+import { FormControl, Select } from "frappe-ui";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps({

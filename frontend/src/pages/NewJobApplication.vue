@@ -4,7 +4,7 @@
 			v-if="!user.data?.name"
 			class="bg-surface-gray-50 rounded-xl p-6 border border-outline-gray-2"
 		>
-			<h3 class="text-xl font-semibold text-ink-gray-1-800 mb-6">
+			<h3 class="text-2xl-semibold text-ink-gray-1-800 mb-6">
 				{{ __("Authentication Required") }}
 			</h3>
 			<p class="text-ink-gray-1-600 mb-8 max-w-md">
@@ -24,7 +24,7 @@
 			v-else-if="isApplied"
 			class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center"
 		>
-			<h2 class="text-xl font-semibold text-yellow-800 mb-4">
+			<h2 class="text-2xl-semibold text-yellow-800 mb-4">
 				{{ __("You’ve already applied for this job.") }}
 			</h2>
 			<Button
@@ -50,7 +50,7 @@
 			"
 			class="bg-red-50 border border-outline-red-200 rounded-xl p-6 text-center"
 		>
-			<h2 class="text-xl font-semibold text-red-800 mb-4">
+			<h2 class="text-2xl-semibold text-red-800 mb-4">
 				{{ __("This opportunity is available for volunteers only.") }}
 			</h2>
 			<Button
@@ -74,8 +74,8 @@
 			</div>
 		</div>
 
-		<div v-else class="bg-surface-white rounded-xl p-6 border border-outline-gray-2">
-			<h2 class="text-2xl font-bold text-red-500 mb-6">
+		<div v-else class="bg-surface-base rounded-xl p-6 border border-outline-gray-2">
+			<h2 class="text-3xl-bold text-red-500 mb-6">
 				{{ __("Apply for this Opportunity") }}
 			</h2>
 
@@ -91,6 +91,7 @@
 </template>
 
 <script setup>
+import { goToSignup } from "@/utils/auth";
 import { useHead } from "@vueuse/head";
 import { Button, createResource, toast } from "frappe-ui";
 import { LogIn } from "lucide-vue-next";
@@ -172,7 +173,7 @@ const submitApplication = () => {
 };
 
 function redirectToLogin() {
-	router.push("/login#signup");
+	goToSignup();
 }
 
 const redirectToWebsite = (url) => window.open(url, "_blank");

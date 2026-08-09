@@ -1,5 +1,5 @@
 <template>
-	<div class="flex min-h-screen bg-surface-white">
+	<div class="flex min-h-screen bg-surface-base">
 		<div
 			class="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-red-600 via-red-700 to-red-900 p-12 text-white lg:flex"
 		>
@@ -20,7 +20,7 @@
 					:alt="brandName"
 					class="h-12 w-12 rounded-xl object-contain shadow-lg"
 				/>
-				<span class="text-xl font-semibold tracking-wide">
+				<span class="text-2xl-semibold tracking-wide">
 					<Button icon-right="arrow-right" class="border">
 						Visit <RouterLink to="/">{{ __(brandName || "VMMS") }}</RouterLink></Button
 					>
@@ -28,10 +28,10 @@
 			</div>
 
 			<div class="relative max-w-md">
-				<p class="text-sm font-medium uppercase tracking-[0.2em] text-red-200">
+				<p class="text-sm-medium uppercase tracking-[0.2em] text-red-200">
 					{{ __("Membership Verification") }}
 				</p>
-				<h1 class="mt-3 text-4xl font-bold leading-tight">
+				<h1 class="mt-3 text-5xl-bold leading-tight">
 					{{ __("One scan.") }}<br />
 					{{ __("Verified in real time.") }}
 				</h1>
@@ -69,7 +69,7 @@
 					:alt="brandName"
 					class="h-10 w-10 rounded-lg object-contain"
 				/>
-				<span class="text-lg font-semibold text-ink-gray-9">{{ __(brandName) }}</span>
+				<span class="text-lg-semibold text-ink-gray-9">{{ __(brandName) }}</span>
 				<Button><RouterLink to="/"></RouterLink></Button>
 			</div>
 
@@ -80,11 +80,11 @@
 
 				<div
 					v-else-if="verification.error"
-					class="overflow-hidden rounded-2xl border border-outline-gray-2 bg-surface-white shadow-sm"
+					class="overflow-hidden rounded-2xl border border-outline-gray-2 bg-surface-base shadow-sm"
 				>
 					<div class="bg-red-700 px-6 py-8 text-center text-white">
 						<FeatherIcon name="x-circle" class="mx-auto h-12 w-12" />
-						<p class="mt-3 text-xl font-semibold">
+						<p class="mt-3 text-2xl-semibold">
 							{{ __("Invalid Verification Link") }}
 						</p>
 					</div>
@@ -99,7 +99,7 @@
 
 				<div
 					v-else-if="verification.data"
-					class="overflow-hidden rounded-2xl border border-outline-gray-2 bg-surface-white shadow-sm"
+					class="overflow-hidden rounded-2xl border border-outline-gray-2 bg-surface-base shadow-sm"
 				>
 					<div
 						class="px-6 py-8 text-center text-white"
@@ -109,7 +109,7 @@
 							:name="verification.data.is_valid ? 'check-circle' : 'x-circle'"
 							class="mx-auto h-12 w-12"
 						/>
-						<p class="mt-3 text-xl font-semibold">
+						<p class="mt-3 text-2xl-semibold">
 							{{
 								verification.data.is_valid
 									? __("Active Membership")
@@ -124,15 +124,11 @@
 							:key="row.label"
 							class="flex items-center justify-between gap-4 px-6 py-3"
 						>
-							<span class="text-sm font-medium text-ink-gray-5">{{
-								row.label
-							}}</span>
+							<span class="text-sm-medium text-ink-gray-5">{{ row.label }}</span>
 							<span class="text-right text-sm text-ink-gray-8">{{ row.value }}</span>
 						</div>
 						<div class="flex items-center justify-between gap-4 px-6 py-3">
-							<span class="text-sm font-medium text-ink-gray-5">{{
-								__("Status")
-							}}</span>
+							<span class="text-sm-medium text-ink-gray-5">{{ __("Status") }}</span>
 							<Badge
 								variant="outline"
 								:theme="verification.data.is_valid ? 'green' : 'red'"
