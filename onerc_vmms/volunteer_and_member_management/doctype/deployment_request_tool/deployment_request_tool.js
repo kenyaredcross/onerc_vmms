@@ -149,6 +149,10 @@ frappe.ui.form.on("Deployment Request Tool", {
 		render_tor_preview(frm);
 	},
 
+	tor_attachment: function (frm) {
+		render_tor_preview(frm);
+	},
+
 	company: function (frm) {
 		frm.events.set_tor_filter(frm);
 	},
@@ -544,22 +548,33 @@ frappe.ui.form.on("Deployment Request Tool", {
 	},
 });
 
+function get_tor_preview_url(frm) {
+	// an uploaded file is the explicit choice, so it wins over the linked ToR
+	if (frm.doc.tor_attachment) {
+		return encodeURI(frm.doc.tor_attachment);
+	}
+
+	if (frm.doc.terms_of_reference) {
+		const base_url = window.location.origin;
+		return (
+			`${base_url}/api/method/frappe.utils.print_format.download_pdf` +
+			`?doctype=${encodeURIComponent("Personnel Terms of Reference")}` +
+			`&name=${encodeURIComponent(frm.doc.terms_of_reference)}` +
+			`&_lang=en`
+		);
+	}
+
+	return "";
+}
+
 async function render_tor_preview(frm) {
-	if (!frm.doc.terms_of_reference) {
+	const pdf_url = get_tor_preview_url(frm);
+
+	if (!pdf_url) {
 		frm.set_df_property("tor", "options", "");
 		frm.refresh_field("tor");
 		return;
 	}
-
-	const tor_name = frm.doc.terms_of_reference;
-	const doctype = "Personnel Terms of Reference";
-	const base_url = window.location.origin;
-
-	let pdf_url = `${base_url}/api/method/frappe.utils.print_format.download_pdf?doctype=${encodeURIComponent(
-		doctype
-	)}&name=${encodeURIComponent(tor_name)}`;
-
-	pdf_url += "&_lang=en";
 
 	const preview_html = `
     <div style="text-align: right; margin-bottom: 10px;">
@@ -570,10 +585,6 @@ async function render_tor_preview(frm) {
   `;
 
 	frm.set_df_property("tor", "options", preview_html);
-	if (frm.doc.tor_url !== pdf_url) {
-		frm.doc.tor_url = pdf_url;
-		frm.save();
-	}
 	frm.refresh_field("tor");
 }
 function addActionsButtons(frm) {

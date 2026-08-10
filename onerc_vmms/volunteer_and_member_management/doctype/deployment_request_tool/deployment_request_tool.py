@@ -5,10 +5,11 @@
 # For license information, please see license.txt
 
 from datetime import timedelta
+from urllib.parse import quote
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import get_datetime, get_link_to_form, getdate, pretty_date
+from frappe.utils import get_datetime, get_link_to_form, get_url, getdate, pretty_date
 from hrms.hr.utils import validate_bulk_tool_fields
 
 from ...utils.utils import get_company_descendants
@@ -112,7 +113,7 @@ class DeploymentRequestTool(Document):
 		skills: DF.TableMultiSelect[DesignationSkill]
 		sub_county: DF.TableMultiSelect[SubCountyTable]
 		task: DF.Link | None
-		terms_of_reference: DF.Link
+		terms_of_reference: DF.Link | None
 		title: DF.Data
 		tor_attachment: DF.Attach | None
 		tor_url: DF.SmallText | None
@@ -123,6 +124,22 @@ class DeploymentRequestTool(Document):
 		self.validate_deployment_dates()
 		if self.future_deployment:
 			self.validate_future_deployment()
+		self.set_tor_url()
+
+	def set_tor_url(self):
+		if not self.terms_of_reference and not self.tor_attachment:
+			frappe.throw("Please provide either Terms of Reference or TOR Attachment.")
+
+		if self.tor_attachment:
+			self.tor_url = (
+				get_url(self.tor_attachment) if self.tor_attachment.startswith("/") else self.tor_attachment
+			)
+		else:
+			self.tor_url = (
+				f"{get_url()}/api/method/frappe.utils.print_format.download_pdf"
+				f"?doctype={quote('Personnel Terms of Reference')}"
+				f"&name={quote(self.terms_of_reference)}"
+			)
 
 	def validate_deployment_dates(self):
 		start_date = getdate(self.expected_start_date)
