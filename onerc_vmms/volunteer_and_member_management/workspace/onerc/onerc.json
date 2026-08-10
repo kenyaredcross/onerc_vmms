@@ -1,6 +1,19 @@
 {
- "charts": [],
- "content": "[{\"id\":\"o7ZVMmh-Gw\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Volunteer and Member Management</span>\",\"col\":12}},{\"id\":\"56KjotVCHZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ZTkxkgUxdj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcut</b></span>\",\"col\":12}},{\"id\":\"G1hFwYYxeR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Open Portal\",\"col\":4}},{\"id\":\"hjuW5cRm4r\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee\",\"col\":4}},{\"id\":\"SfGtMpU3on\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Volunteers\",\"col\":4}},{\"id\":\"vQf8l2OZgO\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Settings\",\"col\":4}},{\"id\":\"TdBeWGZTUp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Volunteer Applicant\",\"col\":4}},{\"id\":\"aWMJpclsaG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Applicant\",\"col\":4}},{\"id\":\"VvDwNFTx_N\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"87D2Uw3PAo\",\"type\":\"card\",\"data\":{\"card_name\":\"Deployment\",\"col\":4}},{\"id\":\"2wNQTbiace\",\"type\":\"card\",\"data\":{\"card_name\":\"Volunteers\",\"col\":4}},{\"id\":\"uqQHMQPYcP\",\"type\":\"card\",\"data\":{\"card_name\":\"Membership\",\"col\":4}},{\"id\":\"oUujoxgHXG\",\"type\":\"card\",\"data\":{\"card_name\":\"Opportunities\",\"col\":4}},{\"id\":\"kOFmHt93ct\",\"type\":\"card\",\"data\":{\"card_name\":\"Projects & Events\",\"col\":4}},{\"id\":\"HDpcLp4l-k\",\"type\":\"card\",\"data\":{\"card_name\":\"Locations\",\"col\":4}}]",
+ "charts": [
+  {
+   "chart_name": "Volunteer Applications",
+   "label": "Volunteer Applications"
+  },
+  {
+   "chart_name": "Deployments Trend",
+   "label": "Deployments Trend"
+  },
+  {
+   "chart_name": "Volunteer Branch Distribution",
+   "label": "Volunteer Branch Distribution"
+  }
+ ],
+ "content": "[{\"id\":\"PgTa8g1ma1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Volunteer and Member Management</span>\",\"col\":12}},{\"id\":\"oXIfN_zKaO\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Personnel\",\"col\":4}},{\"id\":\"F9K8aDVIaR\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Volunteers\",\"col\":4}},{\"id\":\"2KfXqZp2lE\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Members\",\"col\":4}},{\"id\":\"WhMM8d3l_O\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Active Memberships\",\"col\":4}},{\"id\":\"EHGuxTmZ3F\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Deployments\",\"col\":4}},{\"id\":\"z0AnPErNPK\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"0vCFyL9k4X\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"id\":\"1RJ4-vJsAV\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Open Portal\",\"col\":4}},{\"id\":\"5o37HtMqoI\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Personnel\",\"col\":4}},{\"id\":\"5TB685uLrB\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Volunteers\",\"col\":4}},{\"id\":\"i-vBla34oi\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Volunteer Applicant\",\"col\":4}},{\"id\":\"NqXCHEw8MJ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Opportunity Applicant\",\"col\":4}},{\"id\":\"rePq-cr5MX\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Member\",\"col\":4}},{\"id\":\"euaWXUfd5m\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Deployment Request\",\"col\":4}},{\"id\":\"-N0Upst_6l\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Settings\",\"col\":4}},{\"id\":\"STIyiXWQtE\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"i7AWG4ujAA\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Insights</b></span>\",\"col\":12}},{\"id\":\"AQNAeAPYlT\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Volunteer Applications\",\"col\":12}},{\"id\":\"0xG1KZRdHY\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Deployments Trend\",\"col\":12}},{\"id\":\"ttdIx79dBV\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Volunteer Branch Distribution\",\"col\":12}},{\"id\":\"E-TSjSi3Bd\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"1s8UpIuEXD\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Lists</b></span>\",\"col\":12}},{\"id\":\"QJwPLs1XjT\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Open Applications\",\"col\":4}},{\"id\":\"jKkNeRvR1j\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Pending Deployments\",\"col\":4}},{\"id\":\"Nor2MwpwAn\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Pending Memberships\",\"col\":4}},{\"id\":\"QxrOtYDNl9\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"eaYUOC3v-c\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Masters &amp; Records</b></span>\",\"col\":12}},{\"id\":\"FF1u2ugdpD\",\"type\":\"card\",\"data\":{\"card_name\":\"Personnel & Volunteers\",\"col\":4}},{\"id\":\"36hsyLf0Le\",\"type\":\"card\",\"data\":{\"card_name\":\"Opportunities\",\"col\":4}},{\"id\":\"vRtpE0z96M\",\"type\":\"card\",\"data\":{\"card_name\":\"Membership\",\"col\":4}},{\"id\":\"jUUlTTqMnD\",\"type\":\"card\",\"data\":{\"card_name\":\"Donors\",\"col\":4}},{\"id\":\"Vb8XsiiXQK\",\"type\":\"card\",\"data\":{\"card_name\":\"Deployment\",\"col\":4}},{\"id\":\"EFoocnxEky\",\"type\":\"card\",\"data\":{\"card_name\":\"Projects & Events\",\"col\":4}},{\"id\":\"eULf8e084n\",\"type\":\"card\",\"data\":{\"card_name\":\"Personnel Operations\",\"col\":4}},{\"id\":\"676twXQz2I\",\"type\":\"card\",\"data\":{\"card_name\":\"Locations\",\"col\":4}},{\"id\":\"UzQoDyGe0z\",\"type\":\"card\",\"data\":{\"card_name\":\"Notifications\",\"col\":4}},{\"id\":\"MLtoTVZwQw\",\"type\":\"card\",\"data\":{\"card_name\":\"Setup & Masters\",\"col\":4}}]",
  "creation": "2025-11-10 22:47:20.942199",
  "custom_blocks": [],
  "docstatus": 0,
@@ -13,6 +26,144 @@
  "is_hidden": 0,
  "label": "OneRC",
  "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Personnel & Volunteers",
+   "link_count": 6,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Personnel",
+   "link_count": 0,
+   "link_to": "Employee",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Volunteer Status",
+   "link_count": 0,
+   "link_to": "Volunteer Status",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Personnel Details Update",
+   "link_count": 0,
+   "link_to": "Personnel Details Update",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Personnel Availability Schedule",
+   "link_count": 0,
+   "link_to": "Personnel Availability Schedule",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Volunteer Availability Slot",
+   "link_count": 0,
+   "link_to": "Volunteer Availability Slot",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Personnel Data Import",
+   "link_count": 0,
+   "link_to": "Personnel Data Import",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Opportunities",
+   "link_count": 6,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Opportunity Opening Template",
+   "link_count": 0,
+   "link_to": "Job Opening Template",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Opportunity Opening",
+   "link_count": 0,
+   "link_to": "Job Opening",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Opportunity Applicant",
+   "link_count": 0,
+   "link_to": "Job Applicant",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Interview",
+   "link_count": 0,
+   "link_to": "Interview",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Opportunity Offer",
+   "link_count": 0,
+   "link_to": "Job Offer",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Personnel Onboarding",
+   "link_count": 0,
+   "link_to": "Employee Onboarding",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
   {
    "hidden": 0,
    "is_query_report": 0,
@@ -65,8 +216,8 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Opportunities",
-   "link_count": 4,
+   "label": "Donors",
+   "link_count": 2,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -74,9 +225,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Opportunity Opening Template",
+   "label": "Donor",
    "link_count": 0,
-   "link_to": "Job Opening Template",
+   "link_to": "VM Donor",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -84,9 +235,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Opportunity Opening",
+   "label": "Donor Type",
    "link_count": 0,
-   "link_to": "Job Opening",
+   "link_to": "VM Donor Type",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -94,9 +245,18 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Opportunity Applicant",
+   "label": "Deployment",
+   "link_count": 7,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Terms of Reference",
    "link_count": 0,
-   "link_to": "Job Applicant",
+   "link_to": "Personnel Terms of Reference",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -104,9 +264,59 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Opportunity Offer",
+   "label": "TOR Methodology",
    "link_count": 0,
-   "link_to": "Job Offer",
+   "link_to": "TOR Methodology",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Deployment Request Tool",
+   "link_count": 0,
+   "link_to": "Deployment Request Tool",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Deployment Request",
+   "link_count": 0,
+   "link_to": "Personnel Deployment Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Deployment Criteria",
+   "link_count": 0,
+   "link_to": "Deployment Criteria",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Volunteer Deployment Criteria",
+   "link_count": 0,
+   "link_to": "Volunteer Deployment Criteria",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Deployment Contract",
+   "link_count": 0,
+   "link_to": "Contract",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -115,7 +325,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Projects & Events",
-   "link_count": 4,
+   "link_count": 6,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -163,8 +373,28 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Volunteers",
-   "link_count": 4,
+   "label": "Training Program",
+   "link_count": 0,
+   "link_to": "Training Program",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Training Event",
+   "link_count": 0,
+   "link_to": "Training Event",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Personnel Operations",
+   "link_count": 5,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -172,9 +402,29 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Volunteer",
+   "label": "Personnel Checkin",
    "link_count": 0,
-   "link_to": "Employee",
+   "link_to": "Employee Checkin",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Attendance",
+   "link_count": 0,
+   "link_to": "Attendance",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Leave Application",
+   "link_count": 0,
+   "link_to": "Leave Application",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -192,7 +442,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Employee Advance",
+   "label": "Personnel Advance",
    "link_count": 0,
    "link_to": "Employee Advance",
    "link_type": "DocType",
@@ -202,77 +452,8 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Employee Checkin",
-   "link_count": 0,
-   "link_to": "Employee Checkin",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Deployment",
-   "link_count": 5,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Terms of Reference",
-   "link_count": 0,
-   "link_to": "Personnel Terms of Reference",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Deployment Request Tool",
-   "link_count": 0,
-   "link_to": "Deployment Request Tool",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Deployment Request",
-   "link_count": 0,
-   "link_to": "Personnel Deployment Request",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Deployment Criteria",
-   "link_count": 0,
-   "link_to": "Volunteer Deployment Criteria",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Deployment Contract",
-   "link_count": 0,
-   "link_to": "Contract",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Locations",
-   "link_count": 4,
+   "link_count": 6,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -310,26 +491,234 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Sub Location",
+   "link_count": 0,
+   "link_to": "Sub Location",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Administrative Location",
    "link_count": 0,
    "link_to": "Administrative Location",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Administrative Division",
+   "link_count": 0,
+   "link_to": "Administrative Division",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Notifications",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Notification Center",
+   "link_count": 0,
+   "link_to": "VM Notification Center",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Notification Channel",
+   "link_count": 0,
+   "link_to": "Notification Channel",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Setup & Masters",
+   "link_count": 9,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "VM Settings",
+   "link_count": 0,
+   "link_to": "VM Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Profession",
+   "link_count": 0,
+   "link_to": "Profession",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Institution",
+   "link_count": 0,
+   "link_to": "Institution",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Organisation Type",
+   "link_count": 0,
+   "link_to": "Organisation Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Disability Category",
+   "link_count": 0,
+   "link_to": "Disability Category",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Disability",
+   "link_count": 0,
+   "link_to": "Disability",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Driving Licence Class",
+   "link_count": 0,
+   "link_to": "Driving Licence Class",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Personnel License Type",
+   "link_count": 0,
+   "link_to": "Personnel License Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Supporting Document Type",
+   "link_count": 0,
+   "link_to": "Supporting Document Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-03-13 03:16:23.073583",
+ "modified": "2026-08-10 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Volunteer and Member Management",
  "name": "OneRC",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Personnel",
+   "number_card_name": "Personnel"
+  },
+  {
+   "label": "Volunteers",
+   "number_card_name": "Volunteers"
+  },
+  {
+   "label": "Members",
+   "number_card_name": "Members"
+  },
+  {
+   "label": "Active Memberships",
+   "number_card_name": "Active Memberships"
+  },
+  {
+   "label": "Deployments",
+   "number_card_name": "Deployments"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
- "quick_lists": [],
+ "quick_lists": [
+  {
+   "document_type": "Job Applicant",
+   "label": "Open Applications",
+   "quick_list_filter": "{\"status\": \"Open\"}"
+  },
+  {
+   "document_type": "Personnel Deployment Request",
+   "label": "Pending Deployments",
+   "quick_list_filter": "{\"deployment_status\": \"Pending\"}"
+  },
+  {
+   "document_type": "VM Membership",
+   "label": "Pending Memberships",
+   "quick_list_filter": "{\"status\": \"Pending\"}"
+  }
+ ],
  "roles": [],
  "sequence_id": 51.0,
  "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Open Portal",
+   "type": "URL",
+   "url": "/vmms"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "label": "Personnel",
+   "link_to": "Employee",
+   "stats_filter": "[[\"Employee\",\"is_volunteer\",\"=\",0,false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Volunteers",
+   "link_to": "Employee",
+   "stats_filter": "[[\"Employee\",\"is_volunteer\",\"=\",1,false]]",
+   "type": "DocType"
+  },
   {
    "color": "Green",
    "doc_view": "List",
@@ -339,18 +728,27 @@
    "type": "DocType"
   },
   {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Open Portal",
-   "type": "URL",
-   "url": "/vmms"
-  },
-  {
    "color": "Orange",
    "doc_view": "List",
-   "label": "Job Applicant",
+   "label": "Opportunity Applicant",
    "link_to": "Job Applicant",
    "stats_filter": "[[\"Job Applicant\",\"is_volunteer\",\"=\",0,false],[\"Job Applicant\",\"docstatus\",\"=\",\"1\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Pink",
+   "doc_view": "List",
+   "label": "Member",
+   "link_to": "VM Member",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Deployment Request",
+   "link_to": "Personnel Deployment Request",
+   "stats_filter": "[]",
    "type": "DocType"
   },
   {
@@ -358,22 +756,6 @@
    "doc_view": "List",
    "label": "Settings",
    "link_to": "VM Settings",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Employee",
-   "link_to": "Employee",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Volunteers",
-   "link_to": "Employee",
-   "stats_filter": "[[\"Employee\",\"is_volunteer\",\"=\",1,false]]",
    "type": "DocType"
   }
  ],

@@ -5,25 +5,20 @@
  "docstatus": 0,
  "doctype": "Desktop Icon",
  "hidden": 0,
+ "icon": "heart",
  "icon_type": "Link",
- "idx": 0,
+ "idx": 3,
  "label": "OneRC VMMS",
  "link_to": "OneRC VMMS",
  "link_type": "Workspace Sidebar",
  "logo_url": "/assets/onerc_vmms/frontend/vmms.png",
- "modified": "2026-06-08 09:32:24.596458",
+ "modified": "2026-08-10 00:00:00.000000",
  "modified_by": "Administrator",
  "name": "OneRC VMMS",
  "owner": "Administrator",
  "parent_icon": "OneRC",
  "restrict_removal": 0,
- "roles": [
-  {
-   "role": "System Manager"
-  },
-  {
-   "role": "County Coordinator"
-  }
- ],
+ "roles": [],
+ "sidebar": "OneRC VMMS",
  "standard": 1
 }
