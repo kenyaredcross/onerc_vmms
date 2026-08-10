@@ -148,7 +148,7 @@ class DeploymentRequestTool(Document):
 
 	def validate_future_deployment(self):
 		self.validate_future_deployment_date()
-		if not self._get_employees():
+		if not self.fetch_eligible_employees():
 			frappe.throw(
 				"This is a future deployment but no employees match the criteria. Please adjust the criteria"
 			)
@@ -264,7 +264,7 @@ class DeploymentRequestTool(Document):
 		return {"success": success, "failure": failure}
 
 	@frappe.whitelist()
-	def _get_employees(self) -> list[dict]:
+	def fetch_eligible_employees(self) -> list[dict]:
 		employees = self.fetch_employees()
 		if not employees:
 			return []
@@ -373,7 +373,7 @@ def deploy_future_requests() -> None:
 		try:
 			doc: DeploymentRequestTool = frappe.get_doc("Deployment Request Tool", deployment)
 
-			employees = doc._get_employees()
+			employees = doc.fetch_eligible_employees()
 			if not employees:
 				return
 

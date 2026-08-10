@@ -327,7 +327,7 @@ frappe.ui.form.on("Deployment Request Tool", {
 		}
 
 		frm.call({
-			method: "_get_employees",
+			method: "fetch_eligible_employees",
 			args: {
 				advanced_filters: frm.advanced_filters || [],
 			},
