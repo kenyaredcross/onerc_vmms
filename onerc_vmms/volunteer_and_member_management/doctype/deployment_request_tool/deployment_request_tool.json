@@ -25,6 +25,7 @@
   "require_contract_before_deployment",
   "terms_section",
   "terms_of_reference",
+  "tor_attachment",
   "tor_url",
   "tor",
   "section_break_rmvn",
