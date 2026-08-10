@@ -146,8 +146,10 @@ class DeploymentRequestTool(Document):
 
 	def validate_future_deployment_date(self):
 		future_date = getdate(self.future_deployment_date)
-		if future_date < getdate() or future_date > getdate(self.expected_start_date):
+		if future_date < getdate():
 			frappe.throw("Future deployment date cannot be in the past.")
+		if future_date > getdate(self.expected_start_date):
+			frappe.throw("Future deployment date cannot be after the expected start date.")
 
 	def validate_fields(self, employees: list):
 		mandatory_fields = [
@@ -346,7 +348,7 @@ def deploy_future_requests() -> None:
 		"Deployment Request Tool",
 		filters={
 			"future_deployment": 1,
-			"future_deployment_date": getdate(),
+			"future_deployment_date": ["<=", getdate()],
 			"is_future_deployed": 0,
 		},
 		pluck="name",
@@ -359,89 +361,21 @@ def deploy_future_requests() -> None:
 		try:
 			doc: DeploymentRequestTool = frappe.get_doc("Deployment Request Tool", deployment)
 
-			employees = doc.fetch_eligible_employees()
+			employees = [row.name for row in doc.fetch_eligible_employees()]
 			if not employees:
-				return
+				continue
 
-			doc.deploy_employees(employees)
+			result = doc.deploy_employees(employees)
 		except Exception:
 			frappe.log_error(
 				f"Error processing future deployment request: {deployment}",
 				frappe.get_traceback(),
 			)
 		else:
-			doc.db_set("is_future_deployed", 1, update_modified=False)
-
-
-# def filter_by_availability(self, employees: list, expected_start_date, expected_end_date) -> list:
-#     if not employees:
-#         return []
-
-#     expected_start_date = frappe.utils.getdate(expected_start_date)
-#     expected_end_date = frappe.utils.getdate(expected_end_date)
-#     final_employees = []
-
-#     for emp in employees:
-#         emp_name = emp.get("name")
-
-#         pas = frappe.get_all(
-#             "Personnel Availability Schedule",
-#             filters={"employee": emp_name},
-#             fields=["name", "start_date", "end_date"],
-#         )
-
-#         if not pas:
-#             final_employees.append(emp)
-#             continue
-
-#         available = False
-
-#         for sched in pas:
-#             sched_start = frappe.utils.getdate(sched.start_date)
-#             sched_end = frappe.utils.getdate(sched.end_date)
-
-#             if sched_end < expected_start_date or sched_start > expected_end_date:
-#                 continue
-
-#             schedule_rows = frappe.get_all(
-#                 "Schedule",
-#                 filters={
-#                     "parent": sched.name,
-#                     "parenttype": "Personnel Availability Schedule",
-#                 },
-#                 fields=["day", "shift_type"],
-#             )
-
-#             for row in schedule_rows:
-#                 day = (row.get("day") or "").lower()
-#                 shift_type = row.get("shift_type")
-
-#                 if not shift_type:
-#                     continue
-
-#                 shift = frappe.get_value(
-#                     "Shift Type",
-#                     shift_type,
-#                     ["start_time", "end_time"],
-#                     as_dict=True,
-#                 )
-#                 if not shift:
-#                     continue
-
-#                 current_day = expected_start_date
-#                 while current_day <= expected_end_date:
-#                     if current_day.strftime("%A").lower() == day:
-#                         available = True
-#                         break
-#                     current_day += timedelta(days=1)
-
-#                 if available:
-#                     break
-
-#             if available:
-#                 break
-
-#         if available:
-#             final_employees.append(emp)
-
-#     return final_employees
+			if result.get("success"):
+				doc.db_set("is_future_deployed", 1, update_modified=False)
+			else:
+				frappe.log_error(
+					f"No deployment requests created for future deployment: {deployment}",
+					frappe.as_json(result.get("failure")),
+				)
