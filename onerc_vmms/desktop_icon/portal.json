@@ -1,30 +1,22 @@
 {
  "app": "onerc_vmms",
- "bg_color": "gray",
- "creation": "2026-06-04 17:46:58.227830",
+ "bg_color": "blue",
+ "creation": "2026-05-28 17:15:25.327286",
  "docstatus": 0,
  "doctype": "Desktop Icon",
  "hidden": 0,
- "icon_type": "Link",
- "idx": 0,
- "label": "VMMS Portal",
+ "icon_type": "App",
+ "idx": 2,
+ "label": "Portal",
  "link": "/vmms",
- "link_to": "",
  "link_type": "External",
  "logo_url": "/assets/onerc_vmms/frontend/vmms.png",
- "modified": "2026-06-08 09:32:06.532128",
+ "modified": "2026-08-10 00:00:00.000000",
  "modified_by": "Administrator",
- "name": "VMMS Portal",
+ "name": "Portal",
  "owner": "Administrator",
  "parent_icon": "OneRC",
  "restrict_removal": 0,
- "roles": [
-  {
-   "role": "Volunteer"
-  },
-  {
-   "role": "VM Member"
-  }
- ],
+ "roles": [],
  "standard": 1
 }
