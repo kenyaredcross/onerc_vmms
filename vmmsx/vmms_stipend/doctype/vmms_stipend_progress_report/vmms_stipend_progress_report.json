@@ -1,0 +1,171 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-06 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "report_section",
+  "naming_series",
+  "geo_node",
+  "column_break_report",
+  "period_from",
+  "period_to",
+  "narrative_section",
+  "narrative",
+  "volunteers_section",
+  "volunteers",
+  "routing_section",
+  "routing_departments",
+  "approval_section",
+  "approval_state",
+  "column_break_approval",
+  "submitted_on",
+  "submitted_by"
+ ],
+ "fields": [
+  {
+   "default": "SPR-.#####",
+   "description": "The opaque docname series. Nothing about the supervisor, the place or the period goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "SPR-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "report_section",
+   "fieldtype": "Section Break",
+   "label": "Report"
+  },
+  {
+   "description": "ACC-02. Where this period of work happened, and the anchor geo scoping filters this report by. A Link, never free text, and mandatory at creation: an unplaced report is invisible to geo scoping and unroutable, so it would exist with nobody able to see or act on it. Which levels are permitted is the society's vmms_stipend_anchor_level (ACC-03), and empty means any.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Geo Node",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_report",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The first day this report covers. The period is the report's subject: one report covers one period and many volunteers, and the payment form paired with it pays for days inside these two dates.",
+   "fieldname": "period_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Period From",
+   "reqd": 1
+  },
+  {
+   "description": "The last day this report covers. Never earlier than the first.",
+   "fieldname": "period_to",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Period To",
+   "reqd": 1
+  },
+  {
+   "fieldname": "narrative_section",
+   "fieldtype": "Section Break",
+   "label": "Narrative"
+  },
+  {
+   "description": "What happened over the period, in the supervisor's own words. This is the report; the volunteer table below says who it was about. Read by whoever eventually approves it, never by code.",
+   "fieldname": "narrative",
+   "fieldtype": "Text Editor",
+   "label": "Narrative",
+   "reqd": 1
+  },
+  {
+   "fieldname": "volunteers_section",
+   "fieldtype": "Section Break",
+   "label": "Volunteers Involved"
+  },
+  {
+   "description": "Everybody this report covers. A table because one report covers many volunteers: the alternative, a report per person, would make a period of work into a pile of paperwork nobody reads together. Rows are added through the geo scoped picker.",
+   "fieldname": "volunteers",
+   "fieldtype": "Table",
+   "label": "Volunteers",
+   "options": "VMMS Stipend Report Volunteer"
+  },
+  {
+   "fieldname": "routing_section",
+   "fieldtype": "Section Break",
+   "label": "Pending Routing Target"
+  },
+  {
+   "description": "The departments this report would route to once departmental approval exists, derived from the volunteers above and recomputed on every save. It is a record of where the answer will come from, not a route: nothing resolves a head of department today, and nothing here is read by any routing code. Empty is ordinary and means no volunteer on this report has a department the site can see.",
+   "fieldname": "routing_departments",
+   "fieldtype": "Small Text",
+   "label": "Departments",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "default": "Draft",
+   "description": "Where this report stands. Submitting it moves it to Pending Departmental Approval, which is a dead end on purpose: stipend approval runs from the supervisor to the head of the volunteer's department, departmental resolution is not built, and routing this through the geo engine instead would send it to a geo parent rather than to the head of department. Nobody can approve it, including an administrator, and the refusal says so. Owned by vmmsx/stipend/services/approval.py.",
+   "fieldname": "approval_state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval State",
+   "options": "Draft\nPending Departmental Approval",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When this report was submitted for approval. Cleared if it is withdrawn back to Draft, so the field always describes the submission that is currently outstanding rather than one that was taken back.",
+   "fieldname": "submitted_on",
+   "fieldtype": "Datetime",
+   "label": "Submitted On",
+   "read_only": 1
+  },
+  {
+   "description": "Who submitted it. The supervisor half of the supervisor to head of department chain, recorded now so that the eventual routing has both ends of it rather than only one.",
+   "fieldname": "submitted_by",
+   "fieldtype": "Link",
+   "label": "Submitted By",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-06 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Stipend",
+ "name": "VMMS Stipend Progress Report",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

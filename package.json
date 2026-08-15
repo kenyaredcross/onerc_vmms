@@ -1,0 +1,13 @@
+{
+  "name": "vmmsx",
+  "version": "1.0.0",
+  "description": "Volunteer & Member Management System - operational layer",
+  "private": true,
+  "scripts": {
+    "postinstall": "cd portal && npm install",
+    "dev": "cd portal && npm run dev",
+    "build": "cd portal && npm run build"
+  },
+  "license": "MIT",
+  "type": "commonjs"
+}

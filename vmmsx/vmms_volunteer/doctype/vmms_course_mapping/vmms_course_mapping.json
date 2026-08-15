@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-03 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "mapping_section",
+  "naming_series",
+  "external_course",
+  "course_label",
+  "column_break_mapping",
+  "certification_type",
+  "is_active",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "CMAP-.#####",
+   "description": "The opaque docname series. The external course identifier is another system's name for something and may change under us, so it is a field and not the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "CMAP-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mapping_section",
+   "fieldtype": "Section Break",
+   "label": "Mapping"
+  },
+  {
+   "description": "The learning system's identifier for the course; on this site, an LMS Course docname. Deliberately Data and not a Link: the learning seam is a contract between apps, and vmmsx must not acquire a schema dependency on the LMS app's doctypes. A Link here would put an LMS doctype name in a vmmsx doctype JSON and make this app fail to install where no LMS is present. Unique, because a completed course maps to exactly one certification type; two mappings for one course would make the outcome depend on which row was read first.",
+   "fieldname": "external_course",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "External Course",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "What the course is called, for whoever is reading this mapping. Typed by the administrator and never read by code, so the seam does not have to reach into the learning system just to render a list.",
+   "fieldname": "course_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Course Label"
+  },
+  {
+   "fieldname": "column_break_mapping",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The certification a volunteer holds once they complete that course. This one field is the whole mapping, and it is configuration: pointing it at a different type changes what every future completion of that course awards, with no code change anywhere.",
+   "fieldname": "certification_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Certification Type",
+   "options": "VMMS Certification Type",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "description": "An inactive mapping awards nothing. Certifications already awarded under it are untouched: switching a mapping off stops it acting in future, it does not revoke the past.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "Why this course maps to this certification. Notes for the next administrator; never read by code.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-03 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Course Mapping",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "course_label",
+ "track_changes": 1
+}

@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-06 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "certification_type",
+  "is_mandatory",
+  "requirement_notes"
+ ],
+ "fields": [
+  {
+   "columns": 4,
+   "description": "A certification a volunteer needs in order to be a candidate for this Terms of Reference. A Link to the society's own VMMS Certification Type, so no qualification is named in any source file: which certifications exist, how long they last and whether a lapse blocks deployment are all rows the society writes.",
+   "fieldname": "certification_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Certification Type",
+   "options": "VMMS Certification Type",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "default": "1",
+   "description": "Whether this requirement is a hard filter or a preference. On, and a volunteer who does not hold the certification (or whose certification has lapsed on the date being asked about) is not a candidate at all. Off, and it is desirable rather than required: the volunteer is still a candidate, and holding it ranks them higher. Read by deployment/services/matching.py, which computes the lapse rather than reading a stored flag.",
+   "fieldname": "is_mandatory",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Mandatory"
+  },
+  {
+   "description": "Why this requirement is here, for whoever reads the Terms of Reference. Never read by code.",
+   "fieldname": "requirement_notes",
+   "fieldtype": "Data",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-06 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS Deployment Requirement",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

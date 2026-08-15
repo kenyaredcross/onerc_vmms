@@ -1,0 +1,33 @@
+{#-
+	The alert banner the two auth pages fill, defined here rather than imported.
+
+	It used to be `{% from "templates/includes/login/macros.html" import
+	alert_banner %}`, which is Frappe's own — and that import is what returned
+	**500 on production**. The file landed in Frappe on 2026-07-20, six months
+	after v16.0.0 was tagged, so it exists only on `develop`. This bench runs
+	17.0.0-dev and had it; `pyproject.toml` pins `frappe = ">=16.0.0,<17.0.0"`,
+	so Frappe Cloud does not, and Jinja raises TemplateNotFound while rendering
+	the door to the site.
+
+	A login page may not depend on a template this app does not own. That is the
+	same rule `vmmsx/auth_page.py` already states about raising — the failure of
+	a sign-in page is everybody locked out — applied one level up, to the
+	template's own imports rather than to its context.
+
+	The markup is deliberately identical to the framework's, because `login.js`
+	on a v17 site fills it by class: `.login-error-banner` / `.login-success-banner`
+	found under the visible section, and `.es-alert__title` for the text. On a
+	v16 site nothing looks for it and it simply never unhides, which is why the
+	buttons carry `btn-primary` as well — see the note in `login.html`.
+-#}
+{%- macro alert_banner(type, text="") -%}
+{%- set is_error = type == "error" -%}
+<div class="login-{{ type }}-banner es-alert hidden" role="alert" data-theme="{{ 'red' if is_error else 'green' }}">
+	<svg fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<use href="#icon-{{ 'circle-alert' if is_error else 'circle-check' }}"></use>
+	</svg>
+	<div class="es-alert__content">
+		<span class="es-alert__title">{{ text }}</span>
+	</div>
+</div>
+{%- endmacro %}

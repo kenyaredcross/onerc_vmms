@@ -1,0 +1,195 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:membership_type_key",
+ "creation": "2026-08-02 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "membership_type_name",
+  "membership_type_key",
+  "column_break_identity",
+  "is_active",
+  "description",
+  "fee_section",
+  "fee_amount",
+  "fee_currency",
+  "column_break_fee",
+  "is_lifetime",
+  "duration_days",
+  "approval_section",
+  "approval_mode",
+  "column_break_approval",
+  "approval_note",
+  "certificate_section",
+  "template_key",
+  "benefits_section",
+  "benefits"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "What this society calls this membership type: Life Member, Youth, Corporate. Display only; nothing in the engine reads it to decide anything.",
+   "fieldname": "membership_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Membership Type",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "The stable business key, and the docname. A membership points at its type by this key, so relabelling the type never rewrites history or breaks a report.",
+   "fieldname": "membership_type_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Type Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "An inactive type keeps its existing memberships but refuses new ones, so retiring a type does not orphan the people on it.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "description": "Who this type is for, in the society's own words.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "translatable": 1
+  },
+  {
+   "fieldname": "fee_section",
+   "fieldtype": "Section Break",
+   "label": "Fee"
+  },
+  {
+   "default": "0",
+   "description": "What this membership costs. Zero means no fee is collected, and a zero-fee type never initiates a payment at all.",
+   "fieldname": "fee_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Fee",
+   "options": "fee_currency"
+  },
+  {
+   "description": "The currency of the fee. Empty falls back to the society's configured currency from National Society Settings; no currency is ever assumed in code.",
+   "fieldname": "fee_currency",
+   "fieldtype": "Link",
+   "label": "Fee Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_fee",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "A membership of this type never expires. It activates with a start date and no end date, so the daily expiry sweep never touches it and it is never renewable. A lifetime type carries no duration; any value here is cleared on save.",
+   "fieldname": "is_lifetime",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Lifetime"
+  },
+  {
+   "default": "365",
+   "depends_on": "eval:!doc.is_lifetime",
+   "description": "How long a membership of this type stays valid, in days. Counted from activation, so the clock starts when the member actually becomes one. A lifetime type is not asked for one.",
+   "fieldname": "duration_days",
+   "fieldtype": "Int",
+   "label": "Duration (Days)",
+   "mandatory_depends_on": "eval:!doc.is_lifetime"
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "default": "routed",
+   "description": "MEM-02. How a membership of this type becomes active. routed: it goes through the VMMS approval engine and a resolved human approves it. auto_on_payment: it activates the moment payment is confirmed, with no approver. This field selects the path: no source file branches on a membership type's name to decide it.",
+   "fieldname": "approval_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval Mode",
+   "options": "routed\nauto_on_payment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Why this type approves the way it does. Notes for the next administrator; never read by code.",
+   "fieldname": "approval_note",
+   "fieldtype": "Small Text",
+   "label": "Approval Note",
+   "translatable": 1
+  },
+  {
+   "fieldname": "certificate_section",
+   "fieldtype": "Section Break",
+   "label": "Certificate"
+  },
+  {
+   "description": "Which VMMS Template renders this type's membership certificate. Configuration, not a constant: pointing it at a different template changes every certificate this type issues, with no code change.",
+   "fieldname": "template_key",
+   "fieldtype": "Link",
+   "label": "Certificate Template",
+   "options": "VMMS Template"
+  },
+  {
+   "fieldname": "benefits_section",
+   "fieldtype": "Section Break",
+   "label": "Benefits"
+  },
+  {
+   "description": "What a member of this type is entitled to.",
+   "fieldname": "benefits",
+   "fieldtype": "Table",
+   "label": "Benefits",
+   "options": "VMMS Membership Benefit"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Member",
+ "name": "VMMS Membership Type",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "membership_type_name",
+ "track_changes": 1
+}

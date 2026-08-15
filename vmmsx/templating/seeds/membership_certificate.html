@@ -1,0 +1,36 @@
+<div class="vmms-certificate">
+	{% if society_logo %}
+	<img class="society-logo" src="{{ society_logo }}" alt="{{ society_name or '' }}">
+	{% endif %}
+
+	<h1>{{ society_name or "" }}</h1>
+	<h2>Certificate of Membership</h2>
+
+	<p>This certifies that</p>
+	<p class="member-name"><strong>{{ member_name }}</strong></p>
+
+	<p>
+		is a <strong>{{ membership_type }}</strong> member of this society,
+		registered at <strong>{{ geo_path }}</strong>.
+	</p>
+
+	<table class="details">
+		<tr><td>Membership</td><td>{{ membership_id }}</td></tr>
+		<tr><td>Valid from</td><td>{{ valid_from }}</td></tr>
+		<tr><td>Valid to</td><td>{{ valid_to }}</td></tr>
+		{% if benefits %}
+		<tr>
+			<td>Benefits</td>
+			<td>{% for benefit in benefits %}{{ benefit }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+		</tr>
+		{% endif %}
+		{% if payment_receipt %}
+		<tr><td>Receipt</td><td>{{ payment_receipt }}</td></tr>
+		{% endif %}
+		{% if payment_transaction %}
+		<tr><td>Transaction</td><td>{{ payment_transaction }}</td></tr>
+		{% endif %}
+	</table>
+
+	<p class="issued">Issued on {{ issued_on }}.</p>
+</div>

@@ -1,0 +1,212 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-10 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "message_section",
+  "naming_series",
+  "title",
+  "announcement_type",
+  "column_break_message",
+  "urgency",
+  "geo_node",
+  "audience",
+  "body_section",
+  "summary",
+  "body",
+  "link_section",
+  "link_label",
+  "column_break_link",
+  "link_href",
+  "delivery_section",
+  "status",
+  "also_email",
+  "column_break_delivery",
+  "published_on",
+  "expires_on",
+  "delivered_count"
+ ],
+ "fields": [
+  {
+   "default": "ANN-.#####",
+   "description": "The opaque docname series. Nothing about the branch, the date or the subject goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "ANN-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "message_section",
+   "fieldtype": "Section Break",
+   "label": "Message"
+  },
+  {
+   "description": "The headline, as it appears in a person's notification list. Plain text, rendered as a string, because an announcement is written by staff and read by everybody the branch serves: markup typed here must not become markup running in a reader's browser.",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "description": "How the society classifies this announcement for its own purposes: news, advisory, weather warning, whatever vocabulary it keeps. A configurable set, and no code anywhere branches on a value of it. Behaviour comes from urgency next to it, which is a closed set the server owns. Optional, because a society that does not classify its announcements should not be made to.",
+   "fieldname": "announcement_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "VMMS Announcement Type"
+  },
+  {
+   "fieldname": "column_break_message",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "routine",
+   "description": "How loudly this should arrive, and the only field here that changes what the server does. routine: it waits in the notification list. important: it is marked out in the list and is offered email by default. urgent: the same, and it stays at the top of the list until it is read. This is a closed, code-owned set rather than a society's vocabulary, because each value names a delivery behaviour and a society adding a fourth would produce an announcement nothing knows how to deliver. Nothing compares this value in scattered places: notifications/services/announce.py holds one dispatch table keyed by it, the same shape as the member module's approval_mode.",
+   "fieldname": "urgency",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Urgency",
+   "options": "routine\nimportant\nurgent",
+   "reqd": 1
+  },
+  {
+   "description": "ACC-02. Which part of the society is speaking, and therefore who hears it. An announcement reaches this node and everything beneath it, so a national office anchored at the top reaches everybody and a branch reaches its own people. Required, because an announcement nobody can be resolved for is a message that goes nowhere, and because an unplaced record is invisible to geo scoping.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "From",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "default": "everyone",
+   "description": "Which of the people beneath that node should receive this. everyone: every volunteer and every member. volunteers: people with an active volunteer record. members: people holding an active membership. A closed, code-owned set for the same reason as urgency: each value names a query the server has to know how to run. Somebody who is both a volunteer and a member is resolved once and receives one copy, never two.",
+   "fieldname": "audience",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Audience",
+   "options": "everyone\nvolunteers\nmembers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "body_section",
+   "fieldtype": "Section Break",
+   "label": "What it says"
+  },
+  {
+   "description": "One line summarising the announcement, shown under the title in the list before anybody opens it. Optional. Left empty, the list shows the opening of the body instead, so a writer who has nothing extra to say is not made to repeat themselves.",
+   "fieldname": "summary",
+   "fieldtype": "Small Text",
+   "label": "Summary"
+  },
+  {
+   "description": "The announcement in full. Plain text, deliberately, and rendered as a string wherever it is shown. A rich text field here would mean a person able to write announcements could put scripts into a page served to every volunteer in the society, and the ability to broadcast is not the same permission as the ability to run code in somebody's browser.",
+   "fieldname": "body",
+   "fieldtype": "Text",
+   "label": "Body",
+   "reqd": 1
+  },
+  {
+   "fieldname": "link_section",
+   "fieldtype": "Section Break",
+   "label": "Where it points"
+  },
+  {
+   "description": "The wording on the button, if this announcement points somewhere. Left empty while a destination is set, the button reads as a plain instruction to open the link rather than showing a bare address.",
+   "fieldname": "link_label",
+   "fieldtype": "Data",
+   "label": "Link Label"
+  },
+  {
+   "fieldname": "column_break_link",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Where the announcement points, if anywhere. Optional. Refused on save unless it is site-relative or an http, https, mailto or tel address, the same rule content blocks are held to: a broadcast that reaches everybody is exactly the wrong place to allow a javascript or data address.",
+   "fieldname": "link_href",
+   "fieldtype": "Data",
+   "label": "Link"
+  },
+  {
+   "fieldname": "delivery_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "default": "Draft",
+   "description": "Draft: still being written, and delivered to nobody. Published: fanned out to everybody the audience resolved to. Publishing is idempotent, so saving a published announcement again delivers nothing twice, and it is one-way: an announcement people have already read cannot be unsent, and pretending otherwise by reverting this field would leave copies in their lists that nothing owned.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nPublished",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Whether this also goes out as an email, on top of appearing in the notification list. Defaults on for an important or urgent announcement and off for a routine one, which is the default rather than the rule: whoever writes it decides, and an advisory that must reach somebody who has not signed in this week needs the email.",
+   "fieldname": "also_email",
+   "fieldtype": "Check",
+   "label": "Also send as email"
+  },
+  {
+   "fieldname": "column_break_delivery",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When this was published. Written by the fan-out, not by whoever is typing, so the ordering people see is the order things actually went out in.",
+   "fieldname": "published_on",
+   "fieldtype": "Datetime",
+   "label": "Published On",
+   "read_only": 1
+  },
+  {
+   "description": "The day after which this stops appearing in people's lists. Optional, and it is a display rule rather than a deletion: a weather advisory for next Tuesday is noise on Wednesday, but the record of having sent it stays. Left empty, the announcement does not expire.",
+   "fieldname": "expires_on",
+   "fieldtype": "Date",
+   "label": "Expires On"
+  },
+  {
+   "default": "0",
+   "description": "How many people this actually reached. Written by the fan-out. Worth showing, because an announcement that resolved to nobody is the failure this system fails at silently otherwise: the message was written, saved and published, and read by no one.",
+   "fieldname": "delivered_count",
+   "fieldtype": "Int",
+   "label": "Delivered To",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Notification",
+ "name": "VMMS Announcement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

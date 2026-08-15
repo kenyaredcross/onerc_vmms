@@ -1,0 +1,141 @@
+/* Copyright (c) 2026, Nigel and contributors
+ * For license information, please see license.txt
+ *
+ * Styling for the three read-only blocks vmms_volunteer.js renders. Loaded by
+ * Frappe from this folder alongside the form script (frappe/desk/form/meta.py),
+ * so it ships and migrates with the doctype rather than living in a site's
+ * database.
+ *
+ * Frappe's own CSS variables are used throughout — no colour, spacing or font
+ * is hardcoded — so the blocks follow the desk's theme, light or dark, without
+ * knowing which one is on.
+ */
+
+.vmms-card {
+	display: flex;
+	gap: var(--margin-md);
+	align-items: flex-start;
+}
+
+.vmms-card-media {
+	flex: 0 0 auto;
+}
+
+.vmms-card-body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.vmms-photo {
+	width: 72px;
+	height: 72px;
+	border-radius: var(--border-radius-md);
+	object-fit: cover;
+	border: 1px solid var(--border-color);
+	background-color: var(--bg-color);
+}
+
+.vmms-photo-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--text-2xl);
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.vmms-card-title {
+	font-size: var(--text-xl);
+	font-weight: 600;
+	color: var(--text-color);
+	line-height: 1.3;
+}
+
+.vmms-card-title-small {
+	font-size: var(--text-sm);
+	font-weight: 600;
+	color: var(--text-color);
+	margin-top: var(--margin-md);
+	margin-bottom: var(--margin-xs);
+}
+
+.vmms-card-subtitle {
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+	margin-bottom: var(--margin-sm);
+}
+
+.vmms-pairs {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: var(--margin-sm) var(--margin-md);
+}
+
+.vmms-pair-label {
+	font-size: var(--text-xs);
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+	color: var(--text-light);
+}
+
+.vmms-pair-value {
+	font-size: var(--text-md);
+	color: var(--text-color);
+	word-break: break-word;
+}
+
+.vmms-decisions {
+	margin: 0;
+	padding-left: var(--padding-md);
+	font-size: var(--text-md);
+	color: var(--text-color);
+}
+
+.vmms-decisions li {
+	margin-bottom: var(--margin-xs);
+}
+
+.vmms-reason {
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+}
+
+/* The declared block is deliberately set apart from everything else on the
+ * page: it is the only part of it that is a snapshot rather than a live read,
+ * and a reader must not mistake it for what this volunteer can do today.
+ */
+.vmms-snapshot {
+	font-size: var(--text-sm);
+	color: var(--text-color);
+	background-color: var(--bg-yellow);
+	border-radius: var(--border-radius-md);
+	padding: var(--padding-sm) var(--padding-md);
+	margin-bottom: var(--margin-sm);
+}
+
+.vmms-declared {
+	margin-bottom: var(--margin-sm);
+}
+
+.vmms-declared-label {
+	font-size: var(--text-xs);
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+	color: var(--text-light);
+}
+
+.vmms-declared-value {
+	font-size: var(--text-md);
+	color: var(--text-color);
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.vmms-note {
+	font-size: var(--text-md);
+}
+
+.vmms-footnote {
+	font-size: var(--text-xs);
+	margin-top: var(--margin-sm);
+}

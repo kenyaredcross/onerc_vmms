@@ -1,0 +1,330 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-02 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "subject_section",
+  "naming_series",
+  "member",
+  "membership_type",
+  "column_break_subject",
+  "geo_node",
+  "membership_status",
+  "renews",
+  "intake_section",
+  "applicant_first_name",
+  "applicant_last_name",
+  "applicant_phone",
+  "column_break_intake",
+  "applicant_gender",
+  "applicant_date_of_birth",
+  "validity_section",
+  "valid_from",
+  "column_break_validity",
+  "valid_to",
+  "payment_section",
+  "payment_transaction",
+  "column_break_payment",
+  "payment_receipt",
+  "paid_on",
+  "proof_section",
+  "membership_source",
+  "column_break_proof",
+  "proof_attachment",
+  "questions_section",
+  "custom_answers",
+  "approval_section",
+  "approval_state",
+  "approval_stage",
+  "column_break_approval",
+  "approval_stage_entered_on",
+  "approval_decisions",
+  "card_token"
+ ],
+ "fields": [
+  {
+   "default": "MSHIP-.#####",
+   "description": "The opaque docname series. Nothing about the member, the place or the year goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "MSHIP-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "subject_section",
+   "fieldtype": "Section Break",
+   "label": "Membership"
+  },
+  {
+   "description": "Whose membership this is. Identity is read through the member's Red Profile, never copied onto this record.",
+   "fieldname": "member",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Member",
+   "options": "VMMS Member",
+   "reqd": 1
+  },
+  {
+   "description": "Which type this membership is on. The type carries the fee, the duration, the certificate template and, under MEM-02, whether this membership is routed for approval or activates on payment.",
+   "fieldname": "membership_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Membership Type",
+   "options": "VMMS Membership Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_subject",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "ACC-02. The organisational anchor, and where approvals route from. A Link, never free text, and mandatory at creation: an unplaced membership is invisible to geo scoping and unroutable, so it would exist with nobody able to see or act on it. Which level it may sit at is society configuration (ACC-03), not a constant.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Geo Node",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "description": "Where this membership stands operationally, as distinct from where its approval stands. Written by the membership services; the two never disagree because only one of them moves it.",
+   "fieldname": "membership_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Membership Status",
+   "options": "Draft\nAwaiting Payment\nAwaiting Approval\nActive\nExpired\nCancelled",
+   "read_only": 1
+  },
+  {
+   "description": "The prior membership this one renews, when this record exists because somebody paid to continue rather than to join. A renewal is always a NEW record, never an edit of the old one: the prior membership is left exactly as it was, and this link is what makes the chain (\"2027 renews 2026\") traceable. Empty on a first membership. Written once, by the renewal service, at creation.",
+   "fieldname": "renews",
+   "fieldtype": "Link",
+   "label": "Renews",
+   "options": "VMMS Membership",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "description": "A transient buffer between a public registration form and core's Red Profile, and never storage. A native Web Form writes one document, but registration needs two, so the form collects what a profile needs here and vmmsx/registration/services/intake.py writes it to Red Profile and blanks it before the row is saved. Every field in this section is empty on a saved membership, which is the same rule that keeps a name off the satellite.",
+   "fieldname": "intake_section",
+   "fieldtype": "Section Break",
+   "label": "Registration Intake"
+  },
+  {
+   "description": "The applicant's given name, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_first_name",
+   "fieldtype": "Data",
+   "label": "Applicant First Name",
+   "no_copy": 1
+  },
+  {
+   "description": "The applicant's family name, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_last_name",
+   "fieldtype": "Data",
+   "label": "Applicant Last Name",
+   "no_copy": 1
+  },
+  {
+   "description": "A telephone number, for their Red Profile. Validated against the society's own configured pattern by core, never against a regex written here. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_phone",
+   "fieldtype": "Data",
+   "label": "Applicant Phone",
+   "no_copy": 1,
+   "options": "Phone"
+  },
+  {
+   "fieldname": "column_break_intake",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Gender, as core's own vocabulary lists it. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_gender",
+   "fieldtype": "Link",
+   "label": "Applicant Gender",
+   "no_copy": 1,
+   "options": "Gender"
+  },
+  {
+   "description": "Date of birth, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_date_of_birth",
+   "fieldtype": "Date",
+   "label": "Applicant Date of Birth",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "validity_section",
+   "fieldtype": "Section Break",
+   "label": "Validity"
+  },
+  {
+   "description": "When this membership took effect. Set at activation, so the clock starts when the member actually became one rather than when they applied.",
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_validity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When it lapses: valid_from plus the type's duration. Computed at activation from configuration, never assumed to be a year. Left empty for a lifetime type, which is how a membership with no expiry is stored.",
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "label": "Valid To",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_section",
+   "fieldtype": "Section Break",
+   "label": "Payment"
+  },
+  {
+   "description": "The onerc_payments transaction this membership is waiting on. Deliberately a Data field and not a Link: the payment seam is a contract between apps, and vmmsx must not acquire a schema dependency on a gateway app's doctype.",
+   "fieldname": "payment_transaction",
+   "fieldtype": "Data",
+   "label": "Payment Transaction",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_payment",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The gateway's receipt number, when one ever arrives. Optional enrichment: some gateways deliver a receipt only on a late callback and some never do, so nothing about activation depends on this being set.",
+   "fieldname": "payment_receipt",
+   "fieldtype": "Data",
+   "label": "Payment Receipt",
+   "read_only": 1
+  },
+  {
+   "description": "When the payment was confirmed. Written by the payment hook, not by hand.",
+   "fieldname": "paid_on",
+   "fieldtype": "Datetime",
+   "label": "Paid On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "proof_section",
+   "fieldtype": "Section Break",
+   "label": "Proof of Membership"
+  },
+  {
+   "default": "Gateway",
+   "description": "How this membership's fee obligation was settled. Gateway: an onerc_payments transaction, the ordinary path. Proof: this member paid before the system existed, so no gateway ran; a resolved approver verified the attached evidence instead, through the same routed approval path an ordinary application goes through. It never changes how the routing or the gate works, only what activation accepts as the money question answered.",
+   "fieldname": "membership_source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "Gateway\nProof",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_proof",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.membership_source==\"Proof\"",
+   "description": "Evidence of a payment made before this system existed: a scanned receipt, a photo of a stamped record book, or similar. Required when Source is Proof, and reviewed by whoever this membership already routes to for approval — the same membership approver role and geo assignment the engine resolves for any routed membership. There is no separate proof reviewer.",
+   "fieldname": "proof_attachment",
+   "fieldtype": "Attach",
+   "label": "Proof Attachment"
+  },
+  {
+   "fieldname": "questions_section",
+   "fieldtype": "Section Break",
+   "label": "Society Questions"
+  },
+  {
+   "description": "What this society asks for beyond the standard form. The questions come from VMMS Application Question, and the wording beside each answer is a snapshot of what was asked.",
+   "fieldname": "custom_answers",
+   "fieldtype": "Table",
+   "label": "Answers",
+   "options": "VMMS Application Answer"
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "default": "Draft",
+   "description": "The approval engine's state. Owned entirely by vmmsx/approvals: this doctype declares the field and never writes it. A membership on an auto-on-payment type stays at Draft here, because it has no approval to be in.",
+   "fieldname": "approval_state",
+   "fieldtype": "Select",
+   "label": "Approval State",
+   "options": "Draft\nSubmitted\nIn Review\nApproved\nRejected\nWithdrawn\nExpired",
+   "read_only": 1
+  },
+  {
+   "description": "The opaque row name of the approval stage under review. Engine-owned; never a stage's label.",
+   "fieldname": "approval_stage",
+   "fieldtype": "Data",
+   "label": "Approval Stage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When the current stage was entered, and the SLA clock the approval engine measures a breach against.",
+   "fieldname": "approval_stage_entered_on",
+   "fieldtype": "Datetime",
+   "label": "Stage Entered On",
+   "read_only": 1
+  },
+  {
+   "description": "The approval audit trail: who decided what, at which stage, when and why. Written only by the engine.",
+   "fieldname": "approval_decisions",
+   "fieldtype": "Table",
+   "label": "Approval Decisions",
+   "options": "VMMS Approval Decision"
+  },
+  {
+   "description": "The opaque handle a printed card is verified by. Minted the first time a card is issued and never rotated: a card already in somebody's pocket has this printed on it.",
+   "fieldname": "card_token",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Card Token",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1,
+   "unique": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Member",
+ "name": "VMMS Membership",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

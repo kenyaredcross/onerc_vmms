@@ -1,0 +1,93 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:motivation_key",
+ "creation": "2026-08-09 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "motivation_name",
+  "motivation_key",
+  "column_break_identity",
+  "is_active",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "What this society calls this reason to volunteer: Community Service, Skill-building, Faith. A society's own vocabulary, extended freely and never a literal in a source file.",
+   "fieldname": "motivation_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Motivation",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "The stable business key, and the docname. An application's declared motivations point at this key, so relabelling one never rewrites history. Nothing in this app branches on a motivation value.",
+   "fieldname": "motivation_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Motivation Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "An inactive motivation keeps the applications already declared under it but is no longer offered for new ones.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "description": "What this motivation covers, in the society's own words.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "translatable": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-09 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Motivation",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "motivation_name",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "motivation_name",
+ "track_changes": 1
+}

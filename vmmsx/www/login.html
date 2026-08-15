@@ -1,0 +1,385 @@
+{#-
+	The society's sign-in page. See `vmmsx/www/login.py` for why it exists and
+	what it does *not* change.
+
+	It extends Frappe's own login template, and the split matters:
+
+	* `content` is replaced, because the layout is a different page — a panel
+	  carrying the society's mark beside the form, rather than a card floating on
+	  a plain ground.
+	* `script` is **not** replaced. It is inherited, so `login.js` is the
+	  framework's, and with it every authentication path this page can take.
+	  Everything below therefore keeps that script's contract: the section
+	  classes it toggles (`for-login`, `for-signup`, `for-forgot`,
+	  `for-login-with-email-link`, `for-email-login`), the field ids it reads,
+	  `page-card-body` / `form-group` / `field-error` for validation state, the
+	  alert banners it fills, and `es-button[data-variant=solid]` for the button
+	  it turns into a spinner. Renaming any of them breaks sign-in silently.
+
+	**The contract is two versions wide, and that is not optional.** Inheriting
+	the framework's script means inheriting *whichever* framework the site runs,
+	and this app does not run on one: the bench developing it is on 17.0.0-dev
+	while `pyproject.toml` pins `frappe = ">=16.0.0,<17.0.0"`, which is what
+	Frappe Cloud installs against. The two scripts report errors by different
+	mechanisms, so the markup satisfies both:
+
+	* v17 fills `.login-error-banner` / `.login-success-banner` under the visible
+	  section and writes the text into `.es-alert__title`;
+	* v16 has no banner at all — it replaces the text of
+	  `section:visible .btn-primary` with the message, and adds `invalid` to
+	  `.page-card-body`.
+
+	So every submit button carries `btn-primary` alongside `es-button`, and the
+	banners are rendered on both. On v16 the banners never unhide and cost
+	nothing; on v17 `btn-primary` is a class nobody queries. Neither styles
+	anything: `.es-button[data-variant="solid"]` out-specifies `.btn-primary`
+	in `templates/includes/auth/styles.html`.
+
+	`alert_banner` is imported from **this app's** `templates/includes/auth/`
+	rather than the framework's `templates/includes/login/`. That import is what
+	took production down with a 500 — see the macro file's own note.
+-#}
+{% extends "frappe/www/login.html" %}
+{% from "templates/includes/auth/macros.html" import alert_banner %}
+
+{% block title %}{{ _("Sign in") }}{% if society_name %} &middot; {{ society_name }}{% endif %}{% endblock %}
+
+{#- No navbar and no footer: the page is a door, not a destination. -#}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{#- Frappe's `login.bundle.css` is deliberately not carried over; see the note at
+    the top of the stylesheet for why overriding it would be worse than
+    replacing it. -#}
+{% block head_include %}{% include "templates/includes/auth/styles.html" %}{% endblock %}
+
+{#- The password form, which appears twice on a site with social logins because
+    Frappe's own page does the same: `#login` shows the providers with it, and
+    `#email` is the panel somebody reaches by choosing to type a password
+    instead. One macro so the two cannot drift apart. -#}
+{% macro credentials_body() %}
+<div class="page-card-body">
+	{{ alert_banner("error") }}
+
+	{% if not disable_user_pass_login or (ldap_settings and ldap_settings.enabled) %}
+	<div class="form-group">
+		<label for="login_email">{{ login_label or _("Email") }}</label>
+		<div class="email-field">
+			<input
+				type="text"
+				id="login_email"
+				class="form-control"
+				placeholder="{% if login_name_placeholder %}{{ login_name_placeholder }}{% else %}{{ _('name@example.com') }}{% endif %}"
+				required
+				autofocus
+				autocomplete="username"
+			>
+		</div>
+		<p class="field-error"></p>
+	</div>
+
+	<div class="form-group">
+		<div class="form-label-row">
+			<label for="login_password">{{ _("Password") }}</label>
+			{% if not disable_user_pass_login %}
+			<a href="#forgot" class="forgot-link">{{ _("Forgot password?") }}</a>
+			{% endif %}
+		</div>
+		<div class="password-field">
+			<input
+				type="password"
+				id="login_password"
+				class="form-control"
+				placeholder="••••••••"
+				autocomplete="current-password"
+				required
+			>
+			<svg toggle="#login_password" class="toggle-password" xmlns="http://www.w3.org/2000/svg">
+				<use href="#icon-eye"></use>
+			</svg>
+		</div>
+		<p class="field-error"></p>
+	</div>
+	{% endif %}
+</div>
+
+<div class="page-card-actions">
+	{% if not disable_user_pass_login %}
+	<button class="es-button btn-primary" data-variant="solid" type="submit">{{ _("Sign in") }}</button>
+	{% endif %}
+
+	{% if ldap_settings and ldap_settings.enabled %}
+	<button class="es-button btn-ldap-login" data-variant="solid">{{ _("Sign in with LDAP") }}</button>
+	{% endif %}
+
+	{#- The rule is only drawn when there is in fact a second way in. -#}
+	{% if login_with_email_link or social_login %}
+	<div class="auth-or">{{ _("or") }}</div>
+	{% endif %}
+
+	{% if login_with_email_link %}
+	<a href="#login-with-email-link" class="es-button btn-login-option btn-login-with-email-link">
+		{{ _("Email me a sign-in link") }}
+	</a>
+	{% endif %}
+
+	{% if social_login %}
+	<div class="social-logins">
+		<div class="social-login-buttons">
+			{% for provider in provider_logins %}
+			<a href="{{ provider.auth_url }}" class="es-button btn-login-option btn-{{ provider.name }}">
+				{% if provider.icon %}{{ provider.icon }}{% endif %}
+				{{ _("Continue with {0}").format(provider.provider_name) }}
+			</a>
+			{% endfor %}
+		</div>
+	</div>
+	{% endif %}
+</div>
+{% endmacro %}
+
+{% macro heading(eyebrow, title, body="") %}
+<div class="page-card-head">
+	<p class="auth-eyebrow">{{ eyebrow }}</p>
+	<h1 class="auth-title">{{ title }}</h1>
+	{% if body %}<p class="auth-sub">{{ body }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="auth">
+	{% include "templates/includes/auth/panel.html" %}
+
+	<div class="auth-form">
+		<div class="auth-form-inner">
+			<noscript>
+				<div class="es-alert" data-theme="red">
+					<div class="es-alert__content">
+						<span class="es-alert__title">
+							{{ _("You need to enable JavaScript to sign in.") }}
+						</span>
+					</div>
+				</div>
+			</noscript>
+
+			<section class="for-login">
+				<div class="login-content page-card">
+					{{ heading(
+						words.get("login.signin.eyebrow") or _("Sign in"),
+						words.get("login.signin.title") or _("Welcome back")
+					) }}
+					<form class="form-signin form-login" role="form" novalidate>
+						{{ credentials_body() }}
+					</form>
+					{%- if not disable_signup and not disable_user_pass_login %}
+					<p class="sign-up-message">
+						{{ words.get("login.signin.prompt") or _("New to the society?") }}
+						<a href="#signup">{{ words.get("login.signin.action") or _("Create an account") }} &rsaquo;</a>
+					</p>
+					{%- endif %}
+				</div>
+			</section>
+
+			{%- if social_login %}
+			<section class="for-email-login">
+				<div class="login-content page-card">
+					{{ heading(
+						words.get("login.signin.eyebrow") or _("Sign in"),
+						words.get("login.signin.title") or _("Welcome back")
+					) }}
+					<form class="form-signin form-login" role="form" novalidate>
+						{{ credentials_body() }}
+					</form>
+					{%- if not disable_signup and not disable_user_pass_login %}
+					<p class="sign-up-message">
+						{{ words.get("login.signin.prompt") or _("New to the society?") }}
+						<a href="#signup">{{ words.get("login.signin.action") or _("Create an account") }} &rsaquo;</a>
+					</p>
+					{%- endif %}
+				</div>
+			</section>
+			{%- endif %}
+
+			<section class="for-signup {{ 'signup-disabled' if disable_signup else '' }}">
+				<div class="login-content page-card">
+					{%- if not disable_signup %}
+					{{ heading(
+						words.get("login.signup.eyebrow") or _("Get started"),
+						words.get("login.signup.title") or _("Create your account"),
+						words.get("login.signup.body") or _("We will email you a link to set a password.")
+					) }}
+					<form class="form-signin form-signup hide" role="form" novalidate>
+						<div class="page-card-body">
+							{{ alert_banner("success") }}
+							{{ alert_banner("error") }}
+							<div class="form-group">
+								<label for="signup_fullname">{{ _("Full Name") }}</label>
+								<input
+									type="text"
+									id="signup_fullname"
+									class="form-control"
+									placeholder="{{ _('Jane Doe') }}"
+									required
+									autocomplete="name"
+								>
+								<p class="field-error"></p>
+							</div>
+							<div class="form-group">
+								<label for="signup_email">{{ _("Email") }}</label>
+								<input
+									type="email"
+									id="signup_email"
+									class="form-control"
+									placeholder="{{ _('name@example.com') }}"
+									required
+									autocomplete="username"
+								>
+								<p class="field-error"></p>
+							</div>
+						</div>
+						<div class="page-card-actions">
+							<button class="es-button btn-primary btn-signup" data-variant="solid" type="submit" disabled>
+								{{ _("Create Account") }}
+							</button>
+						</div>
+					</form>
+					<p class="sign-up-message">
+						{{ words.get("login.signup.prompt") or _("Already have one?") }}
+						<a href="#login">{{ words.get("login.signup.action") or _("Sign in") }} &rsaquo;</a>
+					</p>
+					{%- else %}
+					{{ heading(
+						words.get("login.signup.eyebrow") or _("Get started"),
+						_("Accounts are not open")
+					) }}
+					<p class="auth-sub">{{ _("This society is not taking new accounts on the website.") }}</p>
+					<p class="sign-up-message"><a href="#login">{{ _("Back to sign in") }} &rsaquo;</a></p>
+					{%- endif %}
+				</div>
+			</section>
+
+			<section class="for-forgot">
+				<div class="login-content page-card">
+					{{ heading(
+						words.get("login.forgot.eyebrow") or _("Password"),
+						words.get("login.forgot.title") or _("Reset your password"),
+						words.get("login.forgot.body") or _("Give us the address you sign in with and we will send you a link.")
+					) }}
+					<form class="form-signin form-forgot hide" role="form" novalidate>
+						<div class="page-card-body">
+							{{ alert_banner("success") }}
+							{{ alert_banner("error") }}
+							<div class="form-group">
+								<label for="forgot_email">{{ _("Email") }}</label>
+								<div class="email-field">
+									<input
+										type="email"
+										id="forgot_email"
+										class="form-control"
+										placeholder="{{ _('name@example.com') }}"
+										required
+										autocomplete="username"
+									>
+								</div>
+								<p class="field-error"></p>
+							</div>
+						</div>
+						<div class="page-card-actions">
+							<button class="es-button btn-primary btn-forgot" data-variant="solid" type="submit" disabled>
+								{{ _("Send Link") }}
+							</button>
+						</div>
+					</form>
+					<p class="sign-up-message"><a href="#login">{{ _("Back to sign in") }} &rsaquo;</a></p>
+				</div>
+			</section>
+
+			<section class="for-login-with-email-link">
+				<div class="login-content page-card">
+					{{ heading(
+						words.get("login.link.eyebrow") or _("Sign in"),
+						words.get("login.link.title") or _("Send me a link"),
+						words.get("login.link.body") or _("We will email you a link that signs you in without a password.")
+					) }}
+					<form class="form-signin form-login-with-email-link hide" role="form" novalidate>
+						<div class="page-card-body">
+							{{ alert_banner("success", _("Please check your email.")) }}
+							{{ alert_banner("error") }}
+							<div class="form-group">
+								<label for="login_with_email_link_email">{{ _("Email") }}</label>
+								<div class="email-field">
+									<input
+										type="email"
+										id="login_with_email_link_email"
+										class="form-control"
+										placeholder="{{ _('name@example.com') }}"
+										required
+										autocomplete="username"
+									>
+								</div>
+								<p class="field-error"></p>
+							</div>
+						</div>
+						<div class="page-card-actions">
+							<button class="es-button btn-primary btn-login-with-email-link" data-variant="solid" type="submit">
+								{{ _("Send login link") }}
+							</button>
+							<p class="resend-link hidden">
+								{{ _("Didn't receive the link?") }}
+								<a href="#" class="btn-resend-link">{{ _("Resend") }}</a>
+							</p>
+							<a href="#login" class="es-button btn-login-option">{{ _("Sign in with a password") }}</a>
+						</div>
+					</form>
+				</div>
+			</section>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{#-
+	Where somebody with no particular destination goes after signing in.
+
+	`{{ super() }}` is `login.js` — see the note at the top of this file — and the
+	few lines after it exist because of one gap in what that script can decide.
+	For a **Website User** it prefers, in order: `localStorage.last_visited`, then
+	`?redirect-to`, then the server's answer. The server's answer comes from
+	`get_default_path()`, which on a bench with several apps installed is
+	`/apps` — and Frappe redirects `/apps` to `/desk`, the one address a
+	self-service account cannot open. So the volunteer this whole change is about
+	would sign in successfully and land on a permission error.
+
+	`last_visited` is the right slot for the fix rather than a convenient one. It
+	is written by exactly one function in the framework — `ask_to_login()`, which
+	stashes the page a signed-out visitor was on before bouncing them here — and
+	read by exactly one, the branch below. Seeding it says the same thing: *this
+	is where you were going*. Nothing else on the site reads it, and `login.js`
+	clears it as it uses it.
+
+	Two guards, and both matter. It is not written when the URL already carries a
+	`redirect-to`, because `last_visited` would win over it and a person following
+	`RequireAuth` back to a specific screen must get that screen. And it is not
+	written over an existing value, which is a real destination somebody was
+	actually on.
+
+	**Staff are untouched, and not by accident.** A System User takes the "Logged
+	In" branch, which never looks at `last_visited`; the framework itself makes
+	the distinction, so nothing here has to ask what kind of account is signing
+	in — which is just as well, because at this point nobody knows.
+-#}
+{% block script %}
+{{ super() }}
+<script>
+	(function () {
+		try {
+			if (!window.localStorage) return;
+			if (localStorage.getItem("last_visited")) return;
+			if (new URLSearchParams(window.location.search).get("redirect-to")) return;
+			localStorage.setItem("last_visited", {{ portal_home | tojson }});
+		} catch (e) {
+			/* Private browsing refuses localStorage. The server's answer stands. */
+		}
+	})();
+</script>
+{% endblock %}

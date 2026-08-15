@@ -1,0 +1,188 @@
+<div class="vmms-tor">
+	<div class="letterhead">
+		{% if society_logo %}
+		<img class="society-logo" src="{{ society_logo }}" alt="{{ society_name or '' }}">
+		{% endif %}
+		<div class="letterhead-text">
+			<h1>{{ society_name or "" }}</h1>
+			{% if geo_scope_path %}<p class="office">{{ geo_scope_path }}</p>{% endif %}
+		</div>
+	</div>
+
+	<h2>Terms of Reference</h2>
+	<p class="tor-name">{{ tor_name }}</p>
+
+	{% if project_name %}
+	<p class="project">Under the project <strong>{{ project_name }}</strong>{% if project_geo_path %}, {{ project_geo_path }}{% endif %}.</p>
+	{% endif %}
+
+	<table class="details">
+		<tr><td>Reference</td><td>{{ tor_key }}</td></tr>
+		{% if geo_scope_path %}<tr><td>Applies within</td><td>{{ geo_scope_path }}</td></tr>{% endif %}
+		{% if duration %}<tr><td>Usual duration</td><td>{{ duration }}</td></tr>{% endif %}
+		{% if project_period %}<tr><td>Project period</td><td>{{ project_period }}</td></tr>{% endif %}
+		<tr><td>Authorisation</td><td>{{ approval_mode_label }}</td></tr>
+		<tr><td>Status</td><td>{{ status_label }}</td></tr>
+	</table>
+
+	{% if project_summary %}
+	<h3>Background</h3>
+	<p class="body-text">{{ project_summary }}</p>
+	{% endif %}
+
+	{% if purpose %}
+	<h3>Purpose</h3>
+	<p class="body-text">{{ purpose }}</p>
+	{% endif %}
+
+	{% if responsibilities %}
+	<h3>Responsibilities</h3>
+	<p class="body-text">{{ responsibilities }}</p>
+	{% endif %}
+
+	{% if mandatory_certifications or desirable_certifications %}
+	<h3>Requirements</h3>
+	{% if mandatory_certifications %}
+	<p class="requirement-heading">A volunteer deployed under these terms must hold:</p>
+	<ul>{% for item in mandatory_certifications %}<li>{{ item }}</li>{% endfor %}</ul>
+	{% endif %}
+	{% if desirable_certifications %}
+	<p class="requirement-heading">The following are desirable:</p>
+	<ul>{% for item in desirable_certifications %}<li>{{ item }}</li>{% endfor %}</ul>
+	{% endif %}
+	{% endif %}
+
+	{% if notes %}
+	<h3>Notes</h3>
+	<p class="body-text">{{ notes }}</p>
+	{% endif %}
+
+	<div class="signature">
+		<div class="signature-line"></div>
+		<p>For and on behalf of {{ society_name or "the National Society" }}</p>
+	</div>
+
+	<p class="issued">Issued on {{ issued_on }}.</p>
+</div>
+
+<style>
+	.vmms-tor {
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		color: #1f2937;
+		max-width: 44rem;
+		margin: 0 auto;
+		padding: 2rem 2.5rem;
+		line-height: 1.55;
+	}
+
+	.vmms-tor .letterhead {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		border-bottom: 3px solid #ba0c2f;
+		padding-bottom: 0.9rem;
+		margin-bottom: 1.6rem;
+	}
+
+	.vmms-tor .society-logo {
+		max-height: 64px;
+		max-width: 180px;
+	}
+
+	.vmms-tor .letterhead-text h1 {
+		font-size: 1.25rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		margin: 0;
+		color: #101828;
+	}
+
+	.vmms-tor .office {
+		margin: 0.15rem 0 0;
+		font-size: 0.8rem;
+		color: #667085;
+	}
+
+	.vmms-tor h2 {
+		font-size: 0.78rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: #ba0c2f;
+		margin: 0 0 0.25rem;
+	}
+
+	.vmms-tor .tor-name {
+		font-size: 1.5rem;
+		font-weight: 700;
+		margin: 0 0 0.6rem;
+		color: #101828;
+	}
+
+	.vmms-tor .project {
+		margin: 0 0 1.2rem;
+		color: #475467;
+	}
+
+	.vmms-tor h3 {
+		font-size: 0.95rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #101828;
+		margin: 1.5rem 0 0.4rem;
+	}
+
+	.vmms-tor .body-text {
+		margin: 0 0 0.6rem;
+		white-space: pre-wrap;
+	}
+
+	.vmms-tor .details {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 1rem 0 0.5rem;
+		font-size: 0.9rem;
+	}
+
+	.vmms-tor .details td {
+		border-bottom: 1px solid #eaecf0;
+		padding: 0.45rem 0.2rem;
+		vertical-align: top;
+	}
+
+	.vmms-tor .details td:first-child {
+		width: 12rem;
+		color: #667085;
+	}
+
+	.vmms-tor .requirement-heading {
+		margin: 0.6rem 0 0.2rem;
+		color: #475467;
+	}
+
+	.vmms-tor ul {
+		margin: 0 0 0.6rem;
+		padding-left: 1.2rem;
+	}
+
+	.vmms-tor .signature {
+		margin-top: 3rem;
+	}
+
+	.vmms-tor .signature-line {
+		border-top: 1px solid #98a2b3;
+		width: 16rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.vmms-tor .signature p {
+		margin: 0;
+		font-size: 0.85rem;
+		color: #667085;
+	}
+
+	.vmms-tor .issued {
+		margin-top: 1.6rem;
+		font-size: 0.78rem;
+		color: #98a2b3;
+	}
+</style>

@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-06 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "volunteer",
+  "activity",
+  "department",
+  "notes"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "description": "A volunteer this report covers. One report covers many volunteers, which is why this is a table and not a link on the parent. Rows are added through the geo scoped picker, which refuses a volunteer the person adding them may not already see. Identity is read through the volunteer's Red Profile and is never copied onto this row.",
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Volunteer",
+   "options": "VMMS Volunteer",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "description": "What this volunteer did over the period, in the supervisor's own words. Free text on purpose: a structured vocabulary of activities is a society's paperwork, and a Select typed into a JSON file would be this app inventing one. Never read by code.",
+   "fieldname": "activity",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Role or Activity"
+  },
+  {
+   "columns": 3,
+   "description": "The department this volunteer belongs to, captured when the report is saved. It is the target the eventual departmental approval will route to, because the stipend chain runs from the supervisor to the head of the volunteer's department. Recorded rather than resolved: nothing routes on it today. Data rather than a Link, so a site without an HR app still saves this row, and empty is ordinary rather than an error.",
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department",
+   "read_only": 1
+  },
+  {
+   "description": "Anything else the supervisor wants recorded about this volunteer's part in the period. Never read by code.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-06 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Stipend",
+ "name": "VMMS Stipend Report Volunteer",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

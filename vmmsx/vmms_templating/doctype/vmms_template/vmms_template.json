@@ -1,0 +1,142 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:template_key",
+ "creation": "2026-08-02 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "template_name",
+  "template_key",
+  "column_break_identity",
+  "template_category",
+  "is_active",
+  "body_section",
+  "subject",
+  "body",
+  "output_section",
+  "output_format",
+  "column_break_output",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "What this society calls this template. Display only.",
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "The stable business key, and the docname. Configuration elsewhere points at a template by this key (a membership type's template_key, for instance), so renaming the template's label never breaks what refers to it.",
+   "fieldname": "template_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Which kind of template this is. A configurable set, not a code vocabulary: the renderer treats every category identically and no source file branches on the value.",
+   "fieldname": "template_category",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Category",
+   "options": "VMMS Template Category",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "description": "An inactive template refuses to render, so retiring one is a settings change rather than a deletion that orphans whatever pointed at it.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "body_section",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "description": "Optional one-line heading: a certificate title, a notification subject. Rendered with the same context and the same sandbox as the body.",
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject",
+   "translatable": 1
+  },
+  {
+   "description": "The template body, with {{ placeholders }} filled from the context the calling module builds. Rendered through Frappe's sandboxed Jinja: a template cannot reach Python internals, read the database at will, or execute code.",
+   "fieldname": "body",
+   "fieldtype": "Code",
+   "label": "Body",
+   "options": "HTML",
+   "reqd": 1
+  },
+  {
+   "fieldname": "output_section",
+   "fieldtype": "Section Break",
+   "label": "Output"
+  },
+  {
+   "default": "html",
+   "description": "What the rendered body is. Returned to the caller as metadata. The render service does not transform on it, so adding a format never changes the renderer.",
+   "fieldname": "output_format",
+   "fieldtype": "Select",
+   "label": "Output Format",
+   "options": "html\ntext",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_output",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "What this template is for, and which context keys it expects. Notes for the next administrator to edit it.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Templating",
+ "name": "VMMS Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "template_name",
+ "track_changes": 1
+}

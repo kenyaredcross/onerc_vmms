@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-06 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "transfer_section",
+  "naming_series",
+  "volunteer",
+  "from_geo_node",
+  "column_break_transfer",
+  "to_geo_node",
+  "effective_date",
+  "outcome_section",
+  "transfer_status",
+  "column_break_outcome",
+  "applied_on",
+  "reason_section",
+  "reason",
+  "approval_section",
+  "approval_state",
+  "approval_stage",
+  "column_break_approval",
+  "approval_stage_entered_on",
+  "approval_decisions"
+ ],
+ "fields": [
+  {
+   "default": "XFER-.#####",
+   "description": "The opaque docname series. Nothing about the volunteer, the branches or the date goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "XFER-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "transfer_section",
+   "fieldtype": "Section Break",
+   "label": "Transfer"
+  },
+  {
+   "description": "Who is moving. Identity is read through their Red Profile and never copied onto this record; what moves is their placement, which is the only thing this record touches.",
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Volunteer",
+   "options": "VMMS Volunteer",
+   "reqd": 1
+  },
+  {
+   "description": "Where the volunteer is placed today, snapshotted from their record when this transfer is raised rather than typed in. It is also the ACC-02 anchor: geo scoping and, where a society routes transfers, approval routing both read it, so the branch currently responsible for the volunteer is the branch that sees and authorises their release. A society that would rather the receiving branch decide points its approval workflow's geo_node_field at to_geo_node instead, which needs no code change. This node never moves afterwards, which is what keeps a completed transfer a record of where somebody came from.",
+   "fieldname": "from_geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "From",
+   "options": "Geo Node",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_transfer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Where the volunteer is moving to. Must be a different node from the one they are at, and must sit at the level this society places volunteers at (ACC-03, vmms_volunteer_anchor_level), because after the transfer this becomes their home_geo_node and has to satisfy the same rule their placement always did.",
+   "fieldname": "to_geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "To",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "description": "The day the volunteer is treated as belonging to the new branch. A date today or in the past takes effect on the next save once approval is settled; a date in the future waits for the daily sweep, so a transfer arranged in advance happens on the day it was arranged for and not on the day it was typed.",
+   "fieldname": "effective_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Effective Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "outcome_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "default": "Pending",
+   "description": "Where this transfer is in its life, as distinct from where its approval is. Pending is a transfer that has not moved anybody yet, whatever its approval says. Effective is one that has: the volunteer's home_geo_node now names the new branch. Cancelled is a transfer the society called off, and it is terminal. A closed, code owned set, written by deployment/services/transfer.py and never by hand.",
+   "fieldname": "transfer_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Transfer Status",
+   "options": "Pending\nEffective\nCancelled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_outcome",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When the volunteer's placement was actually moved. Written once, and it is what makes applying a transfer idempotent: a second attempt sees the stamp and does nothing rather than moving somebody twice. Empty on a transfer that has not taken effect.",
+   "fieldname": "applied_on",
+   "fieldtype": "Datetime",
+   "label": "Applied On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reason_section",
+   "fieldtype": "Section Break",
+   "label": "Reason"
+  },
+  {
+   "description": "Why the volunteer is moving, in the requester's own words. Required, because a transfer changes who can see somebody and who approves for them, and a change of that kind with no reason recorded is one nobody can review afterwards. Read by whoever approves it; never read by code.",
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "reqd": 1
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "default": "Draft",
+   "description": "The approval engine's state. Owned entirely by vmmsx/approvals: this doctype declares the field and never writes it. It stays at Draft where a society has not asked for transfers to be routed, which is deliberate: the absence of an approval is not an approval, and what governs whether the placement moves is the settled predicate rather than a state somebody set. docstatus is deliberately unused.",
+   "fieldname": "approval_state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval State",
+   "options": "Draft\nSubmitted\nIn Review\nApproved\nRejected\nWithdrawn\nExpired",
+   "read_only": 1
+  },
+  {
+   "description": "The opaque row name of the approval stage under review. Engine owned; never a stage's label, so relabelling a stage changes a screen and nothing else.",
+   "fieldname": "approval_stage",
+   "fieldtype": "Data",
+   "label": "Approval Stage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When the current stage was entered, and the SLA clock the approval engine measures a breach against.",
+   "fieldname": "approval_stage_entered_on",
+   "fieldtype": "Datetime",
+   "label": "Stage Entered On",
+   "read_only": 1
+  },
+  {
+   "description": "The approval audit trail: who decided what, at which stage, when and why. Written only by the engine.",
+   "fieldname": "approval_decisions",
+   "fieldtype": "Table",
+   "label": "Approval Decisions",
+   "options": "VMMS Approval Decision"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-06 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS Branch Transfer",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "volunteer",
+ "track_changes": 1
+}

@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-11 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "naming_series",
+  "location_name",
+  "geo_node",
+  "column_break_identity",
+  "is_published",
+  "photo",
+  "place_section",
+  "address",
+  "column_break_place",
+  "latitude",
+  "longitude",
+  "contact_section",
+  "phone",
+  "email",
+  "column_break_contact",
+  "opening_hours",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "LOC-.#####",
+   "description": "The opaque docname series. The branch's name is not the primary key, because a society that renames a branch would otherwise be unable to without breaking every link to it.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "LOC-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "What this place is called, in the society's own words, as it will appear on the map and in the list beside it.",
+   "fieldname": "location_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name",
+   "reqd": 1
+  },
+  {
+   "description": "Which part of the society this place belongs to. Required at creation, and a Link rather than typed text, so a location is placed in the same hierarchy as everything else and a coordinator sees the ones in their own area without anybody maintaining a second list of what belongs to whom.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Geo Node",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Whether this place appears on the public map. The whole of the guest-read rule for this doctype, the same way is_public on a content surface is the whole of the rule there: putting an office on the public map is a decision somebody makes on this form, not a condition written into a source file. Unticked ships nothing, which is the right default for an address.",
+   "fieldname": "is_published",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Show On Public Map"
+  },
+  {
+   "description": "A photograph of the place, so somebody looking for it recognises it when they arrive. Optional, and no image ships as a default: an empty slot is drawn as an empty slot rather than as a stock photograph of somebody else's building.",
+   "fieldname": "photo",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  },
+  {
+   "fieldname": "place_section",
+   "fieldtype": "Section Break",
+   "label": "Place"
+  },
+  {
+   "description": "The street address as somebody would write it on an envelope. Free text, deliberately: address formats differ by country and a structured set of fields that suited one society would be wrong for the next.",
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "column_break_place",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Latitude in decimal degrees, between -90 and 90. Optional: a branch that knows its address but not its coordinates is still worth listing, and it appears in the list beside the map without a pin on it rather than being refused.",
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6"
+  },
+  {
+   "description": "Longitude in decimal degrees, between -180 and 180. Given with the latitude or not at all: half a coordinate cannot be drawn anywhere, and a point on the equator off the coast of Africa is where half of them would land.",
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "contact_section",
+   "fieldtype": "Section Break",
+   "label": "Contact"
+  },
+  {
+   "description": "A telephone number for the place. Not validated against a pattern here: the society's own phone format lives in core's settings and applies to a person's number, and an office switchboard is not a person.",
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "options": "Phone"
+  },
+  {
+   "description": "An address for enquiries. The place's own, never a member of staff's: this is published, and a personal mailbox on a public page outlives whoever held it.",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "column_break_contact",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When somebody can turn up, in the society's own words. Free text rather than a week of time fields, because what a visitor needs to read is one line and what a society needs to express is sometimes not a schedule at all.",
+   "fieldname": "opening_hours",
+   "fieldtype": "Data",
+   "label": "Opening Hours"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "Anything else a coordinator wants recorded about this place. Internal: it is not served to the public map, so directions for staff and access notes can go here without being published.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-11 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Branch",
+ "name": "VMMS Branch Location",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

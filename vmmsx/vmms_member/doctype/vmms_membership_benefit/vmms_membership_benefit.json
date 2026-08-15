@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "creation": "2026-08-02 18:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "benefit_key",
+  "benefit_name",
+  "is_active",
+  "description"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "description": "The stable key for this benefit. What an integration or a report refers to, so relabelling the benefit does not break them.",
+   "fieldname": "benefit_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Benefit Key",
+   "reqd": 1
+  },
+  {
+   "columns": 4,
+   "description": "What the member is told they get. Display only.",
+   "fieldname": "benefit_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Benefit",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "columns": 1,
+   "default": "1",
+   "description": "Withdrawn benefits stay on the type for history rather than disappearing from it.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "description": "The detail: what the benefit covers, and any limit on it.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "translatable": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-02 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Member",
+ "name": "VMMS Membership Benefit",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

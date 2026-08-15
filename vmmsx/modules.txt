@@ -1,0 +1,13 @@
+Vmmsx
+VMMS Approvals
+VMMS Templating
+VMMS Member
+VMMS Volunteer
+VMMS Deployment
+VMMS Stipend
+VMMS Content
+VMMS Notification
+VMMS Task
+VMMS Branch
+VMMS Registration
+VMMS Events

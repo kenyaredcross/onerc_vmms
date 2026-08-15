@@ -1,0 +1,177 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:tor_key",
+ "creation": "2026-08-06 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "tor_name",
+  "tor_key",
+  "column_break_identity",
+  "project",
+  "is_active",
+  "purpose",
+  "placement_section",
+  "geo_scope",
+  "column_break_placement",
+  "default_duration_days",
+  "governance_section",
+  "approval_mode",
+  "requirements_section",
+  "required_certifications",
+  "responsibilities_section",
+  "responsibilities",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "What this society calls this piece of work: Flood Response, Blood Drive Support, Branch First Aid Duty. Display only; nothing in this app reads it to decide anything, and no deployment name appears in any source file.",
+   "fieldname": "tor_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Terms of Reference",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "The stable business key, and the docname. A deployment and a deployment request point at these terms by this key, so relabelling the terms next year never rewrites what happened this year. This follows core's rule that configuration vocabularies are keyed by their stable business key while records about people and places get opaque IDs.",
+   "fieldname": "tor_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The programme of work these terms are written under. Optional, because a society that runs standing duties rather than programmes has terms belonging to no project, and the terms written before this field existed belong to none either. Where it is set, the project is printed at the head of the terms of reference and its own closure stops new terms being written under it. A deployment reaches its project through its terms and never stores a second copy of the answer.",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "VMMS Project"
+  },
+  {
+   "default": "1",
+   "description": "An inactive Terms of Reference keeps the deployments already run under it but is refused for a new one, so retiring a piece of work does not erase its history.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "description": "What a deployment under these terms is for, in the society's own words. Read by whoever raises a request and by whoever approves it; never read by code.",
+   "fieldname": "purpose",
+   "fieldtype": "Small Text",
+   "label": "Purpose",
+   "translatable": 1
+  },
+  {
+   "fieldname": "placement_section",
+   "fieldtype": "Section Break",
+   "label": "Where It Applies"
+  },
+  {
+   "description": "The part of the organisational tree these terms may be used in: that node and everything beneath it. A deployment or a request anchored outside it is refused. Left empty, the terms apply anywhere, which is what a society that has not narrowed them means. Containment is decided by core's geo adapter, so no depth and no level name is assumed.",
+   "fieldname": "geo_scope",
+   "fieldtype": "Link",
+   "label": "Geo Scope",
+   "options": "Geo Node"
+  },
+  {
+   "fieldname": "column_break_placement",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "How many days a deployment under these terms usually runs for. A default offered when a request is raised, never a rule: the deployment's own start and end dates are what govern. Zero means the society has no usual length for this work.",
+   "fieldname": "default_duration_days",
+   "fieldtype": "Int",
+   "label": "Usual Duration (Days)"
+  },
+  {
+   "fieldname": "governance_section",
+   "fieldtype": "Section Break",
+   "label": "Governance"
+  },
+  {
+   "default": "direct",
+   "description": "Whether a request to deploy under these terms needs somebody to authorise it. direct: there is no approver, and the request is fulfilled by whoever raises it. routed: the VMMS approval engine routes it to a resolved person, who approves or rejects it, and the request cannot become a deployment until they do. This is the same shape a membership type's approval_mode has, and it is read the same way: deployment/services/approval.py dispatches through two tables keyed by this value, and no source file compares it to a Terms of Reference name or to a stage label. Choosing routed requires a VMMS Approval Workflow governing VMMS Deployment Request; without one the request is refused, loudly, rather than quietly deploying unapproved.",
+   "fieldname": "approval_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval Mode",
+   "options": "direct\nrouted",
+   "reqd": 1
+  },
+  {
+   "fieldname": "requirements_section",
+   "fieldtype": "Section Break",
+   "label": "Requirements"
+  },
+  {
+   "description": "The certifications a volunteer needs to be a candidate for this work. Each row is either mandatory (a hard filter) or desirable (a preference that ranks). Matching computes whether a held certification has lapsed at the moment of asking, so a volunteer whose training expired yesterday drops out of the candidate list today without anything having been written down.",
+   "fieldname": "required_certifications",
+   "fieldtype": "Table",
+   "label": "Required Certifications",
+   "options": "VMMS Deployment Requirement"
+  },
+  {
+   "fieldname": "responsibilities_section",
+   "fieldtype": "Section Break",
+   "label": "Responsibilities"
+  },
+  {
+   "description": "What a volunteer deployed under these terms is expected to do, in the society's own words. This is the substance of a terms of reference for the person reading it, and it is deliberately free text: a structured task vocabulary would be a second list to reconcile with every society's own paperwork.",
+   "fieldname": "responsibilities",
+   "fieldtype": "Text",
+   "label": "Responsibilities",
+   "translatable": 1
+  },
+  {
+   "description": "Anything about these terms that is not a field.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-06 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS Terms of Reference",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "tor_name",
+ "track_changes": 1
+}

@@ -1,0 +1,375 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-08-03 09:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "applicant_section",
+  "naming_series",
+  "red_profile",
+  "column_break_applicant",
+  "applied_on",
+  "identity_card_section",
+  "applicant_identity",
+  "citizenship_section",
+  "country_of_citizenship",
+  "residency_type",
+  "column_break_citizenship",
+  "home_geo_node",
+  "country_of_residence",
+  "residence_address",
+  "placement_section",
+  "geo_node",
+  "outcome_section",
+  "volunteer",
+  "declaration_section",
+  "skills",
+  "languages",
+  "column_break_declaration",
+  "availability",
+  "motivation",
+  "prior_experience",
+  "identification_section",
+  "id_type",
+  "column_break_identification",
+  "id_number",
+  "intake_section",
+  "applicant_first_name",
+  "applicant_last_name",
+  "applicant_phone",
+  "column_break_intake",
+  "applicant_gender",
+  "applicant_date_of_birth",
+  "questions_section",
+  "custom_answers",
+  "approval_section",
+  "approval_state",
+  "approval_stage",
+  "column_break_approval",
+  "approval_stage_entered_on",
+  "approval_decisions"
+ ],
+ "fields": [
+  {
+   "default": "VAPP-.#####",
+   "description": "The opaque docname series. Nothing about the applicant, the place or the year goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "VAPP-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "applicant_section",
+   "fieldtype": "Section Break",
+   "label": "Applicant"
+  },
+  {
+   "description": "Who is applying, as onerc_core's identity spine. The application stores no name, email or phone of its own. This is also the field an approval workflow names as its applicant_field, which is how the engine's re-application cooldown identifies the same person across two applications.",
+   "fieldname": "red_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Red Profile",
+   "options": "Red Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_applicant",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "description": "When the application was made. Display and reporting only; the approval clock is approval_stage_entered_on, which the engine owns.",
+   "fieldname": "applied_on",
+   "fieldtype": "Date",
+   "label": "Applied On"
+  },
+  {
+   "fieldname": "identity_card_section",
+   "fieldtype": "Section Break",
+   "label": "Applicant Identity"
+  },
+  {
+   "description": "Who this applicant is, read live from their Red Profile (name, email, phone) rather than a bare docname a coordinator would otherwise have to click through to. Nothing here is stored: correcting a Red Profile field corrects this card the next time this page opens.",
+   "fieldname": "applicant_identity",
+   "fieldtype": "HTML",
+   "label": "Applicant Identity"
+  },
+  {
+   "fieldname": "citizenship_section",
+   "fieldtype": "Section Break",
+   "label": "Citizenship & Residency"
+  },
+  {
+   "description": "Which country this applicant is a citizen of. Always asked, and deliberately decoupled from where they live: a citizen of this society's own country living abroad, and a foreign national living and volunteering locally, both answer this question without residency deciding it. Defaults at creation to the society's own configured country (National Society Settings.country, read through vmmsx/volunteer/services/society.py, never a literal here) and is freely changeable. Copied onto the volunteer record at acceptance, and editable there from then on.",
+   "fieldname": "country_of_citizenship",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Citizenship",
+   "options": "Country",
+   "reqd": 1
+  },
+  {
+   "default": "Local",
+   "description": "Where this applicant lives, as a toggle. Local is the default, because most applicants live where they will serve. Abroad asks a different pair of questions below instead of forcing an overseas address into a Geo Node this app has no business inventing.",
+   "fieldname": "residency_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Residency",
+   "options": "Local\nAbroad",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_citizenship",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.residency_type == \"Local\"",
+   "description": "Where this applicant lives, captured through the same cascading geo picker as Serving Branch below: region down to whatever the society's lowest configured level is, never a hardcoded level name. Asked only when residency is Local, and it is not the same question as Serving Branch: this is where they live, not where they will serve. Serving Branch defaults from this field when it is left blank, because most people serve near home; a coordinator may always override that default. Required before this application can be submitted. Recorded on the applicant's Red Profile as core's own home_geo_node, which is where every later screen reads Home Area from.",
+   "fieldname": "home_geo_node",
+   "fieldtype": "Link",
+   "label": "Home Area",
+   "options": "Geo Node"
+  },
+  {
+   "depends_on": "eval:doc.residency_type == \"Abroad\"",
+   "description": "Which country this applicant currently lives in, asked only when residency is Abroad. Distinct from citizenship: a citizen of this society's own country may live anywhere, and this field is where, not who. Required before this application can be submitted.",
+   "fieldname": "country_of_residence",
+   "fieldtype": "Link",
+   "label": "Country of Residence",
+   "options": "Country"
+  },
+  {
+   "depends_on": "eval:doc.residency_type == \"Abroad\"",
+   "description": "A free-text address abroad, asked only when residency is Abroad. There is no Geo Node to anchor an address outside the society's own organisational tree. Required before this application can be submitted.",
+   "fieldname": "residence_address",
+   "fieldtype": "Small Text",
+   "label": "Address Abroad"
+  },
+  {
+   "fieldname": "placement_section",
+   "fieldtype": "Section Break",
+   "label": "Where They Would Serve"
+  },
+  {
+   "description": "ACC-02. The organisational anchor, and the place the approval engine routes from: where this volunteer will SERVE, never where they live. That is Home Area above, or Country of Residence for somebody Abroad; the two are deliberately different questions so a coordinator is never left guessing which one a Geo Node on this record answers. A Link, never free text, and mandatory at creation: an unplaced application cannot be seen by geo scoping or routed to an approver, so it would exist with nobody able to act on it. Which levels are permitted is the governing VMMS Approval Workflow's allowed_anchor_levels (ACC-03), never a constant here. Defaults from Home Area when residency is Local and this is left blank, because most people serve near home, and a coordinator may always override it; an applicant living Abroad has no home area to default from and must say explicitly where they will serve. Becomes the volunteer's Serving Branch at acceptance.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Serving Branch",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "fieldname": "outcome_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "description": "The volunteer this application became. Written once, by vmmsx/volunteer/services/application.py, when the approval settles as Approved, and it is the record of that having happened, which is what makes acceptance idempotent rather than something that could run twice. Empty until then, and empty forever on an application that was rejected.",
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Volunteer",
+   "options": "VMMS Volunteer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declaration_section",
+   "fieldtype": "Section Break",
+   "label": "Declared at Application"
+  },
+  {
+   "description": "What this applicant says they can do, as a multi-select of the society's own VMMS Skill vocabulary. Replaces a free-text declared-skills field: a structured Link is something a coordinator can filter and query, and a sentence never was. Copied onto the volunteer record at acceptance, and the volunteer's copy is the current truth from then on; this one stays as the declaration made on the day and the two are meant to diverge. Never read as a certification: what a volunteer is certified to do is VMMS Certification.",
+   "fieldname": "skills",
+   "fieldtype": "Table MultiSelect",
+   "label": "Skills",
+   "options": "VMMS Skill Selector"
+  },
+  {
+   "description": "Languages this applicant speaks, as a multi-select of Frappe's own Language doctype, reused rather than reinvented: the same doctype core already links from Red Profile and National Society Settings. Copied onto the volunteer record at acceptance. Read by the coordinator deciding this application; never read by code.",
+   "fieldname": "languages",
+   "fieldtype": "Table MultiSelect",
+   "label": "Languages Spoken",
+   "options": "VMMS Language Selector"
+  },
+  {
+   "fieldname": "column_break_declaration",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When this applicant says they can serve, as a multi-select of the society's own VMMS Availability Slot vocabulary. Copied onto the volunteer record at acceptance, where it becomes the current answer a coordinator can filter on and edit; this one stays as what was said on the day.",
+   "fieldname": "availability",
+   "fieldtype": "Table MultiSelect",
+   "label": "Availability",
+   "options": "VMMS Availability Selector"
+  },
+  {
+   "description": "Why this applicant wants to volunteer, as a multi-select of the society's own VMMS Motivation vocabulary, because people volunteer for more than one reason at once and a single free-text field could never separate them out. Deliberately NOT copied onto the volunteer record: why somebody applied is a fact about the applying, and a current-state copy would be a field somebody could edit to rewrite what was said. Read by the approver deciding this application; never read by code.",
+   "fieldname": "motivation",
+   "fieldtype": "Table MultiSelect",
+   "label": "Motivation",
+   "options": "VMMS Motivation Selector"
+  },
+  {
+   "description": "Relevant volunteering or other experience the applicant offers, in their own words. Context for the approver deciding this application. Never read by code, and not evidence of a qualification: what a volunteer is certified to do is VMMS Certification.",
+   "fieldname": "prior_experience",
+   "fieldtype": "Small Text",
+   "label": "Prior Experience"
+  },
+  {
+   "fieldname": "identification_section",
+   "fieldtype": "Section Break",
+   "label": "Identification"
+  },
+  {
+   "description": "Which kind of identity document this applicant is presenting, from core's own Identification Type vocabulary. Optional on Red Profile itself, since not everyone has identification captured there yet, but mandatory here: this application cannot be submitted without one (see vmmsx/volunteer/services/application.py::assert_ready). Written to the applicant's Red Profile identifications table when the application is submitted, reusing core's existing table rather than a second identity store.",
+   "fieldname": "id_type",
+   "fieldtype": "Link",
+   "label": "ID Type",
+   "options": "Identification Type"
+  },
+  {
+   "fieldname": "column_break_identification",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The document number for ID Type, captured alongside it. Required before this application can be submitted, for the same reason ID Type is, and written to the applicant's Red Profile identifications table alongside it.",
+   "fieldname": "id_number",
+   "fieldtype": "Data",
+   "label": "ID Number"
+  },
+  {
+   "collapsible": 1,
+   "description": "A transient buffer between a public registration form and core's Red Profile, and never storage. A native Web Form writes one document, but registration needs two, so the form collects what a profile needs here and vmmsx/registration/services/intake.py writes it to Red Profile and blanks it before the row is saved. Every field in this section is empty on a saved application, which is the same rule that keeps a name off the satellite.",
+   "fieldname": "intake_section",
+   "fieldtype": "Section Break",
+   "label": "Registration Intake"
+  },
+  {
+   "description": "The applicant's given name, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved application. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_first_name",
+   "fieldtype": "Data",
+   "label": "Applicant First Name",
+   "no_copy": 1
+  },
+  {
+   "description": "The applicant's family name, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved application. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_last_name",
+   "fieldtype": "Data",
+   "label": "Applicant Last Name",
+   "no_copy": 1
+  },
+  {
+   "description": "A telephone number, for their Red Profile. Validated against the society's own configured pattern by core, never against a regex written here. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved application. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_phone",
+   "fieldtype": "Data",
+   "label": "Applicant Phone",
+   "no_copy": 1,
+   "options": "Phone"
+  },
+  {
+   "fieldname": "column_break_intake",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Gender, as core's own vocabulary lists it. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved application. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_gender",
+   "fieldtype": "Link",
+   "label": "Applicant Gender",
+   "no_copy": 1,
+   "options": "Gender"
+  },
+  {
+   "description": "Date of birth, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved application. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "fieldname": "applicant_date_of_birth",
+   "fieldtype": "Date",
+   "label": "Applicant Date of Birth",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "questions_section",
+   "fieldtype": "Section Break",
+   "label": "Society Questions"
+  },
+  {
+   "description": "What this society asks for beyond the standard form. The questions come from VMMS Application Question, and the wording beside each answer is a snapshot of what was asked.",
+   "fieldname": "custom_answers",
+   "fieldtype": "Table",
+   "label": "Answers",
+   "options": "VMMS Application Answer"
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "default": "Draft",
+   "description": "The approval engine's state. Owned entirely by vmmsx/approvals: this doctype declares the field and never writes it. docstatus is deliberately unused: an approvable document stays at docstatus 0 and this is its lifecycle.",
+   "fieldname": "approval_state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval State",
+   "options": "Draft\nSubmitted\nIn Review\nApproved\nRejected\nWithdrawn\nExpired",
+   "read_only": 1
+  },
+  {
+   "description": "The opaque row name of the approval stage under review. Engine-owned; never a stage's label, so relabelling a stage changes a screen and nothing else.",
+   "fieldname": "approval_stage",
+   "fieldtype": "Data",
+   "label": "Approval Stage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When the current stage was entered, and the SLA clock the approval engine measures a breach against.",
+   "fieldname": "approval_stage_entered_on",
+   "fieldtype": "Datetime",
+   "label": "Stage Entered On",
+   "read_only": 1
+  },
+  {
+   "description": "The approval audit trail: who decided what, at which stage, when and why. Written only by the engine.",
+   "fieldname": "approval_decisions",
+   "fieldtype": "Table",
+   "label": "Approval Decisions",
+   "options": "VMMS Approval Decision"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-11 14:49:17.545954",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Volunteer Application",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "red_profile",
+ "track_changes": 1
+}

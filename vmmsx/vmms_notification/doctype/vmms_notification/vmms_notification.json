@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-10 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "delivery_section",
+  "naming_series",
+  "recipient",
+  "announcement",
+  "column_break_delivery",
+  "delivered_on",
+  "read_on",
+  "is_read"
+ ],
+ "fields": [
+  {
+   "default": "NTF-.#####",
+   "description": "The opaque docname series. Neither the recipient nor the announcement goes in the primary key, so a person's address is not derivable from a docname somebody saw.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "NTF-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivery_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "description": "Whose copy this is. The login, because a notification is something a person opens when they sign in, and somebody with no login has nowhere to open it. Resolved from the recipient's Red Profile at fan-out time and never from an address typed anywhere.",
+   "fieldname": "recipient",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Recipient",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "description": "Which announcement this is a copy of. The wording lives there and is read through this link rather than copied here: an announcement corrected after it went out is corrected for everybody, and a thousand copies of a paragraph are a thousand chances for the correction to miss one.",
+   "fieldname": "announcement",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Announcement",
+   "options": "VMMS Announcement",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_delivery",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When this copy was created. Distinct from the announcement's own published_on, because somebody who joins a branch after an announcement went out is not retrospectively sent it, and this is the field that says so.",
+   "fieldname": "delivered_on",
+   "fieldtype": "Datetime",
+   "label": "Delivered On",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Whether the recipient has read it. The only field on this record that anybody but the fan-out writes, and the only thing a recipient may change about their own copy.",
+   "fieldname": "is_read",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Read"
+  },
+  {
+   "description": "When they read it. Kept alongside the flag rather than derived from it, so a society asking whether an urgent advisory actually reached people has an answer with a time on it.",
+   "fieldname": "read_on",
+   "fieldtype": "Datetime",
+   "label": "Read On",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Notification",
+ "name": "VMMS Notification",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

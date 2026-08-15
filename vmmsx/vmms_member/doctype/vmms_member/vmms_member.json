@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-02 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "identity_card",
+  "standing_section",
+  "standing_indicator",
+  "memberships_section",
+  "memberships_held",
+  "history_section",
+  "verification_history",
+  "register_section",
+  "naming_series",
+  "red_profile",
+  "column_break_identity",
+  "status",
+  "joined_on",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "MEM-.#####",
+   "description": "The opaque docname series. A member is never keyed by an email or a membership number. Mutable data does not go in a primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "MEM-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "Who this person is, read from their Red Profile every time this page opens and stored nowhere on this record.",
+   "fieldname": "identity_card",
+   "fieldtype": "HTML",
+   "label": "Identity Card"
+  },
+  {
+   "fieldname": "standing_section",
+   "fieldtype": "Section Break",
+   "label": "Standing"
+  },
+  {
+   "description": "What this person is to the society right now, worked out from the memberships below when the page opened.",
+   "fieldname": "standing_indicator",
+   "fieldtype": "HTML",
+   "label": "Standing"
+  },
+  {
+   "fieldname": "memberships_section",
+   "fieldtype": "Section Break",
+   "label": "Memberships"
+  },
+  {
+   "description": "Every membership this person holds, at every branch you are entitled to see, with how each one was paid for.",
+   "fieldname": "memberships_held",
+   "fieldtype": "HTML",
+   "label": "Memberships Held"
+  },
+  {
+   "fieldname": "history_section",
+   "fieldtype": "Section Break",
+   "label": "Verification History"
+  },
+  {
+   "description": "Who approved or verified this person's memberships, and when. Read from the approval decisions on each record.",
+   "fieldname": "verification_history",
+   "fieldtype": "HTML",
+   "label": "Verification History"
+  },
+  {
+   "fieldname": "register_section",
+   "fieldtype": "Section Break",
+   "label": "Register"
+  },
+  {
+   "description": "The person, as onerc_core's identity spine. This is the only identity this record holds: no name, email or phone is stored here, because a second copy of a person is a second answer to who they are. Read those through Red Profile.",
+   "fieldname": "red_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Red Profile",
+   "options": "Red Profile",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Prospective",
+   "description": "What this person is to the society, and the truth of it: the affiliation row on Red Profile is a summary written from here, never the other way round. Written by the membership services, not by hand.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Prospective\nActive\nLapsed\nTerminated",
+   "read_only": 1
+  },
+  {
+   "description": "When this person first became an active member. Set once, at the first activation, and never moved by a later renewal.",
+   "fieldname": "joined_on",
+   "fieldtype": "Date",
+   "label": "Joined On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "Anything the membership office needs to record about this person's membership that is not a field.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Member",
+ "name": "VMMS Member",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "red_profile",
+ "track_changes": 1
+}

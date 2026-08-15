@@ -1,0 +1,140 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-03 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "holder_section",
+  "naming_series",
+  "volunteer",
+  "certification_type",
+  "column_break_holder",
+  "completion_date",
+  "expiry_date",
+  "provenance_section",
+  "source_mapping",
+  "column_break_provenance",
+  "reference_number",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "CERT-.#####",
+   "description": "The opaque docname series. Nothing about the volunteer, the certification or the year goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "CERT-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "holder_section",
+   "fieldtype": "Section Break",
+   "label": "Held By"
+  },
+  {
+   "description": "Whose certification this is. Identity is read through the volunteer's Red Profile, never copied onto this record.",
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Volunteer",
+   "options": "VMMS Volunteer",
+   "reqd": 1
+  },
+  {
+   "description": "Which certification this is, and where its validity period comes from. One row per volunteer per type: a renewal updates the completion and expiry dates on the row that is already there rather than adding a second, so there is never a question of which of two rows is current.",
+   "fieldname": "certification_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Certification Type",
+   "options": "VMMS Certification Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_holder",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When the training was completed. The one date a human enters, and the date the whole expiry calculation starts from.",
+   "fieldname": "completion_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Completion Date",
+   "reqd": 1
+  },
+  {
+   "description": "When this certification stops being valid: the completion date plus the type's configured validity period, recomputed on every save so a society changing the period brings its held certifications with it. Empty when the type never expires. Note what is deliberately absent: there is no lapsed field anywhere on this doctype. Whether a certification has lapsed is derived from this date at the moment of asking by volunteer/services/certification.py::is_lapsed(), so it can never be stale and no scheduled job has to flip it.",
+   "fieldname": "expiry_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Expiry Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "provenance_section",
+   "fieldtype": "Section Break",
+   "label": "Provenance"
+  },
+  {
+   "description": "The course mapping that awarded this certification, when it came from a completed course rather than being recorded by hand. Written by the learning seam, and the reason a repeated completion updates this row instead of creating another. Empty for a certification an administrator entered directly, which is an equally ordinary way to hold one.",
+   "fieldname": "source_mapping",
+   "fieldtype": "Link",
+   "label": "Awarded By Course Mapping",
+   "options": "VMMS Course Mapping",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_provenance",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The certificate or serial number the issuing body printed, if there is one. The society's own reference for an external document; nothing in this app reads it.",
+   "fieldname": "reference_number",
+   "fieldtype": "Data",
+   "label": "Reference Number"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "Anything about this certification that is not a field: who trained them, what was waived, why the date is what it is.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-03 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Certification",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

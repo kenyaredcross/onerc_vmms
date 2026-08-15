@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-02 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sequence",
+  "stage_label",
+  "required_role",
+  "routing_section",
+  "resolution_rule",
+  "geo_level",
+  "fixed_geo_node",
+  "column_break_routing",
+  "completion_rule",
+  "can_reject",
+  "is_optional",
+  "sla_section",
+  "sla_days",
+  "column_break_sla",
+  "on_sla_breach"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "description": "Order within In Review. Ascending. Gaps are allowed; duplicates are not.",
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sequence",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "description": "Display only. Nothing in the engine reads this to decide anything; stages are identified by row, ordered by sequence.",
+   "fieldname": "stage_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Stage Label",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "columns": 2,
+   "description": "The Frappe role an approver must hold. Routing resolves against roles, never capabilities.",
+   "fieldname": "required_role",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Required Role",
+   "options": "Role",
+   "reqd": 1
+  },
+  {
+   "fieldname": "routing_section",
+   "fieldtype": "Section Break",
+   "label": "Routing"
+  },
+  {
+   "default": "nearest_ancestor",
+   "description": "<b>nearest_ancestor</b>: walk up from the document's Geo Node and stop at the first node where anybody holds the role. <b>at_level</b>: resolve at a named Geo Level, whatever is nearer. <b>fixed_node</b>: resolve at one named node, wherever the document sits.",
+   "fieldname": "resolution_rule",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Resolution Rule",
+   "options": "nearest_ancestor\nat_level\nfixed_node",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.resolution_rule == 'at_level'",
+   "description": "Which level the decision belongs to, by policy. Per society, and never an assumed depth or label.",
+   "fieldname": "geo_level",
+   "fieldtype": "Link",
+   "label": "Geo Level",
+   "mandatory_depends_on": "eval:doc.resolution_rule == 'at_level'",
+   "options": "Geo Level"
+  },
+  {
+   "depends_on": "eval:doc.resolution_rule == 'fixed_node'",
+   "description": "The one node this stage always resolves at: a national desk, a headquarters unit.",
+   "fieldname": "fixed_geo_node",
+   "fieldtype": "Link",
+   "label": "Fixed Geo Node",
+   "mandatory_depends_on": "eval:doc.resolution_rule == 'fixed_node'",
+   "options": "Geo Node"
+  },
+  {
+   "fieldname": "column_break_routing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "single",
+   "description": "How many of the resolved approvers must act. <b>single</b> and <b>any_of</b> advance on the first decision; <b>all_of</b> waits for every resolved approver.",
+   "fieldname": "completion_rule",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Completion Rule",
+   "options": "single\nany_of\nall_of",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "description": "Whether this stage may terminate the application, or only endorse it onward. At least one stage of a workflow must be able to reject.",
+   "fieldname": "can_reject",
+   "fieldtype": "Check",
+   "label": "Can Reject"
+  },
+  {
+   "default": "0",
+   "description": "Skipped when nobody resolves. A stage that is <i>not</i> optional and resolves nobody blocks and escalates; it never silently passes.",
+   "fieldname": "is_optional",
+   "fieldtype": "Check",
+   "label": "Is Optional"
+  },
+  {
+   "fieldname": "sla_section",
+   "fieldtype": "Section Break",
+   "label": "Service Level"
+  },
+  {
+   "default": "5",
+   "description": "Days the resolved approver has before this stage is breached. Every stage has a clock, because an application rotting in an absent approver's queue is the failure mode this exists to catch.",
+   "fieldname": "sla_days",
+   "fieldtype": "Int",
+   "label": "SLA Days",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_sla",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "escalate_up",
+   "description": "<b>escalate_up</b>: route to the nearest holder above, never to whoever is already late. <b>notify_only</b>: remind, do not re-route. <b>none</b>: an explicit society choice to let it sit.",
+   "fieldname": "on_sla_breach",
+   "fieldtype": "Select",
+   "label": "On SLA Breach",
+   "options": "escalate_up\nnotify_only\nnone",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-02 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Approvals",
+ "name": "VMMS Approval Stage",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

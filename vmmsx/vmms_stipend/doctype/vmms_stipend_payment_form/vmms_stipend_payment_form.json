@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-06 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "form_section",
+  "naming_series",
+  "progress_report",
+  "geo_node",
+  "column_break_form",
+  "period_from",
+  "period_to",
+  "currency",
+  "attendance_section",
+  "attendance",
+  "totals_section",
+  "total_payable",
+  "approval_section",
+  "approval_state",
+  "column_break_approval",
+  "submitted_on",
+  "submitted_by"
+ ],
+ "fields": [
+  {
+   "default": "SPF-.#####",
+   "description": "The opaque docname series. Nothing about the supervisor, the place or the period goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "SPF-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "form_section",
+   "fieldtype": "Section Break",
+   "label": "Payment Form"
+  },
+  {
+   "description": "The progress report this form pays for. Required, because a payment form is the money half of a period somebody already described: the report says what happened and who was involved, and this form may pay only the volunteers it names, for days inside its period.",
+   "fieldname": "progress_report",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Progress Report",
+   "options": "VMMS Stipend Progress Report",
+   "reqd": 1
+  },
+  {
+   "description": "ACC-02. Where this payment belongs, and the anchor geo scoping filters this form by. A Link, never free text, and mandatory at creation. Held on this record rather than read through the report, because core's geo scoping filters each doctype on a field of its own; it is checked against the report's anchor on every save, so the two can never disagree.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Geo Node",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_form",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The first day this form pays for. Copied from the paired report on every save and read-only here, so a form and its report cannot drift into covering different periods.",
+   "fieldname": "period_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Period From",
+   "read_only": 1
+  },
+  {
+   "description": "The last day this form pays for. Copied from the paired report on every save, like the first.",
+   "fieldname": "period_to",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Period To",
+   "read_only": 1
+  },
+  {
+   "description": "The currency every amount on this form is in. Filled from the society's configured currency in National Society Settings when the form is created, and never assumed in code: no currency appears as a literal anywhere in this module.",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attendance_section",
+   "fieldtype": "Section Break",
+   "label": "Daily Attendance"
+  },
+  {
+   "description": "The grid: one row per volunteer per day, carrying that day's attendance and that day's stipend. Deliberately tall rather than wide. A row per day answers who attended on a given day with one filter, and the total payable for a volunteer with one sum, while a column per day would put the calendar in the schema and break the moment a period ran longer than the columns.",
+   "fieldname": "attendance",
+   "fieldtype": "Table",
+   "label": "Attendance",
+   "options": "VMMS Stipend Attendance Line"
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Total"
+  },
+  {
+   "description": "The sum of every line's stipend, recomputed on every save. Derived and read-only: a total anybody could type is a total that will one day disagree with the rows it claims to add up. Per volunteer totals are not stored at all, for the same reason; they are computed from the same rows on request.",
+   "fieldname": "total_payable",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Payable",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "default": "Draft",
+   "description": "Where this form stands. Submitting it moves it to Pending Departmental Approval, which is a dead end on purpose: stipend approval runs from the supervisor to the head of the volunteer's department, departmental resolution is not built, and routing this through the geo engine instead would send it to a geo parent rather than to the head of department. Nobody can approve it, including an administrator, and the refusal says so. Owned by vmmsx/stipend/services/approval.py.",
+   "fieldname": "approval_state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval State",
+   "options": "Draft\nPending Departmental Approval",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When this form was submitted for approval. Cleared if it is withdrawn back to Draft, so the field always describes the submission that is currently outstanding.",
+   "fieldname": "submitted_on",
+   "fieldtype": "Datetime",
+   "label": "Submitted On",
+   "read_only": 1
+  },
+  {
+   "description": "Who submitted it. The supervisor half of the supervisor to head of department chain, recorded now so the eventual routing has both ends of it.",
+   "fieldname": "submitted_by",
+   "fieldtype": "Link",
+   "label": "Submitted By",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-06 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Stipend",
+ "name": "VMMS Stipend Payment Form",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "AQN-.#####",
+ "creation": "2026-08-12 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "asked_section",
+  "asked_on",
+  "question_label",
+  "column_break_asked",
+  "sequence",
+  "is_active",
+  "answer_section",
+  "field_type",
+  "is_required",
+  "column_break_answer",
+  "options",
+  "guidance_section",
+  "help_text"
+ ],
+ "fields": [
+  {
+   "fieldname": "asked_section",
+   "fieldtype": "Section Break",
+   "label": "Asked On"
+  },
+  {
+   "description": "The registration this question is added to, for example VMMS Volunteer Application or VMMS Membership. A question belongs to one of them; ask it on both by creating it twice.",
+   "fieldname": "asked_on",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Asked On",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "description": "The question exactly as the applicant reads it. Plain text, rendered as a string.",
+   "fieldname": "question_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Question",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_asked",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Order on the form, lowest first. Questions sharing a number fall back to the order they were created in.",
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sequence"
+  },
+  {
+   "default": "1",
+   "description": "Unticked, the question stops being asked of new applicants. Answers already given are kept, because they were part of an application somebody decided.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "answer_section",
+   "fieldtype": "Section Break",
+   "label": "Answer"
+  },
+  {
+   "default": "Data",
+   "description": "What kind of answer this is. Attach asks the applicant for a file, which is how a society collects a chief's letter or a reference.",
+   "fieldname": "field_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Answer Type",
+   "options": "Data\nSmall Text\nSelect\nCheck\nDate\nInt\nAttach",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Required questions must be answered before the application can be submitted. A question added after an application was submitted is never applied to it retrospectively.",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "label": "Required"
+  },
+  {
+   "fieldname": "column_break_answer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.field_type == \"Select\"",
+   "description": "One choice per line. An answer the list does not contain is refused, so the vocabulary here is the whole of what may be recorded.",
+   "fieldname": "options",
+   "fieldtype": "Small Text",
+   "label": "Choices",
+   "mandatory_depends_on": "eval:doc.field_type == \"Select\""
+  },
+  {
+   "fieldname": "guidance_section",
+   "fieldtype": "Section Break",
+   "label": "Guidance"
+  },
+  {
+   "description": "Shown under the question, for anything the applicant needs to know before answering. Optional, and plain text like the question itself.",
+   "fieldname": "help_text",
+   "fieldtype": "Small Text",
+   "label": "Help Text"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-12 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Application Question",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "sequence",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

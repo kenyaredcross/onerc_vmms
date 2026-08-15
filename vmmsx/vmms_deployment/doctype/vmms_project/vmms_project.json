@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-12 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "identity_section",
+  "project_name",
+  "column_break_identity",
+  "status",
+  "placement_section",
+  "geo_node",
+  "column_break_placement",
+  "start_date",
+  "end_date",
+  "detail_section",
+  "summary",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "PRJ-.#####",
+   "description": "The opaque identifier. A project is renamed, moved and rescoped over its life, so none of that may sit in its primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "PRJ-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "What this society calls the programme of work: Coastal Flood Response, National Blood Drive, Ramadan Food Distribution. Display only; nothing in this app reads it to decide anything.",
+   "fieldname": "project_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Project",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Planned",
+   "description": "Where the project has got to. A closed set with a fixed transition table in deployment/services/project.py, for the same reason a deployment's status is code: each value means something the server acts on. Completed and Cancelled are terminal, because a project that ended is history and reopening it would silently change what its deployments were run under.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Planned\nActive\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "placement_section",
+   "fieldtype": "Section Break",
+   "label": "Placement"
+  },
+  {
+   "description": "The organisational anchor, required at creation (ACC-02). The project belongs to this node and everything beneath it, and geo scoping decides who sees it. There are no unplaced projects: one would be invisible to every coordinator and reachable by nobody.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Geo Node",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_placement",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When the programme of work begins. A planning figure: a deployment carries its own dates and is what governs who served when.",
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "description": "When the programme of work is expected to end. Must not fall before the start date.",
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "detail_section",
+   "fieldtype": "Section Break",
+   "label": "Detail"
+  },
+  {
+   "description": "What the project is for, in the society's own words. Printed at the head of every terms of reference written under it; never read by code.",
+   "fieldname": "summary",
+   "fieldtype": "Small Text",
+   "label": "Summary",
+   "translatable": 1
+  },
+  {
+   "description": "Anything about this project that is not a field.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-12 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS Project",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "project_name",
+ "track_changes": 1
+}

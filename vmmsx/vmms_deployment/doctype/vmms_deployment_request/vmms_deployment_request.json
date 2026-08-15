@@ -1,0 +1,205 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-06 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "request_section",
+  "naming_series",
+  "terms_of_reference",
+  "column_break_request",
+  "geo_node",
+  "volunteers_requested",
+  "is_published",
+  "period_section",
+  "needed_from",
+  "column_break_period",
+  "needed_until",
+  "justification_section",
+  "justification",
+  "outcome_section",
+  "deployment",
+  "approval_section",
+  "approval_state",
+  "approval_stage",
+  "column_break_approval",
+  "approval_stage_entered_on",
+  "approval_decisions"
+ ],
+ "fields": [
+  {
+   "default": "DREQ-.#####",
+   "description": "The opaque docname series. Nothing about the requester, the place or the year goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "DREQ-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "request_section",
+   "fieldtype": "Section Break",
+   "label": "Request"
+  },
+  {
+   "description": "The work volunteers are being asked for. It carries the requirements matching will filter candidates against, and it carries the answer to whether this request needs an approver at all, in its approval_mode. Both are the society's, written once on the terms rather than argued about per request.",
+   "fieldname": "terms_of_reference",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Terms of Reference",
+   "options": "VMMS Terms of Reference",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_request",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "ACC-02. Where the volunteers are needed, and the place the approval engine routes from when the terms of reference ask for a routed approval. A Link, never free text, and mandatory at creation: an unplaced request cannot be seen by geo scoping or routed to an approver, so it would exist with nobody able to act on it. Which levels are permitted is the governing VMMS Approval Workflow's allowed_anchor_levels (ACC-03) where one exists, and the society's vmms_deployment_anchor_level otherwise.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Geo Node",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "description": "How many volunteers are being asked for. Greater than zero, because a request for nobody is not a request. It is what the request asked for and not a quota the roster is held to: a deployment that ran with fewer people than were requested is an ordinary outcome, and the record of both numbers is more useful than a refusal.",
+   "fieldname": "volunteers_requested",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Volunteers Requested",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_section",
+   "fieldtype": "Section Break",
+   "label": "When"
+  },
+  {
+   "description": "The first day the volunteers are needed. Carried onto the deployment this request becomes, and the date matching asks its certification questions about, so that somebody whose training expires before the work begins is not offered as a candidate.",
+   "fieldname": "needed_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Needed From",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_period",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The last day the volunteers are needed. Never earlier than the first.",
+   "fieldname": "needed_until",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Needed Until",
+   "reqd": 1
+  },
+  {
+   "fieldname": "justification_section",
+   "fieldtype": "Section Break",
+   "label": "Justification"
+  },
+  {
+   "description": "Why these volunteers are needed, in the requester's own words. Read by whoever approves the request; never read by code.",
+   "fieldname": "justification",
+   "fieldtype": "Small Text",
+   "label": "Justification"
+  },
+  {
+   "fieldname": "outcome_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "description": "The deployment this request became. Written once, by deployment/services/request.py, when the request's approval requirement is settled, and it is the record of that having happened, which is what makes fulfilment idempotent rather than something that could run twice. Empty until then, and empty forever on a request that was rejected.",
+   "fieldname": "deployment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Deployment",
+   "options": "VMMS Deployment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "default": "Draft",
+   "description": "The approval engine's state. Owned entirely by vmmsx/approvals: this doctype declares the field and never writes it. It stays at Draft for a request whose terms of reference ask for no approver, which is deliberate: the absence of an approval is not an approval, and what governs fulfilment is the settled predicate rather than a state somebody set. docstatus is deliberately unused.",
+   "fieldname": "approval_state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Approval State",
+   "options": "Draft\nSubmitted\nIn Review\nApproved\nRejected\nWithdrawn\nExpired",
+   "read_only": 1
+  },
+  {
+   "description": "The opaque row name of the approval stage under review. Engine owned; never a stage's label, so relabelling a stage changes a screen and nothing else.",
+   "fieldname": "approval_stage",
+   "fieldtype": "Data",
+   "label": "Approval Stage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When the current stage was entered, and the SLA clock the approval engine measures a breach against.",
+   "fieldname": "approval_stage_entered_on",
+   "fieldtype": "Datetime",
+   "label": "Stage Entered On",
+   "read_only": 1
+  },
+  {
+   "description": "The approval audit trail: who decided what, at which stage, when and why. Written only by the engine.",
+   "fieldname": "approval_decisions",
+   "fieldtype": "Table",
+   "label": "Approval Decisions",
+   "options": "VMMS Approval Decision"
+  },
+  {
+   "default": "0",
+   "description": "Whether this need is advertised to the society's volunteers on the portal's opportunity board. It ships off, and off is the whole of the rule: nothing is visible to a volunteer until somebody who can see the request decides to publish it. Publishing shows the terms of reference, the place, the dates and how many people are wanted. It never shows the justification, which is written for the approver.",
+   "fieldname": "is_published",
+   "fieldtype": "Check",
+   "label": "Advertise to Volunteers"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS Deployment Request",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "terms_of_reference",
+ "track_changes": 1
+}

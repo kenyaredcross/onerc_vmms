@@ -1,0 +1,119 @@
+{#
+	The shipped card. One template body for both kinds, because a volunteer card
+	and a member card differ in what is written on them and not in what they
+	are: `card_kind` says which, and the rows that only one of them has are
+	guarded individually.
+
+	Everything here is an administrator's to rewrite. Nothing in the code reads
+	this markup, and no field below is required to be present.
+
+	Laid out in a table rather than with flexbox because this is rendered to PDF
+	by wkhtmltopdf as often as it is rendered to a screen, and its flexbox
+	support is not something to build a society's identity card on.
+#}
+<div class="vmms-card">
+	<table class="vmms-card-frame" cellpadding="0" cellspacing="0">
+		<tr>
+			<td class="vmms-card-body">
+				<table cellpadding="0" cellspacing="0" width="100%">
+					<tr>
+						<td class="vmms-card-lockup">
+							{% if society_logo %}
+							<img class="vmms-card-logo" src="{{ society_logo }}" alt="{{ society_name or '' }}">
+							{% endif %}
+							<div class="vmms-card-society">{{ society_name or "" }}</div>
+							<div class="vmms-card-kind">{{ card_kind or "" }}</div>
+						</td>
+					</tr>
+
+					<tr>
+						<td class="vmms-card-name">
+							{# Drawn only when the society has a photograph of this person.
+							   An empty slot is left empty rather than filled with a
+							   placeholder: a card is shown to a steward comparing it with
+							   a face, and a grey silhouette on it is worse than nothing. #}
+							{% if holder_photo %}
+							<img class="vmms-card-photo" src="{{ holder_photo }}" alt="">
+							{% endif %}
+							<span class="vmms-card-holder">{{ holder_name }}</span>
+						</td>
+					</tr>
+
+					<tr>
+						<td>
+							<table class="vmms-card-details" cellpadding="0" cellspacing="0" width="100%">
+								<tr>
+									<td class="vmms-card-label">No.</td>
+									<td class="vmms-card-value vmms-card-mono">{{ record_id }}</td>
+								</tr>
+								{% if membership_type %}
+								<tr>
+									<td class="vmms-card-label">Type</td>
+									<td class="vmms-card-value">{{ membership_type }}</td>
+								</tr>
+								{% endif %}
+								{% if geo_path %}
+								<tr>
+									<td class="vmms-card-label">Branch</td>
+									<td class="vmms-card-value">{{ geo_path }}</td>
+								</tr>
+								{% endif %}
+								{% if status %}
+								<tr>
+									<td class="vmms-card-label">Status</td>
+									<td class="vmms-card-value">{{ status }}</td>
+								</tr>
+								{% endif %}
+								{% if joined_on or valid_from %}
+								<tr>
+									<td class="vmms-card-label">Since</td>
+									<td class="vmms-card-value">{{ joined_on or valid_from }}</td>
+								</tr>
+								{% endif %}
+								{% if valid_to %}
+								<tr>
+									<td class="vmms-card-label">Valid to</td>
+									<td class="vmms-card-value">{{ valid_to }}</td>
+								</tr>
+								{% endif %}
+							</table>
+						</td>
+					</tr>
+				</table>
+			</td>
+
+			<td class="vmms-card-check">
+				{% if verify_qr %}
+				<img class="vmms-card-qr" src="{{ verify_qr }}" alt="">
+				<div class="vmms-card-checkword">Scan to check</div>
+				{% endif %}
+			</td>
+		</tr>
+	</table>
+
+	<div class="vmms-card-foot">Issued {{ issued_on }}. This card remains the property of the society.</div>
+</div>
+
+<style>
+	.vmms-card { max-width: 460px; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+	.vmms-card-frame { width: 100%; border-collapse: separate; border: 1px solid #d9dee5; border-radius: 14px; background: #ffffff; overflow: hidden; }
+	.vmms-card-body { padding: 20px 18px; vertical-align: top; }
+	.vmms-card-check { width: 108px; padding: 20px 18px 20px 0; text-align: center; vertical-align: top; }
+	.vmms-card-lockup { padding-bottom: 14px; }
+	.vmms-card-logo { max-height: 30px; max-width: 130px; display: block; margin-bottom: 8px; }
+	.vmms-card-society { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7684; }
+	.vmms-card-kind { font-size: 15px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #c8102e; margin-top: 2px; }
+	.vmms-card-name { font-size: 21px; font-weight: 800; color: #16202c; padding-bottom: 12px; line-height: 1.2; }
+	/* Floated rather than laid out in a flex row: this body is rendered to PDF by
+	   wkhtmltopdf as well as to the screen, and float is the one of the two that
+	   both renderers agree about. */
+	.vmms-card-photo { float: left; width: 46px; height: 46px; margin-right: 10px; border-radius: 4px; object-fit: cover; }
+	.vmms-card-holder { display: block; overflow: hidden; }
+	.vmms-card-details { font-size: 12px; }
+	.vmms-card-label { width: 68px; padding: 2px 0; color: #8b95a1; text-transform: uppercase; font-size: 9.5px; font-weight: 700; letter-spacing: .07em; vertical-align: top; }
+	.vmms-card-value { padding: 2px 0; color: #16202c; font-weight: 600; }
+	.vmms-card-mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+	.vmms-card-qr { width: 92px; height: 92px; display: block; }
+	.vmms-card-checkword { font-size: 8.5px; text-transform: uppercase; letter-spacing: .07em; color: #8b95a1; margin-top: 6px; }
+	.vmms-card-foot { font-size: 10px; color: #8b95a1; margin-top: 8px; }
+</style>

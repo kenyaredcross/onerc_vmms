@@ -1,0 +1,82 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.py~
+
+# Distribution / packaging
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+tags
+MANIFEST
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# The trailing slash above matches a directory, and `vmmsx/public/node_modules`
+# is a symlink to the app's own — which git sees as a file, not a directory, so
+# the rule above misses it. Named without one.
+node_modules
+
+# Vite build output (generated; regenerate with `bench build --app vmmsx`)
+vmmsx/public/portal/
+
+# IDEs and editors
+.vscode/
+.vs/
+.idea/
+.kdev4/
+*.kdev4
+*.DS_Store
+*.swp
+*.comp.js
+.wnf-lang-status
+*debug.log
+
+# Helix Editor
+.helix/
+
+# Aider AI Chat
+.aider*
+
+# Generated documentation
+#
+# The guide is a build artefact: `vmmsx/docs/` is the source, `/docs/` is the
+# .docx it produces. Committing the binary would put a file nobody can diff
+# under review, and it goes stale the moment a field changes. Regenerate it
+# instead — see the documentation rule in CLAUDE.md.
+#
+# Anchored with a leading slash on purpose: a bare `docs/` matches at any depth
+# and would ignore the generator's own source alongside its output.
+/docs/
+
+# Assistant instructions
+#
+# CLAUDE.md is working guidance for whoever is editing this app, not part of
+# what the app ships. Kept on disk and out of the repository, the same way
+# onerc_payments keeps its own. Anchored to the root so a future one nested in
+# a module is a deliberate decision rather than an accident of this rule.
+/CLAUDE.md

@@ -1,0 +1,78 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-11 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "entry_type",
+  "author",
+  "posted_on",
+  "note",
+  "proof"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "description": "What kind of entry this is, in a closed vocabulary this app owns rather than a society's. It is display only: the task's own status is the state machine, and nothing in the code branches on this value. It exists so a thread reads as a conversation instead of a column of undifferentiated notes.",
+   "fieldname": "entry_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Entry",
+   "options": "assigned\naccepted\nquestion\nanswer\nprogress requested\nprogress\nsubmitted\ncompleted\nreturned\ncancelled",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "description": "Who wrote it. The login, taken from the session at the moment the entry was written and never passed in by a caller, so a thread cannot be made to say somebody said something they did not.",
+   "fieldname": "author",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Author",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "description": "When it was written. Stamped by the service, not by the form, so the order of a conversation is the order it happened in.",
+   "fieldname": "posted_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Posted On",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 4,
+   "description": "What was said, in the author's own words. Plain text, and rendered as a string wherever it is shown, for the same reason an announcement body is plain: writing on a record somebody else will open is not permission to run markup in their browser.",
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Note"
+  },
+  {
+   "description": "A photograph attached to this entry, most usefully a volunteer's evidence that the work was done. One image per entry rather than a gallery on the task: proof belongs to the moment it was offered, and a second photograph is a second entry with its own note and its own time.",
+   "fieldname": "proof",
+   "fieldtype": "Attach Image",
+   "label": "Attachment"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-11 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Task",
+ "name": "VMMS Task Update",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

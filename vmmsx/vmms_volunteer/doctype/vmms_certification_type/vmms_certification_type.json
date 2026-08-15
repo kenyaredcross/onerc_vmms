@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:certification_type_key",
+ "creation": "2026-08-03 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "certification_type_name",
+  "certification_type_key",
+  "column_break_identity",
+  "is_active",
+  "description",
+  "validity_section",
+  "validity_days",
+  "column_break_validity",
+  "blocks_deployment_when_lapsed"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "What this society calls this certification: First Aid, Psychosocial Support, Water and Sanitation. Display only; nothing in this app reads it to decide anything, and no course or certification name appears in any source file.",
+   "fieldname": "certification_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Certification Type",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "The stable business key, and the docname. A held certification points at its type by this key, so relabelling the type never rewrites history or breaks a report. This follows core's rule that configuration vocabularies are keyed by their stable business key while records about people and places get opaque IDs.",
+   "fieldname": "certification_type_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Type Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "An inactive type keeps the certifications already held under it but is no longer offered for new ones, so retiring a type does not invalidate anybody's training.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "description": "What this certification covers and who needs it, in the society's own words.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "translatable": 1
+  },
+  {
+   "fieldname": "validity_section",
+   "fieldtype": "Section Break",
+   "label": "Validity"
+  },
+  {
+   "default": "0",
+   "description": "How long a certification of this type stays valid, in days, counted from the date it was completed. This is the whole of what drives expiry: a held certification's expiry_date is its completion_date plus this number, computed on save from configuration and never assumed to be a year. Zero means this type never expires, and a certification of a never-expiring type can never read as lapsed.",
+   "fieldname": "validity_days",
+   "fieldtype": "Int",
+   "label": "Validity (Days)"
+  },
+  {
+   "fieldname": "column_break_validity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Whether a lapsed certification of this type makes its holder non-deployable. On by default, which is the ordinary rule: a volunteer whose first aid training has expired is not deployable on it. A society may switch it off for a type it treats as a record rather than a requirement. Read by volunteer/services/certification.py::deployability(), which derives the answer on every call and stores nothing.",
+   "fieldname": "blocks_deployment_when_lapsed",
+   "fieldtype": "Check",
+   "label": "A Lapse Blocks Deployment"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-03 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Certification Type",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "certification_type_name",
+ "track_changes": 1
+}

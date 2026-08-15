@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>VMMS Portal</title>
+		{%- for href in bundle_css %}
+		<link rel="stylesheet" href="{{ href }}" />
+		{%- endfor %}
+	</head>
+	<body>
+		<div id="root"></div>
+		<script>
+			window.csrf_token = "{{ csrf_token }}";
+			window.frappe = { boot: { sitename: "{{ sitename }}" } };
+		</script>
+		{%- if bundle_js %}
+		<script type="module" src="{{ bundle_js }}"></script>
+		{%- else %}
+		<p style="font-family: sans-serif; padding: 40px">Frontend bundle not built yet. Run the Vite build.</p>
+		{%- endif %}
+	</body>
+</html>

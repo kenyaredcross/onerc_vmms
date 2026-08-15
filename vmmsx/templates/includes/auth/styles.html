@@ -1,0 +1,475 @@
+{#-
+	The look of the two pages in `vmmsx/www/` — sign in, and set a password.
+
+	**Written out here rather than pulled from `login.bundle.css`.** Frappe's own
+	login stylesheet lays a single centred card on a plain ground, which is a
+	different page from the one this is; keeping it and overriding it would mean
+	every rule below fighting a rule above it, and a framework upgrade quietly
+	changing which one won. So the framework sheet is dropped and this one is
+	complete — including the four rules in it that are *behaviour* rather than
+	decoration, marked below, because `login.js` depends on them and would
+	otherwise show every panel of the page at once.
+
+	The palette and the type are the portal's, from `portal/tailwind.config.js`,
+	written as literals here for the one reason a literal is ever right in this
+	app: a Jinja page cannot import a Tailwind config. Nothing else about the
+	society is hardcoded — the mark, the name and every sentence are read at
+	render time by `vmmsx/auth_page.py`.
+
+	Light only, deliberately. This is the same page in every client, and the
+	navy panel *is* the dark surface.
+-#}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+	rel="stylesheet"
+	href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@600;700;800&display=swap"
+>
+<style>
+	:root {
+		--vm-ink: #0B0C0E;
+		--vm-navy: #011E41;
+		--vm-navy-deep: #06101F;
+		--vm-signal: #F5333F;
+		--vm-signal-dark: #C4242E;
+		--vm-body: #5B6472;
+		--vm-strong: #3D4652;
+		--vm-faint: #8A93A1;
+		--vm-hairline: #E7EAF0;
+		--vm-hairline-strong: #D8DEE9;
+		--vm-page: #F4F6FA;
+		--vm-display: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+		--vm-sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+	}
+
+	html, body {
+		margin: 0;
+		padding: 0;
+		background: #fff;
+	}
+
+	body {
+		font-family: var(--vm-sans);
+		color: var(--vm-ink);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	/* The framework's website chrome, which this page does not use. Both are
+	   emptied by the templates as well; this is belt and braces for a site that
+	   has set a banner or a footer template. */
+	.web-footer, .navbar, .banner { display: none !important; }
+
+	/* ---- behaviour, not decoration -------------------------------------
+	   `login.js` toggles panels with jQuery and relies on these four rules for
+	   the state of the page before its first line runs. Without them the sign-in
+	   page paints every panel it owns, stacked, for one frame. */
+	.hidden { display: none !important; }
+	.hide { display: none; }
+	.for-forgot, .for-signup, .for-login-with-email-link, .for-email-login { display: none; }
+	.field-error { display: none; }
+	.form-group.invalid .field-error { display: block; }
+	/* -------------------------------------------------------------------- */
+
+	.auth {
+		display: flex;
+		min-height: 100vh;
+		min-height: 100svh;
+	}
+
+	/* ---- the panel ---------------------------------------------------- */
+
+	.auth-brand {
+		position: relative;
+		flex: 0 0 44%;
+		max-width: 620px;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		gap: 48px;
+		padding: 34px 40px 44px;
+		background: var(--vm-navy);
+		overflow: hidden;
+		isolation: isolate;
+	}
+
+	/* The photograph is a wash, not a picture: the wording sits on it and has to
+	   stay readable whatever a society uploads, so it is dimmed here rather than
+	   trusted to be dark. A society with no photograph gets the flat navy, which
+	   is a finished panel rather than a gap. */
+	.auth-brand-photo {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		opacity: 0.22;
+		z-index: -2;
+	}
+
+	.auth-brand::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(180deg, rgba(1, 30, 65, 0.55) 0%, rgba(1, 30, 65, 0.92) 68%, #011E41 100%);
+		z-index: -1;
+	}
+
+	.auth-lockup {
+		display: inline-flex;
+		align-items: center;
+		gap: 9px;
+		text-decoration: none;
+		align-self: flex-start;
+	}
+
+	.auth-lockup img {
+		height: 32px;
+		width: auto;
+		object-fit: contain;
+	}
+
+	.auth-lockup svg { color: var(--vm-signal); }
+
+	.auth-lockup span {
+		font-family: var(--vm-display);
+		font-weight: 800;
+		font-size: 16px;
+		letter-spacing: -0.01em;
+		line-height: 1.2;
+		color: #fff;
+	}
+
+	.auth-brand-words { max-width: 26ch; }
+
+	.auth-brand-headline {
+		margin: 0;
+		font-family: var(--vm-display);
+		font-weight: 800;
+		font-size: 34px;
+		line-height: 1.14;
+		letter-spacing: -0.022em;
+		color: #fff;
+	}
+
+	.auth-brand-body {
+		margin: 18px 0 0;
+		max-width: 34ch;
+		font-size: 13.5px;
+		line-height: 1.65;
+		color: rgba(255, 255, 255, 0.66);
+	}
+
+	.auth-brand-credit {
+		margin: 22px 0 0;
+		font-size: 10.5px;
+		letter-spacing: 0.02em;
+		color: rgba(255, 255, 255, 0.38);
+	}
+
+	/* ---- the form side ------------------------------------------------- */
+
+	.auth-form {
+		flex: 1 1 auto;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 48px 32px;
+	}
+
+	.auth-form-inner { width: 100%; max-width: 384px; }
+
+	.page-card { width: 100%; }
+
+	.auth-eyebrow {
+		margin: 0 0 10px;
+		font-family: var(--vm-display);
+		font-size: 10px;
+		font-weight: 800;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--vm-signal);
+	}
+
+	.auth-title {
+		margin: 0;
+		font-family: var(--vm-display);
+		font-size: 30px;
+		font-weight: 800;
+		letter-spacing: -0.025em;
+		line-height: 1.15;
+		color: var(--vm-ink);
+	}
+
+	.auth-sub, .page-card-subtitle {
+		margin: 12px 0 0;
+		font-size: 13.5px;
+		line-height: 1.6;
+		color: var(--vm-body);
+	}
+
+	.page-card-head { margin-bottom: 26px; }
+
+	form { margin: 0; }
+
+	.page-card-body { display: flex; flex-direction: column; gap: 18px; }
+
+	.form-group { display: flex; flex-direction: column; gap: 6px; }
+
+	.form-label-row {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	label {
+		margin: 0;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--vm-strong);
+	}
+
+	.email-field, .password-field { position: relative; width: 100%; }
+
+	input[type="text"], input[type="email"], input[type="password"] {
+		width: 100%;
+		box-sizing: border-box;
+		height: 44px;
+		padding: 0 13px;
+		border: 1px solid var(--vm-hairline-strong);
+		border-radius: 6px;
+		background: #fff;
+		font-family: var(--vm-sans);
+		font-size: 14px;
+		color: var(--vm-ink);
+		transition: border-color 0.12s ease, box-shadow 0.12s ease;
+	}
+
+	input::placeholder { color: var(--vm-faint); }
+
+	input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
+		outline: none;
+		border-color: var(--vm-navy);
+		box-shadow: 0 0 0 3px rgba(1, 30, 65, 0.1);
+	}
+
+	.password-field input { padding-right: 42px; }
+	.password-field input::-ms-reveal { display: none; }
+
+	.toggle-password {
+		position: absolute;
+		right: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 17px;
+		height: 17px;
+		stroke: var(--vm-faint);
+		fill: none;
+		cursor: pointer;
+		z-index: 2;
+	}
+
+	.toggle-password:hover { stroke: var(--vm-strong); }
+
+	.page-card-body.invalid input,
+	.form-group.invalid input { border-color: var(--vm-signal); }
+
+	.field-error {
+		margin: 0;
+		font-size: 12px;
+		color: var(--vm-signal-dark);
+	}
+
+	.forgot-link, .auth-quiet-link {
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--vm-body);
+		text-decoration: none;
+	}
+
+	.forgot-link:hover, .auth-quiet-link:hover { color: var(--vm-navy); text-decoration: underline; }
+
+	.page-card-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 24px;
+	}
+
+	.es-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		box-sizing: border-box;
+		min-height: 46px;
+		padding: 0 18px;
+		border: 1px solid transparent;
+		border-radius: 6px;
+		font-family: var(--vm-display);
+		font-size: 13.5px;
+		font-weight: 700;
+		text-decoration: none;
+		cursor: pointer;
+		transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+	}
+
+	.es-button[data-variant="solid"] {
+		background: var(--vm-signal);
+		color: #fff;
+	}
+
+	.es-button[data-variant="solid"]:hover:not(:disabled) { background: var(--vm-signal-dark); }
+
+	.es-button[data-variant="solid"]:disabled {
+		background: var(--vm-hairline-strong);
+		color: #fff;
+		cursor: not-allowed;
+	}
+
+	.btn-login-option {
+		background: #fff;
+		border-color: var(--vm-hairline-strong);
+		color: var(--vm-strong);
+	}
+
+	.btn-login-option:hover { border-color: var(--vm-navy); color: var(--vm-navy); }
+
+	.btn-login-option img, .btn-login-option svg { width: 17px; height: 17px; }
+
+	.es-button:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--vm-signal);
+	}
+
+	.es-spinner {
+		width: 15px;
+		height: 15px;
+		border: 2px solid rgba(255, 255, 255, 0.4);
+		border-top-color: #fff;
+		border-radius: 50%;
+		display: inline-block;
+		animation: vm-spin 0.6s linear infinite;
+	}
+
+	@keyframes vm-spin { to { transform: rotate(360deg); } }
+
+	/* The rule the framework draws between the password and everything else. */
+	.auth-or {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin: 4px 0;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--vm-faint);
+	}
+
+	.auth-or::before, .auth-or::after {
+		content: "";
+		flex: 1 1 auto;
+		height: 1px;
+		background: var(--vm-hairline);
+	}
+
+	.social-logins { margin-top: 2px; }
+	.social-login-buttons { display: flex; flex-direction: column; gap: 10px; }
+
+	.sign-up-message {
+		margin: 26px 0 0;
+		text-align: center;
+		font-size: 13px;
+		color: var(--vm-body);
+	}
+
+	.sign-up-message a {
+		font-weight: 700;
+		color: var(--vm-signal);
+		text-decoration: none;
+	}
+
+	.sign-up-message a:hover { color: var(--vm-signal-dark); text-decoration: underline; }
+
+	.resend-link { margin: 0; font-size: 12.5px; color: var(--vm-body); text-align: center; }
+	.resend-link a { font-weight: 700; color: var(--vm-signal); text-decoration: none; }
+
+	/* ---- banners ------------------------------------------------------- */
+
+	.es-alert {
+		display: flex;
+		align-items: flex-start;
+		gap: 9px;
+		padding: 11px 13px;
+		border: 1px solid;
+		border-radius: 6px;
+		font-size: 13px;
+		line-height: 1.5;
+	}
+
+	.es-alert svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+
+	.es-alert[data-theme="red"] {
+		border-color: #F6CDD0;
+		background: #FEF3F3;
+		color: var(--vm-signal-dark);
+	}
+
+	.es-alert[data-theme="green"] {
+		border-color: #C4E4D0;
+		background: #F1FAF4;
+		color: #1B7A46;
+	}
+
+	.invalid-login { animation: vm-wiggle 0.4s ease-in-out; }
+
+	@keyframes vm-wiggle {
+		0%, 100% { transform: translateX(0); }
+		20% { transform: translateX(-4px); }
+		40% { transform: translateX(4px); }
+		60% { transform: translateX(-3px); }
+		80% { transform: translateX(3px); }
+	}
+
+	/* ---- the password strength row on the set-password page ------------ */
+
+	.password-strength-indicator, .password-hint, .password-mismatch-message {
+		margin: 0;
+		font-size: 12px;
+		color: var(--vm-body);
+	}
+
+	.password-mismatch-message.text-danger, .text-danger { color: var(--vm-signal-dark); }
+	.text-ink-red-8 { color: var(--vm-signal-dark); }
+	.text-ink-orange-8 { color: #B26A00; }
+	.text-ink-blue-8 { color: #1B5FA8; }
+	.text-ink-green-8 { color: #1B7A46; }
+	.password-strength-value { font-weight: 700; }
+
+	/* ---- narrow ---------------------------------------------------------
+	   The panel becomes a header rather than disappearing: it carries the mark,
+	   which is the one thing a person needs to know they are on their society's
+	   page and not somebody's phishing copy of it. The headline goes with it —
+	   below 860px it would be three-quarters of a phone screen of marketing
+	   above the field somebody opened the page to type in. */
+
+	@media (max-width: 860px) {
+		.auth { display: block; }
+
+		.auth-brand {
+			max-width: none;
+			min-height: 0;
+			gap: 0;
+			padding: 20px 24px;
+		}
+
+		.auth-brand-words, .auth-brand-photo { display: none; }
+		.auth-lockup img { height: 26px; }
+
+		.auth-form { padding: 40px 24px 56px; align-items: flex-start; }
+		.auth-form-inner { margin: 0 auto; }
+		.auth-title { font-size: 26px; }
+	}
+</style>

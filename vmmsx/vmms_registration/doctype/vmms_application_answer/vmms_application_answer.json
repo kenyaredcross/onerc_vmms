@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-12 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "question",
+  "question_label",
+  "field_type",
+  "answer_value",
+  "answer_file"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "description": "The question this answers, by its opaque name. Identity, not wording: rewording a question must not orphan the answers already given to it.",
+   "fieldname": "question",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Question",
+   "options": "VMMS Application Question",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "description": "The question as it read when it was answered. A snapshot, so a society rewording its form does not rewrite what somebody was asked.",
+   "fieldname": "question_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Question Asked",
+   "read_only": 1
+  },
+  {
+   "description": "The answer type as it stood when the answer was given. Says how to read the value beside it, so nothing has to go back to the question to render an old answer.",
+   "fieldname": "field_type",
+   "fieldtype": "Data",
+   "label": "Answer Type",
+   "read_only": 1
+  },
+  {
+   "columns": 4,
+   "description": "The answer, as text. A tick is stored as 1 or 0 and a date in the site's own format; the type beside it says which.",
+   "fieldname": "answer_value",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Answer"
+  },
+  {
+   "columns": 2,
+   "depends_on": "eval:doc.field_type == \"Attach\"",
+   "description": "The file the applicant uploaded, where the question asked for one.",
+   "fieldname": "answer_file",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "File"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-12 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Application Answer",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

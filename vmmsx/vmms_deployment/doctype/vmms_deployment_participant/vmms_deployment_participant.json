@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-06 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "volunteer",
+  "response",
+  "joined_on",
+  "left_on",
+  "invited_on",
+  "responded_on",
+  "response_note",
+  "participation_notes"
+ ],
+ "fields": [
+  {
+   "columns": 4,
+   "description": "A volunteer who is on this deployment. This row is what the deployment time log's ownership rule reads: a volunteer may log time against a deployment only if they appear here, checked on the server at save, so that participation cannot be fabricated by a caller who simply names a deployment. Identity is read through the volunteer's Red Profile and is never copied onto this row.",
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Volunteer",
+   "options": "VMMS Volunteer",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "description": "Where this volunteer's invitation stands. Blank is the ordinary state of a roster row a coordinator added directly, meaning nobody was asked, and it is deliberately not the same as invited. Being on the roster is what participation means either way: a declined invitation is recorded, not erased, and an unanswered one never blocks a time log, because a coordinator who lists somebody who actually served must not have that record invalidated by a missing reply.",
+   "fieldname": "response",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Response",
+   "options": "\ninvited\naccepted\ndeclined",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "description": "When this volunteer joined the deployment, if they joined after it began. Reporting only: being on the roster is what participation means, so a log is not refused for falling outside these dates.",
+   "fieldname": "joined_on",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Joined On"
+  },
+  {
+   "columns": 2,
+   "description": "When this volunteer left the deployment, if they left before it ended. Reporting only, and deliberately not a removal: somebody who served two weeks of a month stays on the roster, because they were there and their time logs are theirs. Removing them would make their own logs unfilable.",
+   "fieldname": "left_on",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Left On"
+  },
+  {
+   "description": "When the invitation was sent. Blank on a row nobody was asked about, which is what distinguishes a coordinator's direct addition from an invitation still waiting for a reply.",
+   "fieldname": "invited_on",
+   "fieldtype": "Datetime",
+   "label": "Invited On",
+   "read_only": 1
+  },
+  {
+   "description": "When the volunteer answered. Kept beside the response rather than derived from it, so a society asking how long people take to reply has a figure with a time on it.",
+   "fieldname": "responded_on",
+   "fieldtype": "Datetime",
+   "label": "Responded On",
+   "read_only": 1
+  },
+  {
+   "description": "What the volunteer said when they answered, most usefully why they could not go. Written by the volunteer through their own portal and never by a coordinator, which is why it is separate from the coordinator's own notes below.",
+   "fieldname": "response_note",
+   "fieldtype": "Small Text",
+   "label": "Response Note",
+   "read_only": 1
+  },
+  {
+   "description": "What this volunteer is doing on the deployment, in the coordinator's own words. Free text on purpose: a structured vocabulary of deployment roles is a society's paperwork, and a Select typed into a JSON file would be this app inventing one. Never read by code.",
+   "fieldname": "participation_notes",
+   "fieldtype": "Data",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-06 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS Deployment Participant",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

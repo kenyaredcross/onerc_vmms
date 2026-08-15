@@ -1,0 +1,234 @@
+/* Fonts before Tailwind: an @import has to be the first rule in the file.
+   Loaded from Google rather than self-hosted, and the font stacks in
+   tailwind.config.js fall back to system-ui, so a bench with no outbound
+   network renders the same layout in a different face rather than breaking. */
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	html {
+		-webkit-text-size-adjust: 100%;
+	}
+
+	body {
+		@apply bg-white font-sans text-ink antialiased;
+	}
+
+	/* Every interactive element gets a visible focus ring. Set once here rather
+	   than per component, because the one that gets forgotten is the one
+	   somebody navigating by keyboard needs.
+
+	   Two rules, not one, because the two kinds of control are not the same
+	   thing. A link or a button is a target you land on, and the signal ring
+	   with an offset says so loudly. A text field is somewhere you are already
+	   typing: browsers match :focus-visible on a text input even when it was
+	   *clicked*, so a red offset ring appeared around every search box the
+	   moment somebody put a cursor in it, which reads as an error rather than
+	   as focus. Fields get the navy instead, tight to the control. */
+	:where(a, button, [tabindex]):focus-visible {
+		@apply outline-none ring-2 ring-signal ring-offset-2 ring-offset-white;
+	}
+
+	:where(input, select, textarea):focus-visible {
+		@apply outline-none ring-2 ring-navy/30 ring-offset-0;
+	}
+}
+
+@layer components {
+	.eyebrow {
+		@apply text-[10px] font-extrabold uppercase tracking-eyebrow text-signal;
+	}
+
+	/* One cell of a filter bar: an icon, a hidden label and a bare field, which
+	   together read as a single box. Focus belongs to the box. Ringing the
+	   `input` alone drew a rectangle around part of a control, cutting the
+	   search icon out of its own field, so the field carries no ring here and
+	   the wrapper takes it with :focus-within.
+
+	   Fully rounded, like every other thing on this page you can type into. A
+	   filter bar is a row of controls and it should read as one. */
+	.control {
+		@apply flex items-center gap-2 rounded-full px-4 py-2.5;
+	}
+
+	.control:focus-within {
+		@apply ring-2 ring-navy/25;
+	}
+
+	.control :where(input, select, textarea):focus-visible {
+		@apply ring-0 ring-offset-0;
+	}
+
+	.chev::after {
+		/* The chevron on every "read more" link in the design. A pseudo-element
+		   so it is never read aloud as a character by a screen reader. */
+		content: "›";
+		@apply ml-1.5 inline-block;
+	}
+
+	/* A card is told apart from the ground by *tone*, not by an outline.
+	   It used to carry a hairline border and no shadow, which on a near-white
+	   ground meant nine boxes of ruled feint. White on `page` plus a wide, soft,
+	   downward shadow says the same thing without drawing a single line, and it
+	   is what lets the radius read at 16px instead of looking like a rounded
+	   rectangle somebody drew. */
+	.card {
+		@apply rounded-card bg-white shadow-card;
+	}
+
+	/* The label that sits *outside* and above a card — "Your commitments",
+	   "Recent activity". The single most characteristic move in the reference
+	   set, and the reason its dashboards scan in one pass: the eye reads a
+	   column of short bold labels down the page and drops into whichever card
+	   it wanted, instead of reading nine card headings at nine different
+	   heights.
+
+	   Deliberately *not* uppercase and not letterspaced. `.eyebrow` is already
+	   that, it means "the thing above a title", and having two tiny tracked-out
+	   styles doing different jobs is how a page stops having a hierarchy. */
+	.section-label {
+		@apply font-display text-[13.5px] font-bold tracking-tight text-ink;
+	}
+
+	/* Figures that sit in a column — a stat tile, a table of hours, a count in a
+	   list row — so digits line up between rows and a number does not appear to
+	   change width when it ticks over. */
+	.tabular {
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Applied to the wrapper of an editable slot while edit mode is on, so an
+	   administrator can see the boundaries of what is editable rather than
+	   hunting for pencils. */
+	.editable-on {
+		@apply rounded-[3px] outline-dashed outline-1 outline-offset-2 outline-signal/40;
+	}
+
+	/* An article's body, which is core's Text Editor field and therefore arrives
+	   as HTML this app did not author. Tailwind's preflight strips every default
+	   margin and heading size, so without these an article renders as one
+	   undifferentiated wall of text. Scoped to this class so nothing else on the
+	   site inherits element-level styling. */
+	/* An unbroken token — a pasted URL, or a field somebody filled with one long
+	   run of characters — breaks mid-word rather than widening the page.
+	   `break-words` (overflow-wrap: break-word) only breaks *between* words and
+	   does nothing for a single 400-character token, which is exactly the case
+	   that stretched the event page past the viewport. */
+	.article-body {
+		overflow-wrap: anywhere;
+	}
+
+	.article-body > * + * {
+		@apply mt-4;
+	}
+
+	/* Wide content scrolls inside itself rather than pushing the page sideways.
+	   Neither is authored by this app: both come from another app's Text Editor
+	   field, so neither can be assumed to fit. */
+	.article-body pre {
+		@apply overflow-x-auto rounded-card bg-page p-4 text-[13px];
+	}
+
+	.article-body table {
+		@apply block w-full overflow-x-auto;
+	}
+
+	.article-body h2 {
+		@apply mt-8 font-display text-[19px] font-extrabold tracking-tight text-ink;
+	}
+
+	.article-body h3 {
+		@apply mt-6 font-display text-[16px] font-bold tracking-tight text-ink;
+	}
+
+	.article-body ul {
+		@apply list-disc space-y-1.5 pl-5;
+	}
+
+	.article-body ol {
+		@apply list-decimal space-y-1.5 pl-5;
+	}
+
+	.article-body a {
+		@apply font-semibold text-navy underline decoration-navy/30 underline-offset-2 hover:decoration-navy;
+	}
+
+	.article-body blockquote {
+		@apply border-l-2 border-signal pl-5 italic text-slate-strong;
+	}
+
+	.article-body img {
+		@apply my-6 w-full rounded-card;
+	}
+
+	.article-body strong {
+		@apply font-bold text-ink;
+	}
+}
+
+/* ------------------------------------------------------------------ motion */
+
+/* The registration wizard's step change. Movement carries the direction of
+   travel, which is the one thing a step counter cannot say on its own: going
+   back looks like going back. Keyed on the step index so React replays it. */
+@keyframes step-forward {
+	from {
+		opacity: 0;
+		transform: translate3d(14px, 0, 0);
+	}
+}
+
+@keyframes step-back {
+	from {
+		opacity: 0;
+		transform: translate3d(-14px, 0, 0);
+	}
+}
+
+@keyframes rise-in {
+	from {
+		opacity: 0;
+		transform: translate3d(0, 10px, 0);
+	}
+}
+
+@keyframes draw-tick {
+	from {
+		stroke-dashoffset: 26;
+	}
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+.step-forward {
+	animation: step-forward 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.step-back {
+	animation: step-back 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.rise-in {
+	animation: rise-in 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.tick-draw {
+	stroke-dasharray: 26;
+	animation: draw-tick 0.5s 0.12s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+/* Somebody who has asked their system for less movement gets the end state
+   immediately rather than a shorter version of the same animation. */
+@media (prefers-reduced-motion: reduce) {
+	.step-forward,
+	.step-back,
+	.rise-in,
+	.tick-draw {
+		animation: none;
+		stroke-dashoffset: 0;
+	}
+}

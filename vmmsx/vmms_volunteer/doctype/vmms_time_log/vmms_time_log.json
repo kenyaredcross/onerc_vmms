@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-03 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "log_section",
+  "naming_series",
+  "volunteer",
+  "log_type",
+  "column_break_log",
+  "log_category",
+  "geo_node",
+  "effort_section",
+  "activity_date",
+  "column_break_effort",
+  "hours",
+  "deployment_section",
+  "deployment",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "TLOG-.#####",
+   "description": "The opaque docname series. Nothing about the volunteer, the date or the place goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "TLOG-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "log_section",
+   "fieldtype": "Section Break",
+   "label": "Log"
+  },
+  {
+   "description": "Whose time this is. Identity is read through the volunteer's Red Profile, never copied onto this record.",
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Volunteer",
+   "options": "VMMS Volunteer",
+   "reqd": 1
+  },
+  {
+   "default": "general",
+   "description": "Which structural kind of log this is, and the only field on this record that changes what the server will accept. general: volunteering that stands on its own (training, an open day, office support), and which may never name a deployment. deployment: time served on a specific deployment, and constrained to deployments this volunteer actually took part in. This is a closed, code-owned set rather than a society's vocabulary, because each value names a different validation rule and a society adding a third value would produce a log nothing knows how to check. The society's own vocabulary is log_category next to it. Nothing branches on this value with a scattered comparison: volunteer/services/timelog.py holds one dispatch table keyed by it, exactly as the member module's approval_mode does. See deployment for the ownership rule the second kind carries.",
+   "fieldname": "log_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Log Type",
+   "options": "general\ndeployment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_log",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "How the society classifies this time for its own reporting: training, community event, office support. A configurable vocabulary a society extends freely, and deliberately separate from log_type: no code anywhere branches on a category value. Optional, because a society that does not categorise its volunteering should not be forced to.",
+   "fieldname": "log_category",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Category",
+   "options": "VMMS Time Log Category"
+  },
+  {
+   "description": "ACC-02. Where this time was served. Required on every log of every type, because every log happened somewhere: an unplaced log is invisible to geo scoping and cannot be reported on by the branch whose work it was. Enforced by the controller before the log_type dispatch runs, so it holds for a kind of log that has not been built yet as much as for one that has.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Geo Node",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "fieldname": "effort_section",
+   "fieldtype": "Section Break",
+   "label": "Effort"
+  },
+  {
+   "description": "The day the time was served. A log is filed against a date rather than a range, so a week of volunteering is a week of logs and each one can be placed and categorised separately.",
+   "fieldname": "activity_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Activity Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_effort",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "How many hours were served. Must be greater than zero, since a log of no time is not a record of anything, and no more than the hours in a day, since a log claiming more than that is a typo rather than a very long shift.",
+   "fieldname": "hours",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Hours",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "deployment_section",
+   "fieldtype": "Section Break",
+   "label": "Deployment"
+  },
+  {
+   "depends_on": "eval:doc.log_type == \"deployment\"",
+   "description": "Which deployment this time was served on. Two rules hold and both are enforced on the server by the controller, on every path a log can arrive by. A general log carrying a value here is rejected outright, because general volunteering is by definition not deployment time. A deployment log is rejected unless the deployment named here lists this volunteer on its participants. That second rule is ownership, not geo: being correctly placed in the right county does not make somebody a participant, so the picker filter is a convenience and the server check is the control. Fabricating participation by typing a deployment's name is therefore impossible rather than merely hidden.",
+   "fieldname": "deployment",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Deployment",
+   "mandatory_depends_on": "eval:doc.log_type == \"deployment\"",
+   "options": "VMMS Deployment"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "What the volunteer actually did, in whoever is filing the log's own words.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-03 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Time Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "activity_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

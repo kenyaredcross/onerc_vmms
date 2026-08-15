@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-02 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "governed_section",
+  "workflow_for",
+  "geo_node_field",
+  "column_break_governed",
+  "applicant_field",
+  "policy_section",
+  "allow_withdrawal",
+  "reapplication_cooldown_days",
+  "column_break_policy",
+  "application_expiry_days",
+  "anchor_section",
+  "allowed_anchor_levels",
+  "stages_section",
+  "stages"
+ ],
+ "fields": [
+  {
+   "fieldname": "governed_section",
+   "fieldtype": "Section Break",
+   "label": "Governed Document"
+  },
+  {
+   "description": "The doctype this workflow governs. One workflow per approvable doctype.",
+   "fieldname": "workflow_for",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Workflow For",
+   "options": "DocType",
+   "reqd": 1,
+   "search_index": 1,
+   "unique": 1
+  },
+  {
+   "default": "geo_node",
+   "description": "Fieldname on the governed doctype holding its Geo Node anchor. ACC-02: a Link, required at creation, never free text.",
+   "fieldname": "geo_node_field",
+   "fieldtype": "Data",
+   "label": "Geo Node Field",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_governed",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Fieldname identifying the applicant, used by the re-application cooldown. Empty falls back to the document's owner.",
+   "fieldname": "applicant_field",
+   "fieldtype": "Data",
+   "label": "Applicant Field"
+  },
+  {
+   "fieldname": "policy_section",
+   "fieldtype": "Section Break",
+   "label": "Policy"
+  },
+  {
+   "default": "1",
+   "description": "Whether an applicant may withdraw while the application is still open.",
+   "fieldname": "allow_withdrawal",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Allow Withdrawal"
+  },
+  {
+   "default": "0",
+   "description": "Days a rejected applicant must wait before applying again. 0 means no cooldown.",
+   "fieldname": "reapplication_cooldown_days",
+   "fieldtype": "Int",
+   "label": "Re-application Cooldown (Days)"
+  },
+  {
+   "fieldname": "column_break_policy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Days of inactivity after which an open application expires. 0 means applications never expire.",
+   "fieldname": "application_expiry_days",
+   "fieldtype": "Int",
+   "label": "Application Expiry (Days)"
+  },
+  {
+   "description": "ACC-03. Which levels of the hierarchy an application of this type may be anchored at. A society that deploys at county level and one that deploys at ward level configure this differently and change no code.",
+   "fieldname": "anchor_section",
+   "fieldtype": "Section Break",
+   "label": "Anchor Levels"
+  },
+  {
+   "description": "Empty means any active level is acceptable.",
+   "fieldname": "allowed_anchor_levels",
+   "fieldtype": "Table",
+   "label": "Allowed Anchor Levels",
+   "options": "VMMS Approval Anchor Level"
+  },
+  {
+   "description": "The stages of In Review, in sequence. At least one must be able to reject, or an application could only ever be approved.",
+   "fieldname": "stages_section",
+   "fieldtype": "Section Break",
+   "label": "Stages"
+  },
+  {
+   "fieldname": "stages",
+   "fieldtype": "Table",
+   "label": "Stages",
+   "options": "VMMS Approval Stage",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Approvals",
+ "name": "VMMS Approval Workflow",
+ "naming_rule": "",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "workflow_for",
+ "track_changes": 1
+}

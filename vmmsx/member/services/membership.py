@@ -1,0 +1,557 @@
+# Copyright (c) 2026, Nigel and contributors
+# For license information, please see license.txt
+
+"""The membership lifecycle — submit, activate, expire, cancel.
+
+**Activation is a predicate, not a sequence.** A membership becomes active when
+every requirement its type imposes has been met:
+
+    approval settled?   asked of approval.py   — routed types need a person,
+                                                 auto-on-payment types do not
+    payment settled?    asked of payment.py    — fee-free types need nothing
+
+Both are questions about *configuration*, never about which code path happened
+to run, and that is what makes `try_activate()` safe to call after any event and
+in any order. Payment can confirm before the approver looks, or after; the
+approver can approve a free membership with no payment in sight. There is no
+ordering bug to have, because there is no ordering.
+
+**One trigger point.** `on_update` re-evaluates the predicate after every save,
+so activation follows whatever just happened — an approval decision recorded by
+the engine, a payment confirmed by a gateway callback — without either of them
+needing to know that memberships activate. The logic itself lives in
+`try_activate()`, an idempotent service anyone may call directly; the hook only
+calls it.
+
+**Proof-of-Membership is the same predicate, one input widened.** A pre-rollout
+member paid before this system existed, so there is no gateway transaction to
+confirm — `membership_source` records that an approver verified an attached
+document instead, through the ordinary routed path. `_payment_settled()` is the
+only place that knows this: a proof-sourced membership answers the money
+question the moment its approval does, with no new activation rule and no
+change to `payment.py`, which stays exactly what MEM-01 says it is.
+
+**A lifetime membership is one that has no end date, and nothing more.** The
+type's `is_lifetime` says so; `activate()` leaves `valid_to` empty rather than
+computing an expiry, and every date-derived question in this module already
+reads an empty `valid_to` as "no window to close". There is no lifetime status,
+no lifetime branch in the activation predicate, and no sentinel date — see
+`_valid_to()`.
+
+**The affiliation row is written, never read.** `activate()` reports to core
+through `set_affiliation()`; nothing in this module or any other reads that row
+back to decide anything. This satellite is the truth (core's Design 2).
+"""
+
+import frappe
+from frappe import _
+from frappe.utils import add_days, cint, getdate, today
+
+from vmmsx.approvals.services import contract
+from vmmsx.member.services import approval, payment
+from vmmsx.registration.services import questions
+
+MEMBER_DOCTYPE = "VMMS Member"
+
+STATUS_DRAFT = "Draft"
+STATUS_AWAITING_PAYMENT = "Awaiting Payment"
+STATUS_AWAITING_APPROVAL = "Awaiting Approval"
+STATUS_ACTIVE = "Active"
+STATUS_EXPIRED = "Expired"
+STATUS_CANCELLED = "Cancelled"
+
+# The states from which a membership may still become active. A cancelled or
+# expired one may not be revived by a late payment landing on it.
+ACTIVATABLE = (STATUS_DRAFT, STATUS_AWAITING_PAYMENT, STATUS_AWAITING_APPROVAL)
+
+ACTIVATION_FLAG = "vmms_membership_activating"
+
+# Proof-of-Membership. Gateway is the ordinary path; Proof is a pre-rollout
+# member whose fee was paid before this system existed, verified by an approver
+# instead of a gateway. See _payment_settled() and assert_proof_consistent().
+SOURCE_GATEWAY = "Gateway"
+SOURCE_PROOF = "Proof"
+SOURCES = (SOURCE_GATEWAY, SOURCE_PROOF)
+
+
+def type_of(membership):
+	"""The membership's type record, read through the document cache."""
+	return frappe.get_cached_doc("VMMS Membership Type", membership.membership_type)
+
+
+def source(membership) -> str:
+	"""Which channel this membership's fee obligation was settled through."""
+	return membership.get("membership_source") or SOURCE_GATEWAY
+
+
+def is_proof(membership) -> bool:
+	return source(membership) == SOURCE_PROOF
+
+
+def is_lifetime(membership_type) -> bool:
+	"""Does this type confer a membership that never ends?
+
+	Takes the *type*, not the membership: whether a membership expires is a
+	property of the configuration it was created under, and asking it of the
+	type is what stops the answer from being reconstructed from whether
+	`valid_to` happens to be empty. A membership that has not activated yet has
+	no `valid_to` either, and it is not a lifetime one.
+	"""
+	return bool(membership_type.is_lifetime)
+
+
+def assert_proof_consistent(membership) -> None:
+	"""A proof-based membership names a routed type, and carries its evidence.
+
+	Called from the doctype's own `validate()`, on every save — the same moment
+	`validate_anchor()` enforces ACC-02. A proof marked against a type with no
+	approver would have nobody to look at what was attached, so the combination
+	is refused up front rather than left to sit unreachable in Awaiting Payment.
+	"""
+	if not is_proof(membership):
+		return
+
+	membership_type = type_of(membership)
+
+	if approval.mode(membership_type) != approval.MODE_ROUTED:
+		frappe.throw(
+			_(
+				"A proof-based membership needs an approver to verify what was attached, but"
+				" membership type {0} activates on payment with no approver. Choose a routed"
+				" membership type for a proof-based membership."
+			).format(frappe.bold(membership_type.membership_type_name)),
+			frappe.ValidationError,
+			title=_("Proof Needs An Approver"),
+		)
+
+	if not membership.get("proof_attachment"):
+		frappe.throw(
+			_(
+				"A proof-based membership needs the proof attached — a document or image showing"
+				" it was paid for before this system existed."
+			),
+			frappe.MandatoryError,
+			title=_("Proof Required"),
+		)
+
+
+def _payment_settled(membership, membership_type) -> bool:
+	"""Has the money question been answered — by a gateway, or by verified proof?
+
+	A proof-sourced membership's fee was paid before this system existed, so
+	`payment.is_settled()` would wait on a `paid_on` that no gateway will ever
+	set. `is_proof()` widens what counts as settled the same way a zero fee
+	already does; `payment.py` itself is untouched and never asked about proof
+	at all.
+	"""
+	return is_proof(membership) or payment.is_settled(membership, membership_type)
+
+
+# --- submission -----------------------------------------------------------
+
+
+def submit(membership) -> dict:
+	"""Put a membership into motion: request its fee, start its approval.
+
+	Idempotent. Called twice, the second call re-requests nothing and restarts
+	nothing — `payment.request` refuses a second transaction and
+	`approval.begin` hands an already-routed document back to the engine, which
+	re-syncs the queue rather than restarting review.
+	"""
+	membership_type = type_of(membership)
+
+	_assert_type_usable(membership_type)
+
+	# Before the fee is requested, deliberately. A society's own questions are as
+	# required as anything else on the form, and discovering that after a gateway
+	# has been asked for money would leave a transaction against an application
+	# that never went anywhere. A no-op until a society writes a question.
+	questions.assert_answered(membership)
+
+	# A proof-sourced membership was already paid for, outside this system —
+	# there is nothing for a gateway to collect, so it never asks for one, even
+	# when its type charges a fee.
+	if not is_proof(membership):
+		payment.request(membership, membership_type)
+
+	_set_pending_status(membership, membership_type)
+
+	membership.save()
+
+	# After the save, so the engine reads and writes a persisted document —
+	# engine.submit() saves it again itself.
+	approval.begin(membership, membership_type)
+
+	activated = try_activate(membership)
+
+	if activated:
+		return activated
+
+	# Not active yet, but the person is now known to the society as a
+	# prospective member. Reported to core's index so their profile shows the
+	# application rather than nothing at all until somebody approves it.
+	_sync_member(membership)
+
+	return status(membership)
+
+
+def _set_pending_status(membership, membership_type) -> None:
+	"""What this membership is waiting for, in the society's own configuration."""
+	if not _payment_settled(membership, membership_type):
+		membership.membership_status = STATUS_AWAITING_PAYMENT
+	elif not approval.is_settled(membership, membership_type):
+		membership.membership_status = STATUS_AWAITING_APPROVAL
+
+
+def _assert_type_usable(membership_type) -> None:
+	if membership_type.is_active:
+		return
+
+	frappe.throw(
+		_("Membership type {0} is not active and cannot take new memberships.").format(
+			frappe.bold(membership_type.membership_type_name)
+		),
+		frappe.ValidationError,
+		title=_("Inactive Membership Type"),
+	)
+
+
+# --- activation -----------------------------------------------------------
+
+
+def is_activatable(membership) -> bool:
+	"""Has everything this membership's type requires been met?"""
+	if membership.membership_status not in ACTIVATABLE:
+		return False
+
+	membership_type = type_of(membership)
+
+	return approval.is_settled(membership, membership_type) and _payment_settled(membership, membership_type)
+
+
+def try_activate(membership) -> dict | None:
+	"""Activate if the predicate holds. Returns the status DTO, or None.
+
+	The single entry point for becoming a member. Idempotent — an already-active
+	membership fails `is_activatable` on its status and returns None.
+	"""
+	if not is_activatable(membership):
+		return None
+
+	return activate(membership)
+
+
+def activate(membership) -> dict:
+	"""Make it real: dates, member status, and the affiliation index.
+
+	Validity is computed here rather than at creation because the clock starts
+	when somebody actually becomes a member, not when they applied — an
+	application that sat with an approver for three weeks must not lose three
+	weeks of what it paid for.
+	"""
+	membership_type = type_of(membership)
+	start = getdate(today())
+
+	membership.membership_status = STATUS_ACTIVE
+	membership.valid_from = start
+	membership.valid_to = _valid_to(membership_type, start)
+
+	_save(membership)
+	_sync_member(membership)
+
+	return status(membership)
+
+
+def _valid_to(membership_type, start):
+	"""When this membership ends, or None when it does not end at all.
+
+	**A lifetime membership is stored as an empty `valid_to`, not as a distant
+	date.** A placeholder in 2999 would be a lie the expiry sweep eventually
+	acts on, and every screen would have to know which far-future date meant
+	"forever". Empty already means the right thing everywhere it is read:
+	`is_lapsed()` answers False, `expire_lapsed()` never selects it,
+	`renewal.is_renewable()` finds nothing to renew from, and the desk renders
+	the row as Lifetime.
+
+	**`membership_status` stays Active.** A lifetime status value was
+	considered and rejected: it would fork every `== STATUS_ACTIVE` comparison
+	in this app — the certificate gate, the activation predicate, renewal, the
+	dossier's standing — into a pair that each caller would have to remember to
+	keep in step. Whether somebody is a member and whether their membership
+	ends are two questions, and the second one is answered by `valid_to`.
+	"""
+	if is_lifetime(membership_type):
+		return None
+
+	return add_days(start, cint(membership_type.duration_days))
+
+
+def expire(membership) -> dict:
+	"""Close a membership whose validity has run out."""
+	if membership.membership_status == STATUS_ACTIVE:
+		membership.membership_status = STATUS_EXPIRED
+		_save(membership)
+		_sync_member(membership)
+
+	return status(membership)
+
+
+def cancel(membership, reason: str | None = None) -> dict:
+	"""Withdraw a membership before or after activation."""
+	if membership.membership_status != STATUS_CANCELLED:
+		membership.membership_status = STATUS_CANCELLED
+		_save(membership)
+		membership.add_comment("Comment", _("Cancelled. {0}").format(reason or ""))
+		_sync_member(membership)
+
+	return status(membership)
+
+
+def expire_lapsed(as_of=None) -> dict:
+	"""Expire every active membership whose validity has passed. The daily job.
+
+	Idempotent by construction: it only ever moves Active to Expired, so a
+	second run the same day finds nothing left to move.
+
+	**A membership with no end date is never selected.** That is stated as its
+	own filter rather than left to SQL, where `valid_to < as_of` excludes a
+	NULL only as a side effect of three-valued logic — true today, and exactly
+	the kind of thing that changes under a query builder without anybody
+	noticing that lifetime memberships started expiring overnight. The sweep
+	says out loud that it only looks at memberships that have an end date.
+	"""
+	as_of = getdate(as_of or today())
+	summary = {"checked": 0, "expired": 0}
+
+	lapsed = frappe.get_all(
+		"VMMS Membership",
+		filters=[
+			["membership_status", "=", STATUS_ACTIVE],
+			["valid_to", "is", "set"],
+			["valid_to", "<", as_of],
+		],
+		pluck="name",
+	)
+
+	summary["checked"] = len(lapsed)
+
+	for name in lapsed:
+		expire(frappe.get_doc("VMMS Membership", name))
+		summary["expired"] += 1
+
+	return summary
+
+
+# --- what a membership is, as at a date -----------------------------------
+#
+# Derived on every read and stored nowhere, which is what makes asking about a
+# date other than today meaningful at all. The mirror of
+# `volunteer/services/certification.py::is_lapsed`, and deliberately the same
+# shape: a stored `lapsed` flag would be a second answer that goes wrong
+# silently at midnight and stays wrong until a job runs.
+
+
+def is_lapsed(membership, as_of=None) -> bool:
+	"""Has this membership's validity window closed as at `as_of`?
+
+	A membership with no `valid_to` has no window to close, and there are two
+	ways to be in that position: one that never activated has not lapsed, it
+	has not started, and a lifetime one never will. False is the honest answer
+	for both, and `effective_status` below is what distinguishes them — the
+	first is still Draft or awaiting something, the second is Active.
+	"""
+	if not membership.valid_to:
+		return False
+
+	return getdate(membership.valid_to) < getdate(as_of or today())
+
+
+def effective_status(membership, as_of=None) -> str:
+	"""What this membership actually is as at `as_of`, which is not always what it says.
+
+	There is an ordinary window in which the two differ: a membership whose
+	`valid_to` has passed is still stored as Active until the daily
+	`expire_lapsed()` job notices. A coordinator opening the record during that
+	window must not be told the person is a current member, so the stored status
+	is read through the same date comparison `renewal.is_renewable` already
+	makes — the two now agree by construction rather than by coincidence.
+
+	**Nothing is written.** This does not expire anything, and calling it does
+	not bring the sweep forward; it reports. `expire()` remains the only thing
+	that moves a membership to Expired, so there is still exactly one writer.
+	"""
+	if membership.membership_status == STATUS_ACTIVE and is_lapsed(membership, as_of):
+		return STATUS_EXPIRED
+
+	return membership.membership_status
+
+
+def is_current(membership, as_of=None) -> bool:
+	"""Is this membership one somebody currently holds, as at `as_of`?"""
+	return effective_status(membership, as_of) == STATUS_ACTIVE
+
+
+# --- the lifecycle hook ---------------------------------------------------
+
+
+def on_update(membership, method=None) -> None:
+	"""Re-evaluate activation after any save. Registered in hooks.py.
+
+	This is how an approval decision recorded by the engine, or a payment
+	confirmed by a gateway callback, turns into an active membership without
+	either of them knowing memberships exist. The flag stops the save inside
+	`activate()` from re-entering.
+
+	The state is read before activation and reported after it, for the two
+	reasons the volunteer twin gives: `activate()` saves again and would erase
+	the answer to "what did this save change", and the card attached to an
+	approval only exists once the membership it describes is active.
+	"""
+	if membership.flags.get(ACTIVATION_FLAG):
+		return
+
+	before = membership.get_doc_before_save()
+	previous = before.get(contract.STATE_FIELD) if before else None
+
+	try_activate(membership)
+
+	_report(membership, previous)
+
+
+def _report(membership, previous: str | None) -> None:
+	"""Tell the applicant what just happened to their membership.
+
+	`lifecycle.notify` owns whether anything is sent; this owns who it is to and
+	what goes with it. The sibling of `application._report`, and deliberately the
+	same shape: two registrations, one set of messages, no second vocabulary for
+	the same four events.
+	"""
+	from vmmsx.notifications.services import lifecycle
+	from vmmsx.member.services import identity
+
+	member = frappe.get_doc(MEMBER_DOCTYPE, membership.member) if membership.member else None
+
+	if not member:
+		return
+
+	person = identity.read(member)
+
+	lifecycle.notify(
+		membership,
+		previous,
+		contract.state(membership),
+		{
+			"email": person.get("email"),
+			"name": identity.display_name(member),
+			"kind": _("membership"),
+			"geo_path": _geo_path(membership),
+			"portal_path": "/portal/membership",
+			"attachment": _card_attachment(membership),
+		},
+	)
+
+
+def _geo_path(membership) -> str:
+	"""Where this membership is anchored, in the society's own words."""
+	from onerc_core.geo.services import adapter
+
+	return adapter.get_full_path(membership.geo_node) if membership.geo_node else ""
+
+
+def _card_attachment(membership) -> tuple[str, bytes] | None:
+	"""The member's card, for the approval email. None unless it is active.
+
+	Never raises: a card that could not be rendered must not stop somebody being
+	told they have been accepted.
+	"""
+	if membership.membership_status != STATUS_ACTIVE:
+		return None
+
+	try:
+		from vmmsx.member.services import card
+
+		return card.pdf_filename(membership), card.pdf_for(membership)
+	except Exception:
+		frappe.log_error(
+			title="vmmsx: could not build a member card for the approval email",
+			message=frappe.get_traceback(),
+		)
+
+		return None
+
+
+def _save(membership) -> None:
+	"""Persist an activation-path change without re-entering `on_update`."""
+	membership.flags[ACTIVATION_FLAG] = True
+
+	try:
+		# The membership's own fields here are engine-written and read-only to
+		# users, and this runs on paths with no interactive session at all — a
+		# gateway callback confirming a payment is the ordinary case. The
+		# permission that matters was checked when the membership was created.
+		membership.save(ignore_permissions=True)
+	finally:
+		membership.flags[ACTIVATION_FLAG] = False
+
+
+# --- the member satellite and core's index --------------------------------
+
+
+def _sync_member(membership) -> None:
+	"""Push the member's derived state, then report it to core.
+
+	The order matters: this satellite is the truth, so it is written first and
+	core's affiliation index is refreshed from it afterwards.
+	"""
+	from vmmsx.member.services import member as member_service
+
+	member_service.refresh(membership.member)
+
+
+def status(membership) -> dict:
+	"""Explicit DTO for one membership. Built field by field.
+
+	Never the Document: that would leak every field on the record, including
+	ones nobody reviewed, and turn a schema change into an API change.
+	"""
+	from onerc_core.geo.services import adapter
+
+	from vmmsx.member.services import identity
+
+	membership_type = type_of(membership)
+	member = frappe.get_doc("VMMS Member", membership.member)
+
+	return {
+		"name": membership.name,
+		"member": membership.member,
+		# Read through Red Profile, never stored on the membership.
+		"member_name": identity.display_name(member),
+		"membership_type": membership.membership_type,
+		"membership_type_name": membership_type.membership_type_name,
+		"approval_mode": membership_type.approval_mode,
+		"requires_approver": approval.requires_approver(membership_type),
+		"membership_status": membership.membership_status,
+		"geo_node": membership.geo_node,
+		"geo_path": adapter.get_full_path(membership.geo_node) if membership.geo_node else None,
+		"valid_from": membership.valid_from,
+		"valid_to": membership.valid_to,
+		# Why `valid_to` is empty, which the date alone cannot say. A screen
+		# reading this DTO renders "Lifetime" rather than a gap, and does not
+		# have to infer it from a missing value.
+		"is_lifetime": is_lifetime(membership_type),
+		# Whether the window has closed, derived here as at today rather than
+		# left for a reader to work out from `valid_to`. A surface offering to
+		# expire a membership needs the same answer `api/member.py::
+		# expire_membership` will give it, and deriving it twice in two places
+		# is how the button and the endpoint come to disagree.
+		"is_lapsed": is_lapsed(membership),
+		"fee": payment.fee(membership_type),
+		"payment_settled": _payment_settled(membership, membership_type),
+		"approval_settled": approval.is_settled(membership, membership_type),
+		"payment_transaction": membership.payment_transaction,
+		"payment_receipt": membership.payment_receipt,
+		"paid_on": membership.paid_on,
+		"approval_state": membership.approval_state,
+		"membership_source": source(membership),
+		"proof_attachment": membership.get("proof_attachment"),
+	}

@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-02 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "stage_sequence",
+  "stage_label",
+  "approver",
+  "decision",
+  "decided_on",
+  "reason",
+  "stage"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "stage_sequence",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Stage",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "description": "The stage's label as it read when the decision was taken. A snapshot, so renaming a stage does not rewrite history.",
+   "fieldname": "stage_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Stage Label",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "approver",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Approver",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "decision",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Decision",
+   "options": "Approved\nRejected\nMore info requested",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "decided_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Decided On",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "description": "Required on a rejection. A rejection nobody can explain is not a decision, it is a dead end.",
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "read_only": 1
+  },
+  {
+   "description": "The opaque row name of the stage this decision was taken at. Identity, not label: relabelling a stage must not orphan its decisions.",
+   "fieldname": "stage",
+   "fieldtype": "Data",
+   "label": "Stage Row",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-02 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Approvals",
+ "name": "VMMS Approval Decision",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": []
+}

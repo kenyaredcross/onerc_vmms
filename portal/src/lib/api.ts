@@ -1,0 +1,346 @@
+/**
+ * Every whitelisted method this frontend calls, named once.
+ *
+ * A string literal scattered through components is a rename waiting to break a
+ * screen nobody opened during testing. Collecting them here also makes the
+ * app's real dependency on the backend readable in one file: if a method is not
+ * in this list, no page calls it.
+ *
+ * Each entry is verified against the Python source. Where a screen has no
+ * method to call, there is no entry and the screen says so on the page rather
+ * than inventing one. See `NotBuilt` in `ui/primitives.tsx`.
+ */
+export const API = {
+	// onerc_core/api/article.py — stories and news, and they are *core's*.
+	// Called directly rather than proxied through a vmmsx endpoint, because
+	// wrapping them would be this app holding a second answer to what an article
+	// is. The same reason nothing here re-implements geo or Red Profile. Core
+	// already serves these to guests, which is what the landing page needs.
+	articles: "onerc_core.api.article.get_articles",
+	article: "onerc_core.api.article.get_article",
+	articleCategories: "onerc_core.api.article.get_categories",
+
+	// vmmsx/api/society.py — the society's own name and logo, for the lockup.
+	// Guest-readable, like `contentSurface`, because the landing page carries it.
+	societyBranding: "vmmsx.api.society.branding",
+
+	// vmmsx/api/content.py
+	contentSurface: "vmmsx.api.content.surface",
+	contentCatalogue: "vmmsx.api.content.catalogue",
+	contentUpdate: "vmmsx.api.content.update_block",
+
+	// vmmsx/api/registration.py — the self-service door, and the only one this
+	// app may use. Every method here is possessive: none takes a person, so a
+	// caller cannot register or claim anybody but themselves.
+	// `apply_to_volunteer` / `apply_for_membership` are the *clerk's* door, name
+	// a red_profile and check create permission. They are deliberately absent
+	// from this file: no screen here acts on somebody else's behalf.
+	myProfile: "vmmsx.api.registration.my_profile",
+	// The one endpoint here that overwrites rather than adds, and it is named for
+	// it. Registering can never rewrite what the society already holds; a person
+	// looking at their own details and correcting them is a different act, and
+	// this is the only door to it. The email is not a parameter: it is the login.
+	updateMyProfile: "vmmsx.api.registration.update_my_profile",
+	identityOptions: "vmmsx.api.registration.identity_options",
+	// What the caller has open, one answer per kind of registration. The wizard
+	// reads it before drawing a step, so "you have already applied" is said on
+	// arrival rather than discovered on submit — and per kind, because an
+	// undecided volunteer application is not a reason to refuse a membership.
+	myOpenRegistrations: "vmmsx.api.registration.my_open_registrations",
+	registerAsVolunteer: "vmmsx.api.registration.register_as_volunteer",
+	registerAsMember: "vmmsx.api.registration.register_as_member",
+
+	// vmmsx/api/volunteer.py
+	applicationOptions: "vmmsx.api.volunteer.application_options",
+	// The whole of what an approver reads before deciding: identity, placement,
+	// what was declared, the identification the application required, and the
+	// society's own questions. Ordinary read permission on the application, so
+	// this is not a second door into one.
+	applicationDecision: "vmmsx.api.volunteer.get_decision",
+
+	// vmmsx/api/cards.py — possessive like the rest: neither takes a person, so
+	// neither can be pointed at anybody else's card. `verify` is deliberately
+	// absent from this list and called by name in `guest/Verify.tsx`, because it
+	// is the one endpoint here a signed-out stranger reaches.
+	myVolunteerCard: "vmmsx.api.cards.my_volunteer_card",
+	myMemberCard: "vmmsx.api.cards.my_member_card",
+	volunteerGeoLevels: "vmmsx.api.volunteer.geo_node_levels",
+	myVolunteer: "vmmsx.api.volunteer.my_volunteer",
+	myCertifications: "vmmsx.api.volunteer.my_certifications",
+	// The read half of `logTime`, and possessive like the rest: it takes no
+	// person, so the hours screen cannot be pointed at anybody else's history.
+	myTimeLogs: "vmmsx.api.volunteer.my_time_logs",
+	timeLogOptions: "vmmsx.api.volunteer.time_log_options",
+	logTime: "vmmsx.api.volunteer.log_time",
+	findVolunteers: "vmmsx.api.volunteer.find_volunteers",
+	volunteerDossier: "vmmsx.api.volunteer.get_dossier",
+	// The coordinator's acts over a volunteer's standing. `status` is derived and
+	// read-only on the doctype, so these endpoints are the only way to move it —
+	// there is no field to write. Each is gated on `write`, which is *not* the
+	// gate the dossier read uses: a volunteer may open their own record and may
+	// not suspend themselves. `can_act` on the dossier says which case a caller
+	// is in, and the server re-asks on every one of these regardless.
+	suspendVolunteer: "vmmsx.api.volunteer.suspend_volunteer",
+	reinstateVolunteer: "vmmsx.api.volunteer.reinstate_volunteer",
+	recordVolunteerExit: "vmmsx.api.volunteer.record_volunteer_exit",
+
+	// vmmsx/api/member.py
+	myMemberships: "vmmsx.api.member.my_memberships",
+	renewMembership: "vmmsx.api.member.renew_membership",
+	membershipTypes: "vmmsx.api.member.membership_types",
+	memberGeoLevels: "vmmsx.api.member.geo_node_levels",
+	findMembers: "vmmsx.api.member.find_members",
+	memberDossier: "vmmsx.api.member.get_dossier",
+	// The membership half of the same acts. Cancel ends one early and records
+	// why; expire closes one whose validity has already run out and is refused
+	// on anything still current, so the two are not interchangeable.
+	cancelMembership: "vmmsx.api.member.cancel_membership",
+	expireMembership: "vmmsx.api.member.expire_membership",
+
+	// vmmsx/api/approvals.py
+	myQueue: "vmmsx.api.approvals.my_queue",
+	approvalStatus: "vmmsx.api.approvals.get_status",
+	decide: "vmmsx.api.approvals.decide",
+	withdraw: "vmmsx.api.approvals.withdraw",
+
+	// vmmsx/api/geo.py — `ladder` is how many select fields a placement form
+	// draws, `browse` is what goes in each of them. Neither this file nor any
+	// screen knows how deep a society's hierarchy is or what it calls a rung.
+	geoLadder: "vmmsx.api.geo.ladder",
+	geoBrowse: "vmmsx.api.geo.browse",
+
+	// vmmsx/api/deployment.py — the possessive one. `deployments_of_volunteer`
+	// is the coordinator's: it checks read on the volunteer and then geo-scopes
+	// the deployments, both of which fail closed for somebody holding no Geo
+	// Assignment, which every volunteer correctly is. No screen here calls it.
+	myDeployments: "vmmsx.api.deployment.my_deployments",
+	// Invitations. `myInvitations` is possessive like the line above it;
+	// `respondToInvitation` names a deployment and is the one endpoint in that
+	// pair that has to check something, so it checks ownership of the roster row
+	// rather than geo scope, which every volunteer would fail. `inviteVolunteer`
+	// is the coordinator's half and is gated on write permission.
+	myInvitations: "vmmsx.api.deployment.my_invitations",
+	respondToInvitation: "vmmsx.api.deployment.respond_to_invitation",
+	inviteVolunteer: "vmmsx.api.deployment.invite_volunteer",
+	// The manager's console. Both listings are `frappe.get_list`, so the
+	// caller's Geo Assignment is the floor the answer stands on and no argument
+	// on the screen widens it. A coordinator holding no assignment sees an empty
+	// console, which is the honest answer rather than an error.
+	branchDeployments: "vmmsx.api.deployment.branch_deployments",
+	branchRequests: "vmmsx.api.deployment.branch_requests",
+	getDeployment: "vmmsx.api.deployment.get_deployment",
+	setDeploymentStatus: "vmmsx.api.deployment.set_deployment_status",
+	addParticipant: "vmmsx.api.deployment.add_participant",
+	// Matching. `findCandidatesForRequest` is the same question asked of a
+	// document that already carries the need, so the screen does not take the
+	// terms and the date apart by hand.
+	findCandidates: "vmmsx.api.deployment.find_candidates",
+	findCandidatesForRequest: "vmmsx.api.deployment.find_candidates_for_request",
+	requestDeployment: "vmmsx.api.deployment.request_deployment",
+	// The paperwork a deployment stands on: a programme of work, a specification
+	// written under it, and then the deployment. Every listing is `get_list`, so
+	// the same geo floor holds, and `mine` on each one narrows further to what
+	// this person filed. It can only narrow — the owner filter is applied on top
+	// of a result the permission layer has already bounded.
+	createProject: "vmmsx.api.deployment.create_project",
+	branchProjects: "vmmsx.api.deployment.branch_projects",
+	setProjectStatus: "vmmsx.api.deployment.set_project_status",
+	createTerms: "vmmsx.api.deployment.create_terms",
+	branchTerms: "vmmsx.api.deployment.branch_terms",
+	// `getTerms` returns the reviewed field list *and* the society's own template
+	// rendered against it, so what a coordinator reads on the screen is the same
+	// markup the PDF is made from and the two cannot drift apart.
+	getTerms: "vmmsx.api.deployment.get_terms",
+	createDeployment: "vmmsx.api.deployment.create_deployment",
+
+	// vmmsx/api/tasks.py — two doors into one doctype, checked differently.
+	// Everything under `my` is the volunteer's and is checked by ownership: the
+	// task has to be assigned to the caller's own volunteer record. The rest is
+	// the coordinator's and is checked by write permission, which brings core's
+	// geo scoping with it. No screen decides which door it is using; each one
+	// calls the endpoint for the person it is drawn for, and the server re-asks.
+	myTasks: "vmmsx.api.tasks.my_tasks",
+	acceptTask: "vmmsx.api.tasks.accept_task",
+	askAboutTask: "vmmsx.api.tasks.ask_about_task",
+	reportTaskProgress: "vmmsx.api.tasks.report_progress",
+	submitTask: "vmmsx.api.tasks.submit_task",
+	branchTasks: "vmmsx.api.tasks.branch_tasks",
+	getTask: "vmmsx.api.tasks.get_task",
+	assignTask: "vmmsx.api.tasks.assign_task",
+	answerTaskQuestion: "vmmsx.api.tasks.answer_question",
+	requestTaskProgress: "vmmsx.api.tasks.request_progress",
+	signOffTask: "vmmsx.api.tasks.sign_off",
+	sendTaskBack: "vmmsx.api.tasks.send_back",
+	cancelTask: "vmmsx.api.tasks.cancel_task",
+
+	// vmmsx/api/stipend.py — the paperwork console. One listing over both
+	// doctypes, because "what is in my area" is the same question asked twice.
+	//
+	// `stipendDecide` is named here and the screen calls it, but it always
+	// refuses: departmental routing does not exist, so nobody can approve this
+	// paperwork yet. That refusal travels in the payload as `can_be_decided:
+	// false` with the sentence explaining it, and the screen draws what the
+	// server said rather than hiding a button and inventing its own reason.
+	branchPaperwork: "vmmsx.api.stipend.branch_paperwork",
+	createStipendReport: "vmmsx.api.stipend.create_report",
+	createPaymentForm: "vmmsx.api.stipend.create_payment_form",
+	getStipendReport: "vmmsx.api.stipend.get_report",
+	getPaymentForm: "vmmsx.api.stipend.get_payment_form",
+	addVolunteerToReport: "vmmsx.api.stipend.add_volunteer_to_report",
+	removeVolunteerFromReport: "vmmsx.api.stipend.remove_volunteer_from_report",
+	recordAttendance: "vmmsx.api.stipend.record_attendance",
+	findStipendVolunteers: "vmmsx.api.stipend.find_volunteers",
+	submitStipendForApproval: "vmmsx.api.stipend.submit_for_approval",
+	withdrawStipend: "vmmsx.api.stipend.withdraw",
+
+	// vmmsx/api/analytics.py — one method, and it takes no scope. Every figure is
+	// counted through the doctype's own registered role, so a coordinator holding
+	// one and not another sees real numbers beside honest zeroes rather than a
+	// refusal of the whole screen.
+	branchSummary: "vmmsx.api.analytics.branch_summary",
+
+	// vmmsx/api/console.py — which sections of the manager console this person
+	// may open. Takes no arguments and names no role: the answer is about the
+	// session and nothing else, and the keys it returns are this app's vocabulary
+	// rather than a society's. Drawing a tab from it is a convenience — every
+	// screen behind one re-asks the permission layer on its own.
+	consoleSections: "vmmsx.api.console.sections",
+
+	// vmmsx/api/locations.py — where the society can be found. `publishedLocations`
+	// is this app's third guest-readable method, after `contentSurface` and
+	// `societyBranding`, and the boundary is `is_published` on each location and
+	// nothing else. `branchLocations` is the coordinator's, geo-scoped, and carries
+	// the internal notes the public one does not have.
+	publishedLocations: "vmmsx.api.locations.published",
+	branchLocations: "vmmsx.api.locations.branch_locations",
+
+	// vmmsx/api/opportunities.py — the notice board, and browsing only. There is
+	// no method here to answer an advertisement because this app has no record of
+	// a volunteer answering one: a coordinator matches people to a need and adds
+	// them to a roster. The screen says so rather than drawing a button.
+	opportunitiesBrowse: "vmmsx.api.opportunities.browse",
+	opportunityFilters: "vmmsx.api.opportunities.filters",
+	// One advertisement in full. Re-asks the board's own three predicates, so a
+	// guessed docname and an unpublished need both answer with nothing.
+	opportunityDetail: "vmmsx.api.opportunities.detail",
+
+	// vmmsx/api/events.py — browsing only. Buzz owns registration, tickets,
+	// payment and check-in, so a card's call to action is a full navigation to
+	// Buzz's own page and there is deliberately no booking method to name here.
+	eventsUpcoming: "vmmsx.api.events.upcoming",
+	eventFilters: "vmmsx.api.events.filters",
+	// One event in full, behind the same `is_published` boundary as the listing.
+	// Booking is still a navigation to Buzz; this screen only has more room for
+	// the same call to action.
+	eventDetail: "vmmsx.api.events.detail",
+	// Saying you mean to be there, and it is not the same thing as a ticket.
+	// These write the society's own record of an intention, which is what a
+	// coordinator plans around; they hold no seat and take no money, and no
+	// screen calling them may say otherwise. Possessive like the `my_*` methods
+	// above: none takes a person, so none can answer on somebody's behalf.
+	eventsAttending: "vmmsx.api.events.attending",
+	attendEvent: "vmmsx.api.events.attend",
+	cancelEventAttendance: "vmmsx.api.events.cancel_attendance",
+	// The month grid's one read. Everything published in a window, plus which of
+	// it is the caller's, in a single answer — a day cannot be drawn correctly
+	// until both are known, and two requests would mean markings that appear
+	// after the calendar has rendered.
+	eventsCalendar: "vmmsx.api.events.calendar",
+
+	// vmmsx/api/notifications.py — possessive, like the member and volunteer
+	// endpoints above. None of them takes a person, so no screen can ask for
+	// somebody else's notifications. Sending is absent on purpose: an
+	// announcement is written on the desk, where the geo scope role decides who
+	// may speak for a branch.
+	myNotifications: "vmmsx.api.notifications.my_notifications",
+	unreadCount: "vmmsx.api.notifications.unread_count",
+	markNotificationRead: "vmmsx.api.notifications.mark_read",
+	markAllNotificationsRead: "vmmsx.api.notifications.mark_all_read",
+
+	// vmmsx/api/companions.py — which of the neighbouring apps are installed on
+	// this site and where they are mounted. The sidebar draws what this returns
+	// and decides nothing: a tab missing from the answer is an app that is not
+	// installed or not open to this person, and either way there is nowhere for
+	// the tab to lead.
+	companionApps: "vmmsx.api.companions.available",
+
+	// vmmsx/api/questions.py — the form builder. Every method is gated on write
+	// permission for `VMMS Application Question`, which no configurable scope
+	// role is granted, so these resolve to the administrator until a society
+	// deliberately widens them. No role name appears here or on the screen: the
+	// tab is drawn from `console.sections` like every other one, and `can_edit`
+	// on each answer decides the controls.
+	//
+	// There is deliberately no delete: a question is retired with
+	// `setQuestionActive`, because every answer already given was part of an
+	// application somebody decided.
+	questionTargets: "vmmsx.api.questions.targets",
+	questionCatalogue: "vmmsx.api.questions.catalogue",
+	saveQuestion: "vmmsx.api.questions.save_question",
+	setQuestionActive: "vmmsx.api.questions.set_question_active",
+	reorderQuestions: "vmmsx.api.questions.reorder_questions",
+} as const;
+
+/** The download endpoint is a file response, so it is a URL rather than a call. */
+export const myCertificateUrl = (membership: string): string =>
+	`/api/method/vmmsx.api.member.download_my_certificate?membership=${encodeURIComponent(membership)}`;
+
+/**
+ * The coordinator's companions to the two above, for reprinting somebody's
+ * certificate or card at a counter.
+ *
+ * URLs for the same reason: both are file responses rather than JSON. Each
+ * endpoint checks `read` on the record named, which is core's geo scoping as
+ * well as Frappe's roles, so a link built here for a record outside the
+ * caller's scope is refused by the server rather than by this file.
+ */
+export const certificateUrl = (membership: string): string =>
+	`/api/method/vmmsx.api.member.download_certificate?membership=${encodeURIComponent(membership)}`;
+
+export const cardUrl = (kind: "volunteer" | "member", name: string): string =>
+	`/api/method/vmmsx.api.cards.download_card?kind=${kind}&name=${encodeURIComponent(name)}`;
+
+/**
+ * The printed terms of reference, on the society's own letterhead. A URL for the
+ * same reason the certificate is one: it is a file response rather than JSON.
+ * The endpoint checks read permission on the terms, which is the same check that
+ * let the screen show them in the first place.
+ */
+export const termsPdfUrl = (name: string): string =>
+	`/api/method/vmmsx.api.deployment.download_terms?name=${encodeURIComponent(name)}`;
+
+/**
+ * Frappe wraps a thrown exception's message in HTML and a JSON envelope. This
+ * digs out something worth showing a person, and falls back to the generic
+ * sentence rather than rendering `[object Object]` at somebody.
+ */
+export function errorMessage(error: unknown, fallback = "Something went wrong."): string {
+	if (!error) return fallback;
+
+	const candidate = error as {
+		message?: string;
+		exception?: string;
+		_server_messages?: string;
+		httpStatusText?: string;
+	};
+
+	if (candidate._server_messages) {
+		try {
+			const parsed = JSON.parse(candidate._server_messages) as string[];
+			const first = JSON.parse(parsed[0]) as { message?: string };
+			if (first?.message) return stripHtml(first.message);
+		} catch {
+			// Not the shape we hoped for; fall through to the plainer fields.
+		}
+	}
+
+	const text = candidate.message || candidate.exception || candidate.httpStatusText;
+	return text ? stripHtml(text) : fallback;
+}
+
+function stripHtml(value: string): string {
+	return value
+		.replace(/<[^>]*>/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}

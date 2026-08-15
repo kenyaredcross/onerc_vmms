@@ -1,0 +1,117 @@
+{#-
+	The society's own lockup on every message this site sends.
+
+	This file *overrides* `frappe/templates/emails/standard.html`. Frappe resolves
+	`templates/emails/standard.html` through a Jinja ChoiceLoader over the
+	installed apps in reverse install order, so vmmsx's copy is found first. The
+	rest of the file is Frappe's, kept deliberately faithful: every block, class
+	name and parameter below is theirs, because a divergence here would show up as
+	a broken layout in somebody's mail client rather than as a test failure.
+
+	**Only the masthead differs, and only in where it gets its two values.**
+	Frappe fills `brand_logo` / `brand_name` from Website Settings, and only when
+	the caller passed `with_container` or a `header` — which most callers do not,
+	so most site mail goes out unbranded. This version asks vmmsx's
+	`notifications/services/branding.py` first, which reads the name and logo the
+	society already uploaded to core's `National Society Settings`, and falls back
+	to Frappe's own values when the society has set none.
+
+	**The words in the message are not this file's business.** A society writes
+	its notification text on the desk, in Frappe's `Notification` and `Email
+	Template` doctypes. Nothing here templates a sentence, and nothing here
+	decides who gets mail. This is the frame around whatever the site chose to
+	say, which is why it is safe for it to apply to every email including
+	password resets and system alerts.
+
+	**Safe when the society is unconfigured.** `lockup()` never raises and returns
+	empty strings on a fresh site, and the masthead row is skipped entirely when
+	there is nothing to draw, so the result is exactly the email Frappe would have
+	sent. Identity is added here; delivery is never gated on it.
+-#}
+{#-
+	`lockup` is registered by the `jinja` hook in vmmsx/hooks.py. Frappe returns no
+	jinja hooks at all when there is no site on `frappe.local`, so the guard is not
+	defensive padding: without it this template would raise on any render outside a
+	site context and take the email with it. Undefined here means "unbranded", the
+	same outcome as an unconfigured society.
+-#}
+{%- set society = lockup() if lockup is defined else None -%}
+{%- set mark = (society and society.brand_logo) or brand_logo -%}
+{%- set society_name = (society and society.brand_name) or brand_name -%}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<meta name="viewport" content="width=device-width" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>{{ subject or "" }}</title>
+</head>
+
+<body>
+	<table class="body-table {% if header or with_container %} with-container {% endif %}" cellpadding="0" cellspacing="0">
+		<tr>
+			<td class="body-content" align="center" valign="top">
+				<table class="email-container" border="0" cellpadding="0" cellspacing="0"
+					width="{% if header or with_container %} 600 {% else %} 100% {% endif %}">
+					{% if mark or society_name %}
+					<tr>
+						<td align="left" valign="middle" class="email-masthead">
+							<a href="{{ site_url or '#' }}">
+								{% if mark %}
+								<img src="{{ mark }}" height="28" class="brand-logo" alt="{{ society_name or '' }}" />
+								{% endif %}
+								{% if society_name %}
+								<span class="brand-name">{{ society_name }}</span>
+								{% endif %}
+							</a>
+						</td>
+					</tr>
+					{% endif %}
+					<tr>
+						<td valign="top" class="email-title-cell">
+							{{ header or "" }}
+						</td>
+					</tr>
+					<tr>
+						<td valign="top" class="email-body-cell">
+							<table class="email-body" border="0" cellpadding="0" cellspacing="0" width="100%">
+								<tr>
+									<td valign="top">
+										<div>{{ content }}</div>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td valign="top" class="email-footer-cell {% if footer and 'with-divider' in footer %}filled{% endif %}">
+							<table class="email-footer" border="0" cellpadding="0" cellspacing="0" width="100%">
+								<tr>
+									<td valign="top" data-email-footer="true">
+										{{ footer }}
+									</td>
+								</tr>
+								{% if society_name %}
+								<tr>
+									<td valign="top">
+										<div class="print-html" style="color:#8A93A1;font-size:11px;padding-top:8px;">
+											{{ society_name }}
+										</div>
+									</td>
+								</tr>
+								{% endif %}
+								<tr>
+									<td valign="top">
+										<div class="print-html">{{ print_html or "" }}</div>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+
+</html>

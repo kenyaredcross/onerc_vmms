@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:surface_key",
+ "creation": "2026-08-10 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "surface_name",
+  "surface_key",
+  "column_break_identity",
+  "is_public",
+  "description"
+ ],
+ "fields": [
+  {
+   "description": "What this society calls this part of the product. Display only, and shown to whoever edits its wording.",
+   "fieldname": "surface_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Surface Name",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "The stable business key, and the docname. The frontend asks for one surface by this key and renders whatever blocks come back, so renaming the label never breaks a screen.",
+   "fieldname": "surface_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Surface Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Whether a signed-out visitor may read this surface's wording. On for the guest landing page, off for everything behind a login. This is the whole of the guest read rule: the API serves no surface that has not been marked public here, so opening a new one is a settings change rather than a code change.",
+   "fieldname": "is_public",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Readable By Guests"
+  },
+  {
+   "description": "Which screens this surface covers, in the society's own words. Notes for the next administrator to edit it.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-10 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Content",
+ "name": "VMMS Content Surface",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "surface_name",
+ "track_changes": 1
+}

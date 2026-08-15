@@ -1,0 +1,150 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-06 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "deployment_section",
+  "naming_series",
+  "terms_of_reference",
+  "column_break_deployment",
+  "geo_node",
+  "status",
+  "period_section",
+  "start_date",
+  "column_break_period",
+  "end_date",
+  "roster_section",
+  "participants",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "DEP-.#####",
+   "description": "The opaque docname series. Nothing about the place, the work or the year goes in the primary key.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "DEP-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "deployment_section",
+   "fieldtype": "Section Break",
+   "label": "Deployment"
+  },
+  {
+   "description": "The specification this deployment is run against: what the work is, what a volunteer needs to hold to be a candidate for it, and where it may be used. Configuration a society writes, so that a deployment is an instance of something rather than a description typed out again each time.",
+   "fieldname": "terms_of_reference",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Terms of Reference",
+   "options": "VMMS Terms of Reference",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_deployment",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "ACC-02. Where this deployment sits in the organisational tree, and the field core's geo scoping reads to decide who may see it. A Link, never free text, and mandatory at creation: an unplaced deployment is invisible to geo scoping, because core's list filter is an IN and that excludes NULL. Which level it may sit at is society configuration (ACC-03, vmms_deployment_anchor_level), never a constant, and it must also fall inside the terms of reference's own geo scope where the society has set one.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Geo Node",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "default": "Planned",
+   "description": "Where this deployment is in its life. A closed, code owned set with a fixed transition table in deployment/services/deployment.py, for the same reason approval states are code: each value means something the server enforces, so a society adding an eighth would produce a deployment nothing knows how to handle. Planned is a deployment that has been arranged; Active is one under way; Completed is one that has finished; Cancelled is one that was called off. Note what this does not govern: a time log is accepted on the strength of the roster, not of the status, so a volunteer can still file the hours they served on a deployment that has since completed.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Planned\nActive\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_section",
+   "fieldtype": "Section Break",
+   "label": "Period"
+  },
+  {
+   "description": "The first day of the deployment. Also the date matching asks its questions about when this deployment's own candidate list is built, so a volunteer whose certification expires before the deployment begins is not a candidate for it.",
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_period",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The last day of the deployment. Never earlier than the start date. A deployment of one day has the same date in both fields, which is ordinary rather than a mistake.",
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "End Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "roster_section",
+   "fieldtype": "Section Break",
+   "label": "Roster"
+  },
+  {
+   "description": "Who is deployed. This roster is the truth of participation and the thing the deployment time log's ownership rule checks against: a log naming this deployment is refused at save unless the volunteer filing it appears here. That check is on the server, so hiding a deployment from a picker is a convenience and never the control. A volunteer appears at most once.",
+   "fieldname": "participants",
+   "fieldtype": "Table",
+   "label": "Participants",
+   "options": "VMMS Deployment Participant"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "Anything the coordinator needs to record about this deployment that is not a field.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-06 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS Deployment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "start_date",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "terms_of_reference",
+ "track_changes": 1
+}

@@ -1,0 +1,47 @@
+{#-
+	The society's half of the sign-in and set-password pages.
+
+	Everything in it is read at render time by `vmmsx/auth_page.py` — the mark and
+	the name from core's National Society Settings, the headline, the paragraph
+	and the photograph from the `login` content surface. Nothing about a society
+	is written down here, and no sentence of the product is either: the fallbacks
+	below are the same words `content/seeds/default_content.py` seeds, and they
+	are only reached on a site whose blocks are missing.
+-#}
+<aside class="auth-brand">
+	{%- if panel_image %}
+	<img class="auth-brand-photo" src="{{ panel_image }}" alt="{{ panel_image_alt or '' }}">
+	{%- endif %}
+
+	{#- Home rather than the site root: `/home` is the public landing page, and
+	    the mark on a sign-in page is also the way back out of it. -#}
+	<a class="auth-lockup" href="/home">
+		{%- if society_logo %}
+		<img src="{{ society_logo }}" alt="{{ society_name or '' }}">
+		{%- else %}
+		{#- A geometric cross in the signal colour, not the Red Cross emblem. The
+		    emblem is protected under the Geneva Conventions and national law, and
+		    shipping one would put it on every society's screens whether or not
+		    that society may display it. Same mark, same reason, as
+		    `portal/src/ui/brand.tsx`. -#}
+		<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+			<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" fill="currentColor"></path>
+		</svg>
+		{%- endif %}
+		{%- if society_name %}
+		<span>{{ society_name }}</span>
+		{%- endif %}
+	</a>
+
+	<div class="auth-brand-words">
+		<p class="auth-brand-headline">
+			{{ words.get("login.panel.headline") or _("One account for membership, volunteering and training.") }}
+		</p>
+		<p class="auth-brand-body">
+			{{ words.get("login.panel.body") or _("Your record follows you between branches. Certificates, hours and deployments stay in one place.") }}
+		</p>
+		{%- if panel_image_credit %}
+		<p class="auth-brand-credit">{{ panel_image_credit }}</p>
+		{%- endif %}
+	</div>
+</aside>

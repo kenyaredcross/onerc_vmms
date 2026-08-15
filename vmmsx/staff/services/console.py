@@ -1,0 +1,159 @@
+# Copyright (c) 2026, Nigel and contributors
+# For license information, please see license.txt
+
+"""Which sections of the manager console this person may actually open.
+
+The console used to draw all nine of its tabs for everybody, and its own
+docstring gave the reason: hiding one would mean naming a society's coordinator
+role in `portal/src/`, which the access model forbids. The premise was right and
+the conclusion was wrong. The rule is that **no role name appears in the
+frontend and no screen decides what somebody may do** — not that nothing may be
+hidden. `can_edit` on a content surface and `can_act` on an approval already
+answer the same shape of question server-side, and this is the third.
+
+**A section is named by its doctypes, never by a role.** The gate is
+`frappe.has_permission`, which resolves the society's own scope role through
+core and brings its geo scoping with it. So a society that names a Deployment
+Manager for `vmms_deployment_scope_role` gets a Deployments tab for exactly the
+people holding it, and this file never learns what the role is called. That is
+the same reason `staff/services/permissions.py` keys its grants off settings
+fields rather than literals.
+
+**Read is the gate, write is the buttons.** A tab appears when somebody may read
+what is behind it; whether they may act is asked again, per action, by the
+endpoint that performs it. Gating the tab on `write` would hide a register from
+a coordinator whose job is to look things up.
+
+**Some sections are not gated, and only appear once something else is.**
+Overview, the review queue, events and analytics carry no register of their own:
+the queue is `my_queue`, which is personal and answers for the caller alone;
+analytics is scoped per doctype and reports honest zeroes where a society has
+named no role; events is Buzz's published listing, which every signed-in person
+already sees on their own portal. None of them is a reason to *give* somebody
+the console, so they ride along with the gated sections rather than standing on
+their own — which is what makes `available()` false for a volunteer who follows
+a stale link, instead of handing them a shell full of empty screens.
+
+**Drift is a test, not a convention.** Every doctype named below is one
+`staff/services/permissions.py` grants to some scope role; `staff/tests/
+test_console.py` asserts that against both tables, so a module that gains a
+doctype cannot gain a tab nobody can open, or a grant nobody can reach.
+"""
+
+import frappe
+
+# The console's gated sections, in the order the sidebar draws them.
+#
+# `doctypes` is an *any* — a section opens if the person may read any one of
+# them. The Registry is the case that shapes the rule: it lists volunteers and
+# members side by side, and a society that has named a Volunteer Approver but no
+# membership role should get the screen with one list filled and the other
+# honestly empty, rather than no screen at all.
+GATED_SECTIONS = (
+	{"section": "registry", "doctypes": ("VMMS Volunteer", "VMMS Membership")},
+	{"section": "tasks", "doctypes": ("VMMS Task",)},
+	{"section": "deployments", "doctypes": ("VMMS Deployment", "VMMS Deployment Request")},
+	{
+		"section": "stipends",
+		"doctypes": ("VMMS Stipend Progress Report", "VMMS Stipend Payment Form"),
+	},
+	{"section": "content", "doctypes": ("VMMS Content Block",)},
+)
+
+# Sections with no register behind them. Drawn only when at least one gated
+# section is — see the module docstring.
+UNGATED_SECTIONS = ("overview", "queue", "events", "analytics")
+
+# Sections gated on a doctype that **no configurable role is ever granted**, so
+# they resolve to the administrator and to nobody else until a society
+# deliberately widens them by hand.
+#
+# This is the deliberate exception to the rule `staff/tests/test_console.py`
+# enforces for `GATED_SECTIONS` — that a gated doctype is one some installer
+# hands to a scope role — and it is a separate tuple rather than an exemption
+# inside that one so the exception is a thing you have to opt into rather than a
+# test somebody weakened.
+#
+# The form builder is the case that shapes it. A question changes what every
+# future applicant is asked and what an approver is shown; that is a different
+# kind of act from running a register, and `staff/services/permissions.py`
+# deliberately does not grant `VMMS Application Question` to any scope role. The
+# framework exemption in this app's own rules covers it: `System Manager` is a
+# framework primitive, not a society role, and naming the *doctype* here rather
+# than the role is what keeps that true.
+#
+# **These stand on their own**, unlike the ungated ones: each has a register
+# behind it, so somebody who may open it has a reason to be in the console even
+# if they hold no scope role at all.
+ADMIN_SECTIONS = ({"section": "questions", "doctypes": ("VMMS Application Question",)},)
+
+# The order the sidebar draws every section in, gated or not. Kept here rather
+# than in the frontend so a society reading the list on the desk and a
+# coordinator reading it in the sidebar are reading the same order.
+ORDER = (
+	"overview",
+	"queue",
+	"registry",
+	"tasks",
+	"deployments",
+	"stipends",
+	"events",
+	"analytics",
+	"content",
+	# Last, because it is the one a society touches least often: what the form
+	# asks is decided once and then left alone for a year at a time.
+	"questions",
+)
+
+
+def visible(user: str | None = None) -> list[str]:
+	"""The console sections this person may open, in sidebar order.
+
+	Empty when no gated section admits them, which is the whole of the
+	"should this person have a console at all" question — see `available()`.
+	"""
+	user = user or frappe.session.user
+
+	admitted = [entry["section"] for entry in GATED_SECTIONS if _readable(entry["doctypes"], user)]
+
+	# Admin sections carry their own register, so one of them is reason enough to
+	# be here. An administrator who has configured no scope role yet would
+	# otherwise be shown no console at all on the very screen they need to set
+	# the society up from.
+	admitted += [entry["section"] for entry in ADMIN_SECTIONS if _readable(entry["doctypes"], user)]
+
+	if not admitted:
+		return []
+
+	sections = set(admitted) | set(UNGATED_SECTIONS)
+
+	return [section for section in ORDER if section in sections]
+
+
+def available(user: str | None = None) -> bool:
+	"""May this person open the console at all?
+
+	False for a volunteer, a member and anybody else holding none of the
+	society's staff scope roles. The console is not a screen they are shown
+	empty; it is a place they are not sent.
+	"""
+	return bool(visible(user))
+
+
+def _readable(doctypes: tuple[str, ...], user: str) -> bool:
+	"""May this person read any one of these?
+
+	`frappe.has_permission` is asked rather than the settings fields being read
+	here, so this file names no role and there is one answer to "may you" rather
+	than two that can disagree. A doctype a site does not have is not an error:
+	the same graceful-absence contract `_grant` keeps in
+	`staff/services/permissions.py`.
+	"""
+	for doctype in doctypes:
+		if not frappe.db.exists("DocType", doctype):
+			continue
+
+		if frappe.has_permission(doctype, ptype="read", user=user):
+			return True
+
+	return False
