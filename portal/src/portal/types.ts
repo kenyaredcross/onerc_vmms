@@ -475,14 +475,26 @@ export interface ProjectSummary {
 }
 
 /**
- * `api/deployment.py::get_terms` — the reviewed field list, and the same terms
- * rendered through the society's own template. `document` is the identical
- * markup the PDF is built from, which is what stops the screen and the printer
- * showing two different documents.
+ * `api/deployment.py::get_terms` — the reviewed field list, the same terms
+ * rendered through the society's own template, and the deployments run under
+ * them. `document` is the identical markup the PDF is built from, which is
+ * what stops the screen and the printer showing two different documents.
  */
 export interface TermsDocument {
 	terms: TermsOfReference;
 	document: string;
+	deployments: DeploymentSummary[];
+}
+
+/**
+ * `api/deployment.py::get_project` — one project, and its whole history: the
+ * terms of reference written under it and the deployments run under those,
+ * composed server-side so the three pieces cannot disagree.
+ */
+export interface ProjectDossier {
+	project: ProjectSummary;
+	terms: TermsOfReference[];
+	deployments: DeploymentSummary[];
 }
 
 /** `deployment/services/deployment.py::deployment_dto` — one deployment in full. */

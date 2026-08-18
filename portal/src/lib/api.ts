@@ -145,11 +145,16 @@ export const API = {
 	createProject: "vmmsx.api.deployment.create_project",
 	branchProjects: "vmmsx.api.deployment.branch_projects",
 	setProjectStatus: "vmmsx.api.deployment.set_project_status",
+	// One project in full: its own fields, the terms of reference written under
+	// it, and the deployments run under those — composed server-side, the same
+	// reason `getTerms` composes its own document and roster.
+	getProject: "vmmsx.api.deployment.get_project",
 	createTerms: "vmmsx.api.deployment.create_terms",
 	branchTerms: "vmmsx.api.deployment.branch_terms",
-	// `getTerms` returns the reviewed field list *and* the society's own template
-	// rendered against it, so what a coordinator reads on the screen is the same
-	// markup the PDF is made from and the two cannot drift apart.
+	// `getTerms` returns the reviewed field list, the society's own template
+	// rendered against it, and the deployments run under it, so what a
+	// coordinator reads on the screen is the same markup the PDF is made from
+	// and cannot drift apart from either.
 	getTerms: "vmmsx.api.deployment.get_terms",
 	createDeployment: "vmmsx.api.deployment.create_deployment",
 

@@ -370,8 +370,17 @@ def _matching(w) -> None:
 	)
 
 	w.code(
-		"matching.candidates(terms_of_reference, geo_node, as_of=None, limit=None) -> dict\n"
+		"matching.candidates(terms_of_reference, geo_node, as_of=None, limit=None,\n"
+		"                     offset=0, search=None, skills=None) -> dict\n"
 		"matching.candidates_for(doc, as_of=None, limit=None) -> dict"
+	)
+
+	w.p(
+		"`search` and `skills` narrow the page fetched before anything is assessed, through"
+		" volunteer/services/capabilities.py's search() — the same queryable surface the volunteer"
+		" Registry stands on. `limit` bounds that page (defaulting to MATCH_PAGE) and `offset` pages"
+		" through it; certifications are only read for volunteers on the page actually fetched, never"
+		" for the whole of a searcher's scope, which is what keeps this affordable at society scale."
 	)
 
 	w.p(

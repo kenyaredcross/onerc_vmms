@@ -91,7 +91,36 @@ const Training = lazy(() =>
 const Overview = lazy(() =>
 	import("./admin/Screens").then((module) => ({ default: module.Overview })),
 );
-const AdminDeployments = lazy(() => import("./admin/Deployments"));
+// The deployment console: a hub landing page and four independent registers —
+// Projects, Terms of Reference, Deployments and Requests — each its own routed
+// page rather than a tab, so a project stands on its own and every record has
+// a URL somebody can link, bookmark or come back to. Detail screens share a
+// chunk with their own list, like `EventDetail`/`OpportunityDetail` above:
+// whoever opens a list is one click from opening a row.
+const DeploymentsHub = lazy(() =>
+	import("./admin/Deployments").then((module) => ({ default: module.DeploymentsHub })),
+);
+const DeploymentList = lazy(() =>
+	import("./admin/Deployments").then((module) => ({ default: module.DeploymentList })),
+);
+const DeploymentDetail = lazy(() =>
+	import("./admin/Deployments").then((module) => ({ default: module.DeploymentDetail })),
+);
+const DeploymentRequestList = lazy(() =>
+	import("./admin/Deployments").then((module) => ({ default: module.RequestList })),
+);
+const ProjectList = lazy(() =>
+	import("./admin/Projects").then((module) => ({ default: module.ProjectList })),
+);
+const ProjectDetail = lazy(() =>
+	import("./admin/Projects").then((module) => ({ default: module.ProjectDetail })),
+);
+const TermsOfReferenceList = lazy(() =>
+	import("./admin/Projects").then((module) => ({ default: module.TermsList })),
+);
+const TermsOfReferenceDetail = lazy(() =>
+	import("./admin/Projects").then((module) => ({ default: module.TermsDetail })),
+);
 const Stipends = lazy(() => import("./admin/Stipends"));
 const AdminEvents = lazy(() => import("./admin/Events"));
 
@@ -226,7 +255,18 @@ export default function App() {
 					    register it belongs to, and probing both endpoints to find out
 					    would ask the server a question the link already knew. */}
 					<Route path="registry/:kind/:name" element={<Person />} />
-					<Route path="deployments" element={<AdminDeployments />} />
+					<Route path="deployments" element={<DeploymentsHub />} />
+					<Route path="deployments/projects" element={<ProjectList />} />
+					<Route path="deployments/projects/:name" element={<ProjectDetail />} />
+					<Route path="deployments/terms" element={<TermsOfReferenceList />} />
+					<Route path="deployments/terms/:name" element={<TermsOfReferenceDetail />} />
+					<Route path="deployments/list" element={<DeploymentList />} />
+					<Route path="deployments/requests" element={<DeploymentRequestList />} />
+					{/* Last: `deployments/:name` is one segment shorter than every route
+					    above it, and React Router matches the more specific static
+					    segments first regardless of declaration order, so this never
+					    shadows `projects`, `terms`, `list` or `requests`. */}
+					<Route path="deployments/:name" element={<DeploymentDetail />} />
 					<Route path="stipends" element={<Stipends />} />
 					<Route path="events" element={<AdminEvents />} />
 					<Route path="tasks" element={<AdminTasks />} />

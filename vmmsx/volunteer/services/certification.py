@@ -43,8 +43,13 @@ CERTIFICATION_DOCTYPE = "VMMS Certification"
 CERTIFICATION_TYPE_DOCTYPE = "VMMS Certification Type"
 
 # What `held()` reads. Explicit, so a field added to the doctype later does not
-# start appearing in DTOs nobody reviewed.
-_HELD_FIELDS = (
+# start appearing in DTOs nobody reviewed. Public, and named without the
+# underscore other module-private constants get here, because
+# `deployment/services/matching.py` reads it too: a caller bulk-fetching
+# certifications for a whole page of volunteers selects the same fields
+# `held()` selects for one, and a second list typed out there would be a
+# second answer to what a held certification looks like.
+HELD_FIELDS = (
 	"name",
 	"certification_type",
 	"completion_date",
@@ -132,7 +137,7 @@ def held(volunteer: str) -> list[dict]:
 	return frappe.get_all(
 		CERTIFICATION_DOCTYPE,
 		filters={"volunteer": volunteer},
-		fields=list(_HELD_FIELDS),
+		fields=list(HELD_FIELDS),
 		order_by="expiry_date asc",
 	)
 
@@ -158,6 +163,27 @@ def deployability(volunteer, as_of=None) -> dict:
 	certifications they hold. Nothing about this is stored anywhere, so it
 	cannot be stale and there is no job that has to have run for it to be right.
 
+	A thin wrapper over `deployability_from()`, reading this one volunteer's
+	held certifications itself. A caller assessing many volunteers at once
+	should call `deployability_from()` directly with certifications it already
+	read in bulk — see its own docstring for why.
+	"""
+	return deployability_from(volunteer, held(volunteer.name), as_of)
+
+
+def deployability_from(volunteer, held_rows: list[dict], as_of=None) -> dict:
+	"""The same verdict as `deployability()`, from certifications already read.
+
+	Exists for a caller assessing a whole page of volunteers at once — matching,
+	principally — so it can fetch every held certification for that page in one
+	query and hand each volunteer's own slice in here, rather than asking
+	`deployability()` to call `held()` on their behalf, once per volunteer.
+
+	Accepts a Document or a plain row dict for `volunteer`, the same way
+	`is_lapsed()` accepts either for a certification: a caller holding a
+	bulk-fetched `frappe._dict` and a caller holding a full Document must get the
+	same answer.
+
 	The rule the module exists to express: **a volunteer whose certification has
 	lapsed is not deployable, and stays Active while that is true.** Lapsing is
 	not a disciplinary event and does not end somebody's volunteering — it makes
@@ -172,11 +198,13 @@ def deployability(volunteer, as_of=None) -> dict:
 	from vmmsx.volunteer.services.volunteer import STATUS_ACTIVE
 
 	as_of = getdate(as_of or today())
-	blocking = [row for row in lapsed(volunteer.name, as_of) if _blocks_deployment(row)]
+	lapsed_rows = [row for row in held_rows if is_lapsed(row, as_of)]
+	blocking = [row for row in lapsed_rows if _blocks_deployment(row)]
 	reasons = []
+	status = volunteer.get("status")
 
-	if volunteer.status != STATUS_ACTIVE:
-		reasons.append(_("This volunteer is {0}, not {1}.").format(_(volunteer.status), _(STATUS_ACTIVE)))
+	if status != STATUS_ACTIVE:
+		reasons.append(_("This volunteer is {0}, not {1}.").format(_(status), _(STATUS_ACTIVE)))
 
 	for row in blocking:
 		reasons.append(
@@ -187,11 +215,11 @@ def deployability(volunteer, as_of=None) -> dict:
 		)
 
 	return {
-		"volunteer": volunteer.name,
+		"volunteer": volunteer.get("name"),
 		"as_of": as_of,
-		"status": volunteer.status,
+		"status": status,
 		"deployable": not reasons,
-		"lapsed_certifications": [row["name"] for row in lapsed(volunteer.name, as_of)],
+		"lapsed_certifications": [row["name"] for row in lapsed_rows],
 		"blocking_certifications": [row["name"] for row in blocking],
 		"reasons": reasons,
 	}

@@ -20,12 +20,17 @@ this module needs and they did not.
    approve because they hold a role. That is the mistake Frappe's native
    Workflow makes and the reason this app does not use it, and it is one `if`
    away at all times.
-4. **`get_user_geo_scope` has exactly one caller, and it is matching.** This is
-   the addition. The other product modules may not call it at all, because their
-   access is core's enforcement layers doing the asking. Matching is different:
-   it is a service that *returns* people, so it has to ask the question itself.
-   One caller is defensible; two is the beginning of a second scope model, and
-   the scan below fails on the second.
+4. **`get_user_geo_scope` has no direct caller in this module at all.**
+   Matching used to be the one defensible exception: it is a service that
+   *returns* people, so it had to ask the scope question itself rather than
+   leaning on core's enforcement layer the way every other file here does. It
+   no longer does. `matching.candidates()` reads volunteers through
+   `capabilities.search()`/`capabilities.count()`, which stand on
+   `frappe.get_list` — the identical permission-query-condition channel every
+   other scoped listing in this app already relies on — so the one exception
+   this module used to carry is gone rather than merely justified. Two direct
+   callers would still be the beginning of a second scope model; the scan below
+   now expects zero.
 
 The scan walks the AST for calls and attribute names, and the raw text for
 doctype names, because a `frappe.get_all("Geo Assignment", ...)` is a string
@@ -196,28 +201,27 @@ class TestRoutingIsDelegated(IntegrationTestCase):
 
 
 class TestTheScopeQuestionHasOneCaller(IntegrationTestCase):
-	def test_only_matching_asks_core_for_a_scope_set(self):
-		"""One caller is a service that returns people. Two is a second scope model."""
+	def test_nothing_in_this_module_resolves_scope_directly(self):
+		"""Matching used to be the one defensible exception. It no longer needs to be."""
 		callers = [
 			path.name for path in module_files("deployment") if SCOPE_CALL in called_names(path.read_text())
 		]
 
-		self.assertEqual(callers, [SCOPE_CALLER])
+		self.assertEqual(callers, [])
 
-	def test_matching_does_ask(self):
-		"""Guards the test above: the exemption is exempting something real."""
-		seam = [path for path in module_files("deployment") if path.name == SCOPE_CALLER]
+	def test_matching_still_reads_volunteers_through_a_scoped_channel(self):
+		"""The positive half: matching still asks, just not by resolving scope itself.
 
-		self.assertEqual(len(seam), 1)
-		self.assertIn(SCOPE_CALL, called_names(seam[0].read_text()))
-
-	def test_matching_resolves_the_role_through_cores_registry(self):
-		"""And never names one. The role is the society's, resolved by core."""
-		source = (Path(frappe.get_app_path("vmmsx")) / "deployment" / "services" / "matching.py").read_text()
+		`capabilities.search()`/`capabilities.count()` stand on `frappe.get_list`,
+		which runs core's permission query condition — the identical mechanism
+		every other scoped listing in this app relies on. Without this, the test
+		above would also pass for a module that had quietly stopped reading
+		volunteers by scope at all.
+		"""
+		source = (Path(frappe.get_app_path("vmmsx")) / "deployment" / "services" / SCOPE_CALLER).read_text()
 		names = called_names(source)
 
-		self.assertIn("resolve_role", names)
-		self.assertIn("for_doctype", names)
+		self.assertIn("capabilities", names)
 
 
 class TestThereIsNoShadowApproval(IntegrationTestCase):

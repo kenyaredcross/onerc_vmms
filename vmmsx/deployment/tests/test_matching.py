@@ -56,6 +56,14 @@ class MatchingTestCase(DeploymentTestCase):
 		cls.searcher_user = cls.searcher("branch_searcher", cls.society_a["branch"])
 		cls.national_user = cls.searcher("national_searcher", cls.society_a["region"])
 
+		# Matching now reads through `capabilities.search()`, which stands on
+		# `frappe.get_list` — ordinary Role Permission read *and* the geo scope
+		# condition, not the geo scope condition alone. A role built only through
+		# `grant_scope()` carries the second and not the first, so it needs this
+		# grant too, the same as the volunteer Registry's own scope role does in
+		# `volunteer/tests/test_coordinator_view.py`.
+		fixtures.grant_doctype_access(fixtures.VOLUNTEER_DOCTYPE, fixtures.VOLUNTEER_SCOPE_ROLE)
+
 	def volunteer_at(self, node: str, handle: str, certifications: tuple = ()):
 		volunteer = fixtures.make_volunteer(fixtures.make_profile(handle, "Candidate"), node)
 
@@ -140,7 +148,10 @@ class TestScopeIsNeverLeaked(MatchingTestCase):
 
 		parameters = set(inspect.signature(matching.candidates).parameters)
 
-		self.assertEqual(parameters, {"terms_of_reference", "geo_node", "as_of", "limit"})
+		self.assertEqual(
+			parameters,
+			{"terms_of_reference", "geo_node", "as_of", "limit", "offset", "search", "skills"},
+		)
 
 		for signature in (parameters, set(inspect.signature(api.find_candidates).parameters)):
 			self.assertNotIn("user", signature)
@@ -264,6 +275,29 @@ class TestTheCriteriaThatAreReal(MatchingTestCase):
 		# desirable requirement did something.
 		self.assertEqual(names[0], ranked.name)
 
+	def test_a_skill_filter_narrows_the_candidates_returned(self):
+		"""Skills stopped being pending: `skills=` reaches `capabilities.search()`."""
+		terms = fixtures.make_terms_requiring()
+
+		skilled = self.volunteer_at(self.society_a["branch"], "Skilled")
+		self.volunteer_at(self.society_a["branch"], "Unskilled")
+
+		skill_key = "matching-test-skill"
+
+		if not frappe.db.exists("VMMS Skill", skill_key):
+			frappe.get_doc(
+				{"doctype": "VMMS Skill", "skill_key": skill_key, "skill_name": "Matching Test Skill"}
+			).insert(ignore_permissions=True)
+
+		skilled.append("skills", {"skill": skill_key})
+		skilled.save(ignore_permissions=True)
+
+		names = self.candidate_names(
+			self.search(self.national_user, terms.name, self.society_a["branch"], skills=[skill_key])
+		)
+
+		self.assertEqual(names, [skilled.name])
+
 	def test_the_result_reports_what_it_matched_on(self):
 		terms = fixtures.make_terms_requiring(
 			mandatory=(fixtures.CERT_SWIFT_WATER,), desirable=(fixtures.CERT_RADIO,)
@@ -316,11 +350,14 @@ class TestTheCriteriaThatArePending(MatchingTestCase):
 			self.assertIn("why", row)
 			self.assertIn(row["status"], ("pending", "proposed"))
 
-	def test_skills_are_named_as_pending_rather_than_faked(self):
-		criteria = {row["criterion"]: row for row in matching.PENDING_CRITERIA}
+	def test_skills_are_no_longer_pending(self):
+		"""Skills used to be named here as unmatched; now they are a real filter.
 
-		self.assertIn("skills", criteria)
-		self.assertEqual(criteria["skills"]["status"], "pending")
+		See `TestTheCriteriaThatAreReal.test_a_skill_filter_narrows_the_candidates_returned`.
+		"""
+		criteria = {row["criterion"] for row in matching.PENDING_CRITERIA}
+
+		self.assertNotIn("skills", criteria)
 
 	def test_no_free_text_declaration_is_read_by_the_matching_code(self):
 		"""The negative half. A substring search on free text would be worse than nothing.

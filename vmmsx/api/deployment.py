@@ -47,6 +47,9 @@ def find_candidates(
 	geo_node: str,
 	as_of: str | None = None,
 	limit: int | None = None,
+	offset: int = 0,
+	search: str | None = None,
+	skills: list | None = None,
 ) -> dict:
 	"""Volunteers who fit this need, within the caller's own area.
 
@@ -54,8 +57,20 @@ def find_candidates(
 	so an out-of-scope volunteer is not returnable by any argument. `as_of` moves
 	the certification questions to another date, which is what a caller planning
 	a deployment for next month actually wants to ask.
+
+	`search` (a name or a docname) and `skills` narrow the page before it is
+	assessed, and `offset` pages through it — see `matching.candidates()` for why
+	this is not merely a display filter.
 	"""
-	return matching.candidates(terms_of_reference, geo_node, as_of=as_of, limit=limit)
+	return matching.candidates(
+		terms_of_reference,
+		geo_node,
+		as_of=as_of,
+		limit=limit,
+		offset=offset,
+		search=search,
+		skills=skills,
+	)
 
 
 @frappe.whitelist()
@@ -575,6 +590,54 @@ def branch_projects(
 
 
 @frappe.whitelist()
+def get_project(name: str) -> dict:
+	"""One project: the terms of reference written under it, and the deployments run under them.
+
+	A deployment reaches a project only through its terms — there is no second
+	link on `VMMS Deployment`, by design — so the deployments here are found by
+	first listing the project's own terms and then asking for deployments
+	anchored to any of them. Composed here rather than at three call sites, for
+	the reason `get_terms` states: reading a project's whole shape as one call is
+	the only way its pieces cannot disagree with each other.
+
+	No owner filter, unlike `branch_projects`/`branch_terms`: this is the
+	project's own children, not what any one coordinator filed, and geo scope
+	from `frappe.get_list`'s permission query condition is the only floor. Every
+	terms of reference ever written under the project comes back, active or
+	retired, and every deployment regardless of status — a project's detail page
+	is its whole history, not today's open work.
+	"""
+	project = _readable(PROJECT_DOCTYPE, name)
+
+	tor_names = frappe.get_list(
+		TERMS_DOCTYPE,
+		filters={"project": project.name},
+		order_by="creation desc",
+		pluck="name",
+	)
+
+	deployment_names = (
+		frappe.get_list(
+			DEPLOYMENT_DOCTYPE,
+			filters={"terms_of_reference": ["in", tor_names]},
+			order_by="modified desc",
+			pluck="name",
+		)
+		if tor_names
+		else []
+	)
+
+	return {
+		"project": project_service.dto(project),
+		"terms": [terms.dto(n) for n in tor_names],
+		"deployments": [
+			deployment_service.status_dto(frappe.get_doc(DEPLOYMENT_DOCTYPE, n))
+			for n in deployment_names
+		],
+	}
+
+
+@frappe.whitelist()
 def set_project_status(name: str, status: str, reason: str | None = None) -> dict:
 	"""Move a project's status. Idempotent, and refuses a move outside the grammar.
 
@@ -664,21 +727,39 @@ def branch_terms(
 
 @frappe.whitelist()
 def get_terms(name: str) -> dict:
-	"""One terms of reference, and the same document rendered for the screen.
+	"""One terms of reference, the same document rendered for the screen, and
+	the deployments run under it.
 
-	Two keys rather than a merged blob: `terms` is the reviewed field list every
-	other caller gets, and `document` is the society's own template rendered
+	Three keys rather than a merged blob: `terms` is the reviewed field list
+	every other caller gets, `document` is the society's own template rendered
 	against it — the identical markup the PDF is made from, so what somebody
-	reads on the screen and what comes out of the printer cannot drift apart.
+	reads on the screen and what comes out of the printer cannot drift apart —
+	and `deployments` is composed here rather than folded into `terms.dto()`,
+	because `terms.dto()` is embedded verbatim inside every `deployment_dto()`
+	call: were the deployment list part of its own shape, every single
+	deployment read would recursively re-embed the full list of its own
+	siblings, unbounded. Composed only at this call site instead.
 
 	Read permission decides. There is no holder bypass, for the reason
 	`_readable` states: a terms of reference is the society's paperwork.
 	"""
 	_readable(TERMS_DOCTYPE, name)
 
+	deployment_names = frappe.get_list(
+		DEPLOYMENT_DOCTYPE,
+		filters={"terms_of_reference": name},
+		order_by="modified desc",
+		limit_page_length=PAGE,
+		pluck="name",
+	)
+
 	return {
 		"terms": terms.dto(name),
 		"document": tor_document.render_document(name)["body"],
+		"deployments": [
+			deployment_service.status_dto(frappe.get_doc(DEPLOYMENT_DOCTYPE, n))
+			for n in deployment_names
+		],
 	}
 
 

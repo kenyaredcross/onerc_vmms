@@ -1,9 +1,17 @@
 import { type ReactNode, useContext, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { API, errorMessage, termsPdfUrl } from "../lib/api";
 import { formatDate, geoPath } from "../lib/format";
-import type { GeoNode, ProjectSummary, TermsDocument, TermsOfReference } from "../portal/types";
+import type {
+	DeploymentSummary,
+	GeoNode,
+	ProjectDossier,
+	ProjectSummary,
+	TermsDocument,
+	TermsOfReference,
+} from "../portal/types";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import {
 	Button,
@@ -11,6 +19,8 @@ import {
 	Card,
 	Empty,
 	ErrorNote,
+	type Crumb,
+	PageHeading,
 	Pill,
 	SectionTitle,
 	Spinner,
@@ -22,12 +32,15 @@ import {
  * The paperwork a deployment stands on: a programme of work, and the terms of
  * reference written under it.
  *
- * **Three registers, one order.** A society opens a project, writes one or more
- * terms of reference under it, and deploys people against those. The screens are
- * drawn in that order because that is the order the records have to exist in,
- * and each form only offers what already exists above it — the terms form lists
+ * **Three registers, one order, four pages.** A society opens a project,
+ * writes one or more terms of reference under it, and deploys people against
+ * those. Each register is its own routed page rather than a tab, because a
+ * project stands on its own — a society can run one that never spins up a
+ * deployment — and a URL is what lets somebody link, bookmark or come back to
+ * one directly. The order the records have to exist in still shows up in each
+ * form, which only offers what already exists above it: the terms form lists
  * the projects this person opened, the deployment form lists the terms they
- * wrote. Nothing here invents a row to fill a gap.
+ * wrote.
  *
  * **`mine` is on by default on both registers and it can only narrow.** The
  * server applies the owner filter on top of a result core's query condition has
@@ -46,9 +59,9 @@ import {
 /* ---------------------------------------------------------------- projects */
 
 export function ProjectList() {
+	const [searchParams] = useSearchParams();
 	const [mine, setMine] = useState(true);
-	const [creating, setCreating] = useState(false);
-	const [open, setOpen] = useState<string | null>(null);
+	const [creating, setCreating] = useState(() => searchParams.get("new") === "1");
 
 	const { data, error, isLoading, mutate } = useFrappeGetCall<{
 		message: { count: number; projects: ProjectSummary[]; open_count: number };
@@ -58,6 +71,11 @@ export function ProjectList() {
 
 	return (
 		<>
+			<PageHeading
+				title="Projects"
+				trail={[{ label: "Deployments", to: "/admin/deployments" }, { label: "Projects" }]}
+			/>
+
 			<div className="mb-4 flex flex-wrap items-center gap-2">
 				<MineToggle mine={mine} onChange={setMine} label="Only mine" />
 				{(data?.message?.open_count ?? 0) > 0 && (
@@ -99,7 +117,12 @@ export function ProjectList() {
 							<Card>
 								<div className="flex flex-wrap items-start justify-between gap-3">
 									<div>
-										<SectionTitle>{row.project_name}</SectionTitle>
+										<Link
+											to={`/admin/deployments/projects/${encodeURIComponent(row.name)}`}
+											className="hover:underline"
+										>
+											<SectionTitle>{row.project_name}</SectionTitle>
+										</Link>
 										<p className="text-[12px] text-slate-body">{geoPath(row.geo_path)}</p>
 										<p className="mt-0.5 text-[12px] text-slate-faint">
 											{row.start_date ? formatDate(row.start_date) : "No start date"}
@@ -116,24 +139,176 @@ export function ProjectList() {
 								)}
 
 								<div className="mt-4 flex flex-wrap items-center gap-2">
-									<Button
-										variant="quiet"
-										onClick={() => setOpen(open === row.name ? null : row.name)}
+									<Link
+										to={`/admin/deployments/projects/${encodeURIComponent(row.name)}`}
+										className="text-[12px] font-semibold text-navy hover:underline"
 									>
-										{open === row.name ? "Hide status" : "Change status"}
-									</Button>
+										Open project →
+									</Link>
 									<span className="text-[11.5px] text-slate-faint">{row.name}</span>
 								</div>
-
-								{open === row.name && (
-									<StatusRow project={row} onChanged={() => void mutate()} />
-								)}
 							</Card>
 						</li>
 					))}
 				</ul>
 			)}
 		</>
+	);
+}
+
+/**
+ * One project in full: its own record, the terms of reference written under
+ * it, and the deployments run under those.
+ *
+ * **Composed as one read, `api/deployment.py::get_project`**, for the reason
+ * every other detail screen in this app is: a project, its terms and its
+ * deployments read at three different instants could disagree with each other
+ * in a way that would only show up as confusion later.
+ *
+ * **A project may have terms with no deployment yet, or none of either.** Both
+ * lists say so honestly rather than looking like a screen that failed to load.
+ */
+export function ProjectDetail() {
+	const { name = "" } = useParams<{ name: string }>();
+
+	const { data, error, isLoading, mutate } = useFrappeGetCall<{ message: ProjectDossier }>(
+		API.getProject,
+		{ name },
+		`admin:project:${name}`,
+	);
+
+	if (isLoading) return <Spinner label="Loading project…" />;
+	if (error) return <ErrorNote>{errorMessage(error)}</ErrorNote>;
+
+	const dossier = data?.message;
+	if (!dossier) return null;
+
+	const { project, terms, deployments } = dossier;
+
+	const trail: Crumb[] = [
+		{ label: "Deployments", to: "/admin/deployments" },
+		{ label: "Projects", to: "/admin/deployments/projects" },
+		{ label: project.project_name },
+	];
+
+	return (
+		<>
+			<PageHeading title={project.project_name} trail={trail} />
+
+			<div className="space-y-4">
+				<Card>
+					<div className="flex flex-wrap items-start justify-between gap-3">
+						<div>
+							<p className="text-[12px] text-slate-body">{geoPath(project.geo_path)}</p>
+							<p className="mt-0.5 text-[12px] text-slate-faint">
+								{project.start_date ? formatDate(project.start_date) : "No start date"}
+								{project.end_date ? ` → ${formatDate(project.end_date)}` : ""}
+							</p>
+						</div>
+						<StateBadge state={project.status} />
+					</div>
+
+					{project.summary && (
+						<p className="mt-3 whitespace-pre-line text-[12.5px] text-slate-body">
+							{project.summary}
+						</p>
+					)}
+
+					{project.notes && (
+						<p className="mt-2 whitespace-pre-line text-[12px] text-slate-faint">{project.notes}</p>
+					)}
+
+					<div className="mt-4 border-t border-hairline pt-3">
+						<StatusRow project={project} onChanged={() => void mutate()} />
+					</div>
+				</Card>
+
+				<Card>
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<SectionTitle>Terms of reference under this project ({terms.length})</SectionTitle>
+						<Link
+							to="/admin/deployments/terms?new=1"
+							className="text-[12px] font-semibold text-navy hover:underline"
+						>
+							Write terms of reference
+						</Link>
+					</div>
+
+					{terms.length === 0 ? (
+						<p className="mt-2 text-[12.5px] text-slate-faint">
+							No terms of reference written under this project yet.
+						</p>
+					) : (
+						<ul className="mt-3 space-y-2">
+							{terms.map((row) => (
+								<TermsRow key={row.name} row={row} />
+							))}
+						</ul>
+					)}
+				</Card>
+
+				<Card>
+					<SectionTitle>Deployments under this project ({deployments.length})</SectionTitle>
+
+					{deployments.length === 0 ? (
+						<p className="mt-2 text-[12.5px] text-slate-faint">
+							No deployments run under this project yet.
+						</p>
+					) : (
+						<ul className="mt-3 space-y-2">
+							{deployments.map((row) => (
+								<DeploymentRow key={row.name} row={row} />
+							))}
+						</ul>
+					)}
+				</Card>
+			</div>
+		</>
+	);
+}
+
+/** A terms of reference, linked from a project's or a deployment's own page. */
+function TermsRow({ row }: { row: TermsOfReference }) {
+	return (
+		<li>
+			<Link
+				to={`/admin/deployments/terms/${encodeURIComponent(row.name)}`}
+				className="block rounded-card border border-hairline bg-white px-4 py-3 transition hover:border-hairline-strong"
+			>
+				<div className="flex items-start justify-between gap-2">
+					<span className="text-[13.5px] font-bold text-ink">{row.tor_name}</span>
+					{!row.is_active && <Pill tone="quiet">Retired</Pill>}
+				</div>
+				<div className="mt-0.5 text-[11.5px] text-slate-faint">
+					{row.geo_scope_path ? geoPath(row.geo_scope_path) : "Applies anywhere"}
+					{row.requires_approver ? " · routed for approval" : ""}
+				</div>
+			</Link>
+		</li>
+	);
+}
+
+/** A deployment, linked from a project's or a terms of reference's own page. */
+function DeploymentRow({ row }: { row: DeploymentSummary }) {
+	return (
+		<li>
+			<Link
+				to={`/admin/deployments/${encodeURIComponent(row.name)}`}
+				className="block rounded-card border border-hairline bg-white px-4 py-3 transition hover:border-hairline-strong"
+			>
+				<div className="flex items-start justify-between gap-2">
+					<span className="text-[13.5px] font-bold text-ink">
+						{row.terms_of_reference || row.name}
+					</span>
+					<StateBadge state={row.status} />
+				</div>
+				<div className="mt-1 text-[11.5px] text-slate-body">{geoPath(row.geo_path)}</div>
+				<div className="mt-0.5 text-[11.5px] text-slate-faint">
+					{row.participant_count} on the roster
+					{row.start_date ? ` · from ${formatDate(row.start_date)}` : ""}
+				</div>
+			</Link>
+		</li>
 	);
 }
 
@@ -158,7 +333,7 @@ function StatusRow({ project, onChanged }: { project: ProjectSummary; onChanged:
 	};
 
 	return (
-		<div className="mt-3 border-t border-hairline pt-3">
+		<div>
 			{project.is_open ? (
 				<div className="flex flex-wrap gap-2">
 					{["Planned", "Active", "Completed", "Cancelled"]
@@ -302,9 +477,9 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 /* ------------------------------------------------------- terms of reference */
 
 export function TermsList() {
+	const [searchParams] = useSearchParams();
 	const [mine, setMine] = useState(true);
-	const [creating, setCreating] = useState(false);
-	const [open, setOpen] = useState<string | null>(null);
+	const [creating, setCreating] = useState(() => searchParams.get("new") === "1");
 
 	const { data, error, isLoading, mutate } = useFrappeGetCall<{
 		message: { count: number; terms: TermsOfReference[] };
@@ -314,6 +489,11 @@ export function TermsList() {
 
 	return (
 		<>
+			<PageHeading
+				title="Terms of Reference"
+				trail={[{ label: "Deployments", to: "/admin/deployments" }, { label: "Terms of Reference" }]}
+			/>
+
 			<div className="mb-4 flex flex-wrap items-center gap-2">
 				<MineToggle mine={mine} onChange={setMine} label="Only mine" />
 				<div className="ml-auto">
@@ -346,47 +526,36 @@ export function TermsList() {
 			)}
 
 			{rows.length > 0 && (
-				<div className="grid gap-5 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-					<ul className="space-y-2.5">
-						{rows.map((row) => (
-							<li key={row.name}>
-								<button
-									type="button"
-									onClick={() => setOpen(row.name)}
-									className={cx(
-										"w-full rounded-card border bg-white px-4 py-3 text-left transition",
-										(open ?? rows[0]?.name) === row.name
-											? "border-navy shadow-card"
-											: "border-hairline hover:border-hairline-strong",
-									)}
-								>
-									<div className="flex items-start justify-between gap-2">
-										<span className="text-[13.5px] font-bold text-ink">{row.tor_name}</span>
-										{!row.is_active && <Pill tone="quiet">Retired</Pill>}
-									</div>
-									{row.project_name && (
-										<div className="mt-1 text-[11.5px] text-slate-body">
-											{row.project_name}
-										</div>
-									)}
-									<div className="mt-0.5 text-[11.5px] text-slate-faint">
-										{row.geo_scope_path ? geoPath(row.geo_scope_path) : "Applies anywhere"}
-										{row.requires_approver ? " · routed for approval" : ""}
-									</div>
-								</button>
-							</li>
-						))}
-					</ul>
-
-					<TermsPane name={open ?? rows[0].name} />
-				</div>
+				<ul className="space-y-2.5">
+					{rows.map((row) => (
+						<li key={row.name}>
+							<Link
+								to={`/admin/deployments/terms/${encodeURIComponent(row.name)}`}
+								className="block rounded-card border border-hairline bg-white px-4 py-3 transition hover:border-hairline-strong"
+							>
+								<div className="flex items-start justify-between gap-2">
+									<span className="text-[13.5px] font-bold text-ink">{row.tor_name}</span>
+									{!row.is_active && <Pill tone="quiet">Retired</Pill>}
+								</div>
+								{row.project_name && (
+									<div className="mt-1 text-[11.5px] text-slate-body">{row.project_name}</div>
+								)}
+								<div className="mt-0.5 text-[11.5px] text-slate-faint">
+									{row.geo_scope_path ? geoPath(row.geo_scope_path) : "Applies anywhere"}
+									{row.requires_approver ? " · routed for approval" : ""}
+								</div>
+							</Link>
+						</li>
+					))}
+				</ul>
 			)}
 		</>
 	);
 }
 
 /**
- * One terms of reference as the society's own document.
+ * One terms of reference as the society's own document, and the deployments
+ * run under it.
  *
  * The markup is the server's — the same `VMMS Template` render the PDF is built
  * from — so what is on the screen and what comes out of the printer are one
@@ -394,7 +563,9 @@ export function TermsList() {
  * society's lockup because `tor_document.py` reads the same
  * `National Society Settings` answer the emails and the cards read.
  */
-function TermsPane({ name }: { name: string }) {
+export function TermsDetail() {
+	const { name = "" } = useParams<{ name: string }>();
+
 	const { data, error, isLoading } = useFrappeGetCall<{ message: TermsDocument }>(
 		API.getTerms,
 		{ name },
@@ -405,32 +576,67 @@ function TermsPane({ name }: { name: string }) {
 	if (error) return <ErrorNote>{errorMessage(error)}</ErrorNote>;
 	if (!data?.message) return null;
 
-	return (
-		<div className="space-y-4">
-			<Card>
-				<div className="flex flex-wrap items-center justify-between gap-2">
-					<SectionTitle>Terms of reference</SectionTitle>
-					<ButtonLink to={termsPdfUrl(name)}>Print as PDF</ButtonLink>
-				</div>
-				<p className="mt-1 text-[12px] text-slate-faint">
-					On your society's letterhead. The same document the PDF is made from, so what you read
-					here is what prints.
-				</p>
-			</Card>
+	const { terms, document, deployments } = data.message;
 
-			<Card className="overflow-x-auto">
-				{/* The body is rendered by the server from a template a society
-				    administrator edits on the desk, which is why it is inserted as
-				    markup rather than as text. It is authored configuration on the
-				    same footing as an Email Template, not a value somebody typed
-				    into a public form. */}
-				<div
-					className="vmms-tor-preview"
-					// eslint-disable-next-line react/no-danger
-					dangerouslySetInnerHTML={{ __html: data.message.document }}
-				/>
-			</Card>
-		</div>
+	const trail: Crumb[] = [
+		{ label: "Deployments", to: "/admin/deployments" },
+		...(terms.project
+			? ([
+					{
+						label: terms.project_name ?? terms.project,
+						to: `/admin/deployments/projects/${encodeURIComponent(terms.project)}`,
+					},
+				] as Crumb[])
+			: ([{ label: "Terms of Reference", to: "/admin/deployments/terms" }] as Crumb[])),
+		{ label: terms.tor_name },
+	];
+
+	return (
+		<>
+			<PageHeading title={terms.tor_name} trail={trail} />
+
+			<div className="space-y-4">
+				<Card>
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<SectionTitle>Terms of reference</SectionTitle>
+						<ButtonLink to={termsPdfUrl(name)}>Print as PDF</ButtonLink>
+					</div>
+					<p className="mt-1 text-[12px] text-slate-faint">
+						On your society's letterhead. The same document the PDF is made from, so what you read
+						here is what prints.
+					</p>
+				</Card>
+
+				<Card className="overflow-x-auto">
+					{/* The body is rendered by the server from a template a society
+					    administrator edits on the desk, which is why it is inserted as
+					    markup rather than as text. It is authored configuration on the
+					    same footing as an Email Template, not a value somebody typed
+					    into a public form. */}
+					<div
+						className="vmms-tor-preview"
+						// eslint-disable-next-line react/no-danger
+						dangerouslySetInnerHTML={{ __html: document }}
+					/>
+				</Card>
+
+				<Card>
+					<SectionTitle>Deployments under these terms ({deployments.length})</SectionTitle>
+
+					{deployments.length === 0 ? (
+						<p className="mt-2 text-[12.5px] text-slate-faint">
+							No deployment has been run under these terms yet.
+						</p>
+					) : (
+						<ul className="mt-3 space-y-2">
+							{deployments.map((row) => (
+								<DeploymentRow key={row.name} row={row} />
+							))}
+						</ul>
+					)}
+				</Card>
+			</div>
+		</>
 	);
 }
 
