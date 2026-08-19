@@ -9,6 +9,7 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     # "frappe~=16.0.0" # Installed and managed by bench.
+    "python-docx", # vmmsx/docs/*: the setup-guide and reference-guide generators build a .docx.
 ]
 
 [build-system]
