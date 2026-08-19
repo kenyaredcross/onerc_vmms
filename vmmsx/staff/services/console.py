@@ -122,7 +122,14 @@ def visible(user: str | None = None) -> list[str]:
 	# the society up from.
 	admitted += [entry["section"] for entry in ADMIN_SECTIONS if _readable(entry["doctypes"], user)]
 
-	if not admitted:
+	# The SMS side door is reason enough to be here too, the same argument as
+	# ADMIN_SECTIONS just above: somebody holding only the society's configured
+	# SMS role and none of the console's own scope roles still has a register
+	# behind what they may do — onerc_sms's campaign builder — and must not be
+	# bounced back to their own portal before the link to it ever renders. It
+	# is not a `section` of its own, so it never joins `sections` below; it
+	# only changes whether this function returns empty.
+	if not admitted and not sms_access(user):
 		return []
 
 	sections = set(admitted) | set(UNGATED_SECTIONS)
@@ -134,10 +141,29 @@ def available(user: str | None = None) -> bool:
 	"""May this person open the console at all?
 
 	False for a volunteer, a member and anybody else holding none of the
-	society's staff scope roles. The console is not a screen they are shown
-	empty; it is a place they are not sent.
+	society's staff scope roles and no access to the SMS side door either. The
+	console is not a screen they are shown empty; it is a place they are not
+	sent.
 	"""
 	return bool(visible(user))
+
+
+def sms_access(user: str | None = None) -> bool:
+	"""May this person open onerc_sms's own campaign builder, on the desk?
+
+	Not a `GATED_SECTIONS` entry, deliberately: every doctype named there is
+	one `staff/tests/test_console.py` asserts *exists on the site*, a fair
+	assumption for vmmsx's own doctypes and onerc_core's, and not one this app
+	can make about `SMS Campaign` — it belongs to onerc_sms, an optional
+	companion app vmmsx does not require. Rides alongside `has_desk_access()`
+	in `api/console.py` instead: a side door into the framework's own form for
+	whoever `staff/services/permissions.py` has granted it to, the same shape
+	as the desk link itself, and for the same reason — nobody is shown a door
+	that would give them a permission error at the other end.
+	"""
+	user = user or frappe.session.user
+
+	return _readable(("SMS Campaign",), user)
 
 
 def _readable(doctypes: tuple[str, ...], user: str) -> bool:

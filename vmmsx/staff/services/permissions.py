@@ -72,6 +72,7 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 	society would have no way to hand it to anybody.
 	"""
 	from vmmsx.deployment.services import society as deployment_society
+	from vmmsx.sms.services import society as sms_society
 	from vmmsx.staff.services.workspaces import (
 		BRANCH_LOCATION_SCOPE_ROLE_FIELD,
 		MEMBERSHIP_SCOPE_ROLE_FIELD,
@@ -125,6 +126,15 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 		# other row in this table. What a signed-out visitor sees on the public map
 		# is `is_published` on each location and has nothing to do with this grant.
 		(holder(BRANCH_LOCATION_SCOPE_ROLE_FIELD), {"VMMS Branch Location": FULL}),
+		# The one row here that grants on a doctype this app does not own. `SMS
+		# Campaign` belongs to onerc_sms, an optional companion app — `_grant`'s
+		# existing "skip a doctype that does not exist" guard is what keeps a site
+		# without it unaffected, same as every other row on a site missing the
+		# module it belongs to. Geo scoping is not this grant's job: it comes from
+		# `SMS Campaign.resolve_from_doctype()` reading VMMS Volunteer/VMMS Member
+		# with the campaign owner's own already-scoped permissions. See
+		# `vmmsx/sms/services/society.py`.
+		(holder(sms_society.SCOPE_ROLE_FIELD), {"SMS Campaign": FULL}),
 	]
 
 

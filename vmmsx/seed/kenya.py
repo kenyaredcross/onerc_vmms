@@ -103,6 +103,14 @@ BRANCH_NODES = ("Nairobi Central", "Nairobi West")
 
 ROLE_VOLUNTEER_APPROVER = "Volunteer Approver"
 ROLE_MEMBERSHIP_APPROVER = "Membership Approver"
+# Deployments, terms of reference and projects postdate the rest of this
+# file's role table, the same reason `VMMS Project` postdates
+# `kenya_operations.py`'s terms of reference. Named separately from the two
+# approver roles above rather than folded into one of them, the same reasoning
+# `gambia.py`'s `ROLE_DEPLOYMENT_MANAGER` states: "who may see the register" and
+# "who sends people out" are different questions even where one demo account
+# answers both.
+ROLE_DEPLOYMENT_MANAGER = "Deployment Manager"
 ROLE_VOLUNTEER = "Volunteer"
 ROLE_MEMBER = "Member"
 ROLE_APPLICANT = "Society Applicant"
@@ -111,6 +119,11 @@ ROLE_APPLICANT = "Society Applicant"
 ROLES = (
 	(ROLE_VOLUNTEER_APPROVER, "Reviews volunteer applications for the area they are assigned to.", True),
 	(ROLE_MEMBERSHIP_APPROVER, "Reviews memberships that a membership type routes for approval.", True),
+	(
+		ROLE_DEPLOYMENT_MANAGER,
+		"Sends people out: projects, terms of reference, deployments and deployment requests.",
+		True,
+	),
 	(ROLE_VOLUNTEER, "An accepted volunteer, seeing their own record and nobody else's.", False),
 	(
 		ROLE_MEMBER,
@@ -179,14 +192,30 @@ CERTIFICATE_TEMPLATE_KEY = "membership_certificate"
 APPLICATION_DOCTYPE = "VMMS Volunteer Application"
 MEMBERSHIP_DOCTYPE = "VMMS Membership"
 WORKFLOW_DOCTYPE = "VMMS Approval Workflow"
+PROJECT_DOCTYPE = "VMMS Project"
+TERMS_DOCTYPE = "VMMS Terms of Reference"
+DEPLOYMENT_DOCTYPE = "VMMS Deployment"
+REQUEST_DOCTYPE = "VMMS Deployment Request"
 
 # The doctypes a society role has to be able to write for the engine to record a
 # decision on its behalf: acting on an approval saves the governed document. The
 # shipped JSONs grant only System Manager, deliberately, because which society
 # role gets this is configuration. This is that configuration.
+#
+# The four deployment doctypes below are not approval-governed and are here for
+# a related but distinct reason: `vmms_deployment_scope_role` and its two
+# siblings only narrow a read `frappe.get_list` was already going to run — they
+# are not, by themselves, read permission. A role holding only a Geo Assignment
+# and none of this fails `frappe.get_list`'s own permission check before the
+# geo scope condition ever gets a say, which is what an empty console (or a
+# raw Permission Error) on a site seeded before this line existed would mean.
 APPROVER_WRITABLE = {
 	APPLICATION_DOCTYPE: ROLE_VOLUNTEER_APPROVER,
 	MEMBERSHIP_DOCTYPE: ROLE_MEMBERSHIP_APPROVER,
+	PROJECT_DOCTYPE: ROLE_DEPLOYMENT_MANAGER,
+	TERMS_DOCTYPE: ROLE_DEPLOYMENT_MANAGER,
+	DEPLOYMENT_DOCTYPE: ROLE_DEPLOYMENT_MANAGER,
+	REQUEST_DOCTYPE: ROLE_DEPLOYMENT_MANAGER,
 }
 
 # --- the demo approver ----------------------------------------------------
@@ -566,11 +595,13 @@ def _workflows() -> list[dict]:
 
 
 def _approver_permissions() -> list[dict]:
-	"""Let each approver role act on the doctype it approves.
+	"""Grant each role in `APPROVER_WRITABLE` ordinary access to its doctype.
 
-	Recording a decision saves the governed document, so the role a stage names
-	needs write on it. Added as Custom DocPerms, which is what an administrator
-	does in the Role Permissions Manager.
+	Two reasons live in the one dict: recording a decision saves the governed
+	document, so an approval stage's role needs write on it; a deployment scope
+	role needs read for a different reason, stated where `APPROVER_WRITABLE` is
+	built. Added as Custom DocPerms, which is what an administrator does in the
+	Role Permissions Manager.
 	"""
 	from frappe.permissions import add_permission, update_permission_property
 
@@ -592,7 +623,7 @@ def _approver_permissions() -> list[dict]:
 
 
 def _approver() -> list[dict]:
-	"""One person holding both approver roles, placed at the first county.
+	"""One person holding all three staff roles, placed at the first county.
 
 	Placed with `Geo Assignment`, which is core's answer to *where*: holding
 	the role is not authority anywhere, and holding it at Nairobi is authority
@@ -621,7 +652,7 @@ def _approver() -> list[dict]:
 		).insert(ignore_permissions=True)
 		rows.append({"key": APPROVER_USER, "status": "created"})
 
-	for role in (ROLE_VOLUNTEER_APPROVER, ROLE_MEMBERSHIP_APPROVER):
+	for role in (ROLE_VOLUNTEER_APPROVER, ROLE_MEMBERSHIP_APPROVER, ROLE_DEPLOYMENT_MANAGER):
 		if role not in frappe.get_roles(APPROVER_USER):
 			user.add_roles(role)
 			rows.append({"key": f"{APPROVER_USER} holds {role}", "status": "created"})
@@ -659,17 +690,19 @@ def _approver() -> list[dict]:
 def _settings() -> list[dict]:
 	"""Point every role setting this app owns at a role that really exists.
 
-	All six ship empty and empty fails closed, which is right for an app nobody
+	All ship empty and empty fails closed, which is right for an app nobody
 	has configured and useless for a demo: an unconfigured scope role means no
 	approver can open the application routed to them. This is a society making
 	its choices, and every one of them is a value in this file rather than a
 	default anywhere in the source.
 
-	The two scope roles are pointed at the approver roles here, which keeps the
-	demo to one role per job. A larger society would separate them, because
-	"who may see the register" and "who decides an application" are genuinely
-	different questions and the app keeps them in different settings for exactly
-	that reason.
+	The volunteer and membership scope roles are pointed at the approver roles
+	here, which keeps the demo to one role per job. A larger society would
+	separate them, because "who may see the register" and "who decides an
+	application" are genuinely different questions and the app keeps them in
+	different settings for exactly that reason. The three deployment-related
+	settings are pointed at `ROLE_DEPLOYMENT_MANAGER` instead — see the note on
+	that role — even though the demo hands both to the same person.
 	"""
 	from vmmsx.member.services.society import MEMBER_ROLE_FIELD as MEMBERSHIP_MEMBER_ROLE
 	from vmmsx.member.services.society import PRINT_ROLE_FIELD
@@ -679,6 +712,12 @@ def _settings() -> list[dict]:
 	values = {
 		"vmms_volunteer_scope_role": ROLE_VOLUNTEER_APPROVER,
 		"vmms_membership_scope_role": ROLE_MEMBERSHIP_APPROVER,
+		# Ship empty otherwise, per `deployment/services/society.py`'s own
+		# docstring — which means nobody but an administrator could open the
+		# console's Deployments tab on a site seeded before this line existed.
+		"vmms_deployment_scope_role": ROLE_DEPLOYMENT_MANAGER,
+		"vmms_deployment_request_scope_role": ROLE_DEPLOYMENT_MANAGER,
+		"vmms_branch_transfer_scope_role": ROLE_DEPLOYMENT_MANAGER,
 		PRINT_ROLE_FIELD: ROLE_MEMBERSHIP_APPROVER,
 		VOLUNTEER_MEMBER_ROLE: ROLE_VOLUNTEER,
 		MEMBERSHIP_MEMBER_ROLE: ROLE_MEMBER,

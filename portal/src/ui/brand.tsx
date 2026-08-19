@@ -61,6 +61,7 @@ export function BrandLockup({
 	tone = "light",
 	compact = false,
 	size = "md",
+	wrap = false,
 }: {
 	tone?: "light" | "dark";
 	compact?: boolean;
@@ -70,6 +71,15 @@ export function BrandLockup({
 	 * still wins, because it is the collapsed sidebar and is narrower than both.
 	 */
 	size?: "md" | "sm";
+	/**
+	 * Let a long name break onto a second line instead of ending in an
+	 * ellipsis — for the rail, which has the vertical room to spare and never
+	 * wants a society's own name silently cut off. Everywhere else this sits
+	 * in a fixed-height bar (the top bar, the landing header), where a second
+	 * line would overflow it rather than fit inside it, so those keep the
+	 * one-line, truncated default.
+	 */
+	wrap?: boolean;
 }) {
 	const dark = tone === "dark";
 	const small = size === "sm" && !compact;
@@ -90,24 +100,25 @@ export function BrandLockup({
 	const name = (compact && society?.short_name) || society?.name || society?.short_name || "";
 
 	return (
-		<div className="flex flex-none items-center gap-[9px]">
+		<div className={cx("flex min-w-0 gap-[9px]", wrap ? "items-start" : "items-center")}>
 			{mark ? (
 				<img
 					src={mark}
 					alt=""
-					className={cx("w-auto object-contain", compact ? "h-6" : small ? "h-[22px]" : "h-8")}
+					className={cx("w-auto flex-none object-contain", compact ? "h-6" : small ? "h-[22px]" : "h-8")}
 					// The society's own upload, at whatever aspect it was made in.
 					// Constraining the height and letting the width follow is the
 					// only rule that does not distort somebody's emblem.
 				/>
 			) : (
-				<CrossMark className="text-signal" size={compact ? 20 : small ? 17 : 21} />
+				<CrossMark className="flex-none text-signal" size={compact ? 20 : small ? 17 : 21} />
 			)}
 
 			{name && (
 				<span
 					className={cx(
 						"font-display font-extrabold leading-tight tracking-tight",
+						wrap ? "line-clamp-2 break-words" : "truncate",
 						compact ? "text-[13px]" : small ? "text-[14px]" : "text-[16px]",
 						dark ? "text-white" : "text-ink",
 					)}

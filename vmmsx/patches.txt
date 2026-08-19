@@ -47,3 +47,6 @@ vmmsx.patches.reseed_society_with_operations
 # nobody at the time they were submitted. See the patch's own docstring: without
 # it, every application outside one region was admitted to nobody at all.
 vmmsx.patches.repair_approval_routing
+# Which role, if any, may open onerc_sms's own campaign builder — the one
+# setting vmmsx owns for a doctype it does not. See the patch's own docstring.
+vmmsx.patches.install_sms_scope_role

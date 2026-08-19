@@ -81,7 +81,13 @@ VOLUNTEERS = (
 		# that shows the two satellites are independent: one Red Profile, two
 		# affiliations, neither derived from the other.
 		"membership": "approved",
-		"certifications": (("first-aid", -200), ("psychological-first-aid", -430)),
+		# Both of what `flood-response` requires, so a coordinator matching
+		# against that terms of reference has somebody real to find.
+		"certifications": (
+			("first-aid", -200),
+			("psychological-first-aid", -430),
+			("water-safety", -150),
+		),
 		"logs": (
 			(-3, 6.0, "emergency_response", "Flood assessment with the branch team in Kibera."),
 			(-9, 4.5, "blood_drive", "Donor reception and refreshments at the Sarit drive."),
@@ -130,6 +136,61 @@ VOLUNTEERS = (
 			(-2, 3.5, "community_event", "School talk on road safety in South B."),
 			(-19, 5.0, "community_event", "Psychosocial support at the reception centre."),
 		),
+	},
+	{
+		"email": "peter@krcs.demo",
+		"first_name": "Peter",
+		"last_name": "Otieno",
+		"gender": "Male",
+		"phone": "+254712000104",
+		"date_of_birth": "1993-02-18",
+		"branch": 1,
+		"skills": ("first_aid", "driving"),
+		"availability": ("on_call", "weekend_mornings"),
+		"membership": None,
+		# Both of what `flood-response` requires as well, at the other branch:
+		# a candidate search for it should turn up two people, not one.
+		"certifications": (("first-aid", -100), ("water-safety", -100)),
+		"logs": (
+			(-6, 6.5, "emergency_response", "Boat patrol supporting the Nairobi West evacuation."),
+			(-21, 4.0, "operations_support", "Kit inspection ahead of the long rains."),
+		),
+	},
+	{
+		"email": "fatuma@krcs.demo",
+		"first_name": "Fatuma",
+		"last_name": "Hassan",
+		"gender": "Female",
+		"phone": "+254712000105",
+		"date_of_birth": "1998-09-30",
+		"branch": 0,
+		"skills": ("counselling", "first_aid"),
+		"availability": ("weekday_mornings", "public_holidays"),
+		"membership": "approved",
+		# `blood-drive-support`'s desirable certification, so ranking has
+		# something to prefer somebody for.
+		"certifications": (("blood-donor-care", -60),),
+		"logs": (
+			(-4, 5.0, "blood_drive", "Donor reception at the Nairobi Central drive."),
+			(-27, 3.0, "community_event", "Hygiene talk at a Nairobi Central primary school."),
+		),
+	},
+	{
+		"email": "daniel@krcs.demo",
+		"first_name": "Daniel",
+		"last_name": "Kiprop",
+		"gender": "Male",
+		"phone": "+254712000106",
+		"date_of_birth": "2000-01-14",
+		"branch": 1,
+		"skills": ("logistics", "it"),
+		"availability": ("weekday_evenings",),
+		"membership": None,
+		# Nobody's mandatory certification held yet, deliberately: a candidate
+		# search for anything that requires one should pass over him rather than
+		# every seeded volunteer qualifying for everything.
+		"certifications": (),
+		"logs": ((-8, 4.5, "operations_support", "Warehouse stock count at the Nairobi West store."),),
 	},
 )
 
@@ -192,16 +253,55 @@ TIME_LOG_CATEGORIES = (
 	("blood_drive", "Blood Donation Drive", "Donor reception, screening support and post-donation care."),
 )
 
+# --- the programmes some of this work is written under ---------------------
+#
+# `VMMS Project` postdates the rest of this file: terms of reference were
+# seeded before a project existed to write them under, which is exactly the
+# situation the doctype itself was built to allow — see its own field
+# description. Not every terms of reference gets one, deliberately: a society
+# that runs standing duties beside its programmes should see both in the demo,
+# not a portfolio where everything has been filed under something.
+
+PROJECTS = (
+	{
+		"key": "nairobi-flood-response-2026",
+		"name": "Nairobi Flood Response 2026",
+		"where": ("county", 0),
+		"status": "Active",
+		"start_in": -14,
+		"end_in": 30,
+		"summary": (
+			"The society's coordinated response to the 2026 long rains: evacuation support, relief"
+			" distribution and temporary shelter across Nairobi county's flood-affected branches."
+		),
+	},
+	{
+		"key": "community-health-safety-2026",
+		"name": "Community Health & Safety Programme",
+		"where": ("branch", 0),
+		"status": "Planned",
+		"start_in": 7,
+		"end_in": 120,
+		"summary": (
+			"A branch-led programme of household health outreach and road safety campaigning,"
+			" running through the last quarter of the year."
+		),
+	},
+)
+
 # --- the work a society asks for ------------------------------------------
 #
 # Every one of these is `direct` mode; see the module docstring for why. The
 # certifications named must exist above, and the mandatory ones are what the
-# opportunity card shows as a requirement.
+# opportunity card shows as a requirement. `project`, where present, is one of
+# `PROJECTS`' own keys, resolved by `_project()` the same way `where` is
+# resolved by `_where()`.
 
 TERMS = (
 	{
 		"key": "flood-response",
 		"name": "Flood Response Team",
+		"project": "nairobi-flood-response-2026",
 		"purpose": (
 			"Search, evacuation support and relief distribution in communities cut off by"
 			" seasonal flooding."
@@ -241,6 +341,7 @@ TERMS = (
 	{
 		"key": "community-health",
 		"name": "Community Health Outreach",
+		"project": "community-health-safety-2026",
 		"purpose": (
 			"Household and school visits on a branch health campaign — hygiene, immunisation"
 			" awareness and referral."
@@ -256,6 +357,7 @@ TERMS = (
 	{
 		"key": "road-safety",
 		"name": "Road Safety Campaign",
+		"project": "community-health-safety-2026",
 		"purpose": "Public awareness at matatu stages and schools ahead of the December travel season.",
 		"responsibilities": (
 			"Run stage-side awareness sessions with the branch team.\n"
@@ -268,6 +370,7 @@ TERMS = (
 	{
 		"key": "shelter-support",
 		"name": "Emergency Shelter Support",
+		"project": "nairobi-flood-response-2026",
 		"purpose": "Setting up and running a temporary reception centre for displaced households.",
 		"responsibilities": (
 			"Set up sleeping, washing and feeding areas to the branch standard.\n"
@@ -542,6 +645,7 @@ def main(commit: bool = True) -> dict:
 		"certification_types": _certification_types(),
 		"time_log_categories": _time_log_categories(),
 		"time_log_permission": _time_log_permission(),
+		"projects": _projects(),
 		"terms_of_reference": _terms(),
 		"deployment_requests": _requests(),
 		"volunteers": _volunteers(),
@@ -791,15 +895,88 @@ def _time_log_permission() -> list[dict]:
 	]
 
 
+# --- the programmes ---------------------------------------------------------
+
+
+def _project(key: str | None) -> str | None:
+	"""The seeded project matching this `PROJECTS` key, by its name.
+
+	Looked up by `project_name` rather than by docname, the same reason
+	`kenya.county()`/`kenya.branch()` resolve geo by shape: `VMMS Project`
+	autonames itself opaquely, and a second bench numbers its projects
+	differently. `None` in, `None` out — most terms of reference name no
+	project at all.
+	"""
+	if not key:
+		return None
+
+	spec = next((project for project in PROJECTS if project["key"] == key), None)
+
+	if not spec:
+		return None
+
+	return frappe.db.get_value("VMMS Project", {"project_name": spec["name"]}, "name")
+
+
+def _projects() -> list[dict]:
+	"""The programmes of work some of this society's terms of reference are written under."""
+	rows = []
+
+	for project in PROJECTS:
+		existing = frappe.db.get_value("VMMS Project", {"project_name": project["name"]}, "name")
+
+		if existing:
+			rows.append({"key": project["key"], "name": existing, "status": "exists"})
+			continue
+
+		node = _where(project["where"])
+
+		if not node:
+			rows.append({"key": project["key"], "status": "skipped: no geo node"})
+			continue
+
+		doc = frappe.get_doc(
+			{
+				"doctype": "VMMS Project",
+				"project_name": project["name"],
+				"geo_node": node,
+				"status": project["status"],
+				"start_date": add_days(today(), project["start_in"]),
+				"end_date": add_days(today(), project["end_in"]),
+				"summary": project["summary"],
+			}
+		).insert(ignore_permissions=True)
+
+		rows.append({"key": project["key"], "name": doc.name, "status": "created"})
+
+	return rows
+
+
 # --- the work --------------------------------------------------------------
 
 
 def _terms() -> list[dict]:
-	"""The society's terms of reference, each autonamed from its own key."""
+	"""The society's terms of reference, each autonamed from its own key.
+
+	A terms of reference that already exists but names a project it is not yet
+	linked to is updated rather than left behind — the ordinary case the first
+	time this runs after `PROJECTS` gained an entry `TERMS` now points at.
+	"""
 	rows = []
 
 	for terms in TERMS:
+		project = _project(terms.get("project"))
+
 		if frappe.db.exists("VMMS Terms of Reference", terms["key"]):
+			if project:
+				doc = frappe.get_doc("VMMS Terms of Reference", terms["key"])
+
+				if doc.project != project:
+					doc.project = project
+					doc.save(ignore_permissions=True)
+					rows.append({"key": terms["key"], "status": "linked to project"})
+					continue
+
 			rows.append({"key": terms["key"], "status": "exists"})
 			continue
 
@@ -808,6 +985,7 @@ def _terms() -> list[dict]:
 				"doctype": "VMMS Terms of Reference",
 				"tor_key": terms["key"],
 				"tor_name": terms["name"],
+				"project": project,
 				"purpose": terms["purpose"],
 				"responsibilities": terms["responsibilities"],
 				"default_duration_days": terms["duration_days"],

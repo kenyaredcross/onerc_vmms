@@ -19,7 +19,6 @@ import {
 	Spinner,
 	StateBadge,
 	Table,
-	cx,
 } from "../ui/primitives";
 import type { ApplicationOptions, GeoNode, PricedType } from "../portal/types";
 
@@ -50,15 +49,13 @@ interface VolunteerRow {
 	deployable: boolean;
 }
 
-type Tab = "members" | "volunteers";
-
 /** One page of a register. Server-side, so it is not a slice of a capped read. */
 const PAGE = 25;
 
 /**
- * Who this coordinator is responsible for.
+ * Who this coordinator is responsible for — two registers, two routed pages.
  *
- * **Nothing on this page filters by branch, and nothing needs to.** Both
+ * **Nothing on either page filters by branch, and nothing needs to.** Both
  * endpoints end in `frappe.get_list`, which runs core's permission query
  * condition, so the caller's geo scope is the floor the query stands on rather
  * than something this screen applies on top. A coordinator sees their own
@@ -78,38 +75,30 @@ const PAGE = 25;
  * **Paging is the server's.** Each page is its own scoped read and `total`
  * comes back with it, so the pager is honest about registers larger than one
  * screen rather than silently capping at whatever the first read returned.
+ *
+ * **Members and Volunteers used to be one screen with a toggle between them.**
+ * They are two routed pages now, each its own sidebar entry under People &
+ * Insight, because a coordinator who only ever checks the volunteer roster
+ * should be able to link or bookmark that and skip the membership list every
+ * time it loads. Splitting the route cost nothing either register's own filter
+ * state didn't already have on its own — the two never shared any.
  */
-export default function Registry() {
-	const [tab, setTab] = useState<Tab>("members");
+export function MembersRegistry() {
+	return (
+		<>
+			<PageHeading title={<EditableText k="admin.registry.members.heading" fallback="Members" />} />
+			<Members />
+		</>
+	);
+}
 
+export function VolunteersRegistry() {
 	return (
 		<>
 			<PageHeading
-				title={<EditableText k="admin.registry.heading" fallback="Registry" />}
-				actions={
-					<div className="flex gap-2">
-						{(["members", "volunteers"] as Tab[]).map((id) => (
-							<button
-								key={id}
-								type="button"
-								onClick={() => setTab(id)}
-								className={cx(
-									"whitespace-nowrap rounded-full px-4 py-2 text-[12px] font-semibold capitalize transition",
-									tab === id
-										? "bg-ink text-white"
-										: "border border-hairline-strong bg-white text-slate-strong hover:border-navy",
-								)}
-							>
-								{id}
-							</button>
-						))}
-					</div>
-				}
+				title={<EditableText k="admin.registry.volunteers.heading" fallback="Volunteers" />}
 			/>
-
-			{/* Mounted one at a time so each tab's filter state is its own and a
-			    coordinator switching back does not inherit the other's criteria. */}
-			{tab === "members" ? <Members /> : <Volunteers /> }
+			<Volunteers />
 		</>
 	);
 }

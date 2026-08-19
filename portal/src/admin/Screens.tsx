@@ -3,7 +3,8 @@ import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
 import { API } from "../lib/api";
-import { Card, PageHeading, SectionTitle, Stat } from "../ui/primitives";
+import { Icon } from "../ui/icons";
+import { Card, PageHeading, SectionTitle, StatGrid, StatTile } from "../ui/primitives";
 import type { ApprovalStatus } from "../portal/types";
 
 /**
@@ -38,20 +39,37 @@ export function Overview() {
 		<>
 			<PageHeading title={<EditableText k="admin.nav.overview" fallback="Overview" />} />
 
-			<div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				<Card>
-					<Stat value={waiting.length} label="Waiting on you" />
-				</Card>
-				<Card>
-					<Stat value={overdue} label="Past their SLA" />
-				</Card>
-				<Card>
-					<Stat value={members.data?.message.member_count ?? "—"} label="Members in scope" />
-				</Card>
-				<Card>
-					<Stat value={volunteers.data?.message.count ?? "—"} label="Volunteers in scope" />
-				</Card>
-			</div>
+			<StatGrid className="mb-6">
+				<StatTile
+					label="Waiting on you"
+					value={queue.isLoading ? "—" : waiting.length}
+					icon={Icon.inbox}
+					tint="navy"
+					to="/admin/queue"
+				/>
+				<StatTile
+					label="Past their SLA"
+					value={queue.isLoading ? "—" : overdue}
+					hint={overdue > 0 ? "Overdue for a decision" : undefined}
+					icon={Icon.hourglass}
+					tint="amber"
+					to="/admin/queue"
+				/>
+				<StatTile
+					label="Members in scope"
+					value={members.isLoading ? "—" : (members.data?.message.member_count ?? "—")}
+					icon={Icon.card}
+					tint="violet"
+					to="/admin/registry/members"
+				/>
+				<StatTile
+					label="Volunteers in scope"
+					value={volunteers.isLoading ? "—" : (volunteers.data?.message.count ?? "—")}
+					icon={Icon.people}
+					tint="teal"
+					to="/admin/registry/volunteers"
+				/>
+			</StatGrid>
 
 			<Card>
 				<SectionTitle>Where to start</SectionTitle>
@@ -66,7 +84,7 @@ export function Overview() {
 					</li>
 					<li>
 						<Link
-							to="/admin/registry"
+							to="/admin/registry/volunteers"
 							className="chev block rounded-card px-3 py-2.5 text-[13px] font-semibold text-navy hover:bg-page"
 						>
 							Look somebody up in the registry

@@ -56,4 +56,9 @@ def sections() -> dict:
 		# `/app` is never shown a door to it. A volunteer sees no console at all,
 		# and a coordinator without desk access sees the console without this.
 		"desk": bool(has_desk_access()),
+		# Whether to offer a second, narrower door straight to onerc_sms's own
+		# campaign builder. Not one of `sections` — see `console.sms_access()`'s
+		# own docstring for why a doctype an optional companion app owns cannot
+		# sit in the same gated-section table as this app's own doctypes.
+		"sms": bool(console.sms_access()),
 	}

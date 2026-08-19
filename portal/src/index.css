@@ -11,10 +11,52 @@
 @layer base {
 	html {
 		-webkit-text-size-adjust: 100%;
+		/* A thin, quiet scrollbar everywhere — Firefox's own property. The
+		   browser's default is a thick slab of grey that reads as a UI chrome
+		   element in its own right, which fights the floating rail and pill:
+		   a scrollbar should be a hint that there is more below, not a fourth
+		   panel on the page. Chromium and Safari get the same shape from the
+		   `::-webkit-scrollbar` rules below, since neither reads this property. */
+		scrollbar-width: thin;
+		scrollbar-color: theme("colors.hairline.strong") transparent;
 	}
 
 	body {
 		@apply bg-white font-sans text-ink antialiased;
+	}
+
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background-color: theme("colors.hairline.strong");
+		border-radius: 9999px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background-color: theme("colors.slate.faint");
+	}
+
+	/* The rail scrolls on its own navy, where the page's grey thumb above
+	   would read as a stray light streak rather than part of the surface —
+	   this is the same thumb in the rail's own white-on-navy, not the page's
+	   grey-on-white. */
+	.rail-scroll {
+		scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+	}
+
+	.rail-scroll::-webkit-scrollbar-thumb {
+		background-color: rgba(255, 255, 255, 0.18);
+	}
+
+	.rail-scroll::-webkit-scrollbar-thumb:hover {
+		background-color: rgba(255, 255, 255, 0.32);
 	}
 
 	/* Every interactive element gets a visible focus ring. Set once here rather

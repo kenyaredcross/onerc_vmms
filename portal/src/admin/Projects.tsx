@@ -32,15 +32,19 @@ import {
  * The paperwork a deployment stands on: a programme of work, and the terms of
  * reference written under it.
  *
- * **Three registers, one order, four pages.** A society opens a project,
- * writes one or more terms of reference under it, and deploys people against
- * those. Each register is its own routed page rather than a tab, because a
- * project stands on its own — a society can run one that never spins up a
- * deployment — and a URL is what lets somebody link, bookmark or come back to
- * one directly. The order the records have to exist in still shows up in each
- * form, which only offers what already exists above it: the terms form lists
- * the projects this person opened, the deployment form lists the terms they
- * wrote.
+ * **Three registers, one order, four pages — and only the last three share a
+ * hub.** A society opens a project, writes one or more terms of reference
+ * under it, and deploys people against those. Each register is its own routed
+ * page rather than a tab, because a project stands on its own — a society can
+ * run one that never spins up a deployment or a terms of reference — and a URL
+ * is what lets somebody link, bookmark or come back to one directly. That is
+ * also why Projects is its own top-level console section at `/admin/projects`
+ * rather than a card on `/admin/deployments`: nesting it there read as though a
+ * project needed the other two to exist, which the data model has never
+ * required (`VMMS Terms of Reference.project` is optional). The order the
+ * records have to exist in still shows up in each form, which only offers what
+ * already exists above it: the terms form lists the projects this person
+ * opened, the deployment form lists the terms they wrote.
  *
  * **`mine` is on by default on both registers and it can only narrow.** The
  * server applies the owner filter on top of a result core's query condition has
@@ -71,10 +75,7 @@ export function ProjectList() {
 
 	return (
 		<>
-			<PageHeading
-				title="Projects"
-				trail={[{ label: "Deployments", to: "/admin/deployments" }, { label: "Projects" }]}
-			/>
+			<PageHeading title="Projects" />
 
 			<div className="mb-4 flex flex-wrap items-center gap-2">
 				<MineToggle mine={mine} onChange={setMine} label="Only mine" />
@@ -118,7 +119,7 @@ export function ProjectList() {
 								<div className="flex flex-wrap items-start justify-between gap-3">
 									<div>
 										<Link
-											to={`/admin/deployments/projects/${encodeURIComponent(row.name)}`}
+											to={`/admin/projects/${encodeURIComponent(row.name)}`}
 											className="hover:underline"
 										>
 											<SectionTitle>{row.project_name}</SectionTitle>
@@ -140,7 +141,7 @@ export function ProjectList() {
 
 								<div className="mt-4 flex flex-wrap items-center gap-2">
 									<Link
-										to={`/admin/deployments/projects/${encodeURIComponent(row.name)}`}
+										to={`/admin/projects/${encodeURIComponent(row.name)}`}
 										className="text-[12px] font-semibold text-navy hover:underline"
 									>
 										Open project →
@@ -186,8 +187,7 @@ export function ProjectDetail() {
 	const { project, terms, deployments } = dossier;
 
 	const trail: Crumb[] = [
-		{ label: "Deployments", to: "/admin/deployments" },
-		{ label: "Projects", to: "/admin/deployments/projects" },
+		{ label: "Projects", to: "/admin/projects" },
 		{ label: project.project_name },
 	];
 
@@ -584,7 +584,7 @@ export function TermsDetail() {
 			? ([
 					{
 						label: terms.project_name ?? terms.project,
-						to: `/admin/deployments/projects/${encodeURIComponent(terms.project)}`,
+						to: `/admin/projects/${encodeURIComponent(terms.project)}`,
 					},
 				] as Crumb[])
 			: ([{ label: "Terms of Reference", to: "/admin/deployments/terms" }] as Crumb[])),

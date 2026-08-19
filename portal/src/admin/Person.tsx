@@ -99,6 +99,7 @@ function VolunteerPage({ name }: { name: string }) {
 	return (
 		<>
 			<PersonHeading
+				kind="volunteer"
 				fullName={person.full_name}
 				docname={dossier.volunteer}
 				status={person.status}
@@ -324,6 +325,7 @@ function MemberPage({ name }: { name: string }) {
 	return (
 		<>
 			<PersonHeading
+				kind="member"
 				fullName={person.full_name}
 				docname={dossier.member}
 				status={dossier.standing.status}
@@ -423,11 +425,13 @@ function MemberPage({ name }: { name: string }) {
 /* --------------------------------------------------------------- the pieces */
 
 function PersonHeading({
+	kind,
 	fullName,
 	docname,
 	status,
 	asOf,
 }: {
+	kind: "volunteer" | "member";
 	fullName: string | null;
 	docname: string;
 	status?: string | null;
@@ -436,10 +440,10 @@ function PersonHeading({
 	return (
 		<>
 			<Link
-				to="/admin/registry"
+				to={kind === "volunteer" ? "/admin/registry/volunteers" : "/admin/registry/members"}
 				className="mb-4 inline-block text-[12px] font-semibold text-navy hover:underline"
 			>
-				← Back to the registry
+				{kind === "volunteer" ? "← Back to volunteers" : "← Back to members"}
 			</Link>
 			<PageHeading
 				title={fullName || docname}

@@ -739,16 +739,24 @@ def _admin():
 	nav = (
 		("overview", "Overview"),
 		("queue", "Review queue"),
-		("registry", "Registry"),
+		("registry.members", "Members"),
+		("registry.volunteers", "Volunteers"),
 		# `admin.nav.tasks` was drawn by the console from the day the Tasks screen
 		# was built and never had a block, so it was the one sidebar item a society
 		# could not rename. The pencil reaches it now like every other word.
 		("tasks", "Tasks"),
+		("projects", "Projects"),
 		("deployments", "Deployments"),
 		("stipends", "Stipends"),
 		("events", "Events"),
 		("analytics", "Analytics"),
 		("content", "Page content"),
+		# The two accordion headings the sidebar draws its tabs under —
+		# `AdminLayout.tsx`'s `INSIGHT` and `OPERATIONS` — named the same way the
+		# portal's own two group headings are, so a society renaming one renames
+		# both surfaces through the one mechanism.
+		("group.insight", "People & Insight"),
+		("group.operations", "Operations"),
 		# The way back to the person's own portal. Unconditional in the console,
 		# because being staff is a role somebody holds rather than a thing they
 		# are instead of a volunteer.
@@ -769,7 +777,8 @@ def _admin():
 			210,
 			"Nothing is waiting on you.",
 		),
-		_block("admin.registry.heading", "Registry heading", s, 300, "Registry"),
+		_block("admin.registry.members.heading", "Members heading", s, 300, "Members"),
+		_block("admin.registry.volunteers.heading", "Volunteers heading", s, 310, "Volunteers"),
 		_block("admin.deployments.heading", "Deployments heading", s, 400, "Deployments"),
 		_block("admin.stipends.heading", "Stipends heading", s, 500, "Stipends"),
 		_block("admin.content.heading", "Page content heading", s, 600, "Page content"),

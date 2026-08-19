@@ -43,12 +43,19 @@ import {
  * result that was already bounded before it was applied. Somebody holding no
  * Geo Assignment sees an empty console, which is the honest answer.
  *
- * **`/admin/deployments` is a hub, not a tab bar.** Projects, Terms of
- * Reference, Deployments and Requests are four independent registers, each its
- * own routed page — a project stands on its own even when it never spins up a
- * deployment, and a URL is what lets somebody link, bookmark or come back to
+ * **`/admin/deployments` is a hub, not a tab bar.** Terms of Reference,
+ * Deployments and Requests are three independent registers, each its own
+ * routed page, and a URL is what lets somebody link, bookmark or come back to
  * one directly. `DeploymentsHub` below is the landing page; everything else in
- * this file and in `Projects.tsx` is one of the four registers it points at.
+ * this file is one of the three registers it points at.
+ *
+ * **Projects is not a fourth.** It used to live at `/admin/deployments/
+ * projects`, nested under this hub; it now stands on its own at
+ * `/admin/projects`, its own entry in the console's sidebar, because a project
+ * can exist without ever needing a terms of reference or a deployment — see
+ * `Projects.tsx`'s own docstring. A deployment still reaches the project it
+ * descends from, through its terms, and that link still works; it is just no
+ * longer drawn as a card on this page.
  *
  * **Matching is a search, not a roster.** `find_candidates` answers who *could*
  * go — deployable, certified, in area, and now searchable by name or skill — and
@@ -67,11 +74,6 @@ import {
 /* -------------------------------------------------------------------- hub */
 
 export function DeploymentsHub() {
-	const projects = useFrappeGetCall<{ message: { count: number; open_count: number } }>(
-		API.branchProjects,
-		{ mine: 0 },
-		"admin:hub:projects",
-	);
 	const terms = useFrappeGetCall<{ message: { count: number } }>(
 		API.branchTerms,
 		{ mine: 0 },
@@ -97,16 +99,6 @@ export function DeploymentsHub() {
 			<PageHeading title={<EditableText k="admin.deployments.heading" fallback="Deployments" />} />
 
 			<div className="grid gap-4 sm:grid-cols-2">
-				<HubCard
-					to="/admin/deployments/projects"
-					newTo="/admin/deployments/projects?new=1"
-					title="Projects"
-					count={projects.data?.message?.count}
-					detail={
-						projects.data?.message ? `${projects.data.message.open_count} open` : undefined
-					}
-					lead="The programme of work a terms of reference is written under."
-				/>
 				<HubCard
 					to="/admin/deployments/terms"
 					newTo="/admin/deployments/terms?new=1"
@@ -471,7 +463,7 @@ export function DeploymentDetail() {
 			? ([
 					{
 						label: deployment.terms.project_name ?? deployment.terms.project,
-						to: `/admin/deployments/projects/${encodeURIComponent(deployment.terms.project)}`,
+						to: `/admin/projects/${encodeURIComponent(deployment.terms.project)}`,
 					},
 				] as Crumb[])
 			: ([{ label: "Deployments", to: "/admin/deployments/list" }] as Crumb[])),

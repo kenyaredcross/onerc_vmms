@@ -67,7 +67,12 @@ const Tasks = lazy(() => import("./portal/Tasks"));
 
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const ReviewQueue = lazy(() => import("./admin/ReviewQueue"));
-const Registry = lazy(() => import("./admin/Registry"));
+const RegistryMembers = lazy(() =>
+	import("./admin/Registry").then((module) => ({ default: module.MembersRegistry })),
+);
+const RegistryVolunteers = lazy(() =>
+	import("./admin/Registry").then((module) => ({ default: module.VolunteersRegistry })),
+);
 // One person in full, from either register. Its own chunk rather than part of
 // Registry's: the dossier screens are much the larger of the two, and a
 // coordinator scanning a list should not download them until they open somebody.
@@ -91,12 +96,14 @@ const Training = lazy(() =>
 const Overview = lazy(() =>
 	import("./admin/Screens").then((module) => ({ default: module.Overview })),
 );
-// The deployment console: a hub landing page and four independent registers —
-// Projects, Terms of Reference, Deployments and Requests — each its own routed
-// page rather than a tab, so a project stands on its own and every record has
-// a URL somebody can link, bookmark or come back to. Detail screens share a
-// chunk with their own list, like `EventDetail`/`OpportunityDetail` above:
-// whoever opens a list is one click from opening a row.
+// The deployment console: a hub landing page and three registers under it —
+// Terms of Reference, Deployments and Requests — each its own routed page
+// rather than a tab, so every record has a URL somebody can link, bookmark or
+// come back to. Projects is no longer one of them: it stands on its own at
+// `/admin/projects`, its own console section, because a project does not need
+// a terms of reference or a deployment to exist. Detail screens share a chunk
+// with their own list, like `EventDetail`/`OpportunityDetail` above: whoever
+// opens a list is one click from opening a row.
 const DeploymentsHub = lazy(() =>
 	import("./admin/Deployments").then((module) => ({ default: module.DeploymentsHub })),
 );
@@ -183,6 +190,7 @@ const ROUTE_NAMES: Record<string, string> = {
 	"admin/queue": "the review queue",
 	"admin/registry": "the registry",
 	"admin/tasks": "tasks",
+	"admin/projects": "projects",
 	"admin/deployments": "deployments",
 	"admin/stipends": "stipends",
 	"admin/events": "events",
@@ -250,14 +258,15 @@ export default function App() {
 				>
 					<Route index element={<Overview />} />
 					<Route path="queue" element={<ReviewQueue />} />
-					<Route path="registry" element={<Registry />} />
+					<Route path="registry/members" element={<RegistryMembers />} />
+					<Route path="registry/volunteers" element={<RegistryVolunteers />} />
 					{/* The kind is a path segment because a docname cannot say which
 					    register it belongs to, and probing both endpoints to find out
 					    would ask the server a question the link already knew. */}
 					<Route path="registry/:kind/:name" element={<Person />} />
+					<Route path="projects" element={<ProjectList />} />
+					<Route path="projects/:name" element={<ProjectDetail />} />
 					<Route path="deployments" element={<DeploymentsHub />} />
-					<Route path="deployments/projects" element={<ProjectList />} />
-					<Route path="deployments/projects/:name" element={<ProjectDetail />} />
 					<Route path="deployments/terms" element={<TermsOfReferenceList />} />
 					<Route path="deployments/terms/:name" element={<TermsOfReferenceDetail />} />
 					<Route path="deployments/list" element={<DeploymentList />} />
@@ -265,7 +274,7 @@ export default function App() {
 					{/* Last: `deployments/:name` is one segment shorter than every route
 					    above it, and React Router matches the more specific static
 					    segments first regardless of declaration order, so this never
-					    shadows `projects`, `terms`, `list` or `requests`. */}
+					    shadows `terms`, `list` or `requests`. */}
 					<Route path="deployments/:name" element={<DeploymentDetail />} />
 					<Route path="stipends" element={<Stipends />} />
 					<Route path="events" element={<AdminEvents />} />
