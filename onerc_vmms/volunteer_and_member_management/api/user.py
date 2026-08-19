@@ -240,6 +240,10 @@ def update_user_details(**data):
 
 		return {"message": _("Profile updated successfully")}
 
+	except (frappe.ValidationError, frappe.PermissionError):
+		frappe.db.rollback()
+		raise
+
 	except Exception:
 		frappe.db.rollback()
 		frappe.log_error(frappe.get_traceback(), "User Profile Update Error")

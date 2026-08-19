@@ -181,6 +181,7 @@ import MultiSelect from "@/components/Controls/MultiSelect.vue";
 import { FormControl, createResource, toast } from "frappe-ui";
 import { computed, reactive, ref, watch } from "vue";
 import ErrorModal from "../Modals/ErrorModal.vue";
+import { getServerErrorMessages } from "@/utils/serverErrors";
 
 import { validateForm } from "@/utils/validationUtils.js";
 
@@ -376,7 +377,7 @@ const saveUserResource = createResource({
 	},
 	onError(err) {
 		console.error("Save error:", err);
-		flatErrors.value = [err.message || "Failed to save personal information"];
+		flatErrors.value = getServerErrorMessages(err, "Failed to save personal information");
 		showErrorDialog.value = true;
 		saveInProgress.value = false;
 	},

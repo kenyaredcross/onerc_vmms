@@ -35,6 +35,7 @@ import { validateForm } from "@/utils/validationUtils.js";
 import { createResource, toast } from "frappe-ui";
 import { computed, reactive, ref, watch } from "vue";
 import ErrorModal from "../Modals/ErrorModal.vue";
+import { getServerErrorMessages } from "@/utils/serverErrors";
 
 const props = defineProps({
 	form: {
@@ -115,7 +116,7 @@ const saveDocsResource = createResource({
 	},
 	onError(err) {
 		console.error("Save error:", err);
-		flatErrors.value = [err.message || "Failed to save documents"];
+		flatErrors.value = getServerErrorMessages(err, "Failed to save documents");
 		showErrorDialog.value = true;
 		saveInProgress.value = false;
 	},
