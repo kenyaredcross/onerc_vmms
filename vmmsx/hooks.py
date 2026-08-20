@@ -283,6 +283,13 @@ doc_events = {
 # layer a narrower coordinator role onto one child by naming that doctype's own
 # geo scope role in National Society Settings — see that module's docstring.
 after_migrate = [
+	# The six roles every society's ladder needs — approver, approver, deployment
+	# manager, volunteer, member, applicant — before anything below points a
+	# setting at one of them. See the module docstring for why these six and not
+	# a society-specific list: they are what `gambia.py` and `kenya.py` agree on
+	# underneath their own extras, and a role a society still has to create in
+	# Desk before Geo Assignment works is exactly the gap this closes.
+	"vmmsx.setup.core_roles.install",
 	"vmmsx.registration.services.workspaces.install",
 	"vmmsx.registration.services.permissions.install",
 	# The other half of the same decision, and the reason it is a service rather
