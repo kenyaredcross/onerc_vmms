@@ -96,6 +96,12 @@ export interface MembershipRow {
 	membership_type: string;
 	membership_type_name: string | null;
 	membership_status: string;
+	/**
+	 * Whether this membership is in force now. The server's own comparison
+	 * against its own vocabulary — never re-derived here from
+	 * `membership_status`, which this app does not own the values of.
+	 */
+	is_active: boolean;
 	approval_state: string | null;
 	approval_settled: boolean;
 	payment_settled: boolean;
@@ -171,6 +177,14 @@ export interface RedProfile {
 	gender: string | null;
 	date_of_birth: string | null;
 	preferred_language: string | null;
+	/** A file URL on this site, or null. Set through `update_my_profile`. */
+	profile_photo: string | null;
+	/**
+	 * Where core last recorded this person as living, written by whichever
+	 * registration they filed first. Read-only — `update_my_profile` does not
+	 * accept it — and served so a placement picker can open already answered.
+	 */
+	home_geo_node: string | null;
 }
 
 /**
@@ -286,36 +300,43 @@ export interface GeoLevel {
 	is_lowest: boolean;
 }
 
-/** `api/opportunities.py::browse` — one advertised deployment need. */
+/**
+ * `api/opportunities.py::browse` — one published job opening.
+ *
+ * The society's own `Job Opening` in HRMS, through the seam in
+ * `vmmsx/hr/services/openings.py`, which is the only file that names that
+ * doctype. This is not a deployment need: the board used to advertise
+ * `VMMS Deployment Request` and the field names here changed with the source.
+ */
 export interface Opportunity {
 	name: string;
-	terms_of_reference: string;
+	opening: string;
 	title: string;
-	purpose: string | null;
-	responsibilities: string | null;
-	requirements: Array<{
-		certification_type: string;
-		label: string;
-		is_mandatory: boolean;
-		notes: string | null;
-	}>;
-	geo_node: string;
-	geo_path: string;
-	needed_from: string | null;
-	needed_until: string | null;
 	/**
-	 * How many the branch asked for, and how many of those are already on the
-	 * deployment. Served, and deliberately **not drawn** on either the card or
-	 * the detail page: a job opening advertises the work, not how close it is to
-	 * being filled, and a half-full progress bar tells a volunteer to look
-	 * elsewhere. A coordinator reads these on the deployment itself.
+	 * The description as sanitised markup, for `dangerouslySetInnerHTML`.
+	 *
+	 * **Safe because the server made it safe.** HRMS stores this field as
+	 * rich text — an HR officer's headings and bullet lists — and it arrives
+	 * having been through Frappe's `sanitize_html`, which is what the framework
+	 * runs before rendering user HTML anywhere else. Rendering it as text
+	 * instead is what put escaped `<div class="ql-editor">` on the board.
 	 */
-	volunteers_requested: number;
-	places_filled: number;
-	/** The deployment this need produced, once somebody has created it. */
-	deployment: string | null;
-	/** `VMMS Deployment.status`. Null while no deployment exists yet. */
-	deployment_status: string | null;
+	description_html: string;
+	/** The same description flattened to one paragraph, for a card. */
+	summary: string;
+	department: string;
+	designation: string;
+	employment_type: string;
+	/** HRMS's own Branch record, which is not a Geo Node and is not mapped to one. */
+	location: string;
+	places: number;
+	posted_on: string;
+	closes_on: string;
+	closing_soon: boolean;
+	/** HRMS's public page for this opening. Null when it has no route yet. */
+	href: string | null;
+	/** Where "Apply" goes: HRMS's application route, or the opening's own page. */
+	apply_href: string | null;
 }
 
 /** `api/member.py::membership_type_pricing`. */
@@ -376,16 +397,27 @@ export interface TaskDetail extends TaskSummary {
 
 /** `api/deployment.py::my_invitations` — one row of either list. */
 export interface DeploymentInvitation {
+	/**
+	 * The `VMMS Deployment Assignment` this question lives on. Answering names
+	 * this, not the deployment: the roster is a register of documents now, one
+	 * per person, and the assignment records the exact submitted terms of
+	 * reference this volunteer was asked to accept.
+	 */
+	assignment: string;
 	deployment: string;
 	/** The society's own word for the work. A docname is not a title. */
 	title: string | null;
-	status: string;
+	terms_of_reference: string | null;
+	/** The deployment's own state — Planned, Active, and so on. */
+	deployment_status: string;
+	/** This volunteer's own dates, which may be narrower than the deployment's. */
 	start_date: string | null;
 	end_date: string | null;
 	geo_node: string;
 	notes: string | null;
-	/** `invited`, `accepted` or `declined`. Blank never reaches this DTO. */
+	/** `Pending`, `Accepted` or `Declined`. */
 	response: string;
+	role: string;
 	invited_on: string | null;
 	responded_on: string | null;
 	response_note: string | null;
@@ -420,30 +452,232 @@ export interface DeploymentSummary {
 	is_open: boolean;
 	start_date: string | null;
 	end_date: string | null;
+	volunteers_required: number;
+	/** Assigned + Accepted: who is actually going, not who was asked. */
 	participant_count: number;
+	assignment_counts: AssignmentCounts;
+	/**
+	 * How many places are still open, or `null` where the society has not said
+	 * how many it needs. Null rather than zero, because a deployment that has
+	 * not said needs no arithmetic and is never full.
+	 */
+	places_left: number | null;
 }
 
-/** One row of a deployment's roster. */
+/**
+ * `deployment/services/assignment.py::dto` — one person's deployment.
+ *
+ * The roster is a register of `VMMS Deployment Assignment` documents rather
+ * than a child table, because each person's deployment needed a URL they could
+ * open, a reference a notification could point at, a lifecycle with a grammar,
+ * and somewhere to record which submitted terms of reference they agreed to.
+ */
 export interface RosterRow {
+	name: string;
+	deployment: string;
 	volunteer: string;
+	full_name: string;
+	/** The exact submitted document this person was asked to accept. */
+	terms_of_reference: string;
+	geo_node: string | null;
+	/** `Assigned`, `Pending`, `Accepted`, `Declined` or `Withdrawn`. */
+	status: string;
+	/**
+	 * The three derived answers, so no screen holds its own copy of what the
+	 * five statuses mean. `is_on_deployment` is Assigned or Accepted — the two
+	 * that fill a place and let time be logged.
+	 */
+	is_on_deployment: boolean;
+	is_open: boolean;
+	is_settled: boolean;
+	role: string;
+	is_leader: boolean;
+	start_date: string | null;
+	end_date: string | null;
+	invited_on: string | null;
+	responded_on: string | null;
+	response_note: string | null;
 	joined_on: string | null;
 	left_on: string | null;
+	participation_notes: string | null;
 	notes: string | null;
-	/**
-	 * `invited`, `accepted`, `declined`, or null for somebody a coordinator
-	 * simply put on the roster without asking. An answer decides nothing about
-	 * participation; taking somebody off is the coordinator's own act.
-	 */
-	response: string | null;
-	responded_on: string | null;
 }
 
-/** `deployment/services/terms.py::dto`. */
+/**
+ * `api/deployment.py::deployment_map` — one area's share of the work.
+ *
+ * `latitude`/`longitude` are **absent, not null**, where the geo tree has no
+ * point for the node: a caller iterating this gets only what it can draw, and
+ * the screen reports `unplotted` rather than silently showing fewer pins than
+ * there are places.
+ */
+export interface DeploymentArea {
+	geo_node: string;
+	geo_path: string | null;
+	deployments: number;
+	/** Assigned + Accepted. A question nobody answered is not somebody there. */
+	people: number;
+	waiting: number;
+	latitude?: number;
+	longitude?: number;
+}
+
+/** `api/deployment.py::deployment_map`. */
+export interface DeploymentMapAnswer {
+	areas: DeploymentArea[];
+	deployed: number;
+	/** How many areas carry no point, so the screen can say so plainly. */
+	unplotted: number;
+}
+
+/** `assignment.counts_for` — how a deployment's register breaks down. */
+export interface AssignmentCounts {
+	Assigned: number;
+	Pending: number;
+	Accepted: number;
+	Declined: number;
+	Withdrawn: number;
+	/** Assigned + Accepted: who is actually going. */
+	on_deployment: number;
+	open: number;
+	total: number;
+}
+
+/** `assignment.deploy` — the bulk act's honest report. */
+export interface AssignmentOutcome {
+	deployment: string;
+	requested: number;
+	raised: number;
+	refused: number;
+	success: Array<{
+		volunteer: string;
+		full_name: string;
+		assignment: string;
+		status: string;
+	}>;
+	/** Per person, with the sentence the service threw. Never a code. */
+	failure: Array<{ volunteer: string; full_name: string; reason: string }>;
+}
+
+/** `deployment/services/feed.py::_entry` — one line of a deployment's account. */
+export interface FeedEntry {
+	/** `deployment` for the deployment's own log, `task` for a volunteer's report. */
+	source: string;
+	entry_type: string;
+	author: string;
+	author_name: string | null;
+	posted_on: string | null;
+	note: string | null;
+	proof: string | null;
+	/** Set only on a task-sourced entry. */
+	task: string | null;
+	subject: string | null;
+	volunteer: string | null;
+}
+
+/** `api/deployment.py::get_deployment_feed`. */
+export interface DeploymentFeed {
+	deployment: string;
+	count: number;
+	truncated: boolean;
+	entries: FeedEntry[];
+}
+
+/** `api/deployment.py::get_my_assignment` — the volunteer's read before answering. */
+export interface MyAssignment {
+	assignment: RosterRow;
+	/** The mission itself, read through the terms the assignment names. */
+	terms: TermsMission;
+	deployment: {
+		name: string;
+		status: string;
+		start_date: string | null;
+		end_date: string | null;
+		geo_node: string | null;
+		notes: string | null;
+	};
+}
+
+/* ---------------------------------------------------------- availability */
+
+/** One day-and-window pair on a volunteer's weekly pattern. */
+export interface AvailabilityDay {
+	day: string;
+	availability_slot: string;
+}
+
+/** `volunteer/services/availability.py::slots` — the grid's columns. */
+export interface AvailabilitySlot {
+	name: string;
+	slot_name: string;
+	start_time: string | null;
+	end_time: string | null;
+	description: string | null;
+}
+
+/** `api/volunteer.py::my_availability`. */
+export interface MyAvailability {
+	volunteer: string;
+	exists: boolean;
+	available_on_holidays: boolean;
+	valid_from: string | null;
+	valid_to: string | null;
+	notes: string | null;
+	days: AvailabilityDay[];
+	slots: AvailabilitySlot[];
+}
+
+/**
+ * `volunteer/services/availability.py::assess` — three-way, and `unknown` is a
+ * first-class answer rather than an error state.
+ *
+ * `is_available` is deliberately false for `unknown`: a caller meaning "do not
+ * rule this person out" reads `!is_unavailable`, and having to choose between
+ * the two is what stops a screen quietly treating silence as a yes.
+ */
+export interface AvailabilityAnswer {
+	state: string;
+	is_available: boolean;
+	is_unavailable: boolean;
+	is_known: boolean;
+	why: string;
+	missing_days: string[];
+	slots: string[];
+	available_on_holidays: boolean | null;
+}
+
+/** How much of each mission table has been written. `terms.dto::section_counts`. */
+export interface TermsSectionCounts {
+	stakeholders: number;
+	objectives: number;
+	expected_outputs: number;
+	approach_methods: number;
+	itinerary: number;
+	resources: number;
+}
+
+/** `deployment/services/terms.py::dto` — the lean summary every caller gets. */
 export interface TermsOfReference {
 	name: string;
 	tor_key: string;
 	tor_name: string;
 	is_active: boolean;
+	/**
+	 * The submit state, split into the questions a screen actually asks. A draft
+	 * may still be edited and takes no deployments; a submitted one is frozen,
+	 * which is the point — accepting an assignment is accepting this document,
+	 * so its wording must not change underneath somebody afterwards.
+	 */
+	docstatus: number;
+	is_draft: boolean;
+	is_submitted: boolean;
+	is_cancelled: boolean;
+	/** Submitted *and* still active: the one predicate that means "takes new work". */
+	is_offered: boolean;
+	amended_from: string | null;
+	expected_start_date: string | null;
+	expected_end_date: string | null;
+	section_counts: TermsSectionCounts;
 	purpose: string | null;
 	responsibilities: string | null;
 	geo_scope: string | null;
@@ -474,14 +708,81 @@ export interface ProjectSummary {
 	created_on: string | null;
 }
 
+/* ------------------------------------------- the mission tables on a ToR */
+
+export interface TermsStakeholder {
+	designation: string | null;
+	full_name: string | null;
+	phone_number: string | null;
+	email: string | null;
+}
+
+export interface TermsObjective {
+	objective: string | null;
+}
+
+export interface TermsOutput {
+	output: string | null;
+}
+
+export interface TermsApproach {
+	/** A `VMMS TOR Methodology` docname — the society's own register of methods. */
+	methodology: string | null;
+	notes: string | null;
+}
+
+export interface TermsItineraryRow {
+	activity_date: string | null;
+	activity_time: string | null;
+	activity: string | null;
+	person_responsible: string | null;
+}
+
+export interface TermsResource {
+	resource: string | null;
+	needed_on: string | null;
+	quantity: number | null;
+	unit: string | null;
+	unit_cost: number | null;
+	donor: string | null;
+	/** Derived on the server from quantity × unit cost. Never sent back. */
+	total_cost?: number | null;
+}
+
 /**
- * `api/deployment.py::get_terms` — the reviewed field list, the same terms
- * rendered through the society's own template, and the deployments run under
- * them. `document` is the identical markup the PDF is built from, which is
- * what stops the screen and the printer showing two different documents.
+ * `deployment/services/terms.py::mission_dto` — the summary plus the six
+ * mission tables and the background. Only the screens that show a terms of
+ * reference *in full* ask for this; every other caller gets `TermsOfReference`,
+ * which is why that one stays lean enough to embed in every deployment read.
+ */
+export interface TermsMission extends TermsOfReference {
+	mission_background: string | null;
+	notes: string | null;
+	stakeholders: TermsStakeholder[];
+	objectives: TermsObjective[];
+	expected_outputs: TermsOutput[];
+	approach_methods: TermsApproach[];
+	itinerary: TermsItineraryRow[];
+	resources: TermsResource[];
+	/** The mission's own resource lines totalled. Nothing reaches across a project. */
+	resources_total: number;
+}
+
+/** `api/deployment.py::tor_methodologies` — the approach tab's picker. */
+export interface TermsMethodology {
+	name: string;
+	methodology_name: string;
+	description: string | null;
+}
+
+/**
+ * `api/deployment.py::get_terms` — the whole mission, the same terms rendered
+ * through the society's own template, and the deployments run under them.
+ * `document` is the identical markup the PDF is built from, which is what stops
+ * the screen and the printer showing two different documents.
  */
 export interface TermsDocument {
-	terms: TermsOfReference;
+	terms: TermsMission;
 	document: string;
 	deployments: DeploymentSummary[];
 }
@@ -500,7 +801,13 @@ export interface ProjectDossier {
 /** `deployment/services/deployment.py::deployment_dto` — one deployment in full. */
 export interface DeploymentDetail extends DeploymentSummary {
 	terms: TermsOfReference | null;
+	/** The whole assignment register, settled rows included — a coordinator
+	 * needs to see who declined as much as who accepted, or they will ask the
+	 * same person again next week. */
 	participants: RosterRow[];
+	/** The volunteer leading it, or null. Only an assignment actually on the
+	 * deployment counts: somebody named leader who then declined is not leading. */
+	leader: string | null;
 	notes: string | null;
 }
 
@@ -509,6 +816,13 @@ export interface Candidate {
 	volunteer: string;
 	red_profile: string | null;
 	full_name: string;
+	/**
+	 * Their photograph, or null. Read in bulk with the rest of the page rather
+	 * than per row, and null is the ordinary case rather than an error one — a
+	 * volunteer registered at a branch desk on paper has none, and every screen
+	 * falls back to initials.
+	 */
+	photo: string | null;
 	status: string;
 	home_geo_node: string | null;
 	geo_path: string | null;
@@ -516,6 +830,21 @@ export interface Candidate {
 	blocking_reasons: string[];
 	missing_certifications: string[];
 	desirable_certifications_held: string[];
+	/**
+	 * Advisory, both of them: shown, ranked on, and never part of the verdict.
+	 * Being deployable and holding what the terms require decides whether
+	 * somebody *may* be sent; being free and being double-booked are judgements
+	 * about whether they *should* be, and those belong to the coordinator.
+	 */
+	availability: AvailabilityAnswer;
+	clash: {
+		is_clashing: boolean;
+		deployments: Array<{
+			deployment: string;
+			start_date: string | null;
+			end_date: string | null;
+		}>;
+	};
 	/** The one derived verdict, and the only field to branch on. */
 	is_candidate: boolean;
 }
@@ -526,6 +855,10 @@ export interface CandidateSearch {
 	geo_node: string;
 	geo_path: string | null;
 	as_of: string;
+	/** The span the availability and clash answers were computed over, echoed
+	 * back so a screen says what it asked rather than assuming. */
+	start_date: string | null;
+	end_date: string | null;
 	required_certifications: string[];
 	desirable_certifications: string[];
 	considered: number;
@@ -688,6 +1021,10 @@ export interface DeploymentHistoryRow {
 	geo_node: string | null;
 	terms_of_reference: string | null;
 	tor_name: string | null;
+	/** The assignment this service came through, and what they did on it. */
+	assignment?: string | null;
+	role?: string | null;
+	is_leader?: boolean;
 	joined_on: string | null;
 	left_on: string | null;
 	notes: string | null;

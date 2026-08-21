@@ -413,9 +413,46 @@ def on_update(membership, method=None) -> None:
 	before = membership.get_doc_before_save()
 	previous = before.get(contract.STATE_FIELD) if before else None
 
-	try_activate(membership)
+	if not try_activate(membership):
+		_resettle_pending_status(membership)
 
 	_report(membership, previous)
+
+
+def _resettle_pending_status(membership) -> None:
+	"""Re-derive what a still-pending membership is waiting for.
+
+	**The bug this fixes.** `_set_pending_status` ran only inside `submit()`, so
+	the answer to "what is this waiting for" was computed once, at the moment of
+	application, and never again. A member who paid at the branch counter before
+	their branch had approved them stayed at **Awaiting Payment** — on their own
+	portal, on the register, and on every screen that shows a membership status —
+	with `paid_on` set on the record all along. Nothing recomputed it, because
+	`on_update` only ever asked the stronger question: *can this activate yet?*
+	When the answer was no, it did nothing at all.
+
+	It went unnoticed because the common order hides it. Pay after approval and
+	`try_activate` succeeds, which sets Active and skips the intermediate state
+	entirely; pay before approval and the wrong label sits there until the
+	approval lands. Only the second order shows it, and only in the window
+	between the two.
+
+	**Narrow on purpose.** It touches a membership only while it is in one of the
+	two pending states — a Cancelled, Expired or Active membership is not waiting
+	for anything and must not be dragged back into a queue — and it writes
+	nothing when the derived status already matches. It runs inside the caller's
+	save, so it costs no second write.
+	"""
+	if membership.membership_status not in (STATUS_AWAITING_PAYMENT, STATUS_AWAITING_APPROVAL):
+		return
+
+	before = membership.membership_status
+	_set_pending_status(membership, type_of(membership))
+
+	if membership.membership_status != before:
+		membership.db_set(
+			"membership_status", membership.membership_status, update_modified=False
+		)
 
 
 def _report(membership, previous: str | None) -> None:
@@ -426,8 +463,8 @@ def _report(membership, previous: str | None) -> None:
 	same shape: two registrations, one set of messages, no second vocabulary for
 	the same four events.
 	"""
-	from vmmsx.notifications.services import lifecycle
 	from vmmsx.member.services import identity
+	from vmmsx.notifications.services import lifecycle
 
 	member = frappe.get_doc(MEMBER_DOCTYPE, membership.member) if membership.member else None
 
@@ -531,6 +568,13 @@ def status(membership) -> dict:
 		"approval_mode": membership_type.approval_mode,
 		"requires_approver": approval.requires_approver(membership_type),
 		"membership_status": membership.membership_status,
+		# Whether this membership is in force *now*, stated rather than left to be
+		# derived from the status by whoever is reading. The six statuses are this
+		# module's vocabulary and comparing against one of them is this module's
+		# job: a browser bundle that wrote `status === "Active"` would be a second
+		# copy of that vocabulary, and the screen that had it told somebody they
+		# held a membership their branch had not approved yet.
+		"is_active": membership.membership_status == STATUS_ACTIVE,
 		"geo_node": membership.geo_node,
 		"geo_path": adapter.get_full_path(membership.geo_node) if membership.geo_node else None,
 		"valid_from": membership.valid_from,

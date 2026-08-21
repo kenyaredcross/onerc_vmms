@@ -163,6 +163,108 @@ class TestCorrectingYourOwnProfile(RegistrationTestCase):
 			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "profile_photo")
 		)
 
+	# --- the photograph a *registration* carries ---------------------------
+	#
+	# The first-timer's case, and the one that was quietly broken: somebody with
+	# no profile yet cannot correct one, so their portrait used to go up in a
+	# second call made after the registration had already succeeded, with its
+	# failure swallowed on purpose. Anything between the two calls — a reload, a
+	# closed tab — lost the picture, and the only symptom was an empty control
+	# the next time they registered for anything. It rides with the registration
+	# now, and these assert both halves of that: it lands, and it is still
+	# additive.
+
+	def test_a_registration_carries_the_portrait_that_came_with_it(self):
+		user = fixtures.website_account("register.with.photo")
+
+		with fixtures.acting_as(user):
+			registration_api.register_as_volunteer(
+				geo_node=self.branch(),
+				home_geo_node=self.branch(),
+				id_type=fixtures.make_identification_type(),
+				id_number="A-1234567",
+				date_of_birth=fixtures.DEFAULT_DATE_OF_BIRTH,
+				profile_photo="/files/portrait.png",
+			)
+
+		profile = self.profile_of(user)
+
+		self.assertEqual(
+			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "profile_photo"),
+			"/files/portrait.png",
+			"the picture chosen on the form should be on the profile the form made",
+		)
+
+	def test_a_membership_carries_one_too(self):
+		"""Both doors, because both wizards draw the same control."""
+		user = fixtures.website_account("register.member.photo")
+
+		with fixtures.acting_as(user):
+			registration_api.register_as_member(
+				membership_type=fixtures.TYPE_ROUTED,
+				geo_node=self.branch(),
+				profile_photo="/files/portrait.png",
+			)
+
+		self.assertEqual(
+			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, self.profile_of(user), "profile_photo"),
+			"/files/portrait.png",
+		)
+
+	def test_a_registration_does_not_replace_a_portrait_already_on_file(self):
+		"""Additive, like every other value a registration carries.
+
+		Registering is not the act of correcting: somebody joining as a member in
+		August must not silently overwrite the portrait their volunteer
+		application put on file in March. `update_my_profile` is the door for
+		that, and it is the only one.
+		"""
+		user, profile = self._registered("register.photo.additive")
+
+		with fixtures.acting_as(user):
+			registration_api.update_my_profile(profile_photo="/files/held.png")
+			registration_api.register_as_member(
+				membership_type=fixtures.TYPE_ROUTED,
+				geo_node=self.branch(),
+				profile_photo="/files/newer.png",
+			)
+
+		self.assertEqual(
+			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "profile_photo"),
+			"/files/held.png",
+		)
+
+	def test_a_registration_refuses_a_portrait_from_somewhere_else(self):
+		"""The same wall `update_my_profile` puts up, on the same value."""
+		user = fixtures.website_account("register.photo.remote")
+
+		with fixtures.acting_as(user), self.assertRaises(frappe.ValidationError):
+			registration_api.register_as_member(
+				membership_type=fixtures.TYPE_ROUTED,
+				geo_node=self.branch(),
+				profile_photo="https://example.com/portrait.png",
+			)
+
+	def test_the_profile_says_where_the_society_has_placed_somebody(self):
+		"""What lets a second registration open its placement step answered.
+
+		Read-only, and not in `SELF_EDITABLE_FIELDS`: it is written by a
+		registration rather than typed into one. The wizard uses it to prefill a
+		cascading picker rather than asking somebody to walk back down to the
+		branch they have already named.
+		"""
+		user, _profile = self._registered("placed.already")
+
+		with fixtures.acting_as(user):
+			served = registration_api.my_profile()
+
+		self.assertEqual(served["home_geo_node"], self.branch())
+		self.assertNotIn(
+			"home_geo_node",
+			inspect.signature(registration_api.update_my_profile).parameters,
+			"placement is not a detail a person corrects on this endpoint",
+		)
+
 	def test_the_photograph_reaches_the_card(self):
 		"""What the whole change is for: the card reads the profile live.
 

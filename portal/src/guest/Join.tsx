@@ -10,7 +10,7 @@ import {
 import { ContentProvider } from "../content/ContentProvider";
 import { API, errorMessage } from "../lib/api";
 import { formatDate, formatMoney } from "../lib/format";
-import { loginUrl, useSession } from "../lib/session";
+import { loginUrl, signupUrl, useSession } from "../lib/session";
 import { BrandLockup } from "../ui/brand";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import { PlanCards } from "../ui/PlanCards";
@@ -140,6 +140,9 @@ function JoinBody() {
 	const [phone, setPhone] = useState("");
 	const [gender, setGender] = useState("");
 	const [dateOfBirth, setDateOfBirth] = useState("");
+	// A file URL from the framework's own uploader, never the file. Optional, and
+	// it is the one thing on the identity step nobody has to answer.
+	const [photo, setPhoto] = useState("");
 
 	// --- placement. The *chain* is the state, not the node: the wizard owns what
 	// was answered at every rung so leaving the step and coming back to it shows
@@ -153,6 +156,15 @@ function JoinBody() {
 
 	// --- citizenship and residency
 	const [citizenship, setCitizenship] = useState("");
+	// The yes/no half of the citizenship question, which the country alone cannot
+	// carry: "not a citizen, and has not said of where yet" and "has not been
+	// asked" are both an empty country, and only one of them should be drawing a
+	// picker. It lives here rather than in the step because the step is remounted
+	// on every visit — see the `key={step.id}` the entrance animation needs — and
+	// an answer that disappeared on the way back from the next screen would be
+	// worse than the picker it replaced. Starts at yes, which is what the
+	// society's own default already assumes.
+	const [isCitizen, setIsCitizen] = useState(true);
 	const [residency, setResidency] = useState(LOCAL);
 	const [homeIsServing, setHomeIsServing] = useState(true);
 	const [countryOfResidence, setCountryOfResidence] = useState("");
@@ -220,6 +232,7 @@ function JoinBody() {
 		setPhone(known.phone ?? "");
 		setGender(known.gender ?? "");
 		setDateOfBirth(known.date_of_birth ?? "");
+		setPhoto(known.profile_photo ?? "");
 	}, [existing.data]);
 
 	const identityOptions = useFrappeGetCall<{ message: IdentityOptions }>(
@@ -267,10 +280,63 @@ function JoinBody() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [options?.default_country_of_citizenship]);
 
+	/**
+	 * Answering "are you a citizen of X".
+	 *
+	 * Yes fills in the society's own country; no empties the field, so the step's
+	 * completion rule — which has always required a country — stops somebody at
+	 * the picker rather than letting the default travel under an answer that
+	 * contradicts it.
+	 */
+	const answerCitizenship = (yes: boolean) => {
+		setIsCitizen(yes);
+		setCitizenship(yes ? (options?.default_country_of_citizenship ?? "") : "");
+	};
+
 	const allowedLevels =
 		levels.data?.message && !levels.data.message.unconstrained
 			? levels.data.message.levels
 			: undefined;
+
+	/**
+	 * Opening the placement step already answered, for somebody the society has
+	 * placed before.
+	 *
+	 * A person who registered as a volunteer in March and comes back in August to
+	 * take out a membership was being asked to walk the cascading picker back down
+	 * to the branch they had already named — a question the society can answer
+	 * from its own records. `Red Profile.home_geo_node` is where that answer lives:
+	 * it is written by whichever registration they filed first, and it is served
+	 * read-only by `my_profile` for exactly this.
+	 *
+	 * **A suggestion, not a decision.** Every rung is drawn as normal and every one
+	 * of them can be changed; this fills them in rather than locking them, and it
+	 * runs once so somebody who deliberately picks a different branch does not have
+	 * their answer put back by a revalidation.
+	 */
+	const placed = existing.data?.message?.home_geo_node ?? null;
+
+	const suggestion = useFrappeGetCall<{ message: { chain: GeoNode[] } }>(
+		API.geoChain,
+		placed ? { node: placed } : undefined,
+		isGuest || !placed ? null : `join:geo_path:${placed}`,
+	);
+
+	const [prefilled, setPrefilled] = useState(false);
+
+	useEffect(() => {
+		// `levels` decides how much of the chain is usable, so prefilling before it
+		// has answered could fill in a rung this path is not recorded at and then
+		// have to take it away again.
+		if (prefilled || !levels.data) return;
+
+		const chain = suggestion.data?.message?.chain;
+		if (!chain?.length) return;
+
+		setServingChain(usableChain(chain, allowedLevels));
+		setPrefilled(true);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [suggestion.data, levels.data, prefilled]);
 
 	const node = selectedNode(servingChain, allowedLevels);
 	// Most people serve where they live, which is the assumption the desk form
@@ -312,7 +378,15 @@ function JoinBody() {
 	const step = steps[Math.min(cursor, steps.length - 1)];
 
 	const complete = (id: StepId): boolean => {
-		if (id === "identity") return Boolean(firstName.trim() && lastName.trim());
+		// Date of birth is required of a volunteer and not of a member, which is
+		// the same split `application.assert_ready` makes on the server: age governs
+		// what somebody may be sent to do and what safeguarding applies to them, and
+		// that question is only asked of the people a society deploys. Asked here so
+		// the button says so, rather than the submission failing six steps later.
+		if (id === "identity")
+			return Boolean(
+				firstName.trim() && lastName.trim() && (path !== "volunteer" || dateOfBirth),
+			);
 		if (id === "plan") return Boolean(membershipType);
 		if (id === "placement") return Boolean(node);
 		if (id === "residency") {
@@ -395,12 +469,20 @@ function JoinBody() {
 	// Did they change anything the society already holds? Posting the identity
 	// step unconditionally would rewrite core's spine on every registration,
 	// including the overwhelming majority where nobody touched a field.
+	//
+	// The photograph is one of these, and it was not before: it used to go up on
+	// its own after the registration, which made replacing a portrait during a
+	// second registration a separate call that could quietly not happen. A
+	// picture somebody swapped on this form is a *correction* like a corrected
+	// surname, so it travels with the corrections; a first-time registrant has
+	// nothing to correct and their portrait rides with the registration itself.
 	const corrections = {
 		first_name: firstName.trim(),
 		last_name: lastName.trim(),
 		phone: phone.trim(),
 		gender,
 		date_of_birth: dateOfBirth,
+		profile_photo: photo,
 	};
 
 	const corrected =
@@ -424,6 +506,14 @@ function JoinBody() {
 			phone: phone || undefined,
 			gender: gender || undefined,
 			date_of_birth: dateOfBirth || undefined,
+			// The portrait rides with the registration rather than following it.
+			// It used to be a second call made after the success screen was already
+			// on the page, with its failure deliberately swallowed so a lost picture
+			// could not cost somebody the application that had succeeded — and the
+			// only symptom of it not landing was an empty control the next time they
+			// registered for anything. Additive on the server, exactly like the five
+			// values above it: see `registration._adopt_photo`.
+			profile_photo: photo || undefined,
 		};
 
 		try {
@@ -590,16 +680,19 @@ function JoinBody() {
 											<IdentityStep
 												profile={profile}
 												genders={genders}
+												path={path}
 												firstName={firstName}
 												lastName={lastName}
 												phone={phone}
 												gender={gender}
 												dateOfBirth={dateOfBirth}
+												photo={photo}
 												onFirstName={setFirstName}
 												onLastName={setLastName}
 												onPhone={setPhone}
 												onGender={setGender}
 												onDateOfBirth={setDateOfBirth}
+												onPhoto={setPhoto}
 											/>
 										)}
 
@@ -628,6 +721,8 @@ function JoinBody() {
 												loading={applicationOptions.isLoading}
 												citizenship={citizenship}
 												onCitizenship={setCitizenship}
+												isCitizen={isCitizen}
+												onIsCitizen={answerCitizenship}
 												residency={residency}
 												onResidency={setResidency}
 												servingNode={node}
@@ -690,6 +785,7 @@ function JoinBody() {
 												phone={phone}
 												gender={gender}
 												dateOfBirth={dateOfBirth}
+												photo={photo}
 												node={node}
 												chain={servingChain}
 												type={chosenType}
@@ -939,6 +1035,31 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 		}));
 }
 
+/**
+ * As much of a remembered placement as *this* path is allowed to record at.
+ *
+ * The two paths are not recorded at the same rung — ACC-03 is per doctype, which
+ * is why the wizard asks two different endpoints for `allowedLevels` — so a
+ * volunteer placed at a sub-branch may be joining as a member at the branch above
+ * it. Handing the whole chain over would leave the picker showing an answer
+ * `selectedNode` reads as nothing chosen, with the amber "keep going down" note
+ * pointing *up* the ladder. Cut to the deepest rung this path accepts instead.
+ *
+ * A chain with no acceptable rung in it is passed through whole: the person is
+ * placed higher than this path records at, and the remaining selects are where
+ * they go from here.
+ */
+function usableChain(chain: GeoNode[], allowedLevels?: string[]): GeoNode[] {
+	if (!allowedLevels?.length) return chain;
+
+	const deepest = chain.reduce(
+		(best, entry, index) => (allowedLevels.includes(entry.level) ? index : best),
+		-1,
+	);
+
+	return deepest === -1 ? chain : chain.slice(0, deepest + 1);
+}
+
 function labelsFor(
 	vocabulary: Array<{ key: string; label: string }> | undefined,
 	chosen: string[],
@@ -1114,20 +1235,29 @@ function SignInFirst() {
 			<h1 className="font-display text-[24px] font-extrabold tracking-tight text-ink">
 				Sign in to register
 			</h1>
-			<p className="mb-6 mt-2.5 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
+			<p className="mt-2.5 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
 				Your account is your identity with the Society, and it is what keeps one person to one
-				record however many times they register. Create an account or sign in, and you will come
-				straight back here.
+				record however many times they register. Sign in and you will come straight back here.
+			</p>
+			{/* Said plainly, because it is the step people are surprised by. Creating
+			    an account does not sign anybody in: Frappe mails a link to set a
+			    password, and the account cannot be used until it is opened. A screen
+			    that promised "you will come straight back here" and then sent
+			    somebody to their inbox was the reason that felt like being thrown
+			    out. `signupUrl` is what makes the sentence below true. */}
+			<p className="mb-6 mt-3 max-w-lg text-[12.5px] leading-relaxed text-slate-body">
+				New here? Creating an account sends you an email to set your password. Open that link,
+				and you will land back on this form with nothing lost.
 			</p>
 			<div className="flex flex-wrap gap-2.5">
 				<a
-					href={loginUrl(window.location.pathname + window.location.search)}
+					href={loginUrl(here())}
 					className="inline-flex items-center rounded-card bg-signal px-5 py-2.5 font-display text-[13px] font-bold text-white transition hover:bg-signal-dark"
 				>
 					Sign in
 				</a>
 				<a
-					href="/login#signup"
+					href={signupUrl(here())}
 					className="inline-flex items-center rounded-card border border-hairline-strong bg-white px-5 py-2.5 font-display text-[13px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
 				>
 					Create an account
@@ -1135,6 +1265,11 @@ function SignInFirst() {
 			</div>
 		</Card>
 	);
+}
+
+/** This exact page, path and query, so the way back is the way they came. */
+function here(): string {
+	return window.location.pathname + window.location.search;
 }
 
 function PathStep({ path, onChange }: { path: Path; onChange: (p: Path) => void }) {
@@ -1194,29 +1329,35 @@ function PathSwitch({ path, onChange }: { path: Path; onChange: (p: Path) => voi
 function IdentityStep({
 	profile,
 	genders,
+	path,
 	firstName,
 	lastName,
 	phone,
 	gender,
 	dateOfBirth,
+	photo,
 	onFirstName,
 	onLastName,
 	onPhone,
 	onGender,
 	onDateOfBirth,
+	onPhoto,
 }: {
 	profile: RedProfile | null;
 	genders: string[];
+	path: Path;
 	firstName: string;
 	lastName: string;
 	phone: string;
 	gender: string;
 	dateOfBirth: string;
+	photo: string;
 	onFirstName: (v: string) => void;
 	onLastName: (v: string) => void;
 	onPhone: (v: string) => void;
 	onGender: (v: string) => void;
 	onDateOfBirth: (v: string) => void;
+	onPhoto: (v: string) => void;
 }) {
 	return (
 		<div className="space-y-5">
@@ -1276,7 +1417,16 @@ function IdentityStep({
 					/>
 				</Field>
 
-				<Field label="Date of birth" htmlFor="join-dob">
+				<Field
+					label="Date of birth"
+					required={path === "volunteer"}
+					htmlFor="join-dob"
+					hint={
+						path === "volunteer"
+							? "Required. It decides what you can be asked to do and what safeguarding applies to you."
+							: undefined
+					}
+				>
 					<TextInput
 						id="join-dob"
 						type="date"
@@ -1286,7 +1436,107 @@ function IdentityStep({
 					/>
 				</Field>
 			</div>
+
+			<PhotoField id="join-photo" value={photo} onChange={onPhoto} />
 		</div>
+	);
+}
+
+/**
+ * A photograph, which is optional and says so.
+ *
+ * **It goes on the Red Profile, not on either application.** A portrait is a
+ * fact about the person in the same way a date of birth is, which is why
+ * `SELF_EDITABLE_FIELDS` already carries `profile_photo` and why this control
+ * posts through `update_my_profile` rather than travelling with a registration.
+ * It is the picture that ends up on a membership card and beside this person's
+ * name on every screen a coordinator reads.
+ *
+ * **Public, unlike an answer's attachment.** `AnswerUpload` uploads privately
+ * because a letter naming somebody's chief is evidence for one approver. A
+ * portrait is shown on the person's own card to anybody who scans it, so a
+ * private file would be a broken image everywhere it is drawn.
+ *
+ * **Nobody is blocked by it.** No registration checks it, the step's completion
+ * rule does not mention it, and a failed upload leaves a message and an
+ * otherwise working form. That is what "not mandatory" has to mean to be true.
+ */
+function PhotoField({
+	id,
+	value,
+	onChange,
+}: {
+	id: string;
+	value: string;
+	onChange: (value: string) => void;
+}) {
+	const { upload, loading } = useFrappeFileUpload();
+	const [failure, setFailure] = useState<string | null>(null);
+
+	const pick = async (file: File | undefined) => {
+		if (!file) return;
+		setFailure(null);
+
+		try {
+			const uploaded = await upload(file, { isPrivate: false });
+			onChange(uploaded.file_url);
+		} catch (uploadError) {
+			setFailure(errorMessage(uploadError, "That picture could not be uploaded."));
+		}
+	};
+
+	return (
+		<Field
+			label="Photograph"
+			htmlFor={id}
+			hint="Optional. A head-and-shoulders picture, which goes on your card and beside your name."
+		>
+			<div className="flex flex-wrap items-center gap-4">
+				<div className="grid h-[72px] w-[72px] flex-none place-items-center overflow-hidden rounded-card border border-hairline bg-page text-slate-faint">
+					{value ? (
+						<img src={value} alt="" className="h-full w-full object-cover" />
+					) : (
+						<Icon.user size={26} />
+					)}
+				</div>
+
+				<div>
+					<div className="flex items-center gap-2.5">
+						<label
+							htmlFor={id}
+							className="cursor-pointer rounded-card border border-hairline-strong bg-white px-3.5 py-2 font-display text-[12.5px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
+						>
+							{loading ? "Uploading…" : value ? "Replace picture" : "Choose a picture"}
+						</label>
+						<input
+							id={id}
+							type="file"
+							accept="image/*"
+							className="sr-only"
+							disabled={loading}
+							onChange={(event) => pick(event.target.files?.[0])}
+						/>
+
+						{value && !loading && (
+							<button
+								type="button"
+								onClick={() => {
+									setFailure(null);
+									onChange("");
+								}}
+								className="text-[11.5px] font-semibold text-slate-body hover:text-danger hover:underline"
+							>
+								Remove
+							</button>
+						)}
+					</div>
+
+					{failure && (
+						<p className="mt-2 text-[11.5px] leading-relaxed text-danger">{failure}</p>
+					)}
+				</div>
+			</div>
+		</Field>
 	);
 }
 
@@ -1335,6 +1585,8 @@ function ResidencyStep({
 	loading,
 	citizenship,
 	onCitizenship,
+	isCitizen,
+	onIsCitizen,
 	residency,
 	onResidency,
 	servingNode,
@@ -1351,6 +1603,8 @@ function ResidencyStep({
 	loading: boolean;
 	citizenship: string;
 	onCitizenship: (v: string) => void;
+	isCitizen: boolean;
+	onIsCitizen: (yes: boolean) => void;
 	residency: string;
 	onResidency: (v: string) => void;
 	servingNode: GeoNode | null;
@@ -1370,16 +1624,14 @@ function ResidencyStep({
 	return (
 		<div className="space-y-8">
 			<FieldSet title="Citizenship">
-				<div className="max-w-sm">
-					<Field label="Country of citizenship" required htmlFor="join-citizenship">
-						<Combo
-							id="join-citizenship"
-							value={citizenship}
-							onChange={onCitizenship}
-							options={options.countries}
-						/>
-					</Field>
-				</div>
+				<CitizenshipQuestion
+					countries={options.countries}
+					home={options.default_country_of_citizenship}
+					value={citizenship}
+					onChange={onCitizenship}
+					isCitizen={isCitizen}
+					onIsCitizen={onIsCitizen}
+				/>
 			</FieldSet>
 
 			<FieldSet title="Where you live">
@@ -1445,6 +1697,75 @@ function ResidencyStep({
 					)}
 				</div>
 			</FieldSet>
+		</div>
+	);
+}
+
+/**
+ * Citizenship, asked the way a clerk at a branch counter would ask it.
+ *
+ * **The overwhelming majority answer "yes", so that is the question.** This was
+ * a country picker two hundred entries long, opened on the society's own country
+ * and correct for almost everybody who saw it — a control whose only job, nearly
+ * every time, was to be scrolled past. A person who is a citizen now answers one
+ * button, and the list is drawn for the minority it was actually there for.
+ *
+ * **The society's own country is the society's own configuration.** It is
+ * `application.default_country_of_citizenship`, the same value the field would
+ * be filled with on insert, arriving through `application_options`. Nothing here
+ * names a country, and a society that has not set one gets the plain picker
+ * back — the yes/no question is unanswerable without knowing what "citizen"
+ * means here, and guessing would be this file inventing a nationality.
+ *
+ * **"No" clears the answer rather than leaving the default standing.** The step
+ * cannot be completed without a country, so somebody who says they are not a
+ * citizen is stopped at an empty required field instead of carrying the
+ * society's country forward under an answer that contradicts it.
+ */
+function CitizenshipQuestion({
+	countries,
+	home,
+	value,
+	onChange,
+	isCitizen,
+	onIsCitizen,
+}: {
+	countries: string[];
+	home: string | null;
+	value: string;
+	onChange: (value: string) => void;
+	isCitizen: boolean;
+	onIsCitizen: (yes: boolean) => void;
+}) {
+	if (!home) {
+		return (
+			<div className="max-w-sm">
+				<Field label="Country of citizenship" required htmlFor="join-citizenship">
+					<Combo id="join-citizenship" value={value} onChange={onChange} options={countries} />
+				</Field>
+			</div>
+		);
+	}
+
+	return (
+		<div>
+			<p className="mb-2.5 text-[13px] font-semibold text-slate-strong">
+				Are you a citizen of <span className="text-ink">{home}</span>?
+			</p>
+			<Segmented
+				label={`Are you a citizen of ${home}?`}
+				value={isCitizen ? "Yes" : "No"}
+				onChange={(answer) => onIsCitizen(answer === "Yes")}
+				options={["Yes", "No"]}
+			/>
+
+			{!isCitizen && (
+				<div className="rise-in mt-5 max-w-sm">
+					<Field label="Country of citizenship" required htmlFor="join-citizenship">
+						<Combo id="join-citizenship" value={value} onChange={onChange} options={countries} />
+					</Field>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -1816,6 +2137,7 @@ function ConfirmStep({
 	phone,
 	gender,
 	dateOfBirth,
+	photo,
 	node,
 	chain,
 	type,
@@ -1838,6 +2160,7 @@ function ConfirmStep({
 	phone: string;
 	gender: string;
 	dateOfBirth: string;
+	photo: string;
 	node: GeoNode | null;
 	chain: GeoNode[];
 	type: PricedType | null;
@@ -1862,6 +2185,7 @@ function ConfirmStep({
 				phone={phone}
 				gender={gender}
 				dateOfBirth={dateOfBirth}
+				photo={photo}
 				onEdit={() => onEdit(indexOf("identity"))}
 			/>
 
@@ -2111,6 +2435,7 @@ function PersonCard({
 	phone,
 	gender,
 	dateOfBirth,
+	photo,
 	onEdit,
 }: {
 	name: string;
@@ -2118,6 +2443,7 @@ function PersonCard({
 	phone: string;
 	gender: string;
 	dateOfBirth: string;
+	photo: string;
 	onEdit: () => void;
 }) {
 	const monogram =
@@ -2131,12 +2457,25 @@ function PersonCard({
 	return (
 		<section className="overflow-hidden rounded-card border border-hairline bg-white">
 			<div className="flex items-start gap-4 border-b border-hairline bg-page/60 px-4 py-4">
-				<span
-					aria-hidden="true"
-					className="grid h-12 w-12 flex-none place-items-center rounded-full bg-navy font-display text-[15px] font-extrabold text-white"
-				>
-					{monogram}
-				</span>
+				{/* The portrait, where there is one. This step is a *check*, and the
+				    picture is the one answer on it somebody can get wrong without
+				    noticing — a monogram here said nothing about whether the file they
+				    chose was the one they meant. The initials remain the fallback for
+				    everybody who did not upload one, which is most people. */}
+				{photo ? (
+					<img
+						src={photo}
+						alt=""
+						className="h-12 w-12 flex-none rounded-full border border-hairline object-cover"
+					/>
+				) : (
+					<span
+						aria-hidden="true"
+						className="grid h-12 w-12 flex-none place-items-center rounded-full bg-navy font-display text-[15px] font-extrabold text-white"
+					>
+						{monogram}
+					</span>
+				)}
 
 				<div className="min-w-0 flex-1">
 					<p className="truncate font-display text-[17px] font-extrabold leading-tight text-ink">
@@ -2234,7 +2573,7 @@ function AlreadyApplied({
 
 			<div className="mt-7 flex flex-wrap gap-2.5">
 				<Link
-					to="/"
+					to="/dashboard"
 					className="inline-flex items-center rounded-card bg-navy px-5 py-2.5 font-display text-[13px] font-bold text-white transition hover:bg-navy/90"
 				>
 					See where it got to
@@ -2286,9 +2625,14 @@ function Success({ reference, path }: { reference: string; path: Path }) {
 				<span className="font-mono text-[13px] font-semibold text-ink">{reference}</span>
 			</div>
 
+			{/* To the dashboard, not to `/`. Under this app's basename `/` is the
+			    public landing page: somebody who had just registered was sent to a
+			    page whose header offers "Sign in" and "Become a volunteer", which
+			    reads exactly like having been signed out. The portal is
+			    `/dashboard`, and that is where "go to your portal" has to go. */}
 			<div className="mt-7 flex flex-wrap gap-2.5">
 				<Link
-					to="/"
+					to="/dashboard"
 					className="inline-flex items-center rounded-card bg-navy px-5 py-2.5 font-display text-[13px] font-bold text-white transition hover:bg-navy/90"
 				>
 					Go to your portal

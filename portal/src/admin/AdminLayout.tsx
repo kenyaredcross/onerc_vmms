@@ -6,7 +6,7 @@ import { API } from "../lib/api";
 import { Icon } from "../ui/icons";
 import { Shell, type NavGroup, type NavItem } from "../ui/Shell";
 import { Spinner } from "../ui/primitives";
-import type { ApprovalStatus } from "../portal/types";
+import type { ApprovalStatus, RedProfile } from "../portal/types";
 
 /**
  * The manager console.
@@ -245,6 +245,16 @@ export default function AdminLayout() {
 		"admin:my_queue",
 	);
 
+	// What this coordinator is called, for the greeting and the corner. Same read
+	// and the same key as the portal's — a coordinator is also a person with a
+	// record, and being greeted by the local part of an email address was as wrong
+	// here as it was there.
+	const me = useFrappeGetCall<{ message: RedProfile | null }>(
+		API.myProfile,
+		undefined,
+		"portal:my_profile",
+	);
+
 	// Nothing is drawn until the server has answered. Rendering the full sidebar
 	// and then removing tabs would show somebody a Stipends tab they are about to
 	// lose, which is worse than a moment of nothing.
@@ -313,6 +323,7 @@ export default function AdminLayout() {
 				// for why this doctype cannot be a gated section like the tabs above.
 				sms={answer?.sms ? "/app/sms-campaign/new" : null}
 				tone="admin"
+				person={me.data?.message?.full_name ?? null}
 				subtitle="Manager"
 			/>
 		</ContentProvider>

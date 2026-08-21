@@ -195,7 +195,11 @@ export default function Dashboard() {
 						<SectionLabel>
 							<EditableText k="portal.home.section.volunteering" fallback="Volunteering" />
 						</SectionLabel>
-						<VolunteerCard profile={profile} loading={volunteer.isLoading} />
+						<VolunteerCard
+							profile={profile}
+							applied={Boolean(open.data?.message?.volunteer)}
+							loading={volunteer.isLoading}
+						/>
 					</section>
 
 					{profile && (
@@ -211,7 +215,11 @@ export default function Dashboard() {
 						<SectionLabel action={<SectionLink to="/membership">Manage</SectionLink>}>
 							<EditableText k="portal.home.section.membership" fallback="Membership" />
 						</SectionLabel>
-						<MembershipsCard rows={rows} loading={memberships.isLoading} />
+						<MembershipsCard
+							rows={rows}
+							applied={Boolean(open.data?.message?.member)}
+							loading={memberships.isLoading}
+						/>
 					</section>
 				</div>
 
@@ -273,9 +281,18 @@ function overdue(rows: TaskSummary[]): string | undefined {
 
 function VolunteerCard({
 	profile,
+	applied,
 	loading,
 }: {
 	profile: VolunteerProfile | null;
+	/**
+	 * Whether a volunteer application of this person's is with the branch and
+	 * undecided. Without it this card read the absence of a *volunteer record* as
+	 * never having applied, and told somebody whose application the banner at the
+	 * top of the same page said was under review that they were not registered as
+	 * a volunteer, with a button inviting them to apply again.
+	 */
+	applied: boolean;
 	loading: boolean;
 }) {
 	if (loading) {
@@ -294,6 +311,22 @@ function VolunteerCard({
 					<Skeleton className="h-10" />
 					<Skeleton className="h-10" />
 				</div>
+			</Card>
+		);
+	}
+
+	// Somebody who has applied and is waiting. The banner above already says where
+	// the application got to, so this says the one thing it does not — that the
+	// record this panel is for does not exist yet — and offers nothing, because
+	// there is nothing for them to do and applying again is the one act the server
+	// would refuse.
+	if (!profile && applied) {
+		return (
+			<Card>
+				<Empty framed={false} title="Your volunteer record starts when this is approved" icon={Icon.people}>
+					Your application is with your branch. Once somebody there accepts it, your volunteer
+					record, your hours and your deployments all appear here.
+				</Empty>
 			</Card>
 		);
 	}
@@ -441,11 +474,30 @@ function TasksCard({ rows, loading }: { rows: TaskSummary[]; loading: boolean })
 
 /* -------------------------------------------------------------- membership */
 
-function MembershipsCard({ rows, loading }: { rows: MembershipRow[]; loading: boolean }) {
+function MembershipsCard({
+	rows,
+	applied,
+	loading,
+}: {
+	rows: MembershipRow[];
+	/** As on `VolunteerCard`: a membership with the branch and undecided. */
+	applied: boolean;
+	loading: boolean;
+}) {
 	if (loading) {
 		return (
 			<Card>
 				<Skeleton className="h-14" />
+			</Card>
+		);
+	}
+
+	if (rows.length === 0 && applied) {
+		return (
+			<Card>
+				<Empty framed={false} title="Your membership starts when this is approved" icon={Icon.card}>
+					Your application is with your branch. It appears here once they have decided.
+				</Empty>
 			</Card>
 		);
 	}

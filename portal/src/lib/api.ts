@@ -23,6 +23,10 @@ export const API = {
 	// vmmsx/api/society.py — the society's own name and logo, for the lockup.
 	// Guest-readable, like `contentSurface`, because the landing page carries it.
 	societyBranding: "vmmsx.api.society.branding",
+	// The numbers the landing page's statistics strip used to have typed into it.
+	// Guest-readable and already rounded: the endpoint decides how approximate a
+	// public figure is, so no screen can publish an exact headcount by accident.
+	societyFigures: "vmmsx.api.society.figures",
 
 	// vmmsx/api/content.py
 	contentSurface: "vmmsx.api.content.surface",
@@ -52,6 +56,15 @@ export const API = {
 
 	// vmmsx/api/volunteer.py
 	applicationOptions: "vmmsx.api.volunteer.application_options",
+	// When the caller can serve, and the society's own windows to draw the grid
+	// from. Possessive like every `my*` endpoint: the volunteer comes from the
+	// session and there is no argument naming anybody else, which is what admits
+	// the elevated save on a record a volunteer holds no permission over.
+	// Distinct from the availability *slots* a volunteer picks at intake: those
+	// are a self-description a coordinator can search on, this is a claim about
+	// days that a deployment's own dates can be tested against.
+	myAvailability: "vmmsx.api.volunteer.my_availability",
+	setMyAvailability: "vmmsx.api.volunteer.set_my_availability",
 	// The whole of what an approver reads before deciding: identity, placement,
 	// what was declared, the identification the application required, and the
 	// society's own questions. Ordinary read permission on the application, so
@@ -74,6 +87,13 @@ export const API = {
 	logTime: "vmmsx.api.volunteer.log_time",
 	findVolunteers: "vmmsx.api.volunteer.find_volunteers",
 	volunteerDossier: "vmmsx.api.volunteer.get_dossier",
+	// Where one volunteer has served. The coordinator's endpoint: it checks read
+	// on the volunteer and then filters the deployments through core's scoping,
+	// so a volunteer calling it about themselves would get nothing — they have
+	// `myDeployments` instead. Fetched lazily by the candidate hover card, one
+	// volunteer at a time, rather than fattening every row of a search that was
+	// deliberately made cheap.
+	deploymentsOfVolunteer: "vmmsx.api.deployment.deployments_of_volunteer",
 	// The coordinator's acts over a volunteer's standing. `status` is derived and
 	// read-only on the doctype, so these endpoints are the only way to move it —
 	// there is no field to write. Each is gated on `write`, which is *not* the
@@ -108,6 +128,11 @@ export const API = {
 	// screen knows how deep a society's hierarchy is or what it calls a rung.
 	geoLadder: "vmmsx.api.geo.ladder",
 	geoBrowse: "vmmsx.api.geo.browse",
+	// One node with its whole ancestry, root first — what restores a cascading
+	// picker that already has an answer. The join wizard opens its placement step
+	// with this, so somebody registering a second time is not asked to walk back
+	// down to the branch they already gave the society.
+	geoChain: "vmmsx.api.geo.path",
 
 	// vmmsx/api/deployment.py — the possessive one. `deployments_of_volunteer`
 	// is the coordinator's: it checks read on the volunteer and then geo-scopes
@@ -120,8 +145,24 @@ export const API = {
 	// rather than geo scope, which every volunteer would fail. `inviteVolunteer`
 	// is the coordinator's half and is gated on write permission.
 	myInvitations: "vmmsx.api.deployment.my_invitations",
-	respondToInvitation: "vmmsx.api.deployment.respond_to_invitation",
+	// Answering names an **assignment**, not a deployment, because the roster is
+	// a register of `VMMS Deployment Assignment` documents now — one per person,
+	// with its own URL, and carrying the exact submitted terms of reference that
+	// person was shown. Accepting is accepting those terms: there is no separate
+	// contract in this app, which is why the terms are submittable and why
+	// `getMyAssignment` hands the whole mission document to whoever is deciding.
+	getMyAssignment: "vmmsx.api.deployment.get_my_assignment",
+	respondToAssignment: "vmmsx.api.deployment.respond_to_assignment",
 	inviteVolunteer: "vmmsx.api.deployment.invite_volunteer",
+	// The bulk act. One call, one savepoint per person on the server, and a
+	// `{success, failure}` report naming who did not take and why — because some
+	// will fail (already assigned, deployment full, terms retired since) and a
+	// screen that refused the batch or dropped them silently would be worse than
+	// one that says so. `ask` is the fork between this app's two verbs and is
+	// deliberately not merged: on, each person is asked; off, each is placed.
+	assignVolunteers: "vmmsx.api.deployment.assign_volunteers",
+	setAssignmentRole: "vmmsx.api.deployment.set_assignment_role",
+	withdrawAssignment: "vmmsx.api.deployment.withdraw_assignment",
 	// The manager's console. Both listings are `frappe.get_list`, so the
 	// caller's Geo Assignment is the floor the answer stands on and no argument
 	// on the screen widens it. A coordinator holding no assignment sees an empty
@@ -131,6 +172,20 @@ export const API = {
 	getDeployment: "vmmsx.api.deployment.get_deployment",
 	setDeploymentStatus: "vmmsx.api.deployment.set_deployment_status",
 	addParticipant: "vmmsx.api.deployment.add_participant",
+	// The deployment's own account of itself: its updates merged at read time
+	// with the task reports written against tasks linked to it. Merged rather
+	// than copied, so there is one record of each report and it stays with the
+	// task it belongs to. Reading needs read; posting needs write, because a
+	// feed anybody who could open the deployment could write to would not be a
+	// record of anything.
+	// Where this coordinator's people are, by area, with a point where the geo
+	// tree carries one. Every area comes back whether or not it can be plotted,
+	// and `unplotted` counts the ones that cannot — a tree is filled in from the
+	// top down over months, and a map that silently omitted them would
+	// under-report exactly where the gaps are.
+	deploymentMap: "vmmsx.api.deployment.deployment_map",
+	getDeploymentFeed: "vmmsx.api.deployment.get_deployment_feed",
+	postDeploymentUpdate: "vmmsx.api.deployment.post_deployment_update",
 	// Matching. `findCandidatesForRequest` is the same question asked of a
 	// document that already carries the need, so the screen does not take the
 	// terms and the date apart by hand.
@@ -156,6 +211,14 @@ export const API = {
 	// coordinator reads on the screen is the same markup the PDF is made from
 	// and cannot drift apart from either.
 	getTerms: "vmmsx.api.deployment.get_terms",
+	// Editing and freezing a mission. A terms of reference is written over
+	// several sittings and then **submitted**, which is the deliberate act that
+	// says the wording is final and people may now be asked to agree to it.
+	// `updateTerms` refuses a submitted one, in words that say why; amending is
+	// a new document, so what somebody already agreed to is never rewritten.
+	updateTerms: "vmmsx.api.deployment.update_terms",
+	submitTerms: "vmmsx.api.deployment.submit_terms",
+	torMethodologies: "vmmsx.api.deployment.tor_methodologies",
 	createDeployment: "vmmsx.api.deployment.create_deployment",
 
 	// vmmsx/api/tasks.py — two doors into one doctype, checked differently.
@@ -234,6 +297,11 @@ export const API = {
 	// Buzz's own page and there is deliberately no booking method to name here.
 	eventsUpcoming: "vmmsx.api.events.upcoming",
 	eventFilters: "vmmsx.api.events.filters",
+	// Three events for the public landing page, and the only guest-readable call
+	// in this group. It is a teaser rather than the calendar — no search, no
+	// filters, no paging — and every row is already published by Buzz to the
+	// world. Everything else here still refuses a signed-out visitor.
+	eventsTeaser: "vmmsx.api.events.teaser",
 	// One event in full, behind the same `is_published` boundary as the listing.
 	// Booking is still a navigation to Buzz; this screen only has more room for
 	// the same call to action.

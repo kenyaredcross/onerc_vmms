@@ -5,7 +5,7 @@ import { API } from "../lib/api";
 import { geoPath } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { Shell, type CompanionItem, type NavItem } from "../ui/Shell";
-import type { VolunteerProfile } from "./types";
+import type { RedProfile, VolunteerProfile } from "./types";
 
 /**
  * The portal's own screens, in two groups.
@@ -39,6 +39,10 @@ const ITEMS: NavItem[] = [
 	{ to: "/calendar", labelKey: "portal.nav.calendar", fallback: "Calendar", icon: Icon.calendar, ...YOURS },
 	{ to: "/tasks", labelKey: "portal.nav.tasks", fallback: "My tasks", icon: Icon.check, ...YOURS },
 	{ to: "/deployments", labelKey: "portal.nav.deployments", fallback: "Deployments", icon: Icon.truck, ...YOURS },
+	// Beside Deployments rather than buried in the profile. This is the page a
+	// coordinator will ask somebody to go and fill in, and "open your profile and
+	// scroll" is a worse sentence to have to say than a link.
+	{ to: "/availability", labelKey: "portal.nav.availability", fallback: "My availability", icon: Icon.clock, ...YOURS },
 	{ to: "/hours", labelKey: "portal.nav.hours", fallback: "My hours", icon: Icon.clock, ...YOURS },
 	{ to: "/membership", labelKey: "portal.nav.membership", fallback: "Membership", icon: Icon.card, ...YOURS },
 	// Not the calendar glyph any more: the calendar tab above has it, and two
@@ -96,6 +100,17 @@ export default function PortalLayout() {
 		"portal:console_sections",
 	);
 
+	// What this person is called, for the greeting and the avatar in the corner.
+	// `my_volunteer` above carries a name too, but only for somebody with a
+	// volunteer record — a member-only person has none, and they are as entitled
+	// to be greeted by name as anybody. Shares the key the profile screen already
+	// uses, so this is the same response rather than a second request.
+	const me = useFrappeGetCall<{ message: RedProfile | null }>(
+		API.myProfile,
+		undefined,
+		"portal:my_profile",
+	);
+
 	const placement = data?.message?.geo_path;
 
 	return (
@@ -111,6 +126,7 @@ export default function PortalLayout() {
 				}}
 				console={console_.data?.message?.available ? "/admin" : null}
 				tone="portal"
+				person={me.data?.message?.full_name ?? null}
 				subtitle={placement ? geoPath(placement) : null}
 			/>
 		</ContentProvider>

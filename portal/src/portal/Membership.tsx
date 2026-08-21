@@ -57,7 +57,17 @@ export default function Membership() {
 
 	const rows = data?.message ?? [];
 	const priced = types.data?.message?.types ?? [];
-	const held = rows.map((row) => row.membership_type);
+
+	// A membership that has not been approved and paid for is not one this person
+	// holds, and this screen said it was in two places at once: under a heading
+	// reading "What you hold", and as a green "You hold this" badge on the plan
+	// they had applied for. Somebody whose branch had not looked at their
+	// application yet was being told they were already a member.
+	//
+	// `is_active` is the server's own answer — see `membership.status` — so the
+	// split here is not this file comparing status strings it does not own.
+	const held = rows.filter((row) => row.is_active);
+	const pending = rows.filter((row) => !row.is_active);
 
 	return (
 		<>
@@ -69,14 +79,14 @@ export default function Membership() {
 			{isLoading && <Spinner label="Loading your membership…" />}
 			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
 
-			{rows.length > 0 && (
+			{held.length > 0 && (
 				<section className="mb-10">
 					<SectionLabel>
 						<EditableText k="portal.membership.section.held" fallback="What you hold" />
 					</SectionLabel>
 
 					<div className="space-y-4">
-						{rows.map((row) => (
+						{held.map((row) => (
 							<MembershipCard key={row.name} row={row} onChanged={() => void mutate()} />
 						))}
 
@@ -84,6 +94,27 @@ export default function Membership() {
 						    the endpoint returns nothing for one still under review, and
 						    this renders nothing when it does. */}
 						<HolderCard kind="member" />
+					</div>
+				</section>
+			)}
+
+			{/* The same cards, under a heading that says what they are. Each one
+			    already shows which of payment and approval is outstanding, so this
+			    section needs no explanation of its own beyond not calling them
+			    memberships somebody holds. */}
+			{pending.length > 0 && (
+				<section className="mb-10">
+					<SectionLabel>
+						<EditableText
+							k="portal.membership.section.pending"
+							fallback="Not active yet"
+						/>
+					</SectionLabel>
+
+					<div className="space-y-4">
+						{pending.map((row) => (
+							<MembershipCard key={row.name} row={row} onChanged={() => void mutate()} />
+						))}
 					</div>
 				</section>
 			)}
@@ -111,30 +142,48 @@ export default function Membership() {
 						<EditableText k="portal.membership.plans.eyebrow" fallback="Membership types" />
 					</p>
 					<h2 className="mt-2 font-display text-[26px] font-extrabold tracking-tight text-ink">
-						<EditableText
-							k="portal.membership.plans.heading"
-							fallback="Choose a plan to become a member"
-						/>
+						{pending.length > 0 ? (
+							<EditableText
+								k="portal.membership.plans.heading.pending"
+								fallback="What your society offers"
+							/>
+						) : (
+							<EditableText
+								k="portal.membership.plans.heading"
+								fallback="Choose a plan to become a member"
+							/>
+						)}
 					</h2>
 					<p className="mx-auto mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-body">
-						<EditableText
-							k="portal.membership.plans.blurb"
-							fallback="Every fee, benefit and eligibility note here is set by your society on the membership type itself."
-						/>
+						{pending.length > 0 ? (
+							"Your application is with your branch. There is nothing to choose until they have decided on it."
+						) : (
+							<EditableText
+								k="portal.membership.plans.blurb"
+								fallback="Every fee, benefit and eligibility note here is set by your society on the membership type itself."
+							/>
+						)}
 					</p>
 				</div>
 
+				{/* No `onSelect` while something is undecided, so the cards read rather
+				    than invite. Choosing one would open a wizard that can only say the
+				    application is already in — which is the same "apply again" dead end
+				    the dashboard used to offer. */}
 				<PlanCards
 					types={priced}
 					loading={types.isLoading}
-					held={held}
+					held={held.map((row) => row.membership_type)}
 					actionLabel="Select plan"
 					// Choosing here is choosing to *start* the registration, not to
 					// register: the wizard still asks for a branch and still confirms
 					// before anything is written. The type travels in the URL so the
 					// plan step opens with it already selected.
-					onSelect={(membershipType) =>
-						navigate(`/join?path=member&type=${encodeURIComponent(membershipType)}`)
+					onSelect={
+						pending.length > 0
+							? undefined
+							: (membershipType) =>
+									navigate(`/join?path=member&type=${encodeURIComponent(membershipType)}`)
 					}
 					empty="Your society has not published any membership types yet. Ask your branch when they will be available."
 				/>

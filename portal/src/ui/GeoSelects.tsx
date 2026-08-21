@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { API, errorMessage } from "../lib/api";
@@ -32,6 +33,15 @@ import { ErrorNote, cx } from "./primitives";
  * surfaces that will judge the save. `selectedNode` below applies it, so a
  * half-walked chain reads as "nothing chosen" rather than as a value the server
  * is about to refuse.
+ *
+ * **A rung with one possible answer answers itself and is not drawn.** The top
+ * of a single-society ladder is the society, and every form in this product was
+ * opening with a dropdown whose only option was the national society — a control
+ * that exists to be dismissed, in front of the branch that is the real question.
+ * The rule is not "hide National": it is that a *choice between one thing* is not
+ * a choice, so it is taken rather than asked, at whatever rung it occurs. The
+ * chosen node still appears in the summary line below the selects, so nothing is
+ * decided out of sight.
  */
 
 /**
@@ -98,11 +108,20 @@ export function GeoSelects({
 	const rungs = rungsOf(levels);
 	const chosen = selectedNode(chain, allowedLevels);
 
+	// Which rungs turned out to have exactly one answer and took it. Reported up
+	// from each rung because only the rung knows — its options are its own fetch
+	// — and held here because the *asterisk* is a property of the list: the first
+	// question a person is actually asked is the one that is required, and that
+	// is no longer index 0 once the top of the ladder answers itself.
+	const [settled, setSettled] = useState<Record<number, boolean>>({});
+
 	// Every rung the society has, or one past what has been answered while the
 	// ladder is still loading. Showing them all at once is the point: somebody
 	// can see how far down the form is going to ask them to go before they
 	// start, rather than discovering a fourth dropdown after the third.
 	const count = Math.max(rungs.length, chain.length + 1);
+
+	const firstAsked = Array.from({ length: count }).findIndex((_, index) => !settled[index]);
 
 	return (
 		<div>
@@ -115,7 +134,13 @@ export function GeoSelects({
 						parent={index === 0 ? null : (chain[index - 1] ?? null)}
 						chosen={chain[index] ?? null}
 						fallbackLabel={rungs[index]}
+						required={index === firstAsked}
 						disabled={disabled || (index > 0 && !chain[index - 1])}
+						onSettled={(only) =>
+							setSettled((current) =>
+								Boolean(current[index]) === only ? current : { ...current, [index]: only },
+							)
+						}
 						onAnswer={(node) =>
 							// Everything below the rung being answered is invalidated by
 							// definition, so it goes rather than being left dangling.
@@ -131,7 +156,13 @@ export function GeoSelects({
 				</div>
 			)}
 
-			<Verdict chain={chain} chosen={chosen} allowedLevels={allowedLevels} levels={levels} />
+			<Verdict
+				chain={chain}
+				chosen={chosen}
+				answered={chain.length > Math.max(firstAsked, 0)}
+				allowedLevels={allowedLevels}
+				levels={levels}
+			/>
 		</div>
 	);
 }
@@ -143,6 +174,11 @@ export function GeoSelects({
  * loads exactly one list instead of the whole chain again. `geo.browse` with no
  * parent is the top of the tree, which is why the first rung passes `null`
  * rather than being a special case anywhere else.
+ *
+ * **One option is not a choice.** When the tree offers exactly one node here,
+ * this answers with it and draws nothing, so the form asks the next real
+ * question instead. It reports that upward through `onSettled` so the list can
+ * mark the first rung somebody is genuinely asked as the required one.
  */
 function Rung({
 	index,
@@ -150,16 +186,21 @@ function Rung({
 	parent,
 	chosen,
 	fallbackLabel,
+	required,
 	disabled,
 	onAnswer,
+	onSettled,
 }: {
 	index: number;
 	id: string;
 	parent: GeoNode | null;
 	chosen: GeoNode | null;
 	fallbackLabel?: string;
+	required: boolean;
 	disabled: boolean;
 	onAnswer: (node: GeoNode | null) => void;
+	/** Called with whether this rung answered itself for want of an alternative. */
+	onSettled: (only: boolean) => void;
 }) {
 	const waiting = index > 0 && !parent;
 
@@ -172,6 +213,23 @@ function Rung({
 
 	const nodes = data?.message?.nodes ?? [];
 
+	// Settled once the options are known and there is only one of them. Held apart
+	// from the effect below so the render can use it too: this is what decides
+	// whether a control is drawn at all.
+	const only = !waiting && !isLoading && !error && nodes.length === 1 ? nodes[0] : null;
+
+	// In an effect rather than in the render body, because answering is a write
+	// into the parent's chain and the render may be thrown away. Keyed on the
+	// node's *name* rather than on the array, so a revalidation that returns the
+	// same single node does not re-answer.
+	useEffect(() => {
+		onSettled(Boolean(only));
+		if (only && !disabled && chosen?.name !== only.name) onAnswer(only);
+		// `onAnswer` and `onSettled` are inline closures over the parent's current
+		// chain and change on every render; depending on them would loop.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [only?.name, chosen?.name, disabled]);
+
 	// The nodes' own level name is the truth about what this rung is; the
 	// ladder's is what to call it before any of them have arrived.
 	const label = nodes[0]?.level_name ?? fallbackLabel ?? "Area";
@@ -180,8 +238,11 @@ function Rung({
 	// the tree — not an error, and not an empty dropdown to stare at.
 	if (index > 0 && !waiting && !isLoading && !error && nodes.length === 0) return null;
 
+	// The single-answer case, taken above and not asked about here.
+	if (only) return null;
+
 	return (
-		<Field label={label} htmlFor={id} required={index === 0}>
+		<Field label={label} htmlFor={id} required={required}>
 			<div className="relative">
 				<select
 					id={id}
@@ -234,11 +295,20 @@ function Rung({
 function Verdict({
 	chain,
 	chosen,
+	answered,
 	allowedLevels,
 	levels,
 }: {
 	chain: GeoNode[];
 	chosen: GeoNode | null;
+	/**
+	 * Whether the person has answered a rung they were actually asked. A rung
+	 * that answered itself for want of an alternative fills the chain without
+	 * anybody doing anything, and telling them to "keep going down" before they
+	 * have been offered a single choice is scolding them for the form's own
+	 * first move.
+	 */
+	answered: boolean;
 	allowedLevels?: string[];
 	levels: GeoLevel[];
 }) {
@@ -253,7 +323,7 @@ function Verdict({
 		);
 	}
 
-	if (chain.length > 0 && allowedLevels?.length) {
+	if (answered && chain.length > 0 && allowedLevels?.length) {
 		const wanted = allowedLevels
 			.map((key) => levels.find((level) => level.key === key)?.name ?? key)
 			.join(" or ");

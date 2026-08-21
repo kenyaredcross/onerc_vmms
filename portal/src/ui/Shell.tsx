@@ -225,6 +225,7 @@ export function Shell({
 	sms,
 	tone,
 	subtitle,
+	person,
 }: {
 	items: (NavItem | NavGroup)[];
 	companions?: CompanionItem[];
@@ -271,6 +272,20 @@ export function Shell({
 	sms?: string | null;
 	tone: "portal" | "admin";
 	subtitle?: string | null;
+	/**
+	 * This person's own name, from their Red Profile — what the society calls
+	 * them, rather than what they sign in as.
+	 *
+	 * The greeting and the avatar were both built from `session.user` alone, which
+	 * on almost every site is an email address: `firstName` split it at the `@`
+	 * and again at the first separator, so somebody whose login was
+	 * `nigelnathann3@…` was greeted every morning as "Nigelnathann3". The society
+	 * knows what this person is called — it asked them on the way in — so this is
+	 * what it says. The email-derived guess stays as the fallback for the moment
+	 * before the profile arrives, and for anybody who has not registered for
+	 * anything yet and therefore has no profile at all.
+	 */
+	person?: string | null;
 }) {
 	const { user, logout } = useSession();
 	const location = useLocation();
@@ -312,7 +327,9 @@ export function Shell({
 			(() => {
 				const hour = new Date().getHours();
 				const part = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-				const name = firstName(user);
+				// `firstName` handles both shapes: given a real name it takes the
+				// first word of it, given an email it does the splitting it always did.
+				const name = firstName(person?.trim() || user);
 
 				return name ? `${part}, ${name}` : part;
 			})()
@@ -636,12 +653,16 @@ export function Shell({
 							className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-1 transition hover:bg-white/10 sm:pr-3"
 						>
 							<span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-white/15 font-display text-[12px] font-bold text-white">
-								{initials(user) || "?"}
+								{initials(person?.trim() || user) || "?"}
 							</span>
 
 							<span className="hidden min-w-0 text-left sm:block">
+								{/* The name, with the login underneath it where there is one
+								    to show. The corner is where somebody looks to check they
+								    are signed in as themselves, and an address is a worse
+								    answer to that than a name is. */}
 								<span className="block max-w-[170px] truncate text-[12.5px] font-bold text-white">
-									{user}
+									{person?.trim() || user}
 								</span>
 								{subtitle && (
 									<span className="block max-w-[170px] truncate text-[10.5px] text-white/55">

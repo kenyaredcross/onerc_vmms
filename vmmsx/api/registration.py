@@ -118,6 +118,8 @@ def _profile_dto(profile: str) -> dict:
 			"gender",
 			"date_of_birth",
 			"preferred_language",
+			"profile_photo",
+			"home_geo_node",
 		],
 		as_dict=True,
 	)
@@ -132,6 +134,21 @@ def _profile_dto(profile: str) -> dict:
 		"gender": person.gender,
 		"date_of_birth": person.date_of_birth,
 		"preferred_language": person.preferred_language,
+		# Served because `update_my_profile` already accepts it: a form that can
+		# set a photograph and cannot read back the one already on file would show
+		# an empty control to somebody who has had a portrait on their card for a
+		# year, and the obvious way to fix that is to upload it again.
+		"profile_photo": person.profile_photo,
+		# Where core last recorded this person as living. **Read-only here**, and
+		# it is not a field `update_my_profile` accepts: it is written by a
+		# registration, not typed into one.
+		#
+		# It is served for one reason — a second registration should not ask
+		# somebody to walk a cascading picker down to the branch they already told
+		# this society they belong to. The wizard opens its placement step with
+		# this node's chain already filled in and every rung still changeable, so
+		# the answer is a *suggestion* rather than a decision made for them.
+		"home_geo_node": person.home_geo_node,
 	}
 
 
@@ -363,6 +380,52 @@ def _intake_fields(
 	}
 
 
+def _adopt_photo(profile_photo: str | None) -> None:
+	"""Put the portrait a registrant chose onto the profile the registration made.
+
+	**Why this is not a second call from the browser.** It was one, and it is the
+	half of a registration that could silently not happen: the wizard uploaded the
+	file, registered, and then posted the photograph on its own afterwards, with
+	the failure deliberately swallowed so a lost portrait could not cost somebody
+	the application that had already succeeded. That is the right instinct and the
+	wrong shape — anything between the two calls, a reload or a closed tab, left a
+	person registered with the picture they had chosen nowhere on file, and the
+	only symptom was an empty control the next time they registered for anything.
+	Carried with the registration, there is no window for it to fall into.
+
+	**Additive, like everything else a registration writes.** `intake._enrich`
+	will not contradict what core already holds, and neither will this: a profile
+	that already carries a portrait keeps it. Replacing one is a *correction*, and
+	`update_my_profile` is the door named for that.
+
+	The URL is checked the way `update_my_profile` checks it, because it reaches
+	the same places — a printed card, and every screen showing this person.
+	"""
+	if not profile_photo or not str(profile_photo).strip():
+		return
+
+	url = str(profile_photo).strip()
+
+	if not url.startswith(UPLOAD_PREFIXES):
+		frappe.throw(
+			_("Your photograph was not uploaded to this site."),
+			frappe.ValidationError,
+			title=_("File Not Recognised"),
+		)
+
+	profile = frappe.db.get_value(PROFILE_DOCTYPE, {"user": frappe.session.user}, "name")
+
+	if not profile or frappe.db.get_value(PROFILE_DOCTYPE, profile, "profile_photo"):
+		return
+
+	with intake.as_system():
+		document = frappe.get_doc(PROFILE_DOCTYPE, profile)
+		document.profile_photo = url
+		document.save()
+
+	frappe.clear_document_cache(PROFILE_DOCTYPE, profile)
+
+
 def _open_registration(doctype: str) -> str | None:
 	"""The caller's own undecided registration of this kind, or None.
 
@@ -583,6 +646,7 @@ def register_as_volunteer(
 	phone: str | None = None,
 	gender: str | None = None,
 	date_of_birth: str | None = None,
+	profile_photo: str | None = None,
 	answers: dict | None = None,
 ) -> dict:
 	"""Register the caller as a volunteer, and put the application into motion.
@@ -601,6 +665,10 @@ def register_as_volunteer(
 	`application_options` handed out. Every value in it is re-checked against the
 	question that asked for it, so a choice the browser was not offered is
 	refused here rather than stored.
+
+	`profile_photo` is a fact about the *person*, so it lands on the Red Profile
+	rather than on this application — see `_adopt_photo`, which is also why it
+	travels with the registration instead of following it.
 	"""
 	_assert_signed_in()
 	_assert_nothing_open(APPLICATION_DOCTYPE)
@@ -629,6 +697,10 @@ def register_as_volunteer(
 		answers=answers,
 	)
 
+	# After the insert, because the profile this writes to is the one the insert
+	# just claimed or created.
+	_adopt_photo(profile_photo)
+
 	# `submit_once` has already run from `on_update`. This is the idempotent
 	# re-ask that turns the insert into the status DTO the sibling endpoint
 	# returns, so both doors answer in the same shape.
@@ -644,6 +716,7 @@ def register_as_member(
 	phone: str | None = None,
 	gender: str | None = None,
 	date_of_birth: str | None = None,
+	profile_photo: str | None = None,
 	answers: dict | None = None,
 ) -> dict:
 	"""Register the caller as a member, and put the membership into motion.
@@ -652,6 +725,9 @@ def register_as_member(
 	what the `register-as-a-member` Web Form asks for. The member satellite is
 	created by the controller's own `before_insert`, inside the same narrow
 	elevation the profile write uses, so nothing here has to know it exists.
+
+	`profile_photo` lands on the Red Profile rather than on the membership, for
+	the reason `_adopt_photo` sets out.
 
 	`membership_source` and `proof_attachment` are deliberately absent. They are
 	how a *clerk* enrols somebody who paid before this system existed, and an
@@ -672,5 +748,7 @@ def register_as_member(
 		},
 		answers=answers,
 	)
+
+	_adopt_photo(profile_photo)
 
 	return membership_service.submit(membership)
