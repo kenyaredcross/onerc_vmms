@@ -117,6 +117,15 @@ def set_status(deployment, target: str, reason: str | None = None) -> dict:
 	if reason:
 		deployment.add_comment("Comment", _("{0}. {1}").format(_(target), reason))
 
+	# Into the feed as well as onto the field, so that somebody reading an account
+	# of the deployment sees when it started and when it ended in the same list as
+	# everything that happened in between. The comment above is the desk's audit
+	# trail and this is the account people read; they answer different questions
+	# and both are cheap.
+	from vmmsx.deployment.services import feed
+
+	feed.note_status(deployment, target, reason)
+
 	return status_dto(deployment)
 
 
@@ -125,6 +134,7 @@ def create(
 	geo_node: str,
 	start_date,
 	end_date,
+	volunteers_required: int | None = None,
 	notes: str | None = None,
 ):
 	"""Insert a deployment directly, without a request in front of it.
@@ -139,6 +149,12 @@ def create(
 	The two coherence rules are checked here rather than left to the first save,
 	so a caller is told which of them refused: these terms are retired, or this
 	place is outside them.
+
+	`volunteers_required` is how many people the deployment needs, and it is the
+	cap `assignment.assert_room` measures the roster against. Optional, and zero
+	means the society has not said — a deployment that has not said how many it
+	needs is never full, which is the right default for a branch duty nobody has
+	put a number on.
 	"""
 	from vmmsx.deployment.services import terms
 
@@ -151,7 +167,7 @@ def create(
 			title=_("Where Is This Deployment?"),
 		)
 
-	terms.assert_active(terms_of_reference)
+	terms.assert_offered(terms_of_reference)
 	terms.assert_within_scope(terms_of_reference, geo_node)
 
 	deployment = frappe.get_doc(
@@ -162,6 +178,7 @@ def create(
 			"start_date": getdate(start_date),
 			"end_date": getdate(end_date),
 			"status": STATUS_PLANNED,
+			"volunteers_required": frappe.utils.cint(volunteers_required),
 			"notes": notes,
 		}
 	)
@@ -193,34 +210,62 @@ def in_flight(deployment, on_date=None) -> bool:
 # --- the DTOs -------------------------------------------------------------
 
 
-def status_dto(deployment) -> dict:
+def status_dto(deployment, counts: dict | None = None) -> dict:
 	"""Where a deployment stands, as an explicit dict. Built field by field.
 
 	Never the Document: that would leak every field on the record, including ones
 	nobody reviewed, and turn every schema change into an API change.
+
+	**`counts` is passed in by listings and computed here only for one-offs.**
+	The roster lives in `VMMS Deployment Assignment` now, so the headcount is a
+	query rather than `len()` on a child table, and a listing that let this run
+	its own query per row would be the N+1 that makes the register crawl at the
+	size a national society actually runs at. `assignment.counts_for_many` answers
+	the whole page in one grouped query; callers reading a single deployment can
+	leave it out and pay for one.
 	"""
-	from onerc_core.geo.services import adapter
+	from vmmsx.deployment.services import assignment
+	from vmmsx.deployment.services.placement import geo_path
+
+	tally = counts if counts is not None else assignment.counts_for(deployment.name)
 
 	return {
 		"name": deployment.name,
 		"terms_of_reference": deployment.terms_of_reference,
 		"geo_node": deployment.geo_node,
-		"geo_path": adapter.get_full_path(deployment.geo_node) if deployment.geo_node else None,
+		# Through `placement.geo_path`, so a deployment whose anchor was deleted
+		# underneath it is one odd-looking row rather than a register that refuses
+		# to open. That module says why the case is real.
+		"geo_path": geo_path(deployment.geo_node),
 		"status": deployment.status,
 		"is_open": is_open(deployment),
 		"start_date": deployment.start_date,
 		"end_date": deployment.end_date,
-		"participant_count": len(deployment.participants or []),
+		"volunteers_required": deployment.volunteers_required or 0,
+		# Who is actually going: Assigned plus Accepted. The name is kept from
+		# when the roster was a child table, because every screen and every test
+		# reads it and renaming it would buy nothing.
+		"participant_count": tally["on_deployment"],
+		# The rest of the register in the same breath, so a listing row can say
+		# "4 of 6, 3 still to answer" without a second call.
+		"assignment_counts": tally,
+		"places_left": max(frappe.utils.cint(deployment.volunteers_required) - tally["on_deployment"], 0)
+		if frappe.utils.cint(deployment.volunteers_required) > 0
+		else None,
 	}
 
 
 def deployment_dto(deployment) -> dict:
 	"""Everything about one deployment: its terms, its period, and who is on it."""
-	from vmmsx.deployment.services import participation, terms
+	from vmmsx.deployment.services import assignment, terms
 
 	return {
 		**status_dto(deployment),
 		"terms": terms.dto(deployment.terms_of_reference),
-		"participants": participation.roster_of(deployment.name),
+		# The whole assignment register, settled rows included: a coordinator
+		# looking at a deployment needs to see who declined as much as who
+		# accepted, or they will ask the same person again next week.
+		"participants": assignment.roster_of(deployment.name),
+		"leader": assignment.leader_of(deployment.name),
 		"notes": deployment.notes,
 	}

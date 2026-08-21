@@ -79,9 +79,13 @@ def install() -> dict:
 	reach a site that migrated before these existed.
 	"""
 	created = []
+	upgraded = []
 
 	for template in lifecycle_emails.TEMPLATES:
 		if frappe.db.exists(TEMPLATE_DOCTYPE, template["name"]):
+			if _upgrade_untouched(template):
+				upgraded.append(template["name"])
+
 			continue
 
 		frappe.get_doc(
@@ -99,7 +103,50 @@ def install() -> dict:
 
 		created.append(template["name"])
 
-	return {"created": created, "repaired": _repair_broken_greeting()}
+	return {
+		"created": created,
+		"upgraded": upgraded,
+		"repaired": _repair_broken_greeting(),
+	}
+
+
+def _upgrade_untouched(template: dict) -> bool:
+	"""Replace a shipped body with the current shipped body. Never a society's.
+
+	**The problem this solves.** These records are created once and never edited
+	again, so a society that reworded its acknowledgement keeps that wording
+	through every deploy. That is the right rule, and its cost is that improving
+	the shipped wording could never reach a site that had already migrated: the
+	first site ever installed would carry the first draft forever.
+
+	**The test is byte-identity against what this app has shipped.**
+	`lifecycle_emails.SHIPPED` lists every body each template has previously been
+	seeded with. If the record on the site matches one of them exactly, then what
+	is there is this app's wording that nobody has touched, and replacing it takes
+	nothing from anybody. If it matches none — a single edited word is enough — a
+	human wrote it and it is left alone.
+
+	The subject moves with the body and only with it. A society that reworded the
+	body and kept the subject has still made this message theirs, and swapping
+	half of it would produce a message neither party wrote.
+	"""
+	previous = lifecycle_emails.SHIPPED.get(template["name"], ())
+
+	if not previous:
+		return False
+
+	doc = frappe.get_doc(TEMPLATE_DOCTYPE, template["name"])
+	current = doc.get("response_html") or ""
+
+	if current == template["body"] or current not in previous:
+		return False
+
+	doc.subject = template["subject"]
+	doc.use_html = 1
+	doc.response_html = template["body"]
+	doc.save(ignore_permissions=True)
+
+	return True
 
 
 # What a `str.format` over a Jinja frame left behind: `{{ holder_name }}`

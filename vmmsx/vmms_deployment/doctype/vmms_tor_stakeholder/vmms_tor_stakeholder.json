@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-20 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "designation",
+  "full_name",
+  "phone_number",
+  "email"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "description": "The role this person holds in the mission: County Commissioner, Branch Coordinator, Ward Administrator. Recorded as free text rather than a Link, because a stakeholder is usually somebody outside the society whom no register here holds. Never read by code.",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Designation",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "columns": 3,
+   "description": "Who they are. Optional, because a terms of reference is often written naming the office rather than the person holding it, and an office outlasts its holder.",
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name"
+  },
+  {
+   "columns": 2,
+   "description": "How to reach them during the mission. Printed on the terms of reference so a deployed volunteer has it on the paper they carry.",
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Phone Number",
+   "options": "Phone"
+  },
+  {
+   "columns": 2,
+   "description": "Optional. Printed alongside the phone number where a society works with a stakeholder by email.",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "options": "Email"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS TOR Stakeholder",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

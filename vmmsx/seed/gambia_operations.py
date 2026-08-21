@@ -641,7 +641,7 @@ def _terms_of_reference() -> list[dict]:
 			if frappe.db.exists("VMMS Certification Type", key)
 		]
 
-		frappe.get_doc(
+		doc = frappe.get_doc(
 			{
 				"doctype": "VMMS Terms of Reference",
 				"tor_key": opportunity["key"],
@@ -661,7 +661,12 @@ def _terms_of_reference() -> list[dict]:
 				"required_certifications": required,
 				"is_active": 1,
 			}
-		).insert(ignore_permissions=True)
+		)
+		doc.insert(ignore_permissions=True)
+		# Submitted, not left as a draft: a terms of reference takes no deployment
+		# until its wording is frozen, and an opportunity whose terms are still a
+		# draft would be advertised and unfillable.
+		doc.submit()
 
 		rows.append({"key": opportunity["key"], "status": "created", "requires": len(required)})
 

@@ -7,7 +7,7 @@ Field tables are generated from the doctype JSON; every other claim names the
 file or function it describes.
 
 Three things in this section are decisions rather than descriptions, and each is
-argued rather than asserted: why participation is a child table, why matching
+argued rather than asserted: why the roster is a register of documents, why matching
 can never leak scope, and what a branch transfer does and does not touch. The
 open questions branch transfer raises are listed as open, because a design
 document that reads as though every question were settled is worse than one that
@@ -72,12 +72,16 @@ def _what_it_is(w) -> None:
 		" with whom."
 	)
 	w.p(
-		"Six doctypes carry it, and they divide cleanly into configuration and operation. VMMS"
-		" Terms of Reference is the specification of a kind of work, written once and pointed at"
-		" many times. VMMS Deployment is an instance of that work at a place over a period, with a"
-		" roster. VMMS Deployment Request is somebody asking for volunteers, which may or may not"
-		" need authorising. VMMS Branch Transfer moves a volunteer from one branch to another. The"
-		" other two are child tables."
+		"Five records carry it, and they divide cleanly into the paperwork and the work. VMMS"
+		" Project is the programme a piece of work belongs to. VMMS Terms of Reference is the"
+		" mission itself — the situation, the objectives, the outputs, the approach, the itinerary,"
+		" the resources, and what a volunteer must hold to take part — written once, submitted, and"
+		" pointed at many times. VMMS Deployment is an instance of that mission at a place over a"
+		" period. VMMS Deployment Assignment is one person's part in it, with its own status and its"
+		" own record of the terms they agreed to. VMMS Deployment Request is somebody asking for"
+		" volunteers, which may or may not need authorising. VMMS Branch Transfer moves a volunteer"
+		" from one branch to another. The rest are child tables — six of them on the terms of"
+		" reference alone, which is what a mission document takes."
 	)
 	w.p(
 		"The services are in vmmsx/deployment/services/, and every one of them is idempotent and"
@@ -260,54 +264,86 @@ def _transfer(w) -> None:
 
 
 def _the_participant_model(w) -> None:
-	w.h2("Why participation is a child table")
+	w.h2("Why the roster became a register of documents")
 
 	w.lead(
-		"Both shapes answer both questions, so the choice came down to what each makes true rather"
-		" than to what each makes possible."
-	)
-
-	w.table(
-		("The question", "How the chosen shape answers it"),
-		[
-			[
-				"Who is on this deployment?",
-				"It is the roster, and a roster is a property of the deployment. As a child table it"
-				" is edited as one list on one form, saved in one act, and checked against one"
-				" permission: the permission to write the deployment. As a separate doctype it"
-				" becomes N records that can drift from their parent's state, and adding somebody"
-				" needs its own permission story.",
-			],
-			[
-				"Which deployments was this volunteer on?",
-				"One indexed read either way. A child table is a real table, so"
-				" participation.deployments_of() reads it by volunteer and returns parent. That"
-				" query lives in exactly one place, because reading a child table by a field other"
-				" than parent is unusual enough that scattering it would invite somebody to write it"
-				" without parenttype, which would quietly match rows from another doctype.",
-			],
-			[
-				"What does a time log point at?",
-				"The deployment, not the participation row. That is what settles it. Had the log"
-				" needed a stable per-person identity to point at, a child row would have been the"
-				" wrong thing to hand it, because a child row's name is not something a caller"
-				" should ever have to hold.",
-			],
-			[
-				"What is the editing surface?",
-				"Frappe's grid on the deployment form, which is a native desk surface this stage was"
-				" asked to build on rather than around.",
-			],
-		],
-		(1.85, 4.65),
+		"It was a child table on the deployment, and the case for that was a real one. It stopped"
+		" holding the moment each person's deployment needed things a child row cannot carry."
 	)
 
 	w.p(
-		"What the shape costs, stated plainly: a participation cannot itself be approved, cannot be"
-		" geo-scoped separately from its deployment, and cannot carry an independent lifecycle."
-		" None of those is wanted today. If one becomes wanted, the migration is a real one, and it"
-		" is bought by everything above rather than avoided by guessing now. The argument is kept"
-		" in deployment/services/participation.py, next to the code it justifies."
+		"The original argument is worth restating, because it was sound for what it was answering."
+		" A roster is a property of the deployment: as a child table it is edited as one list on one"
+		" form, saved in one act, and checked against one permission. As N records it can drift from"
+		" its parent's state, and adding somebody needs its own permission story. That reasoning"
+		" held for as long as a roster row was only a roster row."
+	)
+
+	w.h3("What changed")
+
+	w.table(
+		("What each person's deployment needed", "Why a child row could not carry it"),
+		[
+			[
+				"Something a notification can point at.",
+				"An email and an SMS need a reference_doctype and a reference_name. A child row has"
+				" neither, so a message about one person's assignment had to point at the whole"
+				" deployment and leave them to work out which part concerned them.",
+			],
+			[
+				"Something a volunteer can open.",
+				"Accepting is the volunteer's own act on their own record. A child row has no URL,"
+				" no permission of its own, and no way to be shown to one person without showing"
+				" them the whole roster.",
+			],
+			[
+				"A lifecycle with a grammar.",
+				"Assigned, asked, answered, withdrawn — with the moves that make no sense refused."
+				" A child row's fields can each be set to anything by anybody editing the grid.",
+			],
+			[
+				"A record of the terms they agreed to.",
+				"The one that settles it. There is no separate contract in this app: accepting an"
+				" assignment is accepting the terms of reference, so the assignment has to record"
+				" which submitted document that was. An amendment afterwards must leave what"
+				" somebody already agreed to exactly where it was.",
+			],
+		],
+		(2.6, 3.9),
+	)
+
+	w.p(
+		"So the roster is VMMS Deployment Assignment, one document per person, and"
+		" VMMS Terms of Reference became submittable to make the fourth row of that table true."
+		" deployment/services/assignment.py owns the lifecycle; deployment/services/participation.py"
+		" keeps the one question the rest of the app asks of a roster — was this person on this"
+		" deployment — and the refusal that hangs off it."
+	)
+
+	w.h3("What the change costs, stated plainly")
+
+	w.p(
+		"A roster is now N records rather than one list, so placing five people is five inserts and"
+		" five permission checks rather than one save. assignment.deploy() is what makes that"
+		" bearable: one call, one savepoint per person, and a report naming which ones did not take"
+		" and why. A batch that rolled back for one bad row would make a coordinator find it by"
+		" bisection, and one that dropped it silently would be worse."
+	)
+
+	w.p(
+		"One behaviour changed with it, deliberately. Under the child table a decline left"
+		" is_participant untouched, so a volunteer who said no could still file time against the"
+		" deployment. That was the only way to protect a record of service in a model where one"
+		" nullable field held both what somebody said and whether they went. Those are now two"
+		" fields — status, and joined_on/left_on — so a decline can mean what it says. A"
+		" coordinator whose volunteer went anyway moves them to Assigned, which is a true statement,"
+		" rather than relying on a decline meaning nothing."
+	)
+
+	w.p(
+		"vmmsx.patches.migrate_participants_to_assignments carries every existing roster row across."
+		" The old model's blank-versus-invited distinction is exactly the new Assigned-versus-Pending"
+		" one, so the mapping is exact rather than a guess."
 	)
 
 

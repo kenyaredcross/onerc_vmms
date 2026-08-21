@@ -26,6 +26,29 @@ export function loginUrl(returnTo: string = window.location.pathname): string {
 }
 
 /**
+ * Where to send somebody who has no account yet, coming back here afterwards.
+ *
+ * **The `#signup` hash and the `redirect-to` argument are both load-bearing, and
+ * only one of them was here before.** Frappe's login page opens its sign-up form
+ * when the hash says so, and `frappe.core.doctype.user.user.sign_up` stashes
+ * `redirect-to` against the new account under `redirect_after_login` — so the
+ * link the verification email carries lands the person back where they started.
+ * A bare `/login#signup` creates the account with nowhere recorded to return to,
+ * and Frappe falls back to the site's home page: somebody who pressed "Become a
+ * volunteer", created an account and verified it arrived at the landing page
+ * having lost the wizard, with no indication that they were ever meant to end up
+ * somewhere else. That is the whole of that bug.
+ *
+ * **They do still have to sign in once**, and no argument here changes it.
+ * Frappe's sign-up creates the account with a random password and mails a link
+ * to set one; nobody is signed in by the act of registering. What this fixes is
+ * where they land afterwards, which is the part that was actually broken.
+ */
+export function signupUrl(returnTo: string = window.location.pathname): string {
+	return `${loginUrl(returnTo)}#signup`;
+}
+
+/**
  * A first name for the top bar's greeting, out of whatever `session.user` is
  * — an email in most societies, `Administrator` in this one. Good enough for
  * "Good morning, X": the part before an `@` if there is one, then the part

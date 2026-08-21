@@ -1,12 +1,16 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { ContentProvider, useContent } from "../content/ContentProvider";
 import { EditableImage, EditableLink, EditableText, useHasContent } from "../content/Editable";
 import { EditToolbar } from "../content/EditToolbar";
+import { API } from "../lib/api";
+import { dateTile, formatClock } from "../lib/format";
 import { BrandLockup } from "../ui/brand";
 import { ErrorNote, Spinner } from "../ui/primitives";
 import { useSession } from "../lib/session";
+import type { EventCard } from "../portal/types";
 
 /**
  * The public landing page, and the site's front door.
@@ -110,7 +114,7 @@ function Header() {
 								to="/join"
 								className="whitespace-nowrap rounded-[5px] bg-navy px-4 py-2 text-[12.5px] font-bold text-white transition hover:bg-navy/90"
 							>
-								<EditableText k="chrome.action.join" fallback="Join free" />
+								<EditableText k="chrome.action.join" fallback="Join us" />
 							</Link>
 						</>
 					) : (
@@ -375,21 +379,64 @@ function MembershipBand() {
 
 /* -------------------------------------------------------------- statistics */
 
+/**
+ * Four figures, and the first of them nobody types.
+ *
+ * **Statistic one is the register's own count of volunteers**, from
+ * `api/society.py::figures`, and there is no content block behind it — the
+ * pencil is absent because there is nothing to edit. A society used to type
+ * that number onto the page, which meant it was correct on the day somebody
+ * typed it and wrong the day after: every application a branch verifies moves
+ * it. The endpoint rounds it down and suffixes it, so the claim on the page
+ * stays true between one volunteer and the next; see its docstring for why the
+ * rounding is on that side and not this one.
+ *
+ * Its *caption* is still a block, because what a society calls its volunteers
+ * is a society's own word.
+ *
+ * The other three are unchanged: a society fills in as many as it has numbers
+ * for, and an unfilled one is dropped rather than rendered as a gap.
+ */
 function StatStrip() {
-	// Four slots, and a society fills in as many as it has numbers for. An
-	// unfilled one is dropped rather than rendered as a gap, except while
-	// editing, when it has to be visible to be fillable.
 	const has = useHasContent();
-	const shown = [1, 2, 3, 4].filter((index) => has(`landing.stat${index}.value`));
+	const { editing } = useContent();
+
+	const figures = useFrappeGetCall<{ message: { volunteers: string } }>(
+		API.societyFigures,
+		undefined,
+		"landing:figures",
+	);
+	const volunteers = figures.data?.message?.volunteers ?? "";
+
+	// The strip waits for the count rather than drawing three figures and then
+	// growing a fourth: at four columns that is the whole row re-laying itself
+	// under somebody's eyes a moment after the page settles.
+	if (figures.isLoading) return null;
+
+	// A society with nobody on the register yet shows no volunteer figure rather
+	// than a nought on its own front page — the same rule an unfilled statistic
+	// follows. While editing it is drawn regardless, or the caption beside it
+	// could never be reworded.
+	const shown: Array<{ key: string; live?: string; labelKey: string }> = [];
+
+	if (volunteers || editing) {
+		shown.push({ key: "stat1", live: volunteers || "—", labelKey: "landing.stat1.label" });
+	}
+
+	for (const index of [2, 3, 4]) {
+		if (has(`landing.stat${index}.value`)) {
+			shown.push({ key: `stat${index}`, labelKey: `landing.stat${index}.label` });
+		}
+	}
 
 	if (shown.length === 0) return null;
 
 	return (
 		<section className="bg-page">
 			<div className="mx-auto grid max-w-shell grid-cols-2 gap-y-10 px-6 py-[72px] text-center lg:grid-cols-4 lg:gap-y-0">
-				{shown.map((index) => (
+				{shown.map((entry) => (
 					<div
-						key={index}
+						key={entry.key}
 						// Hairlines between the figures rather than around them, so
 						// the strip reads as one row of four and not as four cards.
 						// Whichever figure ends a row carries none, and that is a
@@ -403,13 +450,19 @@ function StatStrip() {
 						// of the strip with nothing after it.
 						className="border-r border-hairline-pale px-6 last:border-r-0 [&:nth-child(2n)]:border-r-0 lg:[&:nth-child(2n):not(:last-child)]:border-r"
 					>
+						{entry.live === undefined ? (
+							<EditableText
+								k={`landing.${entry.key}.value`}
+								as="div"
+								className="relative font-display text-[34px] font-extrabold leading-none tracking-[-.03em] text-navy sm:text-[38px]"
+							/>
+						) : (
+							<div className="font-display text-[34px] font-extrabold leading-none tracking-[-.03em] text-navy sm:text-[38px]">
+								{entry.live}
+							</div>
+						)}
 						<EditableText
-							k={`landing.stat${index}.value`}
-							as="div"
-							className="relative font-display text-[34px] font-extrabold leading-none tracking-[-.03em] text-navy sm:text-[38px]"
-						/>
-						<EditableText
-							k={`landing.stat${index}.label`}
+							k={entry.labelKey}
 							as="div"
 							className="relative mt-2 text-[11px] font-bold uppercase tracking-[.12em] text-slate-faint"
 						/>
@@ -423,36 +476,96 @@ function StatStrip() {
 /* ------------------------------------------------------------------ events */
 
 /**
- * The public events teaser.
+ * The public events teaser: the society's next three, as the society published
+ * them.
  *
- * Typed by an administrator, not queried, and that is deliberate: this app has
- * no event doctype. Three invented rows would be a lie on the front page of a
- * national society; three rows somebody wrote is a poster. If an events module
- * is built later, this section is what it replaces.
+ * **It is a query now.** It was three rows an administrator typed, with a note
+ * in this file saying that was honest because the app had no events. The app has
+ * events: `api/events.py::teaser` returns the next three Buzz events with
+ * `is_published` set, which is the same flag Buzz's own public pages read, so
+ * nothing appears here that the society has not already published to the world.
+ * A society that schedules something has it on its front page without opening
+ * the content editor.
+ *
+ * **The typed rows are still the fallback**, drawn only when there is nothing
+ * live: a site without Buzz, or a season with nothing in it. A society that has
+ * always kept a hand-written teaser keeps it, and one that has not gets a band
+ * that hides itself rather than a heading over an empty row.
+ *
+ * **Three, and then the way in.** A signed-out visitor sees what is open to
+ * everybody and then a line saying the rest of the calendar — and saying you
+ * mean to be there — belongs to people who have joined. That is not a paywall
+ * dressed up: `api/events.py` genuinely refuses a guest everything except these
+ * three, and the portal's events screen is where the rest of it lives. The
+ * "all events" link is the signed-in half of the same slot, so a visitor is
+ * never offered a link to a page that would only bounce them to a login.
  */
 function EventsTeaser() {
 	const has = useHasContent();
-	const shown = [1, 2, 3].filter((index) => has(`landing.event${index}.date`));
+	const { editing } = useContent();
+	const { isGuest } = useSession();
 
-	if (shown.length === 0) return null;
+	const live = useFrappeGetCall<{ message: { available: boolean; events: EventCard[] } }>(
+		API.eventsTeaser,
+		undefined,
+		"landing:events",
+	);
 
-	return (
-		<section id="events" className="mx-auto max-w-shell px-6 py-16">
-			<div className="mb-[26px] flex items-baseline justify-between gap-4">
-				<EditableText
-					k="landing.events.heading"
-					as="h2"
-					className="relative font-display text-[24px] font-extrabold tracking-[-.02em] text-ink sm:text-[28px]"
-				/>
+	const events = live.data?.message?.events ?? [];
+	const typed = [1, 2, 3].filter((index) => has(`landing.event${index}.date`));
+
+	// Nothing at all until the answer is in. Drawing the typed fallback first and
+	// swapping it for live rows a moment later would show a visitor two different
+	// sets of events on one visit, and the second would look like a correction.
+	if (live.isLoading) return null;
+	if (events.length === 0 && typed.length === 0) return null;
+
+	const heading = (
+		<div className="mb-[26px] flex items-baseline justify-between gap-4">
+			<EditableText
+				k="landing.events.heading"
+				as="h2"
+				className="relative font-display text-[24px] font-extrabold tracking-[-.02em] text-ink sm:text-[28px]"
+			/>
+			{(!isGuest || editing) && (
 				<EditableLink
 					k="landing.events.link"
 					chevron
 					className="relative whitespace-nowrap text-[13px] font-bold text-navy hover:underline"
 				/>
-			</div>
+			)}
+		</div>
+	);
+
+	if (events.length > 0) {
+		return (
+			<section id="events" className="mx-auto max-w-shell px-6 py-16">
+				{heading}
+
+				<ul className="grid gap-[18px] md:grid-cols-3">
+					{events.map((row) => (
+						<LiveEvent key={row.event} row={row} />
+					))}
+				</ul>
+
+				{(isGuest || editing) && (
+					<p className="mt-6 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12.5px] leading-relaxed text-slate-body">
+						<EditableText k="landing.events.more" as="span" className="relative" />
+						<Link to="/join?path=volunteer" className="chev font-bold text-navy hover:underline">
+							<EditableText k="landing.events.join" fallback="Become a volunteer" />
+						</Link>
+					</p>
+				)}
+			</section>
+		);
+	}
+
+	return (
+		<section id="events" className="mx-auto max-w-shell px-6 py-16">
+			{heading}
 
 			<ul className="grid gap-[18px] md:grid-cols-3">
-				{shown.map((index) => (
+				{typed.map((index) => (
 					<li
 						key={index}
 						className="flex items-start gap-4 rounded-[6px] border border-hairline bg-white px-[22px] py-5"
@@ -504,6 +617,48 @@ function EventsTeaser() {
 	);
 }
 
+/**
+ * One published event, in the tile the typed rows were designed as.
+ *
+ * The same card the row above draws, so a society that switches from typed rows
+ * to real ones sees its page keep its shape. Only the words are different, and
+ * only the label on the link is editable — the date, the title, the time and
+ * the place are the event's own, and the destination is Buzz's public page for
+ * it, because booking, tickets and check-in are Buzz's and this app does not
+ * re-implement one of them.
+ *
+ * An event Buzz has not finished publishing has no route and therefore no
+ * `href`, and the card renders without its link rather than with one to a 404.
+ */
+function LiveEvent({ row }: { row: EventCard }) {
+	const { month, day } = dateTile(row.start_date);
+	const place = row.venue || row.medium;
+	const meta = [formatClock(row.start_time), place].filter(Boolean).join(" · ");
+
+	return (
+		<li className="flex items-start gap-4 rounded-[6px] border border-hairline bg-white px-[22px] py-5">
+			<div className="flex-none text-center">
+				<span className="block text-[9.5px] font-extrabold text-signal">{month}</span>
+				<span className="block font-display text-[26px] font-extrabold leading-none text-ink">
+					{day}
+				</span>
+			</div>
+			<div className="min-w-0 flex-1">
+				<div className="font-display text-[15px] font-bold text-ink">{row.title}</div>
+				{meta && <div className="mt-1 text-[12px] text-slate-faint">{meta}</div>}
+				{row.href && (
+					<a
+						href={row.href}
+						className="chev mt-2.5 inline-block text-[12.5px] font-bold text-navy hover:underline"
+					>
+						<EditableText k="landing.events.action" fallback="Details" />
+					</a>
+				)}
+			</div>
+		</li>
+	);
+}
+
 /* ----------------------------------------------------------------- closing */
 
 function ClosingPanel() {
@@ -526,7 +681,7 @@ function ClosingPanel() {
 					to="/join"
 					className="inline-block rounded-[5px] bg-signal px-[26px] py-[13px] font-display text-[14px] font-bold text-white transition hover:bg-signal-dark"
 				>
-					<EditableText k="landing.cta.button" fallback="Join free today" />
+					<EditableText k="landing.cta.button" fallback="Join us today" />
 				</Link>
 
 				<ul className="mt-11 flex flex-wrap items-center justify-center gap-x-[26px] gap-y-3 border-t border-white/[.14] pt-[22px]">

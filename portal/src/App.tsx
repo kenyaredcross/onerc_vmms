@@ -66,7 +66,22 @@ const Story = lazy(() => import("./portal/Stories").then((m) => ({ default: m.St
 const Tasks = lazy(() => import("./portal/Tasks"));
 
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
-const ReviewQueue = lazy(() => import("./admin/ReviewQueue"));
+// The review queue is two lists and one detail page, all in one chunk: an
+// approver who opens a queue is one click from opening a row, and splitting
+// them would put a spinner between the two for no saving. The two lists share
+// a chunk with each other for a different reason — they are the same component
+// with a different row in one table, so there is nothing to split.
+const VolunteerQueue = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({ default: module.VolunteerQueue })),
+);
+const MembershipQueue = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({ default: module.MembershipQueue })),
+);
+const ApplicationReview = lazy(() => import("./admin/ReviewQueue"));
+// Addressing a branch's own people. Its own chunk because it is the one console
+// screen most coordinators will never open, and it carries a composer nothing
+// else needs.
+const Communication = lazy(() => import("./admin/Communication"));
 const RegistryMembers = lazy(() =>
 	import("./admin/Registry").then((module) => ({ default: module.MembersRegistry })),
 );
@@ -91,6 +106,13 @@ const Deployments = lazy(() =>
 );
 const Training = lazy(() =>
 	import("./portal/Discover").then((module) => ({ default: module.Training })),
+);
+// When a volunteer can serve. Its own chunk and its own route rather than a
+// section of the profile, because it is the one page a coordinator will ask
+// somebody to go and fill in, and "go to your profile and scroll" is a worse
+// sentence than a link.
+const Availability = lazy(() =>
+	import("./portal/Availability").then((module) => ({ default: module.Availability })),
 );
 
 const Overview = lazy(() =>
@@ -188,6 +210,7 @@ const ROUTE_NAMES: Record<string, string> = {
 	training: "training",
 	admin: "the console",
 	"admin/queue": "the review queue",
+	"admin/communication": "communication",
 	"admin/registry": "the registry",
 	"admin/tasks": "tasks",
 	"admin/projects": "projects",
@@ -196,6 +219,7 @@ const ROUTE_NAMES: Record<string, string> = {
 	"admin/events": "events",
 	"admin/analytics": "analytics",
 	"admin/content": "page content",
+	"admin/questions": "form questions",
 };
 
 function RouteFallback() {
@@ -238,6 +262,7 @@ export default function App() {
 					<Route path="/stories/:slug" element={<Story />} />
 					<Route path="/notifications" element={<Notifications />} />
 					<Route path="/deployments" element={<Deployments />} />
+					<Route path="/availability" element={<Availability />} />
 					<Route path="/membership" element={<Membership />} />
 					<Route path="/hours" element={<Hours />} />
 					<Route path="/tasks" element={<Tasks />} />
@@ -257,7 +282,20 @@ export default function App() {
 					}
 				>
 					<Route index element={<Overview />} />
-					<Route path="queue" element={<ReviewQueue />} />
+					{/* Two queues rather than one mixed list: approving volunteers
+					    and approving memberships are two different jobs, and each
+					    is a page somebody can link and finish. The bare `queue`
+					    address is what every existing bookmark and the sidebar
+					    badge used to point at, so it lands on the volunteer one
+					    rather than on nothing. */}
+					<Route path="queue" element={<Navigate to="/admin/queue/volunteers" replace />} />
+					<Route path="queue/volunteers" element={<VolunteerQueue />} />
+					<Route path="queue/members" element={<MembershipQueue />} />
+					{/* Last of the queue routes, and one segment shorter than none
+					    of them — `:kind` would happily match `volunteers`, so the
+					    two static routes above have to be declared first for a
+					    reader even though React Router ranks them itself. */}
+					<Route path="queue/:kind/:name" element={<ApplicationReview />} />
 					<Route path="registry/members" element={<RegistryMembers />} />
 					<Route path="registry/volunteers" element={<RegistryVolunteers />} />
 					{/* The kind is a path segment because a docname cannot say which
@@ -280,6 +318,7 @@ export default function App() {
 					<Route path="events" element={<AdminEvents />} />
 					<Route path="tasks" element={<AdminTasks />} />
 					<Route path="analytics" element={<Analytics />} />
+					<Route path="communication" element={<Communication />} />
 					<Route path="content" element={<ContentAdmin />} />
 					<Route path="questions" element={<Questions />} />
 				</Route>

@@ -130,3 +130,70 @@ class TestBothPagesRenderForAStranger(IntegrationTestCase):
 		for button in buttons:
 			self.assertIn("es-button", button)
 			self.assertIn("btn-primary", button)
+
+
+class TestCreatingAnAccountEndsSomewhere(IntegrationTestCase):
+	"""The panel that replaces the sign-up form, and the page owning its submit.
+
+	`login.js` answers a successful sign-up by writing "Success" on the button
+	and leaving the filled-in form on screen, which reads as though there is
+	still something to do — and offers nothing at all when the mail does not
+	arrive, because the framework has no resend for sign-up. This page therefore
+	handles that one submit itself.
+
+	What is asserted is the *seam*, not the behaviour: the two halves are on the
+	page, the framework's endpoints are the ones being called, and the handler is
+	bound where it can actually run first. A capture-phase listener bound
+	anywhere but an ancestor would be one `login.js` beats to the event, and the
+	symptom would be the old panel flashing back — which no render test would
+	catch.
+	"""
+
+	def setUp(self):
+		super().setUp()
+		self.addCleanup(frappe.set_user, "Administrator")
+		frappe.set_user("Guest")
+
+	def test_the_form_and_the_panel_that_replaces_it_are_both_there(self):
+		body = render("login")
+
+		self.assertIn("signup-start", body)
+		self.assertIn("signup-sent", body)
+
+	def test_the_panel_starts_hidden(self):
+		"""Or a visitor arriving at `#signup` reads "check your email" before
+		they have typed anything."""
+		body = render("login")
+
+		self.assertRegex(body, r"class=\"signup-sent hidden\"")
+
+	def test_there_is_a_way_to_ask_for_another_link(self):
+		body = render("login")
+
+		self.assertIn("btn-resend-signup", body)
+		self.assertIn("auth-cooldown", body)
+
+	def test_the_page_calls_the_frameworks_own_endpoints(self):
+		"""Account creation and password links stay Frappe's. An app-owned door
+		onto either would be a second implementation of a rule with somebody's
+		identity in it."""
+		body = render("login")
+
+		self.assertIn("frappe.core.doctype.user.user.sign_up", body)
+		self.assertIn("frappe.core.doctype.user.user.reset_password", body)
+
+	def test_the_submit_is_intercepted_where_it_can_win(self):
+		"""On an ancestor, in the capture phase. `login.js` binds to the form
+		itself, so an event stopped on the way down never reaches it."""
+		source = www("login.html").read_text()
+
+		self.assertRegex(source, r"document\.addEventListener\(\s*\n?\s*\"submit\"")
+		self.assertIn("stopPropagation", source)
+
+	def test_the_wording_is_the_societys_to_change(self):
+		"""Every sentence on either half is a `login` surface block, the same rule
+		the rest of the page follows."""
+		source = www("login.html").read_text()
+
+		for key in ("login.signup.sent_title", "login.signup.sent_body", "login.signup.pending_body"):
+			self.assertIn(key, source)

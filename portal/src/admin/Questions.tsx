@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useId, useState } from "react";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
@@ -115,6 +115,7 @@ export default function Questions() {
 						key={target}
 						askedOn={target}
 						fieldTypes={targets.data?.message.field_types ?? []}
+						groups={targets.data?.message.groups ?? []}
 						onChanged={() => void targets.mutate()}
 					/>
 				)
@@ -128,10 +129,12 @@ export default function Questions() {
 function Builder({
 	askedOn,
 	fieldTypes,
+	groups,
 	onChanged,
 }: {
 	askedOn: string;
 	fieldTypes: string[];
+	groups: string[];
 	onChanged: () => void;
 }) {
 	const [editing, setEditing] = useState<BuilderQuestion | "new" | null>(null);
@@ -171,6 +174,7 @@ function Builder({
 				<QuestionForm
 					askedOn={askedOn}
 					fieldTypes={fieldTypes}
+					groups={groups}
 					question={editing === "new" ? null : editing}
 					onDone={() => {
 						setEditing(null);
@@ -269,6 +273,10 @@ function QuestionRow({
 						{question.is_required && <span className="ml-1 text-signal">*</span>}
 					</p>
 					<div className="mt-1.5 flex flex-wrap gap-1.5">
+						{/* First, because it is what says where on the form this
+						    question appears — the field type only matters once you
+						    know that. */}
+						{question.group && <Pill tone="navy">{question.group}</Pill>}
 						<Pill tone="page">{question.field_type}</Pill>
 						{!question.is_active && <Pill tone="page">Retired</Pill>}
 						{question.answer_count > 0 && (
@@ -349,18 +357,23 @@ const NEEDS_CHOICES = "Select";
 function QuestionForm({
 	askedOn,
 	fieldTypes,
+	groups,
 	question,
 	onDone,
 	onCancel,
 }: {
 	askedOn: string;
 	fieldTypes: string[];
+	/** Groups already in use on this site, offered rather than retyped. */
+	groups: string[];
 	question: BuilderQuestion | null;
 	onDone: () => void;
 	onCancel: () => void;
 }) {
 	const { call } = useContext(FrappeContext) as FrappeConfig;
+	const groupListId = useId();
 	const [label, setLabel] = useState(question?.label ?? "");
+	const [group, setGroup] = useState(question?.group ?? "");
 	const [fieldType, setFieldType] = useState(question?.field_type ?? fieldTypes[0] ?? "Data");
 	const [options, setOptions] = useState(question?.options ?? "");
 	const [helpText, setHelpText] = useState(question?.help_text ?? "");
@@ -380,6 +393,7 @@ function QuestionForm({
 				name: question?.name,
 				asked_on: askedOn,
 				question_label: label,
+				question_group: group,
 				field_type: fieldType,
 				options,
 				help_text: helpText,
@@ -410,6 +424,34 @@ function QuestionForm({
 						placeholder="Letter from the area chief"
 						className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
 					/>
+				</label>
+
+				{/* The tab this question is drawn under, and the whole of how a
+				    society builds a section of its own — "Health information",
+				    "Next of kin". A free-text field with a suggestion list rather
+				    than a closed set: what a national society groups its questions
+				    under is its own vocabulary, and a list of options here would be
+				    this app deciding what a form may ask about. */}
+				<label className="block sm:col-span-2">
+					<span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-faint">
+						Group it under (optional)
+					</span>
+					<input
+						value={group}
+						list={groupListId}
+						onChange={(event) => setGroup(event.target.value)}
+						placeholder="Health information"
+						className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+					/>
+					<datalist id={groupListId}>
+						{groups.map((option) => (
+							<option key={option} value={option} />
+						))}
+					</datalist>
+					<span className="mt-1 block text-[12px] text-slate-faint">
+						Questions sharing a group are asked together and become one tab on the
+						approver's screen. Left empty, this sits with the ungrouped ones.
+					</span>
 				</label>
 
 				<label className="block">

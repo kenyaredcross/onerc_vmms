@@ -97,6 +97,13 @@ def targets() -> dict:
 			for option in ((field_type.options if field_type else "") or "").split("\n")
 			if option.strip()
 		],
+		# Every group already in use, across every registration, so the builder
+		# can offer them rather than making somebody retype "Health information"
+		# and get it subtly wrong on the fourth question. A suggestion list and
+		# nothing more: the field is free text, because what a society groups its
+		# questions under is its own vocabulary and a closed list here would be
+		# this app deciding what a form may ask about.
+		"groups": _groups_in_use(),
 		# What this caller may do with any of it, answered by the same check the
 		# writes make. The screen draws its controls from this and decides
 		# nothing itself, the same contract as `can_act` and `can_edit`.
@@ -127,6 +134,7 @@ def catalogue(asked_on: str) -> dict:
 			"name",
 			"asked_on",
 			"question_label",
+			"question_group",
 			"field_type",
 			"options",
 			"is_required",
@@ -154,6 +162,7 @@ def save_question(
 	is_required: bool | int | str = False,
 	help_text: str | None = None,
 	sequence: int | None = None,
+	question_group: str | None = None,
 ) -> dict:
 	"""Create a question, or edit one. Returns the row as the screen will draw it.
 
@@ -190,6 +199,11 @@ def save_question(
 		question.is_active = 1
 
 	question.question_label = question_label
+	# Trimmed, and stored as typed otherwise. Two groups differing by a trailing
+	# space would draw two tabs that read identically, which is the one way free
+	# text goes wrong here; deciding anything more about a society's own word for
+	# a section is not this endpoint's business.
+	question.question_group = (question_group or "").strip()
 	question.field_type = field_type
 	question.options = options or ""
 	question.is_required = 1 if _flag(is_required) else 0
@@ -267,6 +281,7 @@ def _row(row: dict) -> dict:
 		"name": row.get("name"),
 		"asked_on": row.get("asked_on"),
 		"label": row.get("question_label") or "",
+		"group": row.get("question_group") or "",
 		"field_type": row.get("field_type"),
 		"options": row.get("options") or "",
 		"choices": [
@@ -285,6 +300,27 @@ def _row(row: dict) -> dict:
 		if row.get("name")
 		else 0,
 	}
+
+
+def _groups_in_use() -> list[str]:
+	"""Every non-empty question group on the site, alphabetically, deduplicated.
+
+	Across registrations rather than per registration: a society that asks for
+	next of kin on the volunteer form and then builds the membership form wants
+	the same heading offered, and there is no reason for the two lists to
+	diverge over a typo.
+	"""
+	# `("is", "set")` rather than a `not in ("", None)` — Frappe's own idiom for
+	# "has a value", and the one that gets the NULL half right. Deduplicated in
+	# Python rather than with `distinct`, because the trim has to happen before
+	# the set is taken or two spellings of one group survive it.
+	rows = frappe.get_all(
+		QUESTION_DOCTYPE,
+		filters={"question_group": ("is", "set")},
+		pluck="question_group",
+	)
+
+	return sorted({(row or "").strip() for row in rows if (row or "").strip()})
 
 
 def _next_sequence(asked_on: str) -> int:

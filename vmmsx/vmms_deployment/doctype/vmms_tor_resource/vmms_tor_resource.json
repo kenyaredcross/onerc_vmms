@@ -1,0 +1,94 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-20 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "resource",
+  "needed_on",
+  "quantity",
+  "unit",
+  "unit_cost",
+  "total_cost",
+  "donor"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "description": "What the mission needs: a vehicle, fuel, tarpaulins, per-diem, a hall to meet in. Free text, because the range of things a national society mobilises is not a vocabulary this app can usefully close.",
+   "fieldname": "resource",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Resource",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "columns": 1,
+   "description": "When it is needed. Optional: a resource needed for the whole mission has no single date, and saying so by leaving this empty is more honest than repeating the start date.",
+   "fieldname": "needed_on",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Needed On"
+  },
+  {
+   "columns": 1,
+   "default": "0",
+   "description": "How many. A Float rather than an Int because the things a mission budgets for are not all countable in wholes: litres of fuel, days of hire, kilometres.",
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Quantity"
+  },
+  {
+   "columns": 1,
+   "description": "What the quantity counts: litres, days, vehicles, person-days. Free text rather than a Link to ERPNext's UOM register, because vmmsx requires only onerc_core and must not grow a dependency on an accounting app to write a terms of reference.",
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Unit"
+  },
+  {
+   "columns": 1,
+   "default": "0",
+   "description": "The cost of one unit, in the society's own currency. Recorded because a terms of reference is what a society takes to a donor, and a resource list with no figures is not one. Nothing in this app totals these across a project or reconciles them against what was actually spent: money paid to volunteers flows through VMMS Stipend Payment Form, which is anchored to a geography and a period rather than to a mission, and bridging the two is a decision nobody has taken.",
+   "fieldname": "unit_cost",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Unit Cost"
+  },
+  {
+   "columns": 1,
+   "description": "Quantity times unit cost, computed on save and never typed. Read-only for the same reason every derived field in this app is: a figure somebody can edit independently of the two numbers it comes from is a figure that will eventually disagree with them.",
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Cost",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "description": "Who is expected to fund this line. Free text, because vmmsx holds no donor register and inventing one here would be a second place to keep a list that a society's finance system already keeps.",
+   "fieldname": "donor",
+   "fieldtype": "Data",
+   "label": "Donor"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS TOR Resource",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

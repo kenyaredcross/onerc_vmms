@@ -34,10 +34,10 @@ exactly one person for exactly their own rows.
 import frappe
 
 from vmmsx.member.services import certificate
-from vmmsx.registration.services import questions
 from vmmsx.member.services import member as member_service
 from vmmsx.member.services import membership as membership_service
 from vmmsx.member.services import renewal as renewal_service
+from vmmsx.registration.services import questions
 
 MEMBERSHIP_DOCTYPE = "VMMS Membership"
 MEMBER_DOCTYPE = "VMMS Member"
@@ -216,6 +216,27 @@ def get_membership(name: str) -> dict:
 
 
 @frappe.whitelist()
+def get_review(name: str, as_of: str | None = None) -> dict:
+	"""The whole of what an approver reads before deciding one membership.
+
+	The membership counterpart of `api/volunteer.py::get_decision`, and it exists
+	because the review queue had no way to show whose membership it was
+	deciding: the volunteer application had a decision view and the membership
+	did not, so an approver was offered approve and decline over a docname.
+
+	**Ordinary read permission on the membership, through `_readable`.** Not a
+	second door into one: whoever may open the membership may read this, and
+	whether they may *decide* it is a different question the approval engine
+	answers per document — `api/approvals.py::decide` re-asks it when a button is
+	pressed, and holding a role has never been the same as being this
+	membership's approver.
+	"""
+	from vmmsx.member.services import review
+
+	return review.decision_dto(_readable(name), as_of=as_of)
+
+
+@frappe.whitelist()
 def get_certificate(name: str) -> dict:
 	"""Render this membership's certificate from its type's configured template.
 
@@ -364,10 +385,19 @@ def get_dossier(name: str, as_of: str | None = None) -> dict:
 	`VMMS Membership` is scopeable and `VMMS Member` is not; see
 	`dossier._visible_memberships`, which is where that floor is.
 	"""
+	from vmmsx.api import person
 	from vmmsx.member.services import dossier
 
+	member = _readable_member(name)
+
 	return {
-		**dossier.build(_readable_member(name), as_of=as_of),
+		**dossier.build(member, as_of=as_of),
+		# Which of the society's registers this person is in — so the page can
+		# say "also a volunteer" instead of sending a membership clerk to search
+		# the other register for the name. Added here rather than inside `build`
+		# for the same reason `can_act` is: the member module must not know the
+		# volunteer module exists. See `api/person.py`.
+		"registers": person.registers(member.red_profile),
 		# Added here rather than inside `build`, because it is not a fact about
 		# this member: it is a fact about who is asking, and authority in this
 		# app is decided at the boundary rather than in a service. A surface

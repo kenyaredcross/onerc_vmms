@@ -1,65 +1,57 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""The roster: who is on a deployment, and the ownership rule that reads it.
+"""The roster question, and the ownership rule that reads it.
 
 **Ownership is not geo scoping, and this module is where the difference lives.**
 Geo scoping answers *where* somebody may act: it is a property of a record's
 anchor, and core owns it. Ownership answers *whose record this is*: being
 correctly placed in the right county does not make you a participant on a
 deployment run there, and no amount of geo authority ever will. A volunteer may
-log time against a deployment only if they are on its roster, and that is
-checked on the server at save. The picker filters for convenience; the refusal
-is what makes fabricating participation impossible rather than merely hidden.
+log time against a deployment only if they are on it, and that is checked on the
+server at save. The picker filters for convenience; the refusal is what makes
+fabricating participation impossible rather than merely hidden.
 
-Why participation is a child table, and not a doctype of its own
----------------------------------------------------------------
+Where the roster now lives
+--------------------------
 
-Both shapes answer both questions this module was asked to serve, so the choice
-came down to what each makes true rather than what each makes possible.
+It used to be `VMMS Deployment.participants`, a child table, and this module
+argued that case at length. The argument was sound for as long as a roster row
+was only a roster row: a roster is a property of the deployment, it is edited as
+one list, and it is checked against one permission. It stopped holding once each
+person's deployment needed a URL a volunteer could open, a reference an email
+could point at, a lifecycle with a grammar, and somewhere to record which
+submitted terms of reference they agreed to. `VMMS Deployment Assignment` is
+that record, and `deployment/services/assignment.py` owns it.
 
-* **"Who is on this deployment"** is the roster, and a roster is a property of
-  the deployment. As a child table it is edited as one list on one form, saved
-  in one act, and checked against one permission: the permission to write the
-  deployment. As a separate doctype it becomes N records that can drift from
-  their parent's state, and adding somebody needs its own permission story.
-* **"Which deployments was this volunteer on"** is one indexed read either way.
-  A child table is a real table; `deployments_of()` below reads it by
-  `volunteer` and returns `parent`. Nothing else in the app writes that query,
-  which is why it lives here.
-* **The time log links to the deployment, not to a participation row.** That is
-  what settles it. Had the log needed a stable per-person identity to point at,
-  a child row would have been the wrong thing to hand it, because a child row's
-  name is not something a caller should ever have to hold. It does not: the log
-  names a deployment and a volunteer, and this module answers whether that pair
-  is on the roster.
-* **No custom UI.** Frappe's grid on the deployment form is the roster editor,
-  which is the surface this stage was asked to build on.
+**This module did not disappear into that one, and the split is deliberate.**
+`assignment.py` owns the lifecycle: raising, asking, answering, withdrawing.
+This owns the one question the rest of the app asks of a roster — *was this
+person on this deployment* — and the refusal that hangs off it. The time-log
+validator has no business importing a module full of state transitions to ask
+one boolean, and the ownership rule is the kind of thing that should be findable
+in one file with its reasoning next to it.
 
-What the shape costs, stated plainly: a participation cannot itself be approved,
-cannot be geo-scoped separately from its deployment, and cannot carry an
-independent lifecycle. None of those is wanted today. If one becomes wanted, the
-migration is a real one, and it is bought by all of the above rather than
-avoided by guessing now.
+**Assigned and Accepted are what count.** They are the two statuses that mean
+somebody is on the deployment. This is a change from the child-table model,
+where a decline left participation untouched so that a record of service could
+not be invalidated by an answer; `assignment.py`'s own docstring sets out why
+that is no longer needed, and what replaced it.
 
 **Leaving is recorded, never removed.** `left_on` says somebody went early; it
-does not take them off the roster. Removing them would make the time they
-actually served unfilable, which is precisely backwards.
+does not take them off. Removing them would make the time they actually served
+unfilable, which is precisely backwards.
 """
 
 import frappe
 from frappe import _
 
-DEPLOYMENT_DOCTYPE = "VMMS Deployment"
-PARTICIPANT_DOCTYPE = "VMMS Deployment Participant"
+from vmmsx.deployment.services import assignment
 
-# The field on VMMS Deployment holding the roster. Named once, here, because
-# every query below has to identify the child rows by their parent field and a
-# second spelling of it would silently return nothing.
-ROSTER_FIELD = "participants"
+DEPLOYMENT_DOCTYPE = "VMMS Deployment"
+ASSIGNMENT_DOCTYPE = assignment.ASSIGNMENT_DOCTYPE
 
 # The refusal, named so tests assert on a fact rather than on prose that drifts.
-# This is the rule the volunteer spine's stage-4 stub was written to wait for.
 OWNERSHIP_RULE = (
 	"A deployment time log is constrained to deployments the volunteer actually participated in."
 	" This is OWNERSHIP scoping, the actor's own records, and it is not geo scoping: being placed"
@@ -69,41 +61,40 @@ OWNERSHIP_RULE = (
 )
 
 
-def _roster_filters(deployment: str) -> dict:
-	"""The child rows belonging to one deployment's roster.
-
-	`parenttype` and `parentfield` are both given. A child table is one physical
-	table per doctype, and filtering only by `parent` would match a row from any
-	other doctype that happened to share a docname.
-	"""
-	return {
-		"parenttype": DEPLOYMENT_DOCTYPE,
-		"parentfield": ROSTER_FIELD,
-		"parent": deployment,
-	}
-
-
 # --- the question the ownership rule asks ---------------------------------
 
 
 def is_participant(deployment: str, volunteer: str) -> bool:
-	"""Is this volunteer on this deployment's roster?
+	"""Is this volunteer on this deployment?
 
 	Read from the database rather than from a document handed in, deliberately.
-	The caller is validating a time log, and a roster the caller loaded earlier
-	is a roster as it was earlier; the question has to be answered against the
-	roster as it is.
+	The caller is validating a time log, and a roster the caller loaded earlier is
+	a roster as it was earlier; the question has to be answered against the roster
+	as it is.
+
+	**`db.exists`, which does not scope.** That is right here: this is not asking
+	whether the caller may see the assignment, it is asking whether a fact is
+	true. A coordinator filing a log on somebody else's behalf, in a branch whose
+	assignments they cannot list, must still get a truthful answer about whether
+	that person served.
 	"""
 	if not (deployment and volunteer):
 		return False
 
 	return bool(
-		frappe.db.exists(PARTICIPANT_DOCTYPE, {**_roster_filters(deployment), "volunteer": volunteer})
+		frappe.db.exists(
+			ASSIGNMENT_DOCTYPE,
+			{
+				"deployment": deployment,
+				"volunteer": volunteer,
+				"status": ("in", assignment.ON_DEPLOYMENT),
+			},
+		)
 	)
 
 
 def assert_participant(deployment: str, volunteer: str) -> None:
-	"""Throw unless the volunteer is on the deployment's roster.
+	"""Throw unless the volunteer is on the deployment.
 
 	**A ValidationError rather than a PermissionError**, and the distinction is
 	deliberate. This is not a question about the acting user's authority: a
@@ -117,10 +108,10 @@ def assert_participant(deployment: str, volunteer: str) -> None:
 
 	frappe.throw(
 		_(
-			"{0} is not on the roster of deployment {1}, so no time can be logged against it. Time"
-			" is logged against a deployment somebody actually took part in. Add them to the"
-			" deployment's participants if they served on it, or file this as a general log."
-		).format(frappe.bold(volunteer), frappe.bold(deployment)),
+			"{0} is not on deployment {1}, so no time can be logged against it. Time is logged"
+			" against a deployment somebody actually took part in. Assign them to it if they"
+			" served on it, or file this as a general log."
+		).format(frappe.bold(assignment.volunteer_label(volunteer)), frappe.bold(deployment)),
 		frappe.ValidationError,
 		title=_("Not A Participant"),
 	)
@@ -130,122 +121,63 @@ def assert_participant(deployment: str, volunteer: str) -> None:
 
 
 def participants_of(deployment: str) -> list[str]:
-	"""Every volunteer on this deployment, in roster order."""
+	"""Every volunteer on this deployment, leaders first.
+
+	Only those actually on it. Somebody who was asked and declined is on the
+	deployment's *assignment* register, which `assignment.roster_of` returns in
+	full, but they are not a participant and a caller asking this question wants
+	the people who went.
+	"""
 	if not deployment:
 		return []
 
-	return frappe.get_all(
-		PARTICIPANT_DOCTYPE,
-		filters=_roster_filters(deployment),
-		order_by="idx asc",
-		pluck="volunteer",
-	)
+	return [row["volunteer"] for row in assignment.roster_of(deployment) if row["is_on_deployment"]]
 
 
 def roster_of(deployment: str) -> list[dict]:
-	"""The roster as explicit rows, for a DTO. Built field by field."""
-	if not deployment:
-		return []
+	"""The whole assignment register for one deployment, settled rows included.
 
-	rows = frappe.get_all(
-		PARTICIPANT_DOCTYPE,
-		filters=_roster_filters(deployment),
-		fields=[
-			"volunteer",
-			"joined_on",
-			"left_on",
-			"participation_notes",
-			"response",
-			"responded_on",
-		],
-		order_by="idx asc",
-	)
-
-	return [
-		{
-			"volunteer": row["volunteer"],
-			"joined_on": row["joined_on"],
-			"left_on": row["left_on"],
-			"notes": row["participation_notes"],
-			# The invitation's answer, carried so a coordinator can see who was
-			# asked and what they said. It decides nothing: `is_participant` is
-			# untouched by a reply, so a declined row is still on the roster
-			# until a coordinator takes it off. Blank is "never asked", which is
-			# a different thing from "asked and silent" (`invited`).
-			"response": row["response"] or None,
-			"responded_on": row["responded_on"],
-		}
-		for row in rows
-	]
+	Delegated rather than re-queried: `assignment.roster_of` owns the shape, and
+	a second reader here would be a second chance for the two to disagree about
+	what a roster row looks like.
+	"""
+	return assignment.roster_of(deployment)
 
 
 def deployments_of(volunteer: str) -> list[str]:
 	"""Every deployment this volunteer has been on, most recent first.
 
-	The reverse of the roster question, and the one place it is asked. Reading a
-	child table by a field other than `parent` is unusual enough that scattering
-	the query would invite somebody to write it without `parenttype`, which would
-	quietly match rows from another doctype.
-
-	Ordered by the deployments themselves rather than by the child rows, because
-	"most recent" is a property of the deployment and a roster row has no date of
-	its own that every society fills in.
+	Only the ones they were actually on. A volunteer's own history is what they
+	did, not what they were asked; the questions they declined are theirs to see
+	on their assignments, not entries in a service record.
 	"""
 	if not volunteer:
 		return []
 
-	names = frappe.get_all(
-		PARTICIPANT_DOCTYPE,
-		filters={
-			"parenttype": DEPLOYMENT_DOCTYPE,
-			"parentfield": ROSTER_FIELD,
-			"volunteer": volunteer,
-		},
-		pluck="parent",
-	)
-
-	if not names:
-		return []
-
-	return frappe.get_all(
-		DEPLOYMENT_DOCTYPE,
-		filters={"name": ("in", names)},
-		order_by="start_date desc, creation desc",
-		pluck="name",
-	)
+	return [
+		row["deployment"] for row in assignment.assignments_of(volunteer, statuses=assignment.ON_DEPLOYMENT)
+	]
 
 
 def history_of(volunteer: str) -> list[dict]:
-	"""Every deployment this volunteer has been on, as explicit rows for a DTO.
+	"""Every deployment this volunteer served on, as explicit rows for a DTO.
 
 	`deployments_of()` above answers "which ones"; this answers "which ones, and
 	what were they". The coordinator's view on the volunteer register needs the
-	second — a list of opaque docnames tells somebody nothing — and it must come
-	from here rather than from the volunteer module, because the join between a
-	roster row and its parent deployment is this module's business and a second
-	copy of it would be a second chance to forget `parenttype`.
+	second — a list of opaque docnames tells somebody nothing.
 
-	Built field by field. Never the documents: a Deployment carries its whole
-	roster, and handing that back would disclose every other participant to
-	anybody who could read one volunteer.
+	Built field by field. Never the documents: a Deployment read in full would
+	drag its own facts into a shape about one person, and a Terms of Reference
+	read in full is a whole mission document.
 
-	`joined_on` and `left_on` come off the roster row, so a volunteer who left a
+	`joined_on` and `left_on` come off the assignment, so a volunteer who left a
 	deployment early reads as having left it rather than as never having been
-	there. Removing them from the roster instead would make the time they
-	actually served unfilable, which is precisely backwards.
+	there.
 	"""
 	if not volunteer:
 		return []
 
-	rows = frappe.get_all(
-		PARTICIPANT_DOCTYPE,
-		filters={
-			"parenttype": DEPLOYMENT_DOCTYPE,
-			"parentfield": ROSTER_FIELD,
-			"volunteer": volunteer,
-		},
-		fields=["parent", "joined_on", "left_on", "participation_notes"],
-	)
+	rows = assignment.assignments_of(volunteer, statuses=assignment.ON_DEPLOYMENT)
 
 	if not rows:
 		return []
@@ -254,25 +186,30 @@ def history_of(volunteer: str) -> list[dict]:
 		row["name"]: row
 		for row in frappe.get_all(
 			DEPLOYMENT_DOCTYPE,
-			filters={"name": ("in", [row["parent"] for row in rows])},
+			filters={"name": ("in", [row["deployment"] for row in rows])},
 			fields=["name", "status", "start_date", "end_date", "geo_node", "terms_of_reference"],
+			# Resolving the facts about deployments this person demonstrably served
+			# on, for their own record. A volunteer holds no Geo Assignment, so a
+			# scoped read here would hand them an empty history of work they did.
+			ignore_permissions=True,
 		)
 	}
 
 	history = []
 
 	for row in rows:
-		deployment = deployments.get(row["parent"])
+		deployment = deployments.get(row["deployment"])
 
 		if not deployment:
-			# The roster row outlived its parent, which a cascade should prevent
-			# and a partially-restored backup will not. Skipped rather than
-			# rendered as a deployment with no facts on it.
+			# The assignment outlived its deployment, which a cascade should
+			# prevent and a partially-restored backup will not. Skipped rather
+			# than rendered as a deployment with no facts on it.
 			continue
 
 		history.append(
 			{
 				"deployment": deployment["name"],
+				"assignment": row["name"],
 				"status": deployment["status"],
 				"start_date": deployment["start_date"],
 				"end_date": deployment["end_date"],
@@ -281,6 +218,8 @@ def history_of(volunteer: str) -> list[dict]:
 				# The society's own word for the terms, read live, because a
 				# docname is not something to put in front of a coordinator.
 				"tor_name": _tor_name(deployment["terms_of_reference"]),
+				"role": row["role"],
+				"is_leader": row["is_leader"],
 				"joined_on": row["joined_on"],
 				"left_on": row["left_on"],
 				"notes": row["participation_notes"],
@@ -288,8 +227,8 @@ def history_of(volunteer: str) -> list[dict]:
 		)
 
 	# Ordered here rather than in the query: the sort key is the deployment's
-	# date and the rows were read off the child table, so there is nothing to
-	# order by until both have been put together.
+	# date and the rows were read off the assignment register, so there is
+	# nothing to order by until both have been put together.
 	history.sort(key=_most_recent_first, reverse=True)
 
 	return history
@@ -324,16 +263,27 @@ def _tor_name(terms_of_reference: str | None) -> str | None:
 # --- writing it -----------------------------------------------------------
 
 
-def add(deployment, volunteer: str, **fields) -> bool:
-	"""Put a volunteer on the roster. Idempotent; returns whether anything changed.
+def add(deployment_doc, volunteer: str, **fields) -> bool:
+	"""Place a volunteer on this deployment. Idempotent; returns whether anything changed.
 
-	Takes the deployment document, not a name, and does not save: the caller
-	owns the transaction, and a roster change that saved itself would make
-	adding five people five saves and five revisions.
+	A coordinator saying somebody is going, which is the verb this app has always
+	drawn apart from asking them. `assignment.create` holds the rules — the
+	headcount cap, the refusal of a second open assignment, the terms check — and
+	this is the name the rest of the app already calls it by.
+
+	Unlike the child-table version this replaced, it **does** write: an assignment
+	is its own document and there is no parent save to defer to. Callers placing
+	several people at once want `assignment.deploy`, which wraps each insert in
+	its own savepoint and reports which ones did not take.
 	"""
-	if any(row.volunteer == volunteer for row in deployment.participants or []):
+	if assignment.open_assignment(deployment_doc.name, volunteer):
 		return False
 
-	deployment.append(ROSTER_FIELD, {"volunteer": volunteer, **fields})
+	assignment.create(
+		deployment_doc,
+		volunteer,
+		status=assignment.STATUS_ASSIGNED,
+		**fields,
+	)
 
 	return True

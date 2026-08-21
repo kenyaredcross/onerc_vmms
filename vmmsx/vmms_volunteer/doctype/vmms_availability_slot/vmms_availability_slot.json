@@ -11,6 +11,10 @@
   "slot_key",
   "column_break_identity",
   "is_active",
+  "hours_section",
+  "start_time",
+  "column_break_hours",
+  "end_time",
   "description"
  ],
  "fields": [
@@ -48,6 +52,29 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Active"
+  },
+  {
+   "fieldname": "hours_section",
+   "fieldtype": "Section Break",
+   "label": "Hours"
+  },
+  {
+   "description": "When this window opens, as a time of day. Optional, and it is what turns a named slot into a question a deployment can actually ask: without it 'Weekends' is a label a volunteer chose, and with it a schedule saying Saturday plus this slot covers a real span of hours. A slot with no hours still works everywhere it worked before; it simply cannot answer 'is this person free on the afternoon of the 3rd'.",
+   "fieldname": "start_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Opens"
+  },
+  {
+   "fieldname": "column_break_hours",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When this window closes. A slot whose close is earlier than its open is refused: an overnight window is two slots in every society that has one, because a single row spanning midnight would have to belong to two days at once and no reader of it could tell which.",
+   "fieldname": "end_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Closes"
   },
   {
    "description": "What this slot covers, in the society's own words.",

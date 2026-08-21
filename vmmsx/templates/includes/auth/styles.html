@@ -396,6 +396,34 @@
 	.resend-link { margin: 0; font-size: 12.5px; color: var(--vm-body); text-align: center; }
 	.resend-link a { font-weight: 700; color: var(--vm-signal); text-decoration: none; }
 
+	/* ---- the panel that replaces the sign-up form ----------------------- */
+
+	/* The address the person typed, shown back to them. `anywhere` because an
+	   email is one unbroken word and a long one would otherwise widen the card
+	   past the panel beside it. */
+	.auth-address {
+		margin: 12px 0 0;
+		font-family: var(--vm-display);
+		font-size: 14px;
+		font-weight: 700;
+		color: var(--vm-ink);
+		overflow-wrap: anywhere;
+	}
+
+	.auth-cooldown {
+		margin: 0;
+		font-size: 12px;
+		line-height: 1.5;
+		color: var(--vm-faint);
+		text-align: center;
+	}
+
+	/* This panel has no fields, so its `page-card-body` holds nothing but two
+	   banners that are usually hidden and collapses to nothing. The actions
+	   would otherwise sit 50px below the address on the strength of two margins
+	   with an empty box between them. */
+	.signup-sent .page-card-actions { margin-top: 8px; }
+
 	/* ---- banners ------------------------------------------------------- */
 
 	.es-alert {

@@ -131,7 +131,12 @@ COPY = (
 	# TRCS's own published figures (trcs.or.tz, IFRC National Societies
 	# Directory): 41,300+ volunteers, 31 regional branches, 1,250+
 	# sub-branches, founded 1962 under Parliamentary Act No. 71.
-	("landing.stat1.value", "41,300+", None, None, None),
+	#
+	# The volunteer figure is deliberately *not* seeded. It is counted off the
+	# register by `api/society.py::figures`, so what the page shows is how many
+	# volunteers this site actually holds — which for a demo is the seeded
+	# people, not TRCS's real 41,300. A typed 41,300+ over a register of two
+	# hundred would be the one number on the page that is a fiction.
 	("landing.stat1.label", "VOLUNTEERS", None, None, None),
 	("landing.stat2.value", "31", None, None, None),
 	("landing.stat2.label", "REGIONAL BRANCHES", None, None, None),
@@ -141,11 +146,11 @@ COPY = (
 	("landing.stat4.label", "FOUNDED", None, None, None),
 	# --- the public events teaser ----------------------------------------
 	#
-	# Typed in, not queried: this app has no event doctype at the content-block
-	# layer, and the honest way to show upcoming events on a page is for
-	# somebody to have written them. Dates are illustrative rather than tied to
-	# the real Buzz events `tanzania_operations.py` seeds, the same as Gambia's
-	# own teaser — see the note in `content/seeds/default_content.py`.
+	# The fallback half of the band, and on this site it never shows: the page
+	# reads the next three published Buzz events through
+	# `api/events.py::teaser`, and `tanzania_operations.py` seeds real ones.
+	# These rows are what a site without Buzz would get instead, kept so the
+	# demo is not a heading over an empty row on a bench that lacks it.
 	("landing.event1.date", "SEP 12", None, None, None),
 	("landing.event1.title", "World First Aid Day", None, None, None),
 	("landing.event1.meta", "09:00 · Dar es Salaam", None, None, None),

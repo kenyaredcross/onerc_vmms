@@ -28,14 +28,22 @@ asking for a key nobody seeded renders its own fallback rather than breaking.
 #: gone, so what is removed is a row that could still be edited and would change
 #: nothing on any page.
 #:
-#: These two held the product's name and a short society name typed onto the
+#: The first two held the product's name and a short society name typed onto the
 #: page. The lockup now reads the society's real logo and name from National
 #: Society Settings through `api/society.py::branding`, so a block beside it was
 #: a second copy of an identity core already owns — stale the moment somebody
 #: uploaded a logo, and a vendor's name on a society's screens besides.
+#:
+#: The third is the same mistake about a number instead of a name. The first
+#: statistic is how many volunteers are on the register, and the register is
+#: what knows: `api/society.py::figures` counts it and rounds it, and the strip
+#: draws that. A typed figure beside it was correct on the day somebody typed it
+#: and wrong the day after. The *caption* is still a block, because what a
+#: society calls its volunteers is a society's own word.
 RETIRED = (
 	"chrome.brand.name",
 	"chrome.brand.society",
+	"landing.stat1.value",
 )
 
 # Links this app shipped pointing at nothing, and where they should go instead.
@@ -49,8 +57,15 @@ RETIRED = (
 # The events button changed from "Get tickets" to "Attend" when the card stopped
 # handing people off and started opening the society's own details panel. Only
 # where the old wording is still there — a society that has renamed it keeps it.
+#
+# The two join buttons said "free", which is a claim this app is in no position
+# to make: a society's membership types carry a fee, `PlanCards` prices them,
+# and the closing panel of the same page invites somebody onto that road. The
+# word had to go from both, and "us" says the thing that is actually true.
 RELABELLED = {
 	"portal.events.card.action": ("Get tickets", "Attend"),
+	"chrome.action.join": ("Join free", "Join us"),
+	"landing.cta.button": ("Join free today", "Join us today"),
 }
 
 DEAD_LINKS = {
@@ -128,7 +143,7 @@ def _chrome():
 	s = "chrome"
 	return [
 		_block("chrome.action.signin", "Sign in button", s, 30, "Sign in", "/login"),
-		_block("chrome.action.join", "Join button", s, 40, "Join free", "/portal/join"),
+		_block("chrome.action.join", "Join button", s, 40, "Join us", "/portal/join"),
 		_block("chrome.action.signout", "Sign out link", s, 50, "Sign out"),
 	]
 
@@ -322,9 +337,22 @@ def _landing_bands():
 
 
 def _landing_stats():
+	"""Four figures, and the first of them is not a slot anybody fills in.
+
+	Statistic one is how many volunteers the society has, counted off the
+	register by `api/society.py::figures` and rounded there. There is no
+	`landing.stat1.value` block, and `RETIRED` deletes it from sites that still
+	carry one: a number a person types is a number that stops being true, and
+	this one stops being true every time a branch verifies an application.
+
+	Its caption stays editable and ships with a word, because "volunteers" is
+	what this app counted and a society is entitled to call them something else.
+	The other three are the society's own to fill in or leave empty.
+	"""
 	s = "landing"
-	rows = []
-	for i in range(1, 5):
+	rows = [_block("landing.stat1.label", "Statistic 1, caption", s, 611, "VOLUNTEERS")]
+
+	for i in range(2, 5):
 		base = 600 + i * 10
 		rows += [
 			_block(
@@ -340,17 +368,39 @@ def _landing_stats():
 
 
 def _landing_events():
-	"""The public events teaser.
+	"""The public events teaser, which is live now and typed only as a fallback.
 
-	Hand-maintained wording rather than live records, and deliberately so: this
-	app has no event doctype, and a marketing teaser an administrator types is an
-	honest answer to that, where three invented rows would not be. If an events
-	module is built later, this section is what it replaces.
+	The band draws the next three published events from Buzz through
+	`api/events.py::teaser`. Nobody types those; a society that has scheduled
+	something has it on its front page the moment it publishes it.
+
+	**The typed rows below stayed.** They are what the band falls back to when
+	there is nothing live to show — a site without Buzz, or a season with nothing
+	in it — so a society that has always kept a hand-written teaser keeps it, and
+	one that has not gets a band that hides itself rather than an empty heading.
+	Live records win whenever there are any.
+
+	`landing.events.action`, `.more` and `.join` belong to the live half: the
+	words on a card's link, and the sentence and the link under the row that
+	tells a signed-out visitor the rest of the calendar is for people who have
+	joined. The per-event `cta` blocks belong to the typed half and are drawn
+	only there.
 	"""
 	s = "landing"
 	rows = [
 		_block("landing.events.heading", "Events section, heading", s, 700, "Upcoming public events"),
 		_block("landing.events.link", "Events section, link", s, 710, "All events", "#events"),
+		_block("landing.events.action", "Events section, card link", s, 712, "Details"),
+		_block(
+			"landing.events.more",
+			"Events section, invitation",
+			s,
+			714,
+			"These are the ones open to everybody. Volunteers see the whole calendar, and can say"
+			" they are coming.",
+			notes="Shown under the row to visitors who are not signed in.",
+		),
+		_block("landing.events.join", "Events section, invitation link", s, 716, "Become a volunteer"),
 	]
 	for i in range(1, 4):
 		base = 720 + i * 10
@@ -393,7 +443,7 @@ def _landing_close():
 			"Register in five minutes. Your branch confirms your record, and the Society gains one"
 			" more person who shows up.",
 		),
-		_block("landing.cta.button", "Closing panel, button", s, 820, "Join free today", "/portal/join"),
+		_block("landing.cta.button", "Closing panel, button", s, 820, "Join us today", "/portal/join"),
 	]
 	for i, word in enumerate(principles, start=1):
 		rows.append(_block(f"landing.principle{i}", f"Fundamental principle {i}", s, 830 + i, word))
@@ -488,6 +538,31 @@ def _login():
 		),
 		_block("login.signup.prompt", "Create account, footer question", s, 230, "Already have one?"),
 		_block("login.signup.action", "Create account, footer link", s, 240, "Sign in"),
+		# The panel that replaces the form once the account exists. The form used
+		# to stay on screen with a green line above it and the word "Success" on
+		# the button, which reads as though there is still something to fill in.
+		# The address is drawn by the page, not by these words, so none of them
+		# needs to interpolate anything.
+		_block("login.signup.sent_eyebrow", "Account created, eyebrow", s, 250, "Almost there"),
+		_block("login.signup.sent_title", "Account created, heading", s, 260, "Check your email"),
+		_block(
+			"login.signup.sent_body",
+			"Account created, paragraph",
+			s,
+			270,
+			"We have sent a link to set your password. Open it and you can finish signing up."
+			" It may take a minute to arrive, and it is worth a look in your spam folder.",
+		),
+		_block(
+			"login.signup.pending_body",
+			"Account created but not emailed, paragraph",
+			s,
+			280,
+			"Your account has been created, but this site cannot send email yet, so nobody could"
+			" send you a link. Ask your branch to activate the account for you.",
+			notes="Shown instead of the paragraph above when the site has no outgoing email"
+			" configured. There is nothing to resend, so no button is offered with it.",
+		),
 		_block("login.forgot.eyebrow", "Forgotten password, eyebrow", s, 300, "Password"),
 		_block("login.forgot.title", "Forgotten password, heading", s, 310, "Reset your password"),
 		_block(
@@ -739,6 +814,11 @@ def _admin():
 	nav = (
 		("overview", "Overview"),
 		("queue", "Review queue"),
+		# The two lists under it. The queue became a parent with two children when
+		# volunteer and membership approvals were split apart — one job each,
+		# done in batches — so each list is a sidebar row a society can rename.
+		("queue.volunteers", "Volunteer applications"),
+		("queue.members", "Membership applications"),
 		("registry.members", "Members"),
 		("registry.volunteers", "Volunteers"),
 		# `admin.nav.tasks` was drawn by the console from the day the Tasks screen
@@ -750,6 +830,7 @@ def _admin():
 		("stipends", "Stipends"),
 		("events", "Events"),
 		("analytics", "Analytics"),
+		("communication", "Communication"),
 		("content", "Page content"),
 		# The two accordion headings the sidebar draws its tabs under —
 		# `AdminLayout.tsx`'s `INSIGHT` and `OPERATIONS` — named the same way the
@@ -777,10 +858,33 @@ def _admin():
 			210,
 			"Nothing is waiting on you.",
 		),
+		_block(
+			"admin.queue.volunteers.heading",
+			"Volunteer applications heading",
+			s,
+			220,
+			"Volunteer applications",
+		),
+		_block(
+			"admin.queue.members.heading",
+			"Membership applications heading",
+			s,
+			230,
+			"Membership applications",
+		),
 		_block("admin.registry.members.heading", "Members heading", s, 300, "Members"),
 		_block("admin.registry.volunteers.heading", "Volunteers heading", s, 310, "Volunteers"),
 		_block("admin.deployments.heading", "Deployments heading", s, 400, "Deployments"),
 		_block("admin.stipends.heading", "Stipends heading", s, 500, "Stipends"),
+		_block("admin.communication.heading", "Communication heading", s, 550, "Communication"),
+		_block(
+			"admin.communication.lead",
+			"Communication, the line under the heading",
+			s,
+			560,
+			"Say something to the volunteers and members your branches cover. Choose who hears"
+			" it before you write it — this is the one thing here that cannot be taken back.",
+		),
 		_block("admin.content.heading", "Page content heading", s, 600, "Page content"),
 		_block(
 			"admin.content.intro",

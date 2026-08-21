@@ -77,7 +77,16 @@ def asked_on(doctype: str) -> list[dict]:
 	rows = frappe.get_all(
 		QUESTION_DOCTYPE,
 		filters={"asked_on": doctype, "is_active": 1},
-		fields=["name", "question_label", "field_type", "options", "is_required", "help_text", "sequence"],
+		fields=[
+			"name",
+			"question_label",
+			"question_group",
+			"field_type",
+			"options",
+			"is_required",
+			"help_text",
+			"sequence",
+		],
 		order_by="sequence asc, creation asc",
 	)
 
@@ -85,6 +94,13 @@ def asked_on(doctype: str) -> list[dict]:
 		{
 			"name": row.name,
 			"label": row.question_label,
+			# The heading this question is asked under, and the whole of what
+			# grouping means to this module: a string a society typed, carried
+			# through so a form can draw a section and an approver's screen can
+			# draw a tab. Nothing here branches on its value — "Health
+			# information" is a society's word, not a case in this app, which is
+			# the same rule every vocabulary in this product follows.
+			"group": row.question_group or "",
 			"field_type": row.field_type,
 			"choices": _choices(row),
 			"is_required": bool(row.is_required),
@@ -92,6 +108,26 @@ def asked_on(doctype: str) -> list[dict]:
 		}
 		for row in rows
 	]
+
+
+def groups(doctype: str) -> list[str]:
+	"""The groups a society has actually used on this registration, in form order.
+
+	Derived from the questions rather than kept in a list of its own: a group
+	exists because a question is in it, so there is no such thing as an empty
+	group to tidy up, and renaming one is editing the questions that name it.
+	Ungrouped questions are not a group and do not appear here — a surface
+	drawing sections decides for itself what to call the rest.
+	"""
+	seen: list[str] = []
+
+	for question in asked_on(doctype):
+		group = question["group"]
+
+		if group and group not in seen:
+			seen.append(group)
+
+	return seen
 
 
 def apply(doc, answers: dict | None) -> list[str]:
@@ -129,8 +165,13 @@ def apply(doc, answers: dict | None) -> list[str]:
 			ANSWER_FIELD,
 			{
 				"question": name,
-				# Snapshots, both of them. See the doctype's docstring.
+				# Snapshots, all three. See the doctype's docstring. The group is
+				# one for the same reason the wording is: a society that renames
+				# "Health information" to "Medical" next year has not changed what
+				# this applicant was asked under, and an approver reading a decided
+				# application should see the form as it stood.
 				"question_label": question["label"],
+				"question_group": question["group"],
 				"field_type": question["field_type"],
 				**_stored(question, value),
 			},
@@ -234,6 +275,11 @@ def answers_of(doc) -> list[dict]:
 		{
 			"question": row.question,
 			"label": row.question_label,
+			# The snapshot, never the question's current group. An application
+			# answered before a society introduced grouping has an empty one, and
+			# a screen puts those together under a heading of its own choosing
+			# rather than inventing a group name here.
+			"group": row.question_group or "",
 			"field_type": row.field_type,
 			"value": row.answer_value or "",
 			"file_url": row.answer_file or "",

@@ -1,0 +1,48 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-20 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "methodology",
+  "notes"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "description": "One way this mission will go about its work, chosen from the society's own VMMS TOR Methodology register. A Link rather than free text so that a society can report across missions on how it works, which a typed-in phrase would never allow.",
+   "fieldname": "methodology",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Methodology",
+   "options": "VMMS TOR Methodology",
+   "reqd": 1
+  },
+  {
+   "columns": 7,
+   "description": "How this particular mission applies that methodology: who it reaches, how many, over what period. The register says what the method is; this says what it means here. Never read by code.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Notes",
+   "translatable": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS TOR Approach",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

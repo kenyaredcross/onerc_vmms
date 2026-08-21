@@ -92,21 +92,23 @@ class VMMSDeployment(Document):
 		)
 
 	def validate_roster(self):
-		"""One row per volunteer, and every row a volunteer who exists."""
-		seen = set()
+		"""Nothing to validate here any more, and the reason is worth leaving behind.
 
-		for row in self.participants or []:
-			if row.volunteer in seen:
-				frappe.throw(
-					_(
-						"{0} is on this deployment's roster twice. A volunteer is either a participant"
-						" or not, and two rows would give the ownership rule two answers."
-					).format(frappe.bold(row.volunteer)),
-					frappe.DuplicateEntryError,
-					title=_("Listed Twice"),
-				)
+		This used to refuse a volunteer listed twice on `participants`, because two
+		rows would give the ownership rule two answers. The roster is now a
+		register of `VMMS Deployment Assignment` documents, and the same rule lives
+		where it can be enforced against the database rather than against one
+		unsaved list: `assignment.create` refuses a second *open* assignment for
+		the same person, while deliberately allowing a settled one to be followed
+		by a new one — asking again after a decline is a real thing a coordinator
+		does, and it should produce a second record rather than overwrite what was
+		said the first time.
 
-			seen.add(row.volunteer)
+		The child table is still on the doctype, hidden and read-only, until
+		`vmmsx.patches.migrate_participants_to_assignments` has run everywhere.
+		Nothing writes it.
+		"""
+		return
 
 	def validate_status(self):
 		"""The status is a closed set, and it moves through the transition table.

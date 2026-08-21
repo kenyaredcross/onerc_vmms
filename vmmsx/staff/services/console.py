@@ -58,6 +58,14 @@ GATED_SECTIONS = (
 		"doctypes": ("VMMS Stipend Progress Report", "VMMS Stipend Payment Form"),
 	},
 	{"section": "content", "doctypes": ("VMMS Content Block",)},
+	# Addressing the people a branch is responsible for. Gated on the
+	# announcement, which is scopeable on its own `geo_node`, so the tab appears
+	# for whoever a society named in `vmms_announcement_scope_role` and the reach
+	# of anything they send is bounded by their Geo Assignment rather than by
+	# this list. SMS rides on the same gate rather than adding `SMS Campaign`
+	# here: onerc_sms is optional, `sms_access()` below answers separately for
+	# it, and the screen offers the channel only when both are true.
+	{"section": "communication", "doctypes": ("VMMS Announcement",)},
 )
 
 # Sections with no register behind them. Drawn only when at least one gated
@@ -99,6 +107,10 @@ ORDER = (
 	"stipends",
 	"events",
 	"analytics",
+	# After the registers and before the two configuration sections: it is a
+	# thing somebody does *to* the people in those registers, so it reads in the
+	# right order after them.
+	"communication",
 	"content",
 	# Last, because it is the one a society touches least often: what the form
 	# asks is decided once and then left alone for a year at a time.

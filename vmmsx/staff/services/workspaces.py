@@ -23,9 +23,21 @@ exactly the way `registration/services/workspaces.py` reads its own roles.
                       VMMS Terms of Reference, VMMS Branch Transfer.
     Stipend           VMMS Stipend Progress Report, VMMS Stipend Payment Form.
     Places            VMMS Branch Location.
-    Society & Setup   Geo Level, Geo Node, National Society Settings (all
-                      core's), VMMS Approval Workflow, VMMS Template,
-                      Affiliation Type, Geo Assignment.
+    VMMS Setup        Geo Level, Geo Node, Geo Assignment, National Society
+                      Settings (all core's), Affiliation Type, VMMS Membership
+                      Type, VMMS Certification Type, VMMS Course Mapping, VMMS
+                      Time Log Category, VMMS Skill, VMMS Announcement Type,
+                      VMMS Approval Workflow, VMMS Template Category, VMMS
+                      Template, VMMS Application Question.
+
+VMMS Setup also carries a native Frappe onboarding checklist (`Module
+Onboarding` plus one `Onboarding Step` per doctype above, `_install_setup_onboarding()`
+below) — the same "Let's get started" mechanism ERPNext uses for Accounting.
+Ordered so a step's own prerequisites come first (the geo tree before anything
+scoped to it, membership/certification/template *types* before the records
+that pick from them), and each step auto-completes the way Frappe's own
+onboarding widget already does: opening the step's "Create Entry" form and
+saving marks it done, no bespoke completion logic here.
 
 Two of those carry a single doctype today, and each is a child of its own rather
 than a card on a neighbour for the same reason: it has a scope role of its own,
@@ -100,7 +112,7 @@ TASKS = "Tasks"
 DEPLOYMENTS = "Deployments"
 STIPEND = "Stipend"
 PLACES = "Places"
-SOCIETY_SETUP = "Society & Setup"
+SOCIETY_SETUP = "VMMS Setup"
 
 CHILDREN = (MEMBERSHIP, VOLUNTEERS, TASKS, DEPLOYMENTS, STIPEND, PLACES, SOCIETY_SETUP)
 
@@ -118,6 +130,31 @@ TASK_SCOPE_ROLE_FIELD = "vmms_task_scope_role"
 BRANCH_LOCATION_SCOPE_ROLE_FIELD = "vmms_branch_location_scope_role"
 
 
+def _migrate_legacy_setup_workspace() -> None:
+	"""One-time cleanup for a site that already ran `install()` under this
+	child's old name, "Society & Setup", before it became `SOCIETY_SETUP =
+	"VMMS Setup"`. Renaming the Python string alone leaves the old workspace
+	orphaned — `_sync()` keys off `label`, so on its own it would create a
+	fresh "VMMS Setup" doc rather than renaming the site's existing one, and
+	the old doc would never be touched by `install()` again. Runs before
+	`_sync()` so there is at most one workspace under either name by the time
+	it does; a no-op on a fresh site that never had the old name.
+	"""
+	LEGACY = "Society & Setup"
+
+	if not frappe.db.exists(WORKSPACE_DOCTYPE, LEGACY):
+		return
+
+	if frappe.db.exists(WORKSPACE_DOCTYPE, SOCIETY_SETUP):
+		# `install()` already ran once since the rename, before this guard
+		# existed, and created a fresh "VMMS Setup" — the legacy doc is now
+		# redundant, not a rename target.
+		frappe.delete_doc(WORKSPACE_DOCTYPE, LEGACY, force=True, ignore_permissions=True)
+		return
+
+	frappe.rename_doc(WORKSPACE_DOCTYPE, LEGACY, SOCIETY_SETUP, ignore_permissions=True, force=True)
+
+
 def install() -> dict:
 	"""Build or refresh the parent and its seven children. Idempotent.
 
@@ -129,9 +166,11 @@ def install() -> dict:
 
 	The parent is written first: a child's `parent_page` is a Link to
 	`Workspace`, and Frappe validates that link on save, so VMMS has to exist
-	before Membership, Volunteers, Deployments, Stipend or Society & Setup can
+	before Membership, Volunteers, Deployments, Stipend or VMMS Setup can
 	name it.
 	"""
+	_migrate_legacy_setup_workspace()
+
 	from onerc_core.society.services import config
 
 	settings = config.settings()
@@ -183,6 +222,8 @@ def install() -> dict:
 			_society_setup(), child_roles[SOCIETY_SETUP], sequence=1.5, module="Vmmsx", parent_page=PARENT
 		),
 	}
+
+	_install_setup_onboarding()
 
 	return result
 
@@ -409,12 +450,19 @@ def _deployments() -> dict:
 		(
 			("VMMS Project", "folder-normal"),
 			("VMMS Deployment", "map-pin"),
+			# One person's deployment, with its own status and its own record of the
+			# terms they agreed to. Here rather than only inside a deployment,
+			# because "what has this volunteer been asked and what did they say" is a
+			# question a coordinator asks across deployments, and a list view answers
+			# it in a way a roster on one record cannot.
+			("VMMS Deployment Assignment", "user-check"),
 			("VMMS Deployment Request", "clipboard-list"),
 			("VMMS Terms of Reference", "file-text"),
 			("VMMS Branch Transfer", "arrow-left-right"),
 		),
 		"Programmes of work, requests for deployment, the deployments they become,"
-		" the terms they are governed by, and volunteers moving between branches.",
+		" who is on each of them, the terms they are governed by, and volunteers"
+		" moving between branches.",
 	)
 
 
@@ -431,9 +479,9 @@ def _stipend() -> dict:
 
 
 def _places() -> dict:
-	"""The society's own addresses, kept out of Society & Setup deliberately.
+	"""The society's own addresses, kept out of VMMS Setup deliberately.
 
-	Society & Setup carries the geo tree, the settings document and Geo
+	VMMS Setup carries the geo tree, the settings document and Geo
 	Assignment, and its role list is System Manager and nothing else for that
 	reason. A branch that maintains its own office address should not need
 	sight of any of those, so its doctype lives here with a role of its own.
@@ -448,21 +496,193 @@ def _places() -> dict:
 
 
 def _society_setup() -> dict:
+	"""Every doctype a society configures once, before the rest of the app is
+	usable — the same set `SETUP_STEPS` below walks as a checklist. Doctypes
+	that also have an operational home elsewhere (Membership Type on
+	Membership, Certification Type and Course Mapping on Volunteers) are
+	listed here too, deliberately: this child is not "where these doctypes
+	live," it is "everything a fresh site needs before day one," and the two
+	questions have different answers.
+	"""
 	return _child_spec(
 		SOCIETY_SETUP,
 		"settings",
 		(
 			("Geo Level", "layers"),
 			("Geo Node", "map"),
-			("National Society Settings", "settings"),
-			("VMMS Approval Workflow", "workflow"),
-			("VMMS Template", "layout-template"),
-			("Affiliation Type", "tags"),
 			("Geo Assignment", "map-pinned"),
+			("National Society Settings", "settings"),
+			("Affiliation Type", "tags"),
+			("VMMS Membership Type", "tag"),
+			("VMMS Certification Type", "shield-check"),
+			("VMMS Course Mapping", "book-open"),
+			("VMMS Time Log Category", "clock"),
+			("VMMS Skill", "star"),
+			("VMMS Availability Slot", "clock-4"),
+			("VMMS TOR Methodology", "compass"),
+			("VMMS Announcement Type", "megaphone"),
+			("VMMS Approval Workflow", "workflow"),
+			("VMMS Template Category", "layout-list"),
+			("VMMS Template", "layout-template"),
+			("VMMS Application Question", "help-circle"),
 		),
-		"The geo tree and the society's own settings — both onerc_core's — and the"
-		" approval workflows and templates this app configures on top of them.",
+		"Everything a society configures once, before the rest of the app is usable:"
+		" the geo tree and the society's own settings — both onerc_core's — the types"
+		" and categories that membership, volunteering, notifications and templates"
+		" pick from, the approval workflows that govern them, and the volunteer"
+		" application form's own questions. Work through the checklist above top to"
+		" bottom on a fresh site.",
 	)
+
+
+# --- the setup checklist -----------------------------------------------------
+
+# One row per `Onboarding Step`, in the exact order `_society_setup()`'s own
+# shortcut grid lists them — the geo tree first (everything else scopes to
+# it), the society's own settings right after, then every *type*/*category*
+# doctype the operational records go on to pick from. `action` is "Create
+# Entry" throughout except National Society Settings, which is a Single: there
+# is nothing to create, only a form to fill in, which is "Update Settings" in
+# Frappe's own onboarding vocabulary and carries `is_single` alongside it.
+SETUP_STEPS = (
+	(
+		"Geo Level",
+		"Create Entry",
+		"Define the levels of your location tree, in order (for example Country, County, Branch).",
+	),
+	("Geo Node", "Create Entry", "Build the tree itself: one node per level, each linked to its parent."),
+	(
+		"Geo Assignment",
+		"Create Entry",
+		"Give a record the geo node it belongs to, wherever this app or onerc_core asks for one.",
+	),
+	(
+		"National Society Settings",
+		"Update Settings",
+		"Name the roles this society uses to scope membership, volunteers, tasks, deployments and stipends.",
+	),
+	(
+		"Affiliation Type",
+		"Create Entry",
+		"The ways a person can be affiliated with the society, beyond membership.",
+	),
+	(
+		"VMMS Membership Type",
+		"Create Entry",
+		"The kinds of membership the society offers, and what each one includes.",
+	),
+	("VMMS Certification Type", "Create Entry", "The certifications a volunteer can hold."),
+	(
+		"VMMS Course Mapping",
+		"Create Entry",
+		"How an external learning system's course IDs map onto a certification.",
+	),
+	("VMMS Time Log Category", "Create Entry", "The categories a volunteer logs their time against."),
+	("VMMS Skill", "Create Entry", "The skills a volunteer can list on their profile."),
+	(
+		"VMMS Availability Slot",
+		"Create Entry",
+		"The windows of the day a volunteer can say they"
+		" are free in. Give one an opening and a closing time and it becomes a column in the"
+		" weekly availability grid; leave the times empty and it stays a label picked at intake.",
+	),
+	(
+		"VMMS TOR Methodology",
+		"Create Entry",
+		"The ways this society goes about its work, which a terms of reference picks its approach from.",
+	),
+	("VMMS Announcement Type", "Create Entry", "The categories an announcement can be posted under."),
+	(
+		"VMMS Approval Workflow",
+		"Create Entry",
+		"The stages a request moves through before it counts as approved.",
+	),
+	("VMMS Template Category", "Create Entry", "How message templates are grouped."),
+	("VMMS Template", "Create Entry", "The wording sent for each notification this app fires."),
+	("VMMS Application Question", "Create Entry", "The questions asked on the volunteer application form."),
+)
+
+MODULE_ONBOARDING_DOCTYPE = "Module Onboarding"
+ONBOARDING_STEP_DOCTYPE = "Onboarding Step"
+
+
+def _install_setup_onboarding() -> None:
+	"""Build or refresh the VMMS Setup checklist. Idempotent, like `_sync()`.
+
+	One `Onboarding Step` per row in `SETUP_STEPS`, a `Module Onboarding`
+	naming them in order, and the VMMS Setup workspace's own `module_onboarding`
+	field plus an `onboarding` content block pointing at it — the exact shape
+	core's `update_workspace2` patch builds for every standard onboarding, read
+	from `frappe/public/js/frappe/views/workspace/blocks/onboarding.js` and
+	`onboarding_step.json`'s own `action` options.
+
+	Completion is entirely Frappe's own: `onboarding_widget.js` opens each
+	step's "Create Entry" (or "Update Settings") form and marks the step done
+	on save, the same as every onboarding checklist ERPNext ships. Nothing
+	here tracks progress a second way.
+
+	Called from `install()`, after the VMMS Setup workspace itself has been
+	synced — a step's `reference_document` not existing yet is skipped, the
+	same guard `_child_spec` opens with and for the same self-healing reason.
+	"""
+	step_names = [
+		_sync_onboarding_step(doctype, action, description)
+		for doctype, action, description in SETUP_STEPS
+		if _installed(doctype)
+	]
+
+	exists = frappe.db.exists(MODULE_ONBOARDING_DOCTYPE, SOCIETY_SETUP)
+	doc = (
+		frappe.get_doc(MODULE_ONBOARDING_DOCTYPE, SOCIETY_SETUP)
+		if exists
+		else frappe.new_doc(MODULE_ONBOARDING_DOCTYPE)
+	)
+
+	if not exists:
+		doc.name = SOCIETY_SETUP
+
+	doc.update({"title": SOCIETY_SETUP, "module": "Vmmsx"})
+	doc.set("steps", [{"step": name} for name in step_names])
+	doc.set("allow_roles", [{"role": SYSTEM_MANAGER}])
+	doc.save(ignore_permissions=True)
+
+	workspace = frappe.get_doc(WORKSPACE_DOCTYPE, SOCIETY_SETUP)
+	workspace.module_onboarding = doc.name
+	content = [
+		block for block in frappe.parse_json(workspace.content or "[]") if block.get("type") != "onboarding"
+	]
+	content.insert(1, _block("onboarding", {"onboarding_name": doc.name, "col": 12}))
+	workspace.content = frappe.as_json(content)
+	workspace.save(ignore_permissions=True)
+
+
+def _sync_onboarding_step(doctype: str, action: str, description: str) -> str:
+	"""Create or update one `Onboarding Step`, named after its doctype so a
+	second `install()` finds and updates the same row rather than duplicating
+	it. Returns the step's `name`, for `_install_setup_onboarding()`'s table.
+	"""
+	title = f"Set up {doctype}"
+	exists = frappe.db.exists(ONBOARDING_STEP_DOCTYPE, title)
+	doc = (
+		frappe.get_doc(ONBOARDING_STEP_DOCTYPE, title) if exists else frappe.new_doc(ONBOARDING_STEP_DOCTYPE)
+	)
+
+	if not exists:
+		doc.name = title
+
+	doc.update(
+		{
+			"title": title,
+			"description": description,
+			"action": action,
+			"reference_document": doctype,
+			"is_single": 1 if action == "Update Settings" else 0,
+			"show_full_form": 1,
+		}
+	)
+	doc.save(ignore_permissions=True)
+
+	return doc.name
 
 
 def _child_spec(label: str, icon: str, doctypes: tuple, intro: str) -> dict:

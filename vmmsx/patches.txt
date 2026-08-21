@@ -50,3 +50,17 @@ vmmsx.patches.repair_approval_routing
 # Which role, if any, may open onerc_sms's own campaign builder — the one
 # setting vmmsx owns for a doctype it does not. See the patch's own docstring.
 vmmsx.patches.install_sms_scope_role
+# VMMS Terms of Reference became submittable, so every record written before
+# that is a draft — and a draft takes no deployments. See the patch's own
+# docstring for why this sets the docstatus rather than running submit().
+vmmsx.patches.submit_existing_terms_of_reference
+# The roster moved off VMMS Deployment.participants and onto its own document,
+# VMMS Deployment Assignment. Without this every existing deployment reads as
+# having nobody on it, and the ownership rule starts refusing time logs from
+# people who demonstrably served. See the patch's own docstring.
+vmmsx.patches.migrate_participants_to_assignments
+# Two starting vocabularies: the day-spans a weekly availability grid is built
+# from, and the register a mission's approach is written from. Both open sets a
+# society edits from the moment they land. See the patch's own docstring for why
+# the availability windows already seeded are not the ones the grid can use.
+vmmsx.patches.seed_scheduling_vocabularies

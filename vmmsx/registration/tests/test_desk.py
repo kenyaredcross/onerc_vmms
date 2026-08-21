@@ -202,3 +202,113 @@ class TestTheFirstThingANewAccountIsToldToDo(RegistrationTestCase):
 		user = self._make("redirect.chosen", "Website User", redirect_url="/home")
 
 		self.assertEqual(frappe.db.get_value("User", user, "redirect_url"), "/home")
+
+
+class TestWhereSigningInLands(RegistrationTestCase):
+	"""`on_session_creation` — the one lever that beats every role's home page.
+
+	**The failure this holds shut is not visible from this app's own source.**
+	`get_home_page()` walks `frappe.get_roles()` and takes the first role that
+	carries a home page, in the order the `Has Role` rows happen to have been
+	written. A companion app that grants every new account a role of its own —
+	Buzz does exactly that from a `User` `after_insert` hook, with a fixture
+	carrying `home_page = /dashboard`, which Buzz then redirects to `/b` — wins
+	that walk for every volunteer, member and coordinator on the site. No amount
+	of correctness on `close()`'s own roles can out-vote it, which is why the
+	answer is a request-local flag set before the walk happens rather than
+	another write to a Role.
+
+	**Asserted on the flag rather than through `get_home_page()`, and that is
+	the framework's doing rather than a shortcut.** `get_home_page()` reads
+	`if frappe.local.flags.home_page and not frappe.in_test` — it deliberately
+	ignores the flag under test, so calling it here would assert the *absence*
+	of the mechanism this suite exists to prove. What is left to hold is that the
+	hook sets the flag, for the right people, with the right value; that the
+	framework then honours it is Frappe's own contract and its own tests'.
+	"""
+
+	def setUp(self):
+		super().setUp()
+
+		self.addCleanup(setattr, frappe.local.flags, "home_page", None)
+		frappe.local.flags.home_page = None
+
+	def landing_for(self, user: str):
+		"""Where the login round trip would put this person, or None for none."""
+		frappe.set_user(user)
+		frappe.local.flags.home_page = None
+		desk.on_session_creation()
+
+		return frappe.local.flags.home_page
+
+	def test_a_role_with_its_own_home_page_does_not_win(self):
+		"""The Buzz case, reproduced with a role of this suite's own.
+
+		Named nothing after Buzz on purpose: the property is "a competing home
+		page loses", not "Buzz loses", and a test that needed Buzz installed
+		would silently stop testing anything on a site without it.
+		"""
+		competitor = f"{fixtures.TEST_PREFIX} Competing App User"
+
+		if not frappe.db.exists("Role", competitor):
+			frappe.get_doc(
+				{"doctype": "Role", "role_name": competitor, "desk_access": 0}
+			).insert(ignore_permissions=True)
+
+		frappe.db.set_value("Role", competitor, "home_page", "/somewhere-else")
+
+		user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": f"landing.competing{fixtures.USER_DOMAIN}",
+				"first_name": "Landing",
+				"send_welcome_email": 0,
+				"user_type": "Website User",
+				"roles": [{"role": competitor}],
+			}
+		)
+		user.flags.ignore_permissions = True
+		user.insert()
+		frappe.clear_cache(user=user.name)
+
+		self.assertEqual(self.landing_for(user.name), desk.PORTAL_HOME)
+
+	def test_an_ordinary_website_account_lands_in_the_portal(self):
+		user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": f"landing.ordinary{fixtures.USER_DOMAIN}",
+				"first_name": "Landing",
+				"send_welcome_email": 0,
+				"user_type": "Website User",
+			}
+		)
+		user.flags.ignore_permissions = True
+		user.insert()
+
+		self.assertEqual(self.landing_for(user.name), desk.PORTAL_HOME)
+
+	def test_the_administrator_is_sent_to_the_desk_by_name(self):
+		"""Named rather than left to the framework, which is the whole point.
+
+		An early `return` here would look like the conservative choice and be the
+		bug: the Administrator holds every role on the site, including the
+		companion app's, so falling through to the role walk sends the account a
+		society is configured from into somebody else's dashboard.
+		"""
+		self.assertEqual(self.landing_for(desk.DESK_ACCOUNT), desk.DESK_HOME)
+
+	def test_the_portal_tile_is_shown_to_everybody_but_the_desk_account(self):
+		"""`has_portal_access` — the apps-screen gate, and why it is wide.
+
+		A tile is where a Website User's login is *sent*: `get_default_path()`
+		reads the apps screen before `get_home_page()` for those accounts, so a
+		missing tile is not a missing icon, it is a login that lands in whichever
+		other app has one. Every person of this society has a portal, coordinator
+		included, so the only account this refuses is the framework's own.
+		"""
+		frappe.set_user(desk.DESK_ACCOUNT)
+		self.assertFalse(desk.has_portal_access())
+
+		frappe.set_user("Guest")
+		self.assertFalse(desk.has_portal_access())

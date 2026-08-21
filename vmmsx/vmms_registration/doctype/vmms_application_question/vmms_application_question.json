@@ -10,6 +10,7 @@
   "asked_section",
   "asked_on",
   "question_label",
+  "question_group",
   "column_break_asked",
   "sequence",
   "is_active",
@@ -44,6 +45,13 @@
    "in_list_view": 1,
    "label": "Question",
    "reqd": 1
+  },
+  {
+   "description": "The heading this question is asked under — \"Health information\", \"Next of kin\". Questions sharing a group are drawn together, as one tab on an approver's screen and one section of the form. Leave it empty and the question sits with the rest.",
+   "fieldname": "question_group",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Question Group"
   },
   {
    "fieldname": "column_break_asked",

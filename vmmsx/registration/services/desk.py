@@ -56,6 +56,22 @@ import frappe
 #: see the routing table in `portal/src/App.tsx` and the two roots in `main.tsx`.
 PORTAL_HOME = "/portal/dashboard"
 
+#: The one account this service leaves on the desk. `Administrator` is a
+#: framework primitive rather than a society role — the same exemption
+#: `staff/services/console.py` makes when it names a doctype instead of
+#: `System Manager` — and it is the account a site is set up from, before any
+#: society, any branch or any portal exists to land in.
+DESK_ACCOUNT = "Administrator"
+
+#: Where that one account goes. Named rather than left to the role walk, because
+#: "leave the framework to decide" is what produced the bug this module fixes:
+#: on a bench with a companion app granting every account a role with a home
+#: page, the framework's answer for the Administrator is that app's dashboard.
+DESK_HOME = "/app"
+
+SETTINGS_DOCTYPE = "System Settings"
+DEFAULT_APP_FIELD = "default_app"
+
 
 def install() -> list[dict]:
 	"""Make every configured self-service role a portal role. Idempotent.
@@ -65,6 +81,48 @@ def install() -> list[dict]:
 	silent about having run.
 	"""
 	return [close(role) for role in self_service_roles()]
+
+
+def claim_default_app() -> dict:
+	"""Make this app the landing for accounts the framework asks the apps screen about.
+
+	Its own `after_migrate` step rather than a line inside `install()`, and for
+	the reason `install_deployment_scope_roles` is its own patch: one function,
+	one concern. `install()` answers "are the society's roles portal roles" and
+	returns one row per role; this answers a question about the site.
+
+	**The third of the three levers, and the one that reaches Website Users.**
+	`close()` sets a role's home page and `on_session_creation` sets the session
+	flag, and neither is consulted for a Website User: `LoginManager.set_user_info`
+	reads `get_default_path() or "/" + get_home_page()`, and `get_default_path()`
+	answers off the apps screen. With `System Settings.default_app` naming this
+	app, that resolves through `frappe.apps.get_route("vmmsx")` to the first
+	`add_to_apps_screen` entry — the portal — and every volunteer and member on
+	the site lands on their own dashboard.
+
+	**Only when it is empty**, which is the rule every setting in this module
+	follows: a bench where somebody has deliberately made ERPNext the default app
+	meant to, and a migrate is not the moment to overrule it. A site that wants
+	this reversed clears or changes the setting by hand and nothing here fights
+	it on the next migrate.
+	"""
+	# This package's own name, taken from the module path rather than typed: the
+	# setting names an installed app, and there is exactly one right answer.
+	app = __name__.split(".")[0]
+
+	current = frappe.db.get_single_value(SETTINGS_DOCTYPE, DEFAULT_APP_FIELD)
+
+	if current:
+		return {"setting": DEFAULT_APP_FIELD, "status": "exists", "value": current}
+
+	# `db_set` on the Single rather than a save: `System Settings.on_update`
+	# rebuilds caches, reloads the scheduler's configuration and re-applies the
+	# session-expiry policy, none of which this one field has anything to do
+	# with, and all of which would run on every migrate of every site.
+	frappe.db.set_single_value(SETTINGS_DOCTYPE, DEFAULT_APP_FIELD, app)
+	frappe.clear_cache()
+
+	return {"setting": DEFAULT_APP_FIELD, "status": "claimed", "value": app}
 
 
 def self_service_roles() -> list[str]:
@@ -129,6 +187,78 @@ def close(role: str) -> dict:
 	doc.save(ignore_permissions=True)
 
 	return {"role": role, "status": "closed", "changed": changed}
+
+
+def on_session_creation(login_manager=None) -> None:
+	"""Land every signed-in person in the portal, whatever else is installed.
+
+	`close()` above points each self-service *role* at `PORTAL_HOME`, and that
+	was the whole answer for as long as those roles were the only ones carrying
+	a home page. On a real bench they are not, and the failure is worth writing
+	down because nothing about it is visible from this app's own source.
+
+	`frappe.website.utils.get_home_page()` walks `frappe.get_roles()` and takes
+	the home page of the **first** role that has one. That order is the order the
+	`Has Role` rows were written, not an order anybody chose. Buzz — installed
+	here for events — grants `Buzz User` to every account from a `User`
+	`after_insert` hook, so it is written *before* this app grants anything;
+	`Buzz User` is a fixture carrying `home_page = /dashboard`; and Buzz
+	redirects `/dashboard` to `/b`. The result was that every volunteer, member
+	and coordinator on this site signed in and arrived in an events dashboard,
+	and no amount of correctness on this app's own roles could out-vote it.
+
+	**So the answer is the one lever that runs before the role walk.**
+	`get_home_page()` returns `frappe.local.flags.home_page` ahead of everything
+	else, and `LoginManager.set_user_info()` — which is what fills the
+	`home_page` the login page redirects to — calls it after `make_session()`
+	has run this hook. One request-local flag, set at the moment of signing in
+	and never persisted.
+
+	**Not a fixture edit, deliberately.** Blanking `Buzz User.home_page` would
+	work until the next `bench migrate` re-imported Buzz's own fixture, and
+	fighting another app's data every migrate is a repair that looks like a fix.
+	Nothing here writes to Buzz, and Buzz's own users on a site without vmmsx are
+	unaffected because this hook does not exist there.
+
+	**`Administrator` gets the desk, named rather than left alone.** The obvious
+	shape here is an early `return` for that one account, and it is wrong for the
+	same reason the rest of this exists: falling through to the framework means
+	falling through to the role walk, and the Administrator holds *every* role on
+	the site — including the companion app's — so the account a society is
+	configured from would land in an events dashboard. Saying `/app` is the
+	honest version of "this one is not a portal person".
+
+	Everybody else lands in the portal, coordinators included: being staff is a
+	role somebody holds, not a thing they are instead of a volunteer, and the
+	console is one link away from the dashboard.
+	"""
+	frappe.local.flags.home_page = (
+		DESK_HOME if frappe.session.user == DESK_ACCOUNT else PORTAL_HOME
+	)
+
+
+def has_portal_access() -> bool:
+	"""Is the portal this person's landing? The apps-screen tile's own gate.
+
+	**A tile is where a login is sent, not merely something to click**, which is
+	`has_self_service_access`'s observation and the reason this exists as a
+	second, wider gate rather than reusing it. `frappe.apps.get_default_path()`
+	reads the apps screen *before* `get_home_page()` for a Website User, so for
+	those accounts it decides the landing outright and the session flag above
+	never gets a say. With no vmmsx tile visible to them, the only app with one
+	on this bench was a companion app — and every volunteer and member on the
+	site signed in and arrived there.
+
+	**Everybody except the desk account**, deliberately, and it is the same rule
+	the flag applies: a coordinator has a portal too. The tile is the portal, so
+	the answer to "may you open the portal" is "are you a person of this
+	society", and the only account that is not is the framework's own.
+
+	Guest is excluded because the apps screen is never drawn for one, and
+	answering True would put a signed-out visitor's tile in a cache keyed on a
+	session that has no person behind it.
+	"""
+	return frappe.session.user not in (DESK_ACCOUNT, "Guest")
 
 
 def on_user_insert(doc, method=None) -> None:

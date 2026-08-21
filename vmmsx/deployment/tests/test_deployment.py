@@ -168,7 +168,7 @@ class TestTheRoster(DeploymentRecordTestCase):
 			)
 
 	def test_adding_somebody_already_on_it_changes_nothing(self):
-		from vmmsx.deployment.services import participation
+		from vmmsx.deployment.services import assignment, participation
 
 		volunteer = fixtures.make_volunteer(fixtures.make_profile("Added", "Once"), self.society_a["branch"])
 		deployment = fixtures.make_deployment(
@@ -176,13 +176,15 @@ class TestTheRoster(DeploymentRecordTestCase):
 		)
 
 		self.assertFalse(participation.add(deployment, volunteer.name))
-		self.assertEqual(len(deployment.participants), 1)
+		self.assertEqual(len(assignment.roster_of(deployment.name)), 1)
 
 	def test_an_empty_roster_is_ordinary(self):
 		"""A planned deployment nobody has been assigned to yet is a normal state."""
+		from vmmsx.deployment.services import assignment
+
 		deployment = fixtures.make_deployment(self.terms.name, self.society_a["branch"])
 
-		self.assertEqual(deployment.participants, [])
+		self.assertEqual(assignment.roster_of(deployment.name), [])
 
 
 class TestTheStatusLifecycle(DeploymentRecordTestCase):

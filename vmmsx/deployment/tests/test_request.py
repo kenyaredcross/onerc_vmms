@@ -27,6 +27,7 @@ from frappe.utils import add_days, today
 
 from vmmsx.approvals import states
 from vmmsx.approvals.services import engine
+from vmmsx.deployment.services import assignment
 from vmmsx.deployment.services import request as request_service
 from vmmsx.deployment.tests import fixtures
 from vmmsx.deployment.tests.base import DeploymentTestCase
@@ -130,7 +131,10 @@ class TestTheDirectModeIsTheBaseCase(RequestTestCase):
 
 		deployment = frappe.get_doc(fixtures.DEPLOYMENT_DOCTYPE, request.deployment)
 
-		self.assertEqual(deployment.participants, [])
+		# A fulfilled request makes a deployment with nobody on it. Finding people
+		# is the next act and a separate one — the roster is a register of
+		# assignments, and an approved request creates none of them.
+		self.assertEqual(assignment.roster_of(deployment.name), [])
 
 
 class TestTheRoutedModeUsesTheRealEngine(RequestTestCase):
@@ -312,5 +316,9 @@ class TestTheRequestRecordItself(RequestTestCase):
 
 		deployment = frappe.get_doc(fixtures.DEPLOYMENT_DOCTYPE, request.deployment)
 
-		self.assertEqual(deployment.participants, [])
+		self.assertEqual(assignment.roster_of(deployment.name), [])
 		self.assertEqual(request.volunteers_requested, 5)
+		# How many the request asked for becomes how many the deployment needs, so
+		# the figure somebody approved is the figure the roster is capped against
+		# rather than one a coordinator has to retype.
+		self.assertEqual(deployment.volunteers_required, 5)

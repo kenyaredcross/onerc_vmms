@@ -24,10 +24,9 @@ import frappe
 from onerc_core.access.services.enforcement import guard
 
 from vmmsx.deployment.services import deployment as deployment_service
-from vmmsx.deployment.services import invitation, matching, participation
+from vmmsx.deployment.services import invitation, matching, participation, terms, tor_document
 from vmmsx.deployment.services import project as project_service
 from vmmsx.deployment.services import request as request_service
-from vmmsx.deployment.services import terms, tor_document
 from vmmsx.deployment.services import transfer as transfer_service
 
 DEPLOYMENT_DOCTYPE = "VMMS Deployment"
@@ -36,6 +35,9 @@ TRANSFER_DOCTYPE = "VMMS Branch Transfer"
 VOLUNTEER_DOCTYPE = "VMMS Volunteer"
 PROJECT_DOCTYPE = "VMMS Project"
 TERMS_DOCTYPE = "VMMS Terms of Reference"
+# Core's, named here only so `deployment_map` can ask whether a deployment's
+# anchor still exists. Everything else geo goes through the adapter.
+DEPLOYMENT_GEO_DOCTYPE = "Geo Node"
 
 
 # --- matching -------------------------------------------------------------
@@ -50,6 +52,10 @@ def find_candidates(
 	offset: int = 0,
 	search: str | None = None,
 	skills: list | None = None,
+	start_date: str | None = None,
+	end_date: str | None = None,
+	only_available: bool | int | str = False,
+	exclude_conflicts: bool | int | str = False,
 ) -> dict:
 	"""Volunteers who fit this need, within the caller's own area.
 
@@ -61,6 +67,10 @@ def find_candidates(
 	`search` (a name or a docname) and `skills` narrow the page before it is
 	assessed, and `offset` pages through it — see `matching.candidates()` for why
 	this is not merely a display filter.
+
+	`start_date` and `end_date` turn on the availability and clash answers, which
+	rank rather than exclude; `only_available` and `exclude_conflicts` turn each
+	into a filter for a caller who has decided they want one.
 	"""
 	return matching.candidates(
 		terms_of_reference,
@@ -70,6 +80,10 @@ def find_candidates(
 		offset=offset,
 		search=search,
 		skills=skills,
+		start_date=start_date,
+		end_date=end_date,
+		only_available=_flag(only_available),
+		exclude_conflicts=_flag(exclude_conflicts),
 	)
 
 
@@ -95,6 +109,133 @@ def get_deployment(name: str) -> dict:
 
 
 @frappe.whitelist()
+def deployment_map(status: str | None = None) -> dict:
+	"""Where this coordinator's people are, by area, with a point where there is one.
+
+	**The map and the ranked list are one answer, not two.** Every area comes back
+	whether or not it can be plotted, with `latitude`/`longitude` present only
+	where the geo tree carries them. A screen draws pins for the ones it can and
+	says plainly how many it could not — which is the honest thing, because a
+	tree is filled in from the top down over months and a map that silently
+	omitted the unplotted areas would under-report exactly where the gaps are.
+
+	**Scoped by the deployment listing, not by the geo tree.** The nodes named
+	here are the anchors of deployments this caller may already read, so nothing
+	is disclosed that `branch_deployments` would not have disclosed anyway. The
+	geo tree itself is not scopeable — it is the thing scoping is expressed *in*.
+
+	Counts are of people actually on each deployment, which is Assigned plus
+	Accepted. A question nobody has answered is not somebody who is there.
+	"""
+	from onerc_core.geo.services import adapter
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	filters = {}
+
+	if status in _DEPLOYMENT_STATUSES:
+		filters["status"] = status
+	elif status:
+		# An unknown status answers with nothing rather than with everything,
+		# which is the direction a filter should fail in.
+		return {"areas": [], "deployed": 0, "unplotted": 0}
+
+	rows = frappe.get_list(
+		DEPLOYMENT_DOCTYPE,
+		filters=filters,
+		fields=["name", "geo_node", "status"],
+		limit_page_length=0,
+	)
+
+	running = [row for row in rows if row["status"] in deployment_service.OPEN_STATUSES]
+	tallies = assignment_service.counts_for_many([row["name"] for row in running])
+	points = adapter.get_points(sorted({row["geo_node"] for row in running if row["geo_node"]}))
+
+	areas: dict[str, dict] = {}
+
+	for row in running:
+		node = row["geo_node"]
+
+		# A deployment whose anchor has since been deleted. A cascade should
+		# prevent it and a partially-restored backup will not, and the dashboard
+		# is the wrong place to discover it: `get_full_path` throws on a node that
+		# is not there, which would take down the whole panel over one bad row.
+		# Skipped, exactly as `participation.history_of` skips a record that
+		# outlived its parent.
+		if not node or not frappe.db.exists(DEPLOYMENT_GEO_DOCTYPE, node):
+			continue
+
+		area = areas.setdefault(
+			node,
+			{
+				"geo_node": node,
+				"geo_path": adapter.get_full_path(node),
+				"deployments": 0,
+				"people": 0,
+				"waiting": 0,
+				**(points.get(node) or {}),
+			},
+		)
+
+		tally = tallies.get(row["name"], {})
+		area["deployments"] += 1
+		area["people"] += tally.get("on_deployment", 0)
+		area["waiting"] += tally.get("Pending", 0)
+
+	ranked = sorted(areas.values(), key=lambda area: (-area["people"], area["geo_path"] or ""))
+
+	return {
+		"areas": ranked,
+		"deployed": sum(area["people"] for area in ranked),
+		# How many areas the map cannot draw, so the screen can say so rather
+		# than quietly showing fewer pins than there are places.
+		"unplotted": sum(1 for area in ranked if "latitude" not in area),
+	}
+
+
+@frappe.whitelist()
+def get_deployment_feed(name: str, limit: int | None = None) -> dict:
+	"""What has happened on this deployment, newest first.
+
+	Two sources merged at read time — the deployment's own updates and the task
+	reports written against tasks linked to it — because a volunteer submitting a
+	task report is reporting on the deployment, and copying the report here would
+	make two records of one thing that immediately start drifting.
+
+	Read permission on the deployment decides, which brings core's geo scoping
+	with it. `feed.py` decides nothing about who may look; answering that twice
+	is how two answers come to disagree.
+	"""
+	_readable(DEPLOYMENT_DOCTYPE, name)
+
+	from vmmsx.deployment.services import feed
+
+	return feed.of(name, limit=limit)
+
+
+@frappe.whitelist()
+def post_deployment_update(
+	name: str,
+	note: str,
+	entry_type: str = "update",
+	proof: str | None = None,
+) -> dict:
+	"""Write one entry to a deployment's feed.
+
+	**Write permission, not read.** A feed anybody who could open the deployment
+	could write to would not be a record of anything. The author and the time are
+	stamped from the session inside the service and are not arguments here, so an
+	entry cannot be back-dated or attributed to somebody else.
+	"""
+	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
+	deployment.check_permission("write")
+
+	from vmmsx.deployment.services import feed
+
+	return feed.post(deployment, note, entry_type=entry_type, proof=proof)
+
+
+@frappe.whitelist()
 def set_deployment_status(name: str, status: str, reason: str | None = None) -> dict:
 	"""Move a deployment through its lifecycle. Idempotent.
 
@@ -109,17 +250,16 @@ def set_deployment_status(name: str, status: str, reason: str | None = None) -> 
 
 @frappe.whitelist()
 def add_participant(name: str, volunteer: str, joined_on: str | None = None) -> dict:
-	"""Put a volunteer on a deployment's roster. Idempotent.
+	"""Place a volunteer on a deployment. Idempotent.
 
 	This is the act that makes a deployment time log possible for that person, so
-	it is gated on write permission on the deployment: adding somebody to a
-	roster is changing what the society says happened.
+	it is gated on write permission on the deployment: placing somebody is
+	changing what the society says happened.
 	"""
 	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
 	deployment.check_permission("write")
 
-	if participation.add(deployment, volunteer, joined_on=joined_on):
-		deployment.save()
+	participation.add(deployment, volunteer, joined_on=joined_on)
 
 	return deployment_service.deployment_dto(deployment)
 
@@ -129,14 +269,128 @@ def invite_volunteer(name: str, volunteer: str, joined_on: str | None = None) ->
 	"""Ask a volunteer to join a deployment, and notify them. Idempotent.
 
 	Gated on write permission on the deployment, the same as `add_participant`,
-	because it writes the same roster row. The difference between the two is what
-	the coordinator is saying: `add_participant` records that somebody is going,
-	this one asks whether they will.
+	because it raises the same kind of record. The difference between the two is
+	what the coordinator is saying: `add_participant` records that somebody is
+	going, this one asks whether they will.
 	"""
 	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
 	deployment.check_permission("write")
 
 	return invitation.invite(deployment, volunteer, joined_on=joined_on)
+
+
+@frappe.whitelist()
+def assign_volunteers(
+	name: str,
+	volunteers: list | str,
+	ask: bool | int | str = True,
+	notes: str | None = None,
+) -> dict:
+	"""Raise assignments for several volunteers at once. The bulk act.
+
+	**One call, and an honest report.** Some of the people picked will fail —
+	already assigned, deployment full, terms retired since — and the answer says
+	which and why, per person, rather than refusing the batch or silently
+	dropping them. `assignment.deploy` wraps each insert in its own savepoint so
+	one refusal cannot roll back the rest.
+
+	`ask` is the fork between this app's two verbs, and it is a fork rather than
+	a merge on purpose: on, and each person is *asked* and can answer; off, and
+	each is *placed* by a coordinator who has already arranged it. Collapsing
+	them would make "who was asked" and "who is going" one question.
+
+	Gated on write permission on the deployment, the same as the two singular
+	endpoints beside it. The list is a list of volunteer names; anything that is
+	not one is refused by the service, per row, with a reason.
+	"""
+	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
+	deployment.check_permission("write")
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	return assignment_service.deploy(
+		deployment,
+		_names(volunteers),
+		status=(assignment_service.STATUS_PENDING if _flag(ask) else assignment_service.STATUS_ASSIGNED),
+		notes=notes,
+	)
+
+
+def _status_rows(names: list[str]) -> list[dict]:
+	"""`status_dto` for a list of deployments, with one query for all their counts.
+
+	The roster is a register of documents now, so a deployment's headcount is a
+	query rather than `len()` on a child table. Every listing in this module goes
+	through here so that a page of a hundred deployments costs one grouped count
+	rather than a hundred, which is the difference between a register that opens
+	and one that times out at the size a national society runs at.
+
+	Order is the caller's, preserved: these lists are already sorted by the query
+	that produced them, and re-sorting here would silently override it.
+	"""
+	if not names:
+		return []
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	tallies = assignment_service.counts_for_many(names)
+
+	return [
+		deployment_service.status_dto(frappe.get_doc(DEPLOYMENT_DOCTYPE, name), counts=tallies.get(name))
+		for name in names
+	]
+
+
+def _names(value: list | str) -> list[str]:
+	"""A list of docnames as it arrives over HTTP.
+
+	Frappe hands a whitelisted method either a real list or the JSON it was sent
+	as, depending on how the caller framed the request. Parsed once here rather
+	than at each call site, and filtered to non-empty strings so a trailing null
+	in the payload does not become a row in the failure report.
+	"""
+	if isinstance(value, str):
+		value = frappe.parse_json(value or "[]")
+
+	if not isinstance(value, list):
+		return []
+
+	return [str(item).strip() for item in value if isinstance(item, str) and item.strip()]
+
+
+@frappe.whitelist()
+def set_assignment_role(name: str, role: str) -> dict:
+	"""Name somebody the deployment's leader, or return them to the ranks.
+
+	Gated on write permission on the **assignment**, which core scopes on its own
+	`geo_node`: naming a leader is a decision about the work, not about the
+	person, so it belongs to whoever may write the deployment's own area.
+	`assignment.set_role` refuses a role outside the two, and the controller
+	refuses a second leader.
+	"""
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	document = _readable(assignment_service.ASSIGNMENT_DOCTYPE, name)
+	document.check_permission("write")
+
+	return assignment_service.set_role(document, role)
+
+
+@frappe.whitelist()
+def withdraw_assignment(name: str, reason: str | None = None) -> dict:
+	"""Take an assignment back. The coordinator's own act.
+
+	Not a deletion, and the service says why: the person was asked, or was
+	placed, and that happened. Somebody who served part of a deployment and went
+	home is recorded with `left_on` instead, because withdrawing them would make
+	the time they actually served unfilable.
+	"""
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	document = _readable(assignment_service.ASSIGNMENT_DOCTYPE, name)
+	document.check_permission("write")
+
+	return assignment_service.withdraw(document, reason)
 
 
 @frappe.whitelist()
@@ -164,20 +418,26 @@ def my_invitations() -> dict | None:
 
 
 @frappe.whitelist()
-def respond_to_invitation(deployment: str, accept: bool | int | str, note: str | None = None) -> dict:
-	"""Accept or decline one of the caller's own invitations.
+def respond_to_assignment(assignment: str, accept: bool | int | str, note: str | None = None) -> dict:
+	"""Accept or decline one of the caller's own assignments.
 
-	This one names a deployment, which the possessive endpoints above never do,
-	so the check that would otherwise be missing is written out: the roster row
-	being answered has to be the caller's own. That is **ownership**, not geo
-	scope, and it is the same distinction `participation.py` draws. A volunteer
-	has no scope, so a permission check here would refuse everybody; an ownership
-	check refuses everybody but the one person entitled to answer.
+	**Accepting is accepting the terms of reference**, which is why there is no
+	separate contract in this app and why `VMMS Terms of Reference` is
+	submittable: the assignment records the exact submitted document the person
+	was shown, and an amendment afterwards cannot reach back and change what they
+	agreed to.
 
-	The deployment is loaded without a read check for exactly that reason, and it
-	is never returned: what comes back is `invitation`'s own outcome, built field
-	by field, so a volunteer answering an invitation is not handed the roster of
-	everybody else who was asked.
+	This one names a record, which the possessive endpoints above never do, so
+	the check that would otherwise be missing is written out: the assignment being
+	answered has to belong to the caller's own volunteer record. That is
+	**ownership**, not geo scope, and it is the same distinction
+	`participation.py` draws. A volunteer has no scope, so a permission check
+	here would refuse everybody; an ownership check refuses everybody but the one
+	person entitled to answer.
+
+	The assignment is loaded without a read check for exactly that reason. What
+	comes back is `assignment.dto`, built field by field, so answering is not a
+	way to be handed the roster of everybody else who was asked.
 	"""
 	volunteer = _my_volunteer()
 
@@ -187,17 +447,60 @@ def respond_to_invitation(deployment: str, accept: bool | int | str, note: str |
 			frappe.PermissionError,
 		)
 
-	document = frappe.get_doc(DEPLOYMENT_DOCTYPE, deployment)
+	from vmmsx.deployment.services import assignment as assignment_service
 
-	if not participation.is_participant(document.name, volunteer):
-		# The same answer a volunteer gets for a deployment that does not exist.
-		# Distinguishing the two would let somebody probe for deployment names.
+	document = frappe.get_doc(assignment_service.ASSIGNMENT_DOCTYPE, assignment)
+
+	if document.volunteer != volunteer:
+		# The same answer a volunteer gets for an assignment that does not exist.
+		# Distinguishing the two would let somebody probe for assignment names.
 		frappe.throw(
-			frappe._("There is no invitation for you on this deployment."),
+			frappe._("That is not your assignment to answer."),
 			frappe.PermissionError,
 		)
 
-	return invitation.respond(document, volunteer, accepted=_flag(accept), note=note)
+	return assignment_service.respond(document, accepted=_flag(accept), note=note)
+
+
+@frappe.whitelist()
+def get_my_assignment(assignment: str) -> dict:
+	"""One of the caller's own assignments, with the mission they are agreeing to.
+
+	The volunteer's read before they answer. It carries the whole terms of
+	reference — background, objectives, itinerary, responsibilities — because
+	accepting is accepting that document and somebody should not have to agree to
+	a title. Ownership decides, exactly as it does in `respond_to_assignment`.
+	"""
+	volunteer = _my_volunteer()
+
+	if not volunteer:
+		frappe.throw(frappe._("You do not have a volunteer record."), frappe.PermissionError)
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	document = frappe.get_doc(assignment_service.ASSIGNMENT_DOCTYPE, assignment)
+
+	if document.volunteer != volunteer:
+		frappe.throw(frappe._("That is not your assignment."), frappe.PermissionError)
+
+	deployment = frappe.get_doc(DEPLOYMENT_DOCTYPE, document.deployment)
+
+	return {
+		"assignment": assignment_service.dto(document),
+		# The mission itself, read through the terms the assignment names rather
+		# than the ones the deployment currently points at. Those are the same
+		# today and need not be tomorrow, and what a volunteer is agreeing to is
+		# the document they were sent.
+		"terms": terms.mission_dto(document.terms_of_reference),
+		"deployment": {
+			"name": deployment.name,
+			"status": deployment.status,
+			"start_date": deployment.start_date,
+			"end_date": deployment.end_date,
+			"geo_node": deployment.geo_node,
+			"notes": deployment.notes,
+		},
+	}
 
 
 def _flag(value: bool | int | str) -> bool:
@@ -229,9 +532,7 @@ def deployments_of_volunteer(volunteer: str) -> dict:
 
 	return {
 		"volunteer": volunteer,
-		"deployments": [
-			deployment_service.status_dto(frappe.get_doc(DEPLOYMENT_DOCTYPE, name)) for name in visible
-		],
+		"deployments": _status_rows(visible),
 	}
 
 
@@ -264,14 +565,11 @@ def my_deployments() -> dict | None:
 
 	return {
 		"volunteer": volunteer,
-		"deployments": [
-			_my_deployment_row(frappe.get_doc(DEPLOYMENT_DOCTYPE, name))
-			for name in participation.deployments_of(volunteer)
-		],
+		"deployments": [_titled(row) for row in _status_rows(participation.deployments_of(volunteer))],
 	}
 
 
-def _my_deployment_row(deployment) -> dict:
+def _titled(row: dict) -> dict:
 	"""One of the caller's own deployments, with the work named in words.
 
 	`status_dto` carries `terms_of_reference`, which is an opaque key the app
@@ -280,14 +578,10 @@ def _my_deployment_row(deployment) -> dict:
 	than in the service, because the coordinator's screens already resolve the
 	full terms of reference and do not need a second copy of its label.
 	"""
-	row = deployment_service.status_dto(deployment)
-
 	return {
 		**row,
-		"title": frappe.db.get_value(
-			"VMMS Terms of Reference", deployment.terms_of_reference, "tor_name"
-		)
-		or deployment.terms_of_reference,
+		"title": frappe.db.get_value("VMMS Terms of Reference", row["terms_of_reference"], "tor_name")
+		or row["terms_of_reference"],
 	}
 
 
@@ -353,9 +647,7 @@ def branch_deployments(
 		pluck="name",
 	)
 
-	rows = [
-		deployment_service.status_dto(frappe.get_doc(DEPLOYMENT_DOCTYPE, name)) for name in names
-	]
+	rows = _status_rows(names)
 
 	return {
 		"count": len(rows),
@@ -630,10 +922,7 @@ def get_project(name: str) -> dict:
 	return {
 		"project": project_service.dto(project),
 		"terms": [terms.dto(n) for n in tor_names],
-		"deployments": [
-			deployment_service.status_dto(frappe.get_doc(DEPLOYMENT_DOCTYPE, n))
-			for n in deployment_names
-		],
+		"deployments": _status_rows(deployment_names),
 	}
 
 
@@ -655,17 +944,29 @@ def create_terms(
 	tor_name: str,
 	project: str | None = None,
 	purpose: str | None = None,
+	mission_background: str | None = None,
 	responsibilities: str | None = None,
 	geo_scope: str | None = None,
+	expected_start_date: str | None = None,
+	expected_end_date: str | None = None,
 	default_duration_days: int | None = None,
 	approval_mode: str | None = None,
 	notes: str | None = None,
+	**tables,
 ) -> dict:
 	"""Write a terms of reference, optionally under a project.
 
 	The stable key is derived by the service and never asked for: a society
 	writing terms on a screen has no reason to invent a slug, and the key is what
 	every deployment afterwards points at.
+
+	**Left as a draft.** A mission document is written over several sittings, and
+	`submit_terms` is the separate, deliberate act that says the wording is
+	final. The screens draw those as two buttons for exactly that reason.
+
+	The six mission tables are optional and arrive through `**tables`, parsed the
+	same way the editor's own payload is, so writing a whole mission in one call
+	and building it up tab by tab go through one normaliser.
 	"""
 	frappe.has_permission(TERMS_DOCTYPE, ptype="create", throw=True)
 
@@ -673,14 +974,99 @@ def create_terms(
 		tor_name=tor_name,
 		project=project,
 		purpose=purpose,
+		mission_background=mission_background,
 		responsibilities=responsibilities,
 		geo_scope=geo_scope,
+		expected_start_date=expected_start_date,
+		expected_end_date=expected_end_date,
 		default_duration_days=default_duration_days,
 		approval_mode=approval_mode,
 		notes=notes,
+		**_terms_payload(tables),
 	)
 
 	return terms.dto(doc.name)
+
+
+@frappe.whitelist()
+def update_terms(name: str, **values) -> dict:
+	"""Edit a terms of reference that is still a draft.
+
+	**A draft only**, and the service says why in words: submitting freezes the
+	wording because accepting a deployment assignment is accepting exactly this
+	document. An amendment is a new record, so what somebody already agreed to is
+	never rewritten underneath them.
+
+	The editor sends one tab at a time, so a table the caller did not mention is
+	left alone rather than emptied — a screen saving the mission tab must not
+	silently delete the itinerary the next tab holds.
+	"""
+	_readable(TERMS_DOCTYPE, name).check_permission("write")
+
+	return terms.update(name, **_terms_payload(values))
+
+
+def _terms_payload(values: dict) -> dict:
+	"""The editor's payload, with its tables parsed out of the JSON they arrive as.
+
+	Frappe hands a whitelisted method either a real list or the JSON string it
+	was sent, depending on how the caller framed the request. Parsed here so the
+	service takes lists either way, and unknown keys are left for `terms.update`
+	to ignore rather than being filtered twice in two places that could disagree.
+	"""
+	tables = (
+		"stakeholders",
+		"objectives",
+		"expected_outputs",
+		"approach_methods",
+		"itinerary",
+		"resources",
+		"required_certifications",
+	)
+
+	parsed = dict(values)
+
+	for field in tables:
+		if isinstance(parsed.get(field), str):
+			parsed[field] = frappe.parse_json(parsed[field] or "[]")
+
+	return parsed
+
+
+@frappe.whitelist()
+def submit_terms(name: str) -> dict:
+	"""Freeze a terms of reference's wording. Idempotent on one already submitted.
+
+	The deliberate act that makes a mission agreeable to. Gated on submit
+	permission, which is a grant of its own rather than a consequence of write:
+	writing the document and declaring it final are two different authorities,
+	and a society may well give them to different people.
+	"""
+	_readable(TERMS_DOCTYPE, name)
+
+	return terms.submit(name)
+
+
+@frappe.whitelist()
+def tor_methodologies() -> dict:
+	"""The society's own register of ways it goes about the work.
+
+	The approach tab's picker. Active ones only: a retired methodology stays on
+	every terms of reference already citing it and is not offered for a new one,
+	which is the same rule every other vocabulary in this app follows.
+
+	`get_all` rather than `get_list`, deliberately: this is configuration
+	vocabulary with no geo anchor, the same footing `application_options` reads
+	skills and languages on. There is nothing here to scope.
+	"""
+	rows = frappe.get_all(
+		"VMMS TOR Methodology",
+		filters={"is_active": 1},
+		fields=["name", "methodology_name", "description"],
+		order_by="methodology_name asc",
+	)
+
+	return {"methodologies": rows}
 
 
 @frappe.whitelist()
@@ -754,12 +1140,13 @@ def get_terms(name: str) -> dict:
 	)
 
 	return {
-		"terms": terms.dto(name),
+		# `mission_dto`, not `dto`: this is the one screen that shows a terms of
+		# reference in full, so it is the one place that pays for reading the six
+		# child tables. Every other caller — every deployment header, every list
+		# row — gets the lean summary, which is why `dto` stays lean.
+		"terms": terms.mission_dto(name),
 		"document": tor_document.render_document(name)["body"],
-		"deployments": [
-			deployment_service.status_dto(frappe.get_doc(DEPLOYMENT_DOCTYPE, n))
-			for n in deployment_names
-		],
+		"deployments": _status_rows(deployment_names),
 	}
 
 
@@ -784,6 +1171,7 @@ def create_deployment(
 	geo_node: str,
 	start_date: str,
 	end_date: str,
+	volunteers_required: int | None = None,
 	notes: str | None = None,
 ) -> dict:
 	"""Set up a deployment directly, under terms that already exist.
@@ -792,6 +1180,9 @@ def create_deployment(
 	and that path is deliberately untouched: this is the branch running its own
 	duty rather than asking anybody for people. The insert is ordinary, so core's
 	query condition refuses a deployment anchored outside the caller's own area.
+
+	`volunteers_required` is optional and zero means the society has not said —
+	a deployment that has not said how many it needs is never full.
 	"""
 	frappe.has_permission(DEPLOYMENT_DOCTYPE, ptype="create", throw=True)
 
@@ -800,6 +1191,7 @@ def create_deployment(
 		geo_node=geo_node,
 		start_date=start_date,
 		end_date=end_date,
+		volunteers_required=volunteers_required,
 		notes=notes,
 	)
 

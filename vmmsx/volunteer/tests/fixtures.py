@@ -208,23 +208,35 @@ def make_user(handle: str, roles: list[str] | None = None) -> str:
 	return email
 
 
-def make_profile(first_name: str = "Wanjiru", last_name: str = "Kamau", **kwargs) -> str:
-	"""A Red Profile — core's identity spine. The volunteer links to this."""
-	slug = f"{first_name}.{last_name}".lower()
+#: A date of birth for anybody the fixtures make. Old enough to volunteer, and
+#: fixed rather than derived from `today()` so an age-dependent assertion cannot
+#: change its answer on somebody's birthday.
+DEFAULT_DATE_OF_BIRTH = "1990-01-01"
 
-	return (
-		frappe.get_doc(
-			{
-				"doctype": "Red Profile",
-				"first_name": first_name,
-				"last_name": last_name,
-				"email": kwargs.pop("email", f"{slug}.{frappe.generate_hash(length=6)}{USER_DOMAIN}"),
-				**kwargs,
-			}
-		)
-		.insert()
-		.name
-	)
+
+def make_profile(first_name: str = "Wanjiru", last_name: str = "Kamau", **kwargs) -> str:
+	"""A Red Profile — core's identity spine. The volunteer links to this.
+
+	**It carries a date of birth by default**, because `assert_ready` requires
+	one to submit a volunteer application: optional on the profile, mandatory
+	there, the same asymmetry identification has. Without it every suite that
+	submits an application would be arranging an applicant the product refuses,
+	and would be testing the refusal rather than the thing it means to test.
+
+	Pass `date_of_birth=None` to build somebody core knows nothing about — which
+	is what a test *about* that requirement wants.
+	"""
+	slug = f"{first_name}.{last_name}".lower()
+	values = {
+		"doctype": "Red Profile",
+		"first_name": first_name,
+		"last_name": last_name,
+		"email": kwargs.pop("email", f"{slug}.{frappe.generate_hash(length=6)}{USER_DOMAIN}"),
+		"date_of_birth": DEFAULT_DATE_OF_BIRTH,
+	}
+	values.update(kwargs)
+
+	return frappe.get_doc(values).insert().name
 
 
 def make_assignment(user: str, role: str, geo_node: str) -> str:
@@ -543,6 +555,9 @@ def make_deployment(geo_node: str, participants: list[str] | None = None, **over
 			"is_active": 1,
 		}
 	).insert()
+	# Submitted, because `terms.assert_offered` refuses a draft: a deployment
+	# cannot be run under wording that can still be edited.
+	terms.submit()
 
 	values = {
 		"doctype": DEPLOYMENT_DOCTYPE,
@@ -551,11 +566,21 @@ def make_deployment(geo_node: str, participants: list[str] | None = None, **over
 		"start_date": today(),
 		"end_date": add_days(today(), 7),
 		"status": "Planned",
-		"participants": [{"volunteer": name} for name in participants or []],
 	}
 	values.update(overrides)
 
-	return frappe.get_doc(values).insert()
+	deployment = frappe.get_doc(values).insert()
+
+	# The roster is a register of `VMMS Deployment Assignment` documents rather
+	# than a child table, so it is raised after the insert. `Assigned` — placed
+	# by a coordinator, not asked — because a test naming a roster up front is
+	# describing who went.
+	from vmmsx.deployment.services import assignment
+
+	for volunteer in participants or []:
+		assignment.create(deployment, volunteer, status=assignment.STATUS_ASSIGNED)
+
+	return deployment
 
 
 def make_time_log(volunteer: str, geo_node: str, **overrides):

@@ -164,9 +164,7 @@ def _titles(certification_keys: list[str]) -> list[str]:
 	titles = []
 
 	for key in certification_keys or []:
-		titles.append(
-			frappe.db.get_value("VMMS Certification Type", key, "certification_type_name") or key
-		)
+		titles.append(frappe.db.get_value("VMMS Certification Type", key, "certification_type_name") or key)
 
 	return titles
 

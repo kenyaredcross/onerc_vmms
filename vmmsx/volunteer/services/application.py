@@ -153,6 +153,7 @@ def assert_ready(application) -> None:
 	somebody creates a question, so a society that has added none is unaffected.
 	"""
 	_assert_identification(application)
+	_assert_date_of_birth(application)
 	_assert_residency_complete(application)
 	questions.assert_answered(application)
 
@@ -169,6 +170,42 @@ def _assert_identification(application) -> None:
 		),
 		frappe.MandatoryError,
 		title=_("Missing Identification"),
+	)
+
+
+def _assert_date_of_birth(application) -> None:
+	"""A volunteer's date of birth is required. It is read off the Red Profile.
+
+	**Why the profile and not the application.** `applicant_date_of_birth` is a
+	transient intake buffer: `intake.claim_profile` reads it in `before_insert`
+	and blanks it, so by the time anything is submitted the field is empty on
+	every application whether or not a date was ever given. The date itself lives
+	on the Red Profile, which is core's spine and the only place identity is held,
+	so that is the only honest thing to test.
+
+	**Why it is mandatory here and optional on the profile.** The same asymmetry
+	`_assert_identification` states. Core will hold a person it knows nothing
+	about; a society sending somebody on a deployment will not. Age governs what a
+	volunteer may be asked to do and what safeguarding applies to them, and a
+	register that cannot answer how old its volunteers are cannot answer either.
+	Nothing is backfilled — an application already accepted is untouched, because
+	this runs at submission and not at save.
+	"""
+	profile = application.get("red_profile")
+	given = application.get("applicant_date_of_birth") or (
+		frappe.db.get_value("Red Profile", profile, "date_of_birth") if profile else None
+	)
+
+	if given:
+		return
+
+	frappe.throw(
+		_(
+			"An application cannot be submitted without a date of birth. Add it to your profile"
+			" and submit again."
+		),
+		frappe.MandatoryError,
+		title=_("Missing Date of Birth"),
 	)
 
 
@@ -626,6 +663,17 @@ def decision_dto(application) -> dict:
 		"full_name": identity.display_name(application),
 		"email": person.get("email"),
 		"phone": person.get("phone"),
+		# The face, and the two facts a volunteering office is asked for
+		# constantly. All three are already in `identity._READABLE` and were
+		# already being read on the line above — they were simply never put in
+		# the payload, so the approver's screen showed initials in a circle for
+		# an applicant who has uploaded a photograph. Read live from Red Profile
+		# like everything else here; nothing is copied onto the application.
+		"profile_photo": person.get("profile_photo"),
+		"gender": person.get("gender"),
+		"date_of_birth": person.get("date_of_birth"),
+		"preferred_language": person.get("preferred_language"),
+		"applied_on": application.applied_on,
 		"country_of_citizenship": application.country_of_citizenship,
 		**residency,
 		"geo_node": application.geo_node,

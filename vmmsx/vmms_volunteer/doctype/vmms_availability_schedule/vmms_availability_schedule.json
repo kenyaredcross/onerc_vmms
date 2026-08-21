@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:volunteer",
+ "creation": "2026-08-20 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "volunteer",
+  "column_break_identity",
+  "available_on_holidays",
+  "period_section",
+  "valid_from",
+  "column_break_period",
+  "valid_to",
+  "pattern_section",
+  "available_days",
+  "notes_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Whose Schedule"
+  },
+  {
+   "description": "Whose availability this is. It is also the docname, and it is unique: a volunteer has one schedule, not one per year. A society that tried to keep several would have to decide which one a deployment asks, and there is no answer to that which is not a rule somebody has to remember.",
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Volunteer",
+   "options": "VMMS Volunteer",
+   "reqd": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Whether this person is willing to serve on a public holiday. Recorded because a society mounting a response over a holiday needs to know who it can ask without asking everybody. Nothing in this app reads a holiday calendar yet, so this is carried and shown rather than matched on; it is a fact a coordinator uses, not a filter the server applies.",
+   "fieldname": "available_on_holidays",
+   "fieldtype": "Check",
+   "label": "Available On Holidays"
+  },
+  {
+   "fieldname": "period_section",
+   "fieldtype": "Section Break",
+   "label": "How Long This Holds"
+  },
+  {
+   "description": "The first day this pattern describes. Optional: a volunteer who has not said means the pattern holds from now on, which is what most people mean when they fill in a weekly availability grid. Where it is set, a deployment beginning before it is not matched against this schedule.",
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From"
+  },
+  {
+   "fieldname": "column_break_period",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The last day this pattern describes — a student free until term restarts, somebody available until they move. Optional, and empty means indefinitely. Refused if it falls before the start.",
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "label": "Valid To"
+  },
+  {
+   "fieldname": "pattern_section",
+   "fieldtype": "Section Break",
+   "label": "The Weekly Pattern"
+  },
+  {
+   "description": "Which windows on which days this volunteer is free. One row per day-and-slot pair, so a person free on Saturday mornings and all day Sunday has three rows rather than a sentence somebody has to read. Deliberately a *pattern* rather than a list of dates: a volunteer fills this in once, and a schedule expanded into a dated row per day for a year would be tens of thousands of rows that go stale the moment somebody's Tuesdays change.",
+   "fieldname": "available_days",
+   "fieldtype": "Table",
+   "label": "Available Days",
+   "options": "VMMS Availability Day"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "Anything about when this person can serve that the pattern cannot say. Never read by code.",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Availability Schedule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "volunteer",
+ "track_changes": 1
+}

@@ -83,6 +83,7 @@ TRANSFER_MODE_SETTING = "vmms_transfer_approval_mode"
 
 TERMS_DOCTYPE = "VMMS Terms of Reference"
 DEPLOYMENT_DOCTYPE = "VMMS Deployment"
+ASSIGNMENT_DOCTYPE = "VMMS Deployment Assignment"
 REQUEST_DOCTYPE = "VMMS Deployment Request"
 TRANSFER_DOCTYPE = "VMMS Branch Transfer"
 VOLUNTEER_DOCTYPE = "VMMS Volunteer"
@@ -319,9 +320,20 @@ def make_certification(volunteer: str, certification_type: str, completion_date=
 	).insert()
 
 
-def make_terms(key: str = TOR_FLOOD, **overrides):
-	"""One terms of reference. Direct approval unless a test asks otherwise."""
+def make_terms(key: str = TOR_FLOOD, submit: bool = True, **overrides):
+	"""One terms of reference. Direct approval unless a test asks otherwise.
+
+	**Submitted by default**, because that is the state terms have to be in to
+	take a deployment: `terms.assert_offered` refuses a draft, on the grounds
+	that somebody accepting an assignment is accepting wording that can still be
+	edited. A test about the draft state itself passes `submit=False`.
+	"""
 	if frappe.db.exists(TERMS_DOCTYPE, key):
+		# Dropped back to a draft before it is deleted. `force=True` skips the
+		# link checks but not the submitted check, and a terms of reference left
+		# over from a previous test in this class is submitted by the time the
+		# next one asks for it.
+		frappe.db.set_value(TERMS_DOCTYPE, key, "docstatus", 0, update_modified=False)
 		frappe.delete_doc(TERMS_DOCTYPE, key, force=True)
 
 	values = {
@@ -334,7 +346,12 @@ def make_terms(key: str = TOR_FLOOD, **overrides):
 	}
 	values.update(overrides)
 
-	return frappe.get_doc(values).insert()
+	doc = frappe.get_doc(values).insert()
+
+	if submit:
+		doc.submit()
+
+	return doc
 
 
 def make_terms_requiring(mandatory: tuple = (), desirable: tuple = (), **overrides):
@@ -344,8 +361,11 @@ def make_terms_requiring(mandatory: tuple = (), desirable: tuple = (), **overrid
 	Frappe rolls the test transaction back once per *class*, not per method, so a
 	shared terms of reference that one method added a requirement to would still
 	carry it for the next method, and the test that then passed would be lying.
+
+	The requirements go on while it is still a draft, and it is submitted after —
+	a submitted document refuses the very `save()` this used to do.
 	"""
-	terms = make_terms(f"{TEST_PREFIX}-tor-{frappe.generate_hash(length=8)}", **overrides)
+	terms = make_terms(f"{TEST_PREFIX}-tor-{frappe.generate_hash(length=8)}", submit=False, **overrides)
 
 	for key in mandatory:
 		terms.append("required_certifications", {"certification_type": key, "is_mandatory": 1})
@@ -355,6 +375,8 @@ def make_terms_requiring(mandatory: tuple = (), desirable: tuple = (), **overrid
 
 	if mandatory or desirable:
 		terms.save()
+
+	terms.submit()
 
 	return terms
 
@@ -420,7 +442,17 @@ def make_volunteer(profile: str, home_geo_node: str, active: bool = True):
 
 
 def make_deployment(terms: str, geo_node: str, participants: list[str] | None = None, **overrides):
-	"""A deployment, running today unless a test says otherwise."""
+	"""A deployment, running today unless a test says otherwise.
+
+	`participants` names people who are **on** it — `Assigned`, the status that
+	means a coordinator placed them without asking. The roster is a register of
+	`VMMS Deployment Assignment` documents rather than a child table, so this
+	raises one per person after the insert instead of passing a list of rows into
+	it. Tests that want the question rather than the placement call
+	`assignment.create(..., status=Pending)` themselves, or `invitation.invite`.
+	"""
+	from vmmsx.deployment.services import assignment as assignment_service
+
 	values = {
 		"doctype": DEPLOYMENT_DOCTYPE,
 		"terms_of_reference": terms,
@@ -428,11 +460,38 @@ def make_deployment(terms: str, geo_node: str, participants: list[str] | None = 
 		"start_date": today(),
 		"end_date": add_days(today(), 7),
 		"status": "Planned",
-		"participants": [{"volunteer": name} for name in participants or []],
 	}
 	values.update(overrides)
 
-	return frappe.get_doc(values).insert()
+	deployment = frappe.get_doc(values).insert()
+
+	for volunteer in participants or []:
+		assignment_service.create(deployment, volunteer, status=assignment_service.STATUS_ASSIGNED)
+
+	return deployment
+
+
+def make_deployment_assignment(deployment, volunteer: str, **overrides):
+	"""One deployment assignment, asked rather than placed unless a test says otherwise.
+
+	Named in full rather than `make_assignment`, which this module already uses
+	for core's own `Geo Assignment` — authority held at a place. Two things called
+	an assignment is unfortunate and neither is this app's to rename, so the
+	longer name goes to the newer one.
+
+	`Pending` is the default here and `Assigned` is the default in
+	`make_deployment` above, which is not an inconsistency: a test naming a roster
+	up front is describing who went, and a test raising one assignment by hand is
+	almost always about the question and the answer.
+	"""
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	return assignment_service.create(
+		deployment,
+		volunteer,
+		status=overrides.pop("status", assignment_service.STATUS_PENDING),
+		**overrides,
+	)
 
 
 def make_request(terms: str, geo_node: str, **overrides):
@@ -504,6 +563,11 @@ def reset() -> None:
 		TIME_LOG_DOCTYPE,
 		TRANSFER_DOCTYPE,
 		REQUEST_DOCTYPE,
+		# Before the deployments it hangs off, and it has to be here at all: an
+		# assignment left behind when its deployment is deleted attaches itself
+		# to the next record that takes the same docname, and the roster a test
+		# then reads has somebody else's people on it.
+		ASSIGNMENT_DOCTYPE,
 		DEPLOYMENT_DOCTYPE,
 		CERTIFICATION_DOCTYPE,
 	):

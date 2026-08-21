@@ -49,6 +49,9 @@ OPERATIONAL_DOCTYPES = (
 	"VMMS Stipend Progress Report",
 	# where they were sent
 	"VMMS Deployment Request",
+	# One person's place on a deployment, and it outlives neither: it points at
+	# the deployment and at the volunteer, so it goes before both.
+	"VMMS Deployment Assignment",
 	"VMMS Deployment",
 	# what they were told
 	"VMMS Notification",
@@ -72,6 +75,13 @@ CONFIGURATION_DOCTYPES = (
 	"VMMS Approval Workflow",
 	"VMMS Membership Type",
 	"VMMS Terms of Reference",
+	# A programme of work is operational rather than configuration, and it is
+	# listed here anyway: a terms of reference points at its project, and the
+	# rule this file is ordered by is dependants first. Leaving it out is what
+	# stranded a departing society's projects on an anchor `_empty_geo_nodes`
+	# had already force-deleted underneath them — a register that then threw
+	# "Geo Node GEO-00004 does not exist" at everybody who opened it.
+	"VMMS Project",
 	"VMMS Certification Type",
 	"VMMS Time Log Category",
 	"VMMS Announcement Type",

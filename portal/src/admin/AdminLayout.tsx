@@ -6,6 +6,7 @@ import { API } from "../lib/api";
 import { Icon } from "../ui/icons";
 import { Shell, type NavGroup, type NavItem } from "../ui/Shell";
 import { Spinner } from "../ui/primitives";
+import { QUEUES, QUEUE_KINDS, queueOf } from "./queues";
 import type { ApprovalStatus, RedProfile } from "../portal/types";
 
 /**
@@ -71,12 +72,28 @@ const VOLUNTEERS: TabDef = {
 	fallback: "Volunteers",
 	icon: Icon.people,
 };
-const QUEUE: TabDef = {
+// The review queue is one section and two lists. Splitting it into two sidebar
+// rows rather than one is the whole of the IA change: approving volunteers and
+// approving memberships are two jobs, done in batches, often by two different
+// people, and a coordinator clearing memberships should be able to open that
+// list and stay in it. They share a `section` because they share a permission —
+// `my_queue` is personal and answers for the caller alone, so there is no
+// second thing to gate.
+const QUEUE_VOLUNTEERS: TabDef = {
 	section: "queue",
-	to: "/admin/queue",
-	labelKey: "admin.nav.queue",
-	fallback: "Review queue",
-	icon: Icon.inbox,
+	// From the shared table, not typed again: the sidebar and the router must
+	// not be able to disagree about where a list lives.
+	to: QUEUES.volunteers.list,
+	labelKey: "admin.nav.queue.volunteers",
+	fallback: QUEUES.volunteers.heading,
+	icon: Icon.people,
+};
+const QUEUE_MEMBERS: TabDef = {
+	section: "queue",
+	to: QUEUES.members.list,
+	labelKey: "admin.nav.queue.members",
+	fallback: QUEUES.members.heading,
+	icon: Icon.card,
 };
 const ANALYTICS: TabDef = {
 	section: "analytics",
@@ -124,6 +141,18 @@ const EVENTS: TabDef = {
 	fallback: "Events",
 	icon: Icon.calendar,
 };
+// Addressing the people in the registers, on whichever of the three channels a
+// society has. Its own top-level tab rather than a child of People & Insight:
+// that group answers "who are my people and how are things going" and is
+// read-first, and this is an act — the one act in this console that cannot be
+// undone.
+const COMMUNICATION: TabDef = {
+	section: "communication",
+	to: "/admin/communication",
+	labelKey: "admin.nav.communication",
+	fallback: "Communication",
+	icon: Icon.bell,
+};
 const CONTENT: TabDef = {
 	section: "content",
 	to: "/admin/content",
@@ -159,7 +188,25 @@ const INSIGHT: GroupDef = {
 	labelKey: "admin.nav.group.insight",
 	fallback: "People & Insight",
 	icon: ANALYTICS.icon,
-	children: [MEMBERS, VOLUNTEERS, QUEUE],
+	children: [MEMBERS, VOLUNTEERS],
+};
+
+// The queue left People & Insight and became a group of its own. That group
+// answers "who are my people and how are things going" — read-first, nothing
+// in it is an act — and deciding an application is the opposite of that. It is
+// also the only tab in the console somebody comes to the console *to do*, so
+// burying it two levels down under an analytics heading was the wrong place
+// for it even before it became two lists.
+//
+// `/admin/queue` is the group's own route and redirects to the volunteer list,
+// which keeps every existing bookmark and the old sidebar link working.
+const QUEUE: GroupDef = {
+	section: "queue",
+	to: "/admin/queue",
+	labelKey: "admin.nav.queue",
+	fallback: "Review queue",
+	icon: Icon.inbox,
+	children: [QUEUE_VOLUNTEERS, QUEUE_MEMBERS],
 };
 
 const OPERATIONS: GroupDef = {
@@ -171,8 +218,8 @@ const OPERATIONS: GroupDef = {
 	children: [PROJECTS, TASKS],
 };
 
-const GROUPS = [INSIGHT, OPERATIONS];
-const FLAT = [OVERVIEW, STIPENDS, EVENTS, CONTENT, QUESTIONS];
+const GROUPS = [QUEUE, INSIGHT, OPERATIONS];
+const FLAT = [OVERVIEW, COMMUNICATION, STIPENDS, EVENTS, CONTENT, QUESTIONS];
 
 /**
  * Every routable tab this console can ever draw, gated or not — flattened out
@@ -280,10 +327,32 @@ export default function AdminLayout() {
 		return <Navigate to="/admin" replace />;
 	}
 
-	const waiting = queue.data?.message?.length ?? 0;
+	const waiting = queue.data?.message ?? [];
 
-	const withBadge = (item: NavItem): NavItem =>
-		item.to === QUEUE.to ? { ...item, badge: waiting } : item;
+	/**
+	 * The count on a queue row — the group's total, and each list's own.
+	 *
+	 * One `my_queue` read for all three, split here rather than fetched three
+	 * times: the queue is small by construction (it is what is routed to this
+	 * one person) and three requests for one answer would be three chances for
+	 * the sidebar to disagree with itself.
+	 *
+	 * Counted by `queueOf` against the shared table rather than by comparing
+	 * doctype names in this file, so the sidebar cannot come to disagree with
+	 * the screens about which list a doctype belongs in.
+	 */
+	const withBadge = (item: NavItem): NavItem => {
+		if (item.to === QUEUE.to) return { ...item, badge: waiting.length };
+
+		const kind = QUEUE_KINDS.find((key) => QUEUES[key].list === item.to);
+
+		if (!kind) return item;
+
+		return {
+			...item,
+			badge: waiting.filter((row) => queueOf(row.doctype) === kind).length,
+		};
+	};
 
 	// Overview first (ungated, so always present once the console is available
 	// at all), then the two groups, then the rest of `FLAT` in its own order —

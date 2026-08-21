@@ -15,6 +15,7 @@ from pathlib import Path
 
 import frappe
 
+from vmmsx.approvals import states
 from vmmsx.volunteer.services import application as application_service
 from vmmsx.volunteer.tests import fixtures
 from vmmsx.volunteer.tests.base import VolunteerTestCase
@@ -182,6 +183,51 @@ class TestIdentificationAsymmetry(VolunteerTestCase):
 
 		with self.assertRaises(frappe.MandatoryError):
 			application_service.submit(application)
+
+	def test_submission_is_refused_without_a_date_of_birth(self):
+		"""The same asymmetry identification has, for the same kind of reason.
+
+		Core will hold a person it knows nothing about; a society sending
+		somebody on a deployment will not. Age governs what a volunteer may be
+		asked to do and what safeguarding applies to them, and a register that
+		cannot answer how old its volunteers are cannot answer either.
+
+		Read off the **Red Profile**, not off the application:
+		`applicant_date_of_birth` is a transient intake buffer that
+		`intake.claim_profile` blanks in `before_insert`, so it is empty on every
+		application by the time anything is submitted, whether or not a date was
+		ever given.
+		"""
+		profile = fixtures.make_profile("No", "Birthday", date_of_birth=None)
+		id_type = fixtures.make_identification_type()
+		application = fixtures.make_application(
+			profile, self.society_a["ward"], id_type=id_type, id_number="ID-DOB-0001"
+		)
+
+		with self.assertRaises(frappe.MandatoryError):
+			application_service.submit(application)
+
+	def test_a_date_of_birth_added_later_unblocks_the_submission(self):
+		"""Nothing is backfilled and nothing is lost: the draft survives.
+
+		The check runs at submission rather than at save, so an application that
+		was refused is still there to correct — which is what the applicant is
+		told to do.
+		"""
+		profile = fixtures.make_profile("Late", "Birthday", date_of_birth=None)
+		id_type = fixtures.make_identification_type()
+		application = fixtures.make_application(
+			profile, self.society_a["ward"], id_type=id_type, id_number="ID-DOB-0002"
+		)
+
+		with self.assertRaises(frappe.MandatoryError):
+			application_service.submit(application)
+
+		frappe.db.set_value("Red Profile", profile, "date_of_birth", "1994-05-06")
+
+		application_service.submit(application.reload())
+
+		self.assertNotEqual(application.reload().get("approval_state"), states.DRAFT)
 
 	def test_submission_succeeds_and_writes_it_to_the_red_profile(self):
 		profile = fixtures.make_profile("Has", "Identification")

@@ -290,6 +290,50 @@ class TestFreeAndRoutedTogether(MemberTestCase):
 		self.assertEqual(row.approval_state, states.IN_REVIEW)
 		self.assertNotEqual(row.membership_status, membership_service.STATUS_ACTIVE)
 
+	def test_a_paid_membership_awaiting_approval_says_so(self):
+		"""What it is waiting for, not what it was waiting for when it was filed.
+
+		**The regression this exists for.** `_set_pending_status` ran only inside
+		`submit()`, so "what is this waiting for" was answered once, at
+		application, and never recomputed. Pay at the branch counter before the
+		branch has approved you and the membership kept the label **Awaiting
+		Payment** — on the member's own portal and on the register — with
+		`paid_on` set on the record the whole time.
+
+		The two tests above it pass either way: both ask only whether the
+		membership is *not yet Active*, which was true and stayed true. Nothing
+		asked what it actually said. `on_update` now re-derives the pending status
+		when activation is not yet possible, which is the only moment the answer
+		can have changed.
+		"""
+		membership = self.apply(fixtures.TYPE_ROUTED)
+
+		self.assertEqual(self.membership_status(membership), membership_service.STATUS_AWAITING_PAYMENT)
+
+		fixtures.confirm_payment_through_manual_driver(self.reload(membership))
+
+		row = self.reload(membership)
+
+		self.assertTrue(row.paid_on)
+		self.assertEqual(row.membership_status, membership_service.STATUS_AWAITING_APPROVAL)
+
+	def test_re_deriving_never_drags_a_finished_membership_backwards(self):
+		"""The guard on the fix above, which is the half that could do harm.
+
+		A membership that has been cancelled is not waiting for anything, and a
+		re-derivation that ignored its status would put a terminal record back
+		into a queue on the next ordinary save.
+		"""
+		membership = self.apply(fixtures.TYPE_ROUTED)
+		membership_service.cancel(self.reload(membership), reason="Applicant withdrew.")
+
+		row = self.reload(membership)
+		row.save(ignore_permissions=True)
+
+		self.assertEqual(
+			self.reload(membership).membership_status, membership_service.STATUS_CANCELLED
+		)
+
 	def test_the_seam_reports_settlement_from_configuration(self):
 		"""`payment.is_settled` answers from the type, not from a code path."""
 		membership = self.reload(self.apply(fixtures.TYPE_FREE))

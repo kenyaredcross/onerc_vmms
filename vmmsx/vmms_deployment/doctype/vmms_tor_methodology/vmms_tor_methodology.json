@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:methodology_key",
+ "creation": "2026-08-20 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "identity_section",
+  "methodology_name",
+  "methodology_key",
+  "column_break_identity",
+  "is_active",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "How a society describes one way of going about the work: Household Survey, Focus Group Discussion, Key Informant Interview, Door-to-Door Mobilisation. Display only. No methodology name appears in any source file, which is what lets a society add its own without anybody changing code.",
+   "fieldname": "methodology_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Methodology",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "The stable business key, and the docname. A terms of reference points at a methodology by this key, so relabelling it next year never rewrites the terms written this year. This is configuration vocabulary, so it is keyed by its business key rather than by an opaque series, the same rule VMMS Certification Type and VMMS Skill follow.",
+   "fieldname": "methodology_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "An inactive methodology stays on every terms of reference already citing it but is not offered for a new one. Retiring an approach must not rewrite the documents that used it.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "description": "What this approach involves, for whoever is choosing between them. Never read by code.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "translatable": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS TOR Methodology",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "methodology_name",
+ "track_changes": 1
+}

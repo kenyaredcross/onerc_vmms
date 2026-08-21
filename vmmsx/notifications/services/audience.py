@@ -36,7 +36,6 @@ against the profile's email address independently of this.
 from collections.abc import Callable
 
 import frappe
-
 from onerc_core.geo.services import adapter
 
 PROFILE_DOCTYPE = "Red Profile"
@@ -172,6 +171,31 @@ def logins(profiles_: set[str]) -> dict[str, str]:
 	)
 
 	return {row.name: row.user for row in rows if row.user}
+
+
+def phones(profiles_: set[str]) -> list[str]:
+	"""Numbers for the same people, for the SMS channel.
+
+	The third of three independent reaches, and it is independent for the reason
+	the second one is: somebody with a number and no login is exactly who SMS is
+	for, and deriving this list from either of the others would quietly drop
+	them. `logins`, `emails` and this are three different answers to "how do we
+	get hold of these people", resolved from one set of Red Profiles.
+
+	Deduplicated and sorted, so a household sharing a number is texted once and
+	a campaign built twice from the same audience is the same campaign.
+	"""
+	if not profiles_:
+		return []
+
+	rows = frappe.get_all(
+		PROFILE_DOCTYPE,
+		filters={"name": ["in", sorted(profiles_)], "phone": ["is", "set"]},
+		pluck="phone",
+		ignore_permissions=True,  # Same argument as `_volunteers`.
+	)
+
+	return sorted({(row or "").strip() for row in rows if (row or "").strip()})
 
 
 def emails(profiles_: set[str]) -> list[str]:

@@ -212,7 +212,10 @@ def _the_frontend(w) -> None:
 				"/portal",
 				"The public page, composed from option 7a of the design: full-bleed photo bands,"
 				" an overlay card on the hero, a four-up card row. Not one sentence of it is in"
-				" the source; the composition is, and nothing else.",
+				" the source; the composition is, and nothing else. Two things on it are not"
+				" sentences and not editable either — the volunteer figure, counted off the"
+				" register by society.figures, and the events band, read from Buzz by"
+				" events.teaser. Both were typed once and both went stale.",
 			],
 			[
 				"Join wizard",
@@ -348,10 +351,13 @@ def _not_built(w) -> None:
 		[
 			[
 				"Events",
-				"Nothing exists",
-				"No VMMS Event doctype, no roster, no RSVP, no check-in, no API. The events on the"
-				" public landing page are wording an administrator typed into content blocks,"
-				" which is the honest answer to having no event records.",
+				"Real, and Buzz's",
+				"Buzz owns the event, the tickets, the payment and the check-in;"
+				" buzz/services/events.py reads its published listing and api/events.py serves"
+				" it. What this app owns is VMMS Event Attendance — the society's own record"
+				" that somebody said they mean to be there, which is not a booking. The public"
+				" landing page shows the next three published events through events.teaser and"
+				" falls back to administrator-typed content blocks only where there are none.",
 			],
 			[
 				"Opportunity browsing",

@@ -4,13 +4,13 @@ import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react
 
 import { API, cardUrl, certificateUrl, errorMessage } from "../lib/api";
 import { formatDate, formatHours, formatMoney, geoPath } from "../lib/format";
+import { PersonHero, RegisterLinks } from "../ui/PersonHero";
 import {
 	Button,
 	Card,
 	Cell,
 	Empty,
 	ErrorNote,
-	PageHeading,
 	Pill,
 	Row,
 	SectionTitle,
@@ -52,6 +52,19 @@ import type {
  * skills and the skills they declared when applying are drawn in two different
  * blocks and never reconciled. One is what is true, the other is what was
  * claimed, and a coordinator comparing them is the point.
+ *
+ * **Both registers open with the same header**, `PersonHero` — a face, a name,
+ * a standing and the four or five facts somebody needs in order to act, with
+ * everything else in the cards beneath. That is the same block the review queue
+ * and the volunteer's own portal profile open with, so a person looks like a
+ * person on every screen in this product rather than like a docname on some of
+ * them. See the component for the argument.
+ *
+ * **A volunteer here can say they are also a member, and the other way round.**
+ * The two registers hang off one Red Profile, the server resolves the hop
+ * (`api/person.py`), and the chip links straight across. It is the question a
+ * counter asks immediately after opening either record, and answering it used
+ * to mean leaving the page and searching the other register by name.
  */
 export default function Person() {
 	const { kind, name } = useParams<{ kind: string; name: string }>();
@@ -98,12 +111,30 @@ function VolunteerPage({ name }: { name: string }) {
 
 	return (
 		<>
-			<PersonHeading
-				kind="volunteer"
-				fullName={person.full_name}
+			<BackToRegister kind="volunteer" />
+
+			<PersonHero
+				name={person.full_name}
+				photo={person.profile_photo}
 				docname={dossier.volunteer}
+				// Two Geo Nodes answering two different questions, under names that
+				// differ. Calling either of them simply "branch" is the confusion
+				// ACC-02 invites, so the serving branch is labelled where it sits
+				// and the home area stays a fact below.
+				subtitle={geoPath(person.geo_path) || "No serving branch recorded"}
 				status={person.status}
-				asOf={dossier.as_of}
+				badges={
+					<>
+						<RegisterLinks registers={dossier.registers} except="volunteer" />
+						<Pill tone="page">as at {formatDate(dossier.as_of)}</Pill>
+					</>
+				}
+				facts={[
+					{ label: "Email", value: person.email },
+					{ label: "Phone", value: person.phone },
+					{ label: "Joined", value: formatDate(person.joined_on) },
+					{ label: "Home area", value: geoPath(person.home_geo_path) },
+				]}
 			/>
 
 			{dossier.can_act && (
@@ -125,12 +156,16 @@ function VolunteerPage({ name }: { name: string }) {
 				</Card>
 			)}
 
+			{/* What the header could not carry. The contact details, the joining
+			    date and the home area are above; these are the facts a
+			    volunteering office is asked for rather than the ones needed to
+			    reach somebody, and here they say "Not recorded" out loud when
+			    they are missing — which in a card is a finding rather than a
+			    blank. */}
 			<Card className="mb-5">
 				<SectionTitle>Who they are</SectionTitle>
 				<Definitions
 					rows={[
-						["Email", person.email],
-						["Phone", person.phone],
 						["Gender", person.gender],
 						["Date of birth", formatDate(person.date_of_birth)],
 						["Preferred language", person.preferred_language],
@@ -139,7 +174,6 @@ function VolunteerPage({ name }: { name: string }) {
 						// confusion ACC-02 invites.
 						["Serving branch", geoPath(person.geo_path)],
 						["Home area", geoPath(person.home_geo_path)],
-						["Joined", formatDate(person.joined_on)],
 						["Exited", formatDate(person.exited_on)],
 					]}
 				/>
@@ -324,20 +358,39 @@ function MemberPage({ name }: { name: string }) {
 
 	return (
 		<>
-			<PersonHeading
-				kind="member"
-				fullName={person.full_name}
+			<BackToRegister kind="member" />
+
+			<PersonHero
+				name={person.full_name}
+				photo={person.profile_photo}
 				docname={dossier.member}
+				// Where they currently hold a membership, which is the thing a
+				// membership desk needs beside the name. A person may hold several,
+				// so this is every current branch rather than "the" branch.
+				subtitle={
+					dossier.standing.current_geo_paths.map((path) => geoPath(path)).join(" · ") ||
+					"No current membership"
+				}
 				status={dossier.standing.status}
-				asOf={dossier.as_of}
+				badges={
+					<>
+						<RegisterLinks registers={dossier.registers} except="member" />
+						<Pill tone="page">as at {formatDate(dossier.as_of)}</Pill>
+					</>
+				}
+				facts={[
+					{ label: "Email", value: person.email },
+					{ label: "Phone", value: person.phone },
+					{ label: "Member since", value: formatDate(dossier.standing.joined_on) },
+					{ label: "Home area", value: geoPath(person.home_geo_path) },
+				]}
 			/>
 
+			{/* What the header could not carry — see the volunteer page's note. */}
 			<Card className="mb-5">
 				<SectionTitle>Who they are</SectionTitle>
 				<Definitions
 					rows={[
-						["Email", person.email],
-						["Phone", person.phone],
 						["Gender", person.gender],
 						["Date of birth", formatDate(person.date_of_birth)],
 						["Preferred language", person.preferred_language],
@@ -355,9 +408,10 @@ function MemberPage({ name }: { name: string }) {
 					<Pill tone="page">{dossier.standing.lapsed_count} lapsed</Pill>
 					<Pill tone="page">{dossier.standing.visible_count} visible to you</Pill>
 				</div>
+				{/* "Member since" and the current branches are in the header. What is
+				    left here is the counting, which is what this card is for. */}
 				<Definitions
 					rows={[
-						["Member since", formatDate(dossier.standing.joined_on)],
 						[
 							"Currently a member at",
 							dossier.standing.current_geo_paths.map((path) => geoPath(path)).join(" · "),
@@ -424,40 +478,26 @@ function MemberPage({ name }: { name: string }) {
 
 /* --------------------------------------------------------------- the pieces */
 
-function PersonHeading({
-	kind,
-	fullName,
-	docname,
-	status,
-	asOf,
-}: {
-	kind: "volunteer" | "member";
-	fullName: string | null;
-	docname: string;
-	status?: string | null;
-	asOf: string;
-}) {
+/**
+ * The way back, in words rather than left to the browser's own button.
+ *
+ * A coordinator who arrived here from a colleague's link has no back button
+ * that goes anywhere useful, and a page that can only be left by retyping a URL
+ * is a dead end. This is the same link the review queue's decision page draws
+ * above its own header, for the same reason.
+ *
+ * There is no `PageHeading` above it any more: `PersonHero` *is* this page's
+ * heading, and a title bar repeating the name above a block that opens with the
+ * name reads as a template with a hole in it.
+ */
+function BackToRegister({ kind }: { kind: "volunteer" | "member" }) {
 	return (
-		<>
-			<Link
-				to={kind === "volunteer" ? "/admin/registry/volunteers" : "/admin/registry/members"}
-				className="mb-4 inline-block text-[12px] font-semibold text-navy hover:underline"
-			>
-				{kind === "volunteer" ? "← Back to volunteers" : "← Back to members"}
-			</Link>
-			<PageHeading
-				title={fullName || docname}
-				actions={
-					<div className="flex flex-wrap items-center gap-2">
-						<StateBadge state={status ?? undefined} />
-						<Pill tone="page">as at {formatDate(asOf)}</Pill>
-					</div>
-				}
-			/>
-			{/* The opaque docname stays visible and copyable: it is what an audit
-			    trail, a report and a support conversation refer to. */}
-			<p className="-mt-4 mb-6 font-mono text-[12px] text-slate-faint">{docname}</p>
-		</>
+		<Link
+			to={kind === "volunteer" ? "/admin/registry/volunteers" : "/admin/registry/members"}
+			className="mb-4 inline-block text-[12px] font-semibold text-navy hover:underline"
+		>
+			{kind === "volunteer" ? "← Back to volunteers" : "← Back to members"}
+		</Link>
 	);
 }
 

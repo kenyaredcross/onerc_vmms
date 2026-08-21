@@ -168,8 +168,16 @@ class TestANonParticipantIsRefusedAtSave(OwnershipTestCase):
 				self.insider.name, self.society_a["branch"], log_type=timelog.TYPE_DEPLOYMENT
 			)
 
-	def test_removing_somebody_from_the_roster_stops_their_logs(self):
-		"""The rule reads the roster now, not the roster the caller once saw."""
+	def test_withdrawing_somebody_stops_their_logs(self):
+		"""The rule reads the register now, not the roster the caller once saw.
+
+		Withdrawing is what taking somebody off looks like since the roster became
+		a register of documents: the assignment stays, so the society keeps the
+		record that this person was on the deployment and was taken off it, and
+		the ownership rule stops admitting their logs from that moment.
+		"""
+		from vmmsx.deployment.services import assignment
+
 		volunteer = fixtures.make_volunteer(fixtures.make_profile("Was", "Onit"), self.society_a["branch"])
 		deployment = fixtures.make_deployment(
 			self.terms.name, self.society_a["branch"], participants=[volunteer.name]
@@ -177,8 +185,7 @@ class TestANonParticipantIsRefusedAtSave(OwnershipTestCase):
 
 		self.assertTrue(self.deployment_log(volunteer.name, deployment.name).name)
 
-		deployment.participants = []
-		deployment.save()
+		assignment.withdraw(assignment.open_assignment(deployment.name, volunteer.name))
 
 		with self.assertRaises(frappe.ValidationError):
 			self.deployment_log(volunteer.name, deployment.name)

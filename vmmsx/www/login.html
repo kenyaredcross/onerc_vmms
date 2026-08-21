@@ -200,53 +200,96 @@
 			</section>
 			{%- endif %}
 
+			{#- Two panels in one card, and only ever one of them on screen. See the
+			    note over `vmmsSignup` in the script block for why this page owns the
+			    sign-up submit rather than leaving it to `login.js`. -#}
 			<section class="for-signup {{ 'signup-disabled' if disable_signup else '' }}">
 				<div class="login-content page-card">
 					{%- if not disable_signup %}
-					{{ heading(
-						words.get("login.signup.eyebrow") or _("Get started"),
-						words.get("login.signup.title") or _("Create your account"),
-						words.get("login.signup.body") or _("We will email you a link to set a password.")
-					) }}
-					<form class="form-signin form-signup hide" role="form" novalidate>
+					<div class="signup-start">
+						{{ heading(
+							words.get("login.signup.eyebrow") or _("Get started"),
+							words.get("login.signup.title") or _("Create your account"),
+							words.get("login.signup.body") or _("We will email you a link to set a password.")
+						) }}
+						<form class="form-signin form-signup hide" role="form" novalidate>
+							<div class="page-card-body">
+								{{ alert_banner("success") }}
+								{{ alert_banner("error") }}
+								<div class="form-group">
+									<label for="signup_fullname">{{ _("Full Name") }}</label>
+									<input
+										type="text"
+										id="signup_fullname"
+										class="form-control"
+										placeholder="{{ _('Jane Doe') }}"
+										required
+										autocomplete="name"
+									>
+									<p class="field-error"></p>
+								</div>
+								<div class="form-group">
+									<label for="signup_email">{{ _("Email") }}</label>
+									<input
+										type="email"
+										id="signup_email"
+										class="form-control"
+										placeholder="{{ _('name@example.com') }}"
+										required
+										autocomplete="username"
+									>
+									<p class="field-error"></p>
+								</div>
+							</div>
+							<div class="page-card-actions">
+								<button class="es-button btn-primary btn-signup" data-variant="solid" type="submit" disabled>
+									{{ _("Create Account") }}
+								</button>
+							</div>
+						</form>
+						<p class="sign-up-message">
+							{{ words.get("login.signup.prompt") or _("Already have one?") }}
+							<a href="#login">{{ words.get("login.signup.action") or _("Sign in") }} &rsaquo;</a>
+						</p>
+					</div>
+
+					{#- What replaces the form once the account exists. The address is
+					    written in by the script, because it is the one thing on this
+					    panel that is neither the framework's nor the society's — it is
+					    what the person just typed, and seeing it is how they catch the
+					    typo that is otherwise a link into nowhere. -#}
+					<div class="signup-sent hidden">
+						<div class="page-card-head">
+							<p class="auth-eyebrow">{{ words.get("login.signup.sent_eyebrow") or _("Almost there") }}</p>
+							<h1 class="auth-title">{{ words.get("login.signup.sent_title") or _("Check your email") }}</h1>
+							<p class="auth-sub signup-sent-body">
+								{{ words.get("login.signup.sent_body") or _("We have sent a link to set your password. Open it and you can finish signing up.") }}
+							</p>
+							<p class="auth-address"><span class="signup-sent-email"></span></p>
+						</div>
+
 						<div class="page-card-body">
 							{{ alert_banner("success") }}
 							{{ alert_banner("error") }}
-							<div class="form-group">
-								<label for="signup_fullname">{{ _("Full Name") }}</label>
-								<input
-									type="text"
-									id="signup_fullname"
-									class="form-control"
-									placeholder="{{ _('Jane Doe') }}"
-									required
-									autocomplete="name"
-								>
-								<p class="field-error"></p>
-							</div>
-							<div class="form-group">
-								<label for="signup_email">{{ _("Email") }}</label>
-								<input
-									type="email"
-									id="signup_email"
-									class="form-control"
-									placeholder="{{ _('name@example.com') }}"
-									required
-									autocomplete="username"
-								>
-								<p class="field-error"></p>
-							</div>
+							{#- Where the resend's server message goes to be forgotten. See
+							    the note beside `error_msg` in the script block: without a
+							    slot, `frappe.process_response` opens a modal over the
+							    page. -#}
+							<span class="signup-message-sink hidden"></span>
 						</div>
-						<div class="page-card-actions">
-							<button class="es-button btn-primary btn-signup" data-variant="solid" type="submit" disabled>
-								{{ _("Create Account") }}
+
+						<div class="page-card-actions signup-resend">
+							<button class="es-button btn-primary btn-resend-signup" data-variant="solid" type="button">
+								{{ _("Resend the link") }}
 							</button>
+							<p class="auth-cooldown hidden"></p>
 						</div>
-					</form>
-					<p class="sign-up-message">
-						{{ words.get("login.signup.prompt") or _("Already have one?") }}
-						<a href="#login">{{ words.get("login.signup.action") or _("Sign in") }} &rsaquo;</a>
-					</p>
+
+						<p class="sign-up-message">
+							{{ _("Wrong address?") }}
+							<a href="#signup" class="btn-signup-restart">{{ _("Start again") }} &rsaquo;</a>
+						</p>
+					</div>
 					{%- else %}
 					{{ heading(
 						words.get("login.signup.eyebrow") or _("Get started"),
@@ -380,6 +423,292 @@
 		} catch (e) {
 			/* Private browsing refuses localStorage. The server's answer stands. */
 		}
+	})();
+
+	/*
+		Creating an account, and the one flow on this page the framework's script
+		does not own.
+
+		**What was wrong with letting it.** `login.js` answers a successful sign-up
+		by writing "Success" onto the button and unhiding a green line above the
+		form — and then leaving the form there, filled in, with the name and the
+		address still in it. Everything about that reads as though there is still
+		something to do: a form on screen is an invitation to fill it in, and the
+		only thing a person can actually do at that moment is go and open their
+		email. Worse, there is nothing to do if the mail does not arrive. The
+		framework has no resend for sign-up, so the only route back was to type the
+		same address into the same form and be told "Already Registered".
+
+		**So this page answers its own sign-up.** The listener below is on
+		`document` in the *capture* phase, which is the only place a handler can sit
+		and be certain of running first: `login.js` binds its handler on the form
+		itself, and an event stopped on the way down never reaches it. Nothing else
+		about the framework's script is displaced — password sign-in, forgotten
+		password, sign-in by email link, LDAP and two-factor are all still its, and
+		the classes and ids it reads are all still on the page.
+
+		**The endpoints are the framework's own**, unwrapped: `sign_up` creates the
+		account and mails the link, and `reset_password` mails a fresh one. There is
+		no vmmsx endpoint here and there must not be — an app-owned door onto
+		account creation is a second implementation of a rule with somebody's
+		identity in it.
+
+		**The cooldown is the honest part of the resend.** `reset_password` is rate
+		limited on the server (`password_reset_limit`, an hour's window), so a
+		button somebody can press five times in five seconds is a button that spends
+		their whole allowance before the first mail has arrived. Sixty seconds is
+		long enough for a mail to land and short enough that nobody feels stuck, and
+		the button says what it is waiting for rather than simply refusing.
+	*/
+	(function () {
+		/* Seconds before the resend button becomes pressable again. */
+		var COOLDOWN = 60;
+
+		var TEXT = {
+			creating: {{ _("Creating your account…") | tojson }},
+			create: {{ _("Create Account") | tojson }},
+			resend: {{ _("Resend the link") | tojson }},
+			sending: {{ _("Sending…") | tojson }},
+			resent: {{ _("A fresh link is on its way. It replaces the first one.") | tojson }},
+			wait: {{ _("You can ask for another link in {0}s.") | tojson }},
+			name_required: {{ _("Full name is required.") | tojson }},
+			email_invalid: {{ _("Please enter a valid email.") | tojson }},
+			failed: {{ _("Your account could not be created. Please try again.") | tojson }},
+			resend_failed: {{ _("That link could not be sent. Please try again in a few minutes.") | tojson }},
+			pending: {{ (words.get("login.signup.pending_body") or _("Your account has been created, but this site cannot send email yet, so nobody could send you a link. Ask your branch to activate the account for you.")) | tojson }},
+		};
+
+		/* An address, roughly. The server is the authority — this only stops the
+		   obvious typo before a round trip, exactly as `login.js` does. */
+		var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+		var countdown = null;
+
+		function $start() { return $(".signup-start"); }
+		function $sent() { return $(".signup-sent"); }
+
+		function banner(scope, kind, message) {
+			var $el = $(scope + " .login-" + kind + "-banner");
+			$el.removeClass("hidden").find(".es-alert__title").text(message);
+		}
+
+		function clearBanners(scope) {
+			$(scope + " .login-error-banner, " + scope + " .login-success-banner").addClass("hidden");
+		}
+
+		function fieldError(id, message) {
+			$("#" + id).closest(".form-group").addClass("invalid").find(".field-error").text(message);
+		}
+
+		/* Back to a blank form. Called when somebody says the address was wrong,
+		   and whenever the hash moves — `login.reset_sections` empties the fields
+		   for us but knows nothing about the panel we put over them. */
+		function reset() {
+			if (countdown) { clearInterval(countdown); countdown = null; }
+			$sent().addClass("hidden");
+			$start().removeClass("hidden");
+			clearBanners(".signup-sent");
+			clearBanners(".form-signup");
+			$(".signup-sent .auth-cooldown").addClass("hidden").text("");
+			$(".form-signup .btn-signup").prop("disabled", true).text(TEXT.create);
+		}
+
+		function tick(left) {
+			var $note = $(".signup-sent .auth-cooldown");
+			var $button = $(".btn-resend-signup");
+
+			if (left <= 0) {
+				clearInterval(countdown);
+				countdown = null;
+				$note.addClass("hidden").text("");
+				$button.prop("disabled", false).text(TEXT.resend);
+				return;
+			}
+
+			$note.removeClass("hidden").text(TEXT.wait.replace("{0}", left));
+		}
+
+		function cooldown() {
+			var left = COOLDOWN;
+
+			if (countdown) clearInterval(countdown);
+			$(".btn-resend-signup").prop("disabled", true).text(TEXT.resend);
+			tick(left);
+
+			countdown = setInterval(function () {
+				left -= 1;
+				tick(left);
+			}, 1000);
+		}
+
+		/*
+			The account exists. `emailed` is the framework's own answer to whether
+			it managed to send anything: `sign_up` returns 1 when the mail went and
+			2 when the site has no outgoing email configured. Offering a resend in
+			the second case would be a button that cannot work, so the panel says
+			what actually happened instead.
+		*/
+		function showSent(email, emailed) {
+			$(".signup-sent-email").text(email);
+			clearBanners(".signup-sent");
+
+			if (emailed) {
+				$(".signup-resend").removeClass("hidden");
+				cooldown();
+			} else {
+				$(".signup-sent .signup-sent-body").text(TEXT.pending);
+				$(".signup-resend").addClass("hidden");
+			}
+
+			$start().addClass("hidden");
+			$sent().removeClass("hidden");
+		}
+
+		function signUp() {
+			var $name = $("#signup_fullname");
+			var $email = $("#signup_email");
+			var name = ($name.val() || "").trim();
+			var email = ($email.val() || "").trim();
+
+			clearBanners(".form-signup");
+			$(".form-signup .form-group").removeClass("invalid").find(".field-error").text("");
+
+			if (!EMAIL.test(email)) {
+				fieldError("signup_email", TEXT.email_invalid);
+				return;
+			}
+
+			if (!name) {
+				fieldError("signup_fullname", TEXT.name_required);
+				return;
+			}
+
+			var $button = $(".form-signup .btn-signup");
+			$button.prop("disabled", true).text(TEXT.creating);
+
+			frappe.call({
+				type: "POST",
+				url: "/",
+				args: {
+					cmd: "frappe.core.doctype.user.user.sign_up",
+					email: email,
+					/* The framework's own sanitisers, used the way `login.js` uses
+					   them, so what reaches `sign_up` is what it expects. */
+					full_name: frappe.utils.xss_sanitise(name),
+					redirect_to: frappe.utils.sanitise_redirect(frappe.utils.get_url_arg("redirect-to")) || "",
+				},
+				/* Server messages land in the error banner rather than in a modal
+				   over the page. Same slot `login.js` gives the forgotten-password
+				   form, for the same reason: a dialog on a door is a dead end. */
+				error_msg: ".signup-start .login-error-banner .es-alert__title",
+				statusCode: {
+					200: function (data) {
+						var answer = (data && data.message) || [];
+						var code = parseInt(answer[0], 10);
+
+						$button.prop("disabled", false).text(TEXT.create);
+
+						/* 0 is the framework's "already registered" and "registered
+						   but disabled" — a refusal, not a success, and its own
+						   sentence is the useful one. */
+						if (!code) {
+							banner(".signup-start", "error", answer[1] || TEXT.failed);
+							return;
+						}
+
+						showSent(email, code === 1);
+					},
+					417: function () {
+						/* `error_msg` above has already written the server's own
+						   message into the banner; all that is left is to show it. */
+						$button.prop("disabled", false).text(TEXT.create);
+						$(".signup-start .login-error-banner").removeClass("hidden");
+					},
+					429: function () {
+						$button.prop("disabled", false).text(TEXT.create);
+						banner(".signup-start", "error", TEXT.failed);
+					},
+					500: function () {
+						$button.prop("disabled", false).text(TEXT.create);
+						banner(".signup-start", "error", TEXT.failed);
+					},
+				},
+			});
+		}
+
+		function resend() {
+			var email = $(".signup-sent-email").text();
+			if (!email) return;
+
+			var $button = $(".btn-resend-signup");
+			$button.prop("disabled", true).text(TEXT.sending);
+			clearBanners(".signup-sent");
+
+			frappe.call({
+				type: "POST",
+				url: "/",
+				args: { cmd: "frappe.core.doctype.user.user.reset_password", user: email },
+				/* Deliberately sunk. `reset_password` always msgprints the same
+				   "if this email is registered" sentence — it refuses to say
+				   whether an account exists, which is right, and useless here where
+				   we already told this person theirs does. Without a slot to write
+				   it into, `process_response` would put it in a modal. */
+				error_msg: ".signup-sent .signup-message-sink",
+				statusCode: {
+					200: function () {
+						banner(".signup-sent", "success", TEXT.resent);
+						cooldown();
+					},
+					417: function () {
+						$button.prop("disabled", false).text(TEXT.resend);
+						banner(".signup-sent", "error", TEXT.resend_failed);
+					},
+					429: function () {
+						/* The server's own hourly limit, reached. The cooldown is
+						   restarted so the button is not simply dead. */
+						banner(".signup-sent", "error", TEXT.resend_failed);
+						cooldown();
+					},
+					500: function () {
+						$button.prop("disabled", false).text(TEXT.resend);
+						banner(".signup-sent", "error", TEXT.resend_failed);
+					},
+				},
+			});
+		}
+
+		/* Capture, on an ancestor: see the note above. Stopping it here is what
+		   keeps `login.js` out of this one form. */
+		document.addEventListener(
+			"submit",
+			function (event) {
+				var form = event.target;
+				if (!form || !form.classList || !form.classList.contains("form-signup")) return;
+
+				event.preventDefault();
+				event.stopPropagation();
+				signUp();
+			},
+			true
+		);
+
+		$(function () {
+			$(".btn-resend-signup").on("click", function (event) {
+				event.preventDefault();
+				resend();
+			});
+
+			/* The hash is already `#signup`, so this click fires no `hashchange`
+			   and the panel has to be put back by hand. */
+			$(".btn-signup-restart").on("click", function () {
+				reset();
+				$("#signup_fullname").focus();
+			});
+
+			/* Registered after `login.js`'s, so it runs after `reset_sections` has
+			   emptied the form underneath. */
+			$(window).on("hashchange", reset);
+		});
 	})();
 </script>
 {% endblock %}

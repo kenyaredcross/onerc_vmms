@@ -12,6 +12,7 @@ import type {
 	TermsDocument,
 	TermsOfReference,
 } from "../portal/types";
+import { MissionEditor, MissionView } from "./Mission";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import {
 	Button,
@@ -112,48 +113,50 @@ export function ProjectList() {
 			)}
 
 			{rows.length > 0 && (
-				<ul className="space-y-2.5">
+				<ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
 					{rows.map((row) => (
 						<li key={row.name}>
-							<Card>
-								<div className="flex flex-wrap items-start justify-between gap-3">
-									<div>
-										<Link
-											to={`/admin/projects/${encodeURIComponent(row.name)}`}
-											className="hover:underline"
-										>
-											<SectionTitle>{row.project_name}</SectionTitle>
-										</Link>
-										<p className="text-[12px] text-slate-body">{geoPath(row.geo_path)}</p>
-										<p className="mt-0.5 text-[12px] text-slate-faint">
-											{row.start_date ? formatDate(row.start_date) : "No start date"}
-											{row.end_date ? ` → ${formatDate(row.end_date)}` : ""}
-										</p>
-									</div>
-									<StateBadge state={row.status} />
-								</div>
-
-								{row.summary && (
-									<p className="mt-3 whitespace-pre-line text-[12.5px] text-slate-body">
-										{row.summary}
-									</p>
-								)}
-
-								<div className="mt-4 flex flex-wrap items-center gap-2">
-									<Link
-										to={`/admin/projects/${encodeURIComponent(row.name)}`}
-										className="text-[12px] font-semibold text-navy hover:underline"
-									>
-										Open project →
-									</Link>
-									<span className="text-[11.5px] text-slate-faint">{row.name}</span>
-								</div>
-							</Card>
+							<ProjectCard row={row} />
 						</li>
 					))}
 				</ul>
 			)}
 		</>
+	);
+}
+
+/**
+ * One project as a card.
+ *
+ * A programme of work is a thing a coordinator recognises by name and by where
+ * it is, and a grid of cards is how somebody scans a dozen of them. The whole
+ * card is the link rather than a "Open project →" at the bottom: a card that
+ * looks clickable and is not, except in one corner, is a small daily annoyance.
+ */
+function ProjectCard({ row }: { row: ProjectSummary }) {
+	return (
+		<Card className="h-full">
+			<Link to={`/admin/projects/${encodeURIComponent(row.name)}`} className="block">
+				<div className="flex items-start justify-between gap-2">
+					<SectionTitle>{row.project_name}</SectionTitle>
+					<StateBadge state={row.status} />
+				</div>
+
+				<p className="mt-1 text-[11.5px] text-slate-body">{geoPath(row.geo_path)}</p>
+				<p className="mt-0.5 text-[11.5px] text-slate-faint">
+					{row.start_date ? formatDate(row.start_date) : "No start date"}
+					{row.end_date ? ` → ${formatDate(row.end_date)}` : ""}
+				</p>
+
+				{row.summary && (
+					<p className="mt-3 line-clamp-3 whitespace-pre-line text-[12.5px] text-slate-body">
+						{row.summary}
+					</p>
+				)}
+
+				<p className="mt-3 text-[11px] text-slate-faint">{row.name}</p>
+			</Link>
+		</Card>
 	);
 }
 
@@ -267,21 +270,58 @@ export function ProjectDetail() {
 	);
 }
 
-/** A terms of reference, linked from a project's or a deployment's own page. */
-function TermsRow({ row }: { row: TermsOfReference }) {
+/**
+ * A terms of reference as a card, linked from a project's or a deployment's page.
+ *
+ * **It says how much of the mission has been written.** A terms of reference is
+ * a document with six parts now, and one that has a title and nothing else looks
+ * identical to a finished one in a list of names. The counts come off
+ * `section_counts`, which the server computes while the record is already loaded,
+ * so saying so costs nothing.
+ */
+function TermsRow({ row, showProject }: { row: TermsOfReference; showProject?: boolean }) {
+	const parts = [
+		[row.section_counts?.objectives ?? 0, "objectives"],
+		[row.section_counts?.itinerary ?? 0, "days planned"],
+		[row.section_counts?.resources ?? 0, "resources"],
+	] as const;
+
+	const written = parts.filter(([count]) => count > 0);
+
 	return (
 		<li>
 			<Link
 				to={`/admin/deployments/terms/${encodeURIComponent(row.name)}`}
 				className="block rounded-card border border-hairline bg-white px-4 py-3 transition hover:border-hairline-strong"
 			>
-				<div className="flex items-start justify-between gap-2">
+				<div className="flex flex-wrap items-start justify-between gap-2">
 					<span className="text-[13.5px] font-bold text-ink">{row.tor_name}</span>
-					{!row.is_active && <Pill tone="quiet">Retired</Pill>}
+					<div className="flex flex-wrap items-center gap-1.5">
+						{row.is_draft && <Pill tone="signal">Draft</Pill>}
+						{row.is_submitted && !row.is_active && <Pill tone="quiet">Retired</Pill>}
+					</div>
 				</div>
+
+				{showProject && row.project_name && (
+					<div className="mt-1 text-[11.5px] text-slate-body">{row.project_name}</div>
+				)}
+
 				<div className="mt-0.5 text-[11.5px] text-slate-faint">
 					{row.geo_scope_path ? geoPath(row.geo_scope_path) : "Applies anywhere"}
 					{row.requires_approver ? " · routed for approval" : ""}
+				</div>
+
+				{row.expected_start_date && (
+					<div className="mt-0.5 text-[11.5px] text-slate-faint">
+						{formatDate(row.expected_start_date)}
+						{row.expected_end_date ? ` → ${formatDate(row.expected_end_date)}` : ""}
+					</div>
+				)}
+
+				<div className="mt-1.5 text-[11.5px] text-slate-body">
+					{written.length > 0
+						? written.map(([count, label]) => `${count} ${label}`).join(" · ")
+						: "Nothing written into it yet."}
 				</div>
 			</Link>
 		</li>
@@ -526,26 +566,9 @@ export function TermsList() {
 			)}
 
 			{rows.length > 0 && (
-				<ul className="space-y-2.5">
+				<ul className="grid gap-2.5 sm:grid-cols-2">
 					{rows.map((row) => (
-						<li key={row.name}>
-							<Link
-								to={`/admin/deployments/terms/${encodeURIComponent(row.name)}`}
-								className="block rounded-card border border-hairline bg-white px-4 py-3 transition hover:border-hairline-strong"
-							>
-								<div className="flex items-start justify-between gap-2">
-									<span className="text-[13.5px] font-bold text-ink">{row.tor_name}</span>
-									{!row.is_active && <Pill tone="quiet">Retired</Pill>}
-								</div>
-								{row.project_name && (
-									<div className="mt-1 text-[11.5px] text-slate-body">{row.project_name}</div>
-								)}
-								<div className="mt-0.5 text-[11.5px] text-slate-faint">
-									{row.geo_scope_path ? geoPath(row.geo_scope_path) : "Applies anywhere"}
-									{row.requires_approver ? " · routed for approval" : ""}
-								</div>
-							</Link>
-						</li>
+						<TermsRow key={row.name} row={row} showProject />
 					))}
 				</ul>
 			)}
@@ -565,12 +588,16 @@ export function TermsList() {
  */
 export function TermsDetail() {
 	const { name = "" } = useParams<{ name: string }>();
+	const { call } = useContext(FrappeContext) as FrappeConfig;
 
-	const { data, error, isLoading } = useFrappeGetCall<{ message: TermsDocument }>(
+	const { data, error, isLoading, mutate } = useFrappeGetCall<{ message: TermsDocument }>(
 		API.getTerms,
 		{ name },
 		`admin:terms:doc:${name}`,
 	);
+
+	const [busy, setBusy] = useState(false);
+	const [failure, setFailure] = useState<string | null>(null);
 
 	if (isLoading) return <Spinner label="Loading terms of reference…" />;
 	if (error) return <ErrorNote>{errorMessage(error)}</ErrorNote>;
@@ -591,41 +618,88 @@ export function TermsDetail() {
 		{ label: terms.tor_name },
 	];
 
+	const submit = async () => {
+		setBusy(true);
+		setFailure(null);
+
+		try {
+			await call.post(API.submitTerms, { name });
+			void mutate();
+		} catch (problem) {
+			setFailure(errorMessage(problem, "These terms were not submitted."));
+		} finally {
+			setBusy(false);
+		}
+	};
+
 	return (
 		<>
 			<PageHeading title={terms.tor_name} trail={trail} />
 
 			<div className="space-y-4">
 				<Card>
-					<div className="flex flex-wrap items-center justify-between gap-2">
-						<SectionTitle>Terms of reference</SectionTitle>
-						<ButtonLink to={termsPdfUrl(name)}>Print as PDF</ButtonLink>
+					<div className="flex flex-wrap items-start justify-between gap-3">
+						<div>
+							<div className="flex flex-wrap items-center gap-2">
+								<SectionTitle>Terms of reference</SectionTitle>
+								{terms.is_draft && <Pill tone="signal">Draft</Pill>}
+								{terms.is_submitted && <Pill tone="navy">Submitted</Pill>}
+								{terms.is_cancelled && <Pill tone="quiet">Cancelled</Pill>}
+								{terms.is_submitted && !terms.is_active && <Pill tone="quiet">Retired</Pill>}
+							</div>
+							<p className="mt-1 max-w-2xl text-[12px] text-slate-faint">
+								{terms.is_draft
+									? "Still being written. Nobody can be deployed under a draft: accepting an assignment is accepting this wording, and wording that can still change is not something anybody can agree to. Submit it when it is finished."
+									: "The wording is fixed. Everyone assigned under these terms agreed to exactly this text, so a change is an amendment — a new document — rather than an edit."}
+							</p>
+						</div>
+
+						<div className="flex flex-wrap items-center gap-2">
+							<ButtonLink to={termsPdfUrl(name)}>Print as PDF</ButtonLink>
+							{terms.is_draft && (
+								<Button disabled={busy} onClick={() => void submit()}>
+									{busy ? "Submitting…" : "Submit"}
+								</Button>
+							)}
+						</div>
 					</div>
-					<p className="mt-1 text-[12px] text-slate-faint">
-						On your society's letterhead. The same document the PDF is made from, so what you read
-						here is what prints.
-					</p>
+
+					{failure && (
+						<div className="mt-3">
+							<ErrorNote>{failure}</ErrorNote>
+						</div>
+					)}
 				</Card>
 
-				<Card className="overflow-x-auto">
-					{/* The body is rendered by the server from a template a society
-					    administrator edits on the desk, which is why it is inserted as
-					    markup rather than as text. It is authored configuration on the
-					    same footing as an Email Template, not a value somebody typed
-					    into a public form. */}
-					<div
-						className="vmms-tor-preview"
-						// eslint-disable-next-line react/no-danger
-						dangerouslySetInnerHTML={{ __html: document }}
-					/>
-				</Card>
+				{terms.is_draft ? (
+					<MissionEditor terms={terms} onSaved={() => void mutate()} />
+				) : (
+					<>
+						<Card className="overflow-x-auto">
+							{/* The body is rendered by the server from a template a society
+							    administrator edits on the desk, which is why it is inserted as
+							    markup rather than as text. It is authored configuration on the
+							    same footing as an Email Template, not a value somebody typed
+							    into a public form. */}
+							<div
+								className="vmms-tor-preview"
+								// eslint-disable-next-line react/no-danger
+								dangerouslySetInnerHTML={{ __html: document }}
+							/>
+						</Card>
+
+						<MissionView terms={terms} />
+					</>
+				)}
 
 				<Card>
 					<SectionTitle>Deployments under these terms ({deployments.length})</SectionTitle>
 
 					{deployments.length === 0 ? (
 						<p className="mt-2 text-[12.5px] text-slate-faint">
-							No deployment has been run under these terms yet.
+							{terms.is_draft
+								? "None, and none can be run until these terms are submitted."
+								: "No deployment has been run under these terms yet."}
 						</p>
 					) : (
 						<ul className="mt-3 space-y-2">

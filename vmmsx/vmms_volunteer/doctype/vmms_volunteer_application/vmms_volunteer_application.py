@@ -47,10 +47,19 @@ class VMMSVolunteerApplication(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from vmmsx.vmms_approvals.doctype.vmms_approval_decision.vmms_approval_decision import VMMSApprovalDecision
-		from vmmsx.vmms_volunteer.doctype.vmms_availability_selector.vmms_availability_selector import VMMSAvailabilitySelector
-		from vmmsx.vmms_volunteer.doctype.vmms_language_selector.vmms_language_selector import VMMSLanguageSelector
-		from vmmsx.vmms_volunteer.doctype.vmms_motivation_selector.vmms_motivation_selector import VMMSMotivationSelector
+
+		from vmmsx.vmms_approvals.doctype.vmms_approval_decision.vmms_approval_decision import (
+			VMMSApprovalDecision,
+		)
+		from vmmsx.vmms_volunteer.doctype.vmms_availability_selector.vmms_availability_selector import (
+			VMMSAvailabilitySelector,
+		)
+		from vmmsx.vmms_volunteer.doctype.vmms_language_selector.vmms_language_selector import (
+			VMMSLanguageSelector,
+		)
+		from vmmsx.vmms_volunteer.doctype.vmms_motivation_selector.vmms_motivation_selector import (
+			VMMSMotivationSelector,
+		)
 		from vmmsx.vmms_volunteer.doctype.vmms_skill_selector.vmms_skill_selector import VMMSSkillSelector
 
 		applicant_date_of_birth: DF.Date | None

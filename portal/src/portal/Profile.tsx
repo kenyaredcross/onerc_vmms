@@ -1,13 +1,15 @@
 import { useContext, useState } from "react";
+import { Link } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
 import { formatDate, geoPath } from "../lib/format";
-import { initials } from "../lib/session";
 import { Field, SelectInput, TextInput, VocabularySelect } from "../ui/form";
 import { Icon } from "../ui/icons";
+import { PersonHero } from "../ui/PersonHero";
 import {
+	Avatar,
 	Button,
 	Card,
 	Empty,
@@ -18,11 +20,11 @@ import {
 	Pill,
 	SectionTitle,
 	Spinner,
-	StateBadge,
 } from "../ui/primitives";
 import type {
 	ApplicationOptions,
 	IdentityOptions,
+	MembershipRow,
 	MyCertifications,
 	RedProfile,
 	VolunteerProfile,
@@ -42,6 +44,14 @@ import type {
  * status and certifications are what the branch decided about this person, and
  * a text field over any of them would be a self-service route around an
  * approval. Those stay read-only, and that is not an unfinished screen.
+ *
+ * **It opens with the same header a coordinator sees.** `PersonHero` is the
+ * block the volunteer record, the member record and the review queue all lead
+ * with, and this page leads with it too: a volunteer looking at their own
+ * profile and a coordinator looking at the same person are looking at the same
+ * thing, which is the whole reason to have one component rather than four
+ * headers that drifted apart. The card underneath is what this screen has that
+ * theirs does not — the pencil.
  */
 export default function Profile() {
 	const volunteer = useFrappeGetCall<{ message: VolunteerProfile | null }>(
@@ -62,15 +72,27 @@ export default function Profile() {
 		"portal:my_profile",
 	);
 
+	// Whether this person is also a member, asked of their own memberships
+	// endpoint rather than of the cross-register lookup the admin screens use:
+	// that one reads the registers through core's scoping, and a volunteer has
+	// no scope over the member register — not even their own row. Here the
+	// holder is asking about themselves, which is a different question with a
+	// different door, and `my_memberships` is it.
+	const memberships = useFrappeGetCall<{ message: MembershipRow[] }>(
+		API.myMemberships,
+		undefined,
+		"portal:my_memberships",
+	);
+
 	const profile = volunteer.data?.message ?? null;
 	const certs = training.data?.message?.certifications ?? [];
+	const held = (memberships.data?.message ?? []).find((row) => row.is_active);
 
 	return (
 		<>
 			<PageHeading
 				title={<EditableText k="portal.profile.heading" fallback="Profile" />}
 				trail={[{ label: "Home", to: "/dashboard" }, { label: "Profile" }]}
-				meta={profile?.geo_path ? geoPath(profile.geo_path) : undefined}
 			/>
 
 			{volunteer.isLoading && <Spinner label="Loading your profile…" />}
@@ -80,6 +102,41 @@ export default function Profile() {
 				<Empty title="You have no volunteer record" icon={Icon.people}>
 					Your profile appears here once your branch has verified your application.
 				</Empty>
+			)}
+
+			{profile && (
+				<PersonHero
+					name={profile.full_name}
+					photo={profile.profile_photo}
+					docname={profile.volunteer}
+					subtitle={geoPath(profile.geo_path) || undefined}
+					status={profile.status}
+					badges={
+						// The same answer the coordinator's screens give, from this
+						// person's own side of it. Drawn only when they actually hold
+						// a current membership: "not a member" is not news to the
+						// person reading their own profile.
+						held && (
+							<Link
+								to="/membership"
+								className="inline-flex items-center gap-1.5 rounded-full border border-navy/20 bg-navy/[.05] px-3 py-1 text-[11.5px] font-bold text-navy transition hover:border-navy hover:bg-navy/10"
+							>
+								Also a member
+								{held.membership_type_name && (
+									<span className="font-semibold text-navy/70">
+										· {held.membership_type_name}
+									</span>
+								)}
+							</Link>
+						)
+					}
+					facts={[
+						{ label: "Email", value: profile.email },
+						{ label: "Phone", value: profile.phone },
+						{ label: "Joined", value: formatDate(profile.joined_on) },
+						{ label: "Home area", value: geoPath(profile.home_geo_path) },
+					]}
+				/>
 			)}
 
 			{profile && (
@@ -172,27 +229,14 @@ function IdentityCard({
 
 	return (
 		<Card>
+			{/* The face and the name are in the header above, once. What is left
+			    here is the *control* over them, which is the one thing this screen
+			    has that a coordinator's version of it does not. */}
+			<SectionTitle>Your details</SectionTitle>
+
 			<div className="flex items-center gap-4">
-				{profile.profile_photo ? (
-					<img
-						src={profile.profile_photo}
-						alt=""
-						className="h-16 w-16 flex-none rounded-full object-cover"
-					/>
-				) : (
-					<div className="grid h-16 w-16 flex-none place-items-center rounded-full bg-navy font-display text-[19px] font-bold text-white">
-						{initials(profile.full_name) || "?"}
-					</div>
-				)}
-				<div className="min-w-0">
-					<h2 className="truncate font-display text-[19px] font-extrabold tracking-tight text-ink">
-						{profile.full_name ?? "—"}
-					</h2>
-					<div className="mt-1.5">
-						<StateBadge state={profile.status} />
-					</div>
-					<PhotoControl current={profile.profile_photo} onSaved={onSaved} />
-				</div>
+				<Avatar name={profile.full_name} photo={profile.profile_photo} size={56} ring />
+				<PhotoControl current={profile.profile_photo} onSaved={onSaved} />
 			</div>
 
 			{editing && person ? (

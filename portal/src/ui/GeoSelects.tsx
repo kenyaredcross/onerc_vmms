@@ -160,6 +160,15 @@ export function GeoSelects({
 				chain={chain}
 				chosen={chosen}
 				answered={chain.length > Math.max(firstAsked, 0)}
+				// The rungs that answered themselves are not part of what anybody
+				// chose, so the summary does not read them back. On a single-society
+				// ladder that is the society's own name — "Tanzania Red Cross
+				// Society · Arusha · Arusha City", where two thirds of the line is
+				// the same on every screen in the product and the branch is the part
+				// being confirmed. Sliced rather than filtered on the name: the rule
+				// is "what you were not asked", which the list already knows, and it
+				// holds at whatever rung it happens to occur.
+				from={Math.max(firstAsked, 0)}
 				allowedLevels={allowedLevels}
 				levels={levels}
 			/>
@@ -296,11 +305,18 @@ function Verdict({
 	chain,
 	chosen,
 	answered,
+	from,
 	allowedLevels,
 	levels,
 }: {
 	chain: GeoNode[];
 	chosen: GeoNode | null;
+	/**
+	 * The first rung this person was actually asked. Everything above it
+	 * answered itself for want of an alternative and is not read back — see the
+	 * call site.
+	 */
+	from: number;
 	/**
 	 * Whether the person has answered a rung they were actually asked. A rung
 	 * that answered itself for want of an alternative fills the chain without
@@ -317,7 +333,9 @@ function Verdict({
 			<p className="mt-4 flex items-center gap-2 rounded-card border border-navy/20 bg-navy/[0.04] px-3.5 py-2.5 text-[12.5px] text-navy">
 				<span className="h-1.5 w-1.5 flex-none rounded-full bg-navy" aria-hidden="true" />
 				<span className="min-w-0 truncate font-semibold">
-					{chain.map((node) => node.label).join(" · ")}
+					{(chain.length > from ? chain.slice(from) : chain)
+						.map((node) => node.label)
+						.join(" · ")}
 				</span>
 			</p>
 		);

@@ -200,8 +200,12 @@ def dto(doc) -> dict:
 
 	Never the Document: that would leak every field on the record, including ones
 	nobody reviewed, and turn a schema change into an API change.
+
+	The path is read through `placement.geo_path` rather than straight off the
+	adapter, so a project whose anchor was deleted underneath it is one odd-looking
+	row instead of a register that refuses to open. That module says why.
 	"""
-	from onerc_core.geo.services import adapter
+	from vmmsx.deployment.services.placement import geo_path
 
 	return {
 		"name": doc.name,
@@ -209,7 +213,7 @@ def dto(doc) -> dict:
 		"status": doc.status,
 		"is_open": is_open(doc),
 		"geo_node": doc.geo_node,
-		"geo_path": adapter.get_full_path(doc.geo_node) if doc.geo_node else None,
+		"geo_path": geo_path(doc.geo_node),
 		"start_date": str(doc.start_date) if doc.start_date else None,
 		"end_date": str(doc.end_date) if doc.end_date else None,
 		"summary": doc.summary,

@@ -136,6 +136,26 @@ export interface ApprovalStatus {
 	is_terminal: boolean;
 	geo_node: string | null;
 	geo_path: string | null;
+	/**
+	 * Who this approval is *about*, resolved by `approvals/services/applicant.py`
+	 * from the workflow's own `applicant_field` — one hop for an application
+	 * that links a Red Profile, two for a membership that links a member.
+	 *
+	 * Null for a governed doctype whose subject is not a person, which is not an
+	 * error and which every queue row has to survive. It is not null merely
+	 * because a doctype has no decision view of its own: that was the old bug,
+	 * where a membership reached the review screen as a docname and a stage
+	 * label with no name attached to it.
+	 */
+	applicant: {
+		doctype: string | null;
+		name: string;
+		red_profile: string | null;
+		full_name: string;
+		email: string | null;
+		phone: string | null;
+		photo: string | null;
+	} | null;
 	stage: {
 		name: string;
 		sequence: number;
@@ -213,6 +233,14 @@ export interface VocabularyRow {
 export interface SocietyQuestion {
 	name: string;
 	label: string;
+	/**
+	 * The heading this question is asked under — a society's own word, empty
+	 * when it did not group this one. Never compared against anything: it is
+	 * drawn as a section on a form and as a tab on an approver's screen, and
+	 * "Health information" is a string a national society typed rather than a
+	 * case in this app.
+	 */
+	group: string;
 	field_type: "Data" | "Small Text" | "Select" | "Check" | "Date" | "Int" | "Attach";
 	choices: string[];
 	is_required: boolean;
@@ -231,6 +259,12 @@ export interface ApplicationDecision {
 	full_name: string;
 	email: string | null;
 	phone: string | null;
+	/** Live from Red Profile. Null for an applicant who uploaded none. */
+	profile_photo: string | null;
+	gender: string | null;
+	date_of_birth: string | null;
+	preferred_language: string | null;
+	applied_on: string | null;
 	country_of_citizenship: string | null;
 	residency_type: string;
 	home_geo_path: string | null;
@@ -254,6 +288,8 @@ export interface ApplicationDecision {
 export interface SocietyAnswer {
 	question: string;
 	label: string;
+	/** The group as it was at the time of answering — a snapshot, like the label. */
+	group: string;
 	field_type: string;
 	value: string;
 	file_url: string;
@@ -477,6 +513,12 @@ export interface RosterRow {
 	deployment: string;
 	volunteer: string;
 	full_name: string;
+	/**
+	 * Their photograph, or null — read alongside the name by
+	 * `assignment.volunteer_photo`, from the same Red Profile the name comes
+	 * from. Null is ordinary and every surface draws initials for it.
+	 */
+	photo: string | null;
 	/** The exact submitted document this person was asked to accept. */
 	terms_of_reference: string;
 	geo_node: string | null;
@@ -1060,7 +1102,29 @@ export interface VolunteerDossier {
 	can_act: boolean;
 	/** Whether there is a card to reprint, from the same predicate the download asserts. */
 	holds_card: boolean;
+	/** `api/person.py::registers`. See `Registers` for what absent means. */
+	registers: Registers;
 }
+
+/**
+ * Which of the society's registers one person appears in — `api/person.py`.
+ *
+ * Composed above both satellites, because neither module may know the other
+ * exists. A `null` under either key means the person is not in that register
+ * *or* that their record there is outside this caller's scope, and the server
+ * deliberately does not distinguish the two: a screen must render both as
+ * nothing rather than as a failure.
+ */
+export interface RegisterEntry {
+	kind: string;
+	label: string;
+	name: string;
+	/** The register's own status word. Display only, never compared across registers. */
+	status: string | null;
+	joined_on: string | null;
+}
+
+export type Registers = Partial<Record<"volunteer" | "member", RegisterEntry | null>>;
 
 /** `member/services/dossier.py::identity_dto`. */
 export interface MemberIdentity {
@@ -1135,6 +1199,86 @@ export interface MemberDossier {
 	history: MemberHistoryRow[];
 	/** See `VolunteerDossier.can_act`. */
 	can_act: boolean;
+	/** `api/person.py::registers`. See `Registers` for what absent means. */
+	registers: Registers;
+}
+
+/**
+ * `member/services/review.py::decision_dto` — the membership half of a review.
+ *
+ * The counterpart of `ApplicationDecision`, and the reason a membership in the
+ * review queue can now be read at all: before this existed the queue showed a
+ * docname and two buttons, and an approver had no way to see whose membership
+ * they were deciding.
+ *
+ * **There is no intake block, deliberately.** `VMMS Membership` carries
+ * `applicant_first_name` and its neighbours, and they are blanked on every save
+ * by `intake.clear_intake` once absorbed into the Red Profile — a transport into
+ * identity, not a record. One answer to who somebody is, and it is `applicant`.
+ */
+export interface MembershipReview {
+	name: string;
+	member: string;
+	as_of: string;
+	applicant: MemberIdentity | null;
+	membership: MembershipDossierRow;
+	/** The attachment a proof-of-payment membership stands on, if there is one. */
+	proof_attachment: string | null;
+	membership_source: string | null;
+	answers: SocietyAnswer[];
+}
+
+/* -------------------------------------------------------- communication */
+
+/** `api/communication.py::options` — what this person may compose and send. */
+export interface CommunicationOptions {
+	audiences: string[];
+	urgencies: string[];
+	types: Array<{ name: string; description: string | null }>;
+	/**
+	 * Per caller, not per site: SMS needs onerc_sms installed *and* this
+	 * person's own permission on it, so a coordinator without the role sees two
+	 * channels rather than a third that would refuse them.
+	 */
+	channels: { notification: boolean; email: boolean; sms: boolean };
+	can_send: boolean;
+}
+
+/**
+ * `api/communication.py::preview` — how far this would reach, per channel.
+ *
+ * Three different numbers from one audience, because the people with a login,
+ * the people with an address and the people with a phone number are three
+ * overlapping sets. `addressed` is the denominator that makes a low reach read
+ * as a data gap rather than as a small branch.
+ */
+export interface CommunicationReach {
+	geo_node: string;
+	audience: string;
+	addressed: number;
+	notification: number;
+	email: number;
+	sms: number;
+}
+
+/** `api/communication.py::send` — what each channel actually did. */
+export interface CommunicationReport {
+	announcement: {
+		announcement: string;
+		addressed: number;
+		delivered: number;
+		created: number;
+	} | null;
+	notification_sent?: boolean;
+	email_sent?: boolean;
+	/** Filed, never sent: onerc_sms's own approval workflow releases it. */
+	sms: {
+		campaign: string;
+		recipients: number;
+		malformed: number;
+		addressed: number;
+		url: string;
+	} | null;
 }
 
 /* --------------------------------------------------------- form builder */
@@ -1157,6 +1301,8 @@ export interface QuestionTargets {
 	targets: QuestionTarget[];
 	/** Read from the doctype's own Select, so a new type appears without a deploy. */
 	field_types: string[];
+	/** Groups already in use anywhere on the site, to offer rather than retype. */
+	groups: string[];
 	can_edit: boolean;
 }
 
@@ -1165,6 +1311,8 @@ export interface BuilderQuestion {
 	name: string;
 	asked_on: string;
 	label: string;
+	/** The tab this question is drawn under. Empty means "with the rest". */
+	group: string;
 	field_type: string;
 	/** The raw newline-separated list, which is what the editor writes back. */
 	options: string;

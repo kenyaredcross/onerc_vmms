@@ -8,6 +8,7 @@
  "field_order": [
   "question",
   "question_label",
+  "question_group",
   "field_type",
   "answer_value",
   "answer_file"
@@ -30,6 +31,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Question Asked",
+   "read_only": 1
+  },
+  {
+   "description": "The group this question was asked under, snapshotted with its wording. See the sibling label and field type: an application decided last year reads as it was asked.",
+   "fieldname": "question_group",
+   "fieldtype": "Data",
+   "label": "Question Group",
    "read_only": 1
   },
   {

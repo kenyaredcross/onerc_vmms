@@ -31,11 +31,10 @@ app names a booking, ticket, attendee or check-in doctype.
 `my_queue` and `my_memberships`, so a caller cannot answer on anybody's behalf
 and there is no check here to get wrong.
 
-**Signed in, deliberately.** Neither is `allow_guest`. The public landing page's
-events are content blocks an administrator wrote, and `api/content.py::surface`
-is the only guest-readable endpoint in this app: opening a screen to the public
-is a flag on a content surface, not a decorator somebody has to find in a source
-file. Events on the *portal* are for people who have joined.
+**Signed in, deliberately — with one exception, and it is named.** Everything
+here is for people who have joined. `teaser()` is the exception: three events
+for the landing page, and its own docstring says why that is a different act
+from browsing the society's calendar. Everything else refuses a guest.
 
 **Buzz absent is an ordinary state, not an error.** vmmsx does not declare
 `buzz` in `required_apps`. On a site without it both endpoints answer empty, and
@@ -46,6 +45,47 @@ import frappe
 
 from vmmsx.buzz.services import events as seam
 from vmmsx.events.services import attendance
+
+#: How many events the public teaser shows. Three, because the landing page's
+#: events band is a row of three and always has been. It is a constant rather
+#: than an argument on purpose: a guest-readable endpoint with nothing to pass
+#: it has no input to validate and no limit to talk somebody's way past.
+TEASER_ROWS = 3
+
+
+@frappe.whitelist(allow_guest=True)
+def teaser() -> dict:
+	"""The next few events, for the landing page a signed-out visitor reads.
+
+	**This is the third `allow_guest` endpoint in the app**, after
+	`content.surface` and `society.branding`, and it is worth saying out loud
+	rather than slipping past. The justification is the same shape as theirs and
+	rests on what is returned rather than on who asked: every row here is a Buzz
+	event with `is_published` set, which is the flag Buzz's *own* public pages
+	read. Buzz already serves each of these at `/b/<route>` to anybody with the
+	address. Nothing is disclosed here that a society has not already published
+	to the world.
+
+	**It is a teaser, not the calendar, and the difference is the whole point.**
+	Three rows, no search, no filters, no date window and no way to page. A
+	visitor sees what is on soon; the society's full calendar, and saying you
+	mean to be there, are for people who have joined — that is `upcoming()` and
+	`attend()`, and both still refuse a guest. The landing page says so in as
+	many words and offers the way in.
+
+	The DTO is `_as_card`, unchanged, so a card on the landing page and a card in
+	the portal are the same record described the same way. A narrower shape for
+	guests would be a second answer to "what is an event" that has to be kept in
+	step with the first, and every field on it is already public.
+
+	`available` travels with the rows for the reason `upcoming()` gives: a
+	society without Buzz and a society with nothing scheduled are different
+	sentences, and the page decides what to draw once.
+	"""
+	return {
+		"available": seam.is_available(),
+		"events": seam.upcoming(limit=TEASER_ROWS),
+	}
 
 
 @frappe.whitelist()

@@ -111,17 +111,43 @@ export const API = {
 	memberGeoLevels: "vmmsx.api.member.geo_node_levels",
 	findMembers: "vmmsx.api.member.find_members",
 	memberDossier: "vmmsx.api.member.get_dossier",
+	// The membership half of a review, and the counterpart of
+	// `applicationDecision` above. Its absence is why a membership reached the
+	// queue as a docname with two buttons under it: there was no endpoint that
+	// would say whose membership an approver was being asked to decide.
+	membershipReview: "vmmsx.api.member.get_review",
 	// The membership half of the same acts. Cancel ends one early and records
 	// why; expire closes one whose validity has already run out and is refused
 	// on anything still current, so the two are not interchangeable.
 	cancelMembership: "vmmsx.api.member.cancel_membership",
 	expireMembership: "vmmsx.api.member.expire_membership",
 
+	// vmmsx/api/person.py
+	//
+	// Which of the society's registers one person is in, resolved through the
+	// Red Profile both hang off. The dossiers carry this block already; this
+	// endpoint is for the review queue, which holds an applicant rather than a
+	// dossier. A register the caller may not read comes back as `null`,
+	// indistinguishable from the person not being in it — deliberately, so a
+	// missing permission costs a chip rather than the page.
+	personRegisters: "vmmsx.api.person.get_registers",
+
 	// vmmsx/api/approvals.py
 	myQueue: "vmmsx.api.approvals.my_queue",
 	approvalStatus: "vmmsx.api.approvals.get_status",
 	decide: "vmmsx.api.approvals.decide",
 	withdraw: "vmmsx.api.approvals.withdraw",
+
+	// vmmsx/api/communication.py — addressing a branch's own people, on three
+	// channels resolved from one audience. `preview` exists because a broadcast
+	// is the one act in this product that cannot be undone: the number of people
+	// it will reach is something to read before pressing send, not after. `send`
+	// publishes one announcement for the in-app and email channels and files a
+	// *draft* SMS campaign for onerc_sms's own approval workflow to release — the
+	// console never dispatches an SMS itself.
+	communicationOptions: "vmmsx.api.communication.options",
+	communicationReach: "vmmsx.api.communication.preview",
+	communicationSend: "vmmsx.api.communication.send",
 
 	// vmmsx/api/geo.py — `ladder` is how many select fields a placement form
 	// draws, `browse` is what goes in each of them. Neither this file nor any

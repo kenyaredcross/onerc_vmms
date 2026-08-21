@@ -32,9 +32,21 @@ supported reader and its *fallbacks* are the contract — `logo_dark` falling ba
 to `logo` is the one that matters here, because the sidebar is navy and the
 landing page is white and a society that uploaded one mark should not have a
 hole on one of them.
+
+`figures()` is the second thing here, and it is public for the same kind of
+reason: how many volunteers a national society has is a number that society
+publishes about itself, and the landing page used to carry it as a sentence
+somebody typed. See its own docstring for what it does and does not say.
 """
 
 import frappe
+
+#: The register this app keeps, and the one status on it that means somebody is
+#: currently a volunteer of the society. `Prospective` has not been verified yet,
+#: `Suspended` is not serving and `Exited` has left, and a public figure that
+#: counted any of them would be claiming a strength the society does not have.
+VOLUNTEER_DOCTYPE = "VMMS Volunteer"
+ACTIVE = "Active"
 
 
 @frappe.whitelist(allow_guest=True)
@@ -60,3 +72,52 @@ def branding() -> dict:
 		# one that knows which surface it is drawing on.
 		"logo_dark": society.get("logo_dark") or "",
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def figures() -> dict:
+	"""Numbers about the society that the society itself would publish.
+
+	One figure so far: how many volunteers are on the register. It replaced a
+	content block — a number an administrator typed onto the landing page — and
+	the reason that had to change is the reason every identity field moved to
+	National Society Settings: a figure kept in a second place is a figure that
+	goes stale, and this one went stale the day the society registered its next
+	volunteer. Nobody edits it now, because there is nothing to edit.
+
+	**Rounded here rather than on the page, and rounded down.** Two reasons, and
+	both are about what leaves this function. A public endpoint returning an
+	exact headcount publishes a fact the society did not choose to publish, and
+	rounding in the browser would put that exact number in the response anyway.
+	And a landing page statistic is a claim, so it has to be one the society can
+	stand behind on any day: floored and suffixed, "1,200+" is true until the
+	1,201st volunteer, and then it is still true.
+
+	The step widens with the figure, so the claim keeps two or three significant
+	figures at every size rather than becoming useless at one end or spuriously
+	precise at the other. Below fifty there is no rounding and no "+": a society
+	with eleven volunteers is better served by the truth than by "10+", and a
+	statistics strip is not the place to round eleven people to ten.
+
+	An empty string for a society with nobody on the register yet, and the strip
+	drops the slot rather than announcing a zero on its own front page. That is
+	the same rule an unfilled statistic already follows.
+	"""
+	return {"volunteers": approximate(frappe.db.count(VOLUNTEER_DOCTYPE, {"status": ACTIVE}))}
+
+
+def approximate(count: int) -> str:
+	"""A count as a society would print it. See `figures()` for why.
+
+	Separated from the endpoint so the rule can be read and tested as the one
+	thing it is, rather than through a whitelisted call and a dict.
+	"""
+	if count <= 0:
+		return ""
+
+	if count < 50:
+		return f"{count:,}"
+
+	step = 10 if count < 1_000 else 100 if count < 10_000 else 1_000
+
+	return f"{count - count % step:,}+"

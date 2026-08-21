@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export function cx(...parts: Array<string | false | null | undefined>): string {
 	return parts.filter(Boolean).join(" ");
@@ -298,14 +298,38 @@ export function StateBadge({ state }: { state?: string | null }) {
  * core's Red Profile and a photograph is not one of its fields — so initials
  * on the brand navy is the honest version of the same shape.
  */
+/**
+ * Somebody's face, or their initials when there is no face to show.
+ *
+ * **`photo` is optional and falling back is the ordinary case**, not an error
+ * one. Most registers have photographs for some people and not others — a
+ * volunteer registered at a branch desk on paper has none — and a screen that
+ * drew a broken image or a grey silhouette for them would make an absence look
+ * like a fault. Initials read as a person either way.
+ *
+ * `aria-hidden` throughout: the name is always beside this in the markup that
+ * uses it, and announcing it twice is worse than not announcing it at all.
+ */
 export function Avatar({
 	name,
+	photo,
 	size = 36,
 	tone = "navy",
+	ring = false,
 }: {
 	name?: string | null;
+	photo?: string | null;
 	size?: number;
 	tone?: "navy" | "signal" | "page";
+	/**
+	 * A hairline around the circle, for the one place an avatar is the largest
+	 * thing on the page rather than a 34px marker in a table row. A photograph
+	 * with a pale background bleeds into a white card at 88px in a way it never
+	 * does at 34px, and the ring is what stops the face looking like a cut-out.
+	 * Off by default: in a list it would draw a second grid the eye has to
+	 * ignore.
+	 */
+	ring?: boolean;
 }) {
 	const letters = (name ?? "")
 		.split(/\s+/)
@@ -320,6 +344,21 @@ export function Avatar({
 		page: "bg-page text-slate-body",
 	} as const;
 
+	const ringed = ring ? "ring-1 ring-hairline-strong ring-offset-2 ring-offset-white" : "";
+
+	if (photo) {
+		return (
+			<img
+				src={photo}
+				alt=""
+				aria-hidden="true"
+				loading="lazy"
+				style={{ width: size, height: size }}
+				className={cx("flex-none rounded-full object-cover", ringed)}
+			/>
+		);
+	}
+
 	return (
 		<span
 			aria-hidden="true"
@@ -327,6 +366,7 @@ export function Avatar({
 			className={cx(
 				"grid flex-none place-items-center rounded-full font-display font-bold",
 				tones[tone],
+				ringed,
 			)}
 		>
 			{letters || "·"}
@@ -1148,4 +1188,325 @@ export function Row({ children }: { children: ReactNode }) {
 
 export function Cell({ children, className }: { children: ReactNode; className?: string }) {
 	return <td className={cx("px-5 py-3.5 align-middle text-[13px]", className)}>{children}</td>;
+}
+
+/* -------------------------------------------------------------------- tabs */
+
+export interface TabDef {
+	/** What this tab is, in the URL and in `active`. Never shown. */
+	key: string;
+	label: ReactNode;
+	/** A count beside the label — answers, deployments, whatever the tab holds. */
+	count?: number;
+}
+
+/**
+ * One record, several faces.
+ *
+ * **A record too long to read is not made shorter by a tab bar; it is made
+ * findable.** That is the whole of what this is for: an application carries an
+ * identity, a set of declarations, a society's own questionnaire and a decision
+ * trail, and an approver going back to check one of them should not scroll past
+ * the other three. A screen with two short sections does not want this — it
+ * wants two sections.
+ *
+ * **The active tab is the caller's state, and it should be the URL's.** This
+ * component holds nothing. A tab held in local state is lost on every reload
+ * and cannot be linked to, which is exactly wrong for a page somebody sends a
+ * colleague ("look at the health answers on this one"). Every caller in this
+ * app puts it in a search param.
+ *
+ * **A tab with nothing behind it is not drawn**, and that decision belongs to
+ * the caller too: this renders the list it is given. A society that asks no
+ * questions should see no questionnaire tab, not an empty one — the same rule
+ * `Rung` in `GeoSelects.tsx` follows about a choice between one thing.
+ */
+export function Tabs({
+	tabs,
+	active,
+	onSelect,
+	className,
+}: {
+	tabs: TabDef[];
+	active: string;
+	onSelect: (key: string) => void;
+	className?: string;
+}) {
+	return (
+		<div
+			role="tablist"
+			className={cx(
+				// Scrolls rather than wraps: a second row of tabs reads as a second
+				// bar, and on a phone six tabs would take a third of the screen
+				// before any of the record showed.
+				"-mx-1 flex gap-1 overflow-x-auto rounded-card bg-page p-1",
+				className,
+			)}
+		>
+			{tabs.map((tab) => {
+				const selected = tab.key === active;
+
+				return (
+					<button
+						key={tab.key}
+						type="button"
+						role="tab"
+						aria-selected={selected}
+						onClick={() => onSelect(tab.key)}
+						className={cx(
+							"flex flex-none items-center gap-2 rounded-card px-4 py-2 font-display text-[12.5px] font-bold transition",
+							selected
+								? "bg-white text-ink shadow-sm"
+								: "text-slate-body hover:bg-white/60 hover:text-ink",
+						)}
+					>
+						{tab.label}
+						{tab.count !== undefined && (
+							<span
+								className={cx(
+									"tabular rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none",
+									selected ? "bg-navy/[.08] text-navy" : "bg-white text-slate-faint",
+								)}
+							>
+								{tab.count}
+							</span>
+						)}
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
+/* ------------------------------------------------------------- action menu */
+
+export interface MenuAction {
+	key: string;
+	label: ReactNode;
+	/** One line under the label, for an act whose consequence is not obvious. */
+	hint?: ReactNode;
+	icon?: (props: { size?: number; className?: string }) => ReactNode;
+	/** Draws it as the destructive one. Never decides anything. */
+	tone?: "default" | "danger";
+	disabled?: boolean;
+}
+
+/**
+ * A row of verbs, collapsed into one control.
+ *
+ * **Three buttons in a row say "these are three things"; a menu says "this is
+ * one decision".** Approve, decline and ask-for-more are not three independent
+ * acts an approver might do — they are the three answers to one question, and
+ * only one of them will ever be pressed. Laid out as buttons they also read as
+ * equally weighted, which puts Decline the same distance from a stray click as
+ * Approve.
+ *
+ * **It closes on outside click and on Escape**, because a menu that stays open
+ * behind whatever you clicked next is a menu that eventually gets clicked by
+ * accident.
+ */
+export function ActionMenu({
+	label,
+	actions,
+	onAction,
+	variant = "navy",
+	disabled,
+	align = "right",
+}: {
+	label: ReactNode;
+	actions: MenuAction[];
+	onAction: (key: string) => void;
+	variant?: keyof typeof BUTTONS;
+	disabled?: boolean;
+	align?: "left" | "right";
+}) {
+	const [open, setOpen] = useState(false);
+	const holder = useRef<HTMLDivElement>(null);
+
+	// Both listeners in one effect and only while open: a document-level
+	// handler per menu on a list of twenty rows is twenty handlers running on
+	// every click in the app.
+	useEffect(() => {
+		if (!open) return;
+
+		const away = (event: MouseEvent) => {
+			if (!holder.current?.contains(event.target as Node)) setOpen(false);
+		};
+		const escape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") setOpen(false);
+		};
+
+		document.addEventListener("mousedown", away);
+		document.addEventListener("keydown", escape);
+
+		return () => {
+			document.removeEventListener("mousedown", away);
+			document.removeEventListener("keydown", escape);
+		};
+	}, [open]);
+
+	return (
+		<div ref={holder} className="relative inline-block">
+			<button
+				type="button"
+				aria-haspopup="menu"
+				aria-expanded={open}
+				disabled={disabled}
+				onClick={() => setOpen((was) => !was)}
+				className={cx(BUTTON_BASE, BUTTONS[variant])}
+			>
+				{label}
+				<svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
+					<path
+						d="m6 9 6 6 6-6"
+						stroke="currentColor"
+						strokeWidth="2.2"
+						strokeLinecap="round"
+					/>
+				</svg>
+			</button>
+
+			{open && (
+				<div
+					role="menu"
+					className={cx(
+						"absolute z-30 mt-2 w-[268px] overflow-hidden rounded-card border border-hairline bg-white p-1.5 shadow-lg",
+						align === "right" ? "right-0" : "left-0",
+					)}
+				>
+					{actions.map((action) => (
+						<button
+							key={action.key}
+							type="button"
+							role="menuitem"
+							disabled={action.disabled}
+							onClick={() => {
+								setOpen(false);
+								onAction(action.key);
+							}}
+							className={cx(
+								"flex w-full items-start gap-2.5 rounded-card px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-40",
+								action.tone === "danger"
+									? "text-signal-dark hover:bg-signal/[.07]"
+									: "text-ink hover:bg-page",
+							)}
+						>
+							{action.icon && (
+								<span className="mt-0.5 flex-none text-slate-faint">
+									<action.icon size={15} />
+								</span>
+							)}
+							<span className="min-w-0">
+								<span className="block text-[13px] font-semibold">{action.label}</span>
+								{action.hint && (
+									<span className="mt-0.5 block text-[11.5px] leading-relaxed text-slate-faint">
+										{action.hint}
+									</span>
+								)}
+							</span>
+						</button>
+					))}
+				</div>
+			)}
+		</div>
+	);
+}
+
+/* --------------------------------------------------------------- confirming */
+
+/**
+ * The second press, for an act that cannot be taken back.
+ *
+ * **Naming what is about to happen, not asking "are you sure".** A dialog that
+ * asks whether you are sure is dismissed without being read; one that says
+ * "Approve Grace Mushi as a volunteer at Arusha" is read, because it contains
+ * the one thing the reader can check. So `title` and `children` are required
+ * and the confirm label is the verb rather than "OK".
+ *
+ * **It is a real dialog**: Escape closes it, the backdrop closes it, and the
+ * confirm button takes focus on open so a keyboard user is not stranded. It is
+ * deliberately not a `<dialog>` element — the top layer would sit above the
+ * console's own chrome in a way this app's shell does not otherwise use, and
+ * nothing here needs it.
+ */
+export function ConfirmDialog({
+	open,
+	title,
+	confirmLabel,
+	tone = "navy",
+	busy,
+	onConfirm,
+	onCancel,
+	children,
+}: {
+	open: boolean;
+	title: ReactNode;
+	confirmLabel: string;
+	tone?: keyof typeof BUTTONS;
+	busy?: boolean;
+	onConfirm: () => void;
+	onCancel: () => void;
+	children: ReactNode;
+}) {
+	const confirm = useRef<HTMLButtonElement>(null);
+
+	useEffect(() => {
+		if (!open) return;
+
+		confirm.current?.focus();
+
+		const escape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") onCancel();
+		};
+
+		document.addEventListener("keydown", escape);
+
+		return () => document.removeEventListener("keydown", escape);
+		// `onCancel` is an inline closure in every caller and changes each
+		// render; depending on it would tear the listener down and rebuild it on
+		// every keystroke behind the dialog.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open]);
+
+	if (!open) return null;
+
+	return (
+		<div className="fixed inset-0 z-50 grid place-items-center p-4">
+			{/* The backdrop is a button so that dismissing by clicking away is
+			    reachable from a keyboard too, and so it announces itself. */}
+			<button
+				type="button"
+				aria-label="Cancel"
+				onClick={onCancel}
+				className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
+			/>
+
+			<div
+				role="dialog"
+				aria-modal="true"
+				className="relative w-full max-w-[440px] rounded-card border border-hairline bg-white p-6 shadow-xl"
+			>
+				<h2 className="font-display text-[17px] font-extrabold tracking-tight text-ink">
+					{title}
+				</h2>
+
+				<div className="mt-2.5 text-[13px] leading-relaxed text-slate-body">{children}</div>
+
+				<div className="mt-6 flex flex-wrap justify-end gap-2.5">
+					<Button variant="quiet" onClick={onCancel} disabled={busy}>
+						Go back
+					</Button>
+					<button
+						ref={confirm}
+						type="button"
+						onClick={onConfirm}
+						disabled={busy}
+						className={cx(BUTTON_BASE, BUTTONS[tone])}
+					>
+						{busy ? "Working…" : confirmLabel}
+					</button>
+				</div>
+			</div>
+		</div>
+	);
 }

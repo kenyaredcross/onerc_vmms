@@ -34,7 +34,7 @@ from onerc_core.access.services.enforcement import guard
 from onerc_core.geo.services import adapter
 
 from vmmsx.approvals import states
-from vmmsx.approvals.services import assignment, config, contract, routing, sla
+from vmmsx.approvals.services import applicant, assignment, config, contract, routing, sla
 
 
 def submit(doc, user: str | None = None) -> dict:
@@ -547,6 +547,13 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 	people is theirs to know; which two is not automatically theirs to know. An
 	approver who has endorsed sees where it went next, because they are part of
 	the decision, not an onlooker.
+
+	**`applicant` travels with every status, and it is not a widening.** Whoever
+	may read this DTO has already been allowed to read the document it describes
+	— `api/approvals.py` checks that first — and the document links the person by
+	name. What this adds is that the link is followed, so a queue lists people
+	rather than docnames. See `applicant.py` for how it is resolved without this
+	module learning what either governed doctype is.
 	"""
 	user = user or frappe.session.user
 	workflow = workflow or config.for_doctype(doc.doctype)
@@ -564,6 +571,7 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 		"is_terminal": states.is_terminal(state),
 		"geo_node": node,
 		"geo_path": adapter.get_full_path(node) if node else None,
+		"applicant": applicant.of(doc, workflow),
 		"stage": _stage_dto(doc, auth),
 		"can_act": user in auth["approvers"],
 		"approver_count": len(auth["approvers"]),

@@ -149,10 +149,14 @@ COPY = (
 	# --- statistics -------------------------------------------------------
 	#
 	# GRCS's 2026 IFRC Federation-wide Databank return, except the branch count,
-	# which is the society's own structure. The volunteer figure is the national
-	# one and is deliberately not the sum of the branch registration sheets in
-	# `gambia_structure.py`: those count a person once per Link they belong to.
-	("landing.stat1.value", "17,889", None, None, None),
+	# which is the society's own structure.
+	#
+	# The volunteer figure is not seeded at all now: `api/society.py::figures`
+	# counts the register, so the page shows this site's volunteers rather than
+	# the national 17,889. That also settles the old worry recorded here — that
+	# the national return is not the sum of the branch registration sheets in
+	# `gambia_structure.py`, which count a person once per Link they belong to.
+	# The register counts a person once.
 	("landing.stat1.label", "VOLUNTEERS", None, None, None),
 	("landing.stat2.value", "7", None, None, None),
 	("landing.stat2.label", "REGIONAL BRANCHES", None, None, None),
@@ -162,9 +166,10 @@ COPY = (
 	("landing.stat4.label", "FOUNDED", None, None, None),
 	# --- the public events teaser ----------------------------------------
 	#
-	# Typed in, not queried: this app has no event doctype, and the honest way to
-	# show upcoming events on a page is for somebody to have written them. See
-	# the note in `content/seeds/default_content.py`.
+	# The fallback half of the band, not what it normally draws. `Landing.tsx`
+	# reads the next three published Buzz events through
+	# `api/events.py::teaser`, and these rows are what it shows only when there
+	# are none — a site without Buzz, or a season with nothing in it.
 	("landing.event1.date", "AUG 20", None, None, None),
 	("landing.event1.title", "Blood donor drive", None, None, None),
 	("landing.event1.meta", "08:00 · Brikama, West Coast Region", None, None, None),

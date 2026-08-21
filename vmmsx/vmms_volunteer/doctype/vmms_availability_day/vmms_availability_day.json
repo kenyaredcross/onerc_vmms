@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-20 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "day",
+  "availability_slot"
+ ],
+ "fields": [
+  {
+   "columns": 4,
+   "description": "A day of the week. A closed Select rather than a Link, because the seven days are not a society's vocabulary to extend and a register of them would be a table nobody should have to seed. This is the one closed list in the availability model; everything else about when somebody can serve is the society's own answer.",
+   "fieldname": "day",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Day",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday",
+   "reqd": 1
+  },
+  {
+   "columns": 6,
+   "description": "The window on that day this volunteer is free, from the society's own VMMS Availability Slot register. The slot carries the hours; this row carries which day they apply on. Together one row means \"Saturday afternoons\", and a schedule is a handful of them.",
+   "fieldname": "availability_slot",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Availability Slot",
+   "options": "VMMS Availability Slot",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Availability Day",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

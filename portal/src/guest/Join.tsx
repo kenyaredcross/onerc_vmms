@@ -1845,26 +1845,50 @@ function QuestionsStep({
 }) {
 	const DRAWN = ["Data", "Small Text", "Select", "Check", "Date", "Int", "Attach"];
 
+	// The society's own headings, in the order the form asks them. A society
+	// that grouped nothing gets one unnamed group, which draws exactly the flat
+	// list this step has always drawn — the heading is only rendered when there
+	// is a word to render.
+	const groups: Array<{ name: string; questions: SocietyQuestion[] }> = [];
+
+	for (const question of questions.filter((entry) => DRAWN.includes(entry.field_type))) {
+		const name = question.group?.trim() ?? "";
+		const existing = groups.find((group) => group.name === name);
+
+		if (existing) existing.questions.push(question);
+		else groups.push({ name, questions: [question] });
+	}
+
 	return (
-		<div className="grid gap-5 sm:grid-cols-2">
-			{questions
-				.filter((question) => DRAWN.includes(question.field_type))
-				.map((question) => (
-					<div
-						key={question.name}
-						className={
-							question.field_type === "Small Text" || question.field_type === "Check"
-								? "sm:col-span-2"
-								: undefined
-						}
-					>
-						<QuestionField
-							question={question}
-							value={answers[question.name] ?? ""}
-							onChange={(value) => onAnswer(question.name, value)}
-						/>
+		<div className="space-y-7">
+			{groups.map((group) => (
+				<div key={group.name || "ungrouped"}>
+					{group.name && (
+						<h3 className="mb-3 font-display text-[14px] font-bold text-ink">
+							{group.name}
+						</h3>
+					)}
+
+					<div className="grid gap-5 sm:grid-cols-2">
+						{group.questions.map((question) => (
+							<div
+								key={question.name}
+								className={
+									question.field_type === "Small Text" || question.field_type === "Check"
+										? "sm:col-span-2"
+										: undefined
+								}
+							>
+								<QuestionField
+									question={question}
+									value={answers[question.name] ?? ""}
+									onChange={(value) => onAnswer(question.name, value)}
+								/>
+							</div>
+						))}
 					</div>
-				))}
+				</div>
+			))}
 		</div>
 	);
 }

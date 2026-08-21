@@ -223,36 +223,31 @@ def _as_card(row: dict) -> dict:
 	and otherwise the opening's own page, which carries an Apply button of its
 	own. Either way the answer to "how do I apply" is a real destination rather
 	than a sentence explaining that there isn't one.
+
+	**This used to carry a second set of names.** Every field the old deployment
+	board read — `purpose`, `responsibilities`, `requirements`, `geo_path`,
+	`needed_from`, `deployment_status` — was aliased here so the source could
+	change without the screen changing in the same breath. That was a stopgap and
+	it did real damage: `purpose` fed a `<p>` that rendered text, HRMS's
+	`description` is Text Editor markup, and the board showed every reader a wall
+	of escaped `<div class="ql-editor">`. The screen now reads the names below,
+	so the aliases are gone rather than quietly wrong.
 	"""
 	closes = row.get("closes_on")
 	posted = row.get("posted_on")
 	page = opening_url(row.get("route"))
+	description = row.get("description") or ""
 
 	return {
-		# The board's own names for these, and beside them the names the
-		# opportunities screen already reads. The screen was written against the
-		# deployment request this replaced, and keeping both spellings here is
-		# what lets the source change without the UI changing in the same breath.
-		# They are aliases of the fields above them, never a second answer:
-		# `name` and `key` are the docname, `purpose` is the description, and
-		# `geo_path` is HRMS's own location. The screen should be moved onto the
-		# left-hand names and these dropped.
 		"name": row.get("name"),
-		"key": row.get("name"),
-		"label": row.get("job_title") or "",
-		"purpose": row.get("description") or "",
-		"responsibilities": "",
-		"requirements": [],
-		"geo_path": row.get("location") or "",
-		"needed_from": str(posted)[:10] if (posted := row.get("posted_on")) else "",
-		"needed_until": str(row.get("closes_on")) if row.get("closes_on") else "",
-		"status": "",
-		"deployment": None,
-		"deployment_status": None,
-		"places_filled": 0,
 		"opening": row.get("name"),
 		"title": row.get("job_title") or "",
-		"description": row.get("description") or "",
+		# Both readings of the same field, decided here rather than in a browser.
+		# A card wants a two-line excerpt and a detail page wants the formatting
+		# an HR officer applied — headings, bullets, emphasis — and neither can be
+		# derived from the other on the client without shipping a parser.
+		"description_html": _safe_html(description),
+		"summary": _excerpt(description),
 		"department": row.get("department") or "",
 		"designation": row.get("designation") or "",
 		"employment_type": row.get("employment_type") or "",
@@ -264,3 +259,50 @@ def _as_card(row: dict) -> dict:
 		"href": page,
 		"apply_href": row.get("job_application_route") or page,
 	}
+
+
+def _safe_html(description: str) -> str:
+	"""HRMS's rich-text description, cleaned of anything that could execute.
+
+	**The app's rule is that nothing a society types is trusted as HTML, and this
+	is not an exception to it — it is the other half of it.** The rule exists
+	because a plain-text field rendered as markup is an injection; a Text Editor
+	field is markup by construction, written through a rich-text control by an HR
+	officer who chose the headings and the bullet list on purpose. Rendering that
+	as text is not the safe reading of it, it is simply the wrong one, and it is
+	what put `<div class="ql-editor read-mode">` on the board in front of every
+	visitor.
+
+	So it is sanitised instead, with Frappe's own `sanitize_html` — the same
+	function the framework runs over user HTML before it renders it anywhere
+	else. Scripts, event handlers, iframes and styles do not survive it. Done
+	here rather than in the browser because a client-side sanitiser is one an
+	attacker can simply not run: the endpoint must never have served the markup.
+	"""
+	if not description:
+		return ""
+
+	from frappe.utils.html_utils import sanitize_html
+
+	return sanitize_html(description)
+
+
+def _excerpt(description: str, limit: int = 220) -> str:
+	"""The same description as one paragraph of plain text, for a card.
+
+	Tags stripped and whitespace collapsed, because HRMS's editor stores the
+	indentation of the markup and a naive strip leaves an excerpt that begins
+	with eleven blank lines. Cut on a word boundary: a summary that stops
+	mid-syllable reads as a truncation bug rather than as an excerpt.
+	"""
+	if not description:
+		return ""
+
+	from frappe.utils import strip_html_tags
+
+	text = " ".join(strip_html_tags(description).split())
+
+	if len(text) <= limit:
+		return text
+
+	return text[:limit].rsplit(" ", 1)[0].rstrip(",.;:") + "…"

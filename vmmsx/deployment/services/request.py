@@ -61,7 +61,7 @@ def submit(request) -> dict:
 	A `direct` request is fulfilled by this call, because nothing is owed on it.
 	A `routed` one is handed to the engine and waits.
 	"""
-	terms.assert_active(request.terms_of_reference)
+	terms.assert_offered(request.terms_of_reference)
 
 	approval.begin(request, mode_of(request), _where(request))
 
@@ -127,6 +127,14 @@ def fulfil(request) -> dict:
 			"start_date": request.needed_from,
 			"end_date": request.needed_until,
 			"status": deployment_service.STATUS_PLANNED,
+			# How many the request asked for becomes how many the deployment needs.
+			# The request already carries the number and somebody already approved
+			# it, so making a coordinator retype it on the deployment would be a
+			# second chance for the two to disagree about the same authorised
+			# figure. It stays editable afterwards: what was approved and what the
+			# branch turns out to need are allowed to diverge, and the deployment's
+			# own number is what the roster is capped against.
+			"volunteers_required": frappe.utils.cint(request.volunteers_requested),
 		}
 	)
 	deployment.insert(ignore_permissions=True)

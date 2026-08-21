@@ -116,8 +116,12 @@ COPY = (
 		None,
 	),
 	# --- statistics -------------------------------------------------------
-	("landing.stat1.value", "80K+", None, None, None),
-	("landing.stat1.label", "VOLUNTEERS & MEMBERS", None, None, None),
+	#
+	# The first figure is not seeded: it is counted off the register by
+	# `api/society.py::figures`, so the page shows how many volunteers this site
+	# holds rather than KRCS's published national total. The caption follows the
+	# figure — it counts volunteers, so it may not say "& members".
+	("landing.stat1.label", "VOLUNTEERS", None, None, None),
 	("landing.stat2.value", "47", None, None, None),
 	("landing.stat2.label", "COUNTY BRANCHES", None, None, None),
 	("landing.stat3.value", "191", None, None, None),
@@ -126,9 +130,11 @@ COPY = (
 	("landing.stat4.label", "EST. BY ACT, CAP 256", None, None, None),
 	# --- the public events teaser ----------------------------------------
 	#
-	# Typed in, not queried: this app has no event doctype, and the honest way to
-	# show three upcoming events on a demo page is for somebody to have written
-	# them. See the note in `content/seeds/default_content.py`.
+	# The fallback half of the band, not what it normally draws. `Landing.tsx`
+	# reads the next three published Buzz events through
+	# `api/events.py::teaser`, and these rows are what it shows only when there
+	# are none — a site without Buzz, or a season with nothing in it. Seeded so
+	# the demo page is never a heading over an empty row.
 	("landing.event1.date", "AUG 14", None, None, None),
 	("landing.event1.title", "Blood donor drive", None, None, None),
 	("landing.event1.meta", "08:00 · Uhuru Park, Nairobi", None, None, None),

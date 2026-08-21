@@ -33,6 +33,23 @@ required_apps = ["onerc_core"]
 # `/desk/...`, not `/app/...` — see `staff/services/workspaces.py`'s docstring
 # on why the parent workspace's own shortcuts made the same switch.
 add_to_apps_screen = [
+	# **First, and that position is load-bearing.** `frappe.apps.get_route()`
+	# resolves an app's default landing with `next(entry for entry in entries if
+	# entry["name"] == app_name)` — the *first* entry wins — and
+	# `get_default_path()` calls it to decide where a Website User goes after
+	# signing in, ahead of `get_home_page()` and therefore ahead of everything
+	# `registration/services/desk.py` arranges. So the portal has to be this
+	# app's first answer to "where does vmmsx put somebody", or the society's own
+	# people land on whichever other installed app happens to have a tile.
+	#
+	# `has_self_service_access` already records the other half of this: a tile is
+	# where a login is *sent*, not merely something to click.
+	{
+		"name": app_name,
+		"title": "VMMS Portal",
+		"route": "/portal/dashboard",
+		"has_permission": "vmmsx.registration.services.desk.has_portal_access",
+	},
 	{
 		"name": app_name,
 		"title": "VMMS",
@@ -260,6 +277,20 @@ doc_events = {
 	},
 }
 
+# Where signing in lands, and the only thing on this site that can decide it for
+# everybody at once.
+#
+# `Role.home_page` is the ordinary answer and it is not sufficient here:
+# `get_home_page()` takes the first role that carries one, in the order the
+# `Has Role` rows happen to have been written, so a companion app that grants
+# every new account a role of its own decides where this society's people land.
+# Buzz does exactly that on this bench. `frappe.local.flags.home_page` is read
+# ahead of that walk, and `make_session()` runs this hook before
+# `set_user_info()` fills the redirect — so this is the one place the answer is
+# the same for everyone. See `registration/services/desk.py::on_session_creation`,
+# which carries the whole argument and the one exemption.
+on_session_creation = "vmmsx.registration.services.desk.on_session_creation"
+
 # Migration
 # ---------
 #
@@ -300,6 +331,13 @@ after_migrate = [
 	# application; what this stops is the *applicant* being made a desk user.
 	# See the module docstring, which sets out the decision it reverses.
 	"vmmsx.registration.services.desk.install",
+	# The third lever on where signing in lands, and the only one that reaches a
+	# Website User: `LoginManager.set_user_info` asks `get_default_path()` before
+	# it asks `get_home_page()` for those accounts, and `get_default_path()`
+	# answers off the apps screen rather than off any role. Naming this app there
+	# resolves to the first `add_to_apps_screen` entry above — the portal. Only
+	# ever fills the setting when it is empty. See `desk.claim_default_app`.
+	"vmmsx.registration.services.desk.claim_default_app",
 	"vmmsx.staff.services.workspaces.install",
 	# The staff-side counterpart of the self-service permissions install above:
 	# grants each configured scope role read/write/create on the doctypes
@@ -531,6 +569,24 @@ onerc_scopeable_doctypes = [
 	# needs no patch for the same reason — the setting it reads already exists.
 	{
 		"doctype": "VMMS Project",
+		"geo_node_field": "geo_node",
+		"role_from_setting": "vmms_deployment_scope_role",
+	},
+	# `VMMS Deployment Assignment` reuses the deployment scope role, on the same
+	# argument `VMMS Project` above reuses it: an assignment is one person's part
+	# of a deployment, and a society that has said who may see its deployments has
+	# already answered who may see the assignments raised under them. A second
+	# field would let the two disagree, and a coordinator who can open a
+	# deployment but not the roster on it is the wrong side of that disagreement.
+	# It needs no patch for the same reason — the setting it reads already exists.
+	#
+	# Scoping it does not gate the volunteer answering their own: that goes
+	# through `api/deployment.py::respond_to_assignment`, which establishes
+	# ownership and then writes with `ignore_permissions`. A volunteer holds no
+	# Geo Assignment at all, so scoping alone would refuse the one person
+	# entitled to reply.
+	{
+		"doctype": "VMMS Deployment Assignment",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_deployment_scope_role",
 	},

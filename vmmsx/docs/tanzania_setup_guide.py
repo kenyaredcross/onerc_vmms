@@ -675,9 +675,9 @@ def _p3_member(w, site: str) -> None:
 		]
 	)
 	w.p(
-		f"Ordinary Member is routed, not auto_on_payment, so the membership enters the approval"
-		f" engine at Draft and is confirmed for payment separately through the Manual gateway"
-		f" (onerc_payments.gateways.manual.confirm_payment), exactly the sequence the Gambia guide"
+		"Ordinary Member is routed, not auto_on_payment, so the membership enters the approval"
+		" engine at Draft and is confirmed for payment separately through the Manual gateway"
+		" (onerc_payments.gateways.manual.confirm_payment), exactly the sequence the Gambia guide"
 		" walks through in full."
 	)
 
@@ -690,7 +690,7 @@ def _p3_volunteer(w, site: str) -> None:
 			"Second private browser window, sign up as baraka.kimaro@example.com, set a password the"
 			" same way.",
 			f"Log in, click Register as a Volunteer, or http://{site}/register-as-a-volunteer.",
-			f'First Name "Baraka", Last Name "Kimaro", Branch or Area "Mwanza". Submit.',
+			'First Name "Baraka", Last Name "Kimaro", Branch or Area "Mwanza". Submit.',
 		]
 	)
 	w.p(
@@ -768,7 +768,7 @@ def _part4(w, site: str) -> None:
 
 	w.h2("Doing this for a different country")
 	w.p(
-		"Copy the five tanzania_*.py files in vmmsx/seed/ and the docs generator, rename the copies,"
+		"Copy the tanzania_*.py files in vmmsx/seed/ and the docs generator, rename the copies,"
 		" and change what is genuinely different — the same relationship gambia.py and kenya.py"
 		" already have to each other:"
 	)
@@ -783,7 +783,11 @@ def _part4(w, site: str) -> None:
 			["COUNTRY_jobs.py", "Company/Department/Designation/Branch and the openings themselves"],
 			["COUNTRY_stories.py", "sourced news, each carrying its source_url — see this file's own"
 				" module docstring for what sourced means in practice"],
-			["COUNTRY_install.py", "three renamed imports; the shape does not change"],
+			["COUNTRY_people.py", "the roster of demo applicants and where each one's application"
+				" stops; every one of them registers and is decided through the real endpoints"],
+			["COUNTRY_deployments.py", "the portfolio: programmes, terms of reference, deployments"
+				" and who was asked — filed by a coordinator login through the real endpoints"],
+			["COUNTRY_install.py", "the renamed imports; the shape does not change"],
 		],
 		(2.00, 4.50),
 	)

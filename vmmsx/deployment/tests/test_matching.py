@@ -150,7 +150,25 @@ class TestScopeIsNeverLeaked(MatchingTestCase):
 
 		self.assertEqual(
 			parameters,
-			{"terms_of_reference", "geo_node", "as_of", "limit", "offset", "search", "skills"},
+			{
+				"terms_of_reference",
+				"geo_node",
+				"as_of",
+				"limit",
+				"offset",
+				"search",
+				"skills",
+				# The deployment's own span, which turns on the availability and
+				# clash answers, and the two toggles that make each a filter. None
+				# of the four says anything about *who is asking* or *where they may
+				# look*, which is the property this test exists to protect: they
+				# narrow a result that core's scoping has already bounded, exactly
+				# as `search` and `skills` do.
+				"start_date",
+				"end_date",
+				"only_available",
+				"exclude_conflicts",
+			},
 		)
 
 		for signature in (parameters, set(inspect.signature(api.find_candidates).parameters)):
@@ -348,7 +366,12 @@ class TestTheCriteriaThatArePending(MatchingTestCase):
 		for row in result["pending_criteria"]:
 			self.assertIn("criterion", row)
 			self.assertIn("why", row)
-			self.assertIn(row["status"], ("pending", "proposed"))
+			# `advisory` joined the vocabulary when availability and double-booking
+			# stopped being unanswered: both are computed now, and both rank rather
+			# than exclude. The list is still called `pending_criteria` because it
+			# answers the same question — what is this search *not* deciding for
+			# you — and an advisory criterion is exactly that.
+			self.assertIn(row["status"], ("pending", "proposed", "advisory"))
 
 	def test_skills_are_no_longer_pending(self):
 		"""Skills used to be named here as unmatched; now they are a real filter.

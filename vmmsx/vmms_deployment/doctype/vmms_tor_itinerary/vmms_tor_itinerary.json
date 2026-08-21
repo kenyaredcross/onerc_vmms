@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-20 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "activity_date",
+  "activity_time",
+  "activity",
+  "person_responsible"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "description": "The day this activity happens. A plain date rather than a datetime because an itinerary is planned in days and hours, not to the second, and the time is its own field so a society can leave it blank for a whole-day activity.",
+   "fieldname": "activity_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "description": "When on that day. Optional: an activity with no time is a whole-day one, which is an ordinary answer rather than a missing one.",
+   "fieldname": "activity_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Time"
+  },
+  {
+   "columns": 5,
+   "description": "What happens: travel to the branch, community entry meeting, household visits, debrief. Never read by code.",
+   "fieldname": "activity",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Activity",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "columns": 2,
+   "description": "Who leads this activity. Free text rather than a Link, because an itinerary is written before anybody is deployed and often names somebody outside the society altogether: a county officer, a partner agency's focal point, a community elder. The deployment's own leader is a separate answer, recorded on VMMS Deployment Assignment.",
+   "fieldname": "person_responsible",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Person Responsible"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS TOR Itinerary",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

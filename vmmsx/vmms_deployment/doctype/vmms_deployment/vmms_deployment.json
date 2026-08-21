@@ -12,12 +12,16 @@
   "column_break_deployment",
   "geo_node",
   "status",
+  "volunteers_required",
+  "email_template",
   "period_section",
   "start_date",
   "column_break_period",
   "end_date",
   "roster_section",
   "participants",
+  "feed_section",
+  "updates",
   "notes_section",
   "notes"
  ],
@@ -70,6 +74,20 @@
    "reqd": 1
   },
   {
+   "default": "0",
+   "description": "How many volunteers this deployment needs. The cap the roster is measured against: once that many assignments are Assigned or Accepted, deployment/services/assignment.py::assert_room refuses another, taking a row lock on this deployment first so two coordinators accepting the last place at the same moment cannot both get it. Zero means the society has not said, and a deployment that has not said how many it needs is never full.",
+   "fieldname": "volunteers_required",
+   "fieldtype": "Int",
+   "label": "Volunteers Required"
+  },
+  {
+   "description": "The society's own wording for the message a volunteer receives when they are asked to join this deployment. Optional: without one, the notification carries this app's plain sentence. A Link to Frappe's own Email Template rather than a field of prose here, because the wording is a society's and belongs where a society already edits its wording.",
+   "fieldname": "email_template",
+   "fieldtype": "Link",
+   "label": "Email Template",
+   "options": "Email Template"
+  },
+  {
    "fieldname": "period_section",
    "fieldtype": "Section Break",
    "label": "Period"
@@ -100,11 +118,26 @@
    "label": "Roster"
   },
   {
-   "description": "Who is deployed. This roster is the truth of participation and the thing the deployment time log's ownership rule checks against: a log naming this deployment is refused at save unless the volunteer filing it appears here. That check is on the server, so hiding a deployment from a picker is a convenience and never the control. A volunteer appears at most once.",
+   "description": "Superseded by VMMS Deployment Assignment, and retained only so that vmmsx.patches.migrate_participants_to_assignments can read what a site already holds. Nothing writes it. The roster became a register of documents because each person's deployment needed a URL they could open, a reference a notification could point at, a lifecycle with a grammar, and somewhere to record which submitted terms of reference they agreed to \u2014 none of which a child row can carry. See deployment/services/assignment.py for the argument in full.",
    "fieldname": "participants",
    "fieldtype": "Table",
-   "label": "Participants",
-   "options": "VMMS Deployment Participant"
+   "label": "Roster (superseded)",
+   "options": "VMMS Deployment Participant",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "feed_section",
+   "fieldtype": "Section Break",
+   "label": "Feed"
+  },
+  {
+   "description": "What has happened on this deployment, in order: notes from the field, milestones, concerns, and the entries the service writes itself when the deployment moves status or somebody joins or leaves. Written only through deployment/services/feed.py, which stamps the author and the time from the session \u2014 a feed people could back-date or attribute to somebody else would be worse than no feed. The volunteers' own task reports are not copied in here; api/deployment.py::get_deployment_feed merges them at read time from the tasks linked to this deployment, so there is one copy of each report and it stays with the task it belongs to.",
+   "fieldname": "updates",
+   "fieldtype": "Table",
+   "label": "Updates",
+   "options": "VMMS Deployment Update",
+   "read_only": 1
   },
   {
    "fieldname": "notes_section",

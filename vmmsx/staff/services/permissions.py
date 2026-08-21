@@ -72,6 +72,7 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 	society would have no way to hand it to anybody.
 	"""
 	from vmmsx.deployment.services import society as deployment_society
+	from vmmsx.notifications.services import society as announcement_society
 	from vmmsx.sms.services import society as sms_society
 	from vmmsx.staff.services.workspaces import (
 		BRANCH_LOCATION_SCOPE_ROLE_FIELD,
@@ -135,6 +136,23 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 		# with the campaign owner's own already-scoped permissions. See
 		# `vmmsx/sms/services/society.py`.
 		(holder(sms_society.SCOPE_ROLE_FIELD), {"SMS Campaign": FULL}),
+		# Broadcasting. `VMMS Announcement` has been scopeable on its own
+		# `geo_node` since the notification module was built — see `hooks.py` —
+		# and until now no scope role was ever granted it, so the register was
+		# an administrator's and the fan-out had no console surface at all. The
+		# grant is what opens the Communication section; core's scoping is what
+		# keeps a branch coordinator addressing their own branch and not the
+		# country. `create` matters here more than anywhere else in this table:
+		# composing is the whole of what the section does.
+		#
+		# The type beside it is read-only, and that asymmetry is deliberate: what
+		# kinds of announcement a society has is a decision made once, and a
+		# coordinator picking one from a list in the middle of composing should
+		# not be able to invent a new kind by typing in the box.
+		(
+			holder(announcement_society.SCOPE_ROLE_FIELD),
+			{"VMMS Announcement": FULL, "VMMS Announcement Type": READ_ONLY},
+		),
 	]
 
 

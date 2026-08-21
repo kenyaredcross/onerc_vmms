@@ -249,7 +249,11 @@ CERTIFICATION_TYPES = (
 # answer correctly.
 
 TIME_LOG_CATEGORIES = (
-	("emergency_response", "Emergency Response", "Time given on an active emergency or its immediate aftermath."),
+	(
+		"emergency_response",
+		"Emergency Response",
+		"Time given on an active emergency or its immediate aftermath.",
+	),
 	("blood_drive", "Blood Donation Drive", "Donor reception, screening support and post-donation care."),
 )
 
@@ -303,8 +307,7 @@ TERMS = (
 		"name": "Flood Response Team",
 		"project": "nairobi-flood-response-2026",
 		"purpose": (
-			"Search, evacuation support and relief distribution in communities cut off by"
-			" seasonal flooding."
+			"Search, evacuation support and relief distribution in communities cut off by seasonal flooding."
 		),
 		"responsibilities": (
 			"Assist with household evacuation and headcount.\n"
@@ -980,7 +983,7 @@ def _terms() -> list[dict]:
 			rows.append({"key": terms["key"], "status": "exists"})
 			continue
 
-		frappe.get_doc(
+		doc = frappe.get_doc(
 			{
 				"doctype": "VMMS Terms of Reference",
 				"tor_key": terms["key"],
@@ -997,7 +1000,12 @@ def _terms() -> list[dict]:
 					for key, mandatory in terms["requires"]
 				],
 			}
-		).insert(ignore_permissions=True)
+		)
+		doc.insert(ignore_permissions=True)
+		# Submitted, not left as a draft: a terms of reference takes no deployment
+		# until its wording is frozen, and a seed that stopped at draft would hand
+		# a society a register of specifications none of which can be used.
+		doc.submit()
 
 		rows.append({"key": terms["key"], "status": "created"})
 
@@ -1314,7 +1322,9 @@ def _time_logs() -> list[dict]:
 					"activity_date": activity_date,
 					"hours": hours,
 					"log_type": "general",
-					"log_category": category if frappe.db.exists("VMMS Time Log Category", category) else None,
+					"log_category": category
+					if frappe.db.exists("VMMS Time Log Category", category)
+					else None,
 					"notes": notes,
 				}
 			).insert(ignore_permissions=True)
@@ -1479,24 +1489,30 @@ def _rosters() -> list[dict]:
 
 	volunteers = [name for name in (_volunteer_of(person["email"]) for person in VOLUNTEERS) if name]
 
+	# The roster is a register of `VMMS Deployment Assignment` documents rather
+	# than a child table, so seeding one is a fan-out rather than a list of rows
+	# and a save. `assignment.deploy` is the same call the console's own bulk
+	# action makes, which is the point: a seeded society and a real one arrive at
+	# their rosters through one code path.
+	from vmmsx.deployment.services import assignment as assignment_service
+
 	for entry in deployments:
 		deployment = frappe.get_doc("VMMS Deployment", entry.name)
-		listed = {row.volunteer for row in deployment.participants}
-		added = 0
 
-		for volunteer in volunteers:
-			if volunteer in listed:
-				continue
+		# `Assigned`, not `Pending`: these people are the seed's record of a
+		# deployment that happened, not questions waiting for an answer that will
+		# never come. It also keeps the seed silent — only a question notifies.
+		outcome = assignment_service.deploy(
+			deployment,
+			volunteers,
+			status=assignment_service.STATUS_ASSIGNED,
+		)
 
-			deployment.append("participants", {"volunteer": volunteer, "joined_on": today()})
-			added += 1
-
-		if not added:
+		if not outcome["raised"]:
 			rows.append({"key": deployment.name, "status": "exists"})
 			continue
 
-		deployment.save(ignore_permissions=True)
-		rows.append({"key": deployment.name, "status": "created", "added": added})
+		rows.append({"key": deployment.name, "status": "created", "added": outcome["raised"]})
 
 	return rows
 
@@ -1539,9 +1555,9 @@ def _event_setup() -> list[dict]:
 			rows.append({"key": name, "status": "exists"})
 			continue
 
-		frappe.get_doc(
-			{"doctype": "Event Venue", "__newname": name, "address": address}
-		).insert(ignore_permissions=True)
+		frappe.get_doc({"doctype": "Event Venue", "__newname": name, "address": address}).insert(
+			ignore_permissions=True
+		)
 		rows.append({"key": name, "status": "created"})
 
 	return rows

@@ -74,14 +74,34 @@ SPOKEN_LANGUAGES = (
 
 # --- the hierarchy ------------------------------------------------------------
 
-# Two rungs, not four: TRCS's own copy says 31+ regional branches and 1,250+
-# sub-branches, but the sub-branches are not named anywhere public, and this
-# seed does not invent 1,250 names to fill a third level — the same restraint
-# `gambia_operations.py` takes with people. A region is a real, sourced unit;
-# a fabricated sub-branch tree under it would not be.
+# Three rungs: National, Branch, Sub-branch.
+#
+# **The branch rung is TRCS's own and is sourced.** The society's copy says 31+
+# regional branches, one per administrative region, which is exactly the list
+# below.
+#
+# **The sub-branch rung is the society's own structure too — "1,250+
+# sub-branches" — but TRCS does not publish their names**, and this seed will
+# not invent 1,250 of them. What it does instead is the narrowest honest thing:
+# it creates sub-branches only under the branches this demo actually puts people
+# in, and names them after **Tanzania's own administrative districts** within
+# each of those regions, which are real units at the right size. See
+# `SUB_BRANCHES`. A society installing this replaces them with its own.
+#
+# The rung exists at all because the approval chain needs it: a volunteer
+# application and a membership are both reviewed at the sub-branch first and
+# then at the branch, which is two rungs of *reviewers* and therefore two rungs
+# of tree.
 LEVELS = (
 	{"key": "trcs-national", "name": "National", "order": 1, "requires_parent": 0, "is_lowest": False},
-	{"key": "trcs-region", "name": "Region", "order": 2, "requires_parent": 1, "is_lowest": True},
+	{"key": "trcs-branch", "name": "Branch", "order": 2, "requires_parent": 1, "is_lowest": False},
+	{
+		"key": "trcs-subbranch",
+		"name": "Sub-Branch",
+		"order": 3,
+		"requires_parent": 1,
+		"is_lowest": True,
+	},
 )
 
 NATIONAL_NODE = ORGANIZATION_NAME
@@ -124,6 +144,27 @@ REGIONS = (
 	"Kaskazini Pemba",
 	"Kusini Pemba",
 )
+
+# Sub-branches, by the branch they hang under.
+#
+# **Only where the demo has people.** Six branches out of thirty-one, because a
+# sub-branch that nobody is registered at, assigned to or deployed from teaches
+# a reader nothing and makes the tree harder to walk. The other twenty-five
+# branches have none, which is also what a real society mid-rollout looks like.
+#
+# **The names are Tanzania's own districts within each region**, not invented
+# ones — Kinondoni, Ilala and Temeke really are districts of Dar es Salaam. They
+# stand in for sub-branch names TRCS does not publish, and they are the right
+# size of unit for one. Replace them with the society's real sub-branch register
+# before this stops being a demo.
+SUB_BRANCHES = {
+	"Dar es Salaam": ("Kinondoni", "Ilala", "Temeke", "Ubungo", "Kigamboni"),
+	"Arusha": ("Arusha City", "Meru", "Karatu"),
+	"Mwanza": ("Nyamagana", "Ilemela", "Sengerema"),
+	"Dodoma": ("Dodoma City", "Chamwino", "Bahi"),
+	"Kilimanjaro": ("Moshi", "Hai", "Rombo"),
+	"Mbeya": ("Mbeya City", "Rungwe", "Kyela"),
+}
 
 # --- roles --------------------------------------------------------------------
 
@@ -244,17 +285,63 @@ APPROVER_WRITABLE = {
 	MEMBERSHIP_DOCTYPE: ROLE_MEMBERSHIP_APPROVER,
 }
 
-# Two rungs, matching the two-rung geo tree: a region decides first, and the
-# national desk is the backstop every unstaffed region escalates to.
-STAGE_REGION = "Regional Coordinator"
-STAGE_NATIONAL = "National Desk"
+# Two stages, and they are the bottom two rungs of the tree rather than the top
+# two: the sub-branch that actually knows the applicant reviews first, and the
+# branch above it confirms. The national desk is not a stage — it runs the
+# society, it does not read every volunteer form in the country.
+#
+# **The same chain governs both doctypes.** A volunteer application and a
+# membership are reviewed by the same two rungs, by different roles.
+STAGE_SUB_BRANCH = "Sub-Branch Review"
+STAGE_BRANCH = "Branch Review"
 
-# --- the demo approver ----------------------------------------------------
+# --- the demo approvers ---------------------------------------------------
 
-APPROVER_USER = "approver@trcs.demo"
-APPROVER_FIRST_NAME = "Amina"
-APPROVER_LAST_NAME = "Mwakalinga"
-APPROVER_REGION = "Dar es Salaam"
+# One login per rung of the chain, named after the rung they sit on, because the
+# whole point of them is to show what the two stages feel like from the inside:
+# sign in as one and the application is waiting, sign in as the other and it is
+# not there yet.
+SUB_BRANCH_APPROVER = "subbranch@mail.com"
+BRANCH_APPROVER = "branch@mail.com"
+
+# Where the two of them sit.
+#
+# **Each is placed at every rung of their own kind that this seed creates** —
+# the sub-branch approver at all sixteen sub-branches, the branch approver at
+# all six branches that have them, plus the national node. One person covering a
+# whole rung is not what a real society looks like, and it is exactly what a
+# demo needs: every application the seed files, wherever it was filed, has a
+# real reviewer waiting at both stages, so signing in as either login shows a
+# queue with something in it.
+#
+# A society replaces both with its own people, one per branch. `MANUAL_STEPS`
+# says so.
+#
+# (login, first name, last name)
+APPROVERS = (
+	(SUB_BRANCH_APPROVER, "Amina", "Mwakalinga"),
+	(BRANCH_APPROVER, "Joseph", "Kimaro"),
+)
+
+# The rung each of the two covers, as the roles they hold there.
+APPROVER_ROLES = (ROLE_VOLUNTEER_APPROVER, ROLE_MEMBERSHIP_APPROVER, ROLE_BRANCH_COORDINATOR)
+
+APPROVER_BRANCH = "Dar es Salaam"
+APPROVER_SUB_BRANCH = "Kinondoni"
+
+# The password every seeded login gets.
+#
+# **A demo site's password, and it must never be a production one.** It is
+# written here in the open on purpose: a demo nobody can sign into is a
+# screenshot, and the alternative — telling somebody to set six passwords by
+# hand before they can look at the thing — is why the manual step this replaced
+# was always the one that got skipped. The seed refuses to run against a site
+# that has real people on it; that refusal is what keeps this honest.
+DEMO_PASSWORD = "Kenya.11"
+
+# Kept so a site seeded before the two-rung chain existed still resolves.
+APPROVER_USER = SUB_BRANCH_APPROVER
+APPROVER_REGION = APPROVER_BRANCH
 
 
 def main(commit: bool = True) -> dict:
@@ -287,10 +374,12 @@ def main(commit: bool = True) -> dict:
 
 
 MANUAL_STEPS = (
-	"Assign somebody to each approver role at the national node, in Geo Assignment. The regional"
-	" rung is optional and skipped when empty; the national one is the final decision and nothing"
-	" above it exists to escalate to.",
-	f"Set a password for {APPROVER_USER} on their User form before signing in as them.",
+	"Assign somebody to each approver role at every branch you intend to use, in Geo Assignment."
+	" The sub-branch rung is optional and is skipped when nobody holds it; the branch rung is the"
+	" decision, and an application anchored under a branch with nobody on it waits forever.",
+	f"Change the demo passwords. Every seeded login is set to {DEMO_PASSWORD!r}, including"
+	f" {SUB_BRANCH_APPROVER} and {BRANCH_APPROVER}. This is a demo credential and must not survive"
+	" contact with real people's records.",
 	"Replace the Manual payment gateway with a real one in OneRC Payment Settings when the society"
 	" is ready to take money online. Until then a member applies and pays at the branch, and a"
 	" clerk confirms it — see _payment_gateway() in this file.",
@@ -367,19 +456,28 @@ def _has_lowest_level() -> bool:
 
 
 def _geo_nodes() -> list[dict]:
-	"""The society and its 31 regions.
+	"""The society, its 31 branches, and sub-branches where the demo needs them.
 
 	Docnames are opaque (`GEO-.#####`), so idempotence is a lookup on the shape
 	of the row rather than on its name: a node is the same node when its label,
 	its level and its parent all match.
+
+	A branch carrying sub-branches is a group; one that does not is a leaf. That
+	is not decoration — a group node is what the picker walks into, and marking a
+	branch with no children as a group draws an empty select underneath it.
 	"""
 	rows = []
 	national, created = _node(NATIONAL_NODE, LEVELS[0]["key"], None, is_group=True)
 	rows.append({"key": NATIONAL_NODE, "name": national, "status": created})
 
 	for label in REGIONS:
-		node, created = _node(label, LEVELS[1]["key"], national)
+		children = SUB_BRANCHES.get(label, ())
+		node, created = _node(label, LEVELS[1]["key"], national, is_group=bool(children))
 		rows.append({"key": label, "name": node, "status": created})
+
+		for child in children:
+			leaf, made = _node(child, LEVELS[2]["key"], node)
+			rows.append({"key": f"{label} / {child}", "name": leaf, "status": made})
 
 	return rows
 
@@ -412,13 +510,44 @@ def national() -> str | None:
 	)
 
 
-def region(label: str) -> str | None:
-	"""A region by name, by shape. Used by the operations and jobs seeds."""
+def branch(label: str) -> str | None:
+	"""A branch by name, by shape. The middle rung, one per region."""
 	return frappe.db.get_value(
 		"Geo Node",
 		{"geo_node_name": label, "geo_level": LEVELS[1]["key"], "parent_geo_node": national()},
 		"name",
 	)
+
+
+def sub_branch(label: str, parent_label: str) -> str | None:
+	"""A sub-branch by name *and* by the branch it hangs under.
+
+	Both halves are needed and the second is not belt-and-braces: district names
+	repeat across Tanzania's regions, and a lookup on the label alone would
+	resolve "Moshi" to whichever one the database happened to return first.
+	"""
+	parent = branch(parent_label)
+
+	if not parent:
+		return None
+
+	return frappe.db.get_value(
+		"Geo Node",
+		{"geo_node_name": label, "geo_level": LEVELS[2]["key"], "parent_geo_node": parent},
+		"name",
+	)
+
+
+def region(label: str) -> str | None:
+	"""The old name for `branch`, kept because other seed modules call it.
+
+	The middle rung was called Region when this society had two rungs and the
+	region *was* the branch. It is called Branch now that a sub-branch hangs
+	beneath it, which is the society's own word for both. This alias means
+	`tanzania_operations.py` and `tanzania_jobs.py` did not have to be edited in
+	the same breath as the rename, and it resolves the same node either way.
+	"""
+	return branch(label)
 
 
 # --- the society single ---------------------------------------------------
@@ -534,15 +663,25 @@ def _membership_types() -> list[dict]:
 
 
 def _workflows() -> list[dict]:
-	"""One workflow per approvable doctype, two rungs: region, then national.
+	"""One workflow per approvable doctype, two rungs: sub-branch, then branch.
 
-	The regional stage is optional — `engine._advance` skips it when the region
-	has named nobody — and the national stage is not, for the same reason it is
-	not optional in `gambia.py`'s ladder: nothing above it exists to escalate to.
-	The seed places that holder itself in `place_approver()`.
+	The sub-branch stage is optional — `engine._advance` skips it when that
+	sub-branch has named nobody, which is the case in twenty-five of the
+	thirty-one branches — and the branch stage is not, for the same reason the
+	last stage is never optional in `gambia.py`'s ladder: it is the decision, and
+	an application that skipped every stage would be approved by nobody. The seed
+	places both holders itself in `place_approver()`.
+
+	Both governed doctypes get the same chain. A volunteer application and a
+	membership are read by the same two rungs of the society, by the two
+	different roles `APPROVER_WRITABLE` names.
 	"""
 	rows = []
-	anchor_levels = [LEVELS[1]["key"]]
+	# A record may be anchored at a sub-branch or at a branch. Both, because a
+	# sub-branch is where most people join and a branch is where somebody in a
+	# region with no sub-branch yet has to join — twenty-five of the thirty-one
+	# have none. ACC-03 in data, which is the only place it may be.
+	anchor_levels = [LEVELS[1]["key"], LEVELS[2]["key"]]
 
 	for doctype, role, applicant_field in (
 		(APPLICATION_DOCTYPE, ROLE_VOLUNTEER_APPROVER, "red_profile"),
@@ -564,9 +703,16 @@ def _workflows() -> list[dict]:
 				"reapplication_cooldown_days": 0,
 				"application_expiry_days": 0,
 				"allowed_anchor_levels": [{"geo_level": level} for level in anchor_levels],
+				# Sub-branch first, branch second, and the first one is optional
+				# while the second is not. That asymmetry is the whole design: an
+				# applicant who joined at a branch directly, or at a sub-branch
+				# nobody has been assigned to yet, has no first-stage reviewer to
+				# wait for and skips straight to the branch. A society that made
+				# both mandatory would have every application in twenty-five of its
+				# thirty-one branches stall forever at a rung with nobody on it.
 				"stages": [
-					_stage(1, STAGE_REGION, role, LEVELS[1]["key"], is_optional=1),
-					_stage(2, STAGE_NATIONAL, role, LEVELS[0]["key"], is_optional=0),
+					_stage(1, STAGE_SUB_BRANCH, role, LEVELS[2]["key"], is_optional=1),
+					_stage(2, STAGE_BRANCH, role, LEVELS[1]["key"], is_optional=0),
 				],
 			}
 		).insert(ignore_permissions=True)
@@ -577,7 +723,7 @@ def _workflows() -> list[dict]:
 				"name": workflow.name,
 				"status": "created",
 				"role": role,
-				"rungs": "+".join(LEVELS[i]["name"] for i in (1, 0)),
+				"rungs": " then ".join(LEVELS[i]["name"] for i in (2, 1)),
 			}
 		)
 
@@ -620,68 +766,137 @@ def _approver_permissions() -> list[dict]:
 
 
 def place_approver() -> list[dict]:
-	"""One person holding the approver roles, placed at one region and at the top.
+	"""One approver per rung of the chain, each placed where they decide.
 
-	Public, like `gambia.py`'s own `place_approver()`, for the same reason: the
-	national placement is the routing backstop, not decoration, and a repair
-	patch may need to call this by name on a site that was seeded before one
-	existed. This person deliberately does not hold `ROLE_DEPLOYMENT_MANAGER` or
-	`ROLE_STIPEND_MANAGER` — see `gambia.py`'s own note on why the split is only
-	visible on a demo account that is missing something.
+	**Two people, not one, and that is the point.** The chain is sub-branch then
+	branch, and a single account holding both rungs would approve its own
+	first-stage decision at the second stage — which the engine permits, because
+	an approver holding a role at two nodes is an ordinary thing in a small
+	society, and which teaches a reader of this demo exactly nothing about how
+	two stages behave. Signing in as `subbranch@mail.com` shows an application
+	waiting; signing in as `branch@mail.com` shows it only after the first rung
+	has passed it up.
+
+	Public, like `gambia.py`'s own `place_approver()`, for the same reason: a
+	repair patch may need to call this by name on a site seeded before the
+	sub-branch rung existed.
+
+	Neither of them holds `ROLE_DEPLOYMENT_MANAGER` or `ROLE_STIPEND_MANAGER` —
+	see `gambia.py`'s note on why the split is only visible on a demo account
+	that is missing something.
 	"""
 	rows = []
-	node = region(APPROVER_REGION)
+
+	for login, first, last in APPROVERS:
+		rows.append({"key": login, "status": _approver_user(login, first, last)})
+
+		for role in APPROVER_ROLES:
+			rows.append({"key": f"{login} holds {role}", "status": _grant(login, role)})
+
+	# Every sub-branch this seed created, for the first stage.
+	for parent_label, children in SUB_BRANCHES.items():
+		for child in children:
+			node = sub_branch(child, parent_label)
+
+			if not node:
+				rows.append({"key": f"{parent_label} / {child}", "status": "skipped: not seeded"})
+				continue
+
+			for role in APPROVER_ROLES:
+				rows.append(
+					{
+						"key": f"{SUB_BRANCH_APPROVER}: {role} at {child}",
+						"status": _assign(SUB_BRANCH_APPROVER, role, node),
+					}
+				)
+
+	# Every branch above one, for the second stage — the decision.
+	for parent_label in SUB_BRANCHES:
+		node = branch(parent_label)
+
+		if not node:
+			continue
+
+		for role in APPROVER_ROLES:
+			rows.append(
+				{
+					"key": f"{BRANCH_APPROVER}: {role} at {parent_label}",
+					"status": _assign(BRANCH_APPROVER, role, node),
+				}
+			)
+
+	# And at the national node. Not as a stage — there isn't one there — but so
+	# that a coordinator signing in as them sees the whole society rather than
+	# six branches of it, which is what makes the admin screens worth opening on
+	# a demo.
 	root = national()
 
-	if not node:
-		return [{"key": APPROVER_USER, "status": f"skipped: {APPROVER_REGION} not seeded"}]
+	if root:
+		for role in APPROVER_ROLES:
+			rows.append(
+				{
+					"key": f"{BRANCH_APPROVER}: {role} at the national node",
+					"status": _assign(BRANCH_APPROVER, role, root),
+				}
+			)
 
-	if frappe.db.exists("User", APPROVER_USER):
-		rows.append({"key": APPROVER_USER, "status": "exists"})
-		user = frappe.get_doc("User", APPROVER_USER)
+	for login, _first, _last in APPROVERS:
+		frappe.clear_cache(user=login)
+
+	return rows
+
+
+def _approver_user(login: str, first: str, last: str) -> str:
+	"""The login, with `DEMO_PASSWORD` set on it. See that constant's note."""
+	from frappe.utils.password import update_password
+
+	if frappe.db.exists("User", login):
+		status = "exists"
 	else:
-		user = frappe.get_doc(
+		frappe.get_doc(
 			{
 				"doctype": "User",
-				"email": APPROVER_USER,
-				"first_name": APPROVER_FIRST_NAME,
-				"last_name": APPROVER_LAST_NAME,
+				"email": login,
+				"first_name": first,
+				"last_name": last,
 				"send_welcome_email": 0,
 				"user_type": "System User",
 			}
 		).insert(ignore_permissions=True)
-		rows.append({"key": APPROVER_USER, "status": "created"})
+		status = "created"
 
-	for role in (ROLE_VOLUNTEER_APPROVER, ROLE_MEMBERSHIP_APPROVER, ROLE_BRANCH_COORDINATOR):
-		if role not in frappe.get_roles(APPROVER_USER):
-			user.add_roles(role)
-			rows.append({"key": f"{APPROVER_USER} holds {role}", "status": "created"})
-		else:
-			rows.append({"key": f"{APPROVER_USER} holds {role}", "status": "exists"})
+	# Set on every run, not only on create. A demo whose documented password
+	# stops working because somebody changed it once is worse than no demo.
+	update_password(login, DEMO_PASSWORD)
 
-		for where, label in ((node, APPROVER_REGION), (root, "the national node")):
-			if not where:
-				continue
+	return status
 
-			if frappe.db.exists("Geo Assignment", {"user": APPROVER_USER, "role": role, "geo_node": where}):
-				rows.append({"key": f"{role} at {label}", "status": "exists"})
-				continue
 
-			frappe.get_doc(
-				{
-					"doctype": "Geo Assignment",
-					"user": APPROVER_USER,
-					"role": role,
-					"geo_node": where,
-					"is_active": 1,
-				}
-			).insert(ignore_permissions=True)
+def _grant(login: str, role: str) -> str:
+	if role in frappe.get_roles(login):
+		return "exists"
 
-			rows.append({"key": f"{role} at {label}", "status": "created"})
+	frappe.get_doc("User", login).add_roles(role)
 
-	frappe.clear_cache(user=APPROVER_USER)
+	return "created"
 
-	return rows
+
+def _assign(login: str, role: str, node: str) -> str:
+	"""One Geo Assignment: this person holds this role at this node."""
+	if frappe.db.exists("Geo Assignment", {"user": login, "role": role, "geo_node": node}):
+		return "exists"
+
+	frappe.get_doc(
+		{
+			"doctype": "Geo Assignment",
+			"user": login,
+			"role": role,
+			"geo_node": node,
+			"is_active": 1,
+		}
+	).insert(ignore_permissions=True)
+
+	return "created"
 
 
 # --- settings vmmsx owns --------------------------------------------------

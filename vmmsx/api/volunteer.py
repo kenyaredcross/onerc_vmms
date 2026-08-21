@@ -331,6 +331,7 @@ def get_dossier(name: str, as_of: str | None = None) -> dict:
 	"""
 	from frappe.utils import getdate, today
 
+	from vmmsx.api import person
 	from vmmsx.deployment.services import participation
 	from vmmsx.volunteer.services import capabilities
 	from vmmsx.volunteer.services import card as volunteer_card
@@ -351,6 +352,12 @@ def get_dossier(name: str, as_of: str | None = None) -> dict:
 		"deployments": participation.history_of(volunteer.name),
 		"time": timelog.summary(volunteer.name),
 		"application": application_service.verification_dto(volunteer),
+		# Which of the society's registers this person is in — so the page can
+		# say "also a member" instead of sending a coordinator to search the
+		# other register for the name. Composed here rather than in the
+		# volunteer module, which must not know the member module exists; see
+		# `api/person.py`. A person in no other register is the ordinary case.
+		"registers": person.registers(volunteer.red_profile),
 		# Whether there is a card to reprint at all, asked of the same function
 		# `cards.download_card` asserts on. `card.assert_holds`'s own docstring
 		# asks for this: shared by the screen and the download so the two cannot
@@ -440,6 +447,13 @@ def _match_row(volunteer) -> dict:
 		"volunteer": volunteer.name,
 		"red_profile": volunteer.red_profile,
 		"full_name": identity.display_name(volunteer),
+		# The face belongs to "enough to choose somebody" just as much as the
+		# name does: a list of candidates is a list a coordinator is *scanning*,
+		# and a photograph is how they pick out the person they already know
+		# from the four others with a similar name. Read through the same
+		# allow-list as everything else and stored nowhere. None is ordinary —
+		# the surface draws initials.
+		"photo": identity.read(volunteer, ("profile_photo",)).get("profile_photo"),
 		"status": volunteer.status,
 		**capabilities.placement(volunteer),
 		**capabilities.current(volunteer),
@@ -506,9 +520,7 @@ def reinstate_volunteer(name: str, reason: str | None = None) -> dict:
 
 
 @frappe.whitelist()
-def record_volunteer_exit(
-	name: str, on_date: str | None = None, reason: str | None = None
-) -> dict:
+def record_volunteer_exit(name: str, on_date: str | None = None, reason: str | None = None) -> dict:
 	"""The person has stopped volunteering. Terminal, and idempotent.
 
 	`on_date` defaults to today inside the service. It is accepted because an
@@ -641,6 +653,105 @@ def my_volunteer() -> dict | None:
 
 
 @frappe.whitelist()
+def my_availability() -> dict | None:
+	"""When the logged-in person has said they can serve. Takes no person.
+
+	Possessive, like `my_volunteer` above and for the same reason: a volunteer
+	holds no Geo Assignment, so every coordinator endpoint fails closed for them,
+	and their own availability is the last thing they should have to ask
+	permission to see. There is no argument by which a caller could name anybody
+	else.
+
+	The society's own windows come back with it, because the screen this serves
+	is a grid of days against windows and it cannot draw its own columns.
+
+	None rather than an error for somebody who is not a volunteer, matching
+	`my_volunteer`.
+	"""
+	from vmmsx.volunteer.services import availability
+
+	name = _my_volunteer()
+
+	if not name:
+		return None
+
+	return {
+		**availability.dto(name),
+		"slots": availability.slots(),
+	}
+
+
+@frappe.whitelist()
+def set_my_availability(
+	days: list | str | None = None,
+	available_on_holidays: bool | int | str = False,
+	valid_from: str | None = None,
+	valid_to: str | None = None,
+	notes: str | None = None,
+) -> dict:
+	"""Write the logged-in person's own weekly availability. Takes no person.
+
+	**Replaces the whole pattern**, because the screen is a grid of tick boxes:
+	what arrives is the entire answer, and a box somebody un-ticked has to
+	disappear. Merging would make un-ticking impossible, which is the one thing a
+	grid has to be able to do.
+
+	The volunteer comes from the session, so there is no argument by which
+	somebody could write another person's availability. That is what admits the
+	elevated save inside the service — a volunteer holds no permission on their
+	own schedule, and granting every volunteer write on the doctype so they could
+	edit their own would be far wider than the thing being permitted.
+	"""
+	from vmmsx.volunteer.services import availability
+
+	name = _my_volunteer()
+
+	if not name:
+		frappe.throw(
+			frappe._("You do not have a volunteer record, so there is no availability to set."),
+			frappe.PermissionError,
+		)
+
+	return availability.set_schedule(
+		name,
+		days=_rows(days),
+		available_on_holidays=_availability_flag(available_on_holidays),
+		valid_from=valid_from,
+		valid_to=valid_to,
+		notes=notes,
+	)
+
+
+def _rows(value: list | str | None) -> list[dict]:
+	"""The grid's ticked boxes as they arrive over HTTP.
+
+	Frappe hands a whitelisted method either a real list or the JSON it was sent
+	as, depending on how the caller framed the request. Anything that is not a
+	dict is dropped here rather than reaching the service, which filters again on
+	the two keys it actually writes.
+	"""
+	if isinstance(value, str):
+		value = frappe.parse_json(value or "[]")
+
+	if not isinstance(value, list):
+		return []
+
+	return [row for row in value if isinstance(row, dict)]
+
+
+def _availability_flag(value: bool | int | str) -> bool:
+	"""A checkbox as it arrives over HTTP.
+
+	`"false"` is a truthy string, so a volunteer un-ticking "available on
+	holidays" would otherwise be recorded as having ticked it.
+	"""
+	if isinstance(value, str):
+		return value.strip().lower() not in ("", "0", "false", "no")
+
+	return bool(value)
+
+
+@frappe.whitelist()
 def my_time_logs(limit: int = 30) -> dict | None:
 	"""What the logged-in person has logged, totalled and listed. Takes no person.
 
@@ -680,7 +791,7 @@ MAX_LOG_ROWS = 100
 def _bounded_limit(limit) -> int:
 	try:
 		value = int(limit)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 30
 
 	return max(1, min(value, MAX_LOG_ROWS))

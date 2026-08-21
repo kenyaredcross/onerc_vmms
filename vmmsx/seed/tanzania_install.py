@@ -6,13 +6,28 @@
     bench --site <site> execute vmmsx.seed.tanzania_install.main
 
 This is the production runner, on the same shape as `gambia_install.py`: it
-does in order what a person would otherwise do in four commands, and it
+does in order what a person would otherwise do in six commands, and it
 refuses rather than guesses when the site is not in the state it expects.
 
-    1. purge     empty an existing society's records off the site
-    2. tanzania  roles, the two-rung ladder, 31 regions, plans, workflows
-    3. content   the society's wording on the public landing page
+    1. purge      empty an existing society's records off the site
+    2. tanzania   roles, the three-rung ladder, 31 branches and their
+                  sub-branches, plans, and the sub-branch -> branch workflows
+    3. content    the society's wording on the public landing page
     4. operations vocabularies, events, stories, locations, HRMS job openings
+    5. people     fifteen volunteers who register through the real endpoint and
+                  are decided by the real approval engine, plus the two approver
+                  logins that decided them
+    6. work       what the society then did with them: six programmes, ten terms
+                  of reference, ten deployments and a roster on each, filed by a
+                  coordinator login and answered by the volunteers themselves
+
+**Steps 5 and 6 are why this site reads as one in use rather than one just
+installed.** Nothing in either writes a volunteer record, an approval state or
+an assignment status directly: each person signs in, files an application, and
+is approved, rejected or sent back by somebody with the standing to do it; each
+deployment is then set up by a coordinator through the same endpoints the
+console posts to, and each invitation is answered by the volunteer who received
+it. See `tanzania_people.py` and `tanzania_deployments.py`.
 
 **The purge is opt-in and it is destructive.** `purge=False` is the default, so
 the plain command is safe on a fresh site and does nothing irreversible. Pass
@@ -37,7 +52,7 @@ page.
 import frappe
 
 from vmmsx.seed import purge as purge_service
-from vmmsx.seed import tanzania, tanzania_operations
+from vmmsx.seed import tanzania, tanzania_deployments, tanzania_operations, tanzania_people
 
 
 def main(purge_first: bool = False, dry_run: bool = False, purge: bool = False) -> dict:
@@ -50,10 +65,10 @@ def main(purge_first: bool = False, dry_run: bool = False, purge: bool = False) 
 	report: dict = {}
 
 	if purge_first:
-		print("\n>>> Step 1 of 4: emptying the site of any existing society\n")
+		print("\n>>> Step 1 of 6: emptying the site of any existing society\n")
 		report["purge"] = purge_service.main(dry_run=dry_run)
 	else:
-		print("\n>>> Step 1 of 4: skipped (pass purge=True to empty an existing society)\n")
+		print("\n>>> Step 1 of 6: skipped (pass purge=True to empty an existing society)\n")
 
 	if dry_run:
 		print(
@@ -63,14 +78,28 @@ def main(purge_first: bool = False, dry_run: bool = False, purge: bool = False) 
 		)
 		return report
 
-	print("\n>>> Step 2 of 4: the society, its regions and its plans\n")
+	print("\n>>> Step 2 of 6: the society, its regions and its plans\n")
 	report["tanzania"] = tanzania.main(commit=True)
 
-	print("\n>>> Step 3 of 4: the public landing page\n")
+	print("\n>>> Step 3 of 6: the public landing page\n")
 	report["content"] = report["tanzania"].get("landing_content")
 
-	print("\n>>> Step 4 of 4: events, stories, vocabularies, locations and job openings\n")
+	print("\n>>> Step 4 of 6: events, stories, vocabularies, locations and job openings\n")
 	report["operations"] = tanzania_operations.main(commit=True)
+
+	# Last, and it has to be last: every person below registers through
+	# `register_as_volunteer`, which needs the skills and availability
+	# vocabularies step 4 creates, and is decided by the approvers step 2
+	# placed. Running it earlier does not fail loudly — it produces applications
+	# with no skills on them, which is worse.
+	print("\n>>> Step 5 of 6: people, their applications, and the decisions on them\n")
+	report["people"] = tanzania_people.main(commit=True)
+
+	# After the people, and it has to be after: every deployment below is filled
+	# from the volunteer register step 5 produced, and a roster raised before
+	# anybody was approved would be a portfolio of empty deployments.
+	print("\n>>> Step 6 of 6: projects, terms of reference, deployments and rosters\n")
+	report["work"] = tanzania_deployments.main(commit=True)
 
 	_summary()
 
@@ -111,6 +140,14 @@ def _summary() -> None:
 		if frappe.db.exists("DocType", "Article")
 		else "onerc_core Article not installed",
 		"Published locations": frappe.db.count("VMMS Branch Location", {"is_published": 1}),
+		"Volunteer applications": frappe.db.count(tanzania.APPLICATION_DOCTYPE),
+		"Active volunteers": frappe.db.count("VMMS Volunteer", {"status": "Active"}),
+		"Projects": frappe.db.count("VMMS Project"),
+		"Terms of reference": frappe.db.count("VMMS Terms of Reference"),
+		"Deployments": frappe.db.count("VMMS Deployment"),
+		"People on a deployment": frappe.db.count(
+			"VMMS Deployment Assignment", {"status": ("in", ("Assigned", "Accepted"))}
+		),
 	}
 
 	print("\n" + "=" * 60)
@@ -125,4 +162,9 @@ def _summary() -> None:
 	for step in tanzania.MANUAL_STEPS:
 		print(f"  - {step}")
 
+	print("\nSigning in")
+	print(f"  every seeded login uses the password {tanzania.DEMO_PASSWORD!r}")
+	print(f"  first approval stage: {tanzania.SUB_BRANCH_APPROVER}")
+	print(f"  second approval stage: {tanzania.BRANCH_APPROVER}")
+	print(f"  deployments: {tanzania_deployments.COORDINATOR}")
 	print()

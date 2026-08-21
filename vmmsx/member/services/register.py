@@ -185,11 +185,14 @@ def _row(record, as_of, names: dict, type_names: dict) -> dict:
 	# A plain namespace over the queried fields, so the derivations below can be
 	# the same ones that take a document. Nothing on it is written.
 	membership = frappe._dict(record)
+	person = names.get(membership.member) or {}
 
 	return {
 		"membership": membership.name,
 		"member": membership.member,
-		"full_name": names.get(membership.member) or membership.member,
+		"full_name": person.get("full_name") or membership.member,
+		# None is ordinary and the surface draws initials — see `_names_for`.
+		"photo": person.get("photo"),
 		"membership_type": membership.membership_type,
 		"membership_type_name": type_names.get(membership.membership_type) or membership.membership_type,
 		"geo_node": membership.geo_node,
@@ -205,12 +208,23 @@ def _row(record, as_of, names: dict, type_names: dict) -> dict:
 
 
 def _names_for(records: list[dict]) -> dict:
-	"""Every member's display name, in two queries rather than two per row.
+	"""Every member's name and face, in two queries rather than two per row.
 
 	The register is the one place in this module where the per-record identity
 	read would actually hurt: a hundred rows is a hundred member lookups and a
 	hundred profile lookups. So the hop from member to profile and the read of
 	the profile are each done once for the whole page.
+
+	**The photo is read here for the same reason the name is.** A register is a
+	list somebody is scanning for a person they often already know, and a face
+	is how they find them — so it is part of "enough to find somebody" rather
+	than decoration added on top. It costs one more column on a query that was
+	already running; it does not cost another query, and it must not be allowed
+	to become one.
+
+	Returns a dict of member docname to `{"full_name", "photo"}`. `photo` is a
+	file URL on this site or None, and None is entirely ordinary: most people a
+	branch registers from a paper form have never uploaded one.
 
 	Still read live and still stored nowhere — this is a batching decision, not
 	a caching one, and the values are discarded when the call returns.
@@ -237,11 +251,17 @@ def _names_for(records: list[dict]) -> dict:
 		for row in frappe.get_all(
 			PROFILE_DOCTYPE,
 			filters={"name": ("in", sorted(set(profiles.values())))},
-			fields=["name", "full_name", "first_name", "last_name"],
+			fields=["name", "full_name", "first_name", "last_name", "profile_photo"],
 		)
 	}
 
-	return {member: _display_name(people.get(profile), profile) for member, profile in profiles.items()}
+	return {
+		member: {
+			"full_name": _display_name(people.get(profile), profile),
+			"photo": (people.get(profile) or {}).get("profile_photo"),
+		}
+		for member, profile in profiles.items()
+	}
 
 
 def _display_name(person, profile: str) -> str:

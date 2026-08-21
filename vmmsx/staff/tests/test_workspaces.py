@@ -102,7 +102,17 @@ class TestTheClusterIsBuilt(IntegrationTestCase):
 	def test_the_deployments_child_covers_exactly_its_doctypes(self):
 		self._assert_shortcuts(
 			workspaces.DEPLOYMENTS,
-			{"VMMS Deployment", "VMMS Deployment Request", "VMMS Terms of Reference", "VMMS Branch Transfer"},
+			{
+				"VMMS Project",
+				"VMMS Deployment",
+				# One person's deployment. A list view of these answers "what has
+				# this volunteer been asked and what did they say" across
+				# deployments, which a roster on one record cannot.
+				"VMMS Deployment Assignment",
+				"VMMS Deployment Request",
+				"VMMS Terms of Reference",
+				"VMMS Branch Transfer",
+			},
 		)
 
 	def test_the_stipend_child_covers_exactly_its_doctypes(self):
@@ -116,13 +126,47 @@ class TestTheClusterIsBuilt(IntegrationTestCase):
 			{
 				"Geo Level",
 				"Geo Node",
-				"National Society Settings",
-				"VMMS Approval Workflow",
-				"VMMS Template",
-				"Affiliation Type",
 				"Geo Assignment",
+				"National Society Settings",
+				"Affiliation Type",
+				"VMMS Membership Type",
+				"VMMS Certification Type",
+				"VMMS Course Mapping",
+				"VMMS Time Log Category",
+				"VMMS Skill",
+				# The two vocabularies a weekly availability grid and a mission's
+				# approach are written from. Configuration a society sets once,
+				# which is what this workspace is for.
+				"VMMS Availability Slot",
+				"VMMS TOR Methodology",
+				"VMMS Announcement Type",
+				"VMMS Approval Workflow",
+				"VMMS Template Category",
+				"VMMS Template",
+				"VMMS Application Question",
 			},
 		)
+
+	def test_the_setup_checklist_covers_the_same_doctypes(self):
+		"""The onboarding steps `install()` builds should name the exact same
+		doctypes as the shortcut grid above — one checklist, one source of truth."""
+		module_onboarding = frappe.get_doc("Module Onboarding", workspaces.SOCIETY_SETUP)
+		step_doctypes = {
+			frappe.db.get_value("Onboarding Step", row.step, "reference_document")
+			for row in module_onboarding.steps
+		}
+		shortcut_doctypes = set(
+			frappe.get_all(
+				"Workspace Shortcut",
+				filters={"parent": workspaces.SOCIETY_SETUP, "parenttype": "Workspace", "type": "DocType"},
+				pluck="link_to",
+			)
+		)
+		self.assertEqual(step_doctypes, shortcut_doctypes)
+
+	def test_the_setup_workspace_points_at_the_checklist(self):
+		module_onboarding = frappe.db.get_value("Workspace", workspaces.SOCIETY_SETUP, "module_onboarding")
+		self.assertEqual(module_onboarding, workspaces.SOCIETY_SETUP)
 
 	def test_the_parents_shortcuts_are_the_five_children_and_nothing_else(self):
 		shortcuts = frappe.get_all(

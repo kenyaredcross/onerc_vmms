@@ -203,23 +203,34 @@ def test_country() -> str:
 	return frappe.db.get_value("Country", {}, "name", order_by="name") or "Kenya"
 
 
-def make_profile(first_name: str, last_name: str, **kwargs) -> str:
-	"""A Red Profile written directly, for the paper-registration cases."""
-	slug = f"{first_name}.{last_name}".lower()
+#: A date of birth for anybody these fixtures make. Fixed rather than derived
+#: from `today()`, so an age-dependent assertion cannot change its answer on
+#: somebody's birthday.
+DEFAULT_DATE_OF_BIRTH = "1990-01-01"
 
-	return (
-		frappe.get_doc(
-			{
-				"doctype": PROFILE_DOCTYPE,
-				"first_name": first_name,
-				"last_name": last_name,
-				"email": kwargs.pop("email", f"{slug}.{frappe.generate_hash(length=6)}{USER_DOMAIN}"),
-				**kwargs,
-			}
-		)
-		.insert()
-		.name
-	)
+
+def make_profile(first_name: str, last_name: str, **kwargs) -> str:
+	"""A Red Profile written directly, for the paper-registration cases.
+
+	**It carries a date of birth**, because `assert_ready` requires one before a
+	volunteer application may be submitted — and a clerk filling in a paper form
+	at the branch desk writes one down, so a fixture without it was modelling a
+	form nobody submits rather than the paper case it stands for.
+
+	Pass `date_of_birth=None` for the applicant that requirement is meant to
+	refuse.
+	"""
+	slug = f"{first_name}.{last_name}".lower()
+	values = {
+		"doctype": PROFILE_DOCTYPE,
+		"first_name": first_name,
+		"last_name": last_name,
+		"email": kwargs.pop("email", f"{slug}.{frappe.generate_hash(length=6)}{USER_DOMAIN}"),
+		"date_of_birth": DEFAULT_DATE_OF_BIRTH,
+	}
+	values.update(kwargs)
+
+	return frappe.get_doc(values).insert().name
 
 
 # --- configuration --------------------------------------------------------
@@ -405,17 +416,25 @@ def clear_society_roles() -> None:
 def submit_volunteer_form(geo_node: str, **values):
 	"""POST the volunteer registration form as whoever is logged in.
 
-	Citizenship, residency and identification are all required to submit — see
-	`vmmsx.volunteer.services.application.assert_ready` — and a native web form
-	submits itself the moment it inserts (`intake.submit_once`), so a payload
-	missing any of the three would fail here exactly as it would in a browser.
-	`home_geo_node` defaults to the same branch the applicant chose to serve at,
-	which is the ordinary "I live near where I volunteer" case the form itself
-	defaults to when it is left blank.
+	Citizenship, residency, identification and a date of birth are all required
+	to submit — see `vmmsx.volunteer.services.application.assert_ready` — and a
+	native web form submits itself the moment it inserts (`intake.submit_once`),
+	so a payload missing any of the four would fail here exactly as it would in a
+	browser. `home_geo_node` defaults to the same branch the applicant chose to
+	serve at, which is the ordinary "I live near where I volunteer" case the form
+	itself defaults to when it is left blank.
+
+	**`applicant_date_of_birth` is an intake-buffer field, not a stored one.**
+	`intake.claim_profile` reads it in `before_insert`, writes it onto the Red
+	Profile and blanks it, which is why `assert_ready` looks for the date on the
+	profile rather than on the application. Passing it here is what a browser
+	does; passing `applicant_date_of_birth=None` builds the applicant the
+	requirement is meant to refuse.
 	"""
 	payload = {
 		"applicant_first_name": "Amina",
 		"applicant_last_name": "Otieno",
+		"applicant_date_of_birth": "1990-01-01",
 		"geo_node": geo_node,
 		"country_of_citizenship": test_country(),
 		"residency_type": "Local",
