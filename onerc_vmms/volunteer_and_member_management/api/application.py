@@ -85,7 +85,7 @@ DEFAULT_JOB_PAGE_LENGTH = 100
 @rate_limit(limit=120, seconds=60)
 def get_job_openings(
 	filters: dict | None = None,
-	orFilters: list | None = None,
+	orFilters: list | dict | None = None,
 	limit_start: int = 0,
 	limit_page_length: int = DEFAULT_JOB_PAGE_LENGTH,
 ):

@@ -41,14 +41,23 @@
 					@update:model-value="(v) => setAttachment(type, v)"
 				>
 					<template v-if="type === 'Other'" #beforeState>
-						<FormControl
-							type="text"
-							:label="__('Document name')"
-							:model-value="docNameByType[type] || ''"
-							:placeholder="__('e.g. Reference letter')"
-							class="mb-3"
-							@update:model-value="(v) => setDocName(type, v)"
-						/>
+						<div class="mb-3">
+							<FormControl
+								type="text"
+								required
+								:label="__('Document name')"
+								:model-value="docNameByType[type] || ''"
+								:placeholder="__('e.g. Reference letter')"
+								:aria-invalid="isDocNameMissing(type) ? 'true' : undefined"
+								@update:model-value="(v) => setDocName(type, v)"
+							/>
+							<p
+								v-if="isDocNameMissing(type)"
+								class="mt-1 text-xs font-medium text-red-600"
+							>
+								{{ __("Please name this document before continuing.") }}
+							</p>
+						</div>
 					</template>
 				</DocumentRequirementCard>
 			</div>
@@ -127,6 +136,7 @@ import { computed, ref, watch } from "vue";
 import DocumentRequirementCard from "./DocumentRequirementCard.vue";
 
 const PAGE_SIZE = 5;
+const OTHER_TYPE = "Other";
 
 const props = defineProps({
 	modelValue: { type: Object, required: true },
@@ -219,8 +229,8 @@ function buildRows() {
 		const attachment = attachmentByType.value[type];
 		if (!attachment) continue;
 		const row = { type, attachment };
-		if (type === "Other" && docNameByType.value[type]) {
-			row.document_name = docNameByType.value[type];
+		if (type === "Other") {
+			row.document_name = (docNameByType.value[type] || "").trim();
 		}
 		rows.push(row);
 	}
@@ -241,6 +251,14 @@ function setAttachment(type, value) {
 
 function setDocName(type, value) {
 	docNameByType.value = { ...docNameByType.value, [type]: value || "" };
+}
+
+// Document Name is mandatory_depends_on type == "Other" on the child doctype. Frappe only
+// enforces that in the desk client, so flag it here while the applicant can still fix it.
+function isDocNameMissing(type) {
+	if (type !== OTHER_TYPE) return false;
+
+	return !!attachmentByType.value[type] && !String(docNameByType.value[type] || "").trim();
 }
 
 // --- Counters (required only — those are the mandatory ones) ---

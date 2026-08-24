@@ -4,6 +4,7 @@ from frappe.model.document import Document
 from frappe.utils.html_utils import sanitize_html
 
 from .job_opening import claim_rejection_notification, send_rejection_email
+from .supporting_document import validate_supporting_document_names
 
 SKIP_CHILD_FIELDS = [
 	"name",
@@ -226,7 +227,9 @@ def validate_required_supporting_documents(doc: Document):
 	missing = [doc_type for doc_type in required_types if doc_type not in attached]
 	if missing:
 		frappe.throw(
-			_(f"Please attach the following required documents before submitting: {missing}"),
+			_("Please attach the following required documents before submitting: {0}").format(
+				", ".join(missing)
+			),
 			title=_("Missing Required Documents"),
 		)
 
@@ -258,6 +261,8 @@ def on_submit(doc, method):
 
 
 def validate(doc, method):
+	validate_supporting_document_names(doc)
+
 	if doc.get("cover_letter"):
 		doc.cover_letter = sanitize_html(doc.cover_letter)
 
