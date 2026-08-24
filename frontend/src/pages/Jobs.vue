@@ -140,7 +140,7 @@ const searchQuery = ref("");
 const selectedRegions = ref([]);
 const selectedBranches = ref([]);
 const filters = ref({});
-const orFilters = ref({});
+const orFilters = ref([]);
 const jobCount = ref(0);
 const currentTab = ref("Open");
 
@@ -219,12 +219,13 @@ const updateFilters = () => {
 	}
 
 	if (searchQuery.value) {
-		orFilters.value = {
-			job_title: ["like", `%${searchQuery.value}%`],
-			company: ["like", `%${searchQuery.value}%`],
-			location: ["like", `%${searchQuery.value}%`],
-		};
-	} else orFilters.value = {};
+		const term = `%${searchQuery.value}%`;
+		orFilters.value = [
+			["job_title", "like", term],
+			["company", "like", term],
+			["location", "like", term],
+		];
+	} else orFilters.value = [];
 };
 
 const onRegionChange = () => {

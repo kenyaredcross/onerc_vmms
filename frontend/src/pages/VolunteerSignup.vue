@@ -712,8 +712,16 @@ function getMissingDocumentTypes() {
 	return required.filter((type) => !attached.has(type));
 }
 
+function getUnnamedOtherDocuments() {
+	return (form.supporting_documents || []).filter(
+		(row) =>
+			row?.type === "Other" && row?.attachment && !String(row.document_name || "").trim()
+	);
+}
+
 function validateDocumentsStep() {
 	const missing = getMissingDocumentTypes();
+	const unnamed = getUnnamedOtherDocuments();
 
 	const newErrors = { ...errors };
 	const stepErrors = { ...(newErrors[DOCUMENTS_STEP] || {}) };
@@ -726,6 +734,14 @@ function validateDocumentsStep() {
 		delete stepErrors["Required Documents"];
 	}
 
+	if (unnamed.length) {
+		stepErrors["Document Name"] = [
+			__("Please enter a name for the document you attached under {0}").format("Other"),
+		];
+	} else {
+		delete stepErrors["Document Name"];
+	}
+
 	if (Object.keys(stepErrors).length) {
 		newErrors[DOCUMENTS_STEP] = stepErrors;
 	} else {
@@ -734,7 +750,7 @@ function validateDocumentsStep() {
 
 	handleErrorsUpdate(newErrors);
 
-	return missing.length === 0;
+	return missing.length === 0 && unnamed.length === 0;
 }
 
 function validateStep(stepIndex) {
