@@ -64,3 +64,7 @@ vmmsx.patches.migrate_participants_to_assignments
 # society edits from the moment they land. See the patch's own docstring for why
 # the availability windows already seeded are not the ones the grid can use.
 vmmsx.patches.seed_scheduling_vocabularies
+# Dense but fictional presentation activity for the explicitly configured
+# Tanzania demo site: people, memberships, projects, TORs, deployments, tasks,
+# notifications and historical email records. Other sites are left untouched.
+vmmsx.patches.seed_tanzania_presentation_scale
