@@ -82,6 +82,7 @@ const ApplicationReview = lazy(() => import("./admin/ReviewQueue"));
 // screen most coordinators will never open, and it carries a composer nothing
 // else needs.
 const Communication = lazy(() => import("./admin/Communication"));
+const PeopleOverview = lazy(() => import("./admin/PeopleOverview"));
 const RegistryMembers = lazy(() =>
 	import("./admin/Registry").then((module) => ({ default: module.MembersRegistry })),
 );
@@ -341,7 +342,9 @@ export default function App() {
 					<Route path="events" element={<AdminEvents />} />
 					<Route path="tasks" element={<AdminTasks />} />
 					<Route path="analytics" element={<Analytics />} />
-					<Route path="communication" element={<Communication />} />
+					<Route path="people" element={<PeopleOverview />} />
+					<Route path="communication" element={<Navigate to="/admin/communication/system/compose" replace />} />
+					<Route path="communication/:channel/:view" element={<Communication />} />
 					<Route path="content" element={<ContentAdmin />} />
 					<Route path="questions" element={<Questions />} />
 				</Route>

@@ -1,5 +1,6 @@
 import { useContext, useState } from "react";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
+import { Navigate, useParams } from "react-router-dom";
 
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
@@ -51,7 +52,9 @@ import type {
  * it. The report says so in as many words, and links to where it is finished.
  */
 export default function Communication() {
+	const { channel = "system", view = "compose" } = useParams<{ channel: string; view: string }>();
 	const { call } = useContext(FrappeContext) as FrappeConfig;
+	const channelKey = channel === "system" ? "notification" : channel;
 
 	const options = useFrappeGetCall<{ message: CommunicationOptions }>(
 		API.communicationOptions,
@@ -61,7 +64,7 @@ export default function Communication() {
 
 	const [chain, setChain] = useState<GeoNode[]>([]);
 	const [who, setWho] = useState("everyone");
-	const [channels, setChannels] = useState<string[]>(["notification"]);
+	const channels = [channelKey];
 	const [title, setTitle] = useState("");
 	const [body, setBody] = useState("");
 	const [smsMessage, setSmsMessage] = useState("");
@@ -95,13 +98,6 @@ export default function Communication() {
 		title.trim().length > 0 &&
 		body.trim().length > 0 &&
 		(!wantsSms || (smsMessage || body).trim().length > 0);
-
-	const toggle = (channel: string) =>
-		setChannels((current) =>
-			current.includes(channel)
-				? current.filter((entry) => entry !== channel)
-				: [...current, channel],
-		);
 
 	const send = async () => {
 		setBusy(true);
@@ -142,13 +138,18 @@ export default function Communication() {
 	if (options.error || !answer) {
 		return <ErrorNote>{errorMessage(options.error, "This screen could not be opened.")}</ErrorNote>;
 	}
+	if (!["system", "email", "sms"].includes(channel) || !["compose", "sent"].includes(view)) return <Navigate to="/admin/communication/system/compose" replace />;
+	if (view === "sent") return <CommunicationHistory channel={channel} />;
+	if (!answer.channels[channelKey as keyof typeof answer.channels]) {
+		return <><PageHeading title={`Compose ${channel === "system" ? "notification" : channel}`} /><Card><SectionTitle>Channel unavailable</SectionTitle><p className="text-[13px] leading-relaxed text-slate-body">This channel is not available to your account on this site. Availability is determined by the server and the channel provider’s permissions.</p></Card></>;
+	}
 
 	const available = CHANNELS.filter((channel) => answer.channels[channel.key]);
 
 	return (
 		<>
 			<PageHeading
-				title={<EditableText k="admin.communication.heading" fallback="Communication" />}
+				title={<EditableText k={`admin.communication.${channel}.heading`} fallback={`Compose ${channel === "system" ? "notification" : channel}`} />}
 				lead={
 					<EditableText
 						k="admin.communication.lead"
@@ -211,8 +212,8 @@ export default function Communication() {
 
 					<Card>
 						<SectionTitle>How it reaches them</SectionTitle>
-						<div className="grid gap-2.5 sm:grid-cols-3">
-							{available.map((channel) => {
+						<div className="grid gap-2.5">
+							{available.filter((item) => item.key === channelKey).map((channel) => {
 								const on = chosen.has(channel.key);
 								const count = counts?.[channel.key];
 
@@ -220,7 +221,7 @@ export default function Communication() {
 									<button
 										key={channel.key}
 										type="button"
-										onClick={() => toggle(channel.key)}
+										aria-pressed="true"
 										className={cx(
 											"rounded-card border p-4 text-left transition",
 											on
@@ -250,7 +251,7 @@ export default function Communication() {
 							})}
 						</div>
 
-						{answer.channels.sms === false && (
+						{channel === "sms" && answer.channels.sms === false && (
 							<p className="mt-3 text-[11.5px] leading-relaxed text-slate-faint">
 								SMS is not available to you on this site. It needs the SMS app
 								installed and the role your society named for it.
@@ -369,6 +370,7 @@ export default function Communication() {
 				    composer rather than under it: it has to be readable at the
 				    moment somebody presses send, not after they scroll back up. */}
 				<div className="space-y-5">
+					<MessagePreview channel={channel} title={title} body={channel === "sms" ? (smsMessage || body) : body} />
 					<Card className="lg:sticky lg:top-6">
 						<SectionTitle>Before you send</SectionTitle>
 
@@ -460,6 +462,7 @@ export default function Communication() {
 								</p>
 							)}
 						</div>
+						<p className="mt-3 text-[11.5px] leading-relaxed text-slate-faint">Draft saving, reusable templates, and scheduled delivery are unavailable in the current VMMS communication API. Nothing on this page implies those states are persisted.</p>
 					</Card>
 				</div>
 			</div>
@@ -512,6 +515,18 @@ export default function Communication() {
  */
 function branchOf(chain: GeoNode[]): string {
 	return (chain.length > 1 ? chain.slice(1) : chain).map((node) => node.label).join(" · ");
+}
+
+function MessagePreview({ channel, title, body }: { channel: string; title: string; body: string }) {
+	if (channel === "sms") return <Card><SectionTitle>SMS preview</SectionTitle><div className="mx-auto max-w-[270px] rounded-[28px] bg-[#24272C] p-3 shadow-card"><div className="rounded-[20px] bg-white p-4"><p className="mb-3 text-center text-[11px] font-semibold text-slate-faint">Tanzania Red Cross Society</p><div className="rounded-2xl rounded-bl-sm bg-[#EDF3FF] px-3.5 py-3 text-[13px] leading-relaxed text-ink">{body || "Your message preview appears here."}</div></div></div><p className="mt-3 text-[11.5px] text-slate-faint">{body.length} characters. Segment count is not shown because the provider has not supplied an encoding-aware estimator.</p></Card>;
+
+	if (channel === "email") return <Card><SectionTitle>Email preview</SectionTitle><div className="overflow-hidden rounded-card border border-hairline"><div className="bg-[#24272C] px-4 py-3 text-[12px] font-bold text-white">Tanzania Red Cross Society</div><div className="bg-white p-4"><p className="mb-3 border-b border-hairline pb-3 text-[12px]"><b>Subject:</b> {title || "Your subject"}</p><p className="text-[13px]">Hello Amina,</p><p className="mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-body">{body || "Your email preview appears here."}</p></div></div></Card>;
+
+	return <Card><SectionTitle>In-app preview</SectionTitle><div className="rounded-card border border-hairline bg-white p-4 shadow-nav"><div className="flex gap-3"><span className="rounded-full bg-[#EDF3FF] p-2 text-blue"><Icon.bell size={16} /></span><div><h3 className="text-[13px] font-bold text-ink">{title || "Notification title"}</h3><p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed text-slate-body">{body || "Your notification preview appears here."}</p></div></div></div></Card>;
+}
+
+function CommunicationHistory({ channel }: { channel: string }) {
+	return <><PageHeading title={`Sent ${channel === "system" ? "notifications" : channel}`} lead="A server-paged campaign history will appear here when VMMS exposes a permission-scoped history contract." /><Card><SectionTitle>History unavailable</SectionTitle><p className="text-[13px] leading-relaxed text-slate-body">The current backend can publish announcements and file SMS drafts, but it does not expose a coordinator-safe campaign listing, delivery summary, recipient-level results, or provider status feed. No delivery states are fabricated.</p></Card></>;
 }
 
 /**

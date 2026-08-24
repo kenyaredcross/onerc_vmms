@@ -6,6 +6,8 @@ import { API } from "../lib/api";
 import { Icon } from "../ui/icons";
 import { Shell, type NavGroup, type NavItem } from "../ui/Shell";
 import { DeploymentSubNav, inDeployments } from "./DeploymentNav";
+import { CommunicationSubNav, inCommunication } from "./CommunicationNav";
+import { PeopleSubNav, inPeople } from "./PeopleNav";
 import { Spinner } from "../ui/primitives";
 import { QUEUES, QUEUE_KINDS, queueOf } from "./queues";
 import type { ApprovalStatus, RedProfile } from "../portal/types";
@@ -96,14 +98,6 @@ const QUEUE_MEMBERS: TabDef = {
 	fallback: QUEUES.members.heading,
 	icon: Icon.card,
 };
-const ANALYTICS: TabDef = {
-	section: "analytics",
-	to: "/admin/analytics",
-	labelKey: "admin.nav.analytics",
-	fallback: "Analytics",
-	icon: Icon.chart,
-};
-
 // Gated on "deployments", the same section `staff/services/permissions.py`
 // grants `VMMS Project` under alongside `VMMS Deployment` and `VMMS Terms of
 // Reference` — the one scope role named by `vmms_deployment_scope_role`. A
@@ -153,6 +147,7 @@ const COMMUNICATION: TabDef = {
 	labelKey: "admin.nav.communication",
 	fallback: "Communication",
 	icon: Icon.bell,
+	hasSubNav: true,
 };
 const CONTENT: TabDef = {
 	section: "content",
@@ -185,13 +180,14 @@ interface GroupDef {
 	children: TabDef[];
 }
 
-const INSIGHT: GroupDef = {
-	section: ANALYTICS.section,
-	to: ANALYTICS.to,
-	labelKey: "admin.nav.group.insight",
-	fallback: "People & Insight",
-	icon: ANALYTICS.icon,
-	children: [MEMBERS, VOLUNTEERS],
+const PEOPLE: GroupDef = {
+	section: "people",
+	to: "/admin/people",
+	labelKey: "admin.nav.people",
+	fallback: "People Management",
+	icon: Icon.people,
+	hasSubNav: true,
+	children: [QUEUE_VOLUNTEERS, QUEUE_MEMBERS, MEMBERS, VOLUNTEERS],
 };
 
 // The queue left People & Insight and became a group of its own. That group
@@ -233,7 +229,7 @@ const OPERATIONS: GroupDef = {
  */
 OPERATIONS.hasSubNav = true;
 
-const GROUPS = [QUEUE, INSIGHT, OPERATIONS];
+const GROUPS = [PEOPLE, OPERATIONS];
 const FLAT = [OVERVIEW, COMMUNICATION, STIPENDS, EVENTS, CONTENT, QUESTIONS];
 
 /**
@@ -327,6 +323,7 @@ export default function AdminLayout() {
 
 	const answer = access.data?.message;
 	const allowed = new Set(answer?.sections ?? []);
+	if (["queue", "registry", "analytics"].some((section) => allowed.has(section))) allowed.add("people");
 
 	// No staff role at all, or the call failed — either way this is not their
 	// screen. A failure sends them somewhere real rather than to a shell that
@@ -400,7 +397,11 @@ export default function AdminLayout() {
 				subNav={
 					inDeployments(location.pathname)
 						? (horizontal) => <DeploymentSubNav horizontal={horizontal} />
-						: undefined
+						: inCommunication(location.pathname)
+							? (horizontal) => <CommunicationSubNav horizontal={horizontal} />
+							: inPeople(location.pathname)
+								? (horizontal) => <PeopleSubNav horizontal={horizontal} />
+								: undefined
 				}
 				console="/dashboard"
 				// The Frappe desk, for whoever the server says may open it. The
