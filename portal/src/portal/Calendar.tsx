@@ -130,7 +130,7 @@ export default function Calendar() {
 					<EditableText k="portal.calendar.today" fallback="Today" />
 				</button>
 
-				<div className="flex rounded-full bg-page p-1">
+				<div className="flex rounded-full bg-surface p-1">
 					<Toggle active={!mineOnly} onClick={() => setMineOnly(false)}>
 						<EditableText k="portal.calendar.filter.all" fallback="Everything on" />
 					</Toggle>

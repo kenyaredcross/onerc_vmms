@@ -262,7 +262,7 @@ function Rung({
 					}
 					className={cx(
 						"w-full appearance-none rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 pr-9 text-[13.5px] text-ink transition",
-						"focus:border-navy disabled:cursor-not-allowed disabled:bg-page disabled:text-slate-faint",
+						"focus:border-navy disabled:cursor-not-allowed disabled:bg-surface disabled:text-slate-faint",
 					)}
 				>
 					<option value="">

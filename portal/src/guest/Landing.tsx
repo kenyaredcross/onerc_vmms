@@ -432,7 +432,7 @@ function StatStrip() {
 	if (shown.length === 0) return null;
 
 	return (
-		<section className="bg-page">
+		<section className="bg-surface">
 			<div className="mx-auto grid max-w-shell grid-cols-2 gap-y-10 px-6 py-[72px] text-center lg:grid-cols-4 lg:gap-y-0">
 				{shown.map((entry) => (
 					<div

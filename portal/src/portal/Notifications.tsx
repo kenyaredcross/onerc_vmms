@@ -192,7 +192,7 @@ export default function Notifications() {
 									<button
 										type="button"
 										onClick={() => void read(row)}
-										className="flex-none rounded-full px-3 py-1.5 text-[11px] font-bold text-slate-body transition hover:bg-page hover:text-navy"
+										className="flex-none rounded-full px-3 py-1.5 text-[11px] font-bold text-slate-body transition hover:bg-surface hover:text-navy"
 									>
 										Mark read
 									</button>

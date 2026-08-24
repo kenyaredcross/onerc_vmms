@@ -322,7 +322,7 @@ function OpportunityCard({ row }: { row: Opportunity }) {
 				</dl>
 			</div>
 
-			<div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline-soft bg-page/60 px-5 py-3.5 sm:px-6">
+			<div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline-soft bg-surface/60 px-5 py-3.5 sm:px-6">
 				<Link
 					to={`/opportunities/${encodeURIComponent(row.name)}`}
 					className="inline-flex flex-none items-center gap-1.5 font-display text-[12.5px] font-bold text-navy hover:underline"
@@ -636,7 +636,7 @@ function OpportunityBody({ row }: { row: Opportunity }) {
 				</section>
 			)}
 
-			<section className="mt-5 rounded-panel border border-hairline bg-page/60 p-6 sm:p-7">
+			<section className="mt-5 rounded-panel border border-hairline bg-surface/60 p-6 sm:p-7">
 				<h2 className="font-display text-[15px] font-bold tracking-tight text-ink">
 					How to apply
 				</h2>

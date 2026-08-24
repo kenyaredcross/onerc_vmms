@@ -20,11 +20,13 @@ import {
 	SectionLink,
 	Skeleton,
 	Spinner,
-	StatGrid,
-	StatTile,
 	StateBadge,
 } from "../ui/primitives";
+import { ActivityTile, DatedRow, FeaturePanel } from "../ui/patterns";
+import { firstName, useSession } from "../lib/session";
 import type {
+	DeploymentInvitation,
+	EventCard,
 	MembershipRow,
 	MyCertifications,
 	MyTimeLogs,
@@ -90,6 +92,21 @@ export default function Dashboard() {
 		>;
 	}>(API.myOpenRegistrations, undefined, "portal:open_registrations");
 
+	// The invitation panel and the "Coming up" column. Two more of the same
+	// shape as the six above — possessive, argument-free, each rendering as
+	// soon as its own answer lands. `my_invitations` is the same read the
+	// Invitations screen makes, under the same SWR key, so opening that screen
+	// afterwards costs nothing.
+	const invitations = useFrappeGetCall<{
+		message: { volunteer: string; waiting: DeploymentInvitation[]; answered: DeploymentInvitation[] } | null;
+	}>(API.myInvitations, undefined, "portal:my_invitations");
+
+	const upcoming = useFrappeGetCall<{ message: { available: boolean; events: EventCard[] } }>(
+		API.eventsUpcoming,
+		undefined,
+		"portal:events_upcoming",
+	);
+
 	const pending = Object.values(open.data?.message ?? {}).filter(Boolean) as {
 		doctype: string;
 		name: string;
@@ -106,12 +123,44 @@ export default function Dashboard() {
 
 	const loading = volunteer.isLoading && memberships.isLoading;
 
+	const { user } = useSession();
+	const waiting = invitations.data?.message?.waiting ?? [];
+	// One invitation is featured — the oldest unanswered, because that is the
+	// one somebody is keeping a coordinator waiting on. The rest are counted,
+	// not stacked: four charcoal panels down a dashboard is four things
+	// shouting, and the Invitations screen is one link away.
+	const featured = waiting[0] ?? null;
+	const events = (upcoming.data?.message?.events ?? []).slice(0, 3);
+
 	return (
 		<>
+			{/* The *page* title ("Dashboard") is in the shell's top row; this is
+			    the greeting under it, which is what the approved design puts here.
+			    The date above it is the one piece of context a person opening
+			    their portal in the morning actually uses. */}
 			<PageHeading
-				title={<EditableText k="portal.home.heading" fallback="Your dashboard" />}
-				meta={profile?.geo_path ? geoPath(profile.geo_path) : undefined}
+				eyebrow={new Date().toLocaleDateString(undefined, {
+					weekday: "long",
+					day: "numeric",
+					month: "long",
+				})}
+				title={
+					firstName(profile?.full_name?.trim() || user)
+						? `Welcome back, ${firstName(profile?.full_name?.trim() || user)}`
+						: "Welcome back"
+				}
 				lead={<EditableText k="portal.home.intro" />}
+				actions={
+					// Where this person sits in the society. A real fact off their own
+					// record, and absent rather than guessed when they have no
+					// placement yet.
+					profile?.geo_path ? (
+						<span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[12px] text-slate-strong shadow-nav">
+							<Icon.pin size={14} className="flex-none text-slate-faint" />
+							{geoPath(profile.geo_path)}
+						</span>
+					) : undefined
+				}
 			/>
 
 			{pending.map((row) => (
@@ -127,36 +176,24 @@ export default function Dashboard() {
 			{/* Drawn for anybody with a volunteer record. Somebody who is a member
 			    only has no hours, no training and no tasks, and four tiles reading
 			    zero would be four ways of saying "this is not your screen". */}
+			{/* **One panel, four insets** — not four floating cards. The unit here
+			    is "your activity"; the figures are its contents, and grouping them
+			    is what stops a dashboard reading as a wall of tiles.
+
+			    Every figure below is a real read. There is deliberately no
+			    "deployments" count: no possessive endpoint returns one, and a
+			    number nobody can source is worse than a figure that is not there. */}
 			{profile && (
-				<section className="mb-8">
-					<SectionLabel>
-						<EditableText k="portal.home.section.standing" fallback="Where you stand" />
-					</SectionLabel>
+				<Card className="mb-5" pad={false}>
+					<div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
+						<SectionLabel>
+							<EditableText k="portal.home.section.standing" fallback="Your activity" />
+						</SectionLabel>
+						<SectionLink to="/profile">View profile</SectionLink>
+					</div>
 
-					<StatGrid>
-						<StatTile
-							label="Hours given"
-							value={logs.isLoading ? "—" : hours(time?.total_hours ?? 0)}
-							hint={
-								logs.isLoading
-									? undefined
-									: `${time?.log_count ?? 0} ${(time?.log_count ?? 0) === 1 ? "entry" : "entries"} filed`
-							}
-							icon={Icon.clock}
-							tint="navy"
-							to="/hours"
-						/>
-
-						<StatTile
-							label="Certifications"
-							value={certifications.isLoading ? "—" : (training?.certifications.length ?? 0)}
-							hint={lapsedHint(training)}
-							icon={Icon.award}
-							tint="teal"
-							to="/training"
-						/>
-
-						<StatTile
+					<div className="grid gap-3 px-4 pb-4 min-[520px]:grid-cols-2 xl:grid-cols-4">
+						<ActivityTile
 							label="Open tasks"
 							value={tasks.isLoading ? "—" : work.length}
 							hint={
@@ -165,26 +202,77 @@ export default function Dashboard() {
 									: overdue(work)
 							}
 							icon={Icon.check}
-							tint="amber"
 							to="/tasks"
+							selected={work.length > 0}
 						/>
 
-						<StatTile
-							label="Membership"
-							value={memberships.isLoading ? "—" : (rows[0]?.membership_status ?? "None")}
+						<ActivityTile
+							label="Hours served"
+							value={logs.isLoading ? "—" : hours(time?.total_hours ?? 0)}
 							hint={
-								rows[0]?.valid_to
-									? `Valid until ${formatDate(rows[0].valid_to)}`
-									: rows[0]?.is_lifetime
-										? "Lifetime"
-										: undefined
+								logs.isLoading
+									? undefined
+									: `${time?.log_count ?? 0} ${(time?.log_count ?? 0) === 1 ? "entry" : "entries"} filed`
 							}
-							icon={Icon.card}
-							tint="violet"
-							to="/membership"
+							icon={Icon.clock}
+							to="/hours"
 						/>
-					</StatGrid>
-				</section>
+
+						<ActivityTile
+							label="Certifications"
+							value={certifications.isLoading ? "—" : (training?.certifications.length ?? 0)}
+							hint={lapsedHint(training)}
+							icon={Icon.award}
+							to="/training"
+						/>
+
+						<ActivityTile
+							label="Upcoming events"
+							value={upcoming.isLoading ? "—" : (upcoming.data?.message?.events.length ?? 0)}
+							hint={
+								events[0]?.start_date ? `Next: ${formatDate(events[0].start_date)}` : undefined
+							}
+							icon={Icon.calendar}
+							to="/events"
+						/>
+					</div>
+				</Card>
+			)}
+
+			{/* The single featured invitation. Charcoal, and the only panel on the
+			    page wearing it — see `FeaturePanel`. Nothing is fabricated when
+			    there is no invitation: the panel simply is not drawn. */}
+			{featured && (
+				<div className="mb-5">
+					<FeaturePanel
+						eyebrow={
+							waiting.length > 1
+								? `Deployment invitation · ${waiting.length} waiting on you`
+								: "Deployment invitation"
+						}
+						title={featured.title || featured.deployment}
+						link={{ to: "/deployments", label: "View details" }}
+						meta={[
+							featured.start_date
+								? `${formatDate(featured.start_date)}${featured.end_date ? ` – ${formatDate(featured.end_date)}` : ""}`
+								: null,
+							featured.role || null,
+							featured.geo_node || null,
+						].filter(Boolean)}
+						actions={
+							// Both actions lead to the invitation itself rather than
+							// answering from here. Accepting is agreeing to a specific
+							// submitted terms of reference, and a dashboard cannot show
+							// somebody what they are agreeing to.
+							<ButtonLink to="/portal/deployments" variant="primary">
+								Review &amp; respond
+							</ButtonLink>
+						}
+					>
+						{featured.notes ||
+							"You have been invited to this deployment. Review the terms of reference before responding."}
+					</FeaturePanel>
+				</div>
 			)}
 
 			{loading && <Spinner label="Loading your dashboard…" />}
@@ -223,7 +311,60 @@ export default function Dashboard() {
 					</section>
 				</div>
 
-				<div className="space-y-8">
+				<div className="space-y-6">
+					{/* Coming up. Real published events from `events.upcoming`, the
+					    same read the Events screen makes. Three, because this is a
+					    glance and the calendar is a click away — and an honest empty
+					    state rather than a filler row when the society has published
+					    nothing. */}
+					<Card pad={false}>
+						<div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
+							<SectionLabel>
+								<EditableText k="portal.home.section.comingup" fallback="Coming up" />
+							</SectionLabel>
+							<SectionLink to="/calendar">Calendar</SectionLink>
+						</div>
+
+						<div className="px-4 pb-4">
+							{upcoming.isLoading && <Skeleton className="h-32" />}
+
+							{upcoming.error && (
+								<p className="px-1 py-2 text-[12px] text-muted">
+									Events could not be loaded just now.
+								</p>
+							)}
+
+							{!upcoming.isLoading && !upcoming.error && events.length === 0 && (
+								<p className="px-1 py-3 text-[12px] leading-relaxed text-muted">
+									Nothing published yet. Anything your society schedules will appear here.
+								</p>
+							)}
+
+							<ul className="space-y-1">
+								{events.map((event) => {
+									const when = event.start_date ? new Date(event.start_date) : null;
+
+									return (
+										<li key={event.event}>
+											<DatedRow
+												iso={event.start_date || undefined}
+												day={when ? String(when.getDate()).padStart(2, "0") : "--"}
+												month={
+													when
+														? when.toLocaleDateString(undefined, { month: "short" })
+														: ""
+												}
+												title={event.title}
+												meta={[event.start_time, event.venue].filter(Boolean).join(" · ")}
+												to={`/events/${encodeURIComponent(event.event)}`}
+											/>
+										</li>
+									);
+								})}
+							</ul>
+						</div>
+					</Card>
+
 					{(training || certifications.isLoading) && (
 						<section>
 							<SectionLabel>
@@ -672,7 +813,7 @@ function QuickLinks({ volunteer }: { volunteer: boolean }) {
 							to={link.to}
 							lead={
 								<span
-									className="grid h-9 w-9 flex-none place-items-center rounded-control bg-page text-slate-body"
+									className="grid h-9 w-9 flex-none place-items-center rounded-control bg-surface text-slate-body"
 									aria-hidden="true"
 								>
 									<link.icon size={17} />
@@ -766,7 +907,7 @@ function UnderReview({
 					    nowhere else, so anybody who deleted the email had no way back to
 					    it — and it is the one thing that says what to do next. */}
 					{row.reason && (
-						<blockquote className="mt-3 rounded-control border-l-2 border-hairline-strong bg-page px-4 py-3 text-[13px] leading-relaxed text-slate-body">
+						<blockquote className="mt-3 rounded-control border-l-2 border-hairline-strong bg-surface px-4 py-3 text-[13px] leading-relaxed text-slate-body">
 							{row.reason}
 						</blockquote>
 					)}

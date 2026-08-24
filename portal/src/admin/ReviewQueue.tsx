@@ -554,7 +554,7 @@ function Declared({ label, rows }: { label: string; rows: Array<{ key: string; l
 			{rows.map((row) => (
 				<span
 					key={row.key}
-					className="rounded-full bg-page px-2.5 py-1 text-[11.5px] font-medium text-slate-body"
+					className="rounded-full bg-surface px-2.5 py-1 text-[11.5px] font-medium text-slate-body"
 				>
 					{row.label}
 				</span>
@@ -789,7 +789,7 @@ function Decision({
 				)}
 
 				{!status.can_act ? (
-					<p className="rounded-card bg-page px-4 py-3 text-[12.5px] leading-relaxed text-slate-body">
+					<p className="rounded-card bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-slate-body">
 						You cannot act on this one right now. The engine resolves approvers per
 						document, so holding the role is not the same as being this document's
 						approver.

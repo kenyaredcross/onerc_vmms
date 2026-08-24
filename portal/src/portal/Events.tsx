@@ -1047,7 +1047,7 @@ export function Event() {
 							{row.href ? (
 								<Attend row={row} />
 							) : (
-								<p className="rounded-card bg-page px-4 py-3 text-[12.5px] italic text-slate-faint">
+								<p className="rounded-card bg-surface px-4 py-3 text-[12.5px] italic text-slate-faint">
 									Registration is not open yet.
 								</p>
 							)}
@@ -1175,7 +1175,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 	}
 
 	return (
-		<div className="rounded-card border border-hairline bg-page/60 p-5 sm:p-6">
+		<div className="rounded-card border border-hairline bg-surface/60 p-5 sm:p-6">
 			<div className="flex flex-wrap items-center gap-2">
 				<span className="inline-flex items-center gap-1.5 rounded-full bg-signal/10 px-3 py-1 text-[11.5px] font-bold text-signal">
 					<Icon.check size={13} />

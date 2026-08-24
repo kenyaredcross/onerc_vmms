@@ -205,7 +205,7 @@ function Verdict({ current, word }: { current: boolean; word: string }) {
 		<div
 			className={cx(
 				"flex items-center gap-3 rounded-card px-4 py-3.5",
-				current ? "bg-emerald-50" : "bg-page",
+				current ? "bg-emerald-50" : "bg-surface",
 			)}
 		>
 			<span

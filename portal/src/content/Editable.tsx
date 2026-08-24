@@ -177,7 +177,7 @@ function BlockEditor({
 						type="button"
 						onClick={onClose}
 						aria-label="Close"
-						className="-mr-1 -mt-1 grid h-7 w-7 place-items-center rounded-full text-slate-faint hover:bg-page hover:text-ink"
+						className="-mr-1 -mt-1 grid h-7 w-7 place-items-center rounded-full text-slate-faint hover:bg-surface hover:text-ink"
 					>
 						×
 					</button>
@@ -214,7 +214,7 @@ function BlockEditor({
 						<div>
 							<span className={labelCls}>Picture</span>
 							<div className="flex items-center gap-3">
-								<div className="h-16 w-24 flex-none overflow-hidden rounded-card border border-hairline bg-page">
+								<div className="h-16 w-24 flex-none overflow-hidden rounded-card border border-hairline bg-surface">
 									{image ? (
 										<img src={image} alt="" className="h-full w-full object-cover" />
 									) : (
@@ -304,7 +304,7 @@ function BlockEditor({
 					<button
 						type="button"
 						onClick={onClose}
-						className="rounded-card px-4 py-2 text-[13px] font-bold text-slate-strong hover:bg-page"
+						className="rounded-card px-4 py-2 text-[13px] font-bold text-slate-strong hover:bg-surface"
 					>
 						Cancel
 					</button>

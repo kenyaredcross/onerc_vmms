@@ -192,7 +192,7 @@ function BlockRow({
 					/>
 				)}
 				<textarea
-					className="min-h-[42px] min-w-[220px] flex-1 resize-y rounded-card border border-hairline-strong px-3 py-2 text-[13px] outline-none focus:border-navy disabled:bg-page"
+					className="min-h-[42px] min-w-[220px] flex-1 resize-y rounded-card border border-hairline-strong px-3 py-2 text-[13px] outline-none focus:border-navy disabled:bg-surface"
 					value={value}
 					disabled={!canEdit}
 					onChange={(event) => setValue(event.target.value)}

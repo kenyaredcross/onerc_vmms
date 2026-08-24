@@ -28,6 +28,7 @@ import {
 	StateBadge,
 	cx,
 } from "../ui/primitives";
+import { FolderCard } from "../ui/patterns";
 
 /**
  * The paperwork a deployment stands on: a programme of work, and the terms of
@@ -113,50 +114,39 @@ export function ProjectList() {
 			)}
 
 			{rows.length > 0 && (
-				<ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+				<ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 					{rows.map((row) => (
 						<li key={row.name}>
-							<ProjectCard row={row} />
+							{/* A project is a container — it holds terms of reference, and
+							    those hold deployments — and the folder shape says so before
+							    a word is read.
+
+							    **The foot carries geography and period, not a TOR and
+							    deployment count.** The approved design asks for those two
+							    figures and `api/projects.py` does not return them:
+							    `ProjectSummary` has no `tor_count` or `deployment_count`.
+							    Counting them here would mean a request per folder, and
+							    guessing them would be inventing a statistic. So the folder
+							    shows what the endpoint actually knows, and the missing
+							    counts are recorded as a backend gap rather than filled in
+							    with a plausible number. */}
+							<FolderCard
+								to={`/admin/projects/${encodeURIComponent(row.name)}`}
+								name={row.project_name}
+								summary={row.summary}
+								status={row.status}
+								counts={
+									<>
+										{geoPath(row.geo_path) || "No location set"}
+										{row.start_date ? ` · from ${formatDate(row.start_date)}` : ""}
+									</>
+								}
+							/>
 						</li>
 					))}
 				</ul>
 			)}
 		</>
-	);
-}
-
-/**
- * One project as a card.
- *
- * A programme of work is a thing a coordinator recognises by name and by where
- * it is, and a grid of cards is how somebody scans a dozen of them. The whole
- * card is the link rather than a "Open project →" at the bottom: a card that
- * looks clickable and is not, except in one corner, is a small daily annoyance.
- */
-function ProjectCard({ row }: { row: ProjectSummary }) {
-	return (
-		<Card className="h-full">
-			<Link to={`/admin/projects/${encodeURIComponent(row.name)}`} className="block">
-				<div className="flex items-start justify-between gap-2">
-					<SectionTitle>{row.project_name}</SectionTitle>
-					<StateBadge state={row.status} />
-				</div>
-
-				<p className="mt-1 text-[11.5px] text-slate-body">{geoPath(row.geo_path)}</p>
-				<p className="mt-0.5 text-[11.5px] text-slate-faint">
-					{row.start_date ? formatDate(row.start_date) : "No start date"}
-					{row.end_date ? ` → ${formatDate(row.end_date)}` : ""}
-				</p>
-
-				{row.summary && (
-					<p className="mt-3 line-clamp-3 whitespace-pre-line text-[12.5px] text-slate-body">
-						{row.summary}
-					</p>
-				)}
-
-				<p className="mt-3 text-[11px] text-slate-faint">{row.name}</p>
-			</Link>
-		</Card>
 	);
 }
 

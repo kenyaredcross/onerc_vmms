@@ -148,11 +148,11 @@ export default function Tasks() {
  * rather than throwing the row away.
  */
 const STATE_TONES: Record<string, string> = {
-	assigned: "border-amber-300 text-amber-700 bg-amber-50/60",
-	accepted: "border-navy/25 text-navy bg-navy/[.05]",
+	assigned: "border-warning-line text-warning bg-warning-soft",
+	accepted: "border-blue-line text-blue bg-blue-soft",
 	submitted: "border-tint-sky/40 text-tint-sky bg-tint-sky-soft",
-	completed: "border-emerald-300 text-emerald-700 bg-emerald-50/60",
-	cancelled: "border-hairline-strong text-slate-body bg-page",
+	completed: "border-success-line text-success bg-success-soft",
+	cancelled: "border-hairline-strong text-slate-body bg-surface",
 };
 
 /**
@@ -168,7 +168,7 @@ export function TaskState({ status, onDark }: { status: string; onDark?: boolean
 				"inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold capitalize",
 				onDark
 					? "border-white/25 bg-white/10 text-white"
-					: (STATE_TONES[status] ?? "border-hairline-strong text-slate-body bg-page"),
+					: (STATE_TONES[status] ?? "border-hairline-strong text-slate-body bg-surface"),
 			)}
 		>
 			<span className="h-1.5 w-1.5 flex-none rounded-full bg-current" aria-hidden="true" />
@@ -240,7 +240,7 @@ function TaskPane({ name, onChanged }: { name: string; onChanged: () => void }) 
 				</dl>
 
 				{task.status === "submitted" && (
-					<p className="rounded-card bg-page px-4 py-3.5 text-[12.5px] leading-relaxed text-slate-body">
+					<p className="rounded-card bg-surface px-4 py-3.5 text-[12.5px] leading-relaxed text-slate-body">
 						You have offered this as done. A coordinator has to sign it off before it is
 						complete, and you will be notified either way.
 					</p>
@@ -303,7 +303,7 @@ function TaskPane({ name, onChanged }: { name: string; onChanged: () => void }) 
 											})
 										}
 									>
-										{busy === "submit" ? "Sending…" : "Mark as done"}
+										{busy === "submit" ? "Sending…" : "Submit for review"}
 									</Button>
 								</>
 							)}
@@ -351,7 +351,7 @@ export function Thread({ thread }: { thread: TaskDetail["thread"] }) {
 	return (
 		<ol className="space-y-3">
 			{thread.map((entry, index) => (
-				<li key={index} className="rounded-card bg-page px-4 py-3.5">
+				<li key={index} className="rounded-card bg-surface px-4 py-3.5">
 					<div className="flex flex-wrap items-baseline justify-between gap-2">
 						<Pill tone="quiet">{entry.entry_type}</Pill>
 						<span className="text-[11.5px] text-slate-faint">

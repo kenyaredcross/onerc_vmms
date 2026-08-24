@@ -1307,7 +1307,7 @@ function PathSwitch({ path, onChange }: { path: Path; onChange: (p: Path) => voi
 	const volunteering = path === "volunteer";
 
 	return (
-		<p className="mt-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-card border border-hairline bg-page px-3.5 py-2 text-[12.5px] text-slate-body">
+		<p className="mt-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-card border border-hairline bg-surface px-3.5 py-2 text-[12.5px] text-slate-body">
 			<span className="inline-flex items-center gap-1.5 font-semibold text-navy">
 				{volunteering ? <Icon.people size={15} /> : <Icon.card size={15} />}
 				Registering as {volunteering ? "a volunteer" : "a member"}
@@ -1399,7 +1399,7 @@ function IdentityStep({
 					{/* Never an input, on either path. The login is the identity: a
 					    form field here would let anybody claim anybody's record, and
 					    `update_my_profile` does not accept one for the same reason. */}
-					<div className="flex items-center gap-2 rounded-card border border-hairline bg-page px-3.5 py-2.5 text-[13.5px] text-slate-body">
+					<div className="flex items-center gap-2 rounded-card border border-hairline bg-surface px-3.5 py-2.5 text-[13.5px] text-slate-body">
 						<span className="flex-none text-slate-faint">
 							<Icon.lock size={14} />
 						</span>
@@ -1492,7 +1492,7 @@ function PhotoField({
 			hint="Optional. A head-and-shoulders picture, which goes on your card and beside your name."
 		>
 			<div className="flex flex-wrap items-center gap-4">
-				<div className="grid h-[72px] w-[72px] flex-none place-items-center overflow-hidden rounded-card border border-hairline bg-page text-slate-faint">
+				<div className="grid h-[72px] w-[72px] flex-none place-items-center overflow-hidden rounded-card border border-hairline bg-surface text-slate-faint">
 					{value ? (
 						<img src={value} alt="" className="h-full w-full object-cover" />
 					) : (
@@ -1667,7 +1667,7 @@ function ResidencyStep({
 						</div>
 					) : (
 						<div>
-							<label className="mb-4 flex cursor-pointer items-start gap-2.5 rounded-card border border-hairline bg-page px-4 py-3">
+							<label className="mb-4 flex cursor-pointer items-start gap-2.5 rounded-card border border-hairline bg-surface px-4 py-3">
 								<input
 									type="checkbox"
 									className="mt-0.5 h-3.5 w-3.5 flex-none accent-navy"
@@ -1789,7 +1789,7 @@ function IdentificationStep({
 
 	if (options.id_types.length === 0) {
 		return (
-			<p className="rounded-card bg-page px-4 py-3 text-[12.5px] leading-relaxed text-slate-body">
+			<p className="rounded-card bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-slate-body">
 				This society has not configured any identification types yet, and an application cannot be
 				submitted without one. Ask your branch to add them before registering.
 			</p>
@@ -2317,7 +2317,7 @@ function Review({
 }) {
 	return (
 		<section className="overflow-hidden rounded-card border border-hairline bg-white">
-			<header className="flex items-center justify-between gap-4 border-b border-hairline bg-page/60 px-4 py-2.5">
+			<header className="flex items-center justify-between gap-4 border-b border-hairline bg-surface/60 px-4 py-2.5">
 				<h3 className="font-display text-[12px] font-extrabold uppercase tracking-wider text-navy">
 					{title}
 				</h3>
@@ -2362,7 +2362,7 @@ function Block({ label, value }: { label: string; value: string }) {
 				className={cx(
 					"mt-1",
 					value
-						? "whitespace-pre-line rounded-card bg-page px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-strong"
+						? "whitespace-pre-line rounded-card bg-surface px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-strong"
 						: MISSING,
 				)}
 			>
@@ -2480,7 +2480,7 @@ function PersonCard({
 
 	return (
 		<section className="overflow-hidden rounded-card border border-hairline bg-white">
-			<div className="flex items-start gap-4 border-b border-hairline bg-page/60 px-4 py-4">
+			<div className="flex items-start gap-4 border-b border-hairline bg-surface/60 px-4 py-4">
 				{/* The portrait, where there is one. This step is a *check*, and the
 				    picture is the one answer on it somebody can get wrong without
 				    noticing — a monogram here said nothing about whether the file they
@@ -2586,7 +2586,7 @@ function AlreadyApplied({
 			</p>
 
 			<div className="mt-5 flex flex-wrap items-center gap-2.5">
-				<span className="inline-flex items-baseline gap-2.5 rounded-card border border-hairline bg-page px-4 py-2.5">
+				<span className="inline-flex items-baseline gap-2.5 rounded-card border border-hairline bg-surface px-4 py-2.5">
 					<span className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 						Reference
 					</span>
@@ -2642,7 +2642,7 @@ function Success({ reference, path }: { reference: string; path: Path }) {
 				chose. Nobody has to be chased: it is already in their queue.
 			</p>
 
-			<div className="mt-5 inline-flex items-baseline gap-2.5 rounded-card border border-hairline bg-page px-4 py-2.5">
+			<div className="mt-5 inline-flex items-baseline gap-2.5 rounded-card border border-hairline bg-surface px-4 py-2.5">
 				<span className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 					Reference
 				</span>

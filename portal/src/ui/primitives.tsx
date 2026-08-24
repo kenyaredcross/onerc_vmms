@@ -55,14 +55,20 @@ export function PageHeading({
 	actions?: ReactNode;
 }) {
 	return (
-		<div className="mb-7">
+		<div className="mb-6">
 			<div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
 				<div className="min-w-0">
 					{eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
 
-					<h1 className="font-display text-[30px] font-extrabold leading-[1.1] tracking-tight text-ink sm:text-[34px]">
+					{/* The *page* title is in the top row of the shell; this is the
+					    heading of the content beneath it — "Welcome back, Amina",
+					    "Deployment dashboard". So it is an h2, and it is set in the
+					    redesign's medium weight rather than the previous system's
+					    extrabold. Rendered as an h2 so the document has exactly one
+					    h1 (the shell's) and the outline stays honest. */}
+					<h2 className="font-display text-[26px] font-medium leading-[1.15] tracking-tight text-ink sm:text-[29px]">
 						{title}
-					</h1>
+					</h2>
 
 					{meta && (
 						<div className="mt-2 flex items-start gap-1.5 text-[12.5px] leading-snug text-slate-body">
@@ -98,12 +104,12 @@ export function PageHeading({
 										{crumb.to ? (
 											<Link
 												to={crumb.to}
-												className="font-medium transition hover:text-navy hover:underline"
+												className="font-medium transition hover:text-blue hover:underline"
 											>
 												{crumb.label}
 											</Link>
 										) : (
-											<span aria-current="page" className="font-semibold text-slate-body">
+											<span aria-current="page" className="font-medium text-slate-body">
 												{crumb.label}
 											</span>
 										)}
@@ -120,7 +126,7 @@ export function PageHeading({
 			</div>
 
 			{lead && (
-				<p className="mt-3 max-w-2xl text-[13.5px] leading-relaxed text-slate-body">{lead}</p>
+				<p className="mt-2.5 max-w-2xl text-[13.5px] leading-relaxed text-slate-body">{lead}</p>
 			)}
 		</div>
 	);
@@ -223,10 +229,14 @@ export function Divide({ className }: { className?: string }) {
 /* ------------------------------------------------------------------ atoms */
 
 const TONES = {
-	navy: "bg-navy text-white",
-	signal: "bg-signal text-white",
+	navy: "bg-authority text-white",
+	signal: "bg-blue text-white",
 	quiet: "border border-hairline-strong bg-white text-slate-strong",
-	page: "bg-page text-slate-strong",
+	// `page` used to be the near-white page ground. That ground is the shell
+	// grey now, which is too dark to sit a chip on inside a white panel, so this
+	// takes the inset surface instead — the same one every other in-panel
+	// surface uses.
+	page: "bg-surface text-slate-strong",
 } as const;
 
 export function Pill({
@@ -239,7 +249,7 @@ export function Pill({
 	return (
 		<span
 			className={cx(
-				"inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[11.5px] font-semibold",
+				"inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[11.5px] font-medium",
 				TONES[tone],
 			)}
 		>
@@ -264,23 +274,30 @@ export function Pill({
  * being read by somebody who cannot tell the two greens apart.
  */
 const STATE_TONES: Record<string, string> = {
-	Approved: "border-emerald-300 text-emerald-700 bg-emerald-50/60",
-	Active: "border-emerald-300 text-emerald-700 bg-emerald-50/60",
-	Rejected: "border-signal/40 text-signal-dark bg-signal/[.06]",
-	Expired: "border-amber-300 text-amber-700 bg-amber-50/60",
-	Withdrawn: "border-hairline-strong text-slate-body bg-page",
-	Draft: "border-hairline-strong text-slate-body bg-page",
+	Approved: "border-success-line text-success bg-success-soft",
+	Active: "border-blue-line text-blue bg-blue-soft",
+	Rejected: "border-danger-line text-danger bg-danger-soft",
+	Expired: "border-warning-line text-warning bg-warning-soft",
+	Withdrawn: "border-hairline-strong text-slate-body bg-surface",
+	Draft: "border-hairline-strong text-slate-body bg-surface",
+	Planned: "border-hairline-strong text-slate-body bg-surface",
+	Cancelled: "border-hairline-strong text-slate-body bg-surface",
+	Completed: "border-success-line text-success bg-success-soft",
+	Pending: "border-warning-line text-warning bg-warning-soft",
+	Accepted: "border-hairline-strong text-slate-body bg-surface",
+	Assigned: "border-blue-line text-blue bg-blue-soft",
+	Declined: "border-hairline-strong text-slate-body bg-surface",
 };
 
 export function StateBadge({ state }: { state?: string | null }) {
 	if (!state) return null;
 
-	const tone = STATE_TONES[state] ?? "border-navy/25 text-navy bg-navy/[.05]";
+	const tone = STATE_TONES[state] ?? "border-hairline-strong text-slate-body bg-surface";
 
 	return (
 		<span
 			className={cx(
-				"inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold",
+				"inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium",
 				tone,
 			)}
 		>
@@ -341,7 +358,7 @@ export function Avatar({
 	const tones = {
 		navy: "bg-navy/[.07] text-navy",
 		signal: "bg-signal/[.10] text-signal-dark",
-		page: "bg-page text-slate-body",
+		page: "bg-surface text-slate-body",
 	} as const;
 
 	const ringed = ring ? "ring-1 ring-hairline-strong ring-offset-2 ring-offset-white" : "";
@@ -429,8 +446,8 @@ export function StatTile({
 		<>
 			<div className="flex items-start justify-between gap-3">
 				<div className="min-w-0">
-					<div className="truncate text-[11.5px] font-semibold text-slate-body">{label}</div>
-					<div className="tabular mt-1.5 font-display text-[28px] font-extrabold leading-none tracking-tight text-ink">
+					<div className="truncate text-[11.5px] font-normal text-muted">{label}</div>
+					<div className="tabular mt-2 font-display text-[30px] font-medium leading-none tracking-tight text-ink">
 						{value}
 					</div>
 				</div>
@@ -489,10 +506,10 @@ export function StatGrid({ children, className }: { children: ReactNode; classNa
 export function Stat({ value, label }: { value: ReactNode; label: ReactNode }) {
 	return (
 		<div>
-			<div className="tabular font-display text-[26px] font-extrabold leading-none tracking-tight text-ink">
+			<div className="tabular font-display text-[26px] font-medium leading-none tracking-tight text-ink">
 				{value}
 			</div>
-			<div className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+			<div className="mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-faint">
 				{label}
 			</div>
 		</div>
@@ -559,7 +576,7 @@ export function Meter({
 			</div>
 
 			<div
-				className="h-1.5 w-full overflow-hidden rounded-full bg-page"
+				className="h-1.5 w-full overflow-hidden rounded-full bg-surface"
 				role="progressbar"
 				aria-valuenow={value}
 				aria-valuemin={0}
@@ -645,21 +662,34 @@ export function Ring({
 /* ----------------------------------------------------------------- buttons */
 
 const BUTTONS = {
-	primary: "bg-signal text-white shadow-sm hover:bg-signal-dark active:translate-y-px",
-	navy: "bg-navy text-white shadow-sm hover:bg-navy/90 active:translate-y-px",
+	/** The one thing this screen is for. Blue, and only ever one per view. */
+	primary: "bg-blue text-white hover:bg-blue-hover active:bg-blue-press",
+	/** The authority charcoal — a strong second action, or a dark-surface action. */
+	navy: "bg-authority text-white hover:bg-authority-soft",
 	/**
-	 * The secondary the reference set actually uses: a wash of the accent with
-	 * the accent as the text. Louder than an outline and quieter than a fill,
-	 * which is the register a "second thing you might do" wants.
+	 * A wash of the accent with the accent as the text. Louder than an outline
+	 * and quieter than a fill, which is the register a "second thing you might
+	 * do" wants.
 	 */
-	soft: "bg-navy/[.07] text-navy hover:bg-navy/[.12] active:translate-y-px",
+	soft: "bg-blue-soft text-blue hover:bg-blue-line/50",
 	quiet:
-		"border border-hairline-strong bg-white text-slate-strong hover:border-navy hover:text-navy",
-	ghost: "text-navy hover:bg-navy/[.06]",
+		"border border-hairline-strong bg-white text-slate-strong hover:border-slate-faint hover:text-ink",
+	ghost: "text-blue hover:bg-blue-soft",
+	/**
+	 * Destructive, and never carried by colour alone.
+	 *
+	 * The border and the warning glyph do the work a red fill used to do on its
+	 * own, so the control is still distinguishable in greyscale, under a colour
+	 * filter, and in Windows high-contrast mode where backgrounds are dropped.
+	 * The *label* is the real signal and callers are expected to say what will
+	 * be destroyed — "Delete draft", not "Delete".
+	 */
+	danger:
+		"border border-danger-line bg-danger-soft text-danger hover:border-danger hover:bg-danger/[.09]",
 } as const;
 
 const BUTTON_BASE =
-	"inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-display text-[13px] font-bold transition disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0";
+	"inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-display text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-inherit";
 
 interface ButtonProps {
 	variant?: keyof typeof BUTTONS;
@@ -668,6 +698,17 @@ interface ButtonProps {
 	onClick?: () => void;
 	disabled?: boolean;
 	type?: "button" | "submit";
+	/**
+	 * The action is in flight.
+	 *
+	 * Disables the control and shows a spinner *in place of* the icon slot while
+	 * keeping the label, so the button does not change width mid-click and the
+	 * label still says what is happening. `aria-busy` carries the same fact to a
+	 * screen reader, which a spinner alone does not.
+	 */
+	busy?: boolean;
+	/** Accessible name, when the label alone is not specific enough. */
+	label?: string;
 }
 
 export function Button({
@@ -677,14 +718,38 @@ export function Button({
 	onClick,
 	disabled,
 	type = "button",
+	busy = false,
+	label,
 }: ButtonProps) {
 	return (
 		<button
 			type={type}
 			onClick={onClick}
-			disabled={disabled}
+			disabled={disabled || busy}
+			aria-busy={busy || undefined}
+			aria-label={label}
 			className={cx(BUTTON_BASE, BUTTONS[variant], className)}
 		>
+			{busy && (
+				<span
+					aria-hidden="true"
+					className="h-3.5 w-3.5 flex-none animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
+				/>
+			)}
+			{variant === "danger" && !busy && (
+				// The shape that survives greyscale. Paired with the label, which is
+				// where the real warning lives.
+				<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" className="flex-none">
+					<path
+						d="M12 4 2.5 20h19L12 4Zm0 6v4m0 3v.5"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1.9"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+					/>
+				</svg>
+			)}
 			{children}
 		</button>
 	);
@@ -745,7 +810,7 @@ export function IconButton({
 			onClick={onClick}
 			disabled={disabled}
 			className={cx(
-				"grid h-9 w-9 flex-none place-items-center rounded-full text-slate-faint transition hover:bg-page hover:text-navy disabled:cursor-not-allowed disabled:opacity-40",
+				"grid h-9 w-9 flex-none place-items-center rounded-full text-slate-faint transition hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40",
 				className,
 			)}
 		>
@@ -859,7 +924,7 @@ export function Empty({
 			className={cx(
 				"text-center",
 				framed
-					? "rounded-card border border-dashed border-hairline-strong bg-page/40 px-6 py-10"
+					? "rounded-card border border-dashed border-hairline-strong bg-surface/40 px-6 py-10"
 					: "px-2 py-6",
 			)}
 		>
@@ -867,7 +932,7 @@ export function Empty({
 				<div
 					className={cx(
 						"mx-auto mb-3.5 grid h-11 w-11 place-items-center rounded-full text-slate-faint",
-						framed ? "bg-white shadow-card" : "bg-page",
+						framed ? "bg-white shadow-card" : "bg-surface",
 					)}
 				>
 					{icon({ size: 19 })}
@@ -910,7 +975,7 @@ export function NotBuilt({
 }) {
 	return (
 		<div className="rounded-panel border border-dashed border-hairline-strong bg-white px-8 py-14 text-center">
-			<div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-page">
+			<div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-surface">
 				<svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true">
 					<path
 						d="M12 8v5m0 3.5v.5M12 3 2 20h20L12 3Z"
@@ -988,7 +1053,7 @@ export function ListRow({
 
 	const base = cx(
 		"block w-full rounded-control px-3 py-3 text-left transition",
-		(to || onClick) && "hover:bg-page",
+		(to || onClick) && "hover:bg-surface",
 		className,
 	);
 
@@ -1156,16 +1221,56 @@ export function usePaged<T>(rows: T[], size: number) {
  * a reader's eye run down a column without being cut across by furniture. The
  * header is quiet on purpose: it is read once and then never again.
  */
-export function Table({ head, children }: { head: ReactNode[]; children: ReactNode }) {
+/**
+ * A register, a queue or a roster.
+ *
+ * **A real `<table>`, always.** The console is mostly data, and a grid of divs
+ * loses the row/column relationships a screen reader needs to read a cell back
+ * with its heading. Wide tables scroll inside their own panel rather than
+ * pushing the page sideways.
+ *
+ * `sticky` keeps the header visible while a long register scrolls under it.
+ * Off by default because it only helps where the table is the tallest thing on
+ * the page — on a short table it produces a header that detaches for no reason.
+ *
+ * `align` lets a caller right-align the columns that hold figures. Dates,
+ * totals and counts read as a column when their digits line up and as a mess
+ * when they do not; `tabular` on the cell does the rest.
+ */
+export function Table({
+	head,
+	children,
+	sticky = false,
+	minWidth = 640,
+	align = [],
+	caption,
+}: {
+	head: ReactNode[];
+	children: ReactNode;
+	sticky?: boolean;
+	minWidth?: number;
+	align?: ("left" | "right" | "center")[];
+	/**
+	 * What this table is, for somebody who cannot see it. Visually hidden —
+	 * a sighted reader already has the section heading above it.
+	 */
+	caption?: string;
+}) {
 	return (
-		<div className="card overflow-x-auto">
-			<table className="w-full min-w-[640px] border-collapse text-left">
-				<thead>
-					<tr className="border-b border-hairline">
+		<div className={cx("card overflow-x-auto", sticky && "max-h-[70vh] overflow-y-auto")}>
+			<table className="w-full border-collapse text-left" style={{ minWidth }}>
+				{caption && <caption className="sr-only">{caption}</caption>}
+				<thead className={cx(sticky && "sticky top-0 z-10")}>
+					<tr className={cx("border-b border-hairline", sticky && "bg-white")}>
 						{head.map((cell, index) => (
 							<th
 								key={index}
-								className="whitespace-nowrap px-5 py-3.5 text-[11px] font-bold text-slate-faint"
+								scope="col"
+								className={cx(
+									"whitespace-nowrap px-5 py-3.5 text-[11px] font-medium text-muted",
+									align[index] === "right" && "text-right",
+									align[index] === "center" && "text-center",
+								)}
 							>
 								{cell}
 							</th>
@@ -1180,7 +1285,7 @@ export function Table({ head, children }: { head: ReactNode[]; children: ReactNo
 
 export function Row({ children }: { children: ReactNode }) {
 	return (
-		<tr className="border-b border-hairline-soft transition last:border-0 hover:bg-page/60">
+		<tr className="border-b border-hairline-soft transition last:border-0 hover:bg-surface/60">
 			{children}
 		</tr>
 	);
@@ -1239,7 +1344,7 @@ export function Tabs({
 				// Scrolls rather than wraps: a second row of tabs reads as a second
 				// bar, and on a phone six tabs would take a third of the screen
 				// before any of the record showed.
-				"-mx-1 flex gap-1 overflow-x-auto rounded-card bg-page p-1",
+				"-mx-1 flex gap-1 overflow-x-auto rounded-card bg-surface p-1",
 				className,
 			)}
 		>
@@ -1388,7 +1493,7 @@ export function ActionMenu({
 								"flex w-full items-start gap-2.5 rounded-card px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-40",
 								action.tone === "danger"
 									? "text-signal-dark hover:bg-signal/[.07]"
-									: "text-ink hover:bg-page",
+									: "text-ink hover:bg-surface",
 							)}
 						>
 							{action.icon && (

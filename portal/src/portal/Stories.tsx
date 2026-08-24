@@ -147,7 +147,7 @@ export default function Stories() {
 				</nav>
 			</div>
 
-			<div className="-mx-5 mb-8 border-b border-hairline bg-page/50 px-5 py-3.5 md:-mx-8 md:px-8">
+			<div className="-mx-5 mb-8 border-b border-hairline bg-surface/50 px-5 py-3.5 md:-mx-8 md:px-8">
 				<Topics
 					categories={categories.data?.message ?? []}
 					value={category}
@@ -343,7 +343,7 @@ function Cover({ src, className }: { src: string | null; className?: string }) {
 	}
 
 	return (
-		<div className={cx("w-full overflow-hidden bg-page", className)}>
+		<div className={cx("w-full overflow-hidden bg-surface", className)}>
 			<img
 				src={src}
 				alt=""
@@ -512,7 +512,7 @@ export function Story() {
 					</div>
 
 					{more.length > 0 && (
-						<section className="-mx-5 mt-16 bg-page px-5 py-12 md:-mx-8 md:px-8">
+						<section className="-mx-5 mt-16 bg-surface px-5 py-12 md:-mx-8 md:px-8">
 							<h2 className="font-display text-[26px] font-extrabold tracking-tight text-ink">
 								Read more
 							</h2>

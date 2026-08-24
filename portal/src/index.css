@@ -43,20 +43,19 @@
 		background-color: theme("colors.slate.faint");
 	}
 
-	/* The rail scrolls on its own navy, where the page's grey thumb above
-	   would read as a stray light streak rather than part of the surface —
-	   this is the same thumb in the rail's own white-on-navy, not the page's
-	   grey-on-white. */
+	/* The rail is grey now rather than navy, so it takes the page's own thumb —
+	   one shade darker, because a hairline-coloured thumb disappears against
+	   the shell it is scrolling on. */
 	.rail-scroll {
-		scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+		scrollbar-color: theme("colors.slate.faint") transparent;
 	}
 
 	.rail-scroll::-webkit-scrollbar-thumb {
-		background-color: rgba(255, 255, 255, 0.18);
+		background-color: theme("colors.slate.faint");
 	}
 
 	.rail-scroll::-webkit-scrollbar-thumb:hover {
-		background-color: rgba(255, 255, 255, 0.32);
+		background-color: theme("colors.muted");
 	}
 
 	/* Every interactive element gets a visible focus ring. Set once here rather
@@ -70,18 +69,41 @@
 	   *clicked*, so a red offset ring appeared around every search box the
 	   moment somebody put a cursor in it, which reads as an error rather than
 	   as focus. Fields get the navy instead, tight to the control. */
+	/* Two rules, because the two kinds of control are not the same thing. A
+	   link or a button is a target you land on, and the blue ring with an
+	   offset says so. A text field is somewhere you are already typing —
+	   browsers match :focus-visible on an input even when it was *clicked* —
+	   so a field takes the soft halo the component sheet draws instead, tight
+	   to the control.
+
+	   `ring-offset-transparent` rather than `ring-offset-white`: the offset ring
+	   now appears on the grey shell as often as on a white panel, and a hard
+	   white gap around a button sitting on grey reads as a rendering fault. */
 	:where(a, button, [tabindex]):focus-visible {
-		@apply outline-none ring-2 ring-signal ring-offset-2 ring-offset-white;
+		@apply outline-none ring-2 ring-blue ring-offset-2 ring-offset-transparent;
 	}
 
 	:where(input, select, textarea):focus-visible {
-		@apply outline-none ring-2 ring-navy/30 ring-offset-0;
+		@apply border-blue outline-none ring-[3px] ring-blue-soft ring-offset-0;
+	}
+
+	/* Windows high-contrast mode throws away box-shadow, and a ring *is* a box
+	   shadow — so every control above would lose its focus indicator entirely.
+	   A transparent outline is repainted by the OS as a real one. */
+	@media (forced-colors: active) {
+		:where(a, button, [tabindex], input, select, textarea):focus-visible {
+			outline: 2px solid transparent;
+			outline-offset: 2px;
+		}
 	}
 }
 
 @layer components {
+	/* The small tracked-out label above a title. Muted, not blue: blue means
+	   "act on this" or "you are here" everywhere else in the product, and an
+	   eyebrow is neither. */
 	.eyebrow {
-		@apply text-[10px] font-extrabold uppercase tracking-eyebrow text-signal;
+		@apply text-[10px] font-semibold uppercase tracking-eyebrow text-muted;
 	}
 
 	/* One cell of a filter bar: an icon, a hidden label and a bare field, which
@@ -97,7 +119,7 @@
 	}
 
 	.control:focus-within {
-		@apply ring-2 ring-navy/25;
+		@apply border-blue ring-[3px] ring-blue-soft;
 	}
 
 	.control :where(input, select, textarea):focus-visible {
@@ -121,6 +143,20 @@
 		@apply rounded-card bg-white shadow-card;
 	}
 
+	/* The grey ground everything signed-in sits on. A single continuous
+	   surface: the rail, the top row and the gaps between panels are all this,
+	   which is what makes white panels read as floating above one shell rather
+	   than as a sidebar bolted onto a content pane. */
+	.app-shell {
+		@apply bg-shell text-ink;
+	}
+
+	/* A panel inside a panel — a stat tile, a map well, an inset list. One step
+	   off white so it separates without a border. */
+	.inset {
+		@apply rounded-control bg-surface;
+	}
+
 	/* The label that sits *outside* and above a card — "Your commitments",
 	   "Recent activity". The single most characteristic move in the reference
 	   set, and the reason its dashboards scan in one pass: the eye reads a
@@ -131,8 +167,11 @@
 	   Deliberately *not* uppercase and not letterspaced. `.eyebrow` is already
 	   that, it means "the thing above a title", and having two tiny tracked-out
 	   styles doing different jobs is how a page stops having a hierarchy. */
+	/* Medium rather than bold: the redesign's type is quieter than the system
+	   it replaces, and a page of bold labels on grey reads as louder than the
+	   content it is labelling. */
 	.section-label {
-		@apply font-display text-[13.5px] font-bold tracking-tight text-ink;
+		@apply font-display text-[13.5px] font-semibold tracking-tight text-ink;
 	}
 
 	/* Figures that sit in a column — a stat tile, a table of hours, a count in a
@@ -146,7 +185,7 @@
 	   administrator can see the boundaries of what is editable rather than
 	   hunting for pencils. */
 	.editable-on {
-		@apply rounded-[3px] outline-dashed outline-1 outline-offset-2 outline-signal/40;
+		@apply rounded-[4px] outline-dashed outline-1 outline-offset-2 outline-blue/45;
 	}
 
 	/* An article's body, which is core's Text Editor field and therefore arrives
@@ -171,7 +210,7 @@
 	   Neither is authored by this app: both come from another app's Text Editor
 	   field, so neither can be assumed to fit. */
 	.article-body pre {
-		@apply overflow-x-auto rounded-card bg-page p-4 text-[13px];
+		@apply overflow-x-auto rounded-card bg-surface p-4 text-[13px];
 	}
 
 	.article-body table {
@@ -195,11 +234,11 @@
 	}
 
 	.article-body a {
-		@apply font-semibold text-navy underline decoration-navy/30 underline-offset-2 hover:decoration-navy;
+		@apply font-medium text-blue underline decoration-blue/30 underline-offset-2 hover:decoration-blue;
 	}
 
 	.article-body blockquote {
-		@apply border-l-2 border-signal pl-5 italic text-slate-strong;
+		@apply border-l-2 border-hairline-strong pl-5 italic text-slate-strong;
 	}
 
 	.article-body img {

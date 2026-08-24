@@ -112,7 +112,7 @@ function RowEditor<Row extends object>({
 					{rows.map((row, index) => (
 						<li
 							key={index}
-							className="rounded-card border border-hairline bg-page/60 px-3 py-2.5"
+							className="rounded-card border border-hairline bg-surface/60 px-3 py-2.5"
 						>
 							<div className="grid grid-cols-12 gap-2.5">
 								{columns.map((column) => (
@@ -345,7 +345,7 @@ export function MissionEditor({
 							"rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition",
 							tab === entry.key
 								? "bg-navy text-white"
-								: "text-slate-body hover:bg-page hover:text-navy",
+								: "text-slate-body hover:bg-surface hover:text-navy",
 						)}
 					>
 						{entry.label}
@@ -550,7 +550,7 @@ export function MissionEditor({
 							/>
 						</Labelled>
 
-						<div className="rounded-card border border-hairline bg-page px-4 py-3">
+						<div className="rounded-card border border-hairline bg-surface px-4 py-3">
 							<p className="text-[12px] font-bold uppercase tracking-wider text-slate-faint">
 								Required certifications
 							</p>

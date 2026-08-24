@@ -138,7 +138,7 @@ function ApprovalStrip({
 			</div>
 
 			{approval.is_pending && approval.blocked_because && (
-				<p className="mt-2.5 rounded-card bg-page px-3 py-2 text-[11.5px] text-slate-body">
+				<p className="mt-2.5 rounded-card bg-surface px-3 py-2 text-[11.5px] text-slate-body">
 					{approval.blocked_because}
 				</p>
 			)}

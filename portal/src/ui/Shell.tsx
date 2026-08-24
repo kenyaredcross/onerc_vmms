@@ -1,9 +1,16 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+	Fragment,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+	type ReactNode,
+} from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { EditableText } from "../content/Editable";
 import { EditToolbar } from "../content/EditToolbar";
-import { firstName, initials, useSession } from "../lib/session";
+import { initials, useSession } from "../lib/session";
 import { BrandLockup } from "./brand";
 import { Icon } from "./icons";
 import { cx } from "./primitives";
@@ -22,15 +29,19 @@ export interface NavItem {
 	 *
 	 * A label is drawn whenever `groupKey` differs from the previous item's, so
 	 * a caller declares grouping by *ordering* rather than by nesting arrays.
-	 * Omit it throughout and the navigation is one ungrouped list, which is what
-	 * the console passes.
-	 *
-	 * Nine flat tabs is the shape this sidebar had, and nine things with no
-	 * headings is a list somebody reads top to bottom every time rather than
-	 * jumping to the third of three short groups.
+	 * Omit it throughout and the navigation is one ungrouped list.
 	 */
 	groupKey?: string;
 	groupFallback?: string;
+	/**
+	 * This destination owns a secondary navigation panel of its own.
+	 *
+	 * Deployments is the one that does. Opening it collapses the global rail to
+	 * icons and slides its own panel in beside it — see `Shell`'s `subNav` prop.
+	 * Declared on the item rather than sniffed from the route so the rail knows
+	 * to collapse *before* the child route has rendered anything.
+	 */
+	hasSubNav?: boolean;
 }
 
 /**
@@ -38,23 +49,9 @@ export interface NavItem {
  * it — the console's Registry-and-Analytics style grouping, not the portal's
  * plain headed list.
  *
- * **Not the same thing as `groupKey`.** A `groupKey` heading is a label over
- * flat siblings that were always going to be shown; nobody expands or
- * collapses it, and `PortalLayout` still uses it exactly that way. A
- * `NavGroup` is a real parent: it has a route of its own, it is a `NavLink`
- * like any other item, and clicking it both opens that route and reveals
- * `children` indented beneath it. The two coexist in one `items` array because
- * they answer different questions — "which heading is this under" against
- * "is there more here than the row shows" — and a screen with a real hierarchy
- * should not have to fake one out of a label.
- *
- * **Expansion follows the route, not a click somebody has to remember to
- * repeat.** A group is open whenever the current page is the group's own or
- * one of `children`'s, so arriving at a child page — by a bookmark, a link
- * from elsewhere, or the browser's back button — always shows it in place
- * rather than nested inside a heading collapsed shut. The chevron is a manual
- * override on top of that default, for glancing at what else is here without
- * leaving the page you are on; see `Shell`'s own `openGroups` state.
+ * **Expansion follows the route**, so arriving at a child page by bookmark or
+ * back button always shows it in place rather than nested inside a heading
+ * collapsed shut. The chevron is a manual override on top of that default.
  */
 export interface NavGroup extends Omit<NavItem, "groupKey" | "groupFallback"> {
 	children: NavItem[];
@@ -70,12 +67,10 @@ function within(pathname: string, base: string): boolean {
 }
 
 /**
- * Which rail item `pathname` belongs to, for the top bar's own title — the
- * same question `within` answers for one item, asked of every leaf and group
- * child at once. Longest `to` wins: `/admin` is `within` almost every admin
- * route, so without this a detail page nested under a specific tab would read
- * back as whichever tab happens to sort first rather than the one it is
- * actually inside.
+ * Which rail item `pathname` belongs to, for the top row's own title. Longest
+ * `to` wins: `/admin` is `within` almost every admin route, so without this a
+ * detail page nested under a specific tab would read back as whichever tab
+ * happens to sort first rather than the one it is actually inside.
  */
 function currentTab(pathname: string, items: (NavItem | NavGroup)[]): NavItem | null {
 	let best: NavItem | null = null;
@@ -92,36 +87,11 @@ function currentTab(pathname: string, items: (NavItem | NavGroup)[]): NavItem | 
 	return best;
 }
 
-/** Icon, label and badge — the content every rail row carries, group or leaf. */
-function railContent(item: NavItem, isActive: boolean) {
-	return (
-		<>
-			<span
-				className={cx(
-					"flex-none transition-colors duration-200",
-					isActive ? "text-signal" : "text-white/55 group-hover:text-white/80",
-				)}
-			>
-				<item.icon size={17} />
-			</span>
-
-			<EditableText k={item.labelKey} fallback={item.fallback} className="flex-1" />
-
-			{item.badge !== undefined && item.badge > 0 && (
-				<span className="rounded-full bg-signal px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-					{item.badge > 99 ? "99+" : item.badge}
-				</span>
-			)}
-		</>
-	);
-}
-
 /**
  * The chevron that opens or closes a `NavGroup`, on its own — never the row's
- * `NavLink` — for the reason `Pencil` in `content/Editable.tsx` gives: a
- * `button` inside an `a` is invalid HTML, so this is a `span` carrying
- * `role="button"` instead, and it stops the click before the link beneath it
- * ever sees it.
+ * `NavLink` — because a `button` inside an `a` is invalid HTML. A `span`
+ * carrying `role="button"` instead, stopping the click before the link beneath
+ * it ever sees it.
  */
 function GroupToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
 	const fire = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
@@ -139,21 +109,18 @@ function GroupToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () =
 				if (event.key === "Enter" || event.key === " ") fire(event);
 			}}
 			aria-label={expanded ? "Collapse" : "Expand"}
-			className="flex-none rounded-full p-1 text-white/40 transition-colors duration-200 hover:bg-white/10 hover:text-white/80"
+			className="flex-none rounded-full p-1 text-slate-faint transition-colors duration-200 hover:bg-black/[.05] hover:text-ink"
 		>
-			<Icon.chevron size={13} className={cx("transition-transform duration-200", expanded && "rotate-180")} />
+			<Icon.chevron
+				size={13}
+				className={cx("transition-transform duration-200", expanded && "rotate-180")}
+			/>
 		</span>
 	);
 }
 
 /**
  * A tab that leaves this app entirely.
- *
- * Learning, chat and the service desk are separate Frappe apps, each mounted at
- * its own route, and a link to one is a real navigation rather than a client
- * route. They are a distinct type rather than a flag on `NavItem` so the two
- * cannot be confused at a call site: a `NavLink` pointed at `/lms` would render
- * an app-shaped hole where the LMS should be, and it would do it silently.
  *
  * Neither the route nor the label is written down in the frontend. Both come
  * from `api/companions.py`, which reads each app's own `add_to_apps_screen`
@@ -166,7 +133,7 @@ export interface CompanionItem {
 	fallback: string;
 }
 
-/** Where the bell in the top bar points, and what it is carrying. */
+/** Where the bell in the top row points, and what it is carrying. */
 export interface BellProps {
 	to: string;
 	count: number;
@@ -174,47 +141,63 @@ export interface BellProps {
 	fallback: string;
 }
 
-const TOPBAR = 60;
+/** Rail widths. One place, because three `calc`s and a transition lean on them. */
+const RAIL_WIDE = 236;
+const RAIL_NARROW = 68;
 
-// The margin every floating surface keeps from the viewport edge and from
-// each other — the page's own inset, the gap between the rail and the pill,
-// and the rail's own clearance top and bottom. One number so the two never
-// drift apart in the calc() arithmetic below that leans on it.
-const GUTTER = 16;
+/**
+ * Where the collapse preference lives.
+ *
+ * `localStorage` and not the server: this is a per-device layout preference,
+ * not something about the person, and somebody who collapses the rail on a
+ * small laptop does not mean it should be collapsed on their desktop too.
+ * Every read and write is guarded — a private window, or a browser set to block
+ * site data, throws on access rather than returning null.
+ */
+const COLLAPSE_KEY = "vmms.nav.collapsed";
+
+function readCollapsed(): boolean {
+	try {
+		return window.localStorage.getItem(COLLAPSE_KEY) === "1";
+	} catch {
+		return false;
+	}
+}
+
+function writeCollapsed(value: boolean) {
+	try {
+		window.localStorage.setItem(COLLAPSE_KEY, value ? "1" : "0");
+	} catch {
+		/* A preference we could not save is not an error worth showing anybody. */
+	}
+}
 
 /**
  * The signed-in chrome, for both the volunteer portal and the coordinator
  * console.
  *
- * **Three zones, floated apart rather than fused.** A rounded rail down the
- * left carries the society's work, its own lockup anchoring the top of it —
- * identity and the navigation that speaks for it are one surface, not a
- * header's height apart. A pill-shaped bar to its right carries the person's
- * own controls, clear of the rail and of the right edge by the same margin
- * `GUTTER` keeps everywhere else. The rest is the screen. Neither surface
- * touches the glass; both sit on the page the way the reference design the
- * request pointed at does, which is the one idea this shell borrows from it
- * wholesale.
+ * **One continuous grey shell.** The rail, the top row and the gaps between
+ * panels are all the same surface; white panels float above it. That is the
+ * whole structural idea of the redesign, and it is why there is no wrapper
+ * `<div class="bg-white">` around page content anywhere below — a page is a set
+ * of panels on the shell, not one white rectangle with things drawn inside it.
  *
- * One component with a `tone`, rather than two shells that drift apart. The
- * design distinguishes the two surfaces by depth: the volunteer portal's rail
- * is the brand navy, the coordinator's is nearly black, and that difference is
- * the only signal a person needs that they are now acting on somebody else's
- * records. Everything else about the two is the same, and duplicating it would
- * mean fixing every focus ring twice.
+ * **The page title lives in the top row**, aligned with the society identity,
+ * search and account controls, and the content area begins underneath. A screen
+ * that wants a fuller heading draws its own beneath that, which is what
+ * `PageHeading` is for.
  *
- * `subtitle` is the person's placement, which is real information rather than
- * decoration: a coordinator who covers two branches needs to see which one this
- * session is scoped to.
+ * **The rail collapses to an icon-only rail** and the preference persists per
+ * device. Collapsing is a layout change and never a navigation: the route is
+ * untouched, so nothing is lost and nothing re-fetches. A destination that owns
+ * a secondary panel (`hasSubNav`) collapses the rail on arrival regardless of
+ * the preference, because two expanded navigation columns side by side is not a
+ * layout, it is a corridor.
  *
- * **The avatar is a menu, not a label**, and it is in the top-right corner
- * because that is where a person looks for themselves. It used to be pinned to
- * the foot of the rail, on the same reasoning — the rail is where somebody
- * looks for the society's work, the corner is where they look for themselves —
- * and the top-right is more that corner than the bottom-left ever was. Profile
- * and sign out live behind it together: they are the same kind of thing, and a
- * destructive action sitting permanently under the navigation is one mis-click
- * from ending a session.
+ * One component with a `tone` rather than two shells that drift apart. The two
+ * surfaces differ only in the console's slightly deeper rail treatment and its
+ * label; everything else about them is the same, and duplicating it would mean
+ * fixing every focus ring twice.
  */
 export function Shell({
 	items,
@@ -226,114 +209,88 @@ export function Shell({
 	tone,
 	subtitle,
 	person,
+	subNav,
+	search,
 }: {
 	items: (NavItem | NavGroup)[];
 	companions?: CompanionItem[];
-	/**
-	 * The notifications control, or nothing.
-	 *
-	 * A bell in the corner rather than a tab in the rail, because "what has
-	 * arrived for me" is the one thing a person wants from every screen rather
-	 * than from a screen. It carries its own count, so the rail does not have to
-	 * hold a tab whose only purpose is to wear a number.
-	 */
 	bell?: BellProps | null;
 	/**
 	 * Where the console switch points, or nothing at all.
 	 *
 	 * A route rather than a boolean, so this component never writes down where
-	 * the other surface lives, and never decides who may go there — the caller
-	 * passes it only when `api/console.py::sections` said `available`. A person
-	 * holding no staff role gets no button, which is the same answer
-	 * `AdminLayout` gives them if they arrive by typing the address.
+	 * the other surface lives and never decides who may go there — the caller
+	 * passes it only when `api/console.py::sections` said `available`.
 	 */
 	console?: string | null;
-	/**
-	 * Where the Frappe desk is, for whoever may open it, or nothing.
-	 *
-	 * A real navigation out of the SPA rather than a route, like the companion
-	 * apps above — and passed only when the server said so. `api/console.py`
-	 * answers with the same function that gates the VMMS tile on the apps
-	 * screen, so this is never drawn for somebody who would get a permission
-	 * error at the other end.
-	 */
+	/** Where the Frappe desk is, for whoever may open it, or nothing. */
 	desk?: string | null;
-	/**
-	 * Where onerc_sms's own campaign builder is, for whoever may open it, or
-	 * nothing.
-	 *
-	 * The same shape as `desk` and for the same reason: a real navigation out
-	 * of the SPA, passed only when the server said so, so this is never drawn
-	 * for somebody who would get a permission error at the other end.
-	 * Narrower than `desk` — it names one form on a companion app vmmsx does
-	 * not require, not the whole framework — so it is its own prop rather
-	 * than folded into that one.
-	 */
+	/** Where onerc_sms's own campaign builder is, or nothing. */
 	sms?: string | null;
 	tone: "portal" | "admin";
 	subtitle?: string | null;
-	/**
-	 * This person's own name, from their Red Profile — what the society calls
-	 * them, rather than what they sign in as.
-	 *
-	 * The greeting and the avatar were both built from `session.user` alone, which
-	 * on almost every site is an email address: `firstName` split it at the `@`
-	 * and again at the first separator, so somebody whose login was
-	 * `nigelnathann3@…` was greeted every morning as "Nigelnathann3". The society
-	 * knows what this person is called — it asked them on the way in — so this is
-	 * what it says. The email-derived guess stays as the fallback for the moment
-	 * before the profile arrives, and for anybody who has not registered for
-	 * anything yet and therefore has no profile at all.
-	 */
+	/** This person's own name, from their Red Profile. */
 	person?: string | null;
+	/**
+	 * The secondary navigation panel, for a destination that has one.
+	 *
+	 * Rendered between the global rail and the content, and its presence is what
+	 * forces the global rail into its icon-only state. Passed by the layout that
+	 * knows the current section rather than assembled here, so this component
+	 * never learns what a deployment is.
+	 *
+	 * A render function rather than a node, because the panel appears twice in
+	 * two arrangements — a column on a wide screen, a horizontal scroller under
+	 * the top row below `lg` — and asking the caller for both is how the two
+	 * stay one component instead of drifting into two.
+	 */
+	subNav?: (horizontal: boolean) => ReactNode;
+	/**
+	 * The global search control, or nothing.
+	 *
+	 * A slot rather than a built-in field: what search *does* differs between
+	 * the portal and the console, and a shell that owned the behaviour would
+	 * have to know about both.
+	 */
+	search?: ReactNode;
 }) {
 	const { user, logout } = useSession();
 	const location = useLocation();
-	const [open, setOpen] = useState(false);
+	const [drawer, setDrawer] = useState(false);
 	const [menu, setMenu] = useState(false);
-	// A group's own manual override, keyed by its route. Absent means "follow
-	// the current page" — see `NavGroup`'s own docstring — present means
-	// somebody clicked the chevron and this group now ignores that default
-	// until they click it again.
+	const [collapsed, setCollapsed] = useState(readCollapsed);
 	const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 	const account = useRef<HTMLDivElement>(null);
-	const dark = tone === "admin";
+	const drawerPanel = useRef<HTMLDivElement>(null);
+	const menuButton = useRef<HTMLButtonElement>(null);
 
-	const rail = dark ? "bg-navy-deep" : "bg-navy";
-	// The badge on the bell sits half off the top bar, so its ring has to match
-	// whichever navy the bar is wearing — a white one would read as a halo
-	// pasted on top rather than a coin cut into the surface underneath it.
-	const railRing = dark ? "ring-navy-deep" : "ring-navy";
-
-	// Where the brand mark takes you, wherever it is drawn — the rail's own
-	// header on a wide screen, the top bar's on a narrow one. Not really "the
-	// other surface": `console_` doubles as a tone signal here (see its own
-	// prop doc), so this always lands on *this* surface's home page.
-	const home = console_ === "/dashboard" ? "/admin" : "/dashboard";
-
-	// What the top bar says beside the controls. "Good morning, Brian" is the
-	// one line of the reference design that lives in the top bar rather than
-	// on a page, so it stood in for every screen at first — but a coordinator
-	// three tabs deep in Operations does not need reminding what time of day
-	// it is, they need to know they are still looking at Tasks. So: the
-	// greeting is a *front door*, drawn only on the surface's own home page,
-	// and every other page names itself the way its own rail row does.
 	const current = currentTab(location.pathname, items);
 
-	const topBarTitle =
-		current && current.to !== home ? (
-			<EditableText k={current.labelKey} fallback={current.fallback} />
-		) : (
-			(() => {
-				const hour = new Date().getHours();
-				const part = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-				// `firstName` handles both shapes: given a real name it takes the
-				// first word of it, given an email it does the splitting it always did.
-				const name = firstName(person?.trim() || user);
+	// A section with its own panel takes the rail down to icons whatever the
+	// stored preference says — see the component docstring. The preference is
+	// not overwritten, so leaving the section restores whatever it was.
+	const forced = Boolean(subNav) || Boolean(current?.hasSubNav);
+	const narrow = forced || collapsed;
 
-				return name ? `${part}, ${name}` : part;
-			})()
-		);
+	const home = console_ === "/dashboard" ? "/admin" : "/dashboard";
+
+	const toggleCollapsed = useCallback(() => {
+		setCollapsed((value) => {
+			writeCollapsed(!value);
+			return !value;
+		});
+	}, []);
+
+	// The page title in the top row. Every page names itself the way its own
+	// rail row does; the surface's own home page says hello instead, because
+	// "Dashboard" above "Welcome back, Amina" is the same word twice.
+	const onHome = !current || current.to === home;
+
+	const topBarTitle = onHome ? (
+		<EditableText k={tone === "admin" ? "admin.nav.overview" : "portal.nav.dashboard"} fallback={tone === "admin" ? "Overview" : "Dashboard"} />
+	) : (
+		<EditableText k={current.labelKey} fallback={current.fallback} />
+	);
 
 	// A menu that stays open after you have clicked past it is a menu that
 	// covers the thing you were trying to reach. Escape closes it too, because a
@@ -346,7 +303,10 @@ export function Shell({
 		}
 
 		function onKey(event: KeyboardEvent) {
-			if (event.key === "Escape") setMenu(false);
+			if (event.key === "Escape") {
+				setMenu(false);
+				menuButton.current?.focus();
+			}
 		}
 
 		document.addEventListener("mousedown", onPointer);
@@ -358,379 +318,579 @@ export function Shell({
 		};
 	}, [menu]);
 
+	// The mobile drawer is a modal surface: Escape closes it, the page behind it
+	// does not scroll, and focus moves into it so a keyboard user is not left
+	// tabbing through the page underneath.
+	useEffect(() => {
+		if (!drawer) return;
+
+		const previous = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+
+		function onKey(event: KeyboardEvent) {
+			if (event.key === "Escape") setDrawer(false);
+		}
+
+		document.addEventListener("keydown", onKey);
+		// After paint, so the panel exists to receive it.
+		const focus = window.setTimeout(() => {
+			drawerPanel.current?.querySelector<HTMLElement>("a, button")?.focus();
+		}, 0);
+
+		return () => {
+			document.body.style.overflow = previous;
+			document.removeEventListener("keydown", onKey);
+			window.clearTimeout(focus);
+		};
+	}, [drawer]);
+
+	// Navigating closes the drawer. In an effect keyed on the path rather than
+	// in every link's onClick, so a link added later cannot forget to do it.
+	useEffect(() => {
+		setDrawer(false);
+	}, [location.pathname]);
+
 	/**
-	 * A rail item.
+	 * A rail row.
 	 *
-	 * The active one is a filled pill and its icon takes the signal colour: on
-	 * navy, red is the only hue with enough separation to be read at 16px, and
-	 * it is the app's own accent rather than a second one invented for the
-	 * navigation.
+	 * The selected one is a white pill lifted off the grey with blue text and a
+	 * blue icon — the redesign's single "you are here" signal, used for
+	 * navigation, active tabs and focus alike. Unselected rows carry no surface
+	 * at all until they are pointed at, which is what keeps the rail reading as
+	 * part of the shell rather than as a panel of its own.
 	 */
-	const link = (isActive: boolean) =>
+	const rowClass = (isActive: boolean, compact = false) =>
 		cx(
-			"group flex items-center gap-3 rounded-full px-3.5 py-2.5 text-[12.5px] transition-all duration-200 ease-out active:scale-[0.97]",
+			"group relative flex items-center rounded-full text-[12.5px] transition-colors duration-150",
+			narrow ? "justify-center px-0 py-2.5" : "gap-3 px-3.5",
+			compact && !narrow ? "py-2" : narrow ? "py-2.5" : "py-2.5",
 			isActive
-				? "bg-white/[.13] font-bold text-white"
-				: "font-semibold text-white/60 hover:bg-white/[.07] hover:text-white",
+				? "bg-white font-medium text-blue shadow-nav"
+				: "font-normal text-slate-strong hover:bg-white/60 hover:text-ink",
 		);
 
-	const groupLabel = "px-3.5 pb-1.5 pt-5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/35 first:pt-1";
-
-	return (
-		<div className="min-h-screen bg-page">
-			{/* Two variables, so the rail, the pill and the gap between them share
-			    one source for how far each sits from the glass and from each
-			    other — see `GUTTER` and `TOPBAR`'s own comments. */}
-			<div
-				className="flex flex-col gap-4 p-4 md:flex-row"
-				style={{ "--gutter": `${GUTTER}px`, "--topbar": `${TOPBAR}px` } as React.CSSProperties}
+	/** Icon, label and badge — the content every rail row carries. */
+	const rowContent = (item: NavItem, isActive: boolean) => (
+		<>
+			<span
+				className={cx(
+					"flex-none transition-colors duration-150",
+					isActive ? "text-blue" : "text-slate-faint group-hover:text-slate-strong",
+				)}
 			>
-				{/* --------------------------------------------------------------- rail */}
-				{/* Its own scroll region, floated clear of every edge. `overflow-y-auto`
-				    is unconditional: on a phone it is a drawer of the same shape, and a
-				    society with companion apps installed can put more in it than a short
-				    screen holds. */}
-				<aside
+				<item.icon size={17} />
+			</span>
+
+			{!narrow && <EditableText k={item.labelKey} fallback={item.fallback} className="flex-1 truncate" />}
+
+			{item.badge !== undefined && item.badge > 0 && (
+				<span
 					className={cx(
-						"rail-scroll z-30 w-full flex-none flex-col overflow-y-auto rounded-feature px-3 pb-5 pt-4 shadow-card md:sticky md:flex md:h-[calc(100vh_-_var(--gutter)*2)] md:w-[236px]",
-						rail,
-						open ? "flex h-[calc(100vh_-_var(--topbar)_-_var(--gutter)*3)]" : "hidden md:flex",
+						"rounded-full bg-blue text-[10px] font-semibold leading-none text-white",
+						narrow
+							? "absolute right-1.5 top-1 min-w-[16px] px-1 py-0.5 text-center ring-2 ring-shell"
+							: "px-1.5 py-0.5",
 					)}
-					style={{ top: "var(--gutter)" }}
 				>
-					<Link to={home} onClick={() => setOpen(false)} className="mb-5 flex items-center px-2 pt-1">
-						<BrandLockup tone="dark" wrap />
-					</Link>
+					{item.badge > 99 ? "99+" : item.badge}
+				</span>
+			)}
+		</>
+	);
 
-					<nav aria-label="Sections" className="flex flex-col gap-0.5">
-						{items.map((item, index) => {
-							if (isGroup(item)) {
-								// Open by default whenever the page you are on is this group's
-								// own or one of its children's; a manual click overrides that
-								// until clicked again — see `openGroups`'s own comment.
-								const onGroupsPage =
-									within(location.pathname, item.to) ||
-									item.children.some((child) => within(location.pathname, child.to));
-								const expanded = openGroups[item.to] ?? onGroupsPage;
-								// Shared by the row's own click and the chevron below — the row
-								// toggles the same way the chevron does, on top of the navigation
-								// `NavLink` still performs on its own, so a second click on an
-								// open group closes it rather than being a no-op beside the
-								// chevron doing the real work.
-								const toggle = () => setOpenGroups((current) => ({ ...current, [item.to]: !expanded }));
+	/**
+	 * The accessible name a row needs when the rail is icon-only.
+	 *
+	 * The label is a content block a society can rewrite, and its resolved text
+	 * is not available to this function — so the fallback is what goes in
+	 * `aria-label` and `title`. That is a real limitation and the honest
+	 * trade-off is stated here rather than hidden: an icon with an English
+	 * accessible name is far better than an icon with none, and the expanded
+	 * rail — the default — always shows the translated label.
+	 */
+	const iconName = (item: NavItem) => (narrow ? item.fallback : undefined);
 
-								return (
-									<Fragment key={item.to}>
-										<NavLink
-											to={item.to}
-											end={item.end}
-											onClick={() => {
-												setOpen(false);
-												toggle();
-											}}
-											className={({ isActive }) => link(isActive)}
-										>
-											{({ isActive }) => (
-												<>
-													{railContent(item, isActive)}
-													<GroupToggle expanded={expanded} onToggle={toggle} />
-												</>
-											)}
-										</NavLink>
+	const groupLabel = cx(
+		"pb-1.5 pt-5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-slate-faint first:pt-1",
+		narrow ? "px-0 text-center" : "px-3.5",
+	);
 
-										{expanded && (
-											<div className="relative ml-[21px] mt-0.5 flex flex-col gap-0.5 border-l border-white/[.14] pl-3">
-												{item.children.map((child) => (
-													<div key={child.to} className="relative">
-														{/* The horizontal tick from the vertical line to this
-														    row, so the connector reads as one tree rather than
-														    a line beside an unrelated list. Positioned to
-														    exactly close the gap `pl-3` on the line above opens. */}
-														<span
-															aria-hidden="true"
-															className="pointer-events-none absolute -left-3 top-1/2 h-px w-3 -translate-y-1/2 bg-white/[.14]"
-														/>
-														<NavLink
-															to={child.to}
-															end={child.end}
-															onClick={() => setOpen(false)}
-															className={({ isActive }) => cx(link(isActive), "py-2 text-[12px]")}
-														>
-															{({ isActive }) => railContent(child, isActive)}
-														</NavLink>
-													</div>
-												))}
-											</div>
-										)}
-									</Fragment>
-								);
-							}
+	/** The navigation itself, shared by the desktop rail and the mobile drawer. */
+	const navigation = (compact: boolean) => (
+		<nav aria-label="Sections" className="flex flex-col gap-0.5">
+			{items.map((item, index) => {
+				if (isGroup(item)) {
+					const onGroupsPage =
+						within(location.pathname, item.to) ||
+						item.children.some((child) => within(location.pathname, child.to));
+					const expanded = openGroups[item.to] ?? onGroupsPage;
+					const toggle = () =>
+						setOpenGroups((state) => ({ ...state, [item.to]: !expanded }));
 
-							// A group needs none of this: its own row is the heading. Only a
-							// plain item looks back for one, and a group behind it never
-							// carries a `groupKey` to continue, so a heading never spans
-							// across a group boundary.
-							const previous = items[index - 1];
-							const previousGroupKey = previous && !isGroup(previous) ? previous.groupKey : undefined;
-							const started = item.groupKey && item.groupKey !== previousGroupKey;
+					return (
+						<Fragment key={item.to}>
+							<NavLink
+								to={item.to}
+								end={item.end}
+								onClick={toggle}
+								aria-label={iconName(item)}
+								title={iconName(item)}
+								className={({ isActive }) => rowClass(isActive)}
+							>
+								{({ isActive }) => (
+									<>
+										{rowContent(item, isActive)}
+										{!narrow && <GroupToggle expanded={expanded} onToggle={toggle} />}
+									</>
+								)}
+							</NavLink>
 
-							return (
-								<Fragment key={item.to}>
-									{started && (
-										<div className={groupLabel}>
-											<EditableText
-												k={item.groupKey as string}
-												fallback={item.groupFallback ?? ""}
+							{/* Children are hidden while the rail is icon-only: there is
+							    nowhere to indent to, and a second column of unlabelled
+							    icons is not a hierarchy anybody can read. The group's own
+							    row still navigates, which is the way in. */}
+							{expanded && !narrow && (
+								<div className="relative ml-[21px] mt-0.5 flex flex-col gap-0.5 border-l border-hairline pl-3">
+									{item.children.map((child) => (
+										<div key={child.to} className="relative">
+											<span
+												aria-hidden="true"
+												className="pointer-events-none absolute -left-3 top-1/2 h-px w-3 -translate-y-1/2 bg-hairline"
 											/>
+											<NavLink
+												to={child.to}
+												end={child.end}
+												className={({ isActive }) => cx(rowClass(isActive, true), "text-[12px]")}
+											>
+												{({ isActive }) => rowContent(child, isActive)}
+											</NavLink>
 										</div>
-									)}
+									))}
+								</div>
+							)}
+						</Fragment>
+					);
+				}
 
-									<NavLink
-										to={item.to}
-										end={item.end}
-										onClick={() => setOpen(false)}
-										className={({ isActive }) => link(isActive)}
-									>
-										{({ isActive }) => railContent(item, isActive)}
-									</NavLink>
-								</Fragment>
-							);
-						})}
-					</nav>
+				const previous = items[index - 1];
+				const previousGroupKey = previous && !isGroup(previous) ? previous.groupKey : undefined;
+				const started = item.groupKey && item.groupKey !== previousGroupKey;
 
-					{companions.length > 0 && (
-						<>
-							{/* Separated, because these leave the app. Somebody who clicks
-							    Learning lands in another product with its own navigation,
-							    and the back button is how they return; a tab that behaves
-							    differently should look different before it is clicked. */}
-							<div className={groupLabel}>
-								<EditableText k="portal.nav.companions" fallback="Also available" />
-							</div>
-							<nav aria-label="Other apps" className="flex flex-col gap-0.5">
-								{companions.map((item) => (
-									<a
-										key={item.app}
-										href={item.href}
-										onClick={() => setOpen(false)}
-										className={link(false)}
-									>
-										<span className="flex-none text-white/55">
-											<Icon.external size={17} />
+				return (
+					<Fragment key={item.to}>
+						{started &&
+							(narrow && !compact ? (
+								// A tracked-out heading has no room in a 68px rail, and a
+								// truncated one is noise. A rule keeps the grouping the
+								// heading carried without pretending to be readable.
+								<div aria-hidden="true" className="mx-auto my-2 h-px w-6 bg-hairline-strong" />
+							) : (
+								<div className={cx(groupLabel, compact && "px-3.5 text-left")}>
+									<EditableText k={item.groupKey as string} fallback={item.groupFallback ?? ""} />
+								</div>
+							))}
+
+						<NavLink
+							to={item.to}
+							end={item.end}
+							aria-label={compact ? undefined : iconName(item)}
+							title={compact ? undefined : iconName(item)}
+							className={({ isActive }) =>
+								compact
+									? cx(
+											"group flex items-center gap-3 rounded-full px-3.5 py-2.5 text-[13px] transition-colors",
+											isActive
+												? "bg-white font-medium text-blue shadow-nav"
+												: "font-normal text-slate-strong hover:bg-white/60",
+										)
+									: rowClass(isActive)
+							}
+						>
+							{({ isActive }) =>
+								compact ? (
+									<>
+										<span className={cx("flex-none", isActive ? "text-blue" : "text-slate-faint")}>
+											<item.icon size={17} />
 										</span>
 										<EditableText k={item.labelKey} fallback={item.fallback} className="flex-1" />
-									</a>
-								))}
-							</nav>
-						</>
-					)}
+										{item.badge !== undefined && item.badge > 0 && (
+											<span className="rounded-full bg-blue px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+												{item.badge > 99 ? "99+" : item.badge}
+											</span>
+										)}
+									</>
+								) : (
+									rowContent(item, isActive)
+								)
+							}
+						</NavLink>
+					</Fragment>
+				);
+			})}
+		</nav>
+	);
 
-					{/* The way across to the other surface, and it is drawn from the
-					    server's answer rather than from a role this file names —
-					    `api/console.py::sections`, the same call `AdminLayout` filters its
-					    own tabs with, so the button and the console it opens can never
-					    disagree about whether somebody has one.
-
-					    Pinned to the foot of the rail, because it is not one of this
-					    surface's screens: it is a change of surface, the same kind of move
-					    as the companion links, and the one thing a coordinator was
-					    previously expected to do by typing an address they had to be
-					    told. */}
-					{(console_ || desk || sms) && (
-						<div className="mt-auto flex flex-col gap-1 border-t border-white/[.12] pt-4">
-							{console_ && (
-								<Link
-									to={console_}
-									onClick={() => setOpen(false)}
-									className="flex items-center gap-3 rounded-full bg-white/[.10] px-3.5 py-2.5 text-[12.5px] font-bold text-white transition-all duration-200 ease-out hover:bg-white/[.18] active:scale-[0.97]"
-								>
-									{/* The switch reads in the direction it goes, and which
-									    direction that is follows the tone rather than a second
-									    prop: the dark shell is the console, so its button can
-									    only be the way back. Both labels are content blocks
-									    like every other word in the product. */}
-									<span className="flex-none text-signal">
-										{dark ? <Icon.user size={17} /> : <Icon.lock size={17} />}
-									</span>
-									<EditableText
-										k={dark ? "admin.nav.portal" : "portal.nav.console"}
-										fallback={dark ? "My portal" : "Manager console"}
-										className="flex-1"
-									/>
-									<Icon.chevron size={14} className="-rotate-90 flex-none text-white/50" />
-								</Link>
-							)}
-
-							{desk && (
-								<a href={desk} className={link(false)}>
-									<span className="flex-none text-white/55">
-										<Icon.external size={17} />
-									</span>
-									<EditableText k="admin.nav.desk" fallback="Desk" className="flex-1" />
-								</a>
-							)}
-
-							{sms && (
-								<a href={sms} className={link(false)}>
-									<span className="flex-none text-white/55">
-										<Icon.phone size={17} />
-									</span>
-									<EditableText k="admin.nav.sms" fallback="Send SMS" className="flex-1" />
-								</a>
-							)}
+	/** Companion apps and the surface switch — the foot of the rail. */
+	const railFoot = (compact: boolean) => (
+		<>
+			{companions.length > 0 && (
+				<>
+					{/* Separated, because these leave the app. Somebody who clicks
+					    Learning lands in another product with its own navigation. */}
+					{(!narrow || compact) && (
+						<div className={cx(groupLabel, compact && "px-3.5 text-left")}>
+							<EditableText k="portal.nav.companions" fallback="Also available" />
 						</div>
 					)}
-				</aside>
+					<nav aria-label="Other apps" className="flex flex-col gap-0.5">
+						{companions.map((item) => (
+							<a
+								key={item.app}
+								href={item.href}
+								aria-label={narrow && !compact ? item.fallback : undefined}
+								title={narrow && !compact ? item.fallback : undefined}
+								className={cx(
+									"group flex items-center rounded-full text-[12.5px] font-normal text-slate-strong transition-colors hover:bg-white/60 hover:text-ink",
+									narrow && !compact ? "justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5",
+								)}
+							>
+								<span className="flex-none text-slate-faint">
+									<Icon.external size={17} />
+								</span>
+								{(!narrow || compact) && (
+									<EditableText k={item.labelKey} fallback={item.fallback} className="flex-1" />
+								)}
+							</a>
+						))}
+					</nav>
+				</>
+			)}
 
-				{/* --------------------------------------------------------- content column */}
-				<div className="flex min-w-0 flex-1 flex-col gap-4">
-					{/* ------------------------------------------------------------ top bar */}
-					<header
+			{(console_ || desk || sms) && (
+				<div
+					className={cx(
+						"mt-auto flex flex-col gap-1 border-t border-hairline pt-4",
+						narrow && !compact && "items-center",
+					)}
+				>
+					{console_ && (
+						<Link
+							to={console_}
+							aria-label={narrow && !compact ? (tone === "admin" ? "My portal" : "Manager console") : undefined}
+							title={narrow && !compact ? (tone === "admin" ? "My portal" : "Manager console") : undefined}
+							className={cx(
+								"flex items-center rounded-full bg-authority text-[12.5px] font-medium text-white transition-colors hover:bg-authority-soft",
+								narrow && !compact ? "h-10 w-10 justify-center" : "gap-3 px-3.5 py-2.5",
+							)}
+						>
+							<span className="flex-none">
+								{tone === "admin" ? <Icon.user size={17} /> : <Icon.lock size={17} />}
+							</span>
+							{(!narrow || compact) && (
+								<>
+									<EditableText
+										k={tone === "admin" ? "admin.nav.portal" : "portal.nav.console"}
+										fallback={tone === "admin" ? "My portal" : "Manager console"}
+										className="flex-1"
+									/>
+									<Icon.chevron size={14} className="-rotate-90 flex-none text-white/60" />
+								</>
+							)}
+						</Link>
+					)}
+
+					{desk && (
+						<a
+							href={desk}
+							aria-label={narrow && !compact ? "Desk" : undefined}
+							title={narrow && !compact ? "Desk" : undefined}
+							className={cx(
+								"flex items-center rounded-full text-[12.5px] text-slate-strong transition-colors hover:bg-white/60",
+								narrow && !compact ? "justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5",
+							)}
+						>
+							<span className="flex-none text-slate-faint">
+								<Icon.external size={17} />
+							</span>
+							{(!narrow || compact) && (
+								<EditableText k="admin.nav.desk" fallback="Desk" className="flex-1" />
+							)}
+						</a>
+					)}
+
+					{sms && (
+						<a
+							href={sms}
+							aria-label={narrow && !compact ? "Send SMS" : undefined}
+							title={narrow && !compact ? "Send SMS" : undefined}
+							className={cx(
+								"flex items-center rounded-full text-[12.5px] text-slate-strong transition-colors hover:bg-white/60",
+								narrow && !compact ? "justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5",
+							)}
+						>
+							<span className="flex-none text-slate-faint">
+								<Icon.phone size={17} />
+							</span>
+							{(!narrow || compact) && (
+								<EditableText k="admin.nav.sms" fallback="Send SMS" className="flex-1" />
+							)}
+						</a>
+					)}
+				</div>
+			)}
+		</>
+	);
+
+	return (
+		<div className="app-shell min-h-screen">
+			<div className="flex min-h-screen">
+				{/* ------------------------------------------------------------ rail */}
+				{/* Part of the shell, not a panel on it: no background, no border, no
+				    shadow. What separates it from the content is the white panels
+				    starting, which is the whole point of a continuous ground. */}
+				<aside
+					className={cx(
+						"rail-scroll sticky top-0 hidden h-screen flex-none flex-col overflow-y-auto px-3 pb-4 pt-4 transition-[width] duration-200 ease-out md:flex",
+					)}
+					style={{ width: narrow ? RAIL_NARROW : RAIL_WIDE }}
+				>
+					<Link
+						to={home}
 						className={cx(
-							"sticky z-40 flex flex-none items-center gap-3 rounded-full px-4 shadow-card md:px-5",
-							rail,
+							"mb-5 flex items-center rounded-card px-2 pt-1",
+							narrow && "justify-center px-0",
 						)}
-						style={{ top: "var(--gutter)", height: TOPBAR }}
+						aria-label="Home"
 					>
+						<BrandLockup compact={narrow} wrap={!narrow} />
+					</Link>
+
+					{navigation(false)}
+
+					<div className="mt-auto flex flex-col gap-1 pt-4">
+						{railFoot(false)}
+
+						{/* The collapse control. A real button with an accessible name
+						    that says what it will do, not what the rail currently is. */}
 						<button
 							type="button"
-							onClick={() => setOpen(!open)}
-							aria-label={open ? "Close navigation" : "Open navigation"}
-							aria-expanded={open}
-							className="-ml-1 grid h-9 w-9 flex-none place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white md:hidden"
+							onClick={toggleCollapsed}
+							disabled={forced}
+							aria-label={narrow ? "Expand menu" : "Collapse menu"}
+							title={
+								forced
+									? "This section uses its own menu"
+									: narrow
+										? "Expand menu"
+										: "Collapse menu"
+							}
+							className={cx(
+								"mt-2 flex items-center rounded-full bg-white text-[12px] font-normal text-slate-strong shadow-nav transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:text-slate-strong",
+								narrow ? "h-10 w-10 justify-center self-center" : "gap-2 px-3.5 py-2.5",
+							)}
 						>
-							{open ? <Icon.cross size={18} /> : <Icon.menu size={18} />}
+							<Icon.chevron
+								size={14}
+								className={cx("flex-none transition-transform", narrow ? "-rotate-90" : "rotate-90")}
+							/>
+							{!narrow && (
+								<EditableText k="chrome.action.collapse" fallback="Collapse menu" className="flex-1 text-left" />
+							)}
+						</button>
+					</div>
+				</aside>
+
+				{/* -------------------------------------------------------- sub-nav */}
+				{/* A second navigation column, for a section that has one. Its own
+				    surface tone (one step off the shell) so the three columns read
+				    as rail / section / content rather than as one grey field. */}
+				{subNav && (
+					<div className="sticky top-0 hidden h-screen w-[212px] flex-none overflow-y-auto border-r border-hairline bg-surface px-3 py-4 lg:block">
+						{subNav(false)}
+					</div>
+				)}
+
+				{/* -------------------------------------------------- content column */}
+				<div className="flex min-w-0 flex-1 flex-col">
+					{/* ------------------------------------------------------ top row */}
+					{/* Transparent on the shell — the controls are the only surfaces
+					    here. The page title sits at the left of the same row, which is
+					    what stops a page from needing a title bar of its own. */}
+					<header className="sticky top-0 z-40 flex flex-none items-center gap-3 bg-shell/90 px-4 py-3.5 backdrop-blur-sm md:px-7 md:py-4">
+						<button
+							type="button"
+							onClick={() => setDrawer(true)}
+							aria-label="Open navigation"
+							aria-expanded={drawer}
+							className="-ml-1 grid h-10 w-10 flex-none place-items-center rounded-full bg-white text-slate-strong shadow-nav transition hover:text-ink md:hidden"
+						>
+							<Icon.menu size={18} />
 						</button>
 
 						{/* Identity lives on the rail once there is room for it beside the
-						    nav it speaks for; on a phone the rail is a drawer that starts
-						    closed, so the mark stands in here until somebody opens it. */}
+						    navigation it speaks for; on a phone the rail is a drawer that
+						    starts closed, so the mark stands in here until somebody opens
+						    it. */}
 						<Link to={home} className="min-w-0 md:hidden">
-							<BrandLockup tone="dark" compact />
+							<BrandLockup compact />
 						</Link>
 
-						{/* The top bar's own title — see `topBarTitle`'s own comment. Room
-						    for it only opens up once the brand mark has moved to the rail,
-						    so it is desktop-only. */}
-						<span className="hidden truncate text-[14.5px] font-bold text-white md:block">
+						<h1 className="hidden min-w-0 flex-1 truncate font-display text-[21px] font-medium tracking-tight text-ink md:block">
 							{topBarTitle}
-						</span>
+						</h1>
 
-						<div className="ml-auto flex items-center gap-1 sm:gap-2">
+						<div className="ml-auto flex items-center gap-2">
+							{search && <div className="hidden lg:block">{search}</div>}
+
 							{bell && (
-						<NavLink
-							to={bell.to}
-							className={({ isActive }) =>
-								cx(
-									"relative grid h-10 w-10 place-items-center rounded-full transition",
-									isActive
-										? "bg-white/[.13] text-white"
-										: "text-white/60 hover:bg-white/10 hover:text-white",
-								)
-							}
-							aria-label={`${bell.fallback}${bell.count > 0 ? ` (${bell.count} unread)` : ""}`}
-						>
-							<Icon.bell size={19} />
-							{bell.count > 0 && (
-								<span
-									className={cx(
-										"absolute right-1 top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-signal px-1 text-[9.5px] font-bold leading-none text-white ring-2",
-										railRing,
-									)}
+								<NavLink
+									to={bell.to}
+									className={({ isActive }) =>
+										cx(
+											"relative grid h-10 w-10 place-items-center rounded-full shadow-nav transition",
+											isActive ? "bg-white text-blue" : "bg-white text-slate-strong hover:text-ink",
+										)
+									}
+									aria-label={`${bell.fallback}${bell.count > 0 ? ` (${bell.count} unread)` : ""}`}
 								>
-									{bell.count > 99 ? "99+" : bell.count}
-								</span>
+									<Icon.bell size={18} />
+									{bell.count > 0 && (
+										<span className="absolute right-1 top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-blue px-1 text-[9.5px] font-semibold leading-none text-white ring-2 ring-white">
+											{bell.count > 99 ? "99+" : bell.count}
+										</span>
+									)}
+								</NavLink>
 							)}
-						</NavLink>
-					)}
 
-					<div ref={account} className="relative">
-						<button
-							type="button"
-							onClick={() => setMenu(!menu)}
-							aria-haspopup="menu"
-							aria-expanded={menu}
-							className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-1 transition hover:bg-white/10 sm:pr-3"
-						>
-							<span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-white/15 font-display text-[12px] font-bold text-white">
-								{initials(person?.trim() || user) || "?"}
-							</span>
-
-							<span className="hidden min-w-0 text-left sm:block">
-								{/* The name, with the login underneath it where there is one
-								    to show. The corner is where somebody looks to check they
-								    are signed in as themselves, and an address is a worse
-								    answer to that than a name is. */}
-								<span className="block max-w-[170px] truncate text-[12.5px] font-bold text-white">
-									{person?.trim() || user}
-								</span>
-								{subtitle && (
-									<span className="block max-w-[170px] truncate text-[10.5px] text-white/55">
-										{subtitle}
-									</span>
-								)}
-							</span>
-
-							<Icon.chevron
-								size={14}
-								className={cx(
-									"hidden flex-none text-white/50 transition sm:block",
-									menu && "rotate-180",
-								)}
-							/>
-						</button>
-
-						{menu && (
-							<div
-								role="menu"
-								className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-card border border-hairline bg-white py-1.5 shadow-pop"
-							>
-								<div className="border-b border-hairline-soft px-4 pb-2.5 pt-1.5 sm:hidden">
-									<div className="truncate text-[12.5px] font-bold text-ink">{user}</div>
-									{subtitle && (
-										<div className="truncate text-[10.5px] text-slate-faint">{subtitle}</div>
-									)}
-								</div>
-
-								<Link
-									to="/profile"
-									role="menuitem"
-									onClick={() => {
-										setMenu(false);
-										setOpen(false);
-									}}
-									className="flex items-center gap-3 px-4 py-2.5 text-[12.5px] font-semibold text-slate-strong transition hover:bg-page hover:text-navy"
-								>
-									<Icon.user size={15} />
-									<EditableText k="portal.nav.profile" fallback="Profile" />
-								</Link>
-
+							<div ref={account} className="relative">
 								<button
+									ref={menuButton}
 									type="button"
-									role="menuitem"
-									onClick={() => {
-										// Frappe clears the session cookie; a hard navigation is
-										// wanted here so nothing stale survives in memory.
-										void logout().then(() => {
-											window.location.href = "/";
-										});
-									}}
-									className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[12.5px] font-semibold text-slate-strong transition hover:bg-page hover:text-signal"
+									onClick={() => setMenu(!menu)}
+									aria-haspopup="menu"
+									aria-expanded={menu}
+									className="flex items-center gap-2.5 rounded-full bg-white py-1 pl-1 pr-1 shadow-nav transition sm:pr-3"
 								>
-									<Icon.signout size={15} />
-									<EditableText k="chrome.action.signout" fallback="Sign out" />
+									<span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-surface font-display text-[12px] font-medium text-slate-strong">
+										{initials(person?.trim() || user) || "?"}
+									</span>
+
+									<span className="hidden min-w-0 text-left sm:block">
+										<span className="block max-w-[170px] truncate text-[12.5px] font-medium text-ink">
+											{person?.trim() || user}
+										</span>
+										{subtitle && (
+											<span className="block max-w-[170px] truncate text-[10.5px] text-muted">
+												{subtitle}
+											</span>
+										)}
+									</span>
+
+									<Icon.chevron
+										size={14}
+										className={cx(
+											"hidden flex-none text-slate-faint transition sm:block",
+											menu && "rotate-180",
+										)}
+									/>
 								</button>
+
+								{menu && (
+									<div
+										role="menu"
+										className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-card bg-white py-1.5 shadow-pop ring-1 ring-hairline"
+									>
+										<div className="border-b border-hairline-soft px-4 pb-2.5 pt-1.5 sm:hidden">
+											<div className="truncate text-[12.5px] font-medium text-ink">{user}</div>
+											{subtitle && <div className="truncate text-[10.5px] text-muted">{subtitle}</div>}
+										</div>
+
+										<Link
+											to="/profile"
+											role="menuitem"
+											onClick={() => setMenu(false)}
+											className="flex items-center gap-3 px-4 py-2.5 text-[12.5px] font-normal text-slate-strong transition hover:bg-surface hover:text-ink"
+										>
+											<Icon.user size={15} />
+											<EditableText k="portal.nav.profile" fallback="Profile" />
+										</Link>
+
+										<button
+											type="button"
+											role="menuitem"
+											onClick={() => {
+												// Frappe clears the session cookie; a hard navigation
+												// is wanted here so nothing stale survives in memory.
+												void logout().then(() => {
+													window.location.href = "/";
+												});
+											}}
+											className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[12.5px] font-normal text-slate-strong transition hover:bg-surface hover:text-ink"
+										>
+											<Icon.signout size={15} />
+											<EditableText k="chrome.action.signout" fallback="Sign out" />
+										</button>
+									</div>
+								)}
 							</div>
-						)}
 						</div>
-					</div>
 					</header>
 
-					<main className="min-w-0 flex-1 px-5 py-7 md:px-8 md:py-9">
+					{/* The sub-nav's own row on narrow screens, where there is no room
+					    for a third column. A horizontal scroller rather than a hidden
+					    panel: the section's pages have to stay reachable. */}
+					{subNav && (
+						<div className="border-b border-hairline bg-surface px-4 py-2 lg:hidden">
+							<div className="-mx-1 overflow-x-auto px-1">{subNav(true)}</div>
+						</div>
+					)}
+
+					<main className="min-w-0 flex-1 px-4 pb-10 pt-1 md:px-7">
 						<Outlet />
 					</main>
 				</div>
 			</div>
+
+			{/* ------------------------------------------------------- mobile drawer */}
+			{/* Not the desktop rail revealed — a surface of its own, sized and spaced
+			    for a thumb, with the society identity at the top of it where the rail
+			    keeps it on a wide screen. */}
+			{drawer && (
+				<div className="fixed inset-0 z-50 md:hidden">
+					<button
+						type="button"
+						aria-label="Close navigation"
+						onClick={() => setDrawer(false)}
+						className="absolute inset-0 h-full w-full cursor-default bg-ink/40"
+					/>
+
+					<div
+						ref={drawerPanel}
+						role="dialog"
+						aria-modal="true"
+						aria-label="Navigation"
+						className="rail-scroll absolute inset-y-0 left-0 flex w-[280px] max-w-[86vw] flex-col overflow-y-auto bg-shell px-3 pb-5 pt-4 shadow-shell"
+					>
+						<div className="mb-4 flex items-center gap-2 px-2">
+							<Link to={home} className="min-w-0 flex-1">
+								<BrandLockup wrap />
+							</Link>
+							<button
+								type="button"
+								onClick={() => setDrawer(false)}
+								aria-label="Close navigation"
+								className="grid h-9 w-9 flex-none place-items-center rounded-full bg-white text-slate-strong shadow-nav"
+							>
+								<Icon.cross size={18} />
+							</button>
+						</div>
+
+						{navigation(true)}
+
+						<div className="mt-auto flex flex-col gap-1 pt-4">{railFoot(true)}</div>
+					</div>
+				</div>
+			)}
 
 			<EditToolbar />
 		</div>

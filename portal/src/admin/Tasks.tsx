@@ -478,7 +478,7 @@ function VolunteerPicker({
 
 	if (value) {
 		return (
-			<div className="flex items-center gap-2 rounded-card border border-hairline bg-page px-3 py-2">
+			<div className="flex items-center gap-2 rounded-card border border-hairline bg-surface px-3 py-2">
 				<span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
 					{chosen?.full_name || value}
 					<span className="ml-2 font-normal text-slate-faint">{value}</span>
@@ -529,7 +529,7 @@ function VolunteerPicker({
 								onChange(row.volunteer);
 								setOpen(false);
 							}}
-							className="flex w-full items-baseline gap-2 px-3 py-2 text-left hover:bg-page"
+							className="flex w-full items-baseline gap-2 px-3 py-2 text-left hover:bg-surface"
 						>
 							<span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
 								{row.full_name || row.volunteer}

@@ -318,7 +318,7 @@ function Step({
 			type="button"
 			onClick={onClick}
 			aria-label={label}
-			className="grid h-7 w-7 place-items-center rounded-full text-slate-faint transition hover:bg-page hover:text-navy"
+			className="grid h-7 w-7 place-items-center rounded-full text-slate-faint transition hover:bg-surface hover:text-navy"
 		>
 			<Icon.chevron size={15} className={rotate} />
 		</button>

@@ -96,7 +96,7 @@ export function Invitations() {
 										key={invitation.assignment}
 										lead={
 											<span
-												className="grid h-9 w-9 flex-none place-items-center rounded-control bg-page text-slate-body"
+												className="grid h-9 w-9 flex-none place-items-center rounded-control bg-surface text-slate-body"
 												aria-hidden="true"
 											>
 												<Icon.truck size={17} />
@@ -121,7 +121,7 @@ function ResponseBadge({ response }: { response: string }) {
 		response === "Accepted"
 			? "border-emerald-300 text-emerald-700 bg-emerald-50/60"
 			: response === "Declined" || response === "Withdrawn"
-				? "border-hairline-strong text-slate-body bg-page"
+				? "border-hairline-strong text-slate-body bg-surface"
 				: "border-amber-300 text-amber-700 bg-amber-50/60";
 
 	return (
@@ -199,7 +199,7 @@ function InvitationCard({
 				</p>
 			)}
 
-			<div className="mb-3 rounded-card border border-hairline bg-page px-4 py-3">
+			<div className="mb-3 rounded-card border border-hairline bg-surface px-4 py-3">
 				<button
 					type="button"
 					aria-expanded={reading}

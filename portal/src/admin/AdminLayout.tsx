@@ -5,6 +5,7 @@ import { ContentProvider } from "../content/ContentProvider";
 import { API } from "../lib/api";
 import { Icon } from "../ui/icons";
 import { Shell, type NavGroup, type NavItem } from "../ui/Shell";
+import { DeploymentSubNav, inDeployments } from "./DeploymentNav";
 import { Spinner } from "../ui/primitives";
 import { QUEUES, QUEUE_KINDS, queueOf } from "./queues";
 import type { ApprovalStatus, RedProfile } from "../portal/types";
@@ -179,6 +180,8 @@ interface GroupDef {
 	labelKey: string;
 	fallback: string;
 	icon: NavItem["icon"];
+	/** This section renders its own `SubNav`; see `OPERATIONS` below. */
+	hasSubNav?: boolean;
 	children: TabDef[];
 }
 
@@ -217,6 +220,18 @@ const OPERATIONS: GroupDef = {
 	icon: Icon.truck,
 	children: [PROJECTS, TASKS],
 };
+
+/**
+ * Deployments carries a navigation panel of its own, so arriving there takes
+ * the global rail down to icons — see `SubNav`'s docstring for why a section
+ * that is really a small application of its own gets a column rather than six
+ * more rows on the global rail.
+ *
+ * Declared on the group rather than sniffed from the route inside `Shell`, so
+ * the rail collapses on the same render the route changes on rather than a
+ * frame later.
+ */
+OPERATIONS.hasSubNav = true;
 
 const GROUPS = [QUEUE, INSIGHT, OPERATIONS];
 const FLAT = [OVERVIEW, COMMUNICATION, STIPENDS, EVENTS, CONTENT, QUESTIONS];
@@ -271,6 +286,7 @@ function narrowGroup(def: GroupDef, allowed: Set<string>): NavItem | NavGroup | 
 		labelKey: def.labelKey,
 		fallback: def.fallback,
 		icon: def.icon,
+		hasSubNav: def.hasSubNav,
 		children,
 	};
 }
@@ -377,6 +393,15 @@ export default function AdminLayout() {
 			    thing they are instead of a volunteer. */}
 			<Shell
 				items={ordered}
+				// The Deployments section's own navigation, and only while the
+				// current route is inside it. Passed from here rather than resolved
+				// inside `Shell` because the shell has no business knowing which of
+				// this console's sections are big enough to need one.
+				subNav={
+					inDeployments(location.pathname)
+						? (horizontal) => <DeploymentSubNav horizontal={horizontal} />
+						: undefined
+				}
 				console="/dashboard"
 				// The Frappe desk, for whoever the server says may open it. The
 				// console covers the day-to-day; the desk is where the settings,

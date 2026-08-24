@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
@@ -28,6 +28,7 @@ import { HoverCard } from "../ui/HoverCard";
 import {
 	Avatar,
 	Button,
+	ButtonLink,
 	Card,
 	type Crumb,
 	Empty,
@@ -35,11 +36,18 @@ import {
 	Meter,
 	PageHeading,
 	Pill,
+	SectionLabel,
+	SectionLink,
 	SectionTitle,
+	Skeleton,
 	Spinner,
+	StatGrid,
+	StatTile,
 	StateBadge,
 	cx,
 } from "../ui/primitives";
+import { Icon } from "../ui/icons";
+import { exceptionsFor, figuresFor } from "./counts";
 
 /**
  * The deployments console — who is going, who was asked, and who could go.
@@ -97,6 +105,26 @@ import {
  * question the map was wanted for — where are our people — with data the app
  * actually holds, and it drills through to the deployments themselves.
  */
+/**
+ * The operational dashboard: what is running, who is out, and what needs doing.
+ *
+ * **Counting terminology is exact here, because the words are load-bearing.**
+ *
+ *   deployed now      an assignment is Assigned or Accepted *and* its
+ *                     deployment is Active
+ *   coming up         the same assignments, on a Planned deployment
+ *   awaiting response  Pending — asked, no reply. Never counted as deployed.
+ *   open positions    places_left on a deployment that is still running
+ *
+ * A person who was invited and has not answered is not somebody on a
+ * deployment, and the two used to be added together on this screen.
+ *
+ * **Every figure below is derived from one page of the register, and says so.**
+ * `branch_deployments` returns `count = len(rows)` with a page cap of 100 — it
+ * is the size of the page, not the register — so nothing here is labelled as a
+ * total. See the backend-gap note in the report: an aggregate endpoint is what
+ * this screen actually wants.
+ */
 export function DeploymentsHub() {
 	const terms = useFrappeGetCall<{ message: { count: number } }>(
 		API.branchTerms,
@@ -127,35 +155,122 @@ export function DeploymentsHub() {
 		"admin:hub:map",
 	);
 
-	const running = rows.filter((row) => row.is_open);
-	const deployed = map.data?.message?.deployed ?? 0;
-	const waiting = running.reduce((total, row) => total + (row.assignment_counts?.Pending ?? 0), 0);
+	// The arithmetic lives in `counts.ts` as pure functions — see its docstring
+	// for the vocabulary, and `tests/counts.test.ts` for what holds it still.
+	const figures = figuresFor(rows);
+	const exceptions = exceptionsFor(rows);
 
 	return (
 		<>
-			<PageHeading title={<EditableText k="admin.deployments.heading" fallback="Deployments" />} />
+			<PageHeading
+				title={<EditableText k="admin.deployments.dashboard" fallback="Deployment dashboard" />}
+				lead="Operations across your authorised geographic scope."
+				actions={<ButtonLink to="/portal/admin/deployments/new">Create deployment</ButtonLink>}
+			/>
 
-			<div className="mb-5 grid gap-4 sm:grid-cols-3">
-				<Figure value={deployed} label="volunteers out" detail={`across ${running.length} running`} />
-				<Figure
-					value={waiting}
-					label="still to answer"
-					detail={waiting > 0 ? "asked, no reply yet" : "nobody is waiting"}
-					tone={waiting > 0 ? "signal" : "quiet"}
+			{deployments.error && (
+				<div className="mb-5">
+					<ErrorNote>{errorMessage(deployments.error)}</ErrorNote>
+				</div>
+			)}
+
+			<StatGrid className="mb-5">
+				<StatTile
+					label="Deployed now"
+					value={deployments.isLoading ? "—" : figures.deployedNow}
+					hint={`Assigned or accepted, on ${figures.activeCount} active deployment${figures.activeCount === 1 ? "" : "s"}`}
+					icon={Icon.people}
+					tint="navy"
+					to="/admin/deployments/ongoing"
 				/>
-				<Figure
-					value={pendingRequests}
-					label="requests open"
-					detail={pendingRequests > 0 ? "awaiting an outcome" : "none outstanding"}
-					tone={pendingRequests > 0 ? "signal" : "quiet"}
+				<StatTile
+					label="Coming up"
+					value={deployments.isLoading ? "—" : figures.comingUp}
+					hint={`Confirmed on ${figures.plannedCount} planned deployment${figures.plannedCount === 1 ? "" : "s"}`}
+					icon={Icon.calendar}
+					tint="sky"
+					to="/admin/deployments/ongoing"
 				/>
+				<StatTile
+					label="Awaiting response"
+					value={deployments.isLoading ? "—" : figures.awaitingResponse}
+					hint={figures.awaitingResponse > 0 ? "Invited, no reply yet" : "Nobody is waiting"}
+					icon={Icon.hourglass}
+					tint="amber"
+				/>
+				<StatTile
+					label="Positions open"
+					value={deployments.isLoading ? "—" : figures.openPositions}
+					hint={
+						figures.requested > 0
+							? `${figures.deployedNow + figures.comingUp} confirmed of ${figures.requested} requested`
+							: "No requirement set"
+					}
+					icon={Icon.plus}
+					tint="teal"
+				/>
+			</StatGrid>
+
+			<p className="mb-5 -mt-2 text-[11px] leading-relaxed text-muted">
+				Figures cover the most recent {figures.sampled} deployment
+				{figures.sampled === 1 ? "" : "s"} in your scope, which is one page of the register rather
+				than its full size.
+			</p>
+
+			<div className="mb-5 grid items-start gap-4 xl:grid-cols-3">
+				<div className="xl:col-span-2">
+					<WhereTheyAre answer={map.data?.message} loading={map.isLoading} />
+				</div>
+
+				<Card pad={false}>
+					<div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
+						<SectionLabel>Needs attention</SectionLabel>
+						<SectionLink to="/admin/deployments/ongoing">See all</SectionLink>
+					</div>
+
+					<div className="px-4 pb-4">
+						{deployments.isLoading && <Skeleton className="h-28" />}
+
+						{!deployments.isLoading && exceptions.length === 0 && (
+							<p className="px-1 py-3 text-[12px] leading-relaxed text-muted">
+								Nothing outstanding on this page. Rosters are filled and every invitation has
+								been answered.
+							</p>
+						)}
+
+						<ul className="space-y-1">
+							{exceptions.slice(0, 6).map((item, index) => (
+								<li key={`${item.row.name}-${index}`}>
+									<Link
+										to={`/admin/deployments/${encodeURIComponent(item.row.name)}`}
+										className="block rounded-control px-3 py-2.5 transition hover:bg-surface"
+									>
+										<span className="block truncate text-[12.5px] font-medium text-ink">
+											{item.row.terms_of_reference || item.row.name}
+										</span>
+										<span
+											className={cx(
+												"mt-0.5 flex items-center gap-1.5 text-[11px]",
+												item.tone === "danger" ? "text-danger" : "text-warning",
+											)}
+										>
+											{/* A dot as well as the colour: a state is never a hue
+											    alone. */}
+											<span
+												aria-hidden="true"
+												className="h-1.5 w-1.5 flex-none rounded-full bg-current"
+											/>
+											{item.text}
+										</span>
+									</Link>
+								</li>
+							))}
+						</ul>
+					</div>
+				</Card>
 			</div>
 
-			<div className="mb-5">
-				<WhereTheyAre answer={map.data?.message} loading={map.isLoading} />
-			</div>
-
-			<div className="grid gap-4 sm:grid-cols-2">
+			<div className="grid gap-4 sm:grid-cols-3">
 				<HubCard
 					to="/admin/deployments/terms"
 					newTo="/admin/deployments/terms?new=1"
@@ -164,13 +279,11 @@ export function DeploymentsHub() {
 					lead="The mission: what the work is, what it will achieve, and what a volunteer must hold to do it."
 				/>
 				<HubCard
-					to="/admin/deployments/list"
-					newTo="/admin/deployments/list?new=1"
-					title="Deployments"
-					count={deployments.data?.message?.count}
-					detail={
-						deployments.data?.message ? `${deployments.data.message.open_count} still running` : undefined
-					}
+					to="/admin/deployments/ongoing"
+					newTo="/admin/deployments/new"
+					title="Ongoing deployments"
+					count={deployments.data?.message?.open_count}
+					detail={`${figures.runningCount} still running`}
 					lead="Who is going, under which terms, and where."
 				/>
 				<HubCard
@@ -182,28 +295,6 @@ export function DeploymentsHub() {
 				/>
 			</div>
 		</>
-	);
-}
-
-function Figure({
-	value,
-	label,
-	detail,
-	tone = "navy",
-}: {
-	value: number;
-	label: string;
-	detail?: string;
-	tone?: "navy" | "signal" | "quiet";
-}) {
-	const colour = tone === "signal" ? "text-signal" : tone === "quiet" ? "text-slate-faint" : "text-navy";
-
-	return (
-		<Card>
-			<div className={cx("font-display text-[30px] font-extrabold leading-none", colour)}>{value}</div>
-			<p className="mt-1.5 text-[12.5px] font-semibold text-ink">{label}</p>
-			{detail && <p className="mt-0.5 text-[11.5px] text-slate-faint">{detail}</p>}
-		</Card>
 	);
 }
 
@@ -325,8 +416,30 @@ function HubCard({
 
 const STATUSES = ["", "Planned", "Active", "Completed", "Cancelled"];
 
-export function DeploymentList() {
+/**
+ * Which statuses each routed view of the register covers.
+ *
+ * Two addresses over one register rather than a filter somebody has to set
+ * again after every reload — "ongoing" and "past" are different questions a
+ * coordinator asks, and each deserves a link they can send a colleague.
+ *
+ * **Cancelled is in `past`, not hidden.** A cancelled deployment is part of the
+ * record of what a branch planned and what happened to it; a register that
+ * quietly dropped them would make a stood-down operation look like one that
+ * never existed.
+ */
+const SCOPES: Record<string, { statuses: string[]; title: string }> = {
+	ongoing: { statuses: ["Planned", "Active"], title: "Ongoing deployments" },
+	past: { statuses: ["Completed", "Cancelled"], title: "Past deployments" },
+};
+
+export type DeploymentScope = "ongoing" | "past";
+
+export function DeploymentList({ scope }: { scope?: DeploymentScope } = {}) {
 	const [searchParams] = useSearchParams();
+	const band = scope ? SCOPES[scope] : null;
+	// Within a scoped view the filter starts on "all of this scope" and can be
+	// narrowed to one of its statuses; the unscoped register keeps every status.
 	const [status, setStatus] = useState("");
 	const [mine, setMine] = useState(false);
 	const [creating, setCreating] = useState(() => searchParams.get("new") === "1");
@@ -344,26 +457,47 @@ export function DeploymentList() {
 	);
 
 	const answer = data?.message;
-	const rows = answer?.deployments ?? [];
+	const all = answer?.deployments ?? [];
+
+	// **Narrowing a page of results, not the register.** The endpoint filters by
+	// one status at a time, so a two-status band is assembled here from the
+	// unfiltered page. That means a scoped view shows this page's members of the
+	// band — it is deliberately *not* presented as a total anywhere, and the
+	// count line below says "on this page" rather than naming a register size.
+	// Filtering server-side by a status *set* is a backend gap; see the report.
+	const rows = band && !status ? all.filter((row) => band.statuses.includes(row.status)) : all;
+
+	const choices = band ? ["", ...band.statuses] : STATUSES;
 
 	return (
 		<>
 			<PageHeading
-				title="Deployments"
-				trail={[{ label: "Deployments", to: "/admin/deployments" }, { label: "Deployments" }]}
+				title={band ? band.title : "Deployments"}
+				lead={
+					scope === "ongoing"
+						? "Planned and active deployments in your area."
+						: scope === "past"
+							? "Completed and cancelled deployments, kept in full."
+							: undefined
+				}
+				trail={[
+					{ label: "Deployments", to: "/admin/deployments" },
+					{ label: band ? band.title : "Deployments" },
+				]}
 			/>
 
 			<div className="mb-4 flex flex-wrap items-center gap-2">
-				{STATUSES.map((option) => (
+				{choices.map((option) => (
 					<button
 						key={option || "all"}
 						type="button"
 						onClick={() => setStatus(option)}
+						aria-pressed={status === option}
 						className={cx(
-							"rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
+							"rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition",
 							status === option
-								? "border-navy bg-navy text-white"
-								: "border-hairline-strong bg-white text-slate-body hover:border-navy hover:text-navy",
+								? "border-blue bg-blue text-white"
+								: "border-hairline-strong bg-white text-slate-body hover:border-slate-faint hover:text-ink",
 						)}
 					>
 						{option || "All"}
@@ -669,6 +803,33 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
  * roster split by what each person has said, and the account of what has
  * happened so far.
  */
+/**
+ * Creating a deployment, as a page of its own.
+ *
+ * The register still opens the same form inline — an existing habit worth
+ * keeping — but the sub-navigation's "Create deployment" is a route, so the
+ * flow can be linked to, bookmarked and returned to with the back button. Both
+ * render one `DeploymentForm`; there is no second copy of the rules.
+ */
+export function DeploymentCreate() {
+	const navigate = useNavigate();
+
+	return (
+		<>
+			<PageHeading
+				title="Create deployment"
+				lead="A deployment is raised from a submitted terms of reference. Choose the mission first — the rest of the form follows from it."
+				trail={[
+					{ label: "Deployments", to: "/admin/deployments" },
+					{ label: "Create deployment" },
+				]}
+			/>
+
+			<DeploymentForm onCreated={() => navigate("/admin/deployments/ongoing")} />
+		</>
+	);
+}
+
 export function DeploymentDetail() {
 	const { name = "" } = useParams<{ name: string }>();
 	const { call } = useContext(FrappeContext) as FrappeConfig;
@@ -1323,7 +1484,7 @@ function Toggle({
  */
 function Outcome({ outcome, onClose }: { outcome: AssignmentOutcome; onClose: () => void }) {
 	return (
-		<div className="mb-4 rounded-card border border-hairline-strong bg-page px-4 py-3.5">
+		<div className="mb-4 rounded-card border border-hairline-strong bg-surface px-4 py-3.5">
 			<div className="flex items-start justify-between gap-3">
 				<p className="text-[13px] font-bold text-ink">
 					{outcome.raised} of {outcome.requested} assigned
@@ -1580,7 +1741,7 @@ function Feed({
 				This deployment's own log, and the task reports volunteers have filed against it.
 			</p>
 
-			<div className="mt-3.5 rounded-card border border-hairline bg-page p-3">
+			<div className="mt-3.5 rounded-card border border-hairline bg-surface p-3">
 				<textarea
 					className={cx(INPUT, "min-h-[64px] resize-y bg-white")}
 					value={note}

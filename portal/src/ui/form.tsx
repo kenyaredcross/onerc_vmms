@@ -37,10 +37,10 @@ import { cx } from "./primitives";
  * a stadium with text in it, and the first character sits under the curve.
  */
 const CONTROL =
-	"w-full rounded-full border border-hairline-strong bg-white px-4 py-2.5 text-[13.5px] text-ink transition placeholder:text-slate-faint hover:border-hairline-strong/80 focus:border-navy disabled:cursor-not-allowed disabled:bg-page disabled:text-slate-body";
+	"w-full rounded-full border border-hairline-strong bg-white px-4 py-2.5 text-[13.5px] text-ink transition placeholder:text-slate-faint hover:border-hairline-strong/80 focus:border-navy disabled:cursor-not-allowed disabled:bg-surface disabled:text-slate-body";
 
 const MULTILINE =
-	"w-full rounded-card border border-hairline-strong bg-white px-4 py-3 text-[13.5px] text-ink transition placeholder:text-slate-faint hover:border-hairline-strong/80 focus:border-navy disabled:cursor-not-allowed disabled:bg-page disabled:text-slate-body";
+	"w-full rounded-card border border-hairline-strong bg-white px-4 py-3 text-[13.5px] text-ink transition placeholder:text-slate-faint hover:border-hairline-strong/80 focus:border-navy disabled:cursor-not-allowed disabled:bg-surface disabled:text-slate-body";
 
 /* ------------------------------------------------------------------ layout */
 
@@ -366,7 +366,7 @@ export function Combo({
 								onClick={() => choose(option)}
 								className={cx(
 									"flex w-full items-center justify-between px-3.5 py-2 text-left text-[13px]",
-									index === active ? "bg-page text-ink" : "text-slate-strong",
+									index === active ? "bg-surface text-ink" : "text-slate-strong",
 									option === value && "font-bold text-navy",
 								)}
 							>
@@ -399,7 +399,7 @@ export function Segmented({
 		<div
 			role="radiogroup"
 			aria-label={label}
-			className="inline-flex rounded-full border border-hairline-strong bg-page p-1"
+			className="inline-flex rounded-full border border-hairline-strong bg-surface p-1"
 		>
 			{options.map((option) => (
 				<button
@@ -526,7 +526,7 @@ export function MultiCombo({
 
 	if (options.length === 0) {
 		return (
-			<p className="rounded-card bg-page px-4 py-3 text-[12.5px] text-slate-body">
+			<p className="rounded-card bg-surface px-4 py-3 text-[12.5px] text-slate-body">
 				{empty ?? "This society has not configured any options here yet."}
 			</p>
 		);
@@ -623,7 +623,7 @@ export function MultiCombo({
 										onClick={() => pick(option.key)}
 										className={cx(
 											"flex w-full items-start gap-2.5 px-3.5 py-2 text-left",
-											index === active && "bg-page",
+											index === active && "bg-surface",
 										)}
 									>
 										<span
@@ -694,7 +694,7 @@ export function ChoiceCard({
 				<span
 					className={cx(
 						"grid h-10 w-10 flex-none place-items-center rounded-card transition",
-						selected ? "bg-navy text-white" : "bg-page text-navy",
+						selected ? "bg-navy text-white" : "bg-surface text-navy",
 					)}
 					aria-hidden="true"
 				>

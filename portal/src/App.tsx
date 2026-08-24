@@ -132,6 +132,23 @@ const DeploymentsHub = lazy(() =>
 const DeploymentList = lazy(() =>
 	import("./admin/Deployments").then((module) => ({ default: module.DeploymentList })),
 );
+// The two routed bands over that same register — see `SCOPES` in Deployments.tsx.
+// Separate routes rather than a filter somebody sets again after every reload:
+// "what is running now" and "what did we do" are different questions, and each
+// deserves an address a coordinator can send to a colleague.
+const DeploymentsOngoing = lazy(() =>
+	import("./admin/Deployments").then((module) => ({
+		default: () => <module.DeploymentList scope="ongoing" />,
+	})),
+);
+const DeploymentsPast = lazy(() =>
+	import("./admin/Deployments").then((module) => ({
+		default: () => <module.DeploymentList scope="past" />,
+	})),
+);
+const DeploymentCreate = lazy(() =>
+	import("./admin/Deployments").then((module) => ({ default: module.DeploymentCreate })),
+);
 const DeploymentDetail = lazy(() =>
 	import("./admin/Deployments").then((module) => ({ default: module.DeploymentDetail })),
 );
@@ -308,6 +325,12 @@ export default function App() {
 					<Route path="deployments/terms" element={<TermsOfReferenceList />} />
 					<Route path="deployments/terms/:name" element={<TermsOfReferenceDetail />} />
 					<Route path="deployments/list" element={<DeploymentList />} />
+					{/* The section's own navigation points at these three. `list` above
+					    stays for every existing bookmark and keeps the unscoped
+					    register reachable. */}
+					<Route path="deployments/ongoing" element={<DeploymentsOngoing />} />
+					<Route path="deployments/past" element={<DeploymentsPast />} />
+					<Route path="deployments/new" element={<DeploymentCreate />} />
 					<Route path="deployments/requests" element={<DeploymentRequestList />} />
 					{/* Last: `deployments/:name` is one segment shorter than every route
 					    above it, and React Router matches the more specific static

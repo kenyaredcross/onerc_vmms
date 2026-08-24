@@ -157,7 +157,7 @@ export function BarRows({
 						<div className="mb-1 truncate text-[12px] font-semibold capitalize text-slate-strong">
 							{row.label}
 						</div>
-						<div className="h-1.5 w-full rounded-full bg-page">
+						<div className="h-1.5 w-full rounded-full bg-surface">
 							<div
 								className={cx("h-1.5 rounded-full", row.value ? "bg-navy" : "bg-transparent")}
 								style={{ width: `${(row.value / max) * 100}%` }}

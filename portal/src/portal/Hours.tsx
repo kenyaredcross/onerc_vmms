@@ -385,7 +385,7 @@ function LogForm({ profile, onLogged }: { profile: VolunteerProfile; onLogged: (
 				    a four-rung ladder has a path that wraps, and a two-line capsule
 				    puts the first character under the curve. */}
 				<Field label="Branch">
-					<p className="flex items-start gap-2.5 rounded-card bg-page px-4 py-3 text-[13px] leading-snug text-slate-strong">
+					<p className="flex items-start gap-2.5 rounded-card bg-surface px-4 py-3 text-[13px] leading-snug text-slate-strong">
 						<Icon.pin size={15} className="mt-px flex-none text-slate-faint" />
 						{profile.geo_path ?? "No serving branch on your record"}
 					</p>

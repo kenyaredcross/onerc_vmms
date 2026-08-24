@@ -77,7 +77,7 @@ export function Overview() {
 					<li>
 						<Link
 							to="/admin/queue"
-							className="chev block rounded-card px-3 py-2.5 text-[13px] font-semibold text-navy hover:bg-page"
+							className="chev block rounded-card px-3 py-2.5 text-[13px] font-semibold text-navy hover:bg-surface"
 						>
 							Work through your review queue
 						</Link>
@@ -85,7 +85,7 @@ export function Overview() {
 					<li>
 						<Link
 							to="/admin/registry/volunteers"
-							className="chev block rounded-card px-3 py-2.5 text-[13px] font-semibold text-navy hover:bg-page"
+							className="chev block rounded-card px-3 py-2.5 text-[13px] font-semibold text-navy hover:bg-surface"
 						>
 							Look somebody up in the registry
 						</Link>
@@ -93,7 +93,7 @@ export function Overview() {
 					<li>
 						<Link
 							to="/admin/content"
-							className="chev block rounded-card px-3 py-2.5 text-[13px] font-semibold text-navy hover:bg-page"
+							className="chev block rounded-card px-3 py-2.5 text-[13px] font-semibold text-navy hover:bg-surface"
 						>
 							Change the wording on the public page
 						</Link>

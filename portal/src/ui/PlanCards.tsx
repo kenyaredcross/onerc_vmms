@@ -201,7 +201,7 @@ function PlanCard({
 				<div className="flex-1" />
 
 				{row.description && (
-					<p className="mt-4 rounded-card bg-page px-3 py-2.5 text-[11.5px] font-semibold leading-relaxed text-slate-strong">
+					<p className="mt-4 rounded-card bg-surface px-3 py-2.5 text-[11.5px] font-semibold leading-relaxed text-slate-strong">
 						{row.description}
 					</p>
 				)}
