@@ -11,14 +11,15 @@ person is a second answer to who they are. Read those through
 `vmmsx.volunteer.services.identity`, which reads Red Profile every time.
 
 **What it does hold, and why that is not the same concession.** Skills,
-languages, availability, placement, citizenship and residency are *volunteer-
-owned attributes*: facts about somebody's volunteering that change while they
-volunteer. They are seeded from the accepted application by
+languages, availability and placement are *volunteer-owned attributes*: facts
+about somebody's volunteering that change while they volunteer. They are seeded
+from the accepted application by
 `volunteer/services/capabilities.py` and are the current truth from then on, so
 a volunteer who learns to drive is recorded as being able to drive without
 anybody rewriting the application they sent in years ago. Identity is the
-opposite case: it is core's, it has exactly one home, and this record borrows it
-on every read. The dividing line is ownership, not convenience.
+opposite case: citizenship, residence and identification are person facts in
+core, have exactly one home, and this record borrows them on every read. The
+dividing line is ownership, not convenience.
 
 The record is a **satellite** in core's Design 2 sense: its existence and status
 are the truth of somebody's volunteering, and the row on their Red Profile's
@@ -30,7 +31,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-from vmmsx.volunteer.services import capabilities, society
+from vmmsx.volunteer.services import society
 
 GEO_NODE_FIELD = "home_geo_node"
 
@@ -38,11 +39,6 @@ GEO_NODE_FIELD = "home_geo_node"
 class VMMSVolunteer(Document):
 	def validate(self):
 		self.validate_profile()
-		# Tidies rather than refuses, and runs before the anchor check so the
-		# rule judges the record as it will be saved. The mirror of
-		# `application.reconcile_residency()` on the other side of acceptance,
-		# and deliberately not identical to it — see the service.
-		capabilities.reconcile_residency(self)
 		self.validate_anchor()
 
 	def validate_profile(self):

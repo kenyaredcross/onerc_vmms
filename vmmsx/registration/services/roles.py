@@ -52,6 +52,8 @@ from contextlib import contextmanager
 
 import frappe
 
+from vmmsx import elevation
+
 USER_PERMISSION_DOCTYPE = "User Permission"
 
 # Accounts that are never granted anything. Guest is not a person; Administrator
@@ -67,14 +69,13 @@ def _as_system():
 	As narrow as it can be: it wraps a single `save()`, so it stays auditable at
 	a glance. See the module docstring for why the caller cannot hold the
 	permission itself.
-	"""
-	previous = frappe.session.user
-	frappe.set_user("Administrator")
 
-	try:
+	The mechanics are `vmmsx.elevation`: restoring the user is not enough on
+	its own, because `set_user` overwrites the live session id and discards the
+	session data with it, which signs the caller out one request later.
+	"""
+	with elevation.as_system():
 		yield
-	finally:
-		frappe.set_user(previous)
 
 
 def grant(user: str | None, role: str | None) -> bool:

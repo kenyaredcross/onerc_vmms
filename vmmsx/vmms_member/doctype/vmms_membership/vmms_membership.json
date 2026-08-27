@@ -47,7 +47,7 @@
  "fields": [
   {
    "default": "MSHIP-.#####",
-   "description": "The opaque docname series. Nothing about the member, the place or the year goes in the primary key.",
+   "description": "Automatic series for the membership number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -61,7 +61,7 @@
    "label": "Membership"
   },
   {
-   "description": "Whose membership this is. Identity is read through the member's Red Profile, never copied onto this record.",
+   "description": "Whose membership this is.",
    "fieldname": "member",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -70,7 +70,7 @@
    "reqd": 1
   },
   {
-   "description": "Which type this membership is on. The type carries the fee, the duration, the certificate template and, under MEM-02, whether this membership is routed for approval or activates on payment.",
+   "description": "The type this membership is on: its fee, duration, certificate, and whether it needs approval.",
    "fieldname": "membership_type",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -83,7 +83,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "ACC-02. The organisational anchor, and where approvals route from. A Link, never free text, and mandatory at creation: an unplaced membership is invisible to geo scoping and unroutable, so it would exist with nobody able to see or act on it. Which level it may sit at is society configuration (ACC-03), not a constant.",
+   "description": "The branch this membership belongs to. Decides who can see it and where approval routes.",
    "fieldname": "geo_node",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -93,7 +93,7 @@
   },
   {
    "default": "Draft",
-   "description": "Where this membership stands operationally, as distinct from where its approval stands. Written by the membership services; the two never disagree because only one of them moves it.",
+   "description": "Where the membership stands: awaiting payment or approval, active, expired or cancelled. Set by the system.",
    "fieldname": "membership_status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -102,7 +102,7 @@
    "read_only": 1
   },
   {
-   "description": "The prior membership this one renews, when this record exists because somebody paid to continue rather than to join. A renewal is always a NEW record, never an edit of the old one: the prior membership is left exactly as it was, and this link is what makes the chain (\"2027 renews 2026\") traceable. Empty on a first membership. Written once, by the renewal service, at creation.",
+   "description": "The previous membership this one continues. Empty on a first membership.",
    "fieldname": "renews",
    "fieldtype": "Link",
    "label": "Renews",
@@ -111,27 +111,27 @@
   },
   {
    "collapsible": 1,
-   "description": "A transient buffer between a public registration form and core's Red Profile, and never storage. A native Web Form writes one document, but registration needs two, so the form collects what a profile needs here and vmmsx/registration/services/intake.py writes it to Red Profile and blanks it before the row is saved. Every field in this section is empty on a saved membership, which is the same rule that keeps a name off the satellite.",
+   "description": "Applicant details from the public registration form. Copied to the person's Red Profile and cleared on save.",
    "fieldname": "intake_section",
    "fieldtype": "Section Break",
    "label": "Registration Intake"
   },
   {
-   "description": "The applicant's given name, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "description": "Given name from the public registration form. Copied to the applicant's Red Profile and cleared on save.",
    "fieldname": "applicant_first_name",
    "fieldtype": "Data",
    "label": "Applicant First Name",
    "no_copy": 1
   },
   {
-   "description": "The applicant's family name, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "description": "Family name from the public registration form. Copied to the applicant's Red Profile and cleared on save.",
    "fieldname": "applicant_last_name",
    "fieldtype": "Data",
    "label": "Applicant Last Name",
    "no_copy": 1
   },
   {
-   "description": "A telephone number, for their Red Profile. Validated against the society's own configured pattern by core, never against a regex written here. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "description": "Telephone number from the public registration form. Copied to the applicant's Red Profile and cleared on save.",
    "fieldname": "applicant_phone",
    "fieldtype": "Data",
    "label": "Applicant Phone",
@@ -143,7 +143,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Gender, as core's own vocabulary lists it. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "description": "Gender from the public registration form. Copied to the applicant's Red Profile and cleared on save.",
    "fieldname": "applicant_gender",
    "fieldtype": "Link",
    "label": "Applicant Gender",
@@ -151,7 +151,7 @@
    "options": "Gender"
   },
   {
-   "description": "Date of birth, for their Red Profile. Written by the applicant on the public registration form, copied onto their Red Profile at insert and blanked in the same pass, so this field is empty on every saved record. Identity lives on core's spine and nowhere else; see vmmsx/registration/services/intake.py.",
+   "description": "Date of birth from the public registration form. Copied to the applicant's Red Profile and cleared on save.",
    "fieldname": "applicant_date_of_birth",
    "fieldtype": "Date",
    "label": "Applicant Date of Birth",
@@ -163,7 +163,7 @@
    "label": "Validity"
   },
   {
-   "description": "When this membership took effect. Set at activation, so the clock starts when the member actually became one rather than when they applied.",
+   "description": "When this membership took effect. Set at activation.",
    "fieldname": "valid_from",
    "fieldtype": "Date",
    "label": "Valid From",
@@ -174,7 +174,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When it lapses: valid_from plus the type's duration. Computed at activation from configuration, never assumed to be a year. Left empty for a lifetime type, which is how a membership with no expiry is stored.",
+   "description": "When it lapses, worked out from the type's duration. Empty for a lifetime membership.",
    "fieldname": "valid_to",
    "fieldtype": "Date",
    "label": "Valid To",
@@ -186,7 +186,7 @@
    "label": "Payment"
   },
   {
-   "description": "The onerc_payments transaction this membership is waiting on. Deliberately a Data field and not a Link: the payment seam is a contract between apps, and vmmsx must not acquire a schema dependency on a gateway app's doctype.",
+   "description": "The payment transaction this membership is waiting on.",
    "fieldname": "payment_transaction",
    "fieldtype": "Data",
    "label": "Payment Transaction",
@@ -197,14 +197,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The gateway's receipt number, when one ever arrives. Optional enrichment: some gateways deliver a receipt only on a late callback and some never do, so nothing about activation depends on this being set.",
+   "description": "The gateway's receipt number, where one is provided.",
    "fieldname": "payment_receipt",
    "fieldtype": "Data",
    "label": "Payment Receipt",
    "read_only": 1
   },
   {
-   "description": "When the payment was confirmed. Written by the payment hook, not by hand.",
+   "description": "When the payment was confirmed. Set automatically.",
    "fieldname": "paid_on",
    "fieldtype": "Datetime",
    "label": "Paid On",
@@ -217,7 +217,7 @@
   },
   {
    "default": "Gateway",
-   "description": "How this membership's fee obligation was settled. Gateway: an onerc_payments transaction, the ordinary path. Proof: this member paid before the system existed, so no gateway ran; a resolved approver verified the attached evidence instead, through the same routed approval path an ordinary application goes through. It never changes how the routing or the gate works, only what activation accepts as the money question answered.",
+   "description": "How the fee was settled: through the payment gateway, or by proof of a payment made before this system.",
    "fieldname": "membership_source",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -231,7 +231,7 @@
   },
   {
    "depends_on": "eval:doc.membership_source==\"Proof\"",
-   "description": "Evidence of a payment made before this system existed: a scanned receipt, a photo of a stamped record book, or similar. Required when Source is Proof, and reviewed by whoever this membership already routes to for approval — the same membership approver role and geo assignment the engine resolves for any routed membership. There is no separate proof reviewer.",
+   "description": "Evidence of a payment made before this system — a receipt or a stamped record. Required when Source is Proof.",
    "fieldname": "proof_attachment",
    "fieldtype": "Attach",
    "label": "Proof Attachment"
@@ -242,7 +242,7 @@
    "label": "Society Questions"
   },
   {
-   "description": "What this society asks for beyond the standard form. The questions come from VMMS Application Question, and the wording beside each answer is a snapshot of what was asked.",
+   "description": "Answers to the extra questions this society asks, with the wording used at the time.",
    "fieldname": "custom_answers",
    "fieldtype": "Table",
    "label": "Answers",
@@ -255,7 +255,7 @@
   },
   {
    "default": "Draft",
-   "description": "The approval engine's state. Owned entirely by vmmsx/approvals: this doctype declares the field and never writes it. A membership on an auto-on-payment type stays at Draft here, because it has no approval to be in.",
+   "description": "Where the approval stands. Set by the approval engine.",
    "fieldname": "approval_state",
    "fieldtype": "Select",
    "label": "Approval State",
@@ -263,7 +263,7 @@
    "read_only": 1
   },
   {
-   "description": "The opaque row name of the approval stage under review. Engine-owned; never a stage's label.",
+   "description": "The approval stage under review. Set by the approval engine.",
    "fieldname": "approval_stage",
    "fieldtype": "Data",
    "label": "Approval Stage",
@@ -274,21 +274,21 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When the current stage was entered, and the SLA clock the approval engine measures a breach against.",
+   "description": "When the current approval stage was entered. Used to measure how long a decision is taking.",
    "fieldname": "approval_stage_entered_on",
    "fieldtype": "Datetime",
    "label": "Stage Entered On",
    "read_only": 1
   },
   {
-   "description": "The approval audit trail: who decided what, at which stage, when and why. Written only by the engine.",
+   "description": "Who decided what, when and why. Written by the approval engine.",
    "fieldname": "approval_decisions",
    "fieldtype": "Table",
    "label": "Approval Decisions",
    "options": "VMMS Approval Decision"
   },
   {
-   "description": "The opaque handle a printed card is verified by. Minted the first time a card is issued and never rotated: a card already in somebody's pocket has this printed on it.",
+   "description": "The code a printed card is verified by. Minted with the first card and never changed.",
    "fieldname": "card_token",
    "fieldtype": "Data",
    "hidden": 1,

@@ -117,6 +117,8 @@ def decide(doc, decision: str, reason: str | None = None, user: str | None = Non
 
 	if decision == states.DECISION_REJECTED:
 		_assert_may_reject(stage, reason)
+	elif decision == states.DECISION_MORE_INFO:
+		_assert_more_information_has_reason(reason)
 
 	already = [row for row in contract.decisions_at(doc, stage.name) if row.approver == user]
 
@@ -409,6 +411,18 @@ def _assert_may_reject(stage, reason: str | None) -> None:
 			frappe.MandatoryError,
 			title=_("Reason Required"),
 		)
+
+
+def _assert_more_information_has_reason(reason: str | None) -> None:
+	"""A returned form must tell its applicant what needs changing."""
+	if (reason or "").strip():
+		return
+
+	frappe.throw(
+		_("A request for more information must say what the applicant needs to add or correct."),
+		frappe.MandatoryError,
+		title=_("Reason Required"),
+	)
 
 
 def assert_single_open(doc, workflow) -> None:

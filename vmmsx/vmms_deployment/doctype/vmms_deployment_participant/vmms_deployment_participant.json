@@ -18,7 +18,7 @@
  "fields": [
   {
    "columns": 4,
-   "description": "A volunteer who is on this deployment. This row is what the deployment time log's ownership rule reads: a volunteer may log time against a deployment only if they appear here, checked on the server at save, so that participation cannot be fabricated by a caller who simply names a deployment. Identity is read through the volunteer's Red Profile and is never copied onto this row.",
+   "description": "A volunteer who is on this deployment. Only people listed here may log time against it.",
    "fieldname": "volunteer",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -28,7 +28,7 @@
   },
   {
    "columns": 2,
-   "description": "Where this volunteer's invitation stands. Blank is the ordinary state of a roster row a coordinator added directly, meaning nobody was asked, and it is deliberately not the same as invited. Being on the roster is what participation means either way: a declined invitation is recorded, not erased, and an unanswered one never blocks a time log, because a coordinator who lists somebody who actually served must not have that record invalidated by a missing reply.",
+   "description": "Where this volunteer's invitation stands. Blank means nobody was asked \u2014 a coordinator added them directly.",
    "fieldname": "response",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -38,7 +38,7 @@
   },
   {
    "columns": 2,
-   "description": "When this volunteer joined the deployment, if they joined after it began. Reporting only: being on the roster is what participation means, so a log is not refused for falling outside these dates.",
+   "description": "When this volunteer joined, if they joined after the deployment began.",
    "fieldname": "joined_on",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -46,35 +46,35 @@
   },
   {
    "columns": 2,
-   "description": "When this volunteer left the deployment, if they left before it ended. Reporting only, and deliberately not a removal: somebody who served two weeks of a month stays on the roster, because they were there and their time logs are theirs. Removing them would make their own logs unfilable.",
+   "description": "When this volunteer left, if they left before it ended. They stay on the roster, so their time logs remain theirs.",
    "fieldname": "left_on",
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Left On"
   },
   {
-   "description": "When the invitation was sent. Blank on a row nobody was asked about, which is what distinguishes a coordinator's direct addition from an invitation still waiting for a reply.",
+   "description": "When the invitation was sent. Blank on a row nobody was asked about.",
    "fieldname": "invited_on",
    "fieldtype": "Datetime",
    "label": "Invited On",
    "read_only": 1
   },
   {
-   "description": "When the volunteer answered. Kept beside the response rather than derived from it, so a society asking how long people take to reply has a figure with a time on it.",
+   "description": "When the volunteer answered.",
    "fieldname": "responded_on",
    "fieldtype": "Datetime",
    "label": "Responded On",
    "read_only": 1
   },
   {
-   "description": "What the volunteer said when they answered, most usefully why they could not go. Written by the volunteer through their own portal and never by a coordinator, which is why it is separate from the coordinator's own notes below.",
+   "description": "What the volunteer said when they answered, in their own words.",
    "fieldname": "response_note",
    "fieldtype": "Small Text",
    "label": "Response Note",
    "read_only": 1
   },
   {
-   "description": "What this volunteer is doing on the deployment, in the coordinator's own words. Free text on purpose: a structured vocabulary of deployment roles is a society's paperwork, and a Select typed into a JSON file would be this app inventing one. Never read by code.",
+   "description": "What this volunteer is doing on the deployment, in your own words.",
    "fieldname": "participation_notes",
    "fieldtype": "Data",
    "label": "Notes"

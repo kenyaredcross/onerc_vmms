@@ -11,7 +11,7 @@
  "fields": [
   {
    "columns": 4,
-   "description": "A level an application of this type may be anchored at. ACC-03: per society, never a constant.",
+   "description": "A level an application of this kind may be anchored at.",
    "fieldname": "geo_level",
    "fieldtype": "Link",
    "in_list_view": 1,

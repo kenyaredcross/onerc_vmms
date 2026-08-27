@@ -14,7 +14,7 @@
  "fields": [
   {
    "columns": 3,
-   "description": "The role this person holds in the mission: County Commissioner, Branch Coordinator, Ward Administrator. Recorded as free text rather than a Link, because a stakeholder is usually somebody outside the society whom no register here holds. Never read by code.",
+   "description": "The role this person holds in the mission: County Commissioner, Branch Coordinator, Ward Administrator.",
    "fieldname": "designation",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -24,7 +24,7 @@
   },
   {
    "columns": 3,
-   "description": "Who they are. Optional, because a terms of reference is often written naming the office rather than the person holding it, and an office outlasts its holder.",
+   "description": "Who they are. Optional: terms are often written naming the office rather than its holder.",
    "fieldname": "full_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -32,7 +32,7 @@
   },
   {
    "columns": 2,
-   "description": "How to reach them during the mission. Printed on the terms of reference so a deployed volunteer has it on the paper they carry.",
+   "description": "How to reach them during the mission. Printed on the terms the volunteer carries.",
    "fieldname": "phone_number",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -41,7 +41,7 @@
   },
   {
    "columns": 2,
-   "description": "Optional. Printed alongside the phone number where a society works with a stakeholder by email.",
+   "description": "An email address, where the society works with them that way.",
    "fieldname": "email",
    "fieldtype": "Data",
    "in_list_view": 1,

@@ -13,7 +13,7 @@
  "fields": [
   {
    "columns": 2,
-   "description": "The stable key for this benefit. What an integration or a report refers to, so relabelling the benefit does not break them.",
+   "description": "The stable key a report or an integration refers to. Relabelling the benefit does not break them.",
    "fieldname": "benefit_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -22,7 +22,7 @@
   },
   {
    "columns": 4,
-   "description": "What the member is told they get. Display only.",
+   "description": "What the member is told they get.",
    "fieldname": "benefit_name",
    "fieldtype": "Data",
    "in_list_view": 1,

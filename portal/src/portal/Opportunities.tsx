@@ -364,19 +364,13 @@ function Tags({ row }: { row: Opportunity }) {
  * HRMS's page. `target="_blank"` with `rel="noopener"` so somebody who opens it,
  * reads the form and changes their mind still has the board behind them.
  *
- * **Nothing is drawn when there is nowhere to go.** An opening HRMS has not
- * finished publishing has no route, the seam serves `apply_href: null` rather
- * than inventing one, and a button leading to a 404 is worse than no button.
+ * **There is always somewhere to go.** The button used to point at the opening's
+ * own page and only fall back to the application form, which meant an opening
+ * whose page link was wrong had no working way to answer it — and the page link
+ * *was* wrong: the seam built it out of the doctype's name. It now points at
+ * HRMS's form for this opening, which exists wherever HRMS does.
  */
 function ApplyLink({ row, compact = false }: { row: Opportunity; compact?: boolean }) {
-	if (!row.apply_href) {
-		return (
-			<span className="text-[11.5px] text-slate-faint">
-				Not yet open for applications
-			</span>
-		);
-	}
-
 	return (
 		<a
 			href={row.apply_href}

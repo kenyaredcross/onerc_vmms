@@ -28,7 +28,7 @@
  "fields": [
   {
    "default": "DEP-.#####",
-   "description": "The opaque docname series. Nothing about the place, the work or the year goes in the primary key.",
+   "description": "Automatic series for the deployment number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -42,7 +42,7 @@
    "label": "Deployment"
   },
   {
-   "description": "The specification this deployment is run against: what the work is, what a volunteer needs to hold to be a candidate for it, and where it may be used. Configuration a society writes, so that a deployment is an instance of something rather than a description typed out again each time.",
+   "description": "The terms this deployment runs against: what the work is, what a volunteer must hold to join it, and where it may be used.",
    "fieldname": "terms_of_reference",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -55,7 +55,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "ACC-02. Where this deployment sits in the organisational tree, and the field core's geo scoping reads to decide who may see it. A Link, never free text, and mandatory at creation: an unplaced deployment is invisible to geo scoping, because core's list filter is an IN and that excludes NULL. Which level it may sit at is society configuration (ACC-03, vmms_deployment_anchor_level), never a constant, and it must also fall inside the terms of reference's own geo scope where the society has set one.",
+   "description": "Where this deployment sits in the organisation. Decides who can see it, and must fall inside the terms of reference's own area.",
    "fieldname": "geo_node",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -65,7 +65,7 @@
   },
   {
    "default": "Planned",
-   "description": "Where this deployment is in its life. A closed, code owned set with a fixed transition table in deployment/services/deployment.py, for the same reason approval states are code: each value means something the server enforces, so a society adding an eighth would produce a deployment nothing knows how to handle. Planned is a deployment that has been arranged; Active is one under way; Completed is one that has finished; Cancelled is one that was called off. Note what this does not govern: a time log is accepted on the strength of the roster, not of the status, so a volunteer can still file the hours they served on a deployment that has since completed.",
+   "description": "Where this deployment stands: planned, active, completed or cancelled. Volunteers can still file time against a completed one.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -75,13 +75,13 @@
   },
   {
    "default": "0",
-   "description": "How many volunteers this deployment needs. The cap the roster is measured against: once that many assignments are Assigned or Accepted, deployment/services/assignment.py::assert_room refuses another, taking a row lock on this deployment first so two coordinators accepting the last place at the same moment cannot both get it. Zero means the society has not said, and a deployment that has not said how many it needs is never full.",
+   "description": "How many volunteers this deployment needs. Once that many are on the roster, no more can be added. Zero means no limit.",
    "fieldname": "volunteers_required",
    "fieldtype": "Int",
    "label": "Volunteers Required"
   },
   {
-   "description": "The society's own wording for the message a volunteer receives when they are asked to join this deployment. Optional: without one, the notification carries this app's plain sentence. A Link to Frappe's own Email Template rather than a field of prose here, because the wording is a society's and belongs where a society already edits its wording.",
+   "description": "Your own wording for the message a volunteer receives when they are asked to join. Optional.",
    "fieldname": "email_template",
    "fieldtype": "Link",
    "label": "Email Template",
@@ -93,7 +93,7 @@
    "label": "Period"
   },
   {
-   "description": "The first day of the deployment. Also the date matching asks its questions about when this deployment's own candidate list is built, so a volunteer whose certification expires before the deployment begins is not a candidate for it.",
+   "description": "The first day of the deployment. Certifications are checked against this date when candidates are matched.",
    "fieldname": "start_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -105,7 +105,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The last day of the deployment. Never earlier than the start date. A deployment of one day has the same date in both fields, which is ordinary rather than a mistake.",
+   "description": "The last day of the deployment. Never earlier than the start date; a one-day deployment repeats the same date.",
    "fieldname": "end_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -118,7 +118,7 @@
    "label": "Roster"
   },
   {
-   "description": "Superseded by VMMS Deployment Assignment, and retained only so that vmmsx.patches.migrate_participants_to_assignments can read what a site already holds. Nothing writes it. The roster became a register of documents because each person's deployment needed a URL they could open, a reference a notification could point at, a lifecycle with a grammar, and somewhere to record which submitted terms of reference they agreed to \u2014 none of which a child row can carry. See deployment/services/assignment.py for the argument in full.",
+   "description": "No longer used. The roster is now a register of deployment assignments, one per person.",
    "fieldname": "participants",
    "fieldtype": "Table",
    "label": "Roster (superseded)",
@@ -132,7 +132,7 @@
    "label": "Feed"
   },
   {
-   "description": "What has happened on this deployment, in order: notes from the field, milestones, concerns, and the entries the service writes itself when the deployment moves status or somebody joins or leaves. Written only through deployment/services/feed.py, which stamps the author and the time from the session \u2014 a feed people could back-date or attribute to somebody else would be worse than no feed. The volunteers' own task reports are not copied in here; api/deployment.py::get_deployment_feed merges them at read time from the tasks linked to this deployment, so there is one copy of each report and it stays with the task it belongs to.",
+   "description": "What has happened on this deployment, in order. The author and time are stamped automatically.",
    "fieldname": "updates",
    "fieldtype": "Table",
    "label": "Updates",

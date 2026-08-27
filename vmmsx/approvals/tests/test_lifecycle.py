@@ -402,6 +402,15 @@ class TestMoreInformation(ApprovalTestCase):
 		self.assertEqual(decision.decision, states.DECISION_MORE_INFO)
 		self.assertEqual(decision.reason, "Please attach an ID.")
 
+	def test_a_request_for_more_information_needs_instructions(self):
+		application = self.submitted("more info without instructions")
+
+		with fixtures.acting_as(self.county), self.assertRaises(frappe.MandatoryError):
+			engine.decide(fixtures.load(application), states.DECISION_MORE_INFO, "  ")
+
+		self.assertEqual(self.state(application), states.IN_REVIEW)
+		self.assertEqual(contract.decisions(fixtures.load(application)), [])
+
 	def test_resubmission_starts_the_review_again(self):
 		"""What the earlier stages saw is not what they are being asked about now."""
 		application = self.submitted("resubmit")

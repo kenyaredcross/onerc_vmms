@@ -281,7 +281,7 @@ def _landing(w) -> None:
 	w.table(
 		("Shortcut", "Goes to"),
 		[
-			["Register as a Volunteer", workspaces.VOLUNTEER_FORM_ROUTE],
+			["Register as a Volunteer", workspaces.VOLUNTEER_REGISTRATION_ROUTE],
 			["Register as a Member", workspaces.MEMBERSHIP_FORM_ROUTE],
 		],
 		(2.60, 3.90),
@@ -385,7 +385,7 @@ def _volunteer(w, site: str) -> None:
 	w.h2("Fill in the form")
 
 	w.p(
-		f"Click Register as a Volunteer, or go to http://{site}{workspaces.VOLUNTEER_FORM_ROUTE}"
+		f"Click Register as a Volunteer, or go to http://{site}{workspaces.VOLUNTEER_REGISTRATION_ROUTE}"
 		" directly. You must be logged in; the form requires it."
 	)
 
@@ -594,7 +594,7 @@ def _volunteer(w, site: str) -> None:
 			],
 			[
 				"My Applications",
-				f"{workspaces.VOLUNTEER_FORM_ROUTE}/list — the web form's own list of their submissions",
+				f"{workspaces.VOLUNTEER_APPLICATIONS_ROUTE} — the portal view of their applications",
 				"working",
 			],
 			[

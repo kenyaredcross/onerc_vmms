@@ -302,13 +302,54 @@ class TestTheDTOIsExplicit(OpeningsTestCase):
 		for alias in ("purpose", "responsibilities", "requirements", "geo_path", "needed_from"):
 			self.assertNotIn(alias, card, alias)
 
-	def test_an_opening_with_no_route_offers_nowhere_to_apply(self):
-		"""Rather than a button leading to a 404. Same rule as the Buzz seam."""
+	def test_the_page_link_is_hrms_own_route_and_nothing_in_front_of_it(self):
+		"""The bug this pins down, and it broke every link on the board.
+
+		HRMS fills `route` in as the whole path — `jobs/<company>/<title>` — and
+		serves the opening there. The seam used to answer `/job_opening/<route>`,
+		which is the doctype's name and is not a URL on any site, so every card
+		and every button under it led to a 404.
+		"""
+		name = self.opening("Routed Post")
+		route = frappe.db.get_value("Job Opening", name, "route")
+
+		self.assertTrue(route, "HRMS fills the route in on validate")
+		self.assertEqual(openings.detail(name)["href"], f"/{route}")
+
+	def test_an_opening_with_no_route_has_no_page_to_open(self):
+		"""Rather than a link leading to a 404. Same rule as the Buzz seam."""
 		name = self.opening("Unrouted Post")
 		frappe.db.set_value("Job Opening", name, "route", None)
-		frappe.db.set_value("Job Opening", name, "job_application_route", None)
 
-		self.assertIsNone(openings.detail(name)["apply_href"])
+		self.assertIsNone(openings.detail(name)["href"])
+
+	def test_apply_goes_to_hrms_application_form_for_this_opening(self):
+		"""The same address HRMS's own opening page puts behind its Apply button.
+
+		Including the docname in the query, so the form opens already knowing
+		which post is being answered.
+		"""
+		name = self.opening("Answerable Post")
+
+		self.assertEqual(openings.detail(name)["apply_href"], f"/job_application/new?job_title={name}")
+
+	def test_a_society_that_named_its_own_application_form_gets_that_one(self):
+		"""`job_application_route` is HRMS's field for exactly this."""
+		name = self.opening("Custom Form Post", job_application_route="careers/apply")
+
+		self.assertEqual(openings.detail(name)["apply_href"], f"/careers/apply/new?job_title={name}")
+
+	def test_applying_does_not_depend_on_the_opening_having_a_page(self):
+		"""It used to: `apply_href` fell back to the opening's own page.
+
+		That looked harmless — the page carries an Apply button — but it made the
+		board's one call to action depend on a second page being reachable, which
+		is precisely what was broken.
+		"""
+		name = self.opening("Pageless But Open")
+		frappe.db.set_value("Job Opening", name, "route", None)
+
+		self.assertEqual(openings.detail(name)["apply_href"], f"/job_application/new?job_title={name}")
 
 	def test_closing_soon_is_within_a_week_and_not_otherwise(self):
 		soon = openings.detail(self.opening("Soon", closes_on=add_days(today(), 3)))

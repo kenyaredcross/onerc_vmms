@@ -35,13 +35,6 @@ TIME_LOG_DOCTYPE = "VMMS Time Log"
 def apply_to_volunteer(
 	red_profile: str,
 	geo_node: str,
-	country_of_citizenship: str | None = None,
-	residency_type: str = "Local",
-	home_geo_node: str | None = None,
-	country_of_residence: str | None = None,
-	residence_address: str | None = None,
-	id_type: str | None = None,
-	id_number: str | None = None,
 	skills: list | None = None,
 	languages: list | None = None,
 	availability: list | None = None,
@@ -50,13 +43,9 @@ def apply_to_volunteer(
 ) -> dict:
 	"""Create an application and put it into motion.
 
-	`geo_node` (Serving Branch) is required here, at creation, and not filled in
-	later — ACC-02 is a property of the record existing, not a step in a
-	workflow. `country_of_citizenship` left empty defaults to the society's own
-	configured country; `home_geo_node` defaults `geo_node` when residency is
-	Local and the caller left it blank. Identification and a completed
-	residency answer are not required to create a draft, only to submit one —
-	`application_service.submit()`, called below, is where both are enforced.
+	`geo_node` is the requested Serving Branch and the only location stored on
+	the application. Citizenship, residence and identification are validated
+	from the linked Red Profile when the application is submitted.
 
 	`skills`, `languages`, `availability` and `motivation` are plain lists of
 	keys — `["first_aid", "driving"]`, not the child-table row shape those
@@ -70,13 +59,6 @@ def apply_to_volunteer(
 			"doctype": APPLICATION_DOCTYPE,
 			"red_profile": red_profile,
 			"geo_node": geo_node,
-			"country_of_citizenship": country_of_citizenship,
-			"residency_type": residency_type,
-			"home_geo_node": home_geo_node,
-			"country_of_residence": country_of_residence,
-			"residence_address": residence_address,
-			"id_type": id_type,
-			"id_number": id_number,
 			"skills": selector_rows(skills, "skill"),
 			"languages": selector_rows(languages, "language"),
 			"availability": selector_rows(availability, "availability_slot"),
@@ -160,7 +142,7 @@ def application_options() -> dict:
 	`All`: a vocabulary is what a form may offer, and it says nothing about any
 	person.
 	"""
-	residency = frappe.get_meta(APPLICATION_DOCTYPE).get_field("residency_type")
+	residency = frappe.get_meta("Red Profile").get_field("residency_type")
 
 	return {
 		"skills": _vocabulary("VMMS Skill", "skill_name"),

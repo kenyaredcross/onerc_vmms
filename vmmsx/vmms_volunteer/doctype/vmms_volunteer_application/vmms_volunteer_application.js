@@ -47,10 +47,21 @@ const vmmsx_application = {
 	},
 
 	identity_html(decision) {
+		const residence =
+			decision.residency_type === "Abroad"
+				? [decision.country_of_residence, decision.residence_address].filter(Boolean).join(" · ")
+				: decision.home_geo_path;
+		const identifications = (decision.identifications || [])
+			.map((row) => `${row.id_type_name || row.id_type || ""} ${row.id_number || ""}`.trim())
+			.filter(Boolean)
+			.join(" · ");
 		const rows = [
 			[__("Red Profile"), vmmsx_application.profile_link(decision.red_profile)],
 			[__("Email"), decision.email],
 			[__("Phone"), decision.phone],
+			[__("Country of Citizenship"), decision.country_of_citizenship],
+			[__("Residence"), residence],
+			[__("Identification"), identifications],
 		];
 
 		const cells = rows
@@ -99,7 +110,6 @@ const vmmsx_application = {
 	/* --- the cascading geo picker ------------------------------------------ */
 
 	setup_geo_pickers(frm) {
-		vmmsx_application.add_picker_button(frm, "home_geo_node", __("Choose Home Area"));
 		vmmsx_application.add_picker_button(frm, "geo_node", __("Choose Serving Branch"));
 	},
 
@@ -245,13 +255,5 @@ frappe.ui.form.on("VMMS Volunteer Application", {
 		}
 
 		vmmsx_application.render_identity(frm);
-	},
-
-	residency_type(frm) {
-		// The desk form's own depends_on already shows and hides the right
-		// fields; nothing else changes when the toggle flips.
-		frm.refresh_field("home_geo_node");
-		frm.refresh_field("country_of_residence");
-		frm.refresh_field("residence_address");
 	},
 });

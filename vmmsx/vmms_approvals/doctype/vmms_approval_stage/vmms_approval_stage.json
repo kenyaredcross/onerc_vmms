@@ -25,7 +25,7 @@
  "fields": [
   {
    "columns": 1,
-   "description": "Order within In Review. Ascending. Gaps are allowed; duplicates are not.",
+   "description": "Order the stages run in, lowest first. Gaps are allowed; two stages may not share a number.",
    "fieldname": "sequence",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -34,7 +34,7 @@
   },
   {
    "columns": 3,
-   "description": "Display only. Nothing in the engine reads this to decide anything; stages are identified by row, ordered by sequence.",
+   "description": "What this stage is called on screen.",
    "fieldname": "stage_label",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -44,7 +44,7 @@
   },
   {
    "columns": 2,
-   "description": "The Frappe role an approver must hold. Routing resolves against roles, never capabilities.",
+   "description": "The role an approver must hold to decide at this stage.",
    "fieldname": "required_role",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -59,7 +59,7 @@
   },
   {
    "default": "nearest_ancestor",
-   "description": "<b>nearest_ancestor</b>: walk up from the document's Geo Node and stop at the first node where anybody holds the role. <b>at_level</b>: resolve at a named Geo Level, whatever is nearer. <b>fixed_node</b>: resolve at one named node, wherever the document sits.",
+   "description": "Where to look for that approver. <b>nearest_ancestor</b>: walk up from the document's branch until somebody holds the role. <b>at_level</b>: always at a named level. <b>fixed_node</b>: always at one named branch.",
    "fieldname": "resolution_rule",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -69,7 +69,7 @@
   },
   {
    "depends_on": "eval:doc.resolution_rule == 'at_level'",
-   "description": "Which level the decision belongs to, by policy. Per society, and never an assumed depth or label.",
+   "description": "The level this stage decides at, when the rule is at_level.",
    "fieldname": "geo_level",
    "fieldtype": "Link",
    "label": "Geo Level",
@@ -78,7 +78,7 @@
   },
   {
    "depends_on": "eval:doc.resolution_rule == 'fixed_node'",
-   "description": "The one node this stage always resolves at: a national desk, a headquarters unit.",
+   "description": "The one branch this stage always resolves at, when the rule is fixed_node.",
    "fieldname": "fixed_geo_node",
    "fieldtype": "Link",
    "label": "Fixed Geo Node",
@@ -91,7 +91,7 @@
   },
   {
    "default": "single",
-   "description": "How many of the resolved approvers must act. <b>single</b> and <b>any_of</b> advance on the first decision; <b>all_of</b> waits for every resolved approver.",
+   "description": "How many of the resolved approvers must act. <b>single</b> and <b>any_of</b> advance on the first decision; <b>all_of</b> waits for every one of them.",
    "fieldname": "completion_rule",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -101,14 +101,14 @@
   },
   {
    "default": "1",
-   "description": "Whether this stage may terminate the application, or only endorse it onward. At least one stage of a workflow must be able to reject.",
+   "description": "Whether this stage may refuse the application, or only pass it onward. At least one stage must be able to refuse.",
    "fieldname": "can_reject",
    "fieldtype": "Check",
    "label": "Can Reject"
   },
   {
    "default": "0",
-   "description": "Skipped when nobody resolves. A stage that is <i>not</i> optional and resolves nobody blocks and escalates; it never silently passes.",
+   "description": "Skipped when nobody holds the role. A stage that is not optional and resolves nobody blocks and escalates instead of passing.",
    "fieldname": "is_optional",
    "fieldtype": "Check",
    "label": "Is Optional"
@@ -120,7 +120,7 @@
   },
   {
    "default": "5",
-   "description": "Days the resolved approver has before this stage is breached. Every stage has a clock, because an application rotting in an absent approver's queue is the failure mode this exists to catch.",
+   "description": "How many days the approver has before this stage is counted as overdue.",
    "fieldname": "sla_days",
    "fieldtype": "Int",
    "label": "SLA Days",
@@ -132,7 +132,7 @@
   },
   {
    "default": "escalate_up",
-   "description": "<b>escalate_up</b>: route to the nearest holder above, never to whoever is already late. <b>notify_only</b>: remind, do not re-route. <b>none</b>: an explicit society choice to let it sit.",
+   "description": "What happens when it goes overdue. <b>escalate_up</b>: pass it to the nearest approver above. <b>notify_only</b>: send a reminder. <b>none</b>: leave it.",
    "fieldname": "on_sla_breach",
    "fieldtype": "Select",
    "label": "On SLA Breach",

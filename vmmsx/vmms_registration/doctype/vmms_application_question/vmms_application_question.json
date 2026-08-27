@@ -29,7 +29,7 @@
    "label": "Asked On"
   },
   {
-   "description": "The registration this question is added to, for example VMMS Volunteer Application or VMMS Membership. A question belongs to one of them; ask it on both by creating it twice.",
+   "description": "Which registration this question is added to. To ask it on both, create it twice.",
    "fieldname": "asked_on",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -39,7 +39,7 @@
    "reqd": 1
   },
   {
-   "description": "The question exactly as the applicant reads it. Plain text, rendered as a string.",
+   "description": "The question exactly as the applicant reads it.",
    "fieldname": "question_label",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -47,7 +47,7 @@
    "reqd": 1
   },
   {
-   "description": "The heading this question is asked under — \"Health information\", \"Next of kin\". Questions sharing a group are drawn together, as one tab on an approver's screen and one section of the form. Leave it empty and the question sits with the rest.",
+   "description": "The heading this question is asked under, such as \"Health information\". Questions sharing a group are drawn together.",
    "fieldname": "question_group",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -66,7 +66,7 @@
   },
   {
    "default": "1",
-   "description": "Unticked, the question stops being asked of new applicants. Answers already given are kept, because they were part of an application somebody decided.",
+   "description": "Unticked, the question stops being asked of new applicants. Answers already given are kept.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -79,7 +79,7 @@
   },
   {
    "default": "Data",
-   "description": "What kind of answer this is. Attach asks the applicant for a file, which is how a society collects a chief's letter or a reference.",
+   "description": "What kind of answer this is. Attach asks the applicant for a file, such as a letter or a reference.",
    "fieldname": "field_type",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -89,7 +89,7 @@
   },
   {
    "default": "0",
-   "description": "Required questions must be answered before the application can be submitted. A question added after an application was submitted is never applied to it retrospectively.",
+   "description": "Required questions must be answered before the application can be submitted. Never applied to applications already sent.",
    "fieldname": "is_required",
    "fieldtype": "Check",
    "label": "Required"
@@ -100,7 +100,7 @@
   },
   {
    "depends_on": "eval:doc.field_type == \"Select\"",
-   "description": "One choice per line. An answer the list does not contain is refused, so the vocabulary here is the whole of what may be recorded.",
+   "description": "One choice per line. An answer outside this list is refused.",
    "fieldname": "options",
    "fieldtype": "Small Text",
    "label": "Choices",
@@ -112,7 +112,7 @@
    "label": "Guidance"
   },
   {
-   "description": "Shown under the question, for anything the applicant needs to know before answering. Optional, and plain text like the question itself.",
+   "description": "Shown under the question, for anything the applicant needs to know before answering.",
    "fieldname": "help_text",
    "fieldtype": "Small Text",
    "label": "Help Text"

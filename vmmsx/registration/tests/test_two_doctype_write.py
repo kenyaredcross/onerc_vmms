@@ -113,22 +113,29 @@ class TestNoIdentityReachesTheSatellite(RegistrationTestCase):
 
 
 class TestRegisteringAgainReusesTheProfile(RegistrationTestCase):
-	def test_a_second_volunteer_application_makes_no_second_profile(self):
-		user, first = self.register_as_volunteer("returning.applicant")
+	def test_a_volunteer_application_reuses_an_existing_profile(self):
+		user = fixtures.website_account("returning.applicant")
+		profile = intake.for_user(user, {"first_name": "Amina", "last_name": "Otieno"})
 
 		with fixtures.acting_as(user):
-			second = fixtures.submit_volunteer_form(self.branch())
+			application = fixtures.submit_volunteer_form(self.branch())
 
 		self.assertEqual(self.profile_count(user), 1)
 		self.assertEqual(
-			frappe.db.get_value(fixtures.APPLICATION_DOCTYPE, second.name, "red_profile"),
-			first.red_profile,
+			frappe.db.get_value(fixtures.APPLICATION_DOCTYPE, application.name, "red_profile"),
+			profile,
 		)
 
 	def test_an_existing_profile_is_not_overwritten_by_a_later_form(self):
 		"""Registration adds what core does not know. It never contradicts it."""
-		user, first = self.register_as_volunteer(
-			"stable.applicant", applicant_first_name="Original", applicant_phone="+254700777888"
+		user = fixtures.website_account("stable.applicant")
+		profile_name = intake.for_user(
+			user,
+			{
+				"first_name": "Original",
+				"last_name": "Applicant",
+				"phone": "+254700777888",
+			},
 		)
 
 		with fixtures.acting_as(user):
@@ -136,22 +143,23 @@ class TestRegisteringAgainReusesTheProfile(RegistrationTestCase):
 				self.branch(), applicant_first_name="Changed", applicant_phone="+254700999000"
 			)
 
-		profile = frappe.get_doc(fixtures.PROFILE_DOCTYPE, first.red_profile)
+		profile = frappe.get_doc(fixtures.PROFILE_DOCTYPE, profile_name)
 
 		self.assertEqual(profile.first_name, "Original")
 		self.assertEqual(profile.phone, "+254700777888")
 
 	def test_a_field_core_does_not_know_yet_is_filled_in(self):
 		"""The other half of the same rule: empty is not the same as set."""
-		user, first = self.register_as_volunteer("growing.applicant", applicant_phone="")
+		user = fixtures.website_account("growing.applicant")
+		profile = intake.for_user(user, {"first_name": "Amina", "last_name": "Otieno"})
 
-		self.assertFalse(frappe.db.get_value(fixtures.PROFILE_DOCTYPE, first.red_profile, "phone"))
+		self.assertFalse(frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "phone"))
 
 		with fixtures.acting_as(user):
 			fixtures.submit_volunteer_form(self.branch(), applicant_phone="+254700121212")
 
 		self.assertEqual(
-			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, first.red_profile, "phone"), "+254700121212"
+			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "phone"), "+254700121212"
 		)
 
 

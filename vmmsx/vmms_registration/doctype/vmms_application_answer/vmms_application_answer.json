@@ -16,7 +16,7 @@
  "fields": [
   {
    "columns": 2,
-   "description": "The question this answers, by its opaque name. Identity, not wording: rewording a question must not orphan the answers already given to it.",
+   "description": "The question this answers. Rewording a question does not orphan the answers already given to it.",
    "fieldname": "question",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -26,7 +26,7 @@
   },
   {
    "columns": 3,
-   "description": "The question as it read when it was answered. A snapshot, so a society rewording its form does not rewrite what somebody was asked.",
+   "description": "The question as it read when it was answered, so an old application reads as it was asked.",
    "fieldname": "question_label",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -34,14 +34,14 @@
    "read_only": 1
   },
   {
-   "description": "The group this question was asked under, snapshotted with its wording. See the sibling label and field type: an application decided last year reads as it was asked.",
+   "description": "The group this question was asked under, as it read at the time.",
    "fieldname": "question_group",
    "fieldtype": "Data",
    "label": "Question Group",
    "read_only": 1
   },
   {
-   "description": "The answer type as it stood when the answer was given. Says how to read the value beside it, so nothing has to go back to the question to render an old answer.",
+   "description": "The answer type as it stood when the answer was given. Says how to read the value beside it.",
    "fieldname": "field_type",
    "fieldtype": "Data",
    "label": "Answer Type",
@@ -49,7 +49,7 @@
   },
   {
    "columns": 4,
-   "description": "The answer, as text. A tick is stored as 1 or 0 and a date in the site's own format; the type beside it says which.",
+   "description": "The answer, as text. A tick is stored as 1 or 0 and a date in the site's own format.",
    "fieldname": "answer_value",
    "fieldtype": "Small Text",
    "in_list_view": 1,

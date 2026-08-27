@@ -82,6 +82,11 @@ _READABLE = (
 	"preferred_language",
 	"profile_photo",
 	"home_geo_node",
+	"country_of_citizenship",
+	"citizenship_status",
+	"residency_type",
+	"country_of_residence",
+	"residence_address",
 )
 
 # The sensitive set, named so that keeping it out is a decision this file states
@@ -123,6 +128,42 @@ def read(volunteer, fields: tuple[str, ...] = _READABLE) -> dict:
 	values = frappe.db.get_value(PROFILE_DOCTYPE, volunteer.red_profile, allowed, as_dict=True)
 
 	return dict(values or {})
+
+
+def identifications(volunteer) -> list[dict]:
+	"""The person's current identification rows, primary first and explicitly shaped."""
+	rows = frappe.get_all(
+		"Red Profile Identification",
+		filters={
+			"parent": volunteer.red_profile,
+			"parenttype": PROFILE_DOCTYPE,
+			"parentfield": "identifications",
+		},
+		fields=["id_type", "id_number", "attachment", "is_primary"],
+		order_by="is_primary desc, idx asc",
+	)
+
+	id_types = [row.id_type for row in rows if row.id_type]
+	labels = dict(
+		frappe.get_all(
+			"Identification Type",
+			filters={"name": ("in", id_types)},
+			fields=["name", "identification_type_name"],
+			as_list=True,
+		)
+	) if id_types else {}
+
+	return [
+		{
+			"id_type": row.id_type,
+			"id_type_name": labels.get(row.id_type) or row.id_type,
+			"id_number": row.id_number,
+			"attachment": row.attachment,
+			"is_primary": bool(row.is_primary),
+		}
+		for row in rows
+		if row.id_type and row.id_number
+	]
 
 
 def display_name(volunteer) -> str:

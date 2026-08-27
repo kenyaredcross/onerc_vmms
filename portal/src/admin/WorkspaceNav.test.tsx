@@ -10,7 +10,9 @@ describe("focused coordinator workspaces", () => {
 		mount(<CommunicationSubNav />, { route: "/admin/communication/sms/compose" });
 		expect(screen.getByRole("link", { name: "Compose SMS" }).getAttribute("href")).toBe("/admin/communication/sms/compose");
 		expect(screen.getByRole("link", { name: "Compose SMS" }).getAttribute("aria-current")).toBe("page");
-		expect(screen.getByRole("link", { name: "Sent notifications" }).getAttribute("href")).toBe("/admin/communication/system/sent");
+		expect(screen.getByRole("link", { name: "System" }).getAttribute("href")).toBe("/admin/communication/system/compose");
+		expect(screen.getByRole("link", { name: "Sent SMS" }).getAttribute("href")).toBe("/admin/communication/sms/sent");
+		expect(screen.getByText("Scheduled").parentElement?.getAttribute("aria-disabled")).toBe("true");
 	});
 
 	it("keeps queues and registers as distinct People routes", () => {

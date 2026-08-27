@@ -23,7 +23,7 @@
  "fields": [
   {
    "default": "CERT-.#####",
-   "description": "The opaque docname series. Nothing about the volunteer, the certification or the year goes in the primary key.",
+   "description": "Automatic series for this record's number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -37,7 +37,7 @@
    "label": "Held By"
   },
   {
-   "description": "Whose certification this is. Identity is read through the volunteer's Red Profile, never copied onto this record.",
+   "description": "Whose certification this is.",
    "fieldname": "volunteer",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -46,7 +46,7 @@
    "reqd": 1
   },
   {
-   "description": "Which certification this is, and where its validity period comes from. One row per volunteer per type: a renewal updates the completion and expiry dates on the row that is already there rather than adding a second, so there is never a question of which of two rows is current.",
+   "description": "Which certification this is. One row per volunteer per type: a renewal updates this row rather than adding another.",
    "fieldname": "certification_type",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -59,7 +59,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When the training was completed. The one date a human enters, and the date the whole expiry calculation starts from.",
+   "description": "When the training was completed. Expiry is worked out from this date.",
    "fieldname": "completion_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -67,7 +67,7 @@
    "reqd": 1
   },
   {
-   "description": "When this certification stops being valid: the completion date plus the type's configured validity period, recomputed on every save so a society changing the period brings its held certifications with it. Empty when the type never expires. Note what is deliberately absent: there is no lapsed field anywhere on this doctype. Whether a certification has lapsed is derived from this date at the moment of asking by volunteer/services/certification.py::is_lapsed(), so it can never be stale and no scheduled job has to flip it.",
+   "description": "When this certification stops being valid, worked out from the type's validity period. Empty when the type never expires.",
    "fieldname": "expiry_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -80,7 +80,7 @@
    "label": "Provenance"
   },
   {
-   "description": "The course mapping that awarded this certification, when it came from a completed course rather than being recorded by hand. Written by the learning seam, and the reason a repeated completion updates this row instead of creating another. Empty for a certification an administrator entered directly, which is an equally ordinary way to hold one.",
+   "description": "The course mapping that awarded this certification. Empty when somebody recorded it by hand.",
    "fieldname": "source_mapping",
    "fieldtype": "Link",
    "label": "Awarded By Course Mapping",
@@ -92,7 +92,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The certificate or serial number the issuing body printed, if there is one. The society's own reference for an external document; nothing in this app reads it.",
+   "description": "The certificate or serial number the issuing body printed, if there is one.",
    "fieldname": "reference_number",
    "fieldtype": "Data",
    "label": "Reference Number"
@@ -103,7 +103,7 @@
    "label": "Notes"
   },
   {
-   "description": "Anything about this certification that is not a field: who trained them, what was waived, why the date is what it is.",
+   "description": "Anything about this certification that is not a field: who trained them, what was waived.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"

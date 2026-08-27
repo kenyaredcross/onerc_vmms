@@ -136,6 +136,29 @@ class TestScopeIsNeverLeaked(MatchingTestCase):
 
 		self.assertEqual(result["candidates"], [])
 
+	def test_a_searcher_who_cannot_read_the_register_is_told_so(self):
+		"""Empty because nobody fits and empty because the register was never
+		shown are different facts, and only the second is a configuration a
+		society can put right. A coordinator who holds the deployment scope role
+		but not the volunteer one is exactly that case — common, because the two
+		are separate roles on purpose — and this is the field that lets the
+		console say so instead of blaming the terms of reference.
+		"""
+		terms = fixtures.make_terms_requiring()
+		self.volunteer_at(self.society_a["branch"], "Unshown")
+
+		reads_nothing = fixtures.make_user("reads_nothing")
+
+		with fixtures.acting_as(reads_nothing):
+			refused = matching.candidates(terms.name, self.society_a["region"])
+
+		self.assertFalse(refused["register_readable"])
+		self.assertEqual(refused["candidates"], [])
+
+		self.assertTrue(
+			self.search(self.searcher_user, terms.name, self.society_a["region"])["register_readable"]
+		)
+
 	def test_the_scope_cannot_be_supplied_by_a_caller(self):
 		"""The signature is the guarantee. There is nothing to override.
 

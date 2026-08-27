@@ -15,7 +15,7 @@
  "fields": [
   {
    "columns": 3,
-   "description": "Who this line pays. Every volunteer named here must appear on the paired progress report: the report says who the period was about, and paying somebody it never mentioned would be a payment with no narrative behind it.",
+   "description": "Who this line pays. Must be somebody the paired progress report names.",
    "fieldname": "volunteer",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -25,7 +25,7 @@
   },
   {
    "columns": 2,
-   "description": "The day this line is about. One row per volunteer per day is what makes the grid a grid: the total payable for a volunteer is the sum of their rows, and who attended on a given day is the rows carrying that date. Must fall inside the paired report's period, and a volunteer may appear only once on a day.",
+   "description": "The day this line is about. Must fall inside the report's period, and a volunteer may appear only once on a day.",
    "fieldname": "attendance_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -35,7 +35,7 @@
   {
    "columns": 1,
    "default": "1",
-   "description": "Whether the volunteer was there that day. An absent day may still be recorded, which is why the row exists at all, but it cannot carry a stipend: a daily stipend is paid for attending.",
+   "description": "Whether the volunteer was there that day. An absent day may be recorded, but it cannot carry a stipend.",
    "fieldname": "attended",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -43,7 +43,7 @@
   },
   {
    "columns": 2,
-   "description": "Hours served that day, where a society records them. Reporting only: nothing computes a stipend from hours, because the rate a society pays and how it derives one are its own decisions and no rate is assumed here.",
+   "description": "Hours served that day, where your society records them. Reporting only: no stipend is worked out from hours.",
    "fieldname": "hours",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -51,7 +51,7 @@
   },
   {
    "columns": 2,
-   "description": "What this day is worth to this volunteer, in the form's currency. Typed by the society, never computed from a rate this app invented. Never negative, and always zero on a day the volunteer did not attend.",
+   "description": "What this day is worth to this volunteer, in the form's currency. Never negative, and zero on a day they did not attend.",
    "fieldname": "stipend_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,

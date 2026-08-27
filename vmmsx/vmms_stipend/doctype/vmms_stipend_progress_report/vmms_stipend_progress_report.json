@@ -27,7 +27,7 @@
  "fields": [
   {
    "default": "SPR-.#####",
-   "description": "The opaque docname series. Nothing about the supervisor, the place or the period goes in the primary key.",
+   "description": "Automatic series for the report number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -41,7 +41,7 @@
    "label": "Report"
   },
   {
-   "description": "ACC-02. Where this period of work happened, and the anchor geo scoping filters this report by. A Link, never free text, and mandatory at creation: an unplaced report is invisible to geo scoping and unroutable, so it would exist with nobody able to see or act on it. Which levels are permitted is the society's vmms_stipend_anchor_level (ACC-03), and empty means any.",
+   "description": "Where this period of work happened. Decides who can see the report.",
    "fieldname": "geo_node",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -54,7 +54,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The first day this report covers. The period is the report's subject: one report covers one period and many volunteers, and the payment form paired with it pays for days inside these two dates.",
+   "description": "The first day this report covers. The payment form paired with it pays for days inside the period.",
    "fieldname": "period_from",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -75,7 +75,7 @@
    "label": "Narrative"
   },
   {
-   "description": "What happened over the period, in the supervisor's own words. This is the report; the volunteer table below says who it was about. Read by whoever eventually approves it, never by code.",
+   "description": "What happened over the period, in your own words. The table below says who it was about.",
    "fieldname": "narrative",
    "fieldtype": "Text Editor",
    "label": "Narrative",
@@ -87,7 +87,7 @@
    "label": "Volunteers Involved"
   },
   {
-   "description": "Everybody this report covers. A table because one report covers many volunteers: the alternative, a report per person, would make a period of work into a pile of paperwork nobody reads together. Rows are added through the geo scoped picker.",
+   "description": "Everybody this report covers. One report covers many volunteers.",
    "fieldname": "volunteers",
    "fieldtype": "Table",
    "label": "Volunteers",
@@ -99,7 +99,7 @@
    "label": "Pending Routing Target"
   },
   {
-   "description": "The departments this report would route to once departmental approval exists, derived from the volunteers above and recomputed on every save. It is a record of where the answer will come from, not a route: nothing resolves a head of department today, and nothing here is read by any routing code. Empty is ordinary and means no volunteer on this report has a department the site can see.",
+   "description": "The departments this report would route to once departmental approval exists. Worked out from the volunteers above.",
    "fieldname": "routing_departments",
    "fieldtype": "Small Text",
    "label": "Departments",
@@ -112,7 +112,7 @@
   },
   {
    "default": "Draft",
-   "description": "Where this report stands. Submitting it moves it to Pending Departmental Approval, which is a dead end on purpose: stipend approval runs from the supervisor to the head of the volunteer's department, departmental resolution is not built, and routing this through the geo engine instead would send it to a geo parent rather than to the head of department. Nobody can approve it, including an administrator, and the refusal says so. Owned by vmmsx/stipend/services/approval.py.",
+   "description": "Where this report stands. Submitting sends it for departmental approval, which is not built yet, so nobody can approve it.",
    "fieldname": "approval_state",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -125,14 +125,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When this report was submitted for approval. Cleared if it is withdrawn back to Draft, so the field always describes the submission that is currently outstanding rather than one that was taken back.",
+   "description": "When this report was submitted for approval. Cleared if it is withdrawn back to draft.",
    "fieldname": "submitted_on",
    "fieldtype": "Datetime",
    "label": "Submitted On",
    "read_only": 1
   },
   {
-   "description": "Who submitted it. The supervisor half of the supervisor to head of department chain, recorded now so that the eventual routing has both ends of it rather than only one.",
+   "description": "Who submitted it.",
    "fieldname": "submitted_by",
    "fieldtype": "Link",
    "label": "Submitted By",

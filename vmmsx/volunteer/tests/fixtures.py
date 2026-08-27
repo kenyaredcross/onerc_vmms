@@ -485,21 +485,40 @@ def grant_volunteer_scope(user: str, *nodes: str) -> None:
 def make_application(profile: str, geo_node: str, **overrides):
 	"""An application, created the way the API creates one.
 
-	Defaults `home_geo_node` to `geo_node` and a real identification onto the
-	application, so a bare `make_application(...)` followed by
-	`application_service.submit(...)` — the shape most of this suite already
-	uses — keeps working now that both are required to submit, without every
-	call site having to know that. A test specifically about their absence
-	overrides either back to None.
+	Person facts are prepared on Red Profile first. The application itself gets
+	only its Serving Branch and declarations, which is the production boundary.
+	The legacy keyword names remain accepted here so focused tests can express a
+	missing profile fact without every call site changing at once.
 	"""
+	country_of_citizenship = overrides.pop("country_of_citizenship", test_country())
+	residency_type = overrides.pop("residency_type", "Local")
+	home_geo_node = overrides.pop("home_geo_node", geo_node)
+	country_of_residence = overrides.pop("country_of_residence", None)
+	residence_address = overrides.pop("residence_address", None)
+	id_type = overrides.pop("id_type", make_identification_type())
+	id_number = overrides.pop("id_number", f"{TEST_PREFIX}-{frappe.generate_hash(length=8)}")
+
+	person = frappe.get_doc("Red Profile", profile)
+	person.country_of_citizenship = country_of_citizenship
+	person.residency_type = residency_type
+	person.home_geo_node = home_geo_node
+	person.country_of_residence = country_of_residence
+	person.residence_address = residence_address
+
+	if id_type and id_number:
+		person.set(
+			"identifications",
+			[{"id_type": id_type, "id_number": id_number, "is_primary": 1}],
+		)
+	else:
+		person.set("identifications", [])
+
+	person.save()
+
 	values = {
 		"doctype": APPLICATION_DOCTYPE,
 		"red_profile": profile,
 		"geo_node": geo_node,
-		"country_of_citizenship": test_country(),
-		"home_geo_node": geo_node,
-		"id_type": make_identification_type(),
-		"id_number": f"{TEST_PREFIX}-{frappe.generate_hash(length=8)}",
 	}
 	values.update(overrides)
 

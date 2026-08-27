@@ -57,6 +57,9 @@ CAMPAIGN_DOCTYPE = "SMS Campaign"
 #: onerc_sms's own manual-recipient mode: a list of numbers on the campaign
 #: rather than a query it re-runs at send time. See the module docstring.
 SOURCE_MANUAL = "Manual"
+SOURCE_VMMS = "VMMS Audience"
+SOURCE_DOCTYPE = "Doctype Query"
+SOURCE_CSV = "CSV Upload"
 
 STATUS_DRAFT = "Draft"
 
@@ -103,7 +106,20 @@ def reachable(geo_node: str, who: str) -> dict:
 	}
 
 
-def draft(name: str, message: str, geo_node: str, who: str, scheduled_at=None) -> dict:
+def draft(
+	name: str,
+	message: str,
+	geo_node: str,
+	who: str,
+	template: str | None = None,
+	scheduled_at=None,
+	source_type: str = SOURCE_VMMS,
+	source_doctype: str | None = None,
+	phone_field: str | None = None,
+	filters: list | None = None,
+	csv_file: str | None = None,
+	phone_numbers: str | None = None,
+) -> dict:
 	"""File a Draft campaign to this audience. Returns what was filed.
 
 	`scheduled_at` defaults to now, which does **not** mean "send now": nothing
@@ -122,10 +138,10 @@ def draft(name: str, message: str, geo_node: str, who: str, scheduled_at=None) -
 	if not (message or "").strip():
 		frappe.throw(_("An SMS needs something to say."), frappe.ValidationError)
 
-	addressed = audience.profiles(geo_node, who)
-	numbers = _sendable(audience.phones(addressed))
+	addressed = audience.profiles(geo_node, who) if source_type == SOURCE_VMMS else []
+	numbers = _sendable(audience.phones(addressed)) if source_type == SOURCE_VMMS else {"ok": [], "bad": []}
 
-	if not numbers["ok"]:
+	if source_type == SOURCE_VMMS and not numbers["ok"]:
 		frappe.throw(
 			_(
 				"Nobody in that audience has a phone number on file, so there is no campaign to file."
@@ -136,18 +152,37 @@ def draft(name: str, message: str, geo_node: str, who: str, scheduled_at=None) -
 
 	campaign = frappe.new_doc(CAMPAIGN_DOCTYPE)
 	campaign.campaign_name = name
+	campaign.template = template or None
 	campaign.message = message
-	campaign.source_type = SOURCE_MANUAL
-	campaign.phone_numbers = "\n".join(numbers["ok"])
+	if source_type == SOURCE_VMMS:
+		campaign.source_type = SOURCE_MANUAL
+		campaign.phone_numbers = "\n".join(numbers["ok"])
+	elif source_type in {SOURCE_DOCTYPE, SOURCE_CSV, SOURCE_MANUAL}:
+		campaign.source_type = source_type
+		campaign.source_doctype = source_doctype
+		campaign.phone_field = phone_field
+		campaign.csv_file = csv_file
+		campaign.phone_numbers = phone_numbers
+		for row in filters or []:
+			campaign.append("campaign_filters", {
+				"filter_field": row.get("filter_field"),
+				"operator": row.get("operator") or "Equals",
+				"filter_value": row.get("filter_value") or "",
+			})
+	else:
+		frappe.throw(_("Choose a valid SMS contact source."), frappe.ValidationError)
 	campaign.status = STATUS_DRAFT
 	campaign.scheduled_at = scheduled_at or now_datetime()
 	# Inserted as the caller, not elevated: whether somebody may file a campaign
 	# is onerc_sms's question and it should be asked of them, not answered here.
 	campaign.insert()
+	recipient_count = len(numbers["ok"])
+	if source_type != SOURCE_VMMS:
+		recipient_count = len(campaign.run_pipeline(campaign.resolve_contacts()))
 
 	return {
 		"campaign": campaign.name,
-		"recipients": len(numbers["ok"]),
+		"recipients": recipient_count,
 		"malformed": len(numbers["bad"]),
 		"addressed": len(addressed),
 		# Where to finish it. The desk, because approving a campaign is

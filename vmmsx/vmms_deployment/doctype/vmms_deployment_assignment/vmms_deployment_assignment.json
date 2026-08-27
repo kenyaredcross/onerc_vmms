@@ -49,7 +49,7 @@
    "label": "Assignment"
   },
   {
-   "description": "The deployment this person is assigned to. Set once: moving somebody between deployments would rewrite what they agreed to, so the honest way to do it is to withdraw this assignment and raise another.",
+   "description": "The deployment this person is assigned to. Set once \u2014 to move somebody, withdraw this and raise another.",
    "fieldname": "deployment",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -61,7 +61,7 @@
    "set_only_once": 1
   },
   {
-   "description": "Who is assigned. Set once, for the same reason the deployment is: an assignment is one person's record of being asked and answering, and pointing it at somebody else would silently transfer their answer.",
+   "description": "Who is assigned. Set once, because this record holds their own answer.",
    "fieldname": "volunteer",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -77,7 +77,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The exact terms this person was asked to accept, copied from the deployment when the assignment is raised and never followed live. This is the whole reason VMMS Terms of Reference is submittable: accepting an assignment is accepting these terms, so the assignment records which document that was. An amendment to the terms afterwards produces a new document and leaves this one pointing where it always pointed.",
+   "description": "The exact terms this person was asked to accept, copied when the assignment was raised. A later amendment does not change it.",
    "fieldname": "terms_of_reference",
    "fieldtype": "Link",
    "label": "Terms of Reference",
@@ -86,7 +86,7 @@
    "reqd": 1
   },
   {
-   "description": "Where the work happens, copied from the deployment. Held on the assignment rather than read through the link because core filters each doctype on a field of its own: an assignment scoped through its deployment would be an assignment nobody could scope.",
+   "description": "Where the work happens, copied from the deployment.",
    "fieldname": "geo_node",
    "fieldtype": "Link",
    "label": "Geo Node",
@@ -97,7 +97,7 @@
   },
   {
    "default": "Pending",
-   "description": "Where this assignment stands. Assigned: a coordinator placed this person, and no question was asked. Pending: they were asked and have not answered. Accepted and Declined are their answer. Withdrawn is the coordinator taking the assignment back. Assigned and Accepted are the two that count as being on the deployment — they fill a place against the headcount and they are what lets time be logged against the deployment. Every move goes through deployment/services/assignment.py::assert_transition, which holds the whole grammar; nothing sets this field directly.",
+   "description": "Where this assignment stands: assigned, pending an answer, accepted, declined or withdrawn. Set by the system.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -114,7 +114,7 @@
   },
   {
    "default": "member",
-   "description": "What this person does on the deployment. leader: the one who leads it in the field, and whom updates and reports are addressed to. member: everybody else. Held here rather than on the deployment so that leadership is a fact about somebody's participation and shows up in their own history; a deployment admits at most one leader, which assignment.py checks across the whole deployment rather than on this row alone.",
+   "description": "What this person does on the deployment. A deployment has at most one leader.",
    "fieldname": "role",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -127,13 +127,13 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When this person's own deployment begins, copied from the deployment and editable afterwards. Somebody joining a fortnight-long response for its last three days is ordinary, and a single pair of dates on the deployment could not say so.",
+   "description": "When this person's own deployment begins. Copied from the deployment, and editable if they join for part of it.",
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Starts"
   },
   {
-   "description": "When this person's own deployment ends. Refused if it falls before their start date.",
+   "description": "When this person's own deployment ends. Never earlier than their start date.",
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "Ends"
@@ -144,14 +144,14 @@
    "label": "The Question And The Answer"
   },
   {
-   "description": "When they were asked. Blank on an assignment a coordinator placed directly, which is a different fact from having been asked and stayed silent.",
+   "description": "When they were asked. Blank when a coordinator placed them directly.",
    "fieldname": "invited_on",
    "fieldtype": "Datetime",
    "label": "Asked On",
    "read_only": 1
   },
   {
-   "description": "When they answered. Written by the service alongside the status, never on its own, so a record cannot say it was answered on a date and not say what the answer was.",
+   "description": "When they answered.",
    "fieldname": "responded_on",
    "fieldtype": "Datetime",
    "label": "Answered On",
@@ -162,7 +162,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "What the volunteer said when they answered — why they cannot go, what they would need, when they could. In their own words, and the one field on this record they write.",
+   "description": "What the volunteer said when they answered, in their own words.",
    "fieldname": "response_note",
    "fieldtype": "Small Text",
    "label": "Their Note"
@@ -173,13 +173,13 @@
    "label": "Service"
   },
   {
-   "description": "The day they actually joined. Distinct from the start date, which is the plan: somebody who arrived two days late joined two days late, and a deployment report that could not say so would be wrong.",
+   "description": "The day they actually joined, which may differ from the planned start.",
    "fieldname": "joined_on",
    "fieldtype": "Date",
    "label": "Joined On"
   },
   {
-   "description": "The day they left, where that is earlier than the end. Leaving is recorded, never removed: withdrawing the assignment instead would make the time they actually served unfilable, which is precisely backwards.",
+   "description": "The day they left, where that is earlier than the end.",
    "fieldname": "left_on",
    "fieldtype": "Date",
    "label": "Left On"
@@ -189,7 +189,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Anything about how this person's deployment went. Never read by code.",
+   "description": "Anything about how this person's deployment went.",
    "fieldname": "participation_notes",
    "fieldtype": "Small Text",
    "label": "Participation Notes"
@@ -200,7 +200,7 @@
    "label": "Notes"
   },
   {
-   "description": "The coordinator's own note on this assignment — why this person, what they are bringing, what was agreed on the phone. Copied from the deployment's note when the assignment is raised in bulk, and editable afterwards.",
+   "description": "The coordinator's note on this assignment: why this person, what they bring, what was agreed.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"

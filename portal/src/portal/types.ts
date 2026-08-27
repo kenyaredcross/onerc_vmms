@@ -26,6 +26,17 @@ export interface VolunteerProfile {
 	geo_path: string | null;
 	home_geo_node: string | null;
 	home_geo_path: string | null;
+	country_of_citizenship?: string | null;
+	residency_type?: "Local" | "Abroad" | null;
+	country_of_residence?: string | null;
+	residence_address?: string | null;
+	identifications?: Array<{
+		id_type: string;
+		id_type_name: string;
+		id_number: string;
+		attachment: string | null;
+		is_primary: boolean;
+	}>;
 	deployability?: Deployability;
 	verification?: Record<string, unknown>;
 }
@@ -173,8 +184,14 @@ export interface ApprovalStatus {
 	} | null;
 	can_act: boolean;
 	approver_count: number;
-	approvers: string[];
-	escalated_to: string[];
+	/**
+	 * Null, not empty, when the caller is an onlooker. `engine.status` withholds
+	 * both lists from anybody outside the decision — the applicant learns their
+	 * application is with two people, not which two — and a caller who models
+	 * that as `[]` cannot tell "nobody" from "not yours to see".
+	 */
+	approvers: string[] | null;
+	escalated_to: string[] | null;
 	allow_withdrawal: boolean;
 	can_withdraw: boolean;
 	decisions: Array<{
@@ -199,12 +216,18 @@ export interface RedProfile {
 	preferred_language: string | null;
 	/** A file URL on this site, or null. Set through `update_my_profile`. */
 	profile_photo: string | null;
-	/**
-	 * Where core last recorded this person as living, written by whichever
-	 * registration they filed first. Read-only — `update_my_profile` does not
-	 * accept it — and served so a placement picker can open already answered.
-	 */
+	country_of_citizenship: string | null;
+	citizenship_status: string | null;
+	residency_type: "Local" | "Abroad" | null;
 	home_geo_node: string | null;
+	country_of_residence: string | null;
+	residence_address: string | null;
+	identifications: Array<{
+		id_type: string;
+		id_number: string;
+		attachment: string | null;
+		is_primary: boolean;
+	}>;
 }
 
 /**
@@ -280,7 +303,16 @@ export interface ApplicationDecision {
 		id_type: string | null;
 		id_type_name: string | null;
 		id_number: string | null;
+		attachment?: string | null;
+		is_primary?: boolean;
 	} | null;
+	identifications: Array<{
+		id_type: string;
+		id_type_name: string | null;
+		id_number: string;
+		attachment: string | null;
+		is_primary: boolean;
+	}>;
 	answers: SocietyAnswer[];
 }
 
@@ -307,6 +339,28 @@ export interface ApplicationOptions {
 	countries: string[];
 	residency_types: string[];
 	default_country_of_citizenship: string | null;
+}
+
+/**
+ * `api/registration.py::my_open_registrations` — one entry per registration
+ * kind the caller has undecided.
+ *
+ * **`reviewed` is what stops "Draft" meaning two opposite things.** A
+ * registration nobody has submitted is a Draft; so is one an approver sent back
+ * for more information. The dashboard read those as one state and told people
+ * who had not finished their own form that their branch was waiting on them.
+ * The server answers it off the approval trail rather than off `reason`, which
+ * an approver may leave empty.
+ */
+export interface OpenRegistration {
+	doctype: string;
+	name: string;
+	path: string;
+	state: string;
+	/** What the approver wrote when they sent it back, if they wrote anything. */
+	reason?: string;
+	/** Has this ever been in front of an approver? */
+	reviewed?: boolean;
 }
 
 /** `api/registration.py::identity_options`. */
@@ -369,10 +423,17 @@ export interface Opportunity {
 	posted_on: string;
 	closes_on: string;
 	closing_soon: boolean;
-	/** HRMS's public page for this opening. Null when it has no route yet. */
+	/**
+	 * HRMS's public page for this opening — its own `route`, which is the whole
+	 * path. Null when HRMS has not filled one in yet.
+	 */
 	href: string | null;
-	/** Where "Apply" goes: HRMS's application route, or the opening's own page. */
-	apply_href: string | null;
+	/**
+	 * Where "Apply" goes: HRMS's application form for this opening, the same
+	 * address HRMS's own page puts behind its Apply button. Always a
+	 * destination, because it does not depend on the opening having a page.
+	 */
+	apply_href: string;
 }
 
 /** `api/member.py::membership_type_pricing`. */
@@ -904,6 +965,12 @@ export interface CandidateSearch {
 	required_certifications: string[];
 	desirable_certifications: string[];
 	considered: number;
+	/**
+	 * False when the caller cannot read the volunteer register at all — they
+	 * hold the deployment scope role but not the volunteer one. Distinguishes
+	 * "nobody fits" from "you were never shown the register".
+	 */
+	register_readable: boolean;
 	candidate_count: number;
 	/** True when `limit` bit. A silently shortened list reads as "all of them". */
 	truncated: boolean;
@@ -1050,7 +1117,6 @@ export interface VolunteerVerification {
 		availability: SelectorRow[];
 		motivation: SelectorRow[];
 		prior_experience: string | null;
-		identification: Record<string, unknown> | null;
 	} | null;
 }
 
@@ -1137,10 +1203,13 @@ export interface MemberIdentity {
 	date_of_birth: string | null;
 	preferred_language: string | null;
 	profile_photo: string | null;
-	nationality: string | null;
+	country_of_citizenship: string | null;
 	citizenship_status: string | null;
+	residency_type: "Local" | "Abroad" | null;
 	home_geo_node: string | null;
 	home_geo_path: string | null;
+	country_of_residence: string | null;
+	residence_address: string | null;
 }
 
 /**
@@ -1241,6 +1310,8 @@ export interface CommunicationOptions {
 	 * channels rather than a third that would refuse them.
 	 */
 	channels: { notification: boolean; email: boolean; sms: boolean };
+	sms_templates: Array<{ name: string; template_name: string; category: string | null; message: string }>;
+	sms_source_doctypes: Array<{ value: string; label: string }>;
 	can_send: boolean;
 }
 

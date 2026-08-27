@@ -26,7 +26,7 @@
  "fields": [
   {
    "default": "MEM-.#####",
-   "description": "The opaque docname series. A member is never keyed by an email or a membership number. Mutable data does not go in a primary key.",
+   "description": "Automatic series for this record's number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -40,7 +40,7 @@
    "label": "Identity"
   },
   {
-   "description": "Who this person is, read from their Red Profile every time this page opens and stored nowhere on this record.",
+   "description": "Who this person is, read from their Red Profile.",
    "fieldname": "identity_card",
    "fieldtype": "HTML",
    "label": "Identity Card"
@@ -51,7 +51,7 @@
    "label": "Standing"
   },
   {
-   "description": "What this person is to the society right now, worked out from the memberships below when the page opened.",
+   "description": "What this person is to the society right now, worked out from the memberships below.",
    "fieldname": "standing_indicator",
    "fieldtype": "HTML",
    "label": "Standing"
@@ -62,7 +62,7 @@
    "label": "Memberships"
   },
   {
-   "description": "Every membership this person holds, at every branch you are entitled to see, with how each one was paid for.",
+   "description": "Every membership this person holds that you are entitled to see, and how each was paid for.",
    "fieldname": "memberships_held",
    "fieldtype": "HTML",
    "label": "Memberships Held"
@@ -73,7 +73,7 @@
    "label": "Verification History"
   },
   {
-   "description": "Who approved or verified this person's memberships, and when. Read from the approval decisions on each record.",
+   "description": "Who approved or verified this person's memberships, and when.",
    "fieldname": "verification_history",
    "fieldtype": "HTML",
    "label": "Verification History"
@@ -84,7 +84,7 @@
    "label": "Register"
   },
   {
-   "description": "The person, as onerc_core's identity spine. This is the only identity this record holds: no name, email or phone is stored here, because a second copy of a person is a second answer to who they are. Read those through Red Profile.",
+   "description": "The person this record belongs to. Their name and contact details live on the Red Profile.",
    "fieldname": "red_profile",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -99,7 +99,7 @@
   },
   {
    "default": "Prospective",
-   "description": "What this person is to the society, and the truth of it: the affiliation row on Red Profile is a summary written from here, never the other way round. Written by the membership services, not by hand.",
+   "description": "What this person is to the society. Set by the system as memberships activate, lapse or end.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -108,7 +108,7 @@
    "read_only": 1
   },
   {
-   "description": "When this person first became an active member. Set once, at the first activation, and never moved by a later renewal.",
+   "description": "When this person first became an active member. Set once, at the first activation.",
    "fieldname": "joined_on",
    "fieldtype": "Date",
    "label": "Joined On",
@@ -120,7 +120,7 @@
    "label": "Notes"
   },
   {
-   "description": "Anything the membership office needs to record about this person's membership that is not a field.",
+   "description": "Anything the membership office needs to record that is not a field.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"

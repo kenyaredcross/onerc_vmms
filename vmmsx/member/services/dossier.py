@@ -46,7 +46,7 @@ draws, and the answer here is more one-sided than it is there:
     ------------------------        ------------------------------------
     name, photo, contact            branch, type, validity, status
     gender, date of birth           payment, receipt, proof
-    nationality, citizenship        the approval trail
+    citizenship, residence          the approval trail
     home area
 
     lives on the MEMBER
@@ -152,10 +152,13 @@ def identity_dto(member) -> dict:
 		"date_of_birth": person.get("date_of_birth"),
 		"preferred_language": person.get("preferred_language"),
 		"profile_photo": person.get("profile_photo"),
-		"nationality": person.get("nationality"),
+		"country_of_citizenship": person.get("country_of_citizenship"),
 		"citizenship_status": person.get("citizenship_status"),
+		"residency_type": person.get("residency_type"),
 		"home_geo_node": home,
 		"home_geo_path": adapter.get_full_path(home) if home else None,
+		"country_of_residence": person.get("country_of_residence"),
+		"residence_address": person.get("residence_address"),
 	}
 
 

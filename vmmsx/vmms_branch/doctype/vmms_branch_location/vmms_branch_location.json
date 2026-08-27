@@ -29,7 +29,7 @@
  "fields": [
   {
    "default": "LOC-.#####",
-   "description": "The opaque docname series. The branch's name is not the primary key, because a society that renames a branch would otherwise be unable to without breaking every link to it.",
+   "description": "Automatic series for this record's number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -43,7 +43,7 @@
    "label": "Identity"
   },
   {
-   "description": "What this place is called, in the society's own words, as it will appear on the map and in the list beside it.",
+   "description": "What this place is called, as it appears on the map and in the list beside it.",
    "fieldname": "location_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -51,7 +51,7 @@
    "reqd": 1
   },
   {
-   "description": "Which part of the society this place belongs to. Required at creation, and a Link rather than typed text, so a location is placed in the same hierarchy as everything else and a coordinator sees the ones in their own area without anybody maintaining a second list of what belongs to whom.",
+   "description": "Which part of the society this place belongs to. Decides who can see it.",
    "fieldname": "geo_node",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -65,14 +65,14 @@
   },
   {
    "default": "0",
-   "description": "Whether this place appears on the public map. The whole of the guest-read rule for this doctype, the same way is_public on a content surface is the whole of the rule there: putting an office on the public map is a decision somebody makes on this form, not a condition written into a source file. Unticked ships nothing, which is the right default for an address.",
+   "description": "Show this place on the public map. Off until somebody decides to publish it.",
    "fieldname": "is_published",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Show On Public Map"
   },
   {
-   "description": "A photograph of the place, so somebody looking for it recognises it when they arrive. Optional, and no image ships as a default: an empty slot is drawn as an empty slot rather than as a stock photograph of somebody else's building.",
+   "description": "A photograph of the place, so somebody looking for it recognises it when they arrive. Optional.",
    "fieldname": "photo",
    "fieldtype": "Attach Image",
    "label": "Photo"
@@ -83,7 +83,7 @@
    "label": "Place"
   },
   {
-   "description": "The street address as somebody would write it on an envelope. Free text, deliberately: address formats differ by country and a structured set of fields that suited one society would be wrong for the next.",
+   "description": "The street address as somebody would write it on an envelope.",
    "fieldname": "address",
    "fieldtype": "Small Text",
    "label": "Address"
@@ -93,14 +93,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Latitude in decimal degrees, between -90 and 90. Optional: a branch that knows its address but not its coordinates is still worth listing, and it appears in the list beside the map without a pin on it rather than being refused.",
+   "description": "Latitude in decimal degrees, between -90 and 90. Optional: without coordinates the place is listed but not pinned.",
    "fieldname": "latitude",
    "fieldtype": "Float",
    "label": "Latitude",
    "precision": "6"
   },
   {
-   "description": "Longitude in decimal degrees, between -180 and 180. Given with the latitude or not at all: half a coordinate cannot be drawn anywhere, and a point on the equator off the coast of Africa is where half of them would land.",
+   "description": "Longitude in decimal degrees, between -180 and 180. Give it with the latitude or not at all.",
    "fieldname": "longitude",
    "fieldtype": "Float",
    "label": "Longitude",
@@ -112,14 +112,14 @@
    "label": "Contact"
   },
   {
-   "description": "A telephone number for the place. Not validated against a pattern here: the society's own phone format lives in core's settings and applies to a person's number, and an office switchboard is not a person.",
+   "description": "A telephone number for the place.",
    "fieldname": "phone",
    "fieldtype": "Data",
    "label": "Phone",
    "options": "Phone"
   },
   {
-   "description": "An address for enquiries. The place's own, never a member of staff's: this is published, and a personal mailbox on a public page outlives whoever held it.",
+   "description": "An address for enquiries. The place's own, not a member of staff's \u2014 this is published.",
    "fieldname": "email",
    "fieldtype": "Data",
    "label": "Email",
@@ -130,7 +130,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When somebody can turn up, in the society's own words. Free text rather than a week of time fields, because what a visitor needs to read is one line and what a society needs to express is sometimes not a schedule at all.",
+   "description": "When somebody can turn up, in your own words.",
    "fieldname": "opening_hours",
    "fieldtype": "Data",
    "label": "Opening Hours"
@@ -141,7 +141,7 @@
    "label": "Notes"
   },
   {
-   "description": "Anything else a coordinator wants recorded about this place. Internal: it is not served to the public map, so directions for staff and access notes can go here without being published.",
+   "description": "Anything else worth recording about this place. Internal: never shown on the public map.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"

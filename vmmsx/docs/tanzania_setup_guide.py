@@ -212,6 +212,17 @@ def _p0_apps(w, site: str) -> None:
 		" Run it again any time a setting below does not seem to have taken effect."
 	)
 	w.note(
+		"Installing buzz is not the whole of installing Buzz. Its event pages are a separate"
+		" single-page app that lives in apps/buzz/dashboard and is not built by bench install-app,"
+		" bench build or bench migrate. Until somebody runs yarn install && yarn build in that"
+		" directory — which writes apps/buzz/buzz/www/dashboard.html — every /b/<route> address"
+		" answers 404, and every event handoff from this app leads to one: the portal's Events"
+		" cards, the landing page's events, and the console's Manage in Buzz button. The events"
+		" themselves still list correctly, because vmmsx reads Buzz Event from the database"
+		" directly, which is what makes the fault look like a broken link rather than a missing"
+		" install."
+	)
+	w.note(
 		"erpnext is a real dependency of hrms, not an accident above — hrms's Job Opening doctype"
 		" links to erpnext's Company, Department and Designation, and none of the three exists on a"
 		" site that has never installed erpnext."
@@ -289,6 +300,16 @@ def _p1_settings(w, site: str) -> None:
 			["Stipend Report / Payment Scope Role", ROLE_STIPEND, "fails closed the same way."],
 		],
 		(2.10, 1.60, 2.70),
+	)
+	w.note(
+		"Staffing a deployment reads two registers, so whoever does it needs two of these roles."
+		" A deployment is scoped by the Deployment Scope Role and the volunteer register by the"
+		" Volunteer Scope Role, each through that person's own Geo Assignments. An account holding"
+		" only the first can open a deployment, write terms and raise assignments by name, but its"
+		" candidate search answers nobody at all, because the register it searches is not one it may"
+		" read. Give the coordinator both roles, each with a Geo Assignment covering the area they"
+		" staff, or accept that candidate matching is an approver's screen rather than theirs. The"
+		" console says which of the two is happening rather than reporting an empty search."
 	)
 	w.note(
 		"None of these role names exist yet on a fresh site — create the eight roles in the next"
@@ -689,7 +710,7 @@ def _p3_volunteer(w, site: str) -> None:
 		[
 			"Second private browser window, sign up as baraka.kimaro@example.com, set a password the"
 			" same way.",
-			f"Log in, click Register as a Volunteer, or http://{site}/register-as-a-volunteer.",
+			f"Log in, click Register as a Volunteer, or http://{site}/portal/join?path=volunteer.",
 			'First Name "Baraka", Last Name "Kimaro", Branch or Area "Mwanza". Submit.',
 		]
 	)

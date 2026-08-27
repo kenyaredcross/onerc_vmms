@@ -10,8 +10,8 @@ it to the world, and owns everything that happens after somebody decides they
 want it.
 
 **Browse here, apply there.** Every card's call to action is a full navigation
-to HRMS's own job page. HRMS owns the applicant record, the duplicate check, the
-interview rounds and the offer — each a flow with a person's history in it, and
+to HRMS — its page for the opening, or its form for answering one. HRMS owns the
+applicant record, the duplicate check, the interview rounds and the offer — each a flow with a person's history in it, and
 re-exposing any of them through a vmmsx endpoint would be a second
 implementation of a rule that has to stay in step with HRMS's forever. So this
 file names no applicant, interview or offer doctype.
@@ -37,15 +37,19 @@ there, and pointing the board at it means a volunteer can actually apply. The
 deployment request keeps its own job — staffing a roster — and is untouched.
 """
 
+from urllib.parse import quote
+
 import frappe
 from frappe.utils import getdate, today
 
 HRMS_APP = "hrms"
 OPENING_DOCTYPE = "Job Opening"
 
-# Where HRMS serves an opening to the public. One place, so the card's link and
-# the `href` in the DTO cannot drift apart.
-OPENING_PATH = "/job_opening"
+# HRMS's own web form for answering an opening, and where the query names which
+# one. Both mirror `hrms/templates/generators/job_opening.html`, the page this
+# board stands in for: an opening links to `/<form>/new?job_title=<docname>`.
+APPLICATION_PATH = "job_application"
+APPLICATION_QUERY = "job_title"
 
 # A board is a board. An unbounded read on a listing endpoint is how a slow
 # query becomes an outage.
@@ -63,11 +67,39 @@ def is_available() -> bool:
 def opening_url(route: str | None) -> str | None:
 	"""HRMS's own public page for this opening, or None when it has no route.
 
+	**`route` is the whole path, not a slug.** HRMS fills it in as
+	`jobs/<company>/<title>` and serves the document there like any other
+	website generator, so the page is that value with a leading slash and
+	nothing else in front of it. This used to answer `/job_opening/<route>` —
+	the doctype's name, which is not a URL on any site — and every card on the
+	board and every button under it led to a 404.
+
 	An opening with no route is one HRMS has not finished publishing, so there
-	is nowhere to send anybody and the card renders without its call to action
-	rather than with a link to a 404. Same rule as the Buzz seam's `event_url`.
+	is nowhere to send anybody and the card renders without that link rather
+	than with a broken one. Same rule as the Buzz seam's `event_url`.
 	"""
-	return f"{OPENING_PATH}/{route}" if route else None
+	return f"/{route.strip('/')}" if route else None
+
+
+def apply_url(opening: str, route: str | None) -> str:
+	"""HRMS's application form, already knowing which opening it is for.
+
+	The same address HRMS's own opening page puts behind its Apply button: the
+	society's form where it has named one on the opening, the standard
+	`job_application` web form otherwise, `/new` because that is where a web
+	form takes a first answer, and the docname in the query so nobody retypes
+	the post they have just read.
+
+	**Not the opening's own page, which is what this used to fall back to.**
+	That page carries an Apply button of its own, so the fallback was one hop
+	from the form and looked harmless — but it was the *only* destination the
+	DTO offered, so when the page link was wrong there was no working way to
+	apply at all. Answering with the form directly means the board's one call
+	to action does not depend on a second page being reachable.
+	"""
+	form = (route or APPLICATION_PATH).strip("/")
+
+	return f"/{form}/new?{APPLICATION_QUERY}={quote(opening)}"
 
 
 def published(search: str | None = None, department: str | None = None, limit: int = MAX_ROWS) -> list[dict]:
@@ -219,10 +251,9 @@ def _as_card(row: dict) -> dict:
 	and staffing plans that are nobody's business on a public board. Nothing is
 	forwarded that was not chosen here.
 
-	`apply_href` is HRMS's own application route where the society has set one,
-	and otherwise the opening's own page, which carries an Apply button of its
-	own. Either way the answer to "how do I apply" is a real destination rather
-	than a sentence explaining that there isn't one.
+	`href` is HRMS's own page for the opening and `apply_href` is HRMS's
+	application form for it — see `opening_url` and `apply_url`, which is where
+	both addresses are built and where the reasoning for each one lives.
 
 	**This used to carry a second set of names.** Every field the old deployment
 	board read — `purpose`, `responsibilities`, `requirements`, `geo_path`,
@@ -257,7 +288,7 @@ def _as_card(row: dict) -> dict:
 		"closes_on": str(closes) if closes else "",
 		"closing_soon": bool(closes and (getdate(closes) - getdate(today())).days <= 7),
 		"href": page,
-		"apply_href": row.get("job_application_route") or page,
+		"apply_href": apply_url(row.get("name"), row.get("job_application_route")),
 	}
 
 

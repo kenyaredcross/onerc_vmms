@@ -12,7 +12,7 @@
  "fields": [
   {
    "columns": 4,
-   "description": "A day of the week. A closed Select rather than a Link, because the seven days are not a society's vocabulary to extend and a register of them would be a table nobody should have to seed. This is the one closed list in the availability model; everything else about when somebody can serve is the society's own answer.",
+   "description": "A day of the week.",
    "fieldname": "day",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -22,7 +22,7 @@
   },
   {
    "columns": 6,
-   "description": "The window on that day this volunteer is free, from the society's own VMMS Availability Slot register. The slot carries the hours; this row carries which day they apply on. Together one row means \"Saturday afternoons\", and a schedule is a handful of them.",
+   "description": "The window on that day this volunteer is free. One row means, for instance, Saturday afternoons.",
    "fieldname": "availability_slot",
    "fieldtype": "Link",
    "in_list_view": 1,

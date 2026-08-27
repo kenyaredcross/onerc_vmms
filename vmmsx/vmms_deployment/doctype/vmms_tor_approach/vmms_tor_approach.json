@@ -12,7 +12,7 @@
  "fields": [
   {
    "columns": 3,
-   "description": "One way this mission will go about its work, chosen from the society's own VMMS TOR Methodology register. A Link rather than free text so that a society can report across missions on how it works, which a typed-in phrase would never allow.",
+   "description": "One way this mission will go about its work, chosen from the society's methodologies.",
    "fieldname": "methodology",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -22,7 +22,7 @@
   },
   {
    "columns": 7,
-   "description": "How this particular mission applies that methodology: who it reaches, how many, over what period. The register says what the method is; this says what it means here. Never read by code.",
+   "description": "How this mission applies that method: who it reaches, how many, over what period.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "in_list_view": 1,

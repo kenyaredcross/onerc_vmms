@@ -275,6 +275,10 @@ const vmmsx_volunteer = {
 
 	identity_html(dossier) {
 		const person = dossier.identity || {};
+		const identifications = (person.identifications || [])
+			.map((row) => `${row.id_type_name || row.id_type || ""} ${row.id_number || ""}`.trim())
+			.filter(Boolean)
+			.join(" · ");
 		const rows = [
 			[__("Email"), person.email],
 			[__("Phone"), person.phone],
@@ -291,6 +295,7 @@ const vmmsx_volunteer = {
 			[__("Serving Branch"), person.geo_path],
 			[__("Country of Residence"), person.country_of_residence],
 			[__("Address Abroad"), person.residence_address],
+			[__("Identification"), identifications],
 		];
 
 		return `
@@ -546,15 +551,11 @@ const vmmsx_volunteer = {
 	declared_html(dossier) {
 		const dto = dossier.application || {};
 		const declared = dto.declared || {};
-		const identification = declared.identification || {};
 		const rows = [
-			// Motivation, prior experience and the identification are here and
-			// nowhere else: they are facts about the applying rather than about
-			// the volunteer, so there is no current-state copy of them to edit.
+			// Motivation and prior experience are here and nowhere else: they are
+			// facts about the applying rather than current person facts.
 			[__("Motivation"), vmmsx_volunteer.selector_labels(declared.motivation)],
 			[__("Prior Experience"), declared.prior_experience],
-			[__("Identification"), identification.id_type_name],
-			[__("ID Number"), identification.id_number],
 			// These three appear on the record above as well, as current truth.
 			// Showing both is the point: the difference between them is what a
 			// volunteer has learned since, and it is only visible side by side.

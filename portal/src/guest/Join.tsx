@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
 	FrappeContext,
@@ -33,6 +33,7 @@ import type {
 	ApplicationOptions,
 	GeoNode,
 	IdentityOptions,
+	OpenRegistration,
 	PricedType,
 	RedProfile,
 	SocietyQuestion,
@@ -40,8 +41,19 @@ import type {
 
 type Path = "volunteer" | "member";
 
-/** One of the caller's registrations that the society still owes an answer on. */
-type OpenRegistration = { doctype: string; name: string; path: Path; state: string };
+/** The applicant-owned fields served back when a saved/returned draft resumes. */
+type DraftRegistration = OpenRegistration & {
+	can_edit: boolean;
+	geo_node: string;
+	answers: Record<string, string>;
+	membership_type?: string;
+	membership_status?: string;
+	skills?: string[];
+	languages?: string[];
+	availability?: string[];
+	motivation?: string[];
+	prior_experience?: string;
+};
 
 /**
  * The steps this wizard can show, as a closed set.
@@ -57,19 +69,27 @@ type StepId =
 	| "identity"
 	| "plan"
 	| "placement"
-	| "residency"
 	| "identification"
 	| "declaration"
 	| "questions"
 	| "confirm";
 
 /**
- * The residency branch, spelled exactly as `VMMS Volunteer Application` spells
- * it and as `volunteer/services/application.py::reconcile_residency` compares
- * it. The *options a person sees* are not these — they come from the doctype
- * through `application_options`, so the toggle can never offer a third value
- * the Select would refuse. These two constants are only the branch, and it is
- * the same branch the service makes on the other side.
+ * The residency branch, spelled exactly as `Red Profile` spells it and as
+ * `volunteer/services/application.py::_assert_residency_complete` compares it.
+ *
+ * **This wizard no longer asks the question.** "Where do you live" was a
+ * segmented control, a tickbox reading "I live in the area I want to serve" and
+ * a second cascading picker behind it — three controls and most of a screen, to
+ * confirm the answer already given two steps earlier on all but a handful of
+ * registrations. A volunteer says where they want to volunteer; that is where
+ * they live unless somebody says otherwise, and a desk clerk can say otherwise
+ * on the profile itself.
+ *
+ * So `Local` travels with the serving branch, and `Abroad` survives here for one
+ * reason: a profile that already says Abroad, with an address behind it, must
+ * not be quietly rewritten to Local by somebody filling in a form that never
+ * asked. See `persistDraft`.
  */
 const LOCAL = "Local";
 const ABROAD = "Abroad";
@@ -77,18 +97,25 @@ const ABROAD = "Abroad";
 /**
  * Registering yourself, in the single-page app.
  *
- * **It asks for what the desk asks for.** The two standard Web Forms are the
- * reference: `register_as_a_volunteer` collects citizenship and residency,
- * identification, skills, languages, availability, motivation and prior
- * experience alongside the branch, and `register_as_a_member` collects gender
- * and date of birth alongside the type. A wizard that collected less was not a
- * simpler wizard, it was one whose volunteer applications
- * `application.assert_ready()` refused at submission for want of an ID.
+ * **It asks for what the server will insist on, and not for more.** The floor is
+ * `application.assert_ready()`: a country of citizenship, an identification, a
+ * date of birth, one complete residence shape and every required society
+ * question. A wizard that collected less was not a simpler wizard, it was one
+ * whose applications were refused at submission for want of an ID.
  *
- * **Each screen asks one thing.** Seven short pages for a volunteer, five for a
- * member, each with its own heading and its own reason to exist, and a rail
- * showing where in the road somebody is. A form that asks thirty questions at
- * once is the thing this replaced.
+ * The ceiling is the same rule read the other way. Where the server will accept
+ * an answer this form can *derive*, it derives it rather than drawing a screen:
+ * a residence is `Local`, at the branch somebody just said they want to
+ * volunteer with, so "where do you live" is not asked. Six short pages for a
+ * volunteer, five for a member, each with its own heading and its own reason to
+ * exist, and a rail showing where in the road somebody is. A form that asks
+ * thirty questions at once is the thing this replaced; a form that asks a
+ * seventh page's worth of question it can answer itself is the same mistake with
+ * better manners.
+ *
+ * **Leaving a step saves.** Every move between screens writes the draft — see
+ * `goTo` — so nothing typed lives only in a browser tab. The "Save draft" button
+ * remains for anybody who wants to press something before walking away.
  *
  * **The identity rules are the server's, and this wizard does not re-implement
  * one of them.** It posts the identity buffer with the registration, which is
@@ -148,13 +175,12 @@ function JoinBody() {
 	// was answered at every rung so leaving the step and coming back to it shows
 	// the selects as they were left. `selectedNode` derives the node from it.
 	const [servingChain, setServingChain] = useState<GeoNode[]>([]);
-	const [homeChain, setHomeChain] = useState<GeoNode[]>([]);
 	// Arriving from a plan card on the membership tab, the plan is already
 	// chosen. It is a docname, and the step still draws every type with this one
 	// selected, so a person who changed their mind is one click from doing so.
 	const [membershipType, setMembershipType] = useState(params.get("type") ?? "");
 
-	// --- citizenship and residency
+	// --- nationality, which the identity step asks
 	const [citizenship, setCitizenship] = useState("");
 	// The yes/no half of the citizenship question, which the country alone cannot
 	// carry: "not a citizen, and has not said of where yet" and "has not been
@@ -165,10 +191,6 @@ function JoinBody() {
 	// worse than the picker it replaced. Starts at yes, which is what the
 	// society's own default already assumes.
 	const [isCitizen, setIsCitizen] = useState(true);
-	const [residency, setResidency] = useState(LOCAL);
-	const [homeIsServing, setHomeIsServing] = useState(true);
-	const [countryOfResidence, setCountryOfResidence] = useState("");
-	const [residenceAddress, setResidenceAddress] = useState("");
 
 	// --- identification
 	const [idType, setIdType] = useState("");
@@ -193,8 +215,11 @@ function JoinBody() {
 	const [answers, setAnswers] = useState<Record<string, string>>({});
 
 	const [busy, setBusy] = useState(false);
+	const [busyAction, setBusyAction] = useState<"save" | "submit" | null>(null);
 	const [failure, setFailure] = useState<string | null>(null);
 	const [done, setDone] = useState<string | null>(null);
+	const [saved, setSaved] = useState<string | null>(null);
+	const [draftReference, setDraftReference] = useState<string | null>(null);
 
 	// What core already knows, so the identity step prefills rather than asking a
 	// returning person who they are for a second time.
@@ -221,6 +246,37 @@ function JoinBody() {
 	const other: Path = path === "volunteer" ? "member" : "volunteer";
 	const openApplication = openRegistrations.data?.message?.[path] ?? null;
 	const otherOpen = Boolean(openRegistrations.data?.message?.[other]);
+	const resumable = openApplication?.state === "Draft";
+
+	const draft = useFrappeGetCall<{ message: DraftRegistration | null }>(
+		API.myRegistration,
+		{ path },
+		isGuest || !resumable ? null : `join:registration:${path}:${openApplication?.name}`,
+	);
+
+	const resumeNode = draft.data?.message?.geo_node ?? null;
+	const resumeChain = useFrappeGetCall<{ message: { chain: GeoNode[] } }>(
+		API.geoChain,
+		resumeNode ? { node: resumeNode } : undefined,
+		isGuest || !resumeNode ? null : `join:resume_path:${resumeNode}`,
+	);
+
+	const [restoredDraft, setRestoredDraft] = useState<string | null>(null);
+
+	useEffect(() => {
+		const remembered = draft.data?.message;
+		if (!remembered || restoredDraft === remembered.name) return;
+
+		setDraftReference(remembered.name);
+		setMembershipType((current) => remembered.membership_type ?? current);
+		setSkills(remembered.skills ?? []);
+		setLanguages(remembered.languages ?? []);
+		setAvailability(remembered.availability ?? []);
+		setMotivations(remembered.motivation ?? []);
+		setExperience(remembered.prior_experience ?? "");
+		setAnswers(remembered.answers ?? {});
+		setRestoredDraft(remembered.name);
+	}, [draft.data, restoredDraft]);
 
 	useEffect(() => {
 		const known = existing.data?.message;
@@ -233,6 +289,11 @@ function JoinBody() {
 		setGender(known.gender ?? "");
 		setDateOfBirth(known.date_of_birth ?? "");
 		setPhoto(known.profile_photo ?? "");
+		setCitizenship(known.country_of_citizenship ?? "");
+
+		const primaryIdentification = known.identifications?.[0];
+		setIdType(primaryIdentification?.id_type ?? "");
+		setIdNumber(primaryIdentification?.id_number ?? "");
 	}, [existing.data]);
 
 	const identityOptions = useFrappeGetCall<{ message: IdentityOptions }>(
@@ -272,13 +333,20 @@ function JoinBody() {
 	const chosenType = priced.find((row) => row.membership_type === membershipType) ?? null;
 
 	// Citizenship starts where the society's own configuration says it starts —
-	// the same default `application.default_country_of_citizenship` would apply
-	// on insert, shown on the form instead of filled in silently afterwards.
+	// the same society default the registration endpoint uses, shown on the form
+	// instead of filled in silently afterwards.
 	useEffect(() => {
 		const suggested = options?.default_country_of_citizenship;
+		const recorded = existing.data?.message?.country_of_citizenship;
+
+		if (recorded && suggested) {
+			setIsCitizen(recorded === suggested);
+			return;
+		}
+
 		if (suggested && !citizenship) setCitizenship(suggested);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [options?.default_country_of_citizenship]);
+	}, [options?.default_country_of_citizenship, existing.data]);
 
 	/**
 	 * Answering "are you a citizen of X".
@@ -299,27 +367,25 @@ function JoinBody() {
 			: undefined;
 
 	/**
-	 * Opening the placement step already answered, for somebody the society has
-	 * placed before.
+	 * Opening the residence and placement steps with the recorded Home Area.
 	 *
 	 * A person who registered as a volunteer in March and comes back in August to
 	 * take out a membership was being asked to walk the cascading picker back down
-	 * to the branch they had already named — a question the society can answer
-	 * from its own records. `Red Profile.home_geo_node` is where that answer lives:
-	 * it is written by whichever registration they filed first, and it is served
-	 * read-only by `my_profile` for exactly this.
+	 * to the area they already recorded as home — a question the society can
+	 * answer from its own records. `Red Profile.home_geo_node` is where that
+	 * person-owned residence answer lives and `my_profile` returns it here.
 	 *
 	 * **A suggestion, not a decision.** Every rung is drawn as normal and every one
 	 * of them can be changed; this fills them in rather than locking them, and it
 	 * runs once so somebody who deliberately picks a different branch does not have
 	 * their answer put back by a revalidation.
 	 */
-	const placed = existing.data?.message?.home_geo_node ?? null;
+	const recordedHome = existing.data?.message?.home_geo_node ?? null;
 
 	const suggestion = useFrappeGetCall<{ message: { chain: GeoNode[] } }>(
 		API.geoChain,
-		placed ? { node: placed } : undefined,
-		isGuest || !placed ? null : `join:geo_path:${placed}`,
+		recordedHome ? { node: recordedHome } : undefined,
+		isGuest || !recordedHome ? null : `join:geo_path:${recordedHome}`,
 	);
 
 	const [prefilled, setPrefilled] = useState(false);
@@ -328,7 +394,7 @@ function JoinBody() {
 		// `levels` decides how much of the chain is usable, so prefilling before it
 		// has answered could fill in a rung this path is not recorded at and then
 		// have to take it away again.
-		if (prefilled || !levels.data) return;
+		if (prefilled || !levels.data || resumable) return;
 
 		const chain = suggestion.data?.message?.chain;
 		if (!chain?.length) return;
@@ -336,13 +402,47 @@ function JoinBody() {
 		setServingChain(usableChain(chain, allowedLevels));
 		setPrefilled(true);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [suggestion.data, levels.data, prefilled]);
+	}, [suggestion.data, levels.data, prefilled, resumable]);
+
+	useEffect(() => {
+		if (!resumable || !levels.data) return;
+
+		const chain = resumeChain.data?.message?.chain;
+		if (!chain?.length) return;
+
+		setServingChain(usableChain(chain, allowedLevels));
+		setPrefilled(true);
+	}, [resumeChain.data, levels.data, resumable, allowedLevels]);
 
 	const node = selectedNode(servingChain, allowedLevels);
-	// Most people serve where they live, which is the assumption the desk form
-	// states out loud. Following the serving branch keeps the common case to one
-	// choice; unticking the box asks the question properly.
-	const homeNode = homeIsServing ? node : selectedNode(homeChain);
+
+	/**
+	 * Where this person lives, which this wizard no longer asks and still has to
+	 * send: `assert_ready` wants one complete residence shape before it will
+	 * accept a submission.
+	 *
+	 * **It fills in a blank; it never corrects an answer.** Somebody registering
+	 * for the first time has nothing on their profile, and the truthful default
+	 * for them is Local, at the branch they have just said they want to volunteer
+	 * with — that is what the deleted screen's tickbox was preselected to anyway.
+	 * Somebody who already has an answer recorded has it because a desk clerk or
+	 * an earlier registration put it there, and a form that never asked the
+	 * question has no business overwriting it:
+	 *
+	 * - **Abroad** carries a country and an address this form cannot supply, so
+	 *   it sends neither field and leaves the pair intact.
+	 * - **A recorded home area** stands, even where it is not the branch being
+	 *   applied to. People do volunteer away from home.
+	 */
+	const recordedResidency = existing.data?.message?.residency_type ?? "";
+
+	const residence =
+		recordedResidency === ABROAD
+			? {}
+			: {
+					residency_type: recordedResidency || LOCAL,
+					home_geo_node: recordedHome ?? node?.name,
+				};
 
 	/**
 	 * The society's own questions for whichever registration this is.
@@ -385,16 +485,16 @@ function JoinBody() {
 		// the button says so, rather than the submission failing six steps later.
 		if (id === "identity")
 			return Boolean(
-				firstName.trim() && lastName.trim() && (path !== "volunteer" || dateOfBirth),
+				firstName.trim() &&
+					lastName.trim() &&
+					// Nationality joined this step when the citizenship screen was
+					// dropped, and it is required of a volunteer for the same reason
+					// `assert_ready` requires it: a country of citizenship, not a
+					// screen, is what the society actually needs.
+					(path !== "volunteer" || (dateOfBirth && citizenship)),
 			);
 		if (id === "plan") return Boolean(membershipType);
 		if (id === "placement") return Boolean(node);
-		if (id === "residency") {
-			if (!citizenship) return false;
-			return residency === ABROAD
-				? Boolean(countryOfResidence && residenceAddress.trim())
-				: Boolean(homeNode);
-		}
 		if (id === "identification") return Boolean(idType && idNumber.trim());
 
 		// The same rule `questions.assert_answered` applies server-side, asked
@@ -449,8 +549,27 @@ function JoinBody() {
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	};
 
+	/**
+	 * Moving between steps, which is also when the draft is written.
+	 *
+	 * **Leaving a screen is the save.** There was a "Save draft" button and
+	 * nothing else, so everything typed between one press and the next lived in
+	 * a browser tab: a closed laptop, an expired session or a stray refresh took
+	 * six screens of answers with it. Every step change now persists what has
+	 * been answered so far, and the button remains for anybody who wants to press
+	 * something before walking away.
+	 *
+	 * **It never blocks the move.** The step changes first and the write goes off
+	 * on its own; a slow network must not make Continue feel broken, and a failed
+	 * autosave must not strand somebody on a screen they have finished. The
+	 * button is still there and still reports properly if it fails.
+	 *
+	 * **Backwards counts too.** Going back to correct an answer and then leaving
+	 * is exactly the case a save-on-forward-only rule would lose.
+	 */
 	const goTo = (index: number) => {
 		const target = Math.max(0, Math.min(index, steps.length - 1));
+		if (target !== cursor) void autosave();
 		setDirection(target >= cursor ? "forward" : "back");
 		setCursor(target);
 		setFurthest((seen) => Math.max(seen, target));
@@ -466,17 +585,7 @@ function JoinBody() {
 		goTo(cursor + 1);
 	};
 
-	// Did they change anything the society already holds? Posting the identity
-	// step unconditionally would rewrite core's spine on every registration,
-	// including the overwhelming majority where nobody touched a field.
-	//
-	// The photograph is one of these, and it was not before: it used to go up on
-	// its own after the registration, which made replacing a portrait during a
-	// second registration a separate call that could quietly not happen. A
-	// picture somebody swapped on this form is a *correction* like a corrected
-	// surname, so it travels with the corrections; a first-time registrant has
-	// nothing to correct and their portrait rides with the registration itself.
-	const corrections = {
+	const identity = {
 		first_name: firstName.trim(),
 		last_name: lastName.trim(),
 		phone: phone.trim(),
@@ -485,85 +594,146 @@ function JoinBody() {
 		profile_photo: photo,
 	};
 
-	const corrected =
-		Boolean(profile) &&
-		Object.entries(corrections).some(
-			([field, given]) => ((profile?.[field as keyof RedProfile] as string | null) ?? "") !== given,
+	const persistDraft = async (): Promise<string> => {
+		const endpoint =
+			path === "volunteer" ? API.saveMyVolunteerDraft : API.saveMyMemberDraft;
+		const payload =
+			path === "volunteer"
+				? {
+						...identity,
+						geo_node: node?.name,
+						country_of_citizenship: citizenship,
+						// Not collected on any screen — derived, or left alone. See
+						// `residence`.
+						...residence,
+						id_type: idType || undefined,
+						id_number: idNumber || undefined,
+						skills,
+						languages,
+						availability,
+						motivation: motivations,
+						prior_experience: experience,
+						answers,
+					}
+				: {
+						...identity,
+						membership_type: membershipType,
+						geo_node: node?.name,
+						answers,
+					};
+
+		const result = await call.post<{ message: DraftRegistration }>(endpoint, payload);
+		const reference = result.message?.name ?? draftReference ?? "your draft";
+		setDraftReference(reference);
+		void existing.mutate();
+		return reference;
+	};
+
+	/**
+	 * One write at a time, whoever asked for it.
+	 *
+	 * The first save is an insert and every save after it is an update of the
+	 * row that insert created — the server finds the caller's open draft and
+	 * writes into it. Two writes in flight together would both find no draft and
+	 * both insert one, and the second registration would then be refused as a
+	 * duplicate of the first. Autosave fires on a keystroke's worth of notice, so
+	 * that race is not theoretical: the writes are chained through this instead.
+	 */
+	const inFlight = useRef<Promise<unknown>>(Promise.resolve());
+
+	const enqueue = <T,>(work: () => Promise<T>): Promise<T> => {
+		// Both arms, so one failed save does not strand every write behind it.
+		const next = inFlight.current.then(
+			() => work(),
+			() => work(),
 		);
+
+		inFlight.current = next.catch(() => undefined);
+
+		return next;
+	};
+
+	/**
+	 * The quiet save, on leaving a step.
+	 *
+	 * Silent about everything except having worked. It does not take the busy
+	 * flag, because that disables the buttons and a person moving between screens
+	 * has not asked to be stopped; it does not raise a failure, because the
+	 * screen it would appear on is one they have already left; and it does
+	 * nothing at all until there is enough answered to make a draft, which is a
+	 * name and a branch.
+	 */
+	const autosave = async () => {
+		if (!canSaveDraft || busy) return;
+
+		try {
+			await enqueue(persistDraft);
+			setSaved("Draft saved");
+		} catch {
+			// The button is still there, and it says so properly when pressed.
+		}
+	};
+
+	const saveDraft = async () => {
+		setBusy(true);
+		setBusyAction("save");
+		setFailure(null);
+		setSaved(null);
+
+		try {
+			await enqueue(persistDraft);
+			// Not the document name. "Draft VAPP-00017 saved. You can sign out and
+			// continue later." told a member of the public a naming series they
+			// will never type, and offered them a workflow — sign out, come back —
+			// that nobody chooses. Their draft is on the dashboard when they
+			// return, which is where they would look anyway.
+			setSaved("Draft saved");
+		} catch (saveError) {
+			setFailure(errorMessage(saveError, "Your draft could not be saved."));
+		} finally {
+			setBusy(false);
+			setBusyAction(null);
+		}
+	};
 
 	const submit = async () => {
 		setBusy(true);
+		setBusyAction("submit");
 		setFailure(null);
-
-		// The identity buffer travels with the registration rather than ahead of
-		// it. One call, so there is no window in which a Red Profile exists and
-		// the registration it was created for does not, and the values stay
-		// additive: the server fills in what core does not know and never
-		// overwrites what it does.
-		const identity = {
-			first_name: firstName || undefined,
-			last_name: lastName || undefined,
-			phone: phone || undefined,
-			gender: gender || undefined,
-			date_of_birth: dateOfBirth || undefined,
-			// The portrait rides with the registration rather than following it.
-			// It used to be a second call made after the success screen was already
-			// on the page, with its failure deliberately swallowed so a lost picture
-			// could not cost somebody the application that had succeeded — and the
-			// only symptom of it not landing was an empty control the next time they
-			// registered for anything. Additive on the server, exactly like the five
-			// values above it: see `registration._adopt_photo`.
-			profile_photo: photo || undefined,
-		};
+		setSaved(null);
 
 		try {
-			// A correction is a different act from a registration and goes through
-			// the endpoint named for it. It has to happen *first*: registering is
-			// additive by design, so a new name posted with the application would
-			// be read by `intake._enrich`, found to contradict what core holds, and
-			// dropped on the floor. Somebody with no profile yet needs none of
-			// this — the buffer above creates one from exactly these values.
-			if (corrected) {
-				const saved = await call.post<{ message: RedProfile }>(API.updateMyProfile, corrections);
-				if (saved.message) setProfile(saved.message);
-			}
-
-			if (path === "volunteer") {
-				const result = await call.post<{ message: { name?: string } }>(API.registerAsVolunteer, {
-					...identity,
-					geo_node: node?.name,
-					country_of_citizenship: citizenship || undefined,
-					residency_type: residency,
-					home_geo_node: residency === ABROAD ? undefined : homeNode?.name,
-					country_of_residence: residency === ABROAD ? countryOfResidence : undefined,
-					residence_address: residency === ABROAD ? residenceAddress : undefined,
-					id_type: idType || undefined,
-					id_number: idNumber || undefined,
-					skills,
-					languages,
-					availability,
-					motivation: motivations,
-					prior_experience: experience || undefined,
-					answers,
-				});
-				setDone(result.message?.name ?? "your application");
-			} else {
-				const result = await call.post<{ message: { name?: string } }>(API.registerAsMember, {
-					...identity,
-					membership_type: membershipType,
-					geo_node: node?.name,
-					answers,
-				});
-				setDone(result.message?.name ?? "your membership");
-			}
+			const reference = await enqueue(persistDraft);
+			const result = await call.post<{ message: { name?: string } }>(API.submitMyRegistration, {
+				path,
+			});
+			setDone(result.message?.name ?? reference);
 		} catch (submitError) {
 			setFailure(errorMessage(submitError, "Your registration was not accepted."));
 		} finally {
 			setBusy(false);
+			setBusyAction(null);
 		}
 	};
 
+	// "Draft saved" reports that something happened, not something that is true
+	// from now on, so it leaves of its own accord rather than sitting under the
+	// form for the rest of the registration.
+	useEffect(() => {
+		if (!saved) return;
+
+		const timer = window.setTimeout(() => setSaved(null), 4000);
+		return () => window.clearTimeout(timer);
+	}, [saved]);
+
 	const ready = complete(step.id);
+	const canSaveDraft = Boolean(
+		firstName.trim() &&
+			lastName.trim() &&
+			node &&
+			(path !== "member" || membershipType) &&
+			(path !== "volunteer" || Boolean(idType) === Boolean(idNumber.trim())),
+	);
 
 	return (
 		<div className="min-h-screen bg-page">
@@ -603,11 +773,17 @@ function JoinBody() {
 				    told on the first. `openApplication` is the open registration of
 				    *this path's* kind, so the other road stays open, which is what the
 				    two server checks have always said. */}
-				{!sessionLoading && !isGuest && !done && openApplication && (
+				{!sessionLoading && !isGuest && !done && resumable && draft.isLoading && (
+					<Spinner label="Loading your saved draft…" />
+				)}
+
+				{!sessionLoading && !isGuest && !done && openApplication && !resumable && (
 					<div className="mx-auto max-w-2xl">
 						<AlreadyApplied
 							reference={openApplication.name}
-							path={openApplication.path}
+							// The entry *is* this path's entry — it was read out of the
+							// answer by it — so the wizard's own is the narrower spelling.
+							path={path}
 							state={openApplication.state}
 							otherOpen={otherOpen}
 							onSwitch={() => switchPath(other)}
@@ -615,8 +791,17 @@ function JoinBody() {
 					</div>
 				)}
 
-				{!sessionLoading && !isGuest && !done && !openApplication && (
+				{!sessionLoading &&
+					!isGuest &&
+					!done &&
+					(!openApplication || resumable) &&
+					!draft.isLoading && (
 					<div className="grid gap-8 lg:grid-cols-[228px_minmax(0,1fr)] lg:gap-10">
+						{resumable && openApplication?.reason && (
+							<div className="lg:col-span-2">
+								<DraftNotice reason={openApplication.reason} />
+							</div>
+						)}
 						<Rail
 							steps={steps}
 							cursor={cursor}
@@ -628,9 +813,7 @@ function JoinBody() {
 									name={`${firstName} ${lastName}`.trim()}
 									node={node}
 									type={chosenType}
-									homeNode={residency === ABROAD ? null : homeNode}
-									residency={residency}
-									countryOfResidence={countryOfResidence}
+									citizenship={citizenship}
 									idType={options?.id_types.find((row) => row.key === idType)?.label ?? null}
 									chips={skills.length + languages.length + availability.length + motivations.length}
 								/>
@@ -681,6 +864,11 @@ function JoinBody() {
 												profile={profile}
 												genders={genders}
 												path={path}
+												options={options}
+												citizenship={citizenship}
+												onCitizenship={setCitizenship}
+												isCitizen={isCitizen}
+												onIsCitizen={answerCitizenship}
 												firstName={firstName}
 												lastName={lastName}
 												phone={phone}
@@ -712,28 +900,6 @@ function JoinBody() {
 												chain={servingChain}
 												onChain={setServingChain}
 												allowedLevels={allowedLevels}
-											/>
-										)}
-
-										{step.id === "residency" && (
-											<ResidencyStep
-												options={options}
-												loading={applicationOptions.isLoading}
-												citizenship={citizenship}
-												onCitizenship={setCitizenship}
-												isCitizen={isCitizen}
-												onIsCitizen={answerCitizenship}
-												residency={residency}
-												onResidency={setResidency}
-												servingNode={node}
-												homeChain={homeChain}
-												onHomeChain={setHomeChain}
-												homeIsServing={homeIsServing}
-												onHomeIsServing={setHomeIsServing}
-												countryOfResidence={countryOfResidence}
-												onCountryOfResidence={setCountryOfResidence}
-												residenceAddress={residenceAddress}
-												onResidenceAddress={setResidenceAddress}
 											/>
 										)}
 
@@ -790,10 +956,6 @@ function JoinBody() {
 												chain={servingChain}
 												type={chosenType}
 												citizenship={citizenship}
-												residency={residency}
-												homeNode={homeNode}
-												countryOfResidence={countryOfResidence}
-												residenceAddress={residenceAddress}
 												idTypeLabel={
 													options?.id_types.find((row) => row.key === idType)?.label ?? idType
 												}
@@ -840,6 +1002,23 @@ function JoinBody() {
 											</Button>
 
 											<div className="flex items-center gap-3">
+												{/* A confirmation, not an announcement. The draft is
+												    written on every step change now, so a green panel
+												    would be a green panel on every screen. */}
+												{saved && !busy && (
+													<span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-emerald-700">
+														<Icon.check size={13} />
+														{saved}
+													</span>
+												)}
+												<Button
+													type="button"
+													variant="ghost"
+													onClick={() => void saveDraft()}
+													disabled={!canSaveDraft || busy}
+												>
+													{busyAction === "save" ? "Saving…" : "Save draft"}
+												</Button>
 												{!ready && (
 													<span className="hidden text-[11.5px] text-slate-faint sm:block">
 														{step.needs}
@@ -850,11 +1029,11 @@ function JoinBody() {
 													variant={step.id === "confirm" ? "primary" : "navy"}
 													disabled={!ready || busy}
 												>
-													{step.id === "confirm"
-														? busy
-															? "Submitting…"
-															: "Submit registration"
-														: "Continue"}
+											{step.id === "confirm"
+												? busyAction === "submit"
+													? "Submitting…"
+													: "Submit registration"
+												: "Continue"}
 												</Button>
 											</div>
 										</div>
@@ -922,8 +1101,6 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 			rail: "About you",
 			eyebrow: "",
 			title: "About you",
-			blurb:
-				"Your details go onto your profile with the society, not onto this registration. One profile is all you will ever have here.",
 			needs: "A first and last name are needed",
 		},
 		/**
@@ -984,21 +1161,12 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 					shared.identity,
 					{
 						id: "placement",
-						rail: "Where you'd serve",
+						rail: "Where you'd volunteer",
 						eyebrow: "",
-						title: "Where would you serve?",
+						title: "Where would you volunteer?",
 						blurb:
 							"Answer each field in turn — the one below narrows to what sits inside your answer. Your application is reviewed by the people responsible for the place you choose.",
 						needs: "Work down to a branch or area",
-					},
-					{
-						id: "residency",
-						rail: "Citizenship",
-						eyebrow: "",
-						title: "Citizenship and where you live",
-						blurb:
-							"Two questions the society asks every applicant, wherever in the world they are.",
-						needs: "Answer both questions to continue",
 					},
 					{
 						id: "identification",
@@ -1168,9 +1336,7 @@ function Summary({
 	name,
 	node,
 	type,
-	homeNode,
-	residency,
-	countryOfResidence,
+	citizenship,
 	idType,
 	chips,
 }: {
@@ -1178,9 +1344,7 @@ function Summary({
 	name: string;
 	node: GeoNode | null;
 	type: PricedType | null;
-	homeNode: GeoNode | null;
-	residency: string;
-	countryOfResidence: string;
+	citizenship: string;
 	idType: string | null;
 	chips: number;
 }) {
@@ -1194,7 +1358,7 @@ function Summary({
 		rows.push(["Branch", node?.label ?? null]);
 	} else {
 		rows.push(["Branch", node?.label ?? null]);
-		rows.push(["Home", residency === ABROAD ? countryOfResidence || null : (homeNode?.label ?? null)]);
+		rows.push(["Nationality", citizenship || null]);
 		rows.push(["Identification", idType]);
 		rows.push(["Declared", chips > 0 ? `${chips} selected` : null]);
 	}
@@ -1326,16 +1490,33 @@ function PathSwitch({ path, onChange }: { path: Path; onChange: (p: Path) => voi
 	);
 }
 
+/**
+ * Who this person is — and, for a volunteer, where they are a national of.
+ *
+ * **Nationality arrived here when its own screen was deleted.** It had a step
+ * to itself titled "Citizenship and where you live", and the pair was wrong in
+ * both halves. Citizenship is one question with one answer for all but a
+ * handful of people, and a whole rung of the ladder for it announced a
+ * seriousness it does not have. "Where you live" was three controls asking the
+ * form to repeat the branch chosen on the screen before it. So the second
+ * question is gone entirely and the first sits with date of birth and gender,
+ * which is what it is: a fact about the person, on the page about the person.
+ */
 function IdentityStep({
 	profile,
 	genders,
 	path,
+	options,
 	firstName,
 	lastName,
 	phone,
 	gender,
 	dateOfBirth,
 	photo,
+	citizenship,
+	onCitizenship,
+	isCitizen,
+	onIsCitizen,
 	onFirstName,
 	onLastName,
 	onPhone,
@@ -1346,12 +1527,17 @@ function IdentityStep({
 	profile: RedProfile | null;
 	genders: string[];
 	path: Path;
+	options?: ApplicationOptions;
 	firstName: string;
 	lastName: string;
 	phone: string;
 	gender: string;
 	dateOfBirth: string;
 	photo: string;
+	citizenship: string;
+	onCitizenship: (v: string) => void;
+	isCitizen: boolean;
+	onIsCitizen: (yes: boolean) => void;
 	onFirstName: (v: string) => void;
 	onLastName: (v: string) => void;
 	onPhone: (v: string) => void;
@@ -1361,18 +1547,6 @@ function IdentityStep({
 }) {
 	return (
 		<div className="space-y-5">
-			{profile && (
-				<p className="flex items-start gap-2.5 rounded-card border border-navy/20 bg-navy/5 px-4 py-3 text-[12.5px] leading-relaxed text-navy">
-					<span className="mt-0.5 flex-none">
-						<Icon.check size={15} />
-					</span>
-					<span>
-						These are the details the Society holds for you. Correct anything that is wrong and it
-						is updated on your profile — you do not have to ask anybody.
-					</span>
-				</p>
-			)}
-
 			<div className="grid gap-5 sm:grid-cols-2">
 				<Field label="First name" required htmlFor="join-first">
 					<TextInput id="join-first" value={firstName} onChange={onFirstName} />
@@ -1436,6 +1610,24 @@ function IdentityStep({
 					/>
 				</Field>
 			</div>
+
+			{/* Only a volunteer is asked. A membership does not depend on it and
+			    `assert_ready` does not check it, so putting it on both paths would
+			    be this screen collecting something nobody needs. Drawn only once
+			    the vocabularies are in, because the yes/no form of the question is
+			    unanswerable without the society's own country. */}
+			{path === "volunteer" && options && (
+				<FieldSet title="Nationality">
+					<CitizenshipQuestion
+						countries={options.countries}
+						home={options.default_country_of_citizenship}
+						value={citizenship}
+						onChange={onCitizenship}
+						isCitizen={isCitizen}
+						onIsCitizen={onIsCitizen}
+					/>
+				</FieldSet>
+			)}
 
 			<PhotoField id="join-photo" value={photo} onChange={onPhoto} />
 		</div>
@@ -1571,137 +1763,6 @@ function PlacementStep({
 }
 
 /**
- * Citizenship, and the fork that decides what "where you live" even means.
- *
- * A person living locally is placed in the society's own hierarchy, so they get
- * the same cascading selects the serving branch uses. A person living abroad is
- * not in that hierarchy at all — there is no node for a flat in another country
- * — so they answer a country and an address instead. That is the doctype's own
- * fork (`residency_type`, and `reconcile_residency` clears whichever half the
- * toggle does not use), drawn here rather than invented.
- */
-function ResidencyStep({
-	options,
-	loading,
-	citizenship,
-	onCitizenship,
-	isCitizen,
-	onIsCitizen,
-	residency,
-	onResidency,
-	servingNode,
-	homeChain,
-	onHomeChain,
-	homeIsServing,
-	onHomeIsServing,
-	countryOfResidence,
-	onCountryOfResidence,
-	residenceAddress,
-	onResidenceAddress,
-}: {
-	options?: ApplicationOptions;
-	loading: boolean;
-	citizenship: string;
-	onCitizenship: (v: string) => void;
-	isCitizen: boolean;
-	onIsCitizen: (yes: boolean) => void;
-	residency: string;
-	onResidency: (v: string) => void;
-	servingNode: GeoNode | null;
-	homeChain: GeoNode[];
-	onHomeChain: (chain: GeoNode[]) => void;
-	homeIsServing: boolean;
-	onHomeIsServing: (v: boolean) => void;
-	countryOfResidence: string;
-	onCountryOfResidence: (v: string) => void;
-	residenceAddress: string;
-	onResidenceAddress: (v: string) => void;
-}) {
-	if (loading || !options) return <Spinner label="Loading…" />;
-
-	const abroad = residency === ABROAD;
-
-	return (
-		<div className="space-y-8">
-			<FieldSet title="Citizenship">
-				<CitizenshipQuestion
-					countries={options.countries}
-					home={options.default_country_of_citizenship}
-					value={citizenship}
-					onChange={onCitizenship}
-					isCitizen={isCitizen}
-					onIsCitizen={onIsCitizen}
-				/>
-			</FieldSet>
-
-			<FieldSet title="Where you live">
-				<Segmented
-					label="Where do you live?"
-					value={residency}
-					onChange={onResidency}
-					options={options.residency_types}
-				/>
-
-				<div className="mt-5">
-					{abroad ? (
-						<div className="rise-in grid gap-5 sm:grid-cols-2">
-							<Field label="Country of residence" required htmlFor="join-residence-country">
-								<Combo
-									id="join-residence-country"
-									value={countryOfResidence}
-									onChange={onCountryOfResidence}
-									options={options.countries}
-								/>
-							</Field>
-							<div className="sm:col-span-2">
-								<Field label="Address abroad" required htmlFor="join-residence-address">
-									<TextArea
-										id="join-residence-address"
-										rows={3}
-										value={residenceAddress}
-										onChange={onResidenceAddress}
-										placeholder="Street, city, postal code"
-									/>
-								</Field>
-							</div>
-						</div>
-					) : (
-						<div>
-							<label className="mb-4 flex cursor-pointer items-start gap-2.5 rounded-card border border-hairline bg-surface px-4 py-3">
-								<input
-									type="checkbox"
-									className="mt-0.5 h-3.5 w-3.5 flex-none accent-navy"
-									checked={homeIsServing}
-									onChange={(event) => onHomeIsServing(event.target.checked)}
-								/>
-								<span className="text-[12.5px] leading-relaxed text-slate-strong">
-									I live in the area I want to serve
-									{servingNode && (
-										<>
-											{" — "}
-											<b className="text-ink">{servingNode.label}</b>
-										</>
-									)}
-									. Most people do; untick this to choose somewhere else.
-								</span>
-							</label>
-
-							{!homeIsServing && (
-								<div className="rise-in">
-									<FieldSet title="Home area">
-										<GeoSelects chain={homeChain} onChain={onHomeChain} idPrefix="home" />
-									</FieldSet>
-								</div>
-							)}
-						</div>
-					)}
-				</div>
-			</FieldSet>
-		</div>
-	);
-}
-
-/**
  * Citizenship, asked the way a clerk at a branch counter would ask it.
  *
  * **The overwhelming majority answer "yes", so that is the question.** This was
@@ -1715,7 +1776,7 @@ function ResidencyStep({
  * be filled with on insert, arriving through `application_options`. Nothing here
  * names a country, and a society that has not set one gets the plain picker
  * back — the yes/no question is unanswerable without knowing what "citizen"
- * means here, and guessing would be this file inventing a nationality.
+ * means here, and guessing would be this file inventing a citizenship country.
  *
  * **"No" clears the answer rather than leaving the default standing.** The step
  * cannot be completed without a country, so somebody who says they are not a
@@ -2166,10 +2227,6 @@ function ConfirmStep({
 	chain,
 	type,
 	citizenship,
-	residency,
-	homeNode,
-	countryOfResidence,
-	residenceAddress,
 	idTypeLabel,
 	idNumber,
 	declared,
@@ -2189,10 +2246,6 @@ function ConfirmStep({
 	chain: GeoNode[];
 	type: PricedType | null;
 	citizenship: string;
-	residency: string;
-	homeNode: GeoNode | null;
-	countryOfResidence: string;
-	residenceAddress: string;
 	idTypeLabel: string;
 	idNumber: string;
 	declared: Record<"skills" | "languages" | "availability" | "motivations", string[]>;
@@ -2210,6 +2263,9 @@ function ConfirmStep({
 				gender={gender}
 				dateOfBirth={dateOfBirth}
 				photo={photo}
+				// Read back where it was answered. Nationality has no step of its
+				// own any more, so it belongs on the card for the step that asks it.
+				citizenship={path === "volunteer" ? citizenship : null}
 				onEdit={() => onEdit(indexOf("identity"))}
 			/>
 
@@ -2247,19 +2303,6 @@ function ConfirmStep({
 
 			{path === "volunteer" && (
 				<>
-					<Review title="Citizenship and residence" onEdit={() => onEdit(indexOf("residency"))}>
-						<Line label="Citizenship" value={citizenship} />
-						<Line label="Where you live" value={residency} />
-						{residency === ABROAD ? (
-							<>
-								<Line label="Country of residence" value={countryOfResidence} />
-								<Block label="Address" value={residenceAddress} />
-							</>
-						) : (
-							<Line label="Home area" value={homeNode?.label ?? null} />
-						)}
-					</Review>
-
 					<Review title="Identification" onEdit={() => onEdit(indexOf("identification"))}>
 						<Line label="ID type" value={idTypeLabel} />
 						<Line label="ID number" value={idNumber} mono />
@@ -2460,6 +2503,7 @@ function PersonCard({
 	gender,
 	dateOfBirth,
 	photo,
+	citizenship,
 	onEdit,
 }: {
 	name: string;
@@ -2468,6 +2512,8 @@ function PersonCard({
 	gender: string;
 	dateOfBirth: string;
 	photo: string;
+	/** Null on the member path, which is never asked for one. */
+	citizenship: string | null;
 	onEdit: () => void;
 }) {
 	const monogram =
@@ -2526,6 +2572,7 @@ function PersonCard({
 				<Line label="Phone" value={phone} />
 				<Line label="Gender" value={gender} />
 				<Line label="Date of birth" value={dateOfBirth ? formatDate(dateOfBirth) : null} />
+				{citizenship && <Line label="Nationality" value={citizenship} />}
 			</dl>
 		</section>
 	);
@@ -2551,6 +2598,31 @@ function PersonCard({
  * absence of a volunteer record, so "Submitted" and "In Review" read as the
  * different things they are.
  */
+/**
+ * The one thing worth saying at the top of a resumed registration.
+ *
+ * **Nothing, when nobody has asked for anything.** Coming back to your own
+ * unfinished form is not an event. It used to be met with an amber panel
+ * reading "Continuing your saved draft — nothing has been sent to an approver
+ * yet. Review or complete the answers below, then submit when you are ready",
+ * above the form it was describing, with a document name underneath it. Every
+ * sentence of that is either visible from the form or of no use to the person
+ * reading it. Somebody who clicks "register as a volunteer" and finds their
+ * answers already in the fields has been told everything they need.
+ *
+ * **Something, when a reviewer has.** That is a real message from a real person
+ * and it exists nowhere else on the screen, so it is drawn — and it is the only
+ * case this component now has.
+ */
+function DraftNotice({ reason }: { reason: string }) {
+	return (
+		<div className="rounded-card border border-amber-200 bg-amber-50 px-5 py-4 text-amber-950">
+			<p className="font-display text-[14px] font-bold">Your reviewer needs more information.</p>
+			<p className="mt-1.5 text-[12.5px] leading-relaxed">{reason}</p>
+		</div>
+	);
+}
+
 function AlreadyApplied({
 	reference,
 	path,

@@ -54,7 +54,7 @@
    "label": "Mission Details"
   },
   {
-   "description": "What this society calls this piece of work: Flood Response, Blood Drive Support, Branch First Aid Duty. Display only; nothing in this app reads it to decide anything, and no deployment name appears in any source file.",
+   "description": "What this society calls this piece of work, such as Flood Response or Branch First Aid Duty.",
    "fieldname": "tor_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -63,7 +63,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. A deployment and a deployment request point at these terms by this key, so relabelling the terms next year never rewrites what happened this year. This follows core's rule that configuration vocabularies are keyed by their stable business key while records about people and places get opaque IDs.",
+   "description": "The stable key deployments and requests point at. Renaming the terms later does not change what happened under them.",
    "fieldname": "tor_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -77,7 +77,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The programme of work these terms are written under. Optional, because a society that runs standing duties rather than programmes has terms belonging to no project, and the terms written before this field existed belong to none either. Where it is set, the project is printed at the head of the terms of reference and its own closure stops new terms being written under it. A deployment reaches its project through its terms and never stores a second copy of the answer.",
+   "description": "The programme of work these terms belong to. Optional: standing duties belong to no project.",
    "fieldname": "project",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -86,7 +86,7 @@
   },
   {
    "default": "1",
-   "description": "Whether these terms are still offered for new work. Distinct from the submit state, and deliberately so: submitting freezes the wording, because accepting a deployment under these terms is accepting exactly this document. Retiring is the ordinary end of a piece of work and must leave every deployment already run under it intact, which cancelling a submitted document would not. So a terms of reference is submitted once and un-ticked here when the society stops using it.",
+   "description": "Whether these terms are still offered for new work. Untick to retire them; deployments already run under them stay intact.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -98,7 +98,7 @@
    "label": "Expected Period"
   },
   {
-   "description": "When the mission is expected to begin. Optional and never a rule: it is offered as the default when a deployment is set up under these terms, and the deployment's own start date is what governs from then on. Terms written for standing work — a branch first aid rota, a year-round blood drive — have no mission window at all, and leaving this empty says so.",
+   "description": "When the mission is expected to begin. Offered as a default; each deployment's own dates govern. Leave empty for standing work.",
    "fieldname": "expected_start_date",
    "fieldtype": "Datetime",
    "label": "Expected Start Date"
@@ -108,14 +108,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When the mission is expected to end. Refused if it falls before the expected start date. Like the start date, a planning figure that a deployment may override.",
+   "description": "When the mission is expected to end. Must not fall before the expected start date.",
    "fieldname": "expected_end_date",
    "fieldtype": "Datetime",
    "label": "Expected End Date"
   },
   {
    "default": "0",
-   "description": "How many days a deployment under these terms usually runs for. A default offered when a request is raised, never a rule: the deployment's own start and end dates are what govern. Zero means the society has no usual length for this work.",
+   "description": "How many days a deployment under these terms usually runs. Offered as a default. Zero means there is no usual length.",
    "fieldname": "default_duration_days",
    "fieldtype": "Int",
    "label": "Usual Duration (Days)"
@@ -126,7 +126,7 @@
    "label": "Where It Applies"
   },
   {
-   "description": "The part of the organisational tree these terms may be used in: that node and everything beneath it. A deployment or a request anchored outside it is refused. Left empty, the terms apply anywhere, which is what a society that has not narrowed them means. Containment is decided by core's geo adapter, so no depth and no level name is assumed.",
+   "description": "The part of the organisation these terms may be used in \u2014 that branch and everything under it. Empty means anywhere.",
    "fieldname": "geo_scope",
    "fieldtype": "Link",
    "label": "Geo Scope",
@@ -138,14 +138,14 @@
    "label": "Background"
   },
   {
-   "description": "What a deployment under these terms is for, in the society's own words. One or two sentences: this is the line that appears wherever the terms are named in a list. Read by whoever raises a request and by whoever approves it; never read by code.",
+   "description": "What a deployment under these terms is for, in one or two sentences. This is the line shown wherever the terms are listed.",
    "fieldname": "purpose",
    "fieldtype": "Small Text",
    "label": "Purpose",
    "translatable": 1
   },
   {
-   "description": "The situation this mission answers to, at whatever length it takes: what happened, what is needed, what has already been done. Rich text because this is the part a society lifts from a situation report or takes to a donor, and stripping its formatting would make it worse paperwork rather than better data. Printed at the head of the terms of reference and offered as the deployment's opening note. Never read by code.",
+   "description": "The situation this mission answers to: what happened, what is needed, what has been done already. Printed at the head of the terms.",
    "fieldname": "mission_background",
    "fieldtype": "Text Editor",
    "label": "Mission Background",
@@ -157,7 +157,7 @@
    "label": "Stakeholders"
   },
   {
-   "description": "Who this mission has to deal with, and how to reach them. Printed on the terms of reference so a deployed volunteer carries the contacts on the paper they were given, rather than having to ask for them once they have arrived.",
+   "description": "Who this mission deals with, and how to reach them. Printed on the terms so a deployed volunteer carries the contacts.",
    "fieldname": "stakeholders",
    "fieldtype": "Table",
    "label": "Stakeholders",
@@ -174,7 +174,7 @@
    "label": "Specific Objectives"
   },
   {
-   "description": "What this mission sets out to achieve, one objective per row. Numbered on the printed document in the order they appear here.",
+   "description": "What this mission sets out to achieve, one per row. Numbered on the printed document in this order.",
    "fieldname": "objectives",
    "fieldtype": "Table",
    "label": "Objectives",
@@ -186,7 +186,7 @@
    "label": "Expected Outputs"
   },
   {
-   "description": "What the mission will leave behind: a register updated, a community trained, a report filed. Kept apart from the objectives because a society reporting on a deployment afterwards reports against these.",
+   "description": "What the mission will leave behind: a register updated, a community trained, a report filed.",
    "fieldname": "expected_outputs",
    "fieldtype": "Table",
    "label": "Expected Outputs",
@@ -198,7 +198,7 @@
    "label": "Proposed Approach"
   },
   {
-   "description": "How the work will be done, chosen from the society's own VMMS TOR Methodology register with a note on what each method means for this mission. A Link rather than free text so a society can eventually report across missions on how it works.",
+   "description": "How the work will be done, chosen from the society's methodologies, with a note on what each means here.",
    "fieldname": "approach_methods",
    "fieldtype": "Table",
    "label": "Approach Methodology",
@@ -215,7 +215,7 @@
    "label": "Itinerary"
   },
   {
-   "description": "The plan by day: what happens, when, and who leads it. Every dated row must fall inside the mission's own expected period where one is set, which is checked on save — an itinerary that runs past the end of the mission is a mistake worth catching on the form rather than in the field.",
+   "description": "The plan by day: what happens, when, and who leads it. Dated rows must fall inside the mission's own period.",
    "fieldname": "itinerary",
    "fieldtype": "Table",
    "label": "Itinerary",
@@ -227,7 +227,7 @@
    "label": "Resources"
   },
   {
-   "description": "What the mission needs and what it is expected to cost. Each row's total is computed from its quantity and unit cost on save. Nothing in this app totals these across a project or reconciles them against actual spend: money paid to volunteers flows through VMMS Stipend Payment Form, which is anchored to a geography and a period rather than to a mission, and bridging the two is a decision nobody has taken yet.",
+   "description": "What the mission needs and what it is expected to cost. Each row's total is worked out from quantity and unit cost.",
    "fieldname": "resources",
    "fieldtype": "Table",
    "label": "Resources",
@@ -244,7 +244,7 @@
    "label": "Requirements"
   },
   {
-   "description": "The certifications a volunteer needs to be a candidate for this work. Each row is either mandatory (a hard filter) or desirable (a preference that ranks). Matching computes whether a held certification has lapsed at the moment of asking, so a volunteer whose training expired yesterday drops out of the candidate list today without anything having been written down.",
+   "description": "What a volunteer must hold to be a candidate. Mandatory rows filter; desirable rows only rank. Lapsed certifications drop out automatically.",
    "fieldname": "required_certifications",
    "fieldtype": "Table",
    "label": "Required Certifications",
@@ -256,7 +256,7 @@
    "label": "Responsibilities"
   },
   {
-   "description": "What a volunteer deployed under these terms is expected to do, in the society's own words. This is the substance of a terms of reference for the person reading it, and it is deliberately free text: a structured task vocabulary would be a second list to reconcile with every society's own paperwork.",
+   "description": "What a volunteer deployed under these terms is expected to do, in your own words.",
    "fieldname": "responsibilities",
    "fieldtype": "Text",
    "label": "Responsibilities",
@@ -269,7 +269,7 @@
   },
   {
    "default": "direct",
-   "description": "Whether a request to deploy under these terms needs somebody to authorise it. direct: there is no approver, and the request is fulfilled by whoever raises it. routed: the VMMS approval engine routes it to a resolved person, who approves or rejects it, and the request cannot become a deployment until they do. This is the same shape a membership type's approval_mode has, and it is read the same way: deployment/services/approval.py dispatches through two tables keyed by this value, and no source file compares it to a Terms of Reference name or to a stage label. Choosing routed requires a VMMS Approval Workflow governing VMMS Deployment Request; without one the request is refused, loudly, rather than quietly deploying unapproved.",
+   "description": "Whether a request to deploy under these terms needs authorising. Direct: whoever raises it fulfils it. Routed: it goes to an approver first, and needs an approval workflow.",
    "fieldname": "approval_mode",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -289,7 +289,7 @@
    "label": "Notes"
   },
   {
-   "description": "Set by Frappe when a submitted terms of reference is amended. The amendment is a new document with its own key, and the deployments already run under the original keep pointing at the original — which is the whole reason these are submittable. Somebody who accepted a mission accepted the wording that was in front of them, and an amendment must not reach back and change it.",
+   "description": "The terms this document amends. Deployments already run under the original keep pointing at the original.",
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",

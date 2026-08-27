@@ -18,12 +18,6 @@
   "home_geo_node",
   "column_break_placement",
   "exited_on",
-  "residency_section",
-  "country_of_citizenship",
-  "residency_type",
-  "column_break_residency",
-  "country_of_residence",
-  "residence_address",
   "capability_section",
   "skills",
   "languages",
@@ -50,7 +44,7 @@
  "fields": [
   {
    "default": "VOL-.#####",
-   "description": "The opaque docname series. A volunteer is never keyed by an email, a name or a badge number. Mutable data does not go in a primary key.",
+   "description": "Automatic series for this record's number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -74,7 +68,7 @@
    "label": "Register"
   },
   {
-   "description": "The person, as onerc_core's identity spine. This is the only identity this record holds: no name, email or phone is stored here, and there is no fetch_from either, because a fetched value is a stored copy wearing a different hat. Read those through vmmsx/volunteer/services/identity.py, which reads Red Profile at the moment of asking.",
+   "description": "The person this record belongs to. Their name and contact details live on the Red Profile.",
    "fieldname": "red_profile",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -89,7 +83,7 @@
   },
   {
    "default": "Prospective",
-   "description": "What this person is to the society, and the truth of it: the affiliation row on their Red Profile is a summary written from here, never the other way round. Prospective and Active are derived from the volunteer's approved applications; Suspended and Exited are explicit acts of the society that a derivation must never quietly undo. Written by vmmsx/volunteer/services/volunteer.py, not by hand.",
+   "description": "What this person is to the society. Set by the system, except for suspension and exit, which the society records.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -98,7 +92,7 @@
    "read_only": 1
   },
   {
-   "description": "When this person first became an active volunteer. Set once, at the first acceptance, and never moved by a later application.",
+   "description": "When this person first became an active volunteer. Set once, at the first acceptance.",
    "fieldname": "joined_on",
    "fieldtype": "Date",
    "label": "Joined On",
@@ -110,7 +104,7 @@
    "label": "Placement"
   },
   {
-   "description": "ACC-02. The branch this volunteer serves with: where they belong in the organisational tree, the field core's geo scoping reads to decide who may see them, and the node a Branch Transfer moves. A Link, never free text, and mandatory at creation, because an unplaced volunteer is invisible to geo scoping: core's list filter is an IN and that excludes NULL. Which level it may sit at is society configuration (ACC-03, vmms_volunteer_anchor_level), never a constant. Seeded at acceptance from the application's own anchor, which is the Serving Branch the applicant chose. Where the volunteer LIVES is a different question and is not stored here at all: Home Area belongs to the person rather than to their volunteering, so it lives once on their Red Profile and the coordinator view reads it from there. The fieldname is historical and predates the two questions being told apart; the label is what it holds.",
+   "description": "The branch this volunteer serves with. Decides who can see them, and is what a branch transfer moves. Where they live is a separate question, held on their Red Profile.",
    "fieldname": "home_geo_node",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -123,50 +117,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When the society recorded that this person stopped volunteering. Set alongside the Exited status; empty for everybody else.",
+   "description": "When the society recorded that this person stopped volunteering. Empty for everybody else.",
    "fieldname": "exited_on",
    "fieldtype": "Date",
    "label": "Exited On",
    "read_only": 1
-  },
-  {
-   "fieldname": "residency_section",
-   "fieldtype": "Section Break",
-   "label": "Citizenship and Residency"
-  },
-  {
-   "description": "Which country this volunteer is a citizen of. Deliberately decoupled from where they live: a citizen of this society's own country living abroad, and a foreign national living and volunteering locally, both answer this question without residency deciding it. Seeded from the application at acceptance; a naturalisation or a correction is edited here, and the application keeps what was declared on the day.",
-   "fieldname": "country_of_citizenship",
-   "fieldtype": "Link",
-   "label": "Citizenship",
-   "options": "Country"
-  },
-  {
-   "default": "Local",
-   "description": "Whether this volunteer lives inside the society's own geo tree or outside it. Local means Home Area beside it is the answer to where they live; Abroad means Country of Residence and Address Abroad are, and Home Area then holds the branch they are attached to rather than a place they live. Seeded from the application at acceptance and editable here, because somebody who moves abroad is still the same volunteer.",
-   "fieldname": "residency_type",
-   "fieldtype": "Select",
-   "label": "Residency",
-   "options": "Local\nAbroad"
-  },
-  {
-   "fieldname": "column_break_residency",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.residency_type == \"Abroad\"",
-   "description": "Which country this volunteer lives in when they live outside the society's own tree. Cleared whenever residency is Local, so the record never carries a stale answer to a question it is not asking.",
-   "fieldname": "country_of_residence",
-   "fieldtype": "Link",
-   "label": "Country of Residence",
-   "options": "Country"
-  },
-  {
-   "depends_on": "eval:doc.residency_type == \"Abroad\"",
-   "description": "Where this volunteer lives when they live outside the society's own tree, as free text, because an address abroad has no Geo Node to point at. Cleared whenever residency is Local.",
-   "fieldname": "residence_address",
-   "fieldtype": "Small Text",
-   "label": "Address Abroad"
   },
   {
    "fieldname": "capability_section",
@@ -174,14 +129,14 @@
    "label": "Current Capabilities"
   },
   {
-   "description": "What this volunteer can do now, as a multi-select of the society's own VMMS Skill vocabulary. Seeded from the application at acceptance and editable here from then on: this is current truth, not the claim made on the day of applying, and the two are meant to diverge as somebody learns. The application keeps its own copy untouched as history. Structured rather than free text so a coordinator can filter the register by it; that filter runs on top of geo scoping, never instead of it.",
+   "description": "What this volunteer can do now. Taken from their application at acceptance, and editable here from then on.",
    "fieldname": "skills",
    "fieldtype": "Table MultiSelect",
    "label": "Skills",
    "options": "VMMS Skill Selector"
   },
   {
-   "description": "Languages this volunteer speaks now, as a multi-select of Frappe's own Language doctype, reused rather than reinvented. Seeded from the application at acceptance and editable here from then on. Read by a coordinator choosing who to send somewhere; never read by code.",
+   "description": "Languages this volunteer speaks now. Taken from their application at acceptance, and editable here from then on.",
    "fieldname": "languages",
    "fieldtype": "Table MultiSelect",
    "label": "Languages Spoken",
@@ -192,7 +147,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When this volunteer can currently serve, as a multi-select of the society's own VMMS Availability Slot vocabulary. Seeded from the application at acceptance and editable here from then on, because availability is the fact about a volunteer most likely to have changed since they applied. Filterable alongside skills, on top of geo scoping.",
+   "description": "When this volunteer can serve now. Taken from their application at acceptance, and editable here from then on.",
    "fieldname": "availability",
    "fieldtype": "Table MultiSelect",
    "label": "Availability",
@@ -264,7 +219,7 @@
    "label": "HR"
   },
   {
-   "description": "The Frappe HR Employee record for this person, when the society provisions one. A thin, one-directional seam: vmmsx points at HR and HR knows nothing of vmmsx. Identity never moves here: Red Profile stays the spine, and no field on Employee is ever read as this person's name, email or phone. Provisioning is off unless the society switches vmms_volunteer_provision_employee on. Empty is the ordinary state, and nothing in this module needs it to be set.",
+   "description": "The HR Employee record for this person, where the society keeps one. Usually empty, and nothing here needs it.",
    "fieldname": "employee",
    "fieldtype": "Link",
    "label": "Employee",
@@ -277,13 +232,13 @@
    "label": "Notes"
   },
   {
-   "description": "Anything the volunteering office needs to record about this person that is not a field.",
+   "description": "Anything the volunteering office needs to record that is not a field.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
   },
   {
-   "description": "The opaque handle a printed card is verified by. Minted the first time a card is issued and never rotated: a card already in somebody's pocket has this printed on it.",
+   "description": "The code a printed card is verified by. Minted with the first card and never changed.",
    "fieldname": "card_token",
    "fieldtype": "Data",
    "hidden": 1,

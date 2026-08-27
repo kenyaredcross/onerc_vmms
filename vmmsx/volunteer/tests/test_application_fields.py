@@ -1,12 +1,11 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""The volunteer application's data model: vocabularies, citizenship/residency,
-identification, and Serving Branch defaulting.
+"""The volunteer application's data model and its Red Profile requirements.
 
 Nothing here is mocked. Vocabularies are real `VMMS Skill` / `VMMS Motivation`
-/ `VMMS Availability Slot` rows, citizenship reads the real National Society
-Settings singleton, and geo comes from core's own fixtures — the same
+/ `VMMS Availability Slot` rows, citizenship, residence and identification are
+real Red Profile facts, and geo comes from core's own fixtures — the same
 arrangement every other suite in this module uses.
 """
 
@@ -229,7 +228,7 @@ class TestIdentificationAsymmetry(VolunteerTestCase):
 
 		self.assertNotEqual(application.reload().get("approval_state"), states.DRAFT)
 
-	def test_submission_succeeds_and_writes_it_to_the_red_profile(self):
+	def test_submission_succeeds_with_identification_on_the_red_profile(self):
 		profile = fixtures.make_profile("Has", "Identification")
 		id_type = fixtures.make_identification_type()
 		application = fixtures.make_application(
@@ -246,8 +245,8 @@ class TestIdentificationAsymmetry(VolunteerTestCase):
 
 		self.assertEqual(rows, [{"id_type": id_type, "id_number": "ID-ASYM-0001"}])
 
-	def test_submitting_twice_does_not_duplicate_the_row(self):
-		"""`submit()` re-syncs an already-open application; the write must be idempotent."""
+	def test_submitting_twice_does_not_change_the_profile_row(self):
+		"""Submission reads the profile and does not create another identification."""
 		profile = fixtures.make_profile("Resubmitted", "Applicant")
 		id_type = fixtures.make_identification_type()
 		application = fixtures.make_application(
@@ -282,56 +281,52 @@ class TestIdentificationAsymmetry(VolunteerTestCase):
 
 
 class TestCitizenshipAndResidency(VolunteerTestCase):
-	def test_citizenship_defaults_from_the_societys_own_country(self):
+	def test_registration_options_default_from_the_societys_own_country(self):
+		from vmmsx.api.volunteer import application_options
+
 		country, _ = _two_countries()
 		frappe.db.set_single_value(SETTINGS_DOCTYPE, "country", country)
 		frappe.clear_document_cache(SETTINGS_DOCTYPE, SETTINGS_DOCTYPE)
 
 		try:
-			profile = fixtures.make_profile("Defaulted", "Citizen")
-			application = frappe.get_doc(
-				{
-					"doctype": fixtures.APPLICATION_DOCTYPE,
-					"red_profile": profile,
-					"geo_node": self.society_a["ward"],
-					"home_geo_node": self.society_a["ward"],
-				}
-			).insert()
-
-			self.assertEqual(application.country_of_citizenship, country)
+			self.assertEqual(application_options()["default_country_of_citizenship"], country)
 		finally:
 			frappe.clear_document_cache(SETTINGS_DOCTYPE, SETTINGS_DOCTYPE)
 
-	def test_citizenship_is_freely_changeable(self):
+	def test_citizenship_is_owned_by_the_profile(self):
 		_, other_country = _two_countries()
 		profile = fixtures.make_profile("Changed", "Citizen")
 
-		application = fixtures.make_application(
+		fixtures.make_application(
 			profile, self.society_a["ward"], country_of_citizenship=other_country
 		)
 
-		self.assertEqual(application.country_of_citizenship, other_country)
+		self.assertEqual(
+			frappe.db.get_value("Red Profile", profile, "country_of_citizenship"), other_country
+		)
+		self.assertIsNone(frappe.get_meta(fixtures.APPLICATION_DOCTYPE).get_field("country_of_citizenship"))
 
 	def test_local_requires_home_area_not_a_country_of_residence(self):
 		profile = fixtures.make_profile("Local", "Resident")
 
-		application = fixtures.make_application(
+		fixtures.make_application(
 			profile,
 			self.society_a["ward"],
 			residency_type="Local",
 			home_geo_node=self.society_a["ward"],
 		)
 
-		self.assertEqual(application.residency_type, "Local")
-		self.assertEqual(application.home_geo_node, self.society_a["ward"])
-		self.assertIsNone(application.country_of_residence)
-		self.assertIsNone(application.residence_address)
+		person = frappe.get_doc("Red Profile", profile)
+		self.assertEqual(person.residency_type, "Local")
+		self.assertEqual(person.home_geo_node, self.society_a["ward"])
+		self.assertIsNone(person.country_of_residence)
+		self.assertIsNone(person.residence_address)
 
 	def test_abroad_requires_country_and_address_not_a_home_area(self):
 		_, other_country = _two_countries()
 		profile = fixtures.make_profile("Abroad", "Resident")
 
-		application = fixtures.make_application(
+		fixtures.make_application(
 			profile,
 			self.society_a["ward"],
 			residency_type="Abroad",
@@ -340,10 +335,11 @@ class TestCitizenshipAndResidency(VolunteerTestCase):
 			residence_address="123 Elsewhere Street",
 		)
 
-		self.assertEqual(application.residency_type, "Abroad")
-		self.assertEqual(application.country_of_residence, other_country)
-		self.assertEqual(application.residence_address, "123 Elsewhere Street")
-		self.assertIsNone(application.home_geo_node)
+		person = frappe.get_doc("Red Profile", profile)
+		self.assertEqual(person.residency_type, "Abroad")
+		self.assertEqual(person.country_of_residence, other_country)
+		self.assertEqual(person.residence_address, "123 Elsewhere Street")
+		self.assertIsNone(person.home_geo_node)
 
 	def test_abroad_cannot_submit_without_country_and_address(self):
 		profile = fixtures.make_profile("Incomplete", "Abroad")
@@ -373,7 +369,7 @@ class TestCitizenshipAndResidency(VolunteerTestCase):
 		home_country, elsewhere = _two_countries()
 
 		local_foreigner = fixtures.make_profile("Local", "Foreigner")
-		local_application = fixtures.make_application(
+		fixtures.make_application(
 			local_foreigner,
 			self.society_a["ward"],
 			country_of_citizenship=elsewhere,
@@ -382,7 +378,7 @@ class TestCitizenshipAndResidency(VolunteerTestCase):
 		)
 
 		abroad_citizen = fixtures.make_profile("Abroad", "Citizen")
-		abroad_application = fixtures.make_application(
+		fixtures.make_application(
 			abroad_citizen,
 			self.society_a["ward"],
 			country_of_citizenship=home_country,
@@ -392,12 +388,14 @@ class TestCitizenshipAndResidency(VolunteerTestCase):
 			residence_address="1 Diaspora Way",
 		)
 
-		self.assertEqual(local_application.country_of_citizenship, elsewhere)
-		self.assertEqual(local_application.residency_type, "Local")
+		local = frappe.get_doc("Red Profile", local_foreigner)
+		abroad = frappe.get_doc("Red Profile", abroad_citizen)
 
-		self.assertEqual(abroad_application.country_of_citizenship, home_country)
-		self.assertEqual(abroad_application.residency_type, "Abroad")
-		self.assertEqual(abroad_application.country_of_residence, elsewhere)
+		self.assertEqual(local.country_of_citizenship, elsewhere)
+		self.assertEqual(local.residency_type, "Local")
+		self.assertEqual(abroad.country_of_citizenship, home_country)
+		self.assertEqual(abroad.residency_type, "Abroad")
+		self.assertEqual(abroad.country_of_residence, elsewhere)
 
 
 # --- 5. Serving Branch defaulting --------------------------------------------
@@ -405,30 +403,28 @@ class TestCitizenshipAndResidency(VolunteerTestCase):
 
 class TestServingBranchDefaulting(VolunteerTestCase):
 	def test_local_defaults_serving_branch_from_home_area(self):
-		profile = fixtures.make_profile("Defaulting", "Serving")
+		profile = fixtures.make_profile(
+			"Defaulting", "Serving", residency_type="Local", home_geo_node=self.society_a["ward"]
+		)
 
 		application = frappe.get_doc(
 			{
 				"doctype": fixtures.APPLICATION_DOCTYPE,
 				"red_profile": profile,
-				"country_of_citizenship": fixtures.test_country(),
-				"residency_type": "Local",
-				"home_geo_node": self.society_a["ward"],
 			}
 		).insert()
 
 		self.assertEqual(application.geo_node, self.society_a["ward"])
 
 	def test_a_coordinator_may_still_override_it(self):
-		profile = fixtures.make_profile("Overriding", "Serving")
+		profile = fixtures.make_profile(
+			"Overriding", "Serving", residency_type="Local", home_geo_node=self.society_a["ward"]
+		)
 
 		application = frappe.get_doc(
 			{
 				"doctype": fixtures.APPLICATION_DOCTYPE,
 				"red_profile": profile,
-				"country_of_citizenship": fixtures.test_country(),
-				"residency_type": "Local",
-				"home_geo_node": self.society_a["ward"],
 				"geo_node": self.society_a["other_ward"],
 			}
 		).insert()
@@ -437,32 +433,36 @@ class TestServingBranchDefaulting(VolunteerTestCase):
 
 	def test_abroad_has_nothing_to_default_from_and_must_say_explicitly(self):
 		_, other_country = _two_countries()
-		profile = fixtures.make_profile("Abroad", "Serving")
+		profile = fixtures.make_profile(
+			"Abroad",
+			"Serving",
+			residency_type="Abroad",
+			country_of_residence=other_country,
+			residence_address="1 Away Street",
+		)
 
 		with self.assertRaises(frappe.MandatoryError):
 			frappe.get_doc(
 				{
 					"doctype": fixtures.APPLICATION_DOCTYPE,
 					"red_profile": profile,
-					"country_of_citizenship": fixtures.test_country(),
-					"residency_type": "Abroad",
-					"country_of_residence": other_country,
-					"residence_address": "1 Away Street",
 				}
 			).insert()
 
 	def test_abroad_saves_once_serving_branch_is_given_explicitly(self):
 		_, other_country = _two_countries()
-		profile = fixtures.make_profile("Abroad", "ServingExplicit")
+		profile = fixtures.make_profile(
+			"Abroad",
+			"ServingExplicit",
+			residency_type="Abroad",
+			country_of_residence=other_country,
+			residence_address="1 Away Street",
+		)
 
 		application = frappe.get_doc(
 			{
 				"doctype": fixtures.APPLICATION_DOCTYPE,
 				"red_profile": profile,
-				"country_of_citizenship": fixtures.test_country(),
-				"residency_type": "Abroad",
-				"country_of_residence": other_country,
-				"residence_address": "1 Away Street",
 				"geo_node": self.society_a["ward"],
 			}
 		).insert()

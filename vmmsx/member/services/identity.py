@@ -37,13 +37,13 @@ PROFILE_DOCTYPE = "Red Profile"
 # rendered onto anything. The gated-sensitive set stays out; see the volunteer
 # module's `_WITHHELD` for the names core holds back.
 #
-# **The last five were added deliberately, and the decision is recorded here
-# rather than in a commit message.** A coordinator opening a member record was
+# **The person-detail fields were added deliberately, and the decision is
+# recorded here rather than in a commit message.** A coordinator opening a member record was
 # shown a docname and nothing else, and had to open the Red Profile in another
 # tab to find out who they were looking at. The photo and the name confirm the
 # right person; gender and date of birth are what a membership office is asked
-# for constantly; nationality and citizenship status are core's own answer to
-# where somebody is from, asked at a counter far more often than it is recorded.
+# for constantly; citizenship and current residence are core's own person facts,
+# asked at a counter far more often than they should be copied into satellites.
 #
 # **Widening what this module reads is not widening what the record holds.** The
 # member record gained no column, no `fetch_from` and no copy — every value here
@@ -66,8 +66,11 @@ _READABLE = (
 	"date_of_birth",
 	"profile_photo",
 	"preferred_language",
-	"nationality",
+	"country_of_citizenship",
 	"citizenship_status",
+	"residency_type",
+	"country_of_residence",
+	"residence_address",
 )
 
 

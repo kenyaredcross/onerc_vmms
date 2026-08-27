@@ -106,19 +106,24 @@ const vmmsx_member = {
 
 	identity_html(dossier) {
 		const person = dossier.identity || {};
+		const residence =
+			person.residency_type === "Abroad"
+				? [person.country_of_residence, person.residence_address].filter(Boolean).join(" · ")
+				: person.home_geo_path;
 		const rows = [
 			[__("Email"), person.email],
 			[__("Phone"), person.phone],
 			[__("Gender"), person.gender],
 			[__("Date of Birth"), vmmsx_member.date(person.date_of_birth)],
 			[__("Preferred Language"), person.preferred_language],
-			[__("Nationality"), person.nationality],
+			[__("Country of Citizenship"), person.country_of_citizenship],
 			[__("Citizenship"), person.citizenship_status],
+			[__("Residency"), person.residency_type],
 			// Where somebody lives. Never labelled simply "location": a branch
 			// they are a member at is a different question, answered per
 			// membership below, and a coordinator who confuses the two writes to
 			// the wrong branch.
-			[__("Home Area"), person.home_geo_path],
+			[__("Residence"), residence],
 		];
 
 		return `
@@ -134,7 +139,7 @@ const vmmsx_member = {
 			</div>
 			${vmmsx_member.footnote(
 				__(
-					"Name, contact, gender, date of birth, nationality and Home Area are read from this person's Red Profile when the page opens. None of them is stored on the member record."
+					"Name, contact, gender, date of birth, country of citizenship and Home Area are read from this person's Red Profile when the page opens. None of them is stored on the member record."
 				)
 			)}
 		`;

@@ -688,7 +688,7 @@ def _p2_volunteer(w, site: str) -> None:
 		[
 			"Second private browser window, sign up as lamin.ceesay@example.com, set a password the"
 			" same way.",
-			f"Log in, click Register as a Volunteer, or go to http://{site}/register-as-a-volunteer.",
+			f"Log in, click Register as a Volunteer, or go to http://{site}/portal/join?path=volunteer.",
 			'First Name "Lamin", Last Name "Ceesay", Branch or Area "Gunjur". The four narrative fields'
 			" (motivation, declared skills, availability, prior experience) are optional and read by"
 			" nobody in code — fill them in or skip them, it changes nothing.",

@@ -26,7 +26,7 @@
    "label": "Whose Schedule"
   },
   {
-   "description": "Whose availability this is. It is also the docname, and it is unique: a volunteer has one schedule, not one per year. A society that tried to keep several would have to decide which one a deployment asks, and there is no answer to that which is not a rule somebody has to remember.",
+   "description": "Whose availability this is. A volunteer has one schedule.",
    "fieldname": "volunteer",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -42,7 +42,7 @@
   },
   {
    "default": "0",
-   "description": "Whether this person is willing to serve on a public holiday. Recorded because a society mounting a response over a holiday needs to know who it can ask without asking everybody. Nothing in this app reads a holiday calendar yet, so this is carried and shown rather than matched on; it is a fact a coordinator uses, not a filter the server applies.",
+   "description": "Whether this person is willing to serve on a public holiday. Shown to coordinators; nothing filters on it yet.",
    "fieldname": "available_on_holidays",
    "fieldtype": "Check",
    "label": "Available On Holidays"
@@ -53,7 +53,7 @@
    "label": "How Long This Holds"
   },
   {
-   "description": "The first day this pattern describes. Optional: a volunteer who has not said means the pattern holds from now on, which is what most people mean when they fill in a weekly availability grid. Where it is set, a deployment beginning before it is not matched against this schedule.",
+   "description": "The first day this pattern describes. Empty means it holds from now on.",
    "fieldname": "valid_from",
    "fieldtype": "Date",
    "label": "Valid From"
@@ -63,7 +63,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The last day this pattern describes — a student free until term restarts, somebody available until they move. Optional, and empty means indefinitely. Refused if it falls before the start.",
+   "description": "The last day this pattern describes — a student free until term restarts. Empty means indefinitely.",
    "fieldname": "valid_to",
    "fieldtype": "Date",
    "label": "Valid To"
@@ -74,7 +74,7 @@
    "label": "The Weekly Pattern"
   },
   {
-   "description": "Which windows on which days this volunteer is free. One row per day-and-slot pair, so a person free on Saturday mornings and all day Sunday has three rows rather than a sentence somebody has to read. Deliberately a *pattern* rather than a list of dates: a volunteer fills this in once, and a schedule expanded into a dated row per day for a year would be tens of thousands of rows that go stale the moment somebody's Tuesdays change.",
+   "description": "Which windows on which days this volunteer is free. One row per day and window.",
    "fieldname": "available_days",
    "fieldtype": "Table",
    "label": "Available Days",
@@ -86,7 +86,7 @@
    "label": "Notes"
   },
   {
-   "description": "Anything about when this person can serve that the pattern cannot say. Never read by code.",
+   "description": "Anything about when this person can serve that the pattern cannot say.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"

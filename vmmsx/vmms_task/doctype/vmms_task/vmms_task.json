@@ -32,7 +32,7 @@
  "fields": [
   {
    "default": "TSK-.#####",
-   "description": "The opaque docname series. Neither the volunteer nor the branch goes in the primary key, so nothing about a person is derivable from a docname somebody saw.",
+   "description": "Automatic series for the task number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -46,7 +46,7 @@
    "label": "Assignment"
   },
   {
-   "description": "What the task is, in one line, as it will appear in the volunteer's list. The detail belongs in the brief below.",
+   "description": "What the task is, in one line, as it appears in the volunteer's list. The detail belongs in the description.",
    "fieldname": "subject",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -54,7 +54,7 @@
    "reqd": 1
   },
   {
-   "description": "Who the task is assigned to. One volunteer, not a team: a task two people can each assume the other accepted is a task nobody does, and work for several people is several tasks that can be tracked and completed separately.",
+   "description": "Who the task is assigned to. One volunteer \u2014 work for several people is several tasks.",
    "fieldname": "volunteer",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -63,7 +63,7 @@
    "reqd": 1
   },
   {
-   "description": "Which part of the society this task belongs to. Required at creation and never filled in later, because a task with no anchor is invisible to geo scoping and therefore to every coordinator who might chase it. Defaults to the volunteer's own branch when the task is raised through the console.",
+   "description": "Which part of the society this task belongs to. Defaults to the volunteer's own branch.",
    "fieldname": "geo_node",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -77,7 +77,7 @@
   },
   {
    "default": "assigned",
-   "description": "Where the task stands. A closed set held in code, moved only by the task service, and read only on the form: a status somebody could type would let a task be marked complete without the completion ever being offered or approved.",
+   "description": "Where the task stands. Moved by the system as the task is accepted, submitted and closed.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -87,13 +87,13 @@
    "reqd": 1
   },
   {
-   "description": "When the work is wanted by. Optional, and nothing enforces it: a task past its date is late, which is a thing for a coordinator to notice rather than a thing for the software to refuse.",
+   "description": "When the work is wanted by. Optional, and nothing is refused after it.",
    "fieldname": "due_on",
    "fieldtype": "Date",
    "label": "Due On"
   },
   {
-   "description": "The deployment this task is part of, where it is part of one. Optional, because plenty of branch work is not a deployment, and a link that had to be filled in would push coordinators into inventing deployments to hold ordinary tasks.",
+   "description": "The deployment this task is part of, where it is part of one. Optional.",
    "fieldname": "deployment",
    "fieldtype": "Link",
    "label": "Deployment",
@@ -105,7 +105,7 @@
    "label": "Brief"
   },
   {
-   "description": "What is being asked for, in full. Plain text, and rendered as a string wherever it is shown, for the same reason an announcement body is plain: assigning work is not permission to run markup in somebody else's browser.",
+   "description": "What is being asked for, in full.",
    "fieldname": "description",
    "fieldtype": "Text",
    "label": "Description",
@@ -118,21 +118,21 @@
   },
   {
    "default": "0",
-   "description": "Whether the volunteer has asked something nobody has answered yet. Deliberately a flag rather than a status: a question does not stop the work or move the task backwards, it just means somebody is waiting on a reply, and modelling it as a state would mean inventing a way back to whichever state the task was in when it was asked.",
+   "description": "Ticked while the volunteer is waiting on an answer. It does not move the task backwards.",
    "fieldname": "open_question",
    "fieldtype": "Check",
    "label": "Awaiting An Answer",
    "read_only": 1
   },
   {
-   "description": "When the task was assigned. Stamped once, by the service, and never moved: it is what a volunteer's response time is measured from.",
+   "description": "When the task was assigned. Response time is measured from here.",
    "fieldname": "assigned_on",
    "fieldtype": "Datetime",
    "label": "Assigned On",
    "read_only": 1
   },
   {
-   "description": "When the volunteer accepted it. Blank on a task nobody has answered, which is what tells a coordinator the difference between work in hand and work merely sent.",
+   "description": "When the volunteer accepted it. Blank while nobody has answered.",
    "fieldname": "accepted_on",
    "fieldtype": "Datetime",
    "label": "Accepted On",
@@ -143,14 +143,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When the volunteer offered the work as done. Cleared if a coordinator sends it back, because a returned task has not been submitted any more and a date left behind would say it had.",
+   "description": "When the volunteer offered the work as done. Cleared if a coordinator sends it back.",
    "fieldname": "submitted_on",
    "fieldtype": "Datetime",
    "label": "Submitted On",
    "read_only": 1
   },
   {
-   "description": "When the task was finished with, whether it was approved or cancelled. One field for both, because what a report wants to know is when it stopped being open, and which of the two it was is already in the status.",
+   "description": "When the task was finished with, whether approved or cancelled.",
    "fieldname": "closed_on",
    "fieldtype": "Datetime",
    "label": "Closed On",
@@ -162,7 +162,7 @@
    "label": "Completion"
   },
   {
-   "description": "What the volunteer said when they offered the work as done. The evidence itself is in the thread below, where each photograph keeps the note and the time it was offered with; this is the summary that survives on the record.",
+   "description": "What the volunteer said when they offered the work as done. Photographs are in the thread below.",
    "fieldname": "completion_notes",
    "fieldtype": "Small Text",
    "label": "Completion Notes",
@@ -174,7 +174,7 @@
    "label": "Thread"
   },
   {
-   "description": "The conversation, in order: the assignment, the acceptance, any questions and answers, requests for progress, what was reported, and the decision that closed it. Written only by the task service, so the record of who said what and when cannot be edited after the fact.",
+   "description": "The conversation, in order: assignment, acceptance, questions, progress and the decision that closed it.",
    "fieldname": "updates",
    "fieldtype": "Table",
    "label": "Updates",

@@ -25,7 +25,7 @@
   },
   {
    "columns": 2,
-   "description": "The stage's label as it read when the decision was taken. A snapshot, so renaming a stage does not rewrite history.",
+   "description": "The stage's label as it read when the decision was taken, so renaming a stage does not rewrite history.",
    "fieldname": "stage_label",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -62,14 +62,14 @@
    "reqd": 1
   },
   {
-   "description": "Required on a rejection. A rejection nobody can explain is not a decision, it is a dead end.",
+   "description": "Required on a rejection: a rejection nobody can explain leaves the applicant with nowhere to go.",
    "fieldname": "reason",
    "fieldtype": "Small Text",
    "label": "Reason",
    "read_only": 1
   },
   {
-   "description": "The opaque row name of the stage this decision was taken at. Identity, not label: relabelling a stage must not orphan its decisions.",
+   "description": "The stage this decision was taken at.",
    "fieldname": "stage",
    "fieldtype": "Data",
    "label": "Stage Row",

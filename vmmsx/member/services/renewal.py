@@ -35,6 +35,7 @@ import frappe
 from frappe import _
 from frappe.utils import getdate, today
 
+from vmmsx import elevation
 from vmmsx.member.services import certificate
 from vmmsx.member.services import membership as membership_service
 
@@ -204,11 +205,10 @@ def _as_renewing_member():
 	doctype-level grant in order to do the one thing this endpoint exists for.
 	The block this wraps writes exactly one membership, for exactly the member
 	and branch the entitlement check already proved this caller may act for.
-	"""
-	previous = frappe.session.user
-	frappe.set_user("Administrator")
 
-	try:
+	The mechanics are `vmmsx.elevation`: restoring the user is not enough on
+	its own, because `set_user` overwrites the live session id and discards the
+	session data with it, which signs the caller out one request later.
+	"""
+	with elevation.as_system():
 		yield
-	finally:
-		frappe.set_user(previous)

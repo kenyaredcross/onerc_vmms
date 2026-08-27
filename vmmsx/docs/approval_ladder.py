@@ -769,15 +769,13 @@ def _register(w, site: str) -> None:
 		]
 	)
 
-	w.h2("Door 2 — the web form")
-
-	w.p(
-		"/register-as-a-volunteer is a standard Frappe Web Form on the same doctype, login"
-		" required. It asks the same questions and takes the same road. It stays installed and"
-		" works whether or not the portal is built."
+	w.note(
+		"The legacy /register-as-a-volunteer Web Form is unpublished. Volunteer self-registration"
+		" has one supported public door because the portal owns the Red Profile and application"
+		" transaction together."
 	)
 
-	w.h2("Door 3 — the desk, for a paper application")
+	w.h2("Door 2 — the desk, for a paper application")
 
 	w.p(
 		f"A coordinator with create permission opens /app/{APPLICATION_DOCTYPE.lower().replace(' ', '-')}/new,"

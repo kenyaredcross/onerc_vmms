@@ -23,7 +23,7 @@
  "fields": [
   {
    "default": "PRJ-.#####",
-   "description": "The opaque identifier. A project is renamed, moved and rescoped over its life, so none of that may sit in its primary key.",
+   "description": "Automatic series for the project number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Series",
@@ -36,7 +36,7 @@
    "label": "Identity"
   },
   {
-   "description": "What this society calls the programme of work: Coastal Flood Response, National Blood Drive, Ramadan Food Distribution. Display only; nothing in this app reads it to decide anything.",
+   "description": "What this society calls the programme of work, such as Coastal Flood Response.",
    "fieldname": "project_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -50,7 +50,7 @@
   },
   {
    "default": "Planned",
-   "description": "Where the project has got to. A closed set with a fixed transition table in deployment/services/project.py, for the same reason a deployment's status is code: each value means something the server acts on. Completed and Cancelled are terminal, because a project that ended is history and reopening it would silently change what its deployments were run under.",
+   "description": "Where the project has got to. Completed and cancelled are final.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -64,7 +64,7 @@
    "label": "Placement"
   },
   {
-   "description": "The organisational anchor, required at creation (ACC-02). The project belongs to this node and everything beneath it, and geo scoping decides who sees it. There are no unplaced projects: one would be invisible to every coordinator and reachable by nobody.",
+   "description": "The branch or office this project belongs to. Decides who can see it.",
    "fieldname": "geo_node",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -77,7 +77,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When the programme of work begins. A planning figure: a deployment carries its own dates and is what governs who served when.",
+   "description": "When the programme of work begins. A planning date; each deployment carries its own.",
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start Date"
@@ -94,7 +94,7 @@
    "label": "Detail"
   },
   {
-   "description": "What the project is for, in the society's own words. Printed at the head of every terms of reference written under it; never read by code.",
+   "description": "What the project is for, in your own words. Printed at the head of every terms of reference written under it.",
    "fieldname": "summary",
    "fieldtype": "Small Text",
    "label": "Summary",

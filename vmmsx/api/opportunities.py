@@ -21,7 +21,7 @@ the board at it is what lets somebody actually apply.
 **Browse here, apply there.** There is no application endpoint in this file and
 there will not be one. HRMS owns the applicant record, the duplicate check and
 everything after it, and each card's call to action is a full navigation to
-HRMS's own page. A vmmsx endpoint wrapping any of that would be a second
+HRMS's own application form. A vmmsx endpoint wrapping any of that would be a second
 implementation of a rule that has to stay in step with HRMS's forever.
 
 **Signed in, deliberately.** Neither endpoint is `allow_guest`. The three

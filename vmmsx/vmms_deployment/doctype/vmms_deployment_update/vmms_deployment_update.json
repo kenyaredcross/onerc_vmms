@@ -15,7 +15,7 @@
  "fields": [
   {
    "columns": 2,
-   "description": "What kind of entry this is, in a closed vocabulary this app owns rather than a society's. It is display only: the deployment's own status is the state machine, and nothing in the code branches on this value. It exists so a feed reads as an account of what happened rather than a column of undifferentiated notes. `status` and `roster` are written by the service when a deployment moves or somebody joins or leaves, which is what makes the feed a timeline instead of only the notes people remembered to write.",
+   "description": "What kind of entry this is. Status and roster entries are written automatically when the deployment moves or somebody joins or leaves.",
    "fieldname": "entry_type",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -26,7 +26,7 @@
   },
   {
    "columns": 2,
-   "description": "Who wrote it. The login, taken from the session at the moment the entry was written and never passed in by a caller, so a feed cannot be made to say somebody said something they did not.",
+   "description": "Who wrote it. Taken from the session when the entry was written.",
    "fieldname": "author",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -37,7 +37,7 @@
   },
   {
    "columns": 2,
-   "description": "When it was written. Stamped by the service, not by the form, so the order of a feed is the order things happened in.",
+   "description": "When it was written. Set automatically, so the feed reads in the order things happened.",
    "fieldname": "posted_on",
    "fieldtype": "Datetime",
    "in_list_view": 1,
@@ -47,14 +47,14 @@
   },
   {
    "columns": 4,
-   "description": "What was said, in the author's own words. Plain text, and rendered as a string wherever it is shown, for the same reason a task update's note is plain: writing on a record somebody else will open is not permission to run markup in their browser.",
+   "description": "What was said, in your own words.",
    "fieldname": "note",
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "Note"
   },
   {
-   "description": "A photograph attached to this entry — the site on arrival, the distribution under way, the damage being reported. One image per entry rather than a gallery on the deployment: a photograph belongs to the moment it was taken, and a second one is a second entry with its own note and its own time.",
+   "description": "A photograph for this entry — the site on arrival, the distribution under way. One image per entry.",
    "fieldname": "proof",
    "fieldtype": "Attach Image",
    "label": "Attachment"

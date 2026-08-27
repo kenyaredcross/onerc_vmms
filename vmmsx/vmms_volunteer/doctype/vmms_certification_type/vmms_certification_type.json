@@ -24,7 +24,7 @@
    "label": "Identity"
   },
   {
-   "description": "What this society calls this certification: First Aid, Psychosocial Support, Water and Sanitation. Display only; nothing in this app reads it to decide anything, and no course or certification name appears in any source file.",
+   "description": "What this society calls this certification: First Aid, Psychosocial Support, Water and Sanitation.",
    "fieldname": "certification_type_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -33,7 +33,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. A held certification points at its type by this key, so relabelling the type never rewrites history or breaks a report. This follows core's rule that configuration vocabularies are keyed by their stable business key while records about people and places get opaque IDs.",
+   "description": "The stable key held certifications point at. Relabelling the type never rewrites history.",
    "fieldname": "certification_type_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -47,14 +47,14 @@
   },
   {
    "default": "1",
-   "description": "An inactive type keeps the certifications already held under it but is no longer offered for new ones, so retiring a type does not invalidate anybody's training.",
+   "description": "An inactive type keeps the certifications already held under it but is no longer offered for new ones.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Active"
   },
   {
-   "description": "What this certification covers and who needs it, in the society's own words.",
+   "description": "What this certification covers and who needs it, in your own words.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description",
@@ -67,7 +67,7 @@
   },
   {
    "default": "0",
-   "description": "How long a certification of this type stays valid, in days, counted from the date it was completed. This is the whole of what drives expiry: a held certification's expiry_date is its completion_date plus this number, computed on save from configuration and never assumed to be a year. Zero means this type never expires, and a certification of a never-expiring type can never read as lapsed.",
+   "description": "How long a certification of this type stays valid, counted from the day it was completed. Zero means it never expires.",
    "fieldname": "validity_days",
    "fieldtype": "Int",
    "label": "Validity (Days)"
@@ -78,7 +78,7 @@
   },
   {
    "default": "1",
-   "description": "Whether a lapsed certification of this type makes its holder non-deployable. On by default, which is the ordinary rule: a volunteer whose first aid training has expired is not deployable on it. A society may switch it off for a type it treats as a record rather than a requirement. Read by volunteer/services/certification.py::deployability(), which derives the answer on every call and stores nothing.",
+   "description": "Whether a lapsed certification of this type makes its holder undeployable. On by default.",
    "fieldname": "blocks_deployment_when_lapsed",
    "fieldtype": "Check",
    "label": "A Lapse Blocks Deployment"

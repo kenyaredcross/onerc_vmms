@@ -17,6 +17,8 @@ vmmsx.patches.register_events_module
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+vmmsx.patches.consolidate_person_facts_on_red_profile
+vmmsx.patches.unpublish_legacy_volunteer_web_form
 vmmsx.patches.setup_member_module
 vmmsx.patches.install_membership_scope_role
 vmmsx.patches.setup_volunteer_module

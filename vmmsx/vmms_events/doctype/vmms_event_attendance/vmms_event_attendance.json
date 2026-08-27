@@ -17,7 +17,7 @@
  "fields": [
   {
    "default": "EVA-.#####",
-   "description": "The opaque docname series. Neither the person nor the event goes in the primary key, so nobody can walk the register by guessing what somebody else is going to.",
+   "description": "Automatic series for this record's number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -31,7 +31,7 @@
    "label": "Declaration"
   },
   {
-   "description": "Who said they are going. The Red Profile rather than the login, because a person is one profile across every app the society runs, and because a member enrolled from paper who later makes an account is still the same person who said yes.",
+   "description": "Who said they are going.",
    "fieldname": "red_profile",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -41,7 +41,7 @@
    "reqd": 1
   },
   {
-   "description": "Which event, held as the identifier the events app gave it. Plain data rather than a Link, because the events app is not required by this one: a site without it would have a broken field on every row, and this record is a statement of intent that outlives whether the listing is installed.",
+   "description": "Which event they are going to.",
    "fieldname": "event",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -55,7 +55,7 @@
   },
   {
    "default": "Attending",
-   "description": "Whether the intention still stands. Withdrawing sets this to Cancelled rather than deleting the row, so a coordinator who counted on somebody can see that the answer changed instead of finding that it was never given.",
+   "description": "Whether the intention still stands. Withdrawing marks it cancelled rather than deleting the row.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -65,7 +65,7 @@
    "reqd": 1
   },
   {
-   "description": "When the current answer was given. Rewritten each time the answer changes, so it reads as the date of the standing intention rather than the date the row first appeared.",
+   "description": "When the current answer was given. Rewritten each time the answer changes.",
    "fieldname": "responded_on",
    "fieldtype": "Datetime",
    "label": "Responded On",

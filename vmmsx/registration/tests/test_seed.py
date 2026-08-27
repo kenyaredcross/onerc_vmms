@@ -17,8 +17,6 @@ way.** It does not build geo or roles: the seed does that, which is the thing
 under test.
 """
 
-import json
-
 import frappe
 from frappe.tests import IntegrationTestCase
 
@@ -232,9 +230,8 @@ class TestItIsIdempotent(SeedTestCase):
 
 class TestAJourneyThroughTheSeededSociety(SeedTestCase):
 	def test_a_person_registers_and_the_seeded_approver_accepts_them(self):
-		from frappe.website.doctype.web_form.web_form import accept
-
 		from vmmsx.api import approvals as approvals_api
+		from vmmsx.api import registration as registration_api
 		from vmmsx.api import volunteer as volunteer_api
 
 		applicant = self._website_account()
@@ -244,24 +241,21 @@ class TestAJourneyThroughTheSeededSociety(SeedTestCase):
 		frappe.set_user(applicant)
 
 		try:
-			application = accept(
-				web_form="register-as-a-volunteer",
-				data=json.dumps(
-					{
-						"applicant_first_name": "Amina",
-						"applicant_last_name": "Otieno",
-						"geo_node": branch,
-						"country_of_citizenship": kenya.COUNTRY,
-						"residency_type": "Local",
-						"home_geo_node": branch,
-						"id_type": id_type,
-						"id_number": "SEED-TEST-0001",
-					}
-				),
+			registered = registration_api.register_as_volunteer(
+				first_name="Amina",
+				last_name="Otieno",
+				date_of_birth="1990-01-01",
+				geo_node=branch,
+				country_of_citizenship=kenya.COUNTRY,
+				residency_type="Local",
+				home_geo_node=branch,
+				id_type=id_type,
+				id_number="SEED-TEST-0001",
 			)
 		finally:
-			frappe.flags.in_web_form = False
 			frappe.set_user("Administrator")
+
+		application = frappe.get_doc(kenya.APPLICATION_DOCTYPE, registered["name"])
 
 		self.assertEqual(application.approval_state, "In Review")
 

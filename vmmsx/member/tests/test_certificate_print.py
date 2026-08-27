@@ -66,8 +66,11 @@ EXPECTED_READABLE = (
 	"date_of_birth",
 	"profile_photo",
 	"preferred_language",
-	"nationality",
+	"country_of_citizenship",
 	"citizenship_status",
+	"residency_type",
+	"country_of_residence",
+	"residence_address",
 )
 
 # Core holds these back for a gated extension. They are not this app's to show,

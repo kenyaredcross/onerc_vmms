@@ -34,6 +34,7 @@ import frappe
 from frappe import _
 from frappe.utils import getdate, today
 
+from vmmsx import elevation
 from vmmsx.approvals import states
 from vmmsx.approvals.services import contract
 
@@ -308,14 +309,13 @@ def _as_system():
 
 	Administrator is a Frappe framework primitive, not a society role, so naming
 	it here is not the hardcoded-role rule being broken.
-	"""
-	previous = frappe.session.user
-	frappe.set_user("Administrator")
 
-	try:
+	The mechanics are `vmmsx.elevation`: restoring the user is not enough on
+	its own, because `set_user` overwrites the live session id and discards the
+	session data with it, which signs the caller out one request later.
+	"""
+	with elevation.as_system():
 		yield
-	finally:
-		frappe.set_user(previous)
 
 
 def report(volunteer) -> str | None:
@@ -392,6 +392,7 @@ def profile_dto(volunteer, as_of=None) -> dict:
 		"date_of_birth": person.get("date_of_birth"),
 		"preferred_language": person.get("preferred_language"),
 		"profile_photo": person.get("profile_photo"),
+		"identifications": identity.identifications(volunteer),
 		"status": volunteer.status,
 		"joined_on": volunteer.joined_on,
 		"exited_on": volunteer.exited_on,

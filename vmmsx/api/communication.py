@@ -73,6 +73,24 @@ def options() -> dict:
 
 	meta = frappe.get_meta(ANNOUNCEMENT_DOCTYPE)
 
+	sms_templates = []
+	sms_source_doctypes = []
+	if campaign.available() and frappe.has_permission("SMS Template", ptype="read"):
+		sms_templates = frappe.get_list(
+			"SMS Template",
+			fields=["name", "template_name", "category", "message"],
+			order_by="template_name asc",
+		)
+	if campaign.available():
+		for doctype in (
+			"VMMS Volunteer",
+			"VMMS Member",
+			"VMMS Volunteer Application",
+			"VMMS Membership",
+		):
+			if frappe.db.exists("DocType", doctype) and frappe.has_permission(doctype, ptype="read"):
+				sms_source_doctypes.append({"value": doctype, "label": doctype.removeprefix("VMMS ")})
+
 	return {
 		"audiences": _select_options(meta, "audience"),
 		"urgencies": _select_options(meta, "urgency"),
@@ -92,6 +110,8 @@ def options() -> dict:
 			CHANNEL_EMAIL: True,
 			CHANNEL_SMS: campaign.available(),
 		},
+		"sms_templates": sms_templates,
+		"sms_source_doctypes": sms_source_doctypes,
 		# Whether they may actually send, asked of the same check `send` makes.
 		# The screen draws its button from this and decides nothing itself.
 		"can_send": bool(frappe.has_permission(ANNOUNCEMENT_DOCTYPE, ptype="create")),
@@ -141,6 +161,14 @@ def send(
 	link_label: str | None = None,
 	link_href: str | None = None,
 	sms_message: str | None = None,
+	sms_template: str | None = None,
+	sms_scheduled_at: str | None = None,
+	sms_source_type: str = "VMMS Audience",
+	sms_source_doctype: str | None = None,
+	sms_phone_field: str | None = None,
+	sms_filters: list | str | None = None,
+	sms_csv_file: str | None = None,
+	sms_phone_numbers: str | None = None,
 ) -> dict:
 	"""Compose and send on every channel asked for. Returns what each one did.
 
@@ -206,12 +234,20 @@ def send(
 		report["email_sent"] = CHANNEL_EMAIL in chosen
 
 	if CHANNEL_SMS in chosen:
-		report["sms"] = campaign.draft(
+			report["sms"] = campaign.draft(
 			name=title,
 			message=(sms_message or summary or body or "").strip(),
 			geo_node=geo_node,
 			who=who,
-		)
+			template=sms_template,
+				scheduled_at=sms_scheduled_at,
+				source_type=sms_source_type,
+				source_doctype=sms_source_doctype,
+				phone_field=sms_phone_field,
+				filters=frappe.parse_json(sms_filters) if isinstance(sms_filters, str) else sms_filters,
+				csv_file=sms_csv_file,
+				phone_numbers=sms_phone_numbers,
+			)
 
 	return report
 

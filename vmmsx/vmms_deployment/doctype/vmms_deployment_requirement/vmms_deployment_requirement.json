@@ -13,7 +13,7 @@
  "fields": [
   {
    "columns": 4,
-   "description": "A certification a volunteer needs in order to be a candidate for this Terms of Reference. A Link to the society's own VMMS Certification Type, so no qualification is named in any source file: which certifications exist, how long they last and whether a lapse blocks deployment are all rows the society writes.",
+   "description": "A certification a volunteer needs to be a candidate for this work.",
    "fieldname": "certification_type",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -24,14 +24,14 @@
   {
    "columns": 2,
    "default": "1",
-   "description": "Whether this requirement is a hard filter or a preference. On, and a volunteer who does not hold the certification (or whose certification has lapsed on the date being asked about) is not a candidate at all. Off, and it is desirable rather than required: the volunteer is still a candidate, and holding it ranks them higher. Read by deployment/services/matching.py, which computes the lapse rather than reading a stored flag.",
+   "description": "On: a volunteer without it, or whose certification has lapsed, is not a candidate. Off: it only ranks them higher.",
    "fieldname": "is_mandatory",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Mandatory"
   },
   {
-   "description": "Why this requirement is here, for whoever reads the Terms of Reference. Never read by code.",
+   "description": "Why this requirement is here, for whoever reads the terms of reference.",
    "fieldname": "requirement_notes",
    "fieldtype": "Data",
    "label": "Notes"

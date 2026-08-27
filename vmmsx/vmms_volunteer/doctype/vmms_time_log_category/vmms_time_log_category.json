@@ -20,7 +20,7 @@
    "label": "Identity"
   },
   {
-   "description": "What this society calls this kind of volunteering: Training, Community Event, Office Support. A society's own vocabulary, extended freely.",
+   "description": "What this society calls this kind of volunteering: Training, Community Event, Office Support.",
    "fieldname": "category_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -29,7 +29,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. A time log points at its category by this key, so relabelling never rewrites history. Nothing in this app branches on a category value: the category is how a society reports on its volunteers' time, not how the app decides anything.",
+   "description": "The stable key time logs point at. Relabelling never rewrites history.",
    "fieldname": "category_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -43,14 +43,14 @@
   },
   {
    "default": "1",
-   "description": "An inactive category keeps the logs already filed under it but is no longer offered for new ones.",
+   "description": "An inactive category keeps the logs already filed under it but is no longer offered.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Active"
   },
   {
-   "description": "What belongs in this category, in the society's own words.",
+   "description": "What belongs in this category, in your own words.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description",

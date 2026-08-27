@@ -49,6 +49,42 @@ class TransferTestCase(DeploymentTestCase):
 		return fixtures.make_volunteer(fixtures.make_profile(handle, "Moving"), node)
 
 
+class TestACoordinatorCanRaiseOne(TransferTestCase):
+	"""The endpoint, asked by somebody who is not an administrator.
+
+	Every other test here builds a transfer as the test user, which is a System
+	Manager and so is core's documented scope bypass. That hides the one thing a
+	real coordinator hits first: `insert()` checks create permission *before* any
+	`before_insert` runs, and this doctype is geo-scoped on `from_geo_node`, so a
+	document still waiting to be anchored is one core refuses on sight.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+
+		cls.mover = cls.viewer("transfer_mover", fixtures.TRANSFER_SCOPE_ROLE, cls.society_a["region"])
+		fixtures.grant_scope(cls.mover, fixtures.VOLUNTEER_SCOPE_ROLE, cls.society_a["region"])
+		fixtures.grant_doctype_access(fixtures.TRANSFER_DOCTYPE, fixtures.TRANSFER_SCOPE_ROLE)
+		fixtures.grant_doctype_access(fixtures.VOLUNTEER_DOCTYPE, fixtures.VOLUNTEER_SCOPE_ROLE)
+
+	def test_a_scoped_coordinator_can_raise_a_transfer_through_the_endpoint(self):
+		from vmmsx.api import deployment as api
+
+		volunteer = self.volunteer_at(self.society_a["branch"], "Endpointed")
+
+		with fixtures.acting_as(self.mover):
+			raised = api.request_transfer(
+				volunteer=volunteer.name,
+				to_geo_node=self.society_a["other_branch"],
+				effective_date=today(),
+				reason="The branch asked for them.",
+			)
+
+		self.assertEqual(raised["from_geo_node"], self.society_a["branch"])
+		self.assertEqual(raised["to_geo_node"], self.society_a["other_branch"])
+
+
 class TestATransferMovesThePlacement(TransferTestCase):
 	def test_an_effective_transfer_moves_the_home_geo_node(self):
 		volunteer = self.volunteer_at(self.society_a["branch"], "Alpha")

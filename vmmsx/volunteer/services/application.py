@@ -34,8 +34,6 @@ engine does with stages that resolve nobody and are optional. That path needs no
 code here either.
 """
 
-from contextlib import contextmanager
-
 import frappe
 from frappe import _
 from frappe.utils import getdate, today
@@ -54,54 +52,24 @@ ACCEPTANCE_FLAG = "vmms_application_accepting"
 
 # --- controller-facing defaults --------------------------------------------
 #
-# The three functions below are called from the controller's own
-# `before_insert`/`validate`, not from `submit()`: they fill in or tidy up
-# values, and none of them refuses to save. Refusing belongs to
-# `assert_ready()`, below, at the later moment this app can insist on it.
-
-
-def default_country_of_citizenship(application) -> None:
-	"""Citizenship defaults to the society's own configured country. Creation only.
-
-	Only when empty, so an applicant (or a clerk) who chose a different
-	citizenship is never overwritten. Called from `before_insert`, which is the
-	one moment guaranteed to run before the field's own `reqd` check — the same
-	window `registration/services/intake.py::claim_profile` uses to supply
-	`red_profile` before its mandatory check.
-	"""
-	if application.get("country_of_citizenship"):
-		return
-
-	from vmmsx.volunteer.services import society
-
-	application.country_of_citizenship = society.default_citizenship_country()
+# The application owns only its Serving Branch. Where the person lives is read
+# from Red Profile and used as a convenient default, never copied onto this row.
 
 
 def default_serving_branch(application) -> None:
 	"""Serving Branch defaults from Home Area for a Local applicant. Idempotent.
 
 	Only when Serving Branch is still blank, so a coordinator's own choice is
-	never overwritten — and only for Local: an applicant Abroad has no home area
-	to default from and must say explicitly where they will serve, which is
-	just the ordinary ACC-02 anchor check doing its job with no extra code.
+	never overwritten. An applicant living abroad has no Home Area and must say
+	explicitly where they will serve.
 	"""
-	if application.get("residency_type") == "Local" and application.get("home_geo_node"):
-		if not application.get("geo_node"):
-			application.geo_node = application.home_geo_node
+	if application.get("geo_node") or not application.get("red_profile"):
+		return
 
+	home = frappe.db.get_value("Red Profile", application.red_profile, "home_geo_node")
 
-def reconcile_residency(application) -> None:
-	"""Clear whichever residency answer the current toggle does not use.
-
-	A Local applicant has no business keeping a stale Abroad address around,
-	and the reverse. Without this, toggling the field in the UI and saving
-	would leave contradictory data sitting on the record.
-	"""
-	if application.get("residency_type") == "Abroad":
-		application.home_geo_node = None
-	else:
-		application.country_of_residence = None
-		application.residence_address = None
+	if home:
+		application.geo_node = home
 
 
 # --- submission -----------------------------------------------------------
@@ -116,18 +84,15 @@ def submit(application) -> dict:
 	their queue. Called on an application already under review, it re-syncs the
 	queue and restarts nothing.
 
-	Two things are checked here, before any of that, that are deliberately not
-	in `validate()`: identification and a completed residency answer. Both are
-	required to *submit*, not to exist — the same draft-may-be-built-up-in-
-	stages allowance a paper form has, and the reason ACC-02's anchor (required
-	at creation) and these two (required at submission) are different gates.
+	Profile completeness is checked here, before any of that, deliberately not in
+	`validate()`: citizenship, identification, date of birth and a completed
+	residence answer are required to *submit*, not to let a draft exist. That is
+	the same build-a-draft-in-stages allowance a paper intake needs.
 	"""
 	if states.is_terminal(contract.state(application)):
 		return status(application)
 
 	assert_ready(application)
-	_sync_identification_to_profile(application)
-
 	engine.submit(application)
 
 	accepted = try_accept(application)
@@ -141,7 +106,7 @@ def submit(application) -> dict:
 def assert_ready(application) -> None:
 	"""Refuse submission until the application is complete enough to review.
 
-	Two checks, neither of them in `validate()`. A draft may be built up over
+	Four profile checks, none of them in `validate()`. A draft may be built up over
 	several saves before an applicant or a clerk is ready to send it on — every
 	existing way of creating an application still creates a bare draft — so
 	these join the gate at the one moment this app can insist the record is
@@ -152,21 +117,45 @@ def assert_ready(application) -> None:
 	required to hold a half-finished draft. `assert_answered` is a no-op until
 	somebody creates a question, so a society that has added none is unaffected.
 	"""
+	_assert_country_of_citizenship(application)
 	_assert_identification(application)
 	_assert_date_of_birth(application)
 	_assert_residency_complete(application)
 	questions.assert_answered(application)
 
 
+def _assert_country_of_citizenship(application) -> None:
+	"""A volunteer application needs the person's country of citizenship."""
+	if _profile_value(application, "country_of_citizenship"):
+		return
+
+	frappe.throw(
+		_("Add your Country of Citizenship to your profile before submitting."),
+		frappe.MandatoryError,
+		title=_("Missing Citizenship"),
+	)
+
+
 def _assert_identification(application) -> None:
-	"""ACC-02's identification cousin: optional on Red Profile, mandatory here."""
-	if application.get("id_type") and application.get("id_number"):
+	"""Identification lives on Red Profile but is required by this process."""
+	profile = application.get("red_profile")
+
+	if profile and frappe.db.exists(
+		"Red Profile Identification",
+		{
+			"parent": profile,
+			"parenttype": "Red Profile",
+			"parentfield": "identifications",
+			"id_type": ("is", "set"),
+			"id_number": ("is", "set"),
+		},
+	):
 		return
 
 	frappe.throw(
 		_(
-			"An application cannot be submitted without an identification. Identification is optional"
-			" on a Red Profile, but mandatory here: enter an ID Type and ID Number before submitting."
+			"An application cannot be submitted without an identification. Add an ID Type and ID Number"
+			" to your profile before submitting."
 		),
 		frappe.MandatoryError,
 		title=_("Missing Identification"),
@@ -191,10 +180,7 @@ def _assert_date_of_birth(application) -> None:
 	Nothing is backfilled — an application already accepted is untouched, because
 	this runs at submission and not at save.
 	"""
-	profile = application.get("red_profile")
-	given = application.get("applicant_date_of_birth") or (
-		frappe.db.get_value("Red Profile", profile, "date_of_birth") if profile else None
-	)
+	given = application.get("applicant_date_of_birth") or _profile_value(application, "date_of_birth")
 
 	if given:
 		return
@@ -210,9 +196,13 @@ def _assert_date_of_birth(application) -> None:
 
 
 def _assert_residency_complete(application) -> None:
-	"""The residency toggle's other half must actually be answered."""
-	if application.get("residency_type") == "Abroad":
-		if application.get("country_of_residence") and application.get("residence_address"):
+	"""The person's Red Profile must contain one complete residence shape."""
+	residency_type = _profile_value(application, "residency_type")
+
+	if residency_type == "Abroad":
+		if _profile_value(application, "country_of_residence") and _profile_value(
+			application, "residence_address"
+		):
 			return
 
 		frappe.throw(
@@ -224,63 +214,27 @@ def _assert_residency_complete(application) -> None:
 			title=_("Missing Residency Details"),
 		)
 
-	if not application.get("home_geo_node"):
+	if residency_type == "Local" and _profile_value(application, "home_geo_node"):
+		return
+
+	if residency_type == "Local":
 		frappe.throw(
-			_("An applicant living locally must give a Home Area before this application can be submitted."),
+			_("Add your Home Area to your profile before submitting."),
 			frappe.MandatoryError,
 			title=_("Missing Home Area"),
 		)
 
-
-def _sync_identification_to_profile(application) -> None:
-	"""Write the applicant's declared identification onto their Red Profile.
-
-	Reuses core's own `identifications` table rather than a parallel ID store,
-	as ACC-02's sibling rule for this field requires. Idempotent: a row already
-	matching this type and number is left alone, so calling `submit()` again —
-	the ordinary re-sync path for an application already under review — does
-	not pile up duplicate rows.
-
-	**The elevation, and why it is this narrow.** The applicant who just
-	submitted holds no write permission on Red Profile — core's identity spine
-	— and must not be given any; a desk clerk submitting on somebody's behalf
-	may not either. The write is not a shortcut around a check: the permission
-	that matters was the create the applicant (or the clerk) was already
-	allowed to perform on this application, and `_assert_identification` above
-	is what guarantees there is something true to write. Exactly one call is
-	wrapped, the same shape as `volunteer/services/volunteer.py::_as_system()`
-	and `member/services/member.py::_as_system()`, deliberately not shared with
-	either: the moment this helper wraps two calls it stops being auditable at
-	a glance.
-	"""
-	if not (application.get("id_type") and application.get("id_number")):
-		return
-
-	profile = frappe.get_doc("Red Profile", application.red_profile)
-
-	for row in profile.identifications:
-		if row.id_type == application.id_type and row.id_number == application.id_number:
-			return
-
-	is_primary = 0 if profile.identifications else 1
-	profile.append(
-		"identifications",
-		{"id_type": application.id_type, "id_number": application.id_number, "is_primary": is_primary},
+	frappe.throw(
+		_("Choose whether your residence is Local or Abroad on your profile before submitting."),
+		frappe.MandatoryError,
+		title=_("Missing Residency"),
 	)
 
-	with _as_system():
-		profile.save(ignore_permissions=True)
 
+def _profile_value(application, fieldname: str):
+	profile = application.get("red_profile")
 
-@contextmanager
-def _as_system():
-	previous = frappe.session.user
-	frappe.set_user("Administrator")
-
-	try:
-		yield
-	finally:
-		frappe.set_user(previous)
+	return frappe.db.get_value("Red Profile", profile, fieldname) if profile else None
 
 
 # --- acceptance -----------------------------------------------------------
@@ -597,10 +551,11 @@ def verification_dto(volunteer) -> dict:
 		# to do is VMMS Certification. The three must not be merged or reconciled
 		# — the page labels this block as declared for exactly that reason.
 		#
-		# `motivation`, `prior_experience` and `identification` are here and
-		# **only** here: they are facts about the applying rather than about the
-		# volunteer, so editing them later would be rewriting history rather than
-		# recording a change. `skills`, `languages` and `availability` appear
+		# `motivation` and `prior_experience` are here and **only** here: they are
+		# facts about the applying rather than about the volunteer, so editing them
+		# later would be rewriting history rather than recording a change.
+		# Identification is a live person fact read from Red Profile, not a
+		# declaration stored on this application. `skills`, `languages` and `availability` appear
 		# here as well as on the volunteer, and that is not duplication: this is
 		# what was claimed, that is what is true, and a coordinator comparing the
 		# two is the reason both are shown.
@@ -614,7 +569,6 @@ def verification_dto(volunteer) -> dict:
 				application.motivation, "motivation", "VMMS Motivation", "motivation_name"
 			),
 			"prior_experience": application.prior_experience,
-			"identification": _identification_dto(application),
 		},
 	}
 
@@ -638,24 +592,25 @@ def decision_dto(application) -> dict:
 
 	person = identity.read(application)
 
-	if application.residency_type == "Abroad":
+	if person.get("residency_type") == "Abroad":
 		residency = {
 			"residency_type": "Abroad",
 			"home_geo_node": None,
 			"home_geo_path": None,
-			"country_of_residence": application.country_of_residence,
-			"residence_address": application.residence_address,
+			"country_of_residence": person.get("country_of_residence"),
+			"residence_address": person.get("residence_address"),
 		}
 	else:
+		home = person.get("home_geo_node")
 		residency = {
-			"residency_type": "Local",
-			"home_geo_node": application.home_geo_node,
-			"home_geo_path": adapter.get_full_path(application.home_geo_node)
-			if application.home_geo_node
-			else None,
+			"residency_type": person.get("residency_type"),
+			"home_geo_node": home,
+			"home_geo_path": adapter.get_full_path(home) if home else None,
 			"country_of_residence": None,
 			"residence_address": None,
 		}
+
+	identifications = _identifications_dto(application)
 
 	return {
 		"name": application.name,
@@ -674,7 +629,7 @@ def decision_dto(application) -> dict:
 		"date_of_birth": person.get("date_of_birth"),
 		"preferred_language": person.get("preferred_language"),
 		"applied_on": application.applied_on,
-		"country_of_citizenship": application.country_of_citizenship,
+		"country_of_citizenship": person.get("country_of_citizenship"),
 		**residency,
 		"geo_node": application.geo_node,
 		"geo_path": adapter.get_full_path(application.geo_node) if application.geo_node else None,
@@ -687,7 +642,8 @@ def decision_dto(application) -> dict:
 			application.motivation, "motivation", "VMMS Motivation", "motivation_name"
 		),
 		"prior_experience": application.prior_experience,
-		"identification": _identification_dto(application),
+		"identification": identifications[0] if identifications else None,
+		"identifications": identifications,
 		# What this society asked for beyond the standard form, read off the
 		# application's own snapshots rather than the live question list, so an
 		# application decided last year still shows the question it was asked.
@@ -709,25 +665,9 @@ def _selector_dto(rows, link_field: str, doctype: str, name_field: str) -> list[
 	return capabilities.selector_dto(rows, link_field, doctype, name_field)
 
 
-def _identification_dto(application) -> dict:
-	"""The identification this application captured, resolved for display.
-
-	Built here rather than inline in two DTOs: the coordinator's decision view
-	and the volunteer page's application history show the same fact, and it must
-	read identically on both.
-	"""
-	return {
-		"id_type": application.id_type,
-		"id_type_name": _id_type_name(application.id_type),
-		"id_number": application.id_number,
-	}
-
-
-def _id_type_name(id_type: str | None) -> str | None:
-	if not id_type:
-		return None
-
-	return frappe.db.get_value("Identification Type", id_type, "identification_type_name")
+def _identifications_dto(application) -> list[dict]:
+	"""The applicant's current Red Profile identifications, primary first."""
+	return identity.identifications(application)
 
 
 # --- housekeeping ---------------------------------------------------------

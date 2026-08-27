@@ -61,7 +61,6 @@ TEMPLATE_DOCTYPE = "VMMS Template"
 WORKFLOW_DOCTYPE = "VMMS Approval Workflow"
 PROFILE_DOCTYPE = "Red Profile"
 
-VOLUNTEER_FORM = "register-as-a-volunteer"
 MEMBERSHIP_FORM = "register-as-a-member"
 
 
@@ -414,15 +413,11 @@ def clear_society_roles() -> None:
 
 
 def submit_volunteer_form(geo_node: str, **values):
-	"""POST the volunteer registration form as whoever is logged in.
+	"""Post the portal volunteer registration as whoever is logged in.
 
-	Citizenship, residency, identification and a date of birth are all required
-	to submit — see `vmmsx.volunteer.services.application.assert_ready` — and a
-	native web form submits itself the moment it inserts (`intake.submit_once`),
-	so a payload missing any of the four would fail here exactly as it would in a
-	browser. `home_geo_node` defaults to the same branch the applicant chose to
-	serve at, which is the ordinary "I live near where I volunteer" case the form
-	itself defaults to when it is left blank.
+	The React portal is the supported registration surface. It sends person facts
+	to `register_as_volunteer`, which writes Red Profile before creating the thin
+	application and submits both in one transaction.
 
 	**`applicant_date_of_birth` is an intake-buffer field, not a stored one.**
 	`intake.claim_profile` reads it in `before_insert`, writes it onto the Red
@@ -432,9 +427,11 @@ def submit_volunteer_form(geo_node: str, **values):
 	requirement is meant to refuse.
 	"""
 	payload = {
-		"applicant_first_name": "Amina",
-		"applicant_last_name": "Otieno",
-		"applicant_date_of_birth": "1990-01-01",
+		"first_name": values.pop("applicant_first_name", "Amina"),
+		"last_name": values.pop("applicant_last_name", "Otieno"),
+		"date_of_birth": values.pop("applicant_date_of_birth", "1990-01-01"),
+		"phone": values.pop("applicant_phone", None),
+		"gender": values.pop("applicant_gender", None),
 		"geo_node": geo_node,
 		"country_of_citizenship": test_country(),
 		"residency_type": "Local",
@@ -445,7 +442,11 @@ def submit_volunteer_form(geo_node: str, **values):
 	}
 	payload.update(values)
 
-	return _accept(VOLUNTEER_FORM, payload)
+	from vmmsx.api.registration import register_as_volunteer
+
+	result = register_as_volunteer(**payload)
+
+	return frappe.get_doc(APPLICATION_DOCTYPE, result["name"])
 
 
 def submit_membership_form(geo_node: str, membership_type: str, **values):

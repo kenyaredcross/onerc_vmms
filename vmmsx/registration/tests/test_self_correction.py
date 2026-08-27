@@ -245,13 +245,11 @@ class TestCorrectingYourOwnProfile(RegistrationTestCase):
 				profile_photo="https://example.com/portrait.png",
 			)
 
-	def test_the_profile_says_where_the_society_has_placed_somebody(self):
-		"""What lets a second registration open its placement step answered.
+	def test_the_profile_serves_the_persons_home_area_for_confirmation(self):
+		"""A second registration can confirm the home area already on the profile.
 
-		Read-only, and not in `SELF_EDITABLE_FIELDS`: it is written by a
-		registration rather than typed into one. The wizard uses it to prefill a
-		cascading picker rather than asking somebody to walk back down to the
-		branch they have already named.
+		Home Area is residence, not the volunteer's Serving Branch, so it is a
+		person-owned fact they may correct through the profile endpoint.
 		"""
 		user, _profile = self._registered("placed.already")
 
@@ -259,10 +257,10 @@ class TestCorrectingYourOwnProfile(RegistrationTestCase):
 			served = registration_api.my_profile()
 
 		self.assertEqual(served["home_geo_node"], self.branch())
-		self.assertNotIn(
+		self.assertIn(
 			"home_geo_node",
 			inspect.signature(registration_api.update_my_profile).parameters,
-			"placement is not a detail a person corrects on this endpoint",
+			"home area is a person detail the profile endpoint may correct",
 		)
 
 	def test_the_photograph_reaches_the_card(self):

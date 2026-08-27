@@ -98,11 +98,11 @@ def _the_journey(w) -> None:
 
 
 def _the_web_forms(w) -> None:
-	w.h2("The two Web Forms")
+	w.h2("The two registration surfaces")
 
 	w.p(
-		"Both are standard Web Forms, which means they ship as JSON in this app and are synced by"
-		" every migrate rather than being typed into a site:"
+		"Volunteer registration uses the React journey so Red Profile and the thin application are"
+		" written together. Membership continues to use its standard Web Form:"
 	)
 
 	w.table(
@@ -111,15 +111,14 @@ def _the_web_forms(w) -> None:
 			[
 				VOLUNTEER_FORM,
 				"VMMS Volunteer Application",
-				"/register-as-a-volunteer",
+				"/portal/join?path=volunteer",
 			],
 			[MEMBERSHIP_FORM, "VMMS Membership", "/register-as-a-member"],
 		],
 		(2.10, 2.45, 2.00),
 	)
 	w.caption(
-		"vmmsx/vmms_volunteer/web_form/register_as_a_volunteer/ and"
-		" vmmsx/vmms_member/web_form/register_as_a_member/"
+		"portal/src/guest/Join.tsx and vmmsx/vmms_member/web_form/register_as_a_member/"
 	)
 
 	w.h3("Login required, and not guest")

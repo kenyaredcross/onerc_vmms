@@ -69,8 +69,11 @@ IDENTITY_FIELDS = (
 	"phone",
 	"gender",
 	"date_of_birth",
-	"nationality",
+	"country_of_citizenship",
 	"citizenship_status",
+	"residency_type",
+	"country_of_residence",
+	"residence_address",
 	"profile_photo",
 	"home_geo_node",
 )

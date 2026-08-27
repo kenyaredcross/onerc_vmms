@@ -30,7 +30,7 @@
    "label": "Identity"
   },
   {
-   "description": "What this slot is, in plain words: \"Hero headline\", \"Second photo band, caption\". Shown beside the pencil when somebody edits the page, so it is the label an administrator navigates by.",
+   "description": "What this slot is, in plain words: \"Hero headline\", \"Second photo band, caption\". Shown beside the pencil when the page is edited.",
    "fieldname": "label",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -39,7 +39,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. A component in the frontend asks for exactly this key, so renaming the label above never blanks a page. Keys read as a path, for instance landing.hero.headline.",
+   "description": "The stable key the page asks for. Renaming the label never blanks a page. Keys read as a path, such as landing.hero.headline.",
    "fieldname": "content_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -52,7 +52,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Which screen this block belongs to. The frontend loads one surface in one request, and a surface's Readable By Guests setting decides whether a signed-out visitor sees it.",
+   "description": "Which screen this block belongs to. The surface decides whether signed-out visitors can see it.",
    "fieldname": "surface",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -62,7 +62,7 @@
   },
   {
    "default": "0",
-   "description": "Ordering for the desk list only, so the blocks of a page read top to bottom the way the page does. Layout is the frontend's business; changing this moves nothing on the page.",
+   "description": "Ordering for this list only, so the blocks read top to bottom the way the page does. It moves nothing on the page itself.",
    "fieldname": "sequence",
    "fieldtype": "Int",
    "label": "Sequence"
@@ -73,14 +73,14 @@
    "label": "Wording"
   },
   {
-   "description": "The words shown in this slot. Plain text, deliberately: it is rendered as text rather than as markup, so an administrator editing a heading can never inject a script into a page served to the public. Line breaks are kept.",
+   "description": "The words shown in this slot. Plain text; line breaks are kept.",
    "fieldname": "text_value",
    "fieldtype": "Small Text",
    "label": "Text",
    "translatable": 1
   },
   {
-   "description": "Where this slot links to, if it links anywhere. A path within the site, or an http, https, mailto or tel address. Anything else is refused on save, because a link a visitor clicks is a link this app served them.",
+   "description": "Where this slot links to, if anywhere. A path within the site, or an http, https, mailto or tel address.",
    "fieldname": "link_href",
    "fieldtype": "Data",
    "label": "Link"
@@ -91,7 +91,7 @@
    "label": "Image"
   },
   {
-   "description": "The picture shown in this slot. Left empty, the page draws its own placeholder rather than a broken image, so a society that has uploaded nothing still has a page that looks finished.",
+   "description": "The picture shown in this slot. Left empty, the page draws its own placeholder rather than a broken image.",
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "label": "Image"
@@ -101,14 +101,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "What the picture shows, for somebody using a screen reader and for the case where the image does not load. Worth writing: a decorative photo may leave it empty, a photo carrying meaning may not.",
+   "description": "What the picture shows, for screen readers and for when the image does not load. A decorative photo may leave it empty.",
    "fieldname": "image_alt",
    "fieldtype": "Data",
    "label": "Alt Text",
    "translatable": 1
   },
   {
-   "description": "Who took the picture and under what licence, shown as a small caption over the image. Empty means no caption is drawn.",
+   "description": "Who took the picture and under what licence, shown as a small caption over it. Empty means no caption.",
    "fieldname": "image_credit",
    "fieldtype": "Data",
    "label": "Photo Credit",
@@ -120,7 +120,7 @@
    "label": "Notes"
   },
   {
-   "description": "Guidance for whoever edits this next: how long the text should be, what the picture needs to show. Never displayed to a visitor.",
+   "description": "Guidance for whoever edits this next: how long the text should be, what the picture needs to show. Never shown to a visitor.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Editor Notes"

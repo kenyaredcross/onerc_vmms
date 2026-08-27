@@ -32,7 +32,6 @@ frappe.ready(function () {
 		MAX_DEPTH: 8,
 
 		setup() {
-			vmmsx_geo_picker.add_button("home_geo_node", __("Choose Home Area"));
 			vmmsx_geo_picker.add_button("geo_node", __("Choose Serving Branch"));
 		},
 

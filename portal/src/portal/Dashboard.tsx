@@ -30,6 +30,7 @@ import type {
 	MembershipRow,
 	MyCertifications,
 	MyTimeLogs,
+	OpenRegistration,
 	TaskSummary,
 	VolunteerProfile,
 } from "./types";
@@ -86,10 +87,7 @@ export default function Dashboard() {
 	// record yet, no membership, no training — so without this the dashboard
 	// reads as though the application never happened.
 	const open = useFrappeGetCall<{
-		message: Record<
-			string,
-			{ doctype: string; name: string; path: string; state: string; reason?: string } | null
-		>;
+		message: Record<string, OpenRegistration | null>;
 	}>(API.myOpenRegistrations, undefined, "portal:open_registrations");
 
 	// The invitation panel and the "Coming up" column. Two more of the same
@@ -107,13 +105,7 @@ export default function Dashboard() {
 		"portal:events_upcoming",
 	);
 
-	const pending = Object.values(open.data?.message ?? {}).filter(Boolean) as {
-		doctype: string;
-		name: string;
-		path: string;
-		state: string;
-		reason?: string;
-	}[];
+	const pending = Object.values(open.data?.message ?? {}).filter(Boolean) as OpenRegistration[];
 
 	const profile = volunteer.data?.message ?? null;
 	const rows = memberships.data?.message ?? [];
@@ -866,12 +858,25 @@ const STATE_COPY: Record<string, { tone: "info" | "warn"; title: string; body: s
 	},
 };
 
-function UnderReview({
-	row,
-}: {
-	row: { doctype: string; name: string; path: string; state: string; reason?: string };
-}) {
-	const copy = STATE_COPY[row.state] ?? {
+/**
+ * The unfinished draft, which is not the returned one.
+ *
+ * `approval_state` says "Draft" for both, and this panel used to read it as one
+ * thing: somebody who had started a registration and not sent it was told "your
+ * application needs something from you — your branch has asked for something",
+ * about an application no branch had ever seen. `reviewed` is the server's
+ * answer to which of the two this is; see `registration._has_been_reviewed`.
+ */
+const UNSENT: { tone: "warn"; title: string; body: string } = {
+	tone: "warn",
+	title: "Your application is not finished",
+	body: "You have not sent this to your branch yet. Pick it up where you left off.",
+};
+
+function UnderReview({ row }: { row: OpenRegistration }) {
+	const unsent = row.state === "Draft" && !row.reviewed;
+
+	const copy = (unsent ? UNSENT : STATE_COPY[row.state]) ?? {
 		tone: "info" as const,
 		title: `Your application is ${row.state.toLowerCase()}`,
 		body: "",
@@ -910,6 +915,21 @@ function UnderReview({
 						<blockquote className="mt-3 rounded-control border-l-2 border-hairline-strong bg-surface px-4 py-3 text-[13px] leading-relaxed text-slate-body">
 							{row.reason}
 						</blockquote>
+					)}
+
+					{/* The way back in. A draft — unfinished or sent back — is the one
+					    state where there is something for this person to *do*, and the
+					    panel that told them so was the only thing on the page that
+					    mentioned the application, with no way to reach it. The wizard
+					    resumes from the path, which is what `/join` reads. */}
+					{row.state === "Draft" && (
+						<Link
+							to={`/join?path=${row.path}`}
+							className="mt-4 inline-flex items-center gap-1.5 rounded-control bg-navy px-4 py-2 font-display text-[12.5px] font-bold text-white transition hover:bg-navy/90"
+						>
+							Continue application
+							<Icon.chevron size={14} className="-rotate-90" />
+						</Link>
 					)}
 
 					<p className="mt-3 text-[12px] text-slate-faint">

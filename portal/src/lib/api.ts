@@ -51,6 +51,13 @@ export const API = {
 	// arrival rather than discovered on submit — and per kind, because an
 	// undecided volunteer application is not a reason to refuse a membership.
 	myOpenRegistrations: "vmmsx.api.registration.my_open_registrations",
+	// The editable body of the caller's one open registration, and the three
+	// explicit applicant actions around it. Draft writes are possessive and stay
+	// out of every approver queue until `submitMyRegistration` is called.
+	myRegistration: "vmmsx.api.registration.my_registration",
+	saveMyVolunteerDraft: "vmmsx.api.registration.save_my_volunteer_draft",
+	saveMyMemberDraft: "vmmsx.api.registration.save_my_member_draft",
+	submitMyRegistration: "vmmsx.api.registration.submit_my_registration",
 	registerAsVolunteer: "vmmsx.api.registration.register_as_volunteer",
 	registerAsMember: "vmmsx.api.registration.register_as_member",
 
@@ -148,6 +155,8 @@ export const API = {
 	communicationOptions: "vmmsx.api.communication.options",
 	communicationReach: "vmmsx.api.communication.preview",
 	communicationSend: "vmmsx.api.communication.send",
+	smsDoctypeFields: "onerc_sms.api.campaign.get_doctype_fields",
+	smsFilterFields: "onerc_sms.api.campaign.get_filter_fields",
 
 	// vmmsx/api/geo.py — `ladder` is how many select fields a placement form
 	// draws, `browse` is what goes in each of them. Neither this file nor any
@@ -409,32 +418,120 @@ export const termsPdfUrl = (name: string): string =>
 	`/api/method/vmmsx.api.deployment.download_terms?name=${encodeURIComponent(name)}`;
 
 /**
- * Frappe wraps a thrown exception's message in HTML and a JSON envelope. This
- * digs out something worth showing a person, and falls back to the generic
- * sentence rather than rendering `[object Object]` at somebody.
+ * The one place a server failure is turned into something a person may read.
+ *
+ * **Nobody outside this file gets to decide that.** Every screen in the portal
+ * funnels its errors through here, so the rule about what an applicant is
+ * allowed to be shown is a rule in one function rather than a habit eighty-five
+ * call sites have to keep.
+ *
+ * **The rule: only sentences somebody wrote for a person survive.** Frappe puts
+ * those in `_server_messages` — they are what `frappe.throw` was given, written
+ * in this codebase to be read at a counter ("You already have an application
+ * with us that has not been decided yet"). Everything else — `exception`, the
+ * HTTP status text, the bare `message` a framework built — is machinery. It was
+ * being rendered under form fields, four times over, in the wizard a member of
+ * the public uses to register:
+ *
+ *     You are not permitted to access this resource. Login to access
+ *     Function vmmsx.api.geo.browse is not whitelisted.
+ *
+ * That sentence is addressed to whoever wrote the endpoint. The person reading
+ * it had come to volunteer.
+ *
+ * **It is not thrown away, it is moved.** The whole error object goes to
+ * `console.error` on the way past, which is where a developer looks for it and
+ * where the browser was already carrying the network failure anyway. Nothing is
+ * harder to debug than it was; it is just no longer debugged on the page.
+ *
+ * **A signed-out session is the one machine failure worth naming**, because it
+ * is the only one the reader can act on, and "something went wrong" while every
+ * control on the page silently fails is worse than being told to sign in again.
  */
 export function errorMessage(error: unknown, fallback = "Something went wrong."): string {
 	if (!error) return fallback;
 
+	// The developer's copy, always, whatever the reader ends up seeing.
+	console.error("[vmms]", error);
+
 	const candidate = error as {
 		message?: string;
 		exception?: string;
+		exc_type?: string;
 		_server_messages?: string;
+		httpStatus?: number;
 		httpStatusText?: string;
 	};
+
+	if (isSignedOut(candidate)) {
+		return "You have been signed out. Sign in again to carry on.";
+	}
 
 	if (candidate._server_messages) {
 		try {
 			const parsed = JSON.parse(candidate._server_messages) as string[];
-			const first = JSON.parse(parsed[0]) as { message?: string };
-			if (first?.message) return stripHtml(first.message);
+
+			for (const entry of parsed) {
+				const text = stripHtml((JSON.parse(entry) as { message?: string })?.message ?? "");
+				if (text && !isMachinery(text)) return text;
+			}
 		} catch {
-			// Not the shape we hoped for; fall through to the plainer fields.
+			// Not the shape we hoped for; the fallback below is the answer.
 		}
 	}
 
-	const text = candidate.message || candidate.exception || candidate.httpStatusText;
-	return text ? stripHtml(text) : fallback;
+	return fallback;
+}
+
+/**
+ * Has the session gone? Frappe says so in several voices, none of them plain.
+ *
+ * `exc_type` is the reliable one when the framework sets it; the 401/403 status
+ * and the "login to access" wording are the same statement arriving from the
+ * layers that do not.
+ */
+function isSignedOut(candidate: {
+	exc_type?: string;
+	httpStatus?: number;
+	message?: string;
+	_server_messages?: string;
+}): boolean {
+	if (candidate.exc_type === "PermissionError" || candidate.exc_type === "AuthenticationError") {
+		return true;
+	}
+
+	if (candidate.httpStatus === 401 || candidate.httpStatus === 403) return true;
+
+	const said = `${candidate.message ?? ""} ${candidate._server_messages ?? ""}`.toLowerCase();
+
+	return said.includes("login to access") || said.includes("session expired");
+}
+
+/**
+ * Does this sentence name a part of the machine?
+ *
+ * A short deny-list rather than a clever one, and it errs towards the generic
+ * fallback: showing "Something went wrong" where a human sentence would have
+ * done costs a little clarity, and the reverse costs a member of the public an
+ * endpoint name under a dropdown.
+ */
+const MACHINERY = [
+	"not whitelisted",
+	"traceback",
+	"internal server error",
+	"<class",
+	"frappe.exceptions",
+	"vmmsx.api.",
+	"onerc_core.",
+	"does not exist in the database",
+	"integrityerror",
+	"operationalerror",
+];
+
+function isMachinery(text: string): boolean {
+	const lowered = text.toLowerCase();
+
+	return MACHINERY.some((mark) => lowered.includes(mark));
 }
 
 function stripHtml(value: string): string {

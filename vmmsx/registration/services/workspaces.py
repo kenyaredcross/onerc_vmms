@@ -67,10 +67,10 @@ LANDING = "Registration"
 VOLUNTEER = "My Volunteering"
 MEMBERSHIP = "My Membership"
 
-# The published routes of the two native Web Forms. Named here because a
-# shortcut has to point somewhere; they are the web forms' own `route`, and the
-# forms are the source of truth for them.
-VOLUNTEER_FORM_ROUTE = "/register-as-a-volunteer"
+# Volunteer registration is the React journey because it owns the Red Profile
+# plus application transaction. Membership still uses its native Web Form.
+VOLUNTEER_REGISTRATION_ROUTE = "/portal/join?path=volunteer"
+VOLUNTEER_APPLICATIONS_ROUTE = "/portal/dashboard"
 MEMBERSHIP_FORM_ROUTE = "/register-as-a-member"
 
 
@@ -208,7 +208,7 @@ def _landing() -> dict:
 	and a volunteer who later wants to become a member comes back here.
 	"""
 	shortcuts = [
-		_url_shortcut("Register as a Volunteer", VOLUNTEER_FORM_ROUTE, "users"),
+		_url_shortcut("Register as a Volunteer", VOLUNTEER_REGISTRATION_ROUTE, "users"),
 		_url_shortcut("Register as a Member", MEMBERSHIP_FORM_ROUTE, "badge"),
 	]
 
@@ -244,7 +244,7 @@ def _volunteering() -> dict:
 	"""
 	shortcuts = [
 		_url_shortcut("My Volunteer Record", "/api/method/vmmsx.api.volunteer.my_volunteer", "user"),
-		_url_shortcut("My Applications", f"{VOLUNTEER_FORM_ROUTE}/list", "file"),
+		_url_shortcut("My Applications", VOLUNTEER_APPLICATIONS_ROUTE, "file"),
 		_doctype_shortcut("My Time Logs", "VMMS Time Log", "clock"),
 		_url_shortcut("My Certifications", "/api/method/vmmsx.api.volunteer.my_certifications", "award"),
 	]

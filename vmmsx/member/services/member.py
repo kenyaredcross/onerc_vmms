@@ -27,6 +27,8 @@ from contextlib import contextmanager
 import frappe
 from frappe import _
 
+from vmmsx import elevation
+
 # The affiliation vocabulary key this satellite owns. A key, not a society's
 # label — core's config-vocabulary rule is explicit that a stable business key
 # is what code refers to (`affiliation_type_key == "member"`). The society's own
@@ -207,14 +209,13 @@ def _as_system():
 
 	Administrator is a Frappe framework primitive, not a society role, so naming
 	it here is not the hardcoded-role rule being broken.
-	"""
-	previous = frappe.session.user
-	frappe.set_user("Administrator")
 
-	try:
+	The mechanics are `vmmsx.elevation`: restoring the user is not enough on
+	its own, because `set_user` overwrites the live session id and discards the
+	session data with it, which signs the caller out one request later.
+	"""
+	with elevation.as_system():
 		yield
-	finally:
-		frappe.set_user(previous)
 
 
 def report(member) -> str | None:

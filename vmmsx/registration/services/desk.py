@@ -23,10 +23,10 @@ signing in — a whole administrative interface handed to somebody whose entire
 business with this site is their own record.
 
 **The desk surfaces are not removed, and that is not an oversight.** The three
-workspaces and the two Web Forms in this package stay installed and keep
-working: a registration clerk with a desk role of their own still uses them to
-file a paper application, which is exactly the case `intake.py` distinguishes
-from a person registering themselves. What changes is who is *made* a desk user.
+workspaces and the membership Web Form stay installed. The legacy volunteer
+Web Form is kept unpublished for transition; a clerk files a paper volunteer
+application directly in the desk, which is exactly the case `intake.py`
+distinguishes from a person registering themselves. What changes is who is *made* a desk user.
 A society that wants its volunteers on the desk after all reverses this by
 ticking `desk_access` on the role, and nothing here fights that on the next
 migrate — see `close()`.

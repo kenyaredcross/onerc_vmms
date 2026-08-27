@@ -34,7 +34,7 @@
    "label": "Identity"
   },
   {
-   "description": "What this society calls this membership type: Life Member, Youth, Corporate. Display only; nothing in the engine reads it to decide anything.",
+   "description": "What this society calls this type: Life Member, Youth, Corporate.",
    "fieldname": "membership_type_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -43,7 +43,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. A membership points at its type by this key, so relabelling the type never rewrites history or breaks a report.",
+   "description": "The stable key each membership points at. Relabelling the type never rewrites history or breaks a report.",
    "fieldname": "membership_type_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -57,14 +57,14 @@
   },
   {
    "default": "1",
-   "description": "An inactive type keeps its existing memberships but refuses new ones, so retiring a type does not orphan the people on it.",
+   "description": "An inactive type keeps its existing memberships but refuses new ones.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Active"
   },
   {
-   "description": "Who this type is for, in the society's own words.",
+   "description": "Who this type is for, in your own words.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description",
@@ -77,7 +77,7 @@
   },
   {
    "default": "0",
-   "description": "What this membership costs. Zero means no fee is collected, and a zero-fee type never initiates a payment at all.",
+   "description": "What this membership costs. Zero means no fee is collected and no payment is started.",
    "fieldname": "fee_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -85,7 +85,7 @@
    "options": "fee_currency"
   },
   {
-   "description": "The currency of the fee. Empty falls back to the society's configured currency from National Society Settings; no currency is ever assumed in code.",
+   "description": "The currency of the fee. Empty falls back to the society's own currency in National Society Settings.",
    "fieldname": "fee_currency",
    "fieldtype": "Link",
    "label": "Fee Currency",
@@ -97,7 +97,7 @@
   },
   {
    "default": "0",
-   "description": "A membership of this type never expires. It activates with a start date and no end date, so the daily expiry sweep never touches it and it is never renewable. A lifetime type carries no duration; any value here is cleared on save.",
+   "description": "A membership of this type never expires, so it is never renewable and needs no duration.",
    "fieldname": "is_lifetime",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -106,7 +106,7 @@
   {
    "default": "365",
    "depends_on": "eval:!doc.is_lifetime",
-   "description": "How long a membership of this type stays valid, in days. Counted from activation, so the clock starts when the member actually becomes one. A lifetime type is not asked for one.",
+   "description": "How long a membership of this type stays valid, counted from activation. Not asked for on a lifetime type.",
    "fieldname": "duration_days",
    "fieldtype": "Int",
    "label": "Duration (Days)",
@@ -119,7 +119,7 @@
   },
   {
    "default": "routed",
-   "description": "MEM-02. How a membership of this type becomes active. routed: it goes through the VMMS approval engine and a resolved human approves it. auto_on_payment: it activates the moment payment is confirmed, with no approver. This field selects the path: no source file branches on a membership type's name to decide it.",
+   "description": "How a membership of this type becomes active. Routed: an approver decides. Auto on payment: it activates when payment is confirmed.",
    "fieldname": "approval_mode",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -132,7 +132,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Why this type approves the way it does. Notes for the next administrator; never read by code.",
+   "description": "Why this type approves the way it does. Notes for the next administrator.",
    "fieldname": "approval_note",
    "fieldtype": "Small Text",
    "label": "Approval Note",
@@ -144,7 +144,7 @@
    "label": "Certificate"
   },
   {
-   "description": "Which VMMS Template renders this type's membership certificate. Configuration, not a constant: pointing it at a different template changes every certificate this type issues, with no code change.",
+   "description": "Which template renders this type's membership certificate.",
    "fieldname": "template_key",
    "fieldtype": "Link",
    "label": "Certificate Template",

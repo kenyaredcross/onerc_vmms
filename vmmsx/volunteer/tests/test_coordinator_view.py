@@ -114,11 +114,12 @@ class TestSeedingOnApproval(CoordinatorViewTestCase):
 		self.assertEqual([row.availability_slot for row in volunteer.availability], [slot.name])
 		self.assertEqual([row.language for row in volunteer.languages], [language])
 
-	def test_it_copies_the_citizenship_and_residency_too(self):
+	def test_citizenship_and_residency_are_read_live_from_the_profile(self):
 		case = self.accepted("residency", residency_type="Local")
+		placement = capabilities.placement(case["volunteer"])
 
-		self.assertEqual(case["volunteer"].country_of_citizenship, fixtures.test_country())
-		self.assertEqual(case["volunteer"].residency_type, "Local")
+		self.assertEqual(placement["country_of_citizenship"], fixtures.test_country())
+		self.assertEqual(placement["residency_type"], "Local")
 
 	def test_the_serving_branch_is_the_applications_anchor(self):
 		"""Where they said they would serve is where the volunteer is placed."""
@@ -140,7 +141,7 @@ class TestSeedingOnApproval(CoordinatorViewTestCase):
 		seeded = capabilities.seed(volunteer, application)
 
 		self.assertIn("skills", seeded)
-		self.assertIn("country_of_citizenship", seeded)
+		self.assertNotIn("country_of_citizenship", seeded)
 
 	def test_seeding_twice_writes_nothing_the_second_time(self):
 		"""Idempotent in the strong sense: the second call finds the work done."""
@@ -258,14 +259,16 @@ class TestLivingVersusHistorical(CoordinatorViewTestCase):
 			self.assertEqual(field.options, options)
 			self.assertFalse(field.read_only, f"{fieldname} is read-only and must be editable")
 
-	def test_the_citizenship_and_residency_fields_are_editable_too(self):
+	def test_citizenship_and_residency_are_not_stored_on_the_volunteer(self):
 		meta = frappe.get_meta(fixtures.VOLUNTEER_DOCTYPE)
 
-		for fieldname in capabilities.SEEDED_SCALARS:
-			field = meta.get_field(fieldname)
-
-			self.assertIsNotNone(field, f"{fieldname} is missing from the volunteer")
-			self.assertFalse(field.read_only, f"{fieldname} is read-only and must be editable")
+		for fieldname in (
+			"country_of_citizenship",
+			"residency_type",
+			"country_of_residence",
+			"residence_address",
+		):
+			self.assertIsNone(meta.get_field(fieldname), f"the volunteer stores {fieldname}")
 
 	def test_the_historical_ones_have_no_field_to_edit(self):
 		"""Shown from the application, and with no current-state copy anywhere."""
@@ -289,13 +292,15 @@ class TestLivingVersusHistorical(CoordinatorViewTestCase):
 		)
 		self.assertEqual(declared["prior_experience"], "Two floods with another society")
 
-	def test_the_identification_is_shown_from_the_application(self):
+	def test_the_identification_is_shown_live_from_the_profile(self):
 		case = self.accepted("identification")
 
-		identification = application_service.verification_dto(case["volunteer"])["declared"]["identification"]
+		decision = application_service.decision_dto(case["application"])
+		identification = decision["identifications"][0]
+		profile_identification = frappe.get_doc("Red Profile", case["profile"]).identifications[0]
 
-		self.assertEqual(identification["id_type"], case["application"].id_type)
-		self.assertEqual(identification["id_number"], case["application"].id_number)
+		self.assertEqual(identification["id_type"], profile_identification.id_type)
+		self.assertEqual(identification["id_number"], profile_identification.id_number)
 
 
 # --- 3. identity is still not duplicated ----------------------------------
@@ -316,10 +321,6 @@ class TestIdentityIsStillNotDuplicated(CoordinatorViewTestCase):
 		"skills",
 		"languages",
 		"availability",
-		"country_of_citizenship",
-		"residency_type",
-		"country_of_residence",
-		"residence_address",
 	)
 
 	def test_no_identity_column_was_added_by_this_pass(self):
@@ -346,13 +347,16 @@ class TestIdentityIsStillNotDuplicated(CoordinatorViewTestCase):
 		checked where each actually lives.
 		"""
 		meta = frappe.get_meta(fixtures.VOLUNTEER_DOCTYPE)
-		columns = set(frappe.db.get_table_columns(fixtures.VOLUNTEER_DOCTYPE))
-
-		for fieldname in ("country_of_citizenship", "residency_type", "residence_address"):
-			self.assertIn(fieldname, columns, f"{fieldname} does not persist and it must")
-
 		for fieldname in ("skills", "languages", "availability"):
 			self.assertEqual(meta.get_field(fieldname).fieldtype, "Table MultiSelect")
+
+		for fieldname in (
+			"country_of_citizenship",
+			"residency_type",
+			"country_of_residence",
+			"residence_address",
+		):
+			self.assertIsNone(meta.get_field(fieldname))
 
 	def test_no_field_fetches_identity_from_anywhere(self):
 		"""A fetched value is a stored copy wearing a different hat."""

@@ -19,7 +19,7 @@
  "fields": [
   {
    "default": "CMAP-.#####",
-   "description": "The opaque docname series. The external course identifier is another system's name for something and may change under us, so it is a field and not the primary key.",
+   "description": "Automatic series for this record's number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -33,7 +33,7 @@
    "label": "Mapping"
   },
   {
-   "description": "The learning system's identifier for the course; on this site, an LMS Course docname. Deliberately Data and not a Link: the learning seam is a contract between apps, and vmmsx must not acquire a schema dependency on the LMS app's doctypes. A Link here would put an LMS doctype name in a vmmsx doctype JSON and make this app fail to install where no LMS is present. Unique, because a completed course maps to exactly one certification type; two mappings for one course would make the outcome depend on which row was read first.",
+   "description": "The learning system's identifier for the course. One mapping per course.",
    "fieldname": "external_course",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -42,7 +42,7 @@
    "unique": 1
   },
   {
-   "description": "What the course is called, for whoever is reading this mapping. Typed by the administrator and never read by code, so the seam does not have to reach into the learning system just to render a list.",
+   "description": "What the course is called, for whoever is reading this mapping.",
    "fieldname": "course_label",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -53,7 +53,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The certification a volunteer holds once they complete that course. This one field is the whole mapping, and it is configuration: pointing it at a different type changes what every future completion of that course awards, with no code change anywhere.",
+   "description": "The certification a volunteer holds once they complete that course.",
    "fieldname": "certification_type",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -63,7 +63,7 @@
   },
   {
    "default": "1",
-   "description": "An inactive mapping awards nothing. Certifications already awarded under it are untouched: switching a mapping off stops it acting in future, it does not revoke the past.",
+   "description": "An inactive mapping awards nothing from now on. Certifications already awarded are untouched.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -75,7 +75,7 @@
    "label": "Notes"
   },
   {
-   "description": "Why this course maps to this certification. Notes for the next administrator; never read by code.",
+   "description": "Why this course maps to this certification. Notes for the next administrator.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"

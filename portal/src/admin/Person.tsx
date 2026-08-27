@@ -394,9 +394,17 @@ function MemberPage({ name }: { name: string }) {
 						["Gender", person.gender],
 						["Date of birth", formatDate(person.date_of_birth)],
 						["Preferred language", person.preferred_language],
-						["Nationality", person.nationality],
+						["Country of citizenship", person.country_of_citizenship],
 						["Citizenship status", person.citizenship_status],
-						["Home area", geoPath(person.home_geo_path)],
+						["Residency", person.residency_type],
+						[
+							"Residence",
+							person.residency_type === "Abroad"
+								? [person.country_of_residence, person.residence_address]
+										.filter(Boolean)
+										.join(" · ")
+								: geoPath(person.home_geo_path),
+						],
 					]}
 				/>
 			</Card>

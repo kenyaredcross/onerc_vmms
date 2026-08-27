@@ -14,7 +14,7 @@
  ],
  "fields": [
   {
-   "description": "What this society calls this part of the product. Display only, and shown to whoever edits its wording.",
+   "description": "What this society calls this part of the product. Shown to whoever edits its wording.",
    "fieldname": "surface_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -23,7 +23,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. The frontend asks for one surface by this key and renders whatever blocks come back, so renaming the label never breaks a screen.",
+   "description": "The stable key the screen asks for. Renaming the label above never breaks a page.",
    "fieldname": "surface_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -37,14 +37,14 @@
   },
   {
    "default": "0",
-   "description": "Whether a signed-out visitor may read this surface's wording. On for the guest landing page, off for everything behind a login. This is the whole of the guest read rule: the API serves no surface that has not been marked public here, so opening a new one is a settings change rather than a code change.",
+   "description": "Let signed-out visitors read this surface's wording. On for the public landing page, off for everything behind a login.",
    "fieldname": "is_public",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Readable By Guests"
   },
   {
-   "description": "Which screens this surface covers, in the society's own words. Notes for the next administrator to edit it.",
+   "description": "Which screens this surface covers. Notes for the next administrator to edit it.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"

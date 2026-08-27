@@ -27,7 +27,7 @@
    "label": "Governed Document"
   },
   {
-   "description": "The doctype this workflow governs. One workflow per approvable doctype.",
+   "description": "The record this workflow governs. One workflow per kind of record.",
    "fieldname": "workflow_for",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -40,7 +40,7 @@
   },
   {
    "default": "geo_node",
-   "description": "Fieldname on the governed doctype holding its Geo Node anchor. ACC-02: a Link, required at creation, never free text.",
+   "description": "The field on that record holding the branch it belongs to, which is where approval routes from.",
    "fieldname": "geo_node_field",
    "fieldtype": "Data",
    "label": "Geo Node Field",
@@ -51,7 +51,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Fieldname identifying the applicant, used by the re-application cooldown. Empty falls back to the document's owner.",
+   "description": "The field identifying the applicant, used by the re-application cooldown. Empty falls back to whoever created the record.",
    "fieldname": "applicant_field",
    "fieldtype": "Data",
    "label": "Applicant Field"
@@ -63,7 +63,7 @@
   },
   {
    "default": "1",
-   "description": "Whether an applicant may withdraw while the application is still open.",
+   "description": "Whether an applicant may withdraw while their application is still open.",
    "fieldname": "allow_withdrawal",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -71,7 +71,7 @@
   },
   {
    "default": "0",
-   "description": "Days a rejected applicant must wait before applying again. 0 means no cooldown.",
+   "description": "How long a rejected applicant must wait before applying again. Zero means no wait.",
    "fieldname": "reapplication_cooldown_days",
    "fieldtype": "Int",
    "label": "Re-application Cooldown (Days)"
@@ -82,13 +82,13 @@
   },
   {
    "default": "0",
-   "description": "Days of inactivity after which an open application expires. 0 means applications never expire.",
+   "description": "Days of inactivity after which an open application expires. Zero means applications never expire.",
    "fieldname": "application_expiry_days",
    "fieldtype": "Int",
    "label": "Application Expiry (Days)"
   },
   {
-   "description": "ACC-03. Which levels of the hierarchy an application of this type may be anchored at. A society that deploys at county level and one that deploys at ward level configure this differently and change no code.",
+   "description": "Which levels of the hierarchy an application of this kind may be anchored at.",
    "fieldname": "anchor_section",
    "fieldtype": "Section Break",
    "label": "Anchor Levels"
@@ -101,7 +101,7 @@
    "options": "VMMS Approval Anchor Level"
   },
   {
-   "description": "The stages of In Review, in sequence. At least one must be able to reject, or an application could only ever be approved.",
+   "description": "The stages an application passes through, in order. At least one must be able to reject.",
    "fieldname": "stages_section",
    "fieldtype": "Section Break",
    "label": "Stages"

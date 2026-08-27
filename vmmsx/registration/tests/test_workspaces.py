@@ -54,7 +54,7 @@ class TestWhatIsInstalled(RegistrationTestCase):
 
 			self.assertEqual(roles, [role], label)
 
-	def test_the_landing_workspace_offers_exactly_the_two_forms(self):
+	def test_the_landing_workspace_offers_exactly_the_two_registration_surfaces(self):
 		shortcuts = frappe.get_all(
 			"Workspace Shortcut",
 			filters={"parent": workspaces.LANDING, "parenttype": "Workspace"},
@@ -65,15 +65,16 @@ class TestWhatIsInstalled(RegistrationTestCase):
 		self.assertEqual(len(shortcuts), 2)
 		self.assertEqual(
 			{row["url"] for row in shortcuts},
-			{workspaces.VOLUNTEER_FORM_ROUTE, workspaces.MEMBERSHIP_FORM_ROUTE},
+			{workspaces.VOLUNTEER_REGISTRATION_ROUTE, workspaces.MEMBERSHIP_FORM_ROUTE},
 		)
 
-	def test_the_landing_shortcuts_point_at_web_forms_that_exist_and_are_published(self):
-		"""A shortcut to a route nobody published is a dead end on day one."""
-		for route in (workspaces.VOLUNTEER_FORM_ROUTE, workspaces.MEMBERSHIP_FORM_ROUTE):
-			published = frappe.db.get_value("Web Form", {"route": route.lstrip("/")}, "published")
-
-			self.assertEqual(published, 1, route)
+	def test_the_landing_shortcuts_point_at_the_supported_registration_surfaces(self):
+		"""Volunteer registration uses the portal; membership still uses its Web Form."""
+		self.assertEqual(workspaces.VOLUNTEER_REGISTRATION_ROUTE, "/portal/join?path=volunteer")
+		published = frappe.db.get_value(
+			"Web Form", {"route": workspaces.MEMBERSHIP_FORM_ROUTE.lstrip("/")}, "published"
+		)
+		self.assertEqual(published, 1, workspaces.MEMBERSHIP_FORM_ROUTE)
 
 	def test_the_volunteer_workspace_links_only_doctypes_that_exist(self):
 		"""A shortcut or card link naming a doctype nobody built is a dead end."""

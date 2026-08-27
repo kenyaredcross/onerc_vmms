@@ -12,13 +12,13 @@
  "fields": [
   {
    "default": "1",
-   "description": "Whether this type is offered when somebody writes a new announcement. Disabling a type retires it from the picker without touching the announcements already filed under it, so a society's own history stays readable.",
+   "description": "Whether this type is offered when somebody writes a new announcement. Disabling it leaves existing announcements alone.",
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
   },
   {
-   "description": "What this type is for, in the society's own words. Shown to whoever is writing an announcement so that a vocabulary of five types does not become five people's guesses at what each one means.",
+   "description": "What this type is for. Shown to whoever is writing an announcement, so the vocabulary means the same to everybody.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"

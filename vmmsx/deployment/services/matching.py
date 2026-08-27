@@ -183,6 +183,8 @@ def candidates(
 	page_size = cint(limit) or MATCH_PAGE
 	page_offset = cint(offset)
 
+	register_readable = True
+
 	try:
 		names = capabilities.search(
 			geo_node=geo_node,
@@ -196,9 +198,14 @@ def candidates(
 		# `frappe.get_list`, unlike `frappe.get_all`, throws for a caller who
 		# holds no ordinary read permission on VMMS Volunteer at all — a role
 		# built with only a geo-scope assignment and no Role Permission grant.
-		# Failing closed here means empty, the answer an unresolvable scope
-		# already gets everywhere else in this module, not a raw permission
-		# error surfacing on a screen that asked an honest question.
+		# Failing closed here means empty rather than a raw permission error on
+		# a screen that asked an honest question, but empty *silently* is the
+		# wrong kind of honest: "nobody fits this work" and "you cannot read the
+		# volunteer register" are different facts, and a coordinator shown the
+		# first when the second is true will go looking for the fault in their
+		# terms of reference. `register_readable` is what lets the screen say
+		# which one it is.
+		register_readable = False
 		names = []
 		considered_total = 0
 
@@ -252,6 +259,10 @@ def candidates(
 		# assessed below — the two now differ on purpose. See the module
 		# docstring's "ranking is over the page fetched" note.
 		"considered": considered_total,
+		# False when this caller cannot read the volunteer register at all. See
+		# the `except` above: it separates an empty answer from an inaccessible
+		# one, which no other field here can express.
+		"register_readable": register_readable,
 		"candidate_count": len(matched),
 		"truncated": considered_total > page_offset + len(names),
 		"candidates": matched,

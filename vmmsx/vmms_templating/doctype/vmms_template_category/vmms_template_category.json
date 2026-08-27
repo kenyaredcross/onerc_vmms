@@ -14,7 +14,7 @@
  ],
  "fields": [
   {
-   "description": "What this society calls this kind of template. Display only.",
+   "description": "What this society calls this kind of template.",
    "fieldname": "category_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -23,7 +23,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. A society may add categories; no source file may branch on the value of one.",
+   "description": "The stable key templates point at. Renaming the label never breaks them.",
    "fieldname": "category_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -44,7 +44,7 @@
    "label": "Is Active"
   },
   {
-   "description": "What this category is for, in the society's own words.",
+   "description": "What this category is for, in your own words.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"

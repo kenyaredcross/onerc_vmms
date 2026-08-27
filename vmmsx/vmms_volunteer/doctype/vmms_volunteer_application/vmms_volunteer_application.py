@@ -73,19 +73,12 @@ class VMMSVolunteerApplication(Document):
 		approval_stage_entered_on: DF.Datetime | None
 		approval_state: DF.Literal["Draft", "Submitted", "In Review", "Approved", "Rejected", "Withdrawn", "Expired"]
 		availability: DF.TableMultiSelect[VMMSAvailabilitySelector]
-		country_of_citizenship: DF.Link
-		country_of_residence: DF.Link | None
 		geo_node: DF.Link
-		home_geo_node: DF.Link | None
-		id_number: DF.Data | None
-		id_type: DF.Link | None
 		languages: DF.TableMultiSelect[VMMSLanguageSelector]
 		motivation: DF.TableMultiSelect[VMMSMotivationSelector]
 		naming_series: DF.Literal["VAPP-.#####"]
 		prior_experience: DF.SmallText | None
 		red_profile: DF.Link
-		residence_address: DF.SmallText | None
-		residency_type: DF.Literal["Local", "Abroad"]
 		skills: DF.TableMultiSelect[VMMSSkillSelector]
 		volunteer: DF.Link | None
 	# end: auto-generated types
@@ -103,11 +96,6 @@ class VMMSVolunteerApplication(Document):
 		themselves. A coordinator entering an application from a paper form
 		supplies the Red Profile, and must never have their own attached to it.
 		"""
-		# Citizenship defaults to the society's own country before anything else
-		# runs, so the field's reqd check — which fires later in this same
-		# insert — never sees it empty on an ordinary application.
-		application_service.default_country_of_citizenship(self)
-
 		profile = intake.claim_profile(self)
 
 		if not profile:
@@ -116,19 +104,7 @@ class VMMSVolunteerApplication(Document):
 		if not self.red_profile:
 			self.red_profile = profile
 
-		# Where somebody says they *live*, recorded on their profile if core
-		# does not know yet. Never overwritten.
-		#
-		# Home Area, not the anchor beside it: `Red Profile.home_geo_node` is
-		# core's field for where a person lives, and this form now asks that
-		# question directly rather than inferring it from where they offered to
-		# serve. It falls back to the anchor for an applicant living abroad, who
-		# gives no home area at all, because the branch they chose is the only
-		# thing this app knows about where they are.
-		intake.place(profile, self.get("home_geo_node") or self.get(GEO_NODE_FIELD))
-
 	def validate(self):
-		application_service.reconcile_residency(self)
 		application_service.default_serving_branch(self)
 		self.validate_anchor()
 		application_service.assert_applicant(self)

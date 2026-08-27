@@ -157,9 +157,22 @@ function Queue({ kind }: { kind: QueueKind }) {
 								<Cell className="text-slate-body">{branchPath(row.geo_path)}</Cell>
 								<Cell>
 									{row.stage && (
-										<span className="text-[12.5px] font-semibold text-navy">
-											{row.stage.label}
-										</span>
+										<>
+											<span className="block text-[12.5px] font-semibold text-navy">
+												{row.stage.label}
+											</span>
+											{/* The stage resolved nobody at its own level, so the
+											    engine entered it blocked and escalated upward —
+											    which is the only reason this row is in *this*
+											    person's queue rather than the branch's. Without
+											    the line it reads as an ordinary assignment and
+											    the unstaffed branch behind it stays invisible. */}
+											{row.stage.is_blocked && (
+												<span className="mt-0.5 block text-[11px] text-slate-faint">
+													Nobody at this level — escalated to you
+												</span>
+											)}
+										</>
 									)}
 								</Cell>
 								<Cell className="text-slate-body">
@@ -434,11 +447,11 @@ function VolunteerApplicant({ record }: { record: ApplicationDecision }) {
 			<Field label="Date of birth" value={formatDate(record.date_of_birth)} />
 			<Field label="Preferred language" value={record.preferred_language} />
 			<Field
-				label="Identification"
+				label="Identifications"
 				value={
-					record.identification?.id_number
-						? `${record.identification.id_type_name ?? record.identification.id_type ?? ""} ${record.identification.id_number}`.trim()
-						: null
+					record.identifications
+						.map((row) => `${row.id_type_name ?? row.id_type} ${row.id_number}`.trim())
+						.join(" · ") || null
 				}
 			/>
 			<Field label="Citizenship" value={record.country_of_citizenship} />
@@ -479,9 +492,16 @@ function MembershipApplicant({ review }: { review: MembershipReview }) {
 			<Field label="Phone" value={person?.phone} />
 			<Field label="Gender" value={person?.gender} />
 			<Field label="Date of birth" value={formatDate(person?.date_of_birth)} />
-			<Field label="Nationality" value={person?.nationality} />
+			<Field label="Country of citizenship" value={person?.country_of_citizenship} />
 			<Field label="Citizenship status" value={person?.citizenship_status} />
-			<Field label="Home area" value={branchPath(person?.home_geo_path)} />
+			<Field
+				label="Residence"
+				value={
+					person?.residency_type === "Abroad"
+						? [person.country_of_residence, person.residence_address].filter(Boolean).join(" · ")
+						: branchPath(person?.home_geo_path)
+				}
+			/>
 		</dl>
 	);
 }
@@ -660,6 +680,10 @@ function groupAnswers(answers: SocietyAnswer[]): Array<{ name: string; answers: 
 const DECISIONS = {
 	Approved: {
 		verb: "Approve",
+		// The button says the whole sentence rather than `{verb} this {noun}`,
+		// which composed to "Ask for more this volunteer applicant" for the one
+		// verb that is a phrase rather than a word.
+		button: (noun: string) => `Approve this ${noun}`,
 		confirm: "Yes, approve",
 		tone: "navy" as const,
 		pill: "border-emerald-300 bg-emerald-50 text-emerald-700",
@@ -670,6 +694,7 @@ const DECISIONS = {
 	},
 	"More info requested": {
 		verb: "Ask for more",
+		button: (noun: string) => `Ask this ${noun} for more`,
 		confirm: "Yes, send it back",
 		tone: "soft" as const,
 		pill: "border-amber-300 bg-amber-50 text-amber-800",
@@ -680,6 +705,7 @@ const DECISIONS = {
 	},
 	Rejected: {
 		verb: "Decline",
+		button: (noun: string) => `Decline this ${noun}`,
 		confirm: "Yes, decline",
 		tone: "primary" as const,
 		pill: "border-signal/40 bg-signal/[.07] text-signal-dark",
@@ -710,9 +736,10 @@ function Decision({
 	const [failure, setFailure] = useState<string | null>(null);
 
 	const picked = chosen ? DECISIONS[chosen] : null;
-	// Declining needs a reason. Enforced on the server too — this only stops
-	// somebody reaching a confirmation they would be refused at.
-	const needsReason = chosen === "Rejected";
+	// Sending a form back and declining both need a reason. Enforced on the
+	// server too — this only stops somebody reaching a confirmation they would
+	// be refused at.
+	const needsReason = chosen === "Rejected" || chosen === "More info requested";
 	const ready = Boolean(chosen) && (!needsReason || reason.trim().length > 0);
 
 	const send = async () => {
@@ -756,6 +783,25 @@ function Decision({
 					<Field label="Decision rule" value={status.stage?.completion_rule} />
 					<Field label="Approvers resolved" value={String(status.approver_count)} />
 				</dl>
+
+				{/* `is_blocked` means the stage found nobody at its own level. It is
+				    entered anyway rather than passed — a stage that needs an approver
+				    and cannot find one must be visible, not silently satisfied — and
+				    the engine escalates upward so the application still moves.
+				    Everything in the grid above reads as an ordinary stage, so
+				    without this the screen shows an approval with nobody's name
+				    against it, which is the case the flag was added to describe. It
+				    is a staffing gap, not a broken record, and it is fixed in Geo
+				    Assignment rather than here. */}
+				{status.stage?.is_blocked && (
+					<p className="mt-4 rounded-card bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-slate-body">
+						Nobody holds <b>{status.stage.required_role}</b> at this stage's level
+						here, so it was escalated
+						{status.escalated_to?.length ? ` to ${status.escalated_to.join(", ")}` : " upward"}.
+						Assigning somebody at that level puts the decision back where the workflow
+						intends it.
+					</p>
+				)}
 			</Card>
 
 			{status.decisions.length > 0 && (
@@ -852,7 +898,9 @@ function Decision({
 									onChange={(event) => setReason(event.target.value)}
 									placeholder={
 										needsReason
-											? "The applicant is told this. Say what was wrong."
+											? chosen === "More info requested"
+												? "Tell the applicant exactly what to add or correct."
+												: "The applicant is told this. Say what was wrong."
 											: "Anything the next approver should know."
 									}
 								/>
@@ -863,7 +911,7 @@ function Decision({
 										disabled={!ready}
 										onClick={() => setConfirming(true)}
 									>
-										{picked.verb} this {noun}
+										{picked.button(noun)}
 									</Button>
 									<Button variant="quiet" onClick={() => setChosen(null)}>
 										Cancel
@@ -872,7 +920,9 @@ function Decision({
 
 								{needsReason && !ready && (
 									<p className="mt-2 text-[11.5px] text-slate-faint">
-										Declining needs a reason — the applicant is told it.
+										{chosen === "More info requested"
+											? "Say what is missing so the applicant knows what to correct."
+											: "Declining needs a reason — the applicant is told it."}
 									</p>
 								)}
 							</div>

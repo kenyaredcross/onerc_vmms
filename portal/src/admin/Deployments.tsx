@@ -1363,7 +1363,16 @@ function CandidatePane({
 			{isLoading && <Spinner label="Matching…" />}
 			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
 
-			{answer && (
+			{answer?.register_readable === false && (
+				<Empty title="You cannot see the volunteer register">
+					Staffing a deployment reads the register of volunteers, and that register is shown to
+					whoever holds your society's volunteer role for the area. Your account runs deployments
+					but has not been given that role, so there is nobody here to show — ask an administrator
+					for it, and this panel fills in.
+				</Empty>
+			)}
+
+			{answer && answer.register_readable !== false && (
 				<p className="mb-3 mt-3 text-[11.5px] text-slate-faint">
 					{answer.candidate_count} of this page's {answer.considered} volunteers matching your search
 					are deployable and hold what these terms require
@@ -1380,7 +1389,7 @@ function CandidatePane({
 				</div>
 			)}
 
-			{answer && rows.length === 0 && (
+			{answer && answer.register_readable !== false && rows.length === 0 && (
 				<Empty title="Nobody matches yet">
 					No volunteer on this page is both deployable and holds every certification these terms
 					require. Narrow or clear the search, loosen the two toggles, or widen the terms.

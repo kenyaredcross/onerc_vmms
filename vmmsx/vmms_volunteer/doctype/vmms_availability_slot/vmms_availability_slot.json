@@ -24,7 +24,7 @@
    "label": "Identity"
   },
   {
-   "description": "What this society calls this window of time: Weekday Mornings, Weekends, On-call. A society's own vocabulary, extended freely and never a literal in a source file.",
+   "description": "What this society calls this window of time: Weekday Mornings, Weekends, On-call.",
    "fieldname": "slot_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -33,7 +33,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. An application's declared availability points at this key, so relabelling a slot never rewrites history. Nothing in this app branches on a slot value.",
+   "description": "The stable key applications and schedules point at. Relabelling a slot never rewrites history.",
    "fieldname": "slot_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -47,7 +47,7 @@
   },
   {
    "default": "1",
-   "description": "An inactive slot keeps the applications already declared under it but is no longer offered for new ones.",
+   "description": "An inactive slot keeps the answers already given under it but is no longer offered.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -59,7 +59,7 @@
    "label": "Hours"
   },
   {
-   "description": "When this window opens, as a time of day. Optional, and it is what turns a named slot into a question a deployment can actually ask: without it 'Weekends' is a label a volunteer chose, and with it a schedule saying Saturday plus this slot covers a real span of hours. A slot with no hours still works everywhere it worked before; it simply cannot answer 'is this person free on the afternoon of the 3rd'.",
+   "description": "When this window opens. Optional, but without it the slot cannot answer whether somebody is free on a given afternoon.",
    "fieldname": "start_time",
    "fieldtype": "Time",
    "in_list_view": 1,
@@ -70,14 +70,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When this window closes. A slot whose close is earlier than its open is refused: an overnight window is two slots in every society that has one, because a single row spanning midnight would have to belong to two days at once and no reader of it could tell which.",
+   "description": "When this window closes. Must be later than the start: an overnight window is two slots.",
    "fieldname": "end_time",
    "fieldtype": "Time",
    "in_list_view": 1,
    "label": "Closes"
   },
   {
-   "description": "What this slot covers, in the society's own words.",
+   "description": "What this slot covers, in your own words.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description",

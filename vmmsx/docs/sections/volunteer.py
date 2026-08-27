@@ -276,10 +276,10 @@ def _application(w) -> None:
 		" else shares."
 	)
 
-	w.h3("The form: engaging questions first, identity last")
+	w.h3("The portal journey: engaging questions first, identity last")
 
 	w.p(
-		"register-as-a-volunteer orders its sections skills/languages/availability/motivation, then"
+		"/portal/join?path=volunteer orders its steps skills/languages/availability/motivation, then"
 		" where you would serve, then citizenship and residency, then personal details, then"
 		" identification last — the onboarding-funnel pattern of asking for invested effort before"
 		" personal data. A returning applicant who already has a Red Profile — the cross-registration"

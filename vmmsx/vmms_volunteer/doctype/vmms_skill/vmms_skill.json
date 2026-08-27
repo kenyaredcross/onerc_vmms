@@ -20,7 +20,7 @@
    "label": "Identity"
   },
   {
-   "description": "What this society calls this skill: First Aid, Driving, Logistics. A society's own vocabulary, extended freely and never a literal in a source file.",
+   "description": "What this society calls this skill: First Aid, Driving, Logistics.",
    "fieldname": "skill_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -29,7 +29,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. An application's declared skills point at this key, so relabelling a skill never rewrites history. Nothing in this app branches on a skill value.",
+   "description": "The stable key applications and volunteers point at. Relabelling a skill never rewrites history.",
    "fieldname": "skill_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -43,14 +43,14 @@
   },
   {
    "default": "1",
-   "description": "An inactive skill keeps the applications already declared under it but is no longer offered for new ones.",
+   "description": "An inactive skill keeps the answers already given under it but is no longer offered.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Active"
   },
   {
-   "description": "What this skill covers, in the society's own words.",
+   "description": "What this skill covers, in your own words.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description",

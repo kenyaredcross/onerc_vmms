@@ -17,8 +17,7 @@ not live in the same place:
     ----------------------          ------------------------------
     skills                          motivation
     languages                       prior_experience
-    availability                    the identification captured at intake
-    citizenship, residency          (and the day's copy of everything left)
+    availability
     serving branch
 
 The test of which side a field belongs on is one question: *if this changed
@@ -53,9 +52,9 @@ number beside it are read. Storing a second copy on the volunteer would be the
 same mistake as storing a second copy of somebody's name, and it would go wrong
 in the same way: two answers, and no way to tell which is current.
 
-Citizenship and residency are neither. Core's spine does not hold them, and
-they are asked because volunteering asks them, so they are the volunteer's and
-are seeded here.
+Citizenship, residence and identification are person facts too. Core's Red
+Profile owns them and every volunteer screen reads them live, just like name,
+phone and Home Area.
 
 Seeding is fill-the-blanks, not overwrite
 -----------------------------------------
@@ -66,7 +65,7 @@ second acceptance: somebody who volunteered, exited, and applied again years
 later is the *same person*, and their current skills are the ones the society
 has been maintaining, not the ones on a form they filled in last week. It is
 the same doctrine `volunteer.ensure()` already applies to placement, stated
-once more here because it now governs six more fields.
+once more here because it now governs three capability fields.
 
 That also makes `seed()` idempotent in the strong sense: the second call
 observes the work is done and returns the same answer.
@@ -112,45 +111,8 @@ SELECTORS = (
 	("availability", "availability_slot", "VMMS Availability Slot", "slot_name"),
 )
 
-# The scalar facts about the person that the volunteer owns once accepted. Same
-# spelling on both records, deliberately: a rename on one side should break the
-# seed loudly rather than quietly copy nothing.
-SEEDED_SCALARS = (
-	"country_of_citizenship",
-	"residency_type",
-	"country_of_residence",
-	"residence_address",
-)
-
 RESIDENCY_LOCAL = "Local"
 RESIDENCY_ABROAD = "Abroad"
-
-# What an Abroad answer uses, and what a Local one must not keep lying around.
-_ABROAD_ONLY = ("country_of_residence", "residence_address")
-
-
-# --- controller-facing tidying ---------------------------------------------
-
-
-def reconcile_residency(volunteer) -> None:
-	"""Clear the half of the residency answer this volunteer's toggle does not use.
-
-	A Local volunteer has no business keeping a stale address abroad around.
-	Without this, switching the field back in the desk and saving would leave
-	two contradictory answers on one record, and a coordinator reading the form
-	would have no way to know which one the society meant.
-
-	**Deliberately not symmetrical with the application's version.** There, an
-	Abroad answer also clears `home_geo_node`, because on an application that
-	field is ordinary optional data. Here `home_geo_node` is the Serving Branch
-	and the ACC-02 anchor: somebody living abroad still serves with a branch,
-	and clearing it would make the record unsaveable.
-	"""
-	if volunteer.get("residency_type") == RESIDENCY_ABROAD:
-		return
-
-	for fieldname in _ABROAD_ONLY:
-		volunteer.set(fieldname, None)
 
 
 # --- seeding, at acceptance ------------------------------------------------
@@ -180,13 +142,6 @@ def seed(volunteer, application) -> dict:
 	either: every value is copied off an application the engine has settled.
 	"""
 	seeded = {}
-
-	for fieldname in SEEDED_SCALARS:
-		value = application.get(fieldname)
-
-		if value and not volunteer.get(fieldname):
-			volunteer.set(fieldname, value)
-			seeded[fieldname] = value
 
 	for fieldname, link_field, _doctype, _label_field in SELECTORS:
 		if volunteer.get(fieldname):
@@ -265,22 +220,32 @@ def placement(volunteer) -> dict:
 
 	from vmmsx.volunteer.services import identity
 
-	abroad = volunteer.get("residency_type") == RESIDENCY_ABROAD
 	branch = volunteer.get(SERVING_BRANCH_FIELD)
-	home = identity.read(volunteer, ("home_geo_node",)).get("home_geo_node")
+	person = identity.read(
+		volunteer,
+		(
+			"home_geo_node",
+			"country_of_citizenship",
+			"residency_type",
+			"country_of_residence",
+			"residence_address",
+		),
+	)
+	home = person.get("home_geo_node")
+	abroad = person.get("residency_type") == RESIDENCY_ABROAD
 
 	return {
 		"geo_node": branch,
 		"geo_path": adapter.get_full_path(branch) if branch else None,
 		"home_geo_node": home,
 		"home_geo_path": adapter.get_full_path(home) if home else None,
-		"country_of_citizenship": volunteer.country_of_citizenship,
-		"residency_type": volunteer.residency_type,
+		"country_of_citizenship": person.get("country_of_citizenship"),
+		"residency_type": person.get("residency_type"),
 		# Only ever populated on the side of the toggle that uses them. The
 		# controller clears the other side on every save, so this is a statement
 		# about the record rather than a filter applied on the way out.
-		"country_of_residence": volunteer.country_of_residence if abroad else None,
-		"residence_address": volunteer.residence_address if abroad else None,
+		"country_of_residence": person.get("country_of_residence") if abroad else None,
+		"residence_address": person.get("residence_address") if abroad else None,
 	}
 
 

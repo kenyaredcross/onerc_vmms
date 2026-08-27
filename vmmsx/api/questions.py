@@ -49,7 +49,7 @@ ANSWER_FIELD = questions.ANSWER_FIELD
 # The types the wizard and the desk form can both actually draw. Read from the
 # doctype's own Select rather than listed again here, so a type added to the
 # field appears in the builder without this file being edited — the same rule
-# `api/volunteer.py::application_options` follows for `residency_type`.
+# `api/volunteer.py::application_options` follows for registration vocabularies.
 FIELD_TYPE_FIELD = "field_type"
 
 

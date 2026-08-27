@@ -150,9 +150,17 @@ export function GeoSelects({
 				))}
 			</div>
 
+			{/* One note for the whole picker, never one per rung. Four selects
+			    that each fetch their own options each rendered their own copy of
+			    the same failure, so a single expired session read as four
+			    paragraphs of red under a form somebody had come to fill in. The
+			    rungs now say "Unavailable" in the control itself and this says
+			    the rest, once. */}
 			{ladder.error && (
 				<div className="mt-3">
-					<ErrorNote>{errorMessage(ladder.error)}</ErrorNote>
+					<ErrorNote>
+						{errorMessage(ladder.error, "The list of branches could not be loaded.")}
+					</ErrorNote>
 				</div>
 			)}
 
@@ -268,9 +276,11 @@ function Rung({
 					<option value="">
 						{isLoading
 							? "Loading…"
-							: waiting
-								? "Choose the one above first"
-								: `Select ${label.toLowerCase()}`}
+							: error
+								? "Unavailable"
+								: waiting
+									? "Choose the one above first"
+									: `Select ${label.toLowerCase()}`}
 					</option>
 					{nodes.map((node) => (
 						<option key={node.name} value={node.name}>
@@ -289,7 +299,6 @@ function Rung({
 					<path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
 				</svg>
 			</div>
-			{error && <p className="mt-1.5 text-[11.5px] text-signal-dark">{errorMessage(error)}</p>}
 		</Field>
 	);
 }

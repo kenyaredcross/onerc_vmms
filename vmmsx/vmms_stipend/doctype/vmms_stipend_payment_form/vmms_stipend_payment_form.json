@@ -27,7 +27,7 @@
  "fields": [
   {
    "default": "SPF-.#####",
-   "description": "The opaque docname series. Nothing about the supervisor, the place or the period goes in the primary key.",
+   "description": "Automatic series for the form number.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -41,7 +41,7 @@
    "label": "Payment Form"
   },
   {
-   "description": "The progress report this form pays for. Required, because a payment form is the money half of a period somebody already described: the report says what happened and who was involved, and this form may pay only the volunteers it names, for days inside its period.",
+   "description": "The progress report this form pays for. It may pay only the volunteers that report names, for days inside its period.",
    "fieldname": "progress_report",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -50,7 +50,7 @@
    "reqd": 1
   },
   {
-   "description": "ACC-02. Where this payment belongs, and the anchor geo scoping filters this form by. A Link, never free text, and mandatory at creation. Held on this record rather than read through the report, because core's geo scoping filters each doctype on a field of its own; it is checked against the report's anchor on every save, so the two can never disagree.",
+   "description": "Where this payment belongs. Decides who can see it, and is checked against the report's own branch on every save.",
    "fieldname": "geo_node",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -63,7 +63,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The first day this form pays for. Copied from the paired report on every save and read-only here, so a form and its report cannot drift into covering different periods.",
+   "description": "The first day this form pays for. Copied from the paired report.",
    "fieldname": "period_from",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -71,7 +71,7 @@
    "read_only": 1
   },
   {
-   "description": "The last day this form pays for. Copied from the paired report on every save, like the first.",
+   "description": "The last day this form pays for. Copied from the paired report.",
    "fieldname": "period_to",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -79,7 +79,7 @@
    "read_only": 1
   },
   {
-   "description": "The currency every amount on this form is in. Filled from the society's configured currency in National Society Settings when the form is created, and never assumed in code: no currency appears as a literal anywhere in this module.",
+   "description": "The currency every amount on this form is in. Filled from the society's own currency in National Society Settings.",
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
@@ -92,7 +92,7 @@
    "label": "Daily Attendance"
   },
   {
-   "description": "The grid: one row per volunteer per day, carrying that day's attendance and that day's stipend. Deliberately tall rather than wide. A row per day answers who attended on a given day with one filter, and the total payable for a volunteer with one sum, while a column per day would put the calendar in the schema and break the moment a period ran longer than the columns.",
+   "description": "One row per volunteer per day, carrying that day's attendance and that day's stipend.",
    "fieldname": "attendance",
    "fieldtype": "Table",
    "label": "Attendance",
@@ -104,7 +104,7 @@
    "label": "Total"
   },
   {
-   "description": "The sum of every line's stipend, recomputed on every save. Derived and read-only: a total anybody could type is a total that will one day disagree with the rows it claims to add up. Per volunteer totals are not stored at all, for the same reason; they are computed from the same rows on request.",
+   "description": "The sum of every line's stipend. Worked out on save.",
    "fieldname": "total_payable",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -119,7 +119,7 @@
   },
   {
    "default": "Draft",
-   "description": "Where this form stands. Submitting it moves it to Pending Departmental Approval, which is a dead end on purpose: stipend approval runs from the supervisor to the head of the volunteer's department, departmental resolution is not built, and routing this through the geo engine instead would send it to a geo parent rather than to the head of department. Nobody can approve it, including an administrator, and the refusal says so. Owned by vmmsx/stipend/services/approval.py.",
+   "description": "Where this form stands. Submitting sends it for departmental approval, which is not built yet, so nobody can approve it.",
    "fieldname": "approval_state",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -132,14 +132,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "When this form was submitted for approval. Cleared if it is withdrawn back to Draft, so the field always describes the submission that is currently outstanding.",
+   "description": "When this form was submitted for approval. Cleared if it is withdrawn back to draft.",
    "fieldname": "submitted_on",
    "fieldtype": "Datetime",
    "label": "Submitted On",
    "read_only": 1
   },
   {
-   "description": "Who submitted it. The supervisor half of the supervisor to head of department chain, recorded now so the eventual routing has both ends of it.",
+   "description": "Who submitted it.",
    "fieldname": "submitted_by",
    "fieldtype": "Link",
    "label": "Submitted By",

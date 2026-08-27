@@ -20,7 +20,7 @@
    "label": "Identity"
   },
   {
-   "description": "How a society describes one way of going about the work: Household Survey, Focus Group Discussion, Key Informant Interview, Door-to-Door Mobilisation. Display only. No methodology name appears in any source file, which is what lets a society add its own without anybody changing code.",
+   "description": "One way of going about the work: Household Survey, Focus Group Discussion, Door-to-Door Mobilisation.",
    "fieldname": "methodology_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -29,7 +29,7 @@
    "translatable": 1
   },
   {
-   "description": "The stable business key, and the docname. A terms of reference points at a methodology by this key, so relabelling it next year never rewrites the terms written this year. This is configuration vocabulary, so it is keyed by its business key rather than by an opaque series, the same rule VMMS Certification Type and VMMS Skill follow.",
+   "description": "The stable key each terms of reference points at. Relabelling it never rewrites the terms written under it.",
    "fieldname": "methodology_key",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -43,14 +43,14 @@
   },
   {
    "default": "1",
-   "description": "An inactive methodology stays on every terms of reference already citing it but is not offered for a new one. Retiring an approach must not rewrite the documents that used it.",
+   "description": "An inactive methodology stays on the terms already citing it, but is not offered for a new one.",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Active"
   },
   {
-   "description": "What this approach involves, for whoever is choosing between them. Never read by code.",
+   "description": "What this approach involves, for whoever is choosing between them.",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description",

@@ -67,6 +67,12 @@ SELF_EDITABLE_FIELDS = (
 	"gender",
 	"date_of_birth",
 	"preferred_language",
+	"country_of_citizenship",
+	"citizenship_status",
+	"residency_type",
+	"home_geo_node",
+	"country_of_residence",
+	"residence_address",
 	# A photograph is a fact about the person, like the six above it, and it goes
 	# on the card they carry. What a *branch* decided — serving branch, status,
 	# certifications — is not here and must not be, which is the whole of what
@@ -119,9 +125,25 @@ def _profile_dto(profile: str) -> dict:
 			"date_of_birth",
 			"preferred_language",
 			"profile_photo",
+			"country_of_citizenship",
+			"citizenship_status",
+			"residency_type",
 			"home_geo_node",
+			"country_of_residence",
+			"residence_address",
 		],
 		as_dict=True,
+	)
+
+	identifications = frappe.get_all(
+		"Red Profile Identification",
+		filters={
+			"parent": profile,
+			"parenttype": PROFILE_DOCTYPE,
+			"parentfield": "identifications",
+		},
+		fields=["id_type", "id_number", "attachment", "is_primary"],
+		order_by="is_primary desc, idx asc",
 	)
 
 	return {
@@ -134,21 +156,28 @@ def _profile_dto(profile: str) -> dict:
 		"gender": person.gender,
 		"date_of_birth": person.date_of_birth,
 		"preferred_language": person.preferred_language,
+		"country_of_citizenship": person.country_of_citizenship,
+		"citizenship_status": person.citizenship_status,
+		"residency_type": person.residency_type,
 		# Served because `update_my_profile` already accepts it: a form that can
 		# set a photograph and cannot read back the one already on file would show
 		# an empty control to somebody who has had a portrait on their card for a
 		# year, and the obvious way to fix that is to upload it again.
 		"profile_photo": person.profile_photo,
-		# Where core last recorded this person as living. **Read-only here**, and
-		# it is not a field `update_my_profile` accepts: it is written by a
-		# registration, not typed into one.
-		#
-		# It is served for one reason — a second registration should not ask
-		# somebody to walk a cascading picker down to the branch they already told
-		# this society they belong to. The wizard opens its placement step with
-		# this node's chain already filled in and every rung still changeable, so
-		# the answer is a *suggestion* rather than a decision made for them.
+		# Residence is person-owned profile data. A later registration reads it
+		# back so the applicant can confirm or correct it without re-entering it.
 		"home_geo_node": person.home_geo_node,
+		"country_of_residence": person.country_of_residence,
+		"residence_address": person.residence_address,
+		"identifications": [
+			{
+				"id_type": row.id_type,
+				"id_number": row.id_number,
+				"attachment": row.attachment,
+				"is_primary": bool(row.is_primary),
+			}
+			for row in identifications
+		],
 	}
 
 
@@ -241,6 +270,14 @@ def update_my_profile(
 	date_of_birth: str | None = None,
 	preferred_language: str | None = None,
 	profile_photo: str | None = None,
+	country_of_citizenship: str | None = None,
+	citizenship_status: str | None = None,
+	residency_type: str | None = None,
+	home_geo_node: str | None = None,
+	country_of_residence: str | None = None,
+	residence_address: str | None = None,
+	id_type: str | None = None,
+	id_number: str | None = None,
 ) -> dict:
 	"""Correct the caller's own Red Profile. The details are theirs.
 
@@ -295,7 +332,27 @@ def update_my_profile(
 		"date_of_birth": date_of_birth,
 		"preferred_language": preferred_language,
 		"profile_photo": profile_photo,
+		"country_of_citizenship": country_of_citizenship,
+		"citizenship_status": citizenship_status,
+		"residency_type": residency_type,
+		"home_geo_node": home_geo_node,
+		"country_of_residence": country_of_residence,
+		"residence_address": residence_address,
 	}
+
+	_write_profile(profile, supplied, id_type=id_type, id_number=id_number)
+
+	return _profile_dto(profile)
+
+
+def _write_profile(
+	profile: str,
+	supplied: dict,
+	*,
+	id_type: str | None = None,
+	id_number: str | None = None,
+) -> None:
+	"""Write person-owned registration facts to one already-resolved profile."""
 
 	changes = {
 		field: value
@@ -312,9 +369,7 @@ def update_my_profile(
 			# person, so the wrong one must never land at all.
 			if field in FILE_FIELDS and not str(value).strip().startswith(UPLOAD_PREFIXES):
 				frappe.throw(
-					_("{0} was not uploaded to this site.").format(
-						frappe.bold(_(meta.get_label(field)))
-					),
+					_("{0} was not uploaded to this site.").format(frappe.bold(_(meta.get_label(field)))),
 					frappe.ValidationError,
 					title=_("File Not Recognised"),
 				)
@@ -332,7 +387,16 @@ def update_my_profile(
 		# string on a Date is not a date, and a Link would store one.
 		changes[field] = None
 
-	if changes:
+	identification_supplied = id_type is not None or id_number is not None
+
+	if identification_supplied and not (str(id_type or "").strip() and str(id_number or "").strip()):
+		frappe.throw(
+			_("Identification Type and Identification Number must be provided together."),
+			frappe.MandatoryError,
+			title=_("Incomplete Identification"),
+		)
+
+	if changes or identification_supplied:
 		# Elevated, and narrowly. A volunteer or member holds no write permission
 		# on Red Profile and should not — it is core's spine and it carries every
 		# person the society knows. What is written here is one row, resolved from
@@ -345,11 +409,30 @@ def update_my_profile(
 		with intake.as_system():
 			document = frappe.get_doc(PROFILE_DOCTYPE, profile)
 			document.update(changes)
+
+			if identification_supplied:
+				primary = next((row for row in document.identifications if row.is_primary), None)
+
+				if primary is None and document.identifications:
+					primary = document.identifications[0]
+					primary.is_primary = 1
+
+				if primary is None:
+					document.append(
+						"identifications",
+						{
+							"id_type": str(id_type).strip(),
+							"id_number": str(id_number).strip(),
+							"is_primary": 1,
+						},
+					)
+				else:
+					primary.id_type = str(id_type).strip()
+					primary.id_number = str(id_number).strip()
+
 			document.save()
 
 		frappe.clear_document_cache(PROFILE_DOCTYPE, profile)
-
-	return _profile_dto(profile)
 
 
 # --- registering yourself -------------------------------------------------
@@ -519,6 +602,18 @@ def my_open_registrations() -> dict:
 				# off the document's own audit trail, exactly as the email reads
 				# it, so the two cannot say different things.
 				"reason": _latest_decision_reason(doctype, name),
+				# Draft means two opposite things and the portal was reading them
+				# as one. A registration nobody has sent yet is a Draft, and so is
+				# one an approver sent back — and the dashboard told somebody who
+				# had not finished their own form that "your branch has asked for
+				# something", about an application no branch had ever seen.
+				#
+				# The audit trail is what separates them: the engine records a
+				# decision *before* it moves the state back, so a returned
+				# application always has at least one, and a never-submitted draft
+				# never does. Answered here rather than inferred from `reason`,
+				# because an approver may send something back without typing one.
+				"reviewed": _has_been_reviewed(doctype, name),
 			}
 			if name
 			else None
@@ -544,6 +639,17 @@ def _latest_decision_reason(doctype: str, name: str) -> str:
 	)
 
 	return (rows[0].get("reason") or "") if rows else ""
+
+
+def _has_been_reviewed(doctype: str, name: str) -> bool:
+	"""Has this registration ever been in front of an approver?
+
+	The one question that tells a draft nobody has submitted apart from a draft
+	an approver returned, and both of those are `approval_state == "Draft"`. The
+	engine appends a decision row and only then moves the state, so the presence
+	of a single row is the whole answer.
+	"""
+	return bool(frappe.db.exists("VMMS Approval Decision", {"parent": name, "parenttype": doctype}))
 
 
 def _assert_nothing_open(doctype: str) -> None:
@@ -580,7 +686,7 @@ def _assert_nothing_open(doctype: str) -> None:
 	)
 
 
-def _register(values: dict, answers: dict | None = None):
+def _register(values: dict, answers: dict | None = None, *, draft_only: bool = False):
 	"""Insert a self-registration, down the same road a Web Form takes.
 
 	The flag is the point. `intake.SELF_REGISTRATION_FLAG` is documented as the
@@ -618,12 +724,308 @@ def _register(values: dict, answers: dict | None = None):
 	questions.apply(document, answers)
 
 	document.flags[intake.SELF_REGISTRATION_FLAG] = True
+	if draft_only:
+		document.flags[intake.DRAFT_ONLY_FLAG] = True
 	document.insert(ignore_permissions=True)
 
 	# After it, because a file can only be tied to a document that has a name.
 	questions.anchor_files(document)
 
 	return document
+
+
+def _doctype_for_path(path: str) -> str:
+	"""The governed doctype behind one public registration path."""
+	for candidate, doctype in REGISTRATION_PATHS:
+		if path == candidate:
+			return doctype
+
+	frappe.throw(
+		_("{0} is not a registration path.").format(frappe.bold(path)),
+		frappe.ValidationError,
+		title=_("Unknown Registration"),
+	)
+
+
+def _editable_registration(path: str):
+	"""The caller's own open registration, provided it is currently editable."""
+	from vmmsx.approvals import states
+	from vmmsx.approvals.services import contract
+
+	doctype = _doctype_for_path(path)
+	name = _open_registration(doctype)
+
+	if not name:
+		return None
+
+	document = frappe.get_doc(doctype, name)
+
+	if contract.state(document) != states.DRAFT:
+		frappe.throw(
+			_(
+				"Your {0} registration is already under review. It can only be edited if an"
+				" approver sends it back for more information."
+			).format(_(path)),
+			frappe.ValidationError,
+			title=_("Registration Is Under Review"),
+		)
+
+	return document
+
+
+def _save_existing_draft(document, values: dict, answers: dict | None):
+	"""Replace the applicant-owned portion of one already-authorised draft."""
+	with intake.as_system():
+		document.update(values)
+		questions.apply(document, answers)
+		document.save()
+
+	questions.anchor_files(document)
+	return document
+
+
+def _answers_dict(document) -> dict:
+	"""The wizard shape for the answer rows stored on a registration."""
+	return {
+		row["question"]: row["file_url"] if row["is_file"] else row["value"]
+		for row in questions.answers_of(document)
+	}
+
+
+def _registration_dto(document, path: str) -> dict:
+	"""The caller's editable registration, field by field, for wizard resume."""
+	from vmmsx.approvals import states
+	from vmmsx.approvals.services import contract
+
+	state = contract.state(document)
+	common = {
+		"doctype": document.doctype,
+		"name": document.name,
+		"path": path,
+		"state": state,
+		"can_edit": state == states.DRAFT,
+		"reason": _latest_decision_reason(document.doctype, document.name),
+		"reviewed": _has_been_reviewed(document.doctype, document.name),
+		"geo_node": document.get("geo_node"),
+		"answers": _answers_dict(document),
+	}
+
+	if path == "volunteer":
+		common.update(
+			{
+				"skills": [row.skill for row in document.get("skills") or [] if row.skill],
+				"languages": [row.language for row in document.get("languages") or [] if row.language],
+				"availability": [
+					row.availability_slot
+					for row in document.get("availability") or []
+					if row.availability_slot
+				],
+				"motivation": [row.motivation for row in document.get("motivation") or [] if row.motivation],
+				"prior_experience": document.get("prior_experience") or "",
+			}
+		)
+	else:
+		common.update(
+			{
+				"membership_type": document.get("membership_type"),
+				"membership_status": document.get("membership_status"),
+			}
+		)
+
+	return common
+
+
+@frappe.whitelist()
+def my_registration(path: str) -> dict | None:
+	"""Load the caller's own open volunteer or member registration for resume."""
+	_assert_signed_in()
+	doctype = _doctype_for_path(path)
+	name = _open_registration(doctype)
+
+	return _registration_dto(frappe.get_doc(doctype, name), path) if name else None
+
+
+@frappe.whitelist()
+def save_my_volunteer_draft(
+	geo_node: str,
+	country_of_citizenship: str | None = None,
+	residency_type: str | None = None,
+	home_geo_node: str | None = None,
+	country_of_residence: str | None = None,
+	residence_address: str | None = None,
+	id_type: str | None = None,
+	id_number: str | None = None,
+	skills: list | None = None,
+	languages: list | None = None,
+	availability: list | None = None,
+	motivation: list | None = None,
+	prior_experience: str | None = None,
+	first_name: str | None = None,
+	last_name: str | None = None,
+	phone: str | None = None,
+	gender: str | None = None,
+	date_of_birth: str | None = None,
+	profile_photo: str | None = None,
+	answers: dict | None = None,
+) -> dict:
+	"""Create or replace the caller's volunteer draft without routing it."""
+	_assert_signed_in()
+
+	from vmmsx.api.volunteer import selector_rows
+
+	profile = intake.for_user(
+		frappe.session.user,
+		{
+			key: value
+			for key, value in {
+				"first_name": first_name,
+				"last_name": last_name,
+				"phone": phone,
+				"gender": gender,
+				"date_of_birth": date_of_birth,
+			}.items()
+			if value
+		},
+	)
+
+	if not profile:
+		frappe.throw(_("Your account could not be matched to a person record."), frappe.ValidationError)
+
+	_write_profile(
+		profile,
+		{
+			"first_name": first_name,
+			"last_name": last_name,
+			"phone": phone,
+			"gender": gender,
+			"date_of_birth": date_of_birth,
+			"profile_photo": profile_photo,
+			"country_of_citizenship": country_of_citizenship,
+			"residency_type": residency_type,
+			"home_geo_node": home_geo_node,
+			"country_of_residence": country_of_residence,
+			"residence_address": residence_address,
+		},
+		id_type=id_type,
+		id_number=id_number,
+	)
+
+	values = {
+		"geo_node": geo_node,
+		"skills": selector_rows(skills, "skill"),
+		"languages": selector_rows(languages, "language"),
+		"availability": selector_rows(availability, "availability_slot"),
+		"motivation": selector_rows(motivation, "motivation"),
+		"prior_experience": prior_experience,
+	}
+	document = _editable_registration("volunteer")
+
+	if document:
+		document = _save_existing_draft(document, values, answers)
+	else:
+		document = _register(
+			{"doctype": APPLICATION_DOCTYPE, "red_profile": profile, **values},
+			answers=answers,
+			draft_only=True,
+		)
+
+	return _registration_dto(document, "volunteer")
+
+
+@frappe.whitelist()
+def save_my_member_draft(
+	membership_type: str,
+	geo_node: str,
+	first_name: str | None = None,
+	last_name: str | None = None,
+	phone: str | None = None,
+	gender: str | None = None,
+	date_of_birth: str | None = None,
+	profile_photo: str | None = None,
+	answers: dict | None = None,
+) -> dict:
+	"""Create or replace the caller's membership draft without starting payment or review."""
+	_assert_signed_in()
+	profile = intake.for_user(
+		frappe.session.user,
+		{
+			key: value
+			for key, value in {
+				"first_name": first_name,
+				"last_name": last_name,
+				"phone": phone,
+				"gender": gender,
+				"date_of_birth": date_of_birth,
+			}.items()
+			if value
+		},
+	)
+
+	if not profile:
+		frappe.throw(_("Your account could not be matched to a person record."), frappe.ValidationError)
+
+	_write_profile(
+		profile,
+		{
+			"first_name": first_name,
+			"last_name": last_name,
+			"phone": phone,
+			"gender": gender,
+			"date_of_birth": date_of_birth,
+			"profile_photo": profile_photo,
+		},
+	)
+
+	values = {"membership_type": membership_type, "geo_node": geo_node}
+	document = _editable_registration("member")
+
+	if document:
+		if document.get("payment_transaction") and document.membership_type != membership_type:
+			frappe.throw(
+				_("The membership type cannot be changed after a payment request has been created."),
+				frappe.ValidationError,
+				title=_("Membership Type Locked"),
+			)
+		document = _save_existing_draft(document, values, answers)
+	else:
+		document = _register(
+			{
+				"doctype": MEMBERSHIP_DOCTYPE,
+				"membership_type": membership_type,
+				"geo_node": geo_node,
+				**_intake_fields(first_name, last_name, phone, gender, date_of_birth),
+			},
+			answers=answers,
+			draft_only=True,
+		)
+
+	return _registration_dto(document, "member")
+
+
+@frappe.whitelist()
+def submit_my_registration(path: str) -> dict:
+	"""Submit the caller's own saved draft and route it through its normal lifecycle."""
+	_assert_signed_in()
+	document = _editable_registration(path)
+
+	if not document:
+		frappe.throw(
+			_("Save your registration before submitting it."),
+			frappe.ValidationError,
+			title=_("No Draft Registration"),
+		)
+
+	with intake.as_system():
+		if path == "volunteer":
+			from vmmsx.volunteer.services import application as application_service
+
+			result = application_service.submit(document)
+		else:
+			from vmmsx.member.services import membership as membership_service
+
+			result = membership_service.submit(document)
+
+	return result
 
 
 @frappe.whitelist()
@@ -652,8 +1054,8 @@ def register_as_volunteer(
 	"""Register the caller as a volunteer, and put the application into motion.
 
 	The self-service twin of `api/volunteer.py::apply_to_volunteer`, and it asks
-	for the same things the `register-as-a-volunteer` Web Form asks for, because
-	they are the same registration: `assert_ready()` refuses a submission with no
+	for the same things the React volunteer journey asks for. `assert_ready()`
+	refuses a submission with no
 	identification and no completed residency answer whichever door it came
 	through.
 
@@ -675,30 +1077,60 @@ def register_as_volunteer(
 
 	from vmmsx.api.volunteer import selector_rows
 	from vmmsx.volunteer.services import application as application_service
+	from vmmsx.volunteer.services import society
 
-	application = _register(
+	profile = intake.for_user(
+		frappe.session.user,
 		{
-			"doctype": APPLICATION_DOCTYPE,
-			"geo_node": geo_node,
-			"country_of_citizenship": country_of_citizenship,
+			key: value
+			for key, value in {
+				"first_name": first_name,
+				"last_name": last_name,
+				"phone": phone,
+				"gender": gender,
+				"date_of_birth": date_of_birth,
+			}.items()
+			if value
+		},
+	)
+
+	if not profile:
+		frappe.throw(
+			_("Your account could not be matched to a person record."),
+			frappe.ValidationError,
+			title=_("No Profile"),
+		)
+
+	_write_profile(
+		profile,
+		{
+			"country_of_citizenship": country_of_citizenship or society.default_citizenship_country(),
 			"residency_type": residency_type,
 			"home_geo_node": home_geo_node,
 			"country_of_residence": country_of_residence,
 			"residence_address": residence_address,
-			"id_type": id_type,
-			"id_number": id_number,
+		},
+		id_type=id_type,
+		id_number=id_number,
+	)
+
+	application = _register(
+		{
+			"doctype": APPLICATION_DOCTYPE,
+			"red_profile": profile,
+			"geo_node": geo_node,
 			"skills": selector_rows(skills, "skill"),
 			"languages": selector_rows(languages, "language"),
 			"availability": selector_rows(availability, "availability_slot"),
 			"motivation": selector_rows(motivation, "motivation"),
 			"prior_experience": prior_experience,
-			**_intake_fields(first_name, last_name, phone, gender, date_of_birth),
 		},
 		answers=answers,
 	)
 
-	# After the insert, because the profile this writes to is the one the insert
-	# just claimed or created.
+	# Registration only fills a missing portrait. Replacing a portrait already
+	# held by the society is an explicit profile correction, not an application
+	# side effect.
 	_adopt_photo(profile_photo)
 
 	# `submit_once` has already run from `on_update`. This is the idempotent

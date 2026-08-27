@@ -50,6 +50,8 @@ from contextlib import contextmanager
 import frappe
 from frappe import _
 
+from vmmsx import elevation
+
 PROFILE_DOCTYPE = "Red Profile"
 USER_DOCTYPE = "User"
 
@@ -76,6 +78,13 @@ SELF_REGISTRATION_FLAG = "vmms_self_registration"
 # engine performs inside `submit` does not re-enter and submit it again.
 SUBMITTING_FLAG = "vmms_registration_submitting"
 
+# Set by the self-service draft endpoints. They still need the self-registration
+# claim in `before_insert` — that is what binds the record to the caller's Red
+# Profile — but, unlike a native Web Form, they explicitly have a later Submit
+# button. Keeping this as a document flag makes the exception last for exactly
+# one insert and keeps the ordinary Web Form and desk paths unchanged.
+DRAFT_ONLY_FLAG = "vmms_registration_draft_only"
+
 # Set by `claim_profile` when it actually claimed, so `submit_once` can tell a
 # registration apart from an ordinary desk insert on the same doctype.
 CLAIMED_FLAG = "vmms_registration_claimed"
@@ -88,14 +97,13 @@ def as_system():
 	Public, because the two controllers need the same elevation for the one
 	other write registration performs — creating the member satellite — and a
 	second private copy of this would be a second thing to audit.
-	"""
-	previous = frappe.session.user
-	frappe.set_user("Administrator")
 
-	try:
+	The mechanics are `vmmsx.elevation`, which is where the *session* is put
+	back afterwards. A bare `set_user` round trip signs the applicant out — see
+	that module for what it overwrites and when the damage surfaces.
+	"""
+	with elevation.as_system():
 		yield
-	finally:
-		frappe.set_user(previous)
 
 
 # --- is this somebody registering themselves? -----------------------------
@@ -370,7 +378,7 @@ def submit_once(doc, submit) -> None:
 	volunteering or membership — it knows that a registration has a next step and
 	that its owner decides what that is.
 	"""
-	if not doc.flags.get(CLAIMED_FLAG) or doc.flags.get(SUBMITTING_FLAG):
+	if not doc.flags.get(CLAIMED_FLAG) or doc.flags.get(SUBMITTING_FLAG) or doc.flags.get(DRAFT_ONLY_FLAG):
 		return
 
 	doc.flags[SUBMITTING_FLAG] = True

@@ -11,7 +11,7 @@
  "fields": [
   {
    "columns": 10,
-   "description": "One specific objective of the mission, in the society's own words. A row rather than a paragraph so that the printed terms of reference numbers them, and so that a society can reorder them without rewriting the text. Never read by code.",
+   "description": "One specific objective of the mission, in your own words. Numbered on the printed terms in this order.",
    "fieldname": "objective",
    "fieldtype": "Small Text",
    "in_list_view": 1,

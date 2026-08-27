@@ -906,7 +906,7 @@ def _identity(w) -> None:
 		" module will surface, so a field appearing on core's spine never starts flowing through a"
 		" vmmsx DTO because nobody noticed it had arrived. It names full_name, first_name,"
 		" last_name, email, phone, home_geo_node, user, gender, date_of_birth, profile_photo,"
-		" preferred_language, nationality and citizenship_status, and the tests assert that tuple"
+		" preferred_language, country_of_citizenship and citizenship_status, and the tests assert that tuple"
 		" whole — adding a fourteenth fails the suite rather than passing quietly."
 	)
 	w.p(
@@ -950,7 +950,7 @@ def _coordinator_view(w) -> None:
 		[
 			[
 				"identity",
-				"Who this person is: name, photo, contact, gender, date of birth, nationality and"
+				"Who this person is: name, photo, contact, gender, date of birth, citizenship and"
 				" the area they live in.",
 				"onerc_core's Red Profile, through member/services/identity.py.",
 			],

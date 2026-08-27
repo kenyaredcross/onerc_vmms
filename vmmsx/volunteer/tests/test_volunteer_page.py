@@ -65,6 +65,11 @@ EXPECTED_READABLE = (
 	"preferred_language",
 	"profile_photo",
 	"home_geo_node",
+	"country_of_citizenship",
+	"citizenship_status",
+	"residency_type",
+	"country_of_residence",
+	"residence_address",
 )
 
 # The four the page pass added, kept separately so the tests below can say which
@@ -646,14 +651,23 @@ class TestTheDeclaredFields(VerifiedVolunteerTestCase):
 		skill = fixtures.make_skill()
 		motivation = fixtures.make_motivation()
 		profile = fixtures.make_profile("Api", "Applicant")
+		person = frappe.get_doc("Red Profile", profile)
+		person.country_of_citizenship = fixtures.test_country()
+		person.residency_type = "Local"
+		person.home_geo_node = self.society_a["ward"]
+		person.append(
+			"identifications",
+			{
+				"id_type": fixtures.make_identification_type(),
+				"id_number": "API-TEST-0001",
+				"is_primary": 1,
+			},
+		)
+		person.save()
 
 		result = volunteer_api.apply_to_volunteer(
 			red_profile=profile,
 			geo_node=self.society_a["ward"],
-			country_of_citizenship=fixtures.test_country(),
-			home_geo_node=self.society_a["ward"],
-			id_type=fixtures.make_identification_type(),
-			id_number="API-TEST-0001",
 			skills=[skill.name],
 			motivation=[motivation.name],
 			prior_experience="School cadet",
@@ -702,7 +716,7 @@ class TestTheDeclaredFields(VerifiedVolunteerTestCase):
 			self.assertIsNone(meta.get_field(fieldname), f"the volunteer has grown {fieldname}")
 
 	def test_the_identification_is_not_stored_on_the_volunteer_either(self):
-		"""Captured at intake, written to Red Profile, and shown from the application.
+		"""Captured on Red Profile and read live wherever it is shown.
 
 		Three places it legitimately is, and the volunteer register is not one of
 		them. It is the applicant's evidence of who they were on the day, and

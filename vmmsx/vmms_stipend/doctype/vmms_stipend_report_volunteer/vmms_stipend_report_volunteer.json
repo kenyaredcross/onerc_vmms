@@ -14,7 +14,7 @@
  "fields": [
   {
    "columns": 3,
-   "description": "A volunteer this report covers. One report covers many volunteers, which is why this is a table and not a link on the parent. Rows are added through the geo scoped picker, which refuses a volunteer the person adding them may not already see. Identity is read through the volunteer's Red Profile and is never copied onto this row.",
+   "description": "A volunteer this report covers.",
    "fieldname": "volunteer",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -24,7 +24,7 @@
   },
   {
    "columns": 3,
-   "description": "What this volunteer did over the period, in the supervisor's own words. Free text on purpose: a structured vocabulary of activities is a society's paperwork, and a Select typed into a JSON file would be this app inventing one. Never read by code.",
+   "description": "What this volunteer did over the period, in your own words.",
    "fieldname": "activity",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -32,7 +32,7 @@
   },
   {
    "columns": 3,
-   "description": "The department this volunteer belongs to, captured when the report is saved. It is the target the eventual departmental approval will route to, because the stipend chain runs from the supervisor to the head of the volunteer's department. Recorded rather than resolved: nothing routes on it today. Data rather than a Link, so a site without an HR app still saves this row, and empty is ordinary rather than an error.",
+   "description": "The department this volunteer belongs to, captured when the report is saved. Empty is ordinary.",
    "fieldname": "department",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -40,7 +40,7 @@
    "read_only": 1
   },
   {
-   "description": "Anything else the supervisor wants recorded about this volunteer's part in the period. Never read by code.",
+   "description": "Anything else worth recording about this volunteer's part in the period.",
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"

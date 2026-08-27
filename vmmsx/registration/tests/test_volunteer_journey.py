@@ -191,16 +191,25 @@ class TestThePaperRegistration(RegistrationTestCase):
 		raise.
 		"""
 		profile = fixtures.make_profile("Paper", "Volunteer")
+		person = frappe.get_doc(fixtures.PROFILE_DOCTYPE, profile)
+		person.country_of_citizenship = fixtures.test_country()
+		person.residency_type = "Local"
+		person.home_geo_node = self.branch()
+		person.append(
+			"identifications",
+			{
+				"id_type": fixtures.make_identification_type(),
+				"id_number": f"{fixtures.TEST_PREFIX}-paper-0001",
+				"is_primary": 1,
+			},
+		)
+		person.save()
 
 		application = frappe.get_doc(
 			{
 				"doctype": fixtures.APPLICATION_DOCTYPE,
 				"red_profile": profile,
 				"geo_node": self.branch(),
-				"country_of_citizenship": fixtures.test_country(),
-				"home_geo_node": self.branch(),
-				"id_type": fixtures.make_identification_type(),
-				"id_number": f"{fixtures.TEST_PREFIX}-paper-0001",
 			}
 		).insert()
 
@@ -288,24 +297,22 @@ class TestSelfAccess(RegistrationTestCase):
 class TestFormOrderingAndPrefill(RegistrationTestCase):
 	"""The onboarding-funnel ordering, and not re-asking somebody who they are."""
 
-	def test_the_engaging_questions_come_before_identity_and_identification(self):
-		"""Skills, languages, availability and motivation before the personal-data
-		and identification step — invested effort before personal data, the same
-		pattern behind any onboarding funnel that wants somebody to finish it.
-		"""
+	def test_the_legacy_native_form_is_not_a_second_registration_door(self):
+		"""The React portal owns the two-record registration transaction."""
 		web_form = frappe.get_doc("Web Form", "register-as-a-volunteer")
-		fieldnames = [row.fieldname for row in web_form.web_form_fields if row.fieldname]
+		application_meta = frappe.get_meta(fixtures.APPLICATION_DOCTYPE)
 
-		engaging = ["skills", "languages", "availability", "motivation"]
-		identity = ["applicant_first_name", "applicant_last_name"]
-		identification = ["id_type", "id_number"]
-
-		last_engaging = max(fieldnames.index(field) for field in engaging)
-		first_identity = min(fieldnames.index(field) for field in identity)
-		first_identification = min(fieldnames.index(field) for field in identification)
-
-		self.assertLess(last_engaging, first_identity)
-		self.assertLess(first_identity, first_identification)
+		self.assertFalse(web_form.published)
+		for fieldname in (
+			"country_of_citizenship",
+			"residency_type",
+			"home_geo_node",
+			"country_of_residence",
+			"residence_address",
+			"id_type",
+			"id_number",
+		):
+			self.assertIsNone(application_meta.get_field(fieldname))
 
 	def test_a_first_time_registrant_has_nothing_to_prefill(self):
 		from vmmsx.api import volunteer as volunteer_api

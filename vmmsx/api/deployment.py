@@ -758,6 +758,13 @@ def request_transfer(
 	a transfer records where somebody actually was rather than where the caller
 	believed they were. Whether it needs authorising is the society's setting,
 	and this endpoint does not know which way that goes either.
+
+	**The snapshot is taken before the insert, not left to `before_insert`.**
+	`insert()` checks create permission first, and this doctype is geo-scoped on
+	`from_geo_node` — so a document that has not been anchored yet is one core
+	refuses on sight, and every caller but an administrator would be told they
+	may not move anybody. `snapshot_origin` is idempotent, so the controller's
+	own `before_insert` still covers a transfer raised anywhere else.
 	"""
 	frappe.has_permission(TRANSFER_DOCTYPE, ptype="create", throw=True)
 
@@ -770,6 +777,7 @@ def request_transfer(
 			"reason": reason,
 		}
 	)
+	transfer_service.snapshot_origin(transfer)
 	transfer.insert()
 
 	return transfer_service.submit(transfer)
