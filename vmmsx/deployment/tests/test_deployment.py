@@ -109,6 +109,40 @@ class TestACC03TheAnchorLevelIsSocietyConfiguration(DeploymentRecordTestCase):
 
 
 class TestTheTermsOwnScope(DeploymentRecordTestCase):
+	def test_the_mission_dto_keeps_every_certification_requirement_field(self):
+		from vmmsx.deployment.services import terms as terms_service
+
+		certification = fixtures.make_certification_type(fixtures.CERT_RADIO)
+		doc = terms_service.create(
+			f"{fixtures.TEST_PREFIX} TOR editor {frappe.generate_hash(length=6)}",
+			is_active=False,
+			approval_mode="routed",
+			notes="Coordinator-only context.",
+			required_certifications=[
+				{
+					"certification_type": certification.name,
+					"is_mandatory": False,
+					"requirement_notes": "Helpful during night shifts.",
+				}
+			],
+		)
+
+		answer = terms_service.mission_dto(doc.name)
+
+		self.assertFalse(answer["is_active"])
+		self.assertEqual(answer["approval_mode"], "routed")
+		self.assertEqual(answer["notes"], "Coordinator-only context.")
+		self.assertEqual(
+			answer["certification_requirements"],
+			[
+				{
+					"certification_type": certification.name,
+					"is_mandatory": False,
+					"requirement_notes": "Helpful during night shifts.",
+				}
+			],
+		)
+
 	def test_empty_scope_permits_anywhere(self):
 		terms = fixtures.make_terms(fixtures.TOR_OPEN)
 
@@ -188,6 +222,31 @@ class TestTheRoster(DeploymentRecordTestCase):
 
 
 class TestTheStatusLifecycle(DeploymentRecordTestCase):
+	def test_creation_keeps_the_selected_status_and_email_template(self):
+		template_name = f"{fixtures.TEST_PREFIX} invitation {frappe.generate_hash(length=6)}"
+		template = frappe.get_doc(
+			{
+				"doctype": "Email Template",
+				"__newname": template_name,
+				"subject": "A deployment invitation",
+				"response": "Please review your deployment invitation.",
+			}
+		).insert()
+
+		deployment = deployment_service.create(
+			self.terms.name,
+			self.society_a["branch"],
+			today(),
+			add_days(today(), 2),
+			status=deployment_service.STATUS_ACTIVE,
+			email_template=template.name,
+		)
+
+		answer = deployment_service.status_dto(deployment)
+
+		self.assertEqual(answer["status"], deployment_service.STATUS_ACTIVE)
+		self.assertEqual(answer["email_template"], template.name)
+
 	def test_the_statuses_are_a_closed_set(self):
 		with self.assertRaises(frappe.ValidationError):
 			fixtures.make_deployment(self.terms.name, self.society_a["branch"], status="Postponed")

@@ -16,7 +16,7 @@ export const DEPLOYMENT_NAV: SubNavItem[] = [
 	{
 		to: "/admin/deployments",
 		labelKey: "admin.deployments.nav.dashboard",
-		fallback: "Deployment dashboard",
+		fallback: "Operations overview",
 		// The section's index route, so it does not stay selected while a child
 		// route is open.
 		end: true,
@@ -53,6 +53,12 @@ export const DEPLOYMENT_NAV: SubNavItem[] = [
 		fallback: "Deployment requests",
 		groupKey: "admin.deployments.nav.group.manage",
 	},
+	{
+		to: "/admin/deployments/documents",
+		labelKey: "admin.deployments.nav.documents",
+		fallback: "Documents",
+		groupKey: "admin.deployments.nav.group.manage",
+	},
 ];
 
 /** Is this path inside the section that owns `DEPLOYMENT_NAV`? */
@@ -61,5 +67,5 @@ export function inDeployments(pathname: string): boolean {
 }
 
 export function DeploymentSubNav({ horizontal = false }: { horizontal?: boolean }) {
-	return <SubNav title="Deployments" items={DEPLOYMENT_NAV} horizontal={horizontal} />;
+	return <SubNav title="Operations" items={DEPLOYMENT_NAV} horizontal={horizontal} />;
 }

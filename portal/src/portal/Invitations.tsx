@@ -243,7 +243,7 @@ function InvitationCard({
 					{busy === "accept" ? "Sending…" : "Accept these terms"}
 				</Button>
 				<Button variant="quiet" disabled={busy !== null} onClick={() => void respond(false)}>
-					{busy === "decline" ? "Sending…" : "I cannot go"}
+					{busy === "decline" ? "Sending…" : "Decline"}
 				</Button>
 			</div>
 

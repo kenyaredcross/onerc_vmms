@@ -38,6 +38,7 @@ function deployment(over: Partial<DeploymentSummary> = {}): DeploymentSummary {
 		start_date: null,
 		end_date: null,
 		volunteers_required: 0,
+		email_template: null,
 		participant_count: 0,
 		assignment_counts: counts(),
 		places_left: null,

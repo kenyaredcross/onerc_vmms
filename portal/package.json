@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "capture:route": "node scripts/capture-route.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",

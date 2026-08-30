@@ -27,17 +27,19 @@
 >
 <style>
 	:root {
-		--vm-ink: #0B0C0E;
-		--vm-navy: #011E41;
-		--vm-navy-deep: #06101F;
-		--vm-signal: #F5333F;
-		--vm-signal-dark: #C4242E;
-		--vm-body: #5B6472;
-		--vm-strong: #3D4652;
-		--vm-faint: #8A93A1;
-		--vm-hairline: #E7EAF0;
-		--vm-hairline-strong: #D8DEE9;
-		--vm-page: #F4F6FA;
+		--vm-ink: #17191D;
+		--vm-authority: #24272C;
+		--vm-authority-deep: #1B1E22;
+		--vm-action: #155EEF;
+		--vm-action-hover: #1150D0;
+		--vm-danger: #B4232C;
+		--vm-danger-dark: #8F1D24;
+		--vm-body: #737982;
+		--vm-strong: #3F444B;
+		--vm-faint: #9AA0A8;
+		--vm-hairline: #E1E3E6;
+		--vm-hairline-strong: #D5D8DC;
+		--vm-page: #ECECEC;
 		--vm-display: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
 		--vm-sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 	}
@@ -87,7 +89,7 @@
 		justify-content: space-between;
 		gap: 48px;
 		padding: 34px 40px 44px;
-		background: var(--vm-navy);
+		background: var(--vm-authority);
 		overflow: hidden;
 		isolation: isolate;
 	}
@@ -110,7 +112,7 @@
 		content: "";
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(180deg, rgba(1, 30, 65, 0.55) 0%, rgba(1, 30, 65, 0.92) 68%, #011E41 100%);
+		background: linear-gradient(180deg, rgba(36, 39, 44, 0.5) 0%, rgba(36, 39, 44, 0.92) 68%, #24272C 100%);
 		z-index: -1;
 	}
 
@@ -128,7 +130,7 @@
 		object-fit: contain;
 	}
 
-	.auth-lockup svg { color: var(--vm-signal); }
+	.auth-lockup svg { color: var(--vm-action); }
 
 	.auth-lockup span {
 		font-family: var(--vm-display);
@@ -180,6 +182,34 @@
 
 	.page-card { width: 100%; }
 
+	.registration-context { margin: 0 0 28px; }
+
+	.registration-label {
+		margin: 0;
+		font-family: var(--vm-display);
+		font-size: 10px;
+		font-weight: 800;
+		letter-spacing: 0.16em;
+		line-height: 1.4;
+		text-transform: uppercase;
+		color: var(--vm-action);
+	}
+
+	.registration-progress {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 5px 8px;
+		margin: 10px 0 0;
+		padding: 0;
+		list-style: none;
+		font-size: 11.5px;
+		line-height: 1.4;
+		color: var(--vm-faint);
+	}
+
+	.registration-progress .current { font-weight: 700; color: var(--vm-authority); }
+
 	.auth-eyebrow {
 		margin: 0 0 10px;
 		font-family: var(--vm-display);
@@ -187,7 +217,7 @@
 		font-weight: 800;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
-		color: var(--vm-signal);
+		color: var(--vm-action);
 	}
 
 	.auth-title {
@@ -237,7 +267,7 @@
 		height: 44px;
 		padding: 0 13px;
 		border: 1px solid var(--vm-hairline-strong);
-		border-radius: 6px;
+		border-radius: 12px;
 		background: #fff;
 		font-family: var(--vm-sans);
 		font-size: 14px;
@@ -249,8 +279,8 @@
 
 	input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
 		outline: none;
-		border-color: var(--vm-navy);
-		box-shadow: 0 0 0 3px rgba(1, 30, 65, 0.1);
+		border-color: var(--vm-action);
+		box-shadow: 0 0 0 3px rgba(21, 94, 239, 0.12);
 	}
 
 	.password-field input { padding-right: 42px; }
@@ -272,12 +302,12 @@
 	.toggle-password:hover { stroke: var(--vm-strong); }
 
 	.page-card-body.invalid input,
-	.form-group.invalid input { border-color: var(--vm-signal); }
+	.form-group.invalid input { border-color: var(--vm-danger); }
 
 	.field-error {
 		margin: 0;
 		font-size: 12px;
-		color: var(--vm-signal-dark);
+		color: var(--vm-danger-dark);
 	}
 
 	.forgot-link, .auth-quiet-link {
@@ -287,7 +317,7 @@
 		text-decoration: none;
 	}
 
-	.forgot-link:hover, .auth-quiet-link:hover { color: var(--vm-navy); text-decoration: underline; }
+	.forgot-link:hover, .auth-quiet-link:hover { color: var(--vm-action); text-decoration: underline; }
 
 	.page-card-actions {
 		display: flex;
@@ -306,7 +336,7 @@
 		min-height: 46px;
 		padding: 0 18px;
 		border: 1px solid transparent;
-		border-radius: 6px;
+		border-radius: 999px;
 		font-family: var(--vm-display);
 		font-size: 13.5px;
 		font-weight: 700;
@@ -316,11 +346,11 @@
 	}
 
 	.es-button[data-variant="solid"] {
-		background: var(--vm-signal);
+		background: var(--vm-action);
 		color: #fff;
 	}
 
-	.es-button[data-variant="solid"]:hover:not(:disabled) { background: var(--vm-signal-dark); }
+	.es-button[data-variant="solid"]:hover:not(:disabled) { background: var(--vm-action-hover); }
 
 	.es-button[data-variant="solid"]:disabled {
 		background: var(--vm-hairline-strong);
@@ -334,13 +364,13 @@
 		color: var(--vm-strong);
 	}
 
-	.btn-login-option:hover { border-color: var(--vm-navy); color: var(--vm-navy); }
+	.btn-login-option:hover { border-color: var(--vm-action); color: var(--vm-action); }
 
 	.btn-login-option img, .btn-login-option svg { width: 17px; height: 17px; }
 
 	.es-button:focus-visible {
 		outline: none;
-		box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--vm-signal);
+		box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--vm-action);
 	}
 
 	.es-spinner {
@@ -387,14 +417,14 @@
 
 	.sign-up-message a {
 		font-weight: 700;
-		color: var(--vm-signal);
+		color: var(--vm-action);
 		text-decoration: none;
 	}
 
-	.sign-up-message a:hover { color: var(--vm-signal-dark); text-decoration: underline; }
+	.sign-up-message a:hover { color: var(--vm-action-hover); text-decoration: underline; }
 
 	.resend-link { margin: 0; font-size: 12.5px; color: var(--vm-body); text-align: center; }
-	.resend-link a { font-weight: 700; color: var(--vm-signal); text-decoration: none; }
+	.resend-link a { font-weight: 700; color: var(--vm-action); text-decoration: none; }
 
 	/* ---- the panel that replaces the sign-up form ----------------------- */
 
@@ -442,7 +472,7 @@
 	.es-alert[data-theme="red"] {
 		border-color: #F6CDD0;
 		background: #FEF3F3;
-		color: var(--vm-signal-dark);
+		color: var(--vm-danger-dark);
 	}
 
 	.es-alert[data-theme="green"] {
@@ -469,8 +499,8 @@
 		color: var(--vm-body);
 	}
 
-	.password-mismatch-message.text-danger, .text-danger { color: var(--vm-signal-dark); }
-	.text-ink-red-8 { color: var(--vm-signal-dark); }
+	.password-mismatch-message.text-danger, .text-danger { color: var(--vm-danger-dark); }
+	.text-ink-red-8 { color: var(--vm-danger-dark); }
 	.text-ink-orange-8 { color: #B26A00; }
 	.text-ink-blue-8 { color: #1B5FA8; }
 	.text-ink-green-8 { color: #1B7A46; }

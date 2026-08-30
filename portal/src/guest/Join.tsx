@@ -113,9 +113,11 @@ const ABROAD = "Abroad";
  * seventh page's worth of question it can answer itself is the same mistake with
  * better manners.
  *
- * **Leaving a step saves.** Every move between screens writes the draft — see
- * `goTo` — so nothing typed lives only in a browser tab. The "Save draft" button
- * remains for anybody who wants to press something before walking away.
+ * **Leaving a step saves, and does not say so.** Every move between screens
+ * writes the draft — see `goTo` — so nothing typed lives only in a browser tab.
+ * It is silent about it: an applicant did not ask for the save and has nothing
+ * to do with the answer. The "Save draft" button remains for anybody who wants
+ * to press something before walking away, and that press is answered.
  *
  * **The identity rules are the server's, and this wizard does not re-implement
  * one of them.** It posts the identity buffer with the registration, which is
@@ -154,7 +156,9 @@ function JoinBody() {
 	// is the only case that gets asked. Read once from the URL the wizard was
 	// opened with: switching path later must not make the step reappear
 	// underneath somebody, which would renumber every rung mid-registration.
-	const [declared] = useState(() => requested === "member" || requested === "volunteer");
+	const [declared, setDeclared] = useState(
+		() => requested === "member" || requested === "volunteer",
+	);
 
 	const [cursor, setCursor] = useState(0);
 	const [furthest, setFurthest] = useState(0);
@@ -217,9 +221,8 @@ function JoinBody() {
 	const [busy, setBusy] = useState(false);
 	const [busyAction, setBusyAction] = useState<"save" | "submit" | null>(null);
 	const [failure, setFailure] = useState<string | null>(null);
-	const [done, setDone] = useState<string | null>(null);
+	const [done, setDone] = useState(false);
 	const [saved, setSaved] = useState<string | null>(null);
-	const [draftReference, setDraftReference] = useState<string | null>(null);
 
 	// What core already knows, so the identity step prefills rather than asking a
 	// returning person who they are for a second time.
@@ -267,7 +270,6 @@ function JoinBody() {
 		const remembered = draft.data?.message;
 		if (!remembered || restoredDraft === remembered.name) return;
 
-		setDraftReference(remembered.name);
 		setMembershipType((current) => remembered.membership_type ?? current);
 		setSkills(remembered.skills ?? []);
 		setLanguages(remembered.languages ?? []);
@@ -550,6 +552,24 @@ function JoinBody() {
 	};
 
 	/**
+	 * Declaring a path before authentication.
+	 *
+	 * A bare `/join` has no intent to preserve yet, so it asks this one question
+	 * before sending a guest through Frappe. The answer goes into the URL before
+	 * any hand-off: login, account creation and the password email can then all
+	 * return to the same volunteer or member registration rather than to an
+	 * ambiguous form.
+	 */
+	const declarePath = (next: Path) => {
+		const url = new URLSearchParams(params);
+		url.set("path", next);
+		setParams(url, { replace: true });
+
+		setPath(next);
+		setDeclared(true);
+	};
+
+	/**
 	 * Moving between steps, which is also when the draft is written.
 	 *
 	 * **Leaving a screen is the save.** There was a "Save draft" button and
@@ -594,7 +614,7 @@ function JoinBody() {
 		profile_photo: photo,
 	};
 
-	const persistDraft = async (): Promise<string> => {
+	const persistDraft = async (): Promise<void> => {
 		const endpoint =
 			path === "volunteer" ? API.saveMyVolunteerDraft : API.saveMyMemberDraft;
 		const payload =
@@ -622,11 +642,8 @@ function JoinBody() {
 						answers,
 					};
 
-		const result = await call.post<{ message: DraftRegistration }>(endpoint, payload);
-		const reference = result.message?.name ?? draftReference ?? "your draft";
-		setDraftReference(reference);
+		await call.post<{ message: DraftRegistration }>(endpoint, payload);
 		void existing.mutate();
-		return reference;
 	};
 
 	/**
@@ -656,19 +673,21 @@ function JoinBody() {
 	/**
 	 * The quiet save, on leaving a step.
 	 *
-	 * Silent about everything except having worked. It does not take the busy
-	 * flag, because that disables the buttons and a person moving between screens
-	 * has not asked to be stopped; it does not raise a failure, because the
-	 * screen it would appear on is one they have already left; and it does
-	 * nothing at all until there is enough answered to make a draft, which is a
-	 * name and a branch.
+	 * Silent, including about having worked. A tick reading "Draft saved" on
+	 * every step change is the form reporting on itself: nobody asked for the
+	 * save, so nobody is waiting to hear that it happened, and the answers being
+	 * there on the next visit is the only proof of it anybody needs. It also does
+	 * not take the busy flag, because that disables the buttons and a person
+	 * moving between screens has not asked to be stopped; it does not raise a
+	 * failure, because the screen it would appear on is one they have already
+	 * left; and it does nothing at all until there is enough answered to make a
+	 * draft, which is a name and a branch.
 	 */
 	const autosave = async () => {
 		if (!canSaveDraft || busy) return;
 
 		try {
 			await enqueue(persistDraft);
-			setSaved("Draft saved");
 		} catch {
 			// The button is still there, and it says so properly when pressed.
 		}
@@ -703,11 +722,9 @@ function JoinBody() {
 		setSaved(null);
 
 		try {
-			const reference = await enqueue(persistDraft);
-			const result = await call.post<{ message: { name?: string } }>(API.submitMyRegistration, {
-				path,
-			});
-			setDone(result.message?.name ?? reference);
+			await enqueue(persistDraft);
+			await call.post(API.submitMyRegistration, { path });
+			setDone(true);
 		} catch (submitError) {
 			setFailure(errorMessage(submitError, "Your registration was not accepted."));
 		} finally {
@@ -755,13 +772,17 @@ function JoinBody() {
 
 				{!sessionLoading && isGuest && (
 					<div className="mx-auto max-w-2xl">
-						<SignInFirst />
+						{declared ? (
+							<SignInFirst path={path} />
+						) : (
+							<ChoosePathFirst onChoose={declarePath} />
+						)}
 					</div>
 				)}
 
 				{!sessionLoading && !isGuest && done && (
 					<div className="mx-auto max-w-2xl">
-						<Success reference={done} path={path} />
+						<Success path={path} />
 					</div>
 				)}
 
@@ -780,7 +801,6 @@ function JoinBody() {
 				{!sessionLoading && !isGuest && !done && openApplication && !resumable && (
 					<div className="mx-auto max-w-2xl">
 						<AlreadyApplied
-							reference={openApplication.name}
 							// The entry *is* this path's entry — it was read out of the
 							// answer by it — so the wizard's own is the narrower spelling.
 							path={path}
@@ -838,12 +858,6 @@ function JoinBody() {
 										<h1 className="mt-2 font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink sm:text-[30px]">
 											{step.title}
 										</h1>
-										{step.blurb && (
-											<p className="mt-2.5 max-w-2xl text-[13.5px] leading-relaxed text-slate-body">
-												{step.blurb}
-											</p>
-										)}
-
 										{/* The choice the path step would have asked, kept
 										    reversible without a screen of its own. Drawn only on
 										    the first step, and only when the answer arrived with
@@ -1002,9 +1016,10 @@ function JoinBody() {
 											</Button>
 
 											<div className="flex items-center gap-3">
-												{/* A confirmation, not an announcement. The draft is
-												    written on every step change now, so a green panel
-												    would be a green panel on every screen. */}
+												{/* Only ever an answer to the button beside it. The
+												    autosave is silent — see `autosave` — so this is
+												    shown to somebody who pressed something and is
+												    waiting to hear, never on a step change. */}
 												{saved && !busy && (
 													<span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-emerald-700">
 														<Icon.check size={13} />
@@ -1054,8 +1069,17 @@ interface StepDef {
 	id: StepId;
 	rail: string;
 	eyebrow: string;
+	/**
+	 * The whole of what a step says for itself.
+	 *
+	 * There was a line of explanation under it — "Answer each field in turn, the
+	 * one below narrows to what sits inside your answer" — and every one of them
+	 * was the page describing the controls already on it, in a voice nobody uses.
+	 * A screen headed "Where would you volunteer?" above three selects has said
+	 * everything it has to say. What a field genuinely needs explaining goes on
+	 * the field, as its hint.
+	 */
 	title: string;
-	blurb?: string;
 	/** Shown beside a disabled Continue, so "why can't I go on" is answered. */
 	needs: string;
 }
@@ -1092,8 +1116,6 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 			rail: "Your path",
 			eyebrow: "Registration",
 			title: "What are you here to do?",
-			blurb:
-				"These are different things and you may do both. Register for one now and add the other from your portal afterwards.",
 			needs: "",
 		},
 		identity: {
@@ -1116,8 +1138,6 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 			rail: "Their questions",
 			eyebrow: "",
 			title: "What your society asks",
-			blurb:
-				"These questions are your society's own, and they are asked of everybody applying the way you are.",
 			needs: "Answer everything marked required",
 		},
 		confirm: {
@@ -1125,7 +1145,6 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 			rail: "Check and submit",
 			eyebrow: "Last step",
 			title: "Check and submit",
-			blurb: "Nothing is sent until you press the button. Anything here can still be changed.",
 			needs: "",
 		},
 	};
@@ -1140,8 +1159,6 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Your plan",
 						eyebrow: "",
 						title: "Choose your membership",
-						blurb:
-							"What each one costs, how long it runs and what it carries. Your society sets all of it.",
 						needs: "Choose a membership type",
 					},
 					{
@@ -1149,9 +1166,7 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Your branch",
 						eyebrow: "",
 						title: "Which branch are you joining through?",
-						blurb:
-							"Where your membership sits on the register. Answer each field in turn — the one below narrows to what sits inside your answer.",
-						needs: "Work down to a branch",
+						needs: "Choose a branch",
 					},
 					shared.questions,
 					shared.confirm,
@@ -1164,17 +1179,13 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Where you'd volunteer",
 						eyebrow: "",
 						title: "Where would you volunteer?",
-						blurb:
-							"Answer each field in turn — the one below narrows to what sits inside your answer. Your application is reviewed by the people responsible for the place you choose.",
-						needs: "Work down to a branch or area",
+						needs: "Choose a branch or area",
 					},
 					{
 						id: "identification",
 						rail: "Identification",
 						eyebrow: "",
 						title: "Identification",
-						blurb:
-							"We need to be able to identify you before you can volunteer with us. This is not shared beyond the society.",
 						needs: "An ID type and number are needed",
 					},
 					{
@@ -1182,8 +1193,6 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Your volunteering",
 						eyebrow: "",
 						title: "About your volunteering",
-						blurb:
-							"None of this is required, and none of it is scored by the software. It is how a coordinator knows who to call when something needs doing. Pick as many as apply.",
 						needs: "",
 					},
 					shared.questions,
@@ -1390,28 +1399,86 @@ function Summary({
 
 /* ------------------------------------------------------------------- steps */
 
-function SignInFirst() {
+/**
+ * The only question a bare guest entry needs before authentication.
+ *
+ * The cards advance immediately because neither answer needs a separate
+ * confirmation button. A declared landing-page CTA skips this screen entirely.
+ */
+function ChoosePathFirst({ onChoose }: { onChoose: (path: Path) => void }) {
 	return (
-		<Card className="p-7">
-			<div className="mb-4 grid h-11 w-11 place-items-center rounded-card bg-navy/5 text-navy">
+		<Card className="p-7 sm:p-9">
+			<p className="eyebrow">Registration</p>
+			<h1 className="mt-2 font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink">
+				How would you like to join?
+			</h1>
+			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
+				Choose a path first. We will keep your choice through account creation and bring you back
+				to the right registration.
+			</p>
+
+			<div
+				className="mt-7 grid gap-3 sm:grid-cols-2"
+				role="radiogroup"
+				aria-label="How would you like to join?"
+			>
+				<ChoiceCard
+					selected={false}
+					onSelect={() => onChoose("volunteer")}
+					icon={<Icon.people size={20} />}
+					title="Volunteer"
+					body="Give time and skills. Your branch verifies your record before you can take part in volunteer work."
+				/>
+				<ChoiceCard
+					selected={false}
+					onSelect={() => onChoose("member")}
+					icon={<Icon.card size={20} />}
+					title="Member"
+					body="Join the Society formally. Membership carries a place on the register and may carry a fee."
+				/>
+			</div>
+		</Card>
+	);
+}
+
+function SignInFirst({ path }: { path: Path }) {
+	const volunteering = path === "volunteer";
+	const registration = volunteering ? "Volunteer registration" : "Member registration";
+
+	return (
+		<Card className="p-7 sm:p-9">
+			<p className="eyebrow">{registration}</p>
+			<nav className="mt-3" aria-label={`${registration} progress`}>
+				<ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-slate-faint">
+					<li className="font-bold text-navy" aria-current="step">
+						Account
+					</li>
+					<li aria-hidden="true">→</li>
+					<li>Your details</li>
+					<li aria-hidden="true">→</li>
+					<li>Branch review</li>
+				</ol>
+			</nav>
+
+			<div className="mb-4 mt-7 grid h-11 w-11 place-items-center rounded-card bg-navy/5 text-navy">
 				<Icon.user size={21} />
 			</div>
 			<h1 className="font-display text-[24px] font-extrabold tracking-tight text-ink">
-				Sign in to register
+				Sign in to continue
 			</h1>
 			<p className="mt-2.5 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
-				Your account is your identity with the Society, and it is what keeps one person to one
-				record however many times they register. Sign in and you will come straight back here.
+				You chose to register as {volunteering ? "a volunteer" : "a member"}. Sign in and you
+				will come straight back to this registration.
 			</p>
 			{/* Said plainly, because it is the step people are surprised by. Creating
 			    an account does not sign anybody in: Frappe mails a link to set a
 			    password, and the account cannot be used until it is opened. A screen
 			    that promised "you will come straight back here" and then sent
-			    somebody to their inbox was the reason that felt like being thrown
-			    out. `signupUrl` is what makes the sentence below true. */}
+				    somebody to their inbox was the reason that felt like being thrown
+				    out. `signupUrl` is what makes the sentence below true. */}
 			<p className="mb-6 mt-3 max-w-lg text-[12.5px] leading-relaxed text-slate-body">
-				New here? Creating an account sends you an email to set your password. Open that link,
-				and you will land back on this form with nothing lost.
+				New here? Creating an account sends you an email to set your password. Open that link and
+				you will return to your {volunteering ? "volunteer" : "member"} registration.
 			</p>
 			<div className="flex flex-wrap gap-2.5">
 				<a
@@ -1566,10 +1633,7 @@ function IdentityStep({
 					/>
 				</Field>
 
-				<Field
-					label="Email"
-					hint="This is the account you signed in with, so it is the one thing here you cannot change."
-				>
+				<Field label="Email" hint="The account you signed in with.">
 					{/* Never an input, on either path. The login is the identity: a
 					    form field here would let anybody claim anybody's record, and
 					    `update_my_profile` does not accept one for the same reason. */}
@@ -1597,7 +1661,7 @@ function IdentityStep({
 					htmlFor="join-dob"
 					hint={
 						path === "volunteer"
-							? "Required. It decides what you can be asked to do and what safeguarding applies to you."
+							? "Needed for safeguarding, and to know what you can be asked to do."
 							: undefined
 					}
 				>
@@ -1681,7 +1745,7 @@ function PhotoField({
 		<Field
 			label="Photograph"
 			htmlFor={id}
-			hint="Optional. A head-and-shoulders picture, which goes on your card and beside your name."
+			hint="Optional. It goes on your card and beside your name."
 		>
 			<div className="flex flex-wrap items-center gap-4">
 				<div className="grid h-[72px] w-[72px] flex-none place-items-center overflow-hidden rounded-card border border-hairline bg-surface text-slate-faint">
@@ -1744,14 +1808,7 @@ function PlacementStep({
 	allowedLevels?: string[];
 }) {
 	return (
-		<FieldSet
-			title={path === "member" ? "Branch or area" : "Serving branch"}
-			description={
-				path === "member"
-					? "Where your membership sits on the register."
-					: "The branch or area you want to volunteer with."
-			}
-		>
+		<FieldSet title={path === "member" ? "Branch or area" : "Serving branch"}>
 			<GeoSelects
 				chain={chain}
 				onChain={onChain}
@@ -1871,11 +1928,6 @@ function IdentificationStep({
 			<Field label="ID number" required htmlFor="join-id-number">
 				<TextInput id="join-id-number" value={idNumber} onChange={onIdNumber} />
 			</Field>
-
-			<p className="text-[11.5px] leading-relaxed text-slate-faint sm:col-span-2">
-				Identification is optional on your profile but required to submit an application, so this is
-				asked once here and kept on your profile afterwards.
-			</p>
 		</div>
 	);
 }
@@ -2139,10 +2191,7 @@ function DeclarationStep({
 			    only "how many rows Kenya happens to have". The descriptions a
 			    society wrote are not lost — `MultiCombo` renders them under each
 			    row — and the picks echo through the same `TokenTray` either way. */}
-			<FieldSet
-				title="What you can do"
-				description="Whatever is true of you. A coordinator staffing something searches on these."
-			>
+			<FieldSet title="What you can do">
 				<MultiCombo
 					id="join-skills"
 					label="Skills"
@@ -2154,10 +2203,7 @@ function DeclarationStep({
 				/>
 			</FieldSet>
 
-			<FieldSet
-				title="Languages you speak"
-				description="Search for each one and pick it. If a language you speak is not on the list, your branch can add it."
-			>
+			<FieldSet title="Languages you speak">
 				<MultiCombo
 					id="join-languages"
 					label="Languages"
@@ -2169,10 +2215,7 @@ function DeclarationStep({
 				/>
 			</FieldSet>
 
-			<FieldSet
-				title="When you are available"
-				description="Pick every slot that works for you. Nothing here commits you to anything — it is how somebody knows whether to call you on a Tuesday morning."
-			>
+			<FieldSet title="When you are available">
 				<MultiCombo
 					id="join-availability"
 					label="Availability"
@@ -2184,10 +2227,7 @@ function DeclarationStep({
 				/>
 			</FieldSet>
 
-			<FieldSet
-				title="Why you want to volunteer"
-				description="As many as are true. There is no better or worse answer here and nothing is scored."
-			>
+			<FieldSet title="Why you want to volunteer">
 				<MultiCombo
 					id="join-motivations"
 					label="Motivation"
@@ -2330,8 +2370,7 @@ function ConfirmStep({
 			)}
 
 			<p className="text-[12px] leading-relaxed text-slate-faint">
-				Submitting sends this to your branch for review. You can follow where it has got to from
-				your portal.
+				Submitting sends this to your branch for review. You can follow it from your portal.
 			</p>
 		</div>
 	);
@@ -2624,13 +2663,11 @@ function DraftNotice({ reason }: { reason: string }) {
 }
 
 function AlreadyApplied({
-	reference,
 	path,
 	state,
 	otherOpen,
 	onSwitch,
 }: {
-	reference: string;
 	path: Path;
 	state: string;
 	otherOpen: boolean;
@@ -2650,20 +2687,13 @@ function AlreadyApplied({
 
 			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
 				Your {path === "volunteer" ? "volunteer application" : "membership"} is with your branch
-				and has not been decided yet, so there is nothing more to fill in. Applying again would
-				put a second one in front of the same reviewer.
+				and has not been decided yet, so there is nothing more to fill in.
 				{otherOpen
 					? ` Your ${other === "volunteer" ? "volunteer application" : "membership"} is with them as well.`
 					: ""}
 			</p>
 
-			<div className="mt-5 flex flex-wrap items-center gap-2.5">
-				<span className="inline-flex items-baseline gap-2.5 rounded-card border border-hairline bg-surface px-4 py-2.5">
-					<span className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-						Reference
-					</span>
-					<span className="font-mono text-[13px] font-semibold text-ink">{reference}</span>
-				</span>
+			<div className="mt-5">
 				<StateBadge state={state} />
 			</div>
 
@@ -2688,7 +2718,7 @@ function AlreadyApplied({
 	);
 }
 
-function Success({ reference, path }: { reference: string; path: Path }) {
+function Success({ path }: { path: Path }) {
 	return (
 		<Card className="p-7 sm:p-9">
 			<div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-emerald-50">
@@ -2709,17 +2739,9 @@ function Success({ reference, path }: { reference: string; path: Path }) {
 			</h1>
 
 			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
-				Your {path === "volunteer" ? "application" : "membership"} was submitted and routed to
-				whoever reviews {path === "volunteer" ? "applications" : "memberships"} for the branch you
-				chose. Nobody has to be chased: it is already in their queue.
+				Your {path === "volunteer" ? "application" : "membership"} has gone to the branch you chose,
+				and somebody there will review it.
 			</p>
-
-			<div className="mt-5 inline-flex items-baseline gap-2.5 rounded-card border border-hairline bg-surface px-4 py-2.5">
-				<span className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-					Reference
-				</span>
-				<span className="font-mono text-[13px] font-semibold text-ink">{reference}</span>
-			</div>
 
 			{/* To the dashboard, not to `/`. Under this app's basename `/` is the
 			    public landing page: somebody who had just registered was sent to a

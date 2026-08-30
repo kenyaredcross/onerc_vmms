@@ -46,7 +46,7 @@ def www(name: str) -> Path:
 	return Path(frappe.get_app_path("vmmsx")) / "www" / name
 
 
-def render(route: str) -> str:
+def render(route: str, query_string: dict | None = None) -> str:
 	"""The page as a signed-out visitor gets it, through the real website stack.
 
 	A request object is built because `frappe/www/login.py::get_context` reads
@@ -57,7 +57,9 @@ def render(route: str) -> str:
 	from werkzeug.wrappers import Request
 
 	previous = getattr(frappe.local, "request", None)
-	frappe.local.request = Request(EnvironBuilder(path=f"/{route}", method="GET").get_environ())
+	frappe.local.request = Request(
+		EnvironBuilder(path=f"/{route}", method="GET", query_string=query_string).get_environ()
+	)
 
 	try:
 		response = get_response(route)
@@ -130,6 +132,57 @@ class TestBothPagesRenderForAStranger(IntegrationTestCase):
 		for button in buttons:
 			self.assertIn("es-button", button)
 			self.assertIn("btn-primary", button)
+
+
+class TestRegistrationContextCrossesAuthentication(IntegrationTestCase):
+	def setUp(self):
+		super().setUp()
+		self.addCleanup(frappe.set_user, "Administrator")
+		frappe.set_user("Guest")
+
+	def test_the_sign_in_page_names_the_declared_volunteer_path(self):
+		body = render(
+			"login",
+			{"redirect-to": "/portal/join?path=volunteer"},
+		)
+
+		self.assertIn("Volunteer registration", body)
+		self.assertIn('aria-current="step"', body)
+		self.assertIn("Branch review", body)
+
+	def test_member_plan_query_keeps_member_context(self):
+		body = render(
+			"login",
+			{"redirect-to": "/portal/join?path=member&type=annual"},
+		)
+
+		self.assertIn("Member registration", body)
+		self.assertNotIn("Volunteer registration", body)
+
+	def test_an_unrelated_destination_adds_no_registration_claim(self):
+		body = render("login", {"redirect-to": "/portal/events?path=volunteer"})
+
+		self.assertNotIn('<div class="registration-context">', body)
+
+	def test_password_setup_uses_the_destination_frappe_stored_for_the_account(self):
+		from unittest.mock import patch
+
+		with patch(
+			"vmmsx.auth_page._password_registration_destination",
+			return_value="/portal/join?path=member&type=annual",
+		):
+			body = render("update-password", {"key": "welcome-email-key"})
+
+		self.assertIn("Member registration", body)
+		self.assertIn("Your details", body)
+
+	def test_an_expired_password_link_has_a_recovery_action(self):
+		body = render("update-password", {"key": "expired-link"})
+
+		self.assertIn('href="/login#forgot"', body)
+		self.assertIn("Request a new link", body)
+		self.assertIn("xhr.status !== 410", body)
+		self.assertIn('$("#reset-password input").val("").prop("disabled", true)', body)
 
 
 class TestCreatingAnAccountEndsSomewhere(IntegrationTestCase):

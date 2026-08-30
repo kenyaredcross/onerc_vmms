@@ -135,6 +135,8 @@ def create(
 	start_date,
 	end_date,
 	volunteers_required: int | None = None,
+	status: str | None = None,
+	email_template: str | None = None,
 	notes: str | None = None,
 ):
 	"""Insert a deployment directly, without a request in front of it.
@@ -177,8 +179,9 @@ def create(
 			"geo_node": geo_node,
 			"start_date": getdate(start_date),
 			"end_date": getdate(end_date),
-			"status": STATUS_PLANNED,
+			"status": status or STATUS_PLANNED,
 			"volunteers_required": frappe.utils.cint(volunteers_required),
+			"email_template": email_template or None,
 			"notes": notes,
 		}
 	)
@@ -242,6 +245,7 @@ def status_dto(deployment, counts: dict | None = None) -> dict:
 		"start_date": deployment.start_date,
 		"end_date": deployment.end_date,
 		"volunteers_required": deployment.volunteers_required or 0,
+		"email_template": deployment.email_template,
 		# Who is actually going: Assigned plus Accepted. The name is kept from
 		# when the roster was a child table, because every screen and every test
 		# reads it and renaming it would buy nothing.

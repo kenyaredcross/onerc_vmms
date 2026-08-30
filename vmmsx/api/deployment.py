@@ -834,6 +834,7 @@ def create_project(
 	end_date: str | None = None,
 	summary: str | None = None,
 	notes: str | None = None,
+	status: str | None = None,
 ) -> dict:
 	"""Open a programme of work. The Geo Node is required here, at creation.
 
@@ -850,6 +851,7 @@ def create_project(
 		end_date=end_date,
 		summary=summary,
 		notes=notes,
+		status=status,
 	)
 
 	return project_service.dto(doc)
@@ -959,6 +961,7 @@ def create_terms(
 	expected_end_date: str | None = None,
 	default_duration_days: int | None = None,
 	approval_mode: str | None = None,
+	is_active: bool | int | str = True,
 	notes: str | None = None,
 	**tables,
 ) -> dict:
@@ -989,6 +992,7 @@ def create_terms(
 		expected_end_date=expected_end_date,
 		default_duration_days=default_duration_days,
 		approval_mode=approval_mode,
+		is_active=_flag(is_active),
 		notes=notes,
 		**_terms_payload(tables),
 	)
@@ -1057,7 +1061,7 @@ def submit_terms(name: str) -> dict:
 
 @frappe.whitelist()
 def tor_methodologies() -> dict:
-	"""The society's own register of ways it goes about the work.
+	"""The configured vocabularies used by the terms editor.
 
 	The approach tab's picker. Active ones only: a retired methodology stays on
 	every terms of reference already citing it and is not offered for a new one,
@@ -1074,7 +1078,68 @@ def tor_methodologies() -> dict:
 		order_by="methodology_name asc",
 	)
 
-	return {"methodologies": rows}
+	certifications = frappe.get_all(
+		"VMMS Certification Type",
+		filters={"is_active": 1},
+		fields=["name", "certification_type_name", "description"],
+		order_by="certification_type_name asc",
+	)
+
+	return {"methodologies": rows, "certification_types": certifications}
+
+
+@frappe.whitelist()
+def deployment_options() -> dict:
+	"""Configured Link choices used when setting up a deployment.
+
+	Email Template is framework configuration rather than operational data, so it
+	is read as a whole vocabulary just as the terms editor reads methodologies.
+	"""
+	frappe.has_permission(DEPLOYMENT_DOCTYPE, ptype="create", throw=True)
+
+	return {
+		"email_templates": frappe.get_all(
+			"Email Template",
+			fields=["name", "subject"],
+			order_by="name asc",
+		)
+	}
+
+
+@frappe.whitelist()
+def operations_documents(search: str | None = None) -> dict:
+	"""Private files attached to operational records in the caller's scope."""
+	parents: dict[str, list[str]] = {
+		PROJECT_DOCTYPE: frappe.get_list(PROJECT_DOCTYPE, pluck="name", limit_page_length=0),
+		TERMS_DOCTYPE: frappe.get_list(TERMS_DOCTYPE, pluck="name", limit_page_length=0),
+		DEPLOYMENT_DOCTYPE: frappe.get_list(DEPLOYMENT_DOCTYPE, pluck="name", limit_page_length=0),
+	}
+	files = []
+	needle = (search or "").strip().lower()
+
+	for doctype, names in parents.items():
+		if not names:
+			continue
+		rows = frappe.get_all(
+			"File",
+			filters={"attached_to_doctype": doctype, "attached_to_name": ["in", names], "is_folder": 0},
+			fields=["name", "file_name", "file_url", "file_size", "is_private", "attached_to_doctype", "attached_to_name", "owner", "creation", "modified"],
+			order_by="modified desc",
+			limit_page_length=200,
+		)
+		for row in rows:
+			if needle and needle not in (row.get("file_name") or "").lower() and needle not in (row.get("attached_to_name") or "").lower():
+				continue
+			files.append(row)
+
+	files.sort(key=lambda row: row.get("modified") or row.get("creation"), reverse=True)
+	targets = [
+		{"doctype": doctype, "name": name}
+		for doctype, names in parents.items()
+		for name in names
+		if frappe.has_permission(doctype, ptype="write", doc=name)
+	]
+	return {"count": len(files), "files": files, "targets": targets}
 
 
 @frappe.whitelist()
@@ -1180,6 +1245,8 @@ def create_deployment(
 	start_date: str,
 	end_date: str,
 	volunteers_required: int | None = None,
+	status: str | None = None,
+	email_template: str | None = None,
 	notes: str | None = None,
 ) -> dict:
 	"""Set up a deployment directly, under terms that already exist.
@@ -1200,6 +1267,8 @@ def create_deployment(
 		start_date=start_date,
 		end_date=end_date,
 		volunteers_required=volunteers_required,
+		status=status,
+		email_template=email_template,
 		notes=notes,
 	)
 

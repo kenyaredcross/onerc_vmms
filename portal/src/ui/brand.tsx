@@ -29,11 +29,39 @@ export function CrossMark({ size = 22, className }: { size?: number; className?:
 }
 
 /** `api/society.py::branding`. */
-interface Branding {
+export interface Branding {
 	name: string;
 	short_name: string;
 	logo: string;
 	logo_dark: string;
+}
+
+/**
+ * The society's own name and marks, wherever a screen needs to say them.
+ *
+ * The lockup below is not the only place a society's identity is drawn: the
+ * message composer renders a mock of the email it is about to send, and the
+ * name on that mock is the name of the society sending it. Hardcoding one there
+ * put "Tanzania Red Cross Society" on the screens of every society that is not
+ * Tanzania's.
+ *
+ * **One request between every caller.** The SWR key is shared and constant, so
+ * the sidebar, the landing header, the wizard header and the composer preview
+ * cost one call between them however many of them are mounted.
+ *
+ * **It can answer nothing, and nothing is an ordinary answer.** A site whose
+ * settings singleton has never been saved has no name, and a caller has to draw
+ * something neutral rather than borrow another society's — see `BrandLockup`,
+ * which renders no name at all rather than a stand-in.
+ */
+export function useSocietyBranding(): Branding | undefined {
+	const { data } = useFrappeGetCall<{ message: Branding }>(
+		API.societyBranding,
+		undefined,
+		"society:branding",
+	);
+
+	return data?.message;
 }
 
 /**
@@ -84,15 +112,7 @@ export function BrandLockup({
 	const dark = tone === "dark";
 	const small = size === "sm" && !compact;
 
-	// Shared SWR key across every mount, so the sidebar, the landing header and
-	// the wizard header cost one request between them rather than three.
-	const { data } = useFrappeGetCall<{ message: Branding }>(
-		API.societyBranding,
-		undefined,
-		"society:branding",
-	);
-
-	const society = data?.message;
+	const society = useSocietyBranding();
 	const mark = (dark ? society?.logo_dark : society?.logo) || "";
 	// The full name is the society's, and the short name is what it calls itself
 	// in a corner. Compact takes the short one where there is one, because a

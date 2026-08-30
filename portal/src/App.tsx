@@ -130,6 +130,9 @@ const Overview = lazy(() =>
 const DeploymentsHub = lazy(() =>
 	import("./admin/Deployments").then((module) => ({ default: module.DeploymentsHub })),
 );
+const OperationsDocuments = lazy(() =>
+	import("./admin/Deployments").then((module) => ({ default: module.OperationsDocuments })),
+);
 const DeploymentList = lazy(() =>
 	import("./admin/Deployments").then((module) => ({ default: module.DeploymentList })),
 );
@@ -333,6 +336,7 @@ export default function App() {
 					<Route path="deployments/past" element={<DeploymentsPast />} />
 					<Route path="deployments/new" element={<DeploymentCreate />} />
 					<Route path="deployments/requests" element={<DeploymentRequestList />} />
+					<Route path="deployments/documents" element={<OperationsDocuments />} />
 					{/* Last: `deployments/:name` is one segment shorter than every route
 					    above it, and React Router matches the more specific static
 					    segments first regardless of declaration order, so this never

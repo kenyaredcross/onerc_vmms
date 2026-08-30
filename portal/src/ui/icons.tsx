@@ -72,6 +72,8 @@ export const Icon = {
 	phone: (p: IconProps) => <Glyph {...p} d="M7 3h3l1.5 4.5-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2L21 14v3a2 2 0 0 1-2 2A16 16 0 0 1 5 5a2 2 0 0 1 2-2Z" />,
 	/** A photograph slot with nothing in it yet. */
 	image: (p: IconProps) => <Glyph {...p} d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-.5 12 5-5 3.5 3.5L15 12l5.5 5.5M9 9.5v.01" />,
+	file: (p: IconProps) => <Glyph {...p} d="M6 3h8l4 4v14H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm8 0v5h5M8 13h8m-8 4h6" />,
+	upload: (p: IconProps) => <Glyph {...p} d="M12 16V4m-4 4 4-4 4 4M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" />,
 	/** Somewhere else the person may be. Used on the placement selector. */
 	globe: (p: IconProps) => <Glyph {...p} d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-8.5-9h17M12 3c2.2 2.4 3.4 5.6 3.4 9S14.2 18.6 12 21c-2.2-2.4-3.4-5.6-3.4-9S9.8 5.4 12 3Z" />,
 };

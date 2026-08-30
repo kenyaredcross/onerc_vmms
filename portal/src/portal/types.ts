@@ -550,6 +550,7 @@ export interface DeploymentSummary {
 	start_date: string | null;
 	end_date: string | null;
 	volunteers_required: number;
+	email_template: string | null;
 	/** Assigned + Accepted: who is actually going, not who was asked. */
 	participant_count: number;
 	assignment_counts: AssignmentCounts;
@@ -852,6 +853,12 @@ export interface TermsResource {
 	total_cost?: number | null;
 }
 
+export interface TermsCertificationRequirement {
+	certification_type: string | null;
+	is_mandatory: boolean;
+	requirement_notes: string | null;
+}
+
 /**
  * `deployment/services/terms.py::mission_dto` — the summary plus the six
  * mission tables and the background. Only the screens that show a terms of
@@ -861,6 +868,7 @@ export interface TermsResource {
 export interface TermsMission extends TermsOfReference {
 	mission_background: string | null;
 	notes: string | null;
+	certification_requirements: TermsCertificationRequirement[];
 	stakeholders: TermsStakeholder[];
 	objectives: TermsObjective[];
 	expected_outputs: TermsOutput[];

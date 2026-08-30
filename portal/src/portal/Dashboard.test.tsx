@@ -19,7 +19,10 @@ import type { OpenRegistration } from "./types";
  * **And in both cases there has to be a way back in.** The panel was the only
  * thing on the page that mentioned the application, and it named a document
  * reference and offered no link, so the form somebody was halfway through was
- * unreachable from the screen telling them about it.
+ * unreachable from the screen telling them about it. The link is now the panel's
+ * whole answer to "what do I do next", and the reference is gone: a naming series
+ * is how the desk finds the row, not how an applicant thinks about their own
+ * application.
  */
 const reads = new Map<string, unknown>();
 
@@ -79,6 +82,13 @@ describe("a draft nobody has sent yet", () => {
 
 		const link = screen.getByRole("link", { name: /continue application/i });
 		expect(link.getAttribute("href")).toBe("/join?path=volunteer");
+	});
+
+	it("does not read the document name back to the applicant", () => {
+		mount(<Dashboard />);
+
+		expect(screen.queryByText(/VAPP-00017/)).toBeNull();
+		expect(screen.queryByText(/your reference is/i)).toBeNull();
 	});
 });
 

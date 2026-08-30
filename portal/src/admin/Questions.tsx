@@ -101,7 +101,7 @@ export default function Questions() {
 			<p className="mb-6 max-w-2xl text-[13px] text-slate-body">
 				<EditableText
 					k="admin.questions.intro"
-					fallback="Anything you add here is asked on the registration form, shown on the desk record, and put in front of whoever approves the application. Existing applications are not changed."
+					fallback="Questions added here are asked on the registration form and shown to whoever approves the application. Applications already in are not changed."
 				/>
 			</p>
 

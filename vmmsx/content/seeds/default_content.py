@@ -40,10 +40,23 @@ asking for a key nobody seeded renders its own fallback rather than breaking.
 #: draws that. A typed figure beside it was correct on the day somebody typed it
 #: and wrong the day after. The *caption* is still a block, because what a
 #: society calls its volunteers is a society's own word.
+#: The rest are lines of explanation under a heading, and every one of them
+#: described the screen it sat on: "What your society has on, and which of it
+#: you have said you are coming to" over a calendar, "Where your application
+#: stands, the hours you have logged, and what is coming up" over a dashboard
+#: showing exactly those three things. A heading and the page under it say it
+#: already, so the slots are gone rather than reworded — there is nothing for a
+#: society to write in them that the page is not already showing.
 RETIRED = (
 	"chrome.brand.name",
 	"chrome.brand.society",
 	"landing.stat1.value",
+	"portal.home.intro",
+	"portal.hours.intro",
+	"portal.calendar.intro",
+	"portal.calendar.note",
+	"portal.membership.plans.blurb",
+	"portal.events.attending.calendar_note",
 )
 
 # Links this app shipped pointing at nothing, and where they should go instead.
@@ -62,10 +75,39 @@ RETIRED = (
 # to make: a society's membership types carry a fee, `PlanCards` prices them,
 # and the closing panel of the same page invites somebody onto that road. The
 # word had to go from both, and "us" says the thing that is actually true.
+#
+# The attendance wording below is one change, not nine. Saying yes to an event
+# was "I'm going" in the calendar, "Attend" on a card and "You're going" on the
+# panel, and taking it back was "I can't make it", "Can't make it" and "I can no
+# longer come" — six phrasings of two actions, none of them the words anybody
+# would use, and all of them first person as though the button were speaking.
+# It is Attend and Cancel now, and the state either of them leaves behind is
+# Attending, wherever it is drawn.
 RELABELLED = {
 	"portal.events.card.action": ("Get tickets", "Attend"),
 	"chrome.action.join": ("Join free", "Join us"),
 	"landing.cta.button": ("Join free today", "Join us today"),
+	"portal.calendar.day.attend": ("I'm going", "Attend"),
+	"portal.calendar.day.withdraw": ("I can't make it", "Cancel"),
+	"portal.calendar.day.badge": ("Going", "Attending"),
+	"portal.calendar.legend.mine": ("You are going", "Attending"),
+	"portal.calendar.legend.other": ("Something on", "Scheduled"),
+	"portal.events.attend.confirmed": ("You're going", "Attending"),
+	"portal.events.attend.withdraw": ("I can no longer come", "Cancel"),
+	"portal.events.attend.calendar": ("Add to my calendar", "Add to calendar"),
+	"portal.events.attending.going": ("Going", "Attending"),
+	"portal.events.attending.withdraw": ("Can't make it", "Cancel"),
+	"portal.events.attending.label": ("Events you are going to", "Your events"),
+	"portal.events.hero.eyebrow": ("Find your next experience", "What's on"),
+	"portal.events.attend.claim": (
+		"Your branch has been told to expect you. This does not book a ticket or hold a place.",
+		"Your branch has been told to expect you. This does not hold a place.",
+	),
+	"admin.communication.lead": (
+		"Say something to the volunteers and members your branches cover. Choose who hears"
+		" it before you write it — this is the one thing here that cannot be taken back.",
+		"Sent to the volunteers and members your branches cover.",
+	),
 }
 
 DEAD_LINKS = {
@@ -626,13 +668,6 @@ def _portal():
 		rows.append(_block(f"portal.nav.{slug}", f"Sidebar item: {text}", s, 100 + i, text))
 	rows += [
 		_block("portal.home.heading", "Dashboard heading", s, 200, "Your dashboard"),
-		_block(
-			"portal.home.intro",
-			"Dashboard introduction",
-			s,
-			210,
-			"Where your application stands, the hours you have logged, and what is coming up.",
-		),
 		_block("portal.membership.heading", "Membership page heading", s, 300, "Membership"),
 		_block(
 			"portal.membership.empty",
@@ -653,22 +688,7 @@ def _portal():
 			325,
 			"Choose a plan to become a member",
 		),
-		_block(
-			"portal.membership.plans.blurb",
-			"Membership plans introduction",
-			s,
-			330,
-			"Every fee, benefit and eligibility note here is set by your society on the membership"
-			" type itself.",
-		),
 		_block("portal.hours.heading", "Hours page heading", s, 400, "My hours"),
-		_block(
-			"portal.hours.intro",
-			"Hours page introduction",
-			s,
-			410,
-			"Log the time you give. Your branch sees the total against your record.",
-		),
 		_block("portal.profile.heading", "Profile page heading", s, 500, "Profile"),
 		_block("portal.opportunities.heading", "Opportunities page heading", s, 600, "Opportunities"),
 		_block("portal.deployments.heading", "Deployments page heading", s, 650, "Deployments"),
@@ -695,7 +715,7 @@ def _portal():
 			"Events hero eyebrow",
 			s,
 			710,
-			"Find your next experience",
+			"What's on",
 		),
 		_block(
 			"portal.events.hero.headline",
@@ -722,15 +742,15 @@ def _portal():
 			726,
 			"What you need on the day",
 		),
-		_block("portal.events.attend.confirmed", "Attend confirmation chip", s, 727, "You're going"),
-		_block("portal.events.attend.calendar", "Add to calendar button", s, 727, "Add to my calendar"),
+		_block("portal.events.attend.confirmed", "Attend confirmation chip", s, 727, "Attending"),
+		_block("portal.events.attend.calendar", "Add to calendar button", s, 727, "Add to calendar"),
 		_block("portal.events.attend.directions", "Find the venue button", s, 728, "Find the venue"),
 		_block(
 			"portal.events.attend.withdraw",
 			"Withdraw link on the attend panel",
 			s,
 			729,
-			"I can no longer come",
+			"Cancel",
 		),
 		# The one sentence on the panel that says what the answer is and is not.
 		# Every other word here can be reworded freely; if a society rewrites this
@@ -741,68 +761,41 @@ def _portal():
 			"What saying yes actually does",
 			s,
 			730,
-			"Your branch has been told to expect you. This does not book a ticket or hold a place.",
+			"Your branch has been told to expect you. This does not hold a place.",
 		),
 		# The reader's own diary, above the listing.
 		_block(
 			"portal.events.attending.label",
-			"Heading over the events you are going to",
+			"Heading over the events this person is attending",
 			s,
 			735,
-			"Events you are going to",
+			"Your events",
 		),
 		_block("portal.events.attending.next", "Featured event flag", s, 736, "Next up"),
 		_block("portal.events.attending.details", "Featured event details button", s, 737, "Details"),
-		_block("portal.events.attending.going", "Attending confirmation on a row", s, 738, "Going"),
+		_block("portal.events.attending.going", "Attending confirmation on a row", s, 738, "Attending"),
 		_block(
 			"portal.events.attending.withdraw",
 			"What the confirmation becomes on hover",
 			s,
 			739,
-			"Can't make it",
+			"Cancel",
 		),
 		_block("portal.events.attending.saving", "While an answer is being saved", s, 740, "Saving…"),
 		_block("portal.events.attending.show_calendar", "Show the small calendar", s, 741, "Show calendar"),
 		_block("portal.events.attending.hide_calendar", "Hide the small calendar", s, 742, "Hide calendar"),
 		_block("portal.events.attending.full", "Link to the calendar tab", s, 743, "Full calendar"),
-		_block(
-			"portal.events.attending.calendar_note",
-			"Note under the small calendar",
-			s,
-			744,
-			"The days you are expected. Everything else your society has on is on the full calendar.",
-		),
 		# The calendar tab.
 		_block("portal.calendar.heading", "Calendar page heading", s, 760, "Your calendar"),
-		_block(
-			"portal.calendar.intro",
-			"Calendar page introduction",
-			s,
-			761,
-			"What your society has on, and which of it you have said you are coming to.",
-		),
 		_block("portal.calendar.today", "Jump to today", s, 762, "Today"),
 		_block("portal.calendar.filter.all", "Show every event", s, 763, "Everything on"),
 		_block("portal.calendar.filter.mine", "Show only your own events", s, 764, "Only mine"),
-		_block("portal.calendar.legend.mine", "Legend: your own events", s, 765, "You are going"),
-		_block("portal.calendar.legend.other", "Legend: everything else", s, 766, "Something on"),
+		_block("portal.calendar.legend.mine", "Legend: your own events", s, 765, "Attending"),
+		_block("portal.calendar.legend.other", "Legend: everything else", s, 766, "Scheduled"),
 		_block("portal.calendar.day.none", "Heading when no day is chosen", s, 767, "Pick a day"),
-		_block("portal.calendar.day.badge", "Attending badge in the day panel", s, 768, "Going"),
-		_block("portal.calendar.day.attend", "Say you are going, in the day panel", s, 769, "I'm going"),
-		_block(
-			"portal.calendar.day.withdraw",
-			"Take it back, in the day panel",
-			s,
-			770,
-			"I can't make it",
-		),
-		_block(
-			"portal.calendar.note",
-			"What saying yes does, under the day panel",
-			s,
-			771,
-			"Saying you are going tells your branch to expect you. It does not book a ticket or hold a place.",
-		),
+		_block("portal.calendar.day.badge", "Attending badge in the day panel", s, 768, "Attending"),
+		_block("portal.calendar.day.attend", "Attend, in the day panel", s, 769, "Attend"),
+		_block("portal.calendar.day.withdraw", "Take it back, in the day panel", s, 770, "Cancel"),
 		_block("portal.notifications.heading", "Notifications page heading", s, 750, "Notifications"),
 		_block("portal.training.heading", "Training page heading", s, 800, "Training"),
 	]
@@ -882,8 +875,7 @@ def _admin():
 			"Communication, the line under the heading",
 			s,
 			560,
-			"Say something to the volunteers and members your branches cover. Choose who hears"
-			" it before you write it — this is the one thing here that cannot be taken back.",
+			"Sent to the volunteers and members your branches cover.",
 		),
 		_block("admin.content.heading", "Page content heading", s, 600, "Page content"),
 		_block(

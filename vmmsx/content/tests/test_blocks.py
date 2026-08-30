@@ -241,3 +241,52 @@ class TestContentApi(IntegrationTestCase):
 
 		self.assertEqual(row["text"], "Changed through the API")
 		self.assertEqual(row["key"], TEST_KEY)
+
+
+class TestShippedDefaults(IntegrationTestCase):
+	"""What this app ships as wording, checked against itself.
+
+	`RELABELLED` and `RETIRED` are the only two ways shipped wording changes on
+	a site that already has it, and both are matched on the *old* text. So the
+	failure mode is a pair that has drifted: a default reworded in
+	`default_content.py` without the `RELABELLED` entry that carries the change
+	to every existing site, or an entry naming an old string this app is still
+	seeding, which would rewrite a fresh site's slot the moment it was created.
+	Neither shows up on a screen — the new sites look right and the old ones
+	quietly keep the old words — so they are tested rather than noticed.
+	"""
+
+	def defaults(self) -> dict:
+		from vmmsx.content.seeds import default_content
+
+		return {row["content_key"]: row.get("text_value", "") for row in default_content.blocks()}
+
+	def test_no_relabelled_slot_still_ships_its_old_wording(self):
+		from vmmsx.content.seeds import default_content
+
+		shipped = self.defaults()
+
+		for key, (was, now) in default_content.RELABELLED.items():
+			self.assertNotEqual(shipped.get(key), was, f"{key} is still seeded with its old wording")
+			self.assertEqual(shipped.get(key), now, f"{key} does not ship what it is relabelled to")
+
+	def test_no_retired_slot_is_still_seeded(self):
+		from vmmsx.content.seeds import default_content
+
+		shipped = self.defaults()
+
+		for key in default_content.RETIRED:
+			self.assertNotIn(key, shipped, f"{key} is retired and still seeded")
+
+	def test_saying_yes_to_an_event_reads_the_same_everywhere(self):
+		"""One pair of verbs for attendance, not six phrasings of two actions."""
+		shipped = self.defaults()
+
+		self.assertEqual(shipped["portal.calendar.day.attend"], "Attend")
+		self.assertEqual(shipped["portal.events.card.action"], "Attend")
+		self.assertEqual(shipped["portal.calendar.day.withdraw"], "Cancel")
+		self.assertEqual(shipped["portal.events.attend.withdraw"], "Cancel")
+		self.assertEqual(shipped["portal.events.attending.withdraw"], "Cancel")
+		self.assertEqual(shipped["portal.calendar.day.badge"], "Attending")
+		self.assertEqual(shipped["portal.events.attend.confirmed"], "Attending")
+		self.assertEqual(shipped["portal.events.attending.going"], "Attending")

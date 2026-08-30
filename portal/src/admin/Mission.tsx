@@ -1,17 +1,21 @@
-import { type ReactNode, useContext, useMemo, useState } from "react";
+import { type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { API, errorMessage } from "../lib/api";
 import { formatDate } from "../lib/format";
 import type {
 	TermsApproach,
+	TermsCertificationRequirement,
 	TermsItineraryRow,
 	TermsMethodology,
 	TermsMission,
 	TermsResource,
 	TermsStakeholder,
+	GeoNode,
+	ProjectSummary,
 } from "../portal/types";
-import { Button, Card, ErrorNote, Pill, SectionTitle, cx } from "../ui/primitives";
+import { GeoSelects, selectedNode } from "../ui/GeoSelects";
+import { Button, Card, ErrorNote, SectionTitle, cx } from "../ui/primitives";
 import { INPUT, Labelled } from "./Projects";
 
 /**
@@ -47,10 +51,10 @@ import { INPUT, Labelled } from "./Projects";
 /* ------------------------------------------------------------------ tables */
 
 /** One column of a row editor: which key it writes and how it is drawn. */
-type Column<Row> = {
+export type Column<Row> = {
 	key: keyof Row & string;
 	label: string;
-	kind?: "text" | "area" | "date" | "time" | "number" | "select";
+	kind?: "text" | "area" | "date" | "time" | "number" | "select" | "check";
 	/** Roughly how wide, in grid columns out of twelve. */
 	span?: number;
 	options?: Array<{ value: string; label: string }>;
@@ -65,7 +69,7 @@ type Column<Row> = {
  * to reconcile with the server's. Editing is by index and so is removal, which
  * is exactly what the underlying array supports.
  */
-function RowEditor<Row extends object>({
+export function RowEditor<Row extends object>({
 	title,
 	lead,
 	columns,
@@ -174,6 +178,19 @@ function Input<Row>({
 }) {
 	const shown = value === null || value === undefined ? "" : String(value);
 
+	if (column.kind === "check") {
+		return (
+			<span className="flex min-h-[38px] items-center gap-2 rounded-card border border-hairline-strong bg-white px-3 py-2 text-[12.5px] text-slate-body">
+				<input
+					type="checkbox"
+					checked={Boolean(value)}
+					onChange={(event) => onChange(event.target.checked)}
+				/>
+				Required
+			</span>
+		);
+	}
+
 	if (column.kind === "area") {
 		return (
 			<textarea
@@ -240,6 +257,10 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
+function toDateTimeLocal(value: string | null): string {
+	return value ? value.slice(0, 16).replace(" ", "T") : "";
+}
+
 /**
  * The mission editor. One tab at a time, each saving only what it holds.
  *
@@ -261,12 +282,34 @@ export function MissionEditor({
 	const [saved, setSaved] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
 
+	const [torName, setTorName] = useState(terms.tor_name);
+	const [project, setProject] = useState(terms.project ?? "");
+	const [isActive, setIsActive] = useState(terms.is_active);
+	const [duration, setDuration] = useState(String(terms.default_duration_days ?? 0));
+	const [approvalMode, setApprovalMode] = useState(terms.approval_mode ?? "direct");
+	const [notes, setNotes] = useState(terms.notes ?? "");
+	const [geoChain, setGeoChain] = useState<GeoNode[]>([]);
+	const [geoRestored, setGeoRestored] = useState(!terms.geo_scope);
 	const [background, setBackground] = useState(terms.mission_background ?? "");
 	const [purpose, setPurpose] = useState(terms.purpose ?? "");
 	const [responsibilities, setResponsibilities] = useState(terms.responsibilities ?? "");
-	const [startsOn, setStartsOn] = useState(terms.expected_start_date?.slice(0, 10) ?? "");
-	const [endsOn, setEndsOn] = useState(terms.expected_end_date?.slice(0, 10) ?? "");
+	const [startsOn, setStartsOn] = useState(toDateTimeLocal(terms.expected_start_date));
+	const [endsOn, setEndsOn] = useState(toDateTimeLocal(terms.expected_end_date));
 
+	const [requirements, setRequirements] = useState<TermsCertificationRequirement[]>(
+		terms.certification_requirements ?? [
+			...terms.required_certifications.map((certification_type) => ({
+				certification_type,
+				is_mandatory: true,
+				requirement_notes: null,
+			})),
+			...terms.desirable_certifications.map((certification_type) => ({
+				certification_type,
+				is_mandatory: false,
+				requirement_notes: null,
+			})),
+		],
+	);
 	const [stakeholders, setStakeholders] = useState<TermsStakeholder[]>(terms.stakeholders);
 	const [objectives, setObjectives] = useState(terms.objectives);
 	const [outputs, setOutputs] = useState(terms.expected_outputs);
@@ -274,20 +317,61 @@ export function MissionEditor({
 	const [itinerary, setItinerary] = useState<TermsItineraryRow[]>(terms.itinerary);
 	const [resources, setResources] = useState<TermsResource[]>(terms.resources);
 
-	const methodologies = useFrappeGetCall<{ message: { methodologies: TermsMethodology[] } }>(
+	const vocabularies = useFrappeGetCall<{
+		message: {
+			methodologies: TermsMethodology[];
+			certification_types: Array<{
+				name: string;
+				certification_type_name: string;
+				description: string | null;
+			}>;
+		};
+	}>(
 		API.torMethodologies,
 		undefined,
-		"admin:tor:methodologies",
+		"admin:tor:vocabularies",
 	);
+
+	const projects = useFrappeGetCall<{ message: { projects: ProjectSummary[] } }>(
+		API.branchProjects,
+		{ mine: 0 },
+		"admin:projects:for-terms-editor",
+	);
+
+	const restoredGeo = useFrappeGetCall<{ message: { chain: GeoNode[] } }>(
+		API.geoChain,
+		terms.geo_scope ? { node: terms.geo_scope } : undefined,
+		terms.geo_scope ? `geo:path:${terms.geo_scope}` : null,
+	);
+
+	useEffect(() => {
+		if (geoRestored || !restoredGeo.data?.message?.chain) return;
+		setGeoChain(restoredGeo.data.message.chain);
+		setGeoRestored(true);
+	}, [geoRestored, restoredGeo.data]);
 
 	const methodOptions = useMemo(
 		() =>
-			(methodologies.data?.message?.methodologies ?? []).map((row) => ({
+				(vocabularies.data?.message?.methodologies ?? []).map((row) => ({
 				value: row.name,
 				label: row.methodology_name,
 			})),
-		[methodologies.data],
+		[vocabularies.data],
 	);
+
+	const certificationOptions = useMemo(
+		() =>
+			(vocabularies.data?.message?.certification_types ?? []).map((row) => ({
+				value: row.name,
+				label: row.certification_type_name,
+			})),
+		[vocabularies.data],
+	);
+
+	const projectOptions = (projects.data?.message?.projects ?? []).filter(
+		(row) => row.is_open || row.name === terms.project,
+	);
+	const geoNode = selectedNode(geoChain);
 
 	// Each tab sends only the fields it owns. A payload carrying every table on
 	// every save would make editing the itinerary a write to the objectives, and
@@ -295,10 +379,15 @@ export function MissionEditor({
 	const payloadFor = (which: TabKey): Record<string, unknown> => {
 		if (which === "mission") {
 			return {
+				tor_name: torName.trim(),
+				project: project || null,
+				is_active: isActive,
 				mission_background: background,
 				purpose,
 				expected_start_date: startsOn || null,
 				expected_end_date: endsOn || null,
+				default_duration_days: duration ? Number(duration) : 0,
+				geo_scope: geoRestored ? (geoNode?.name ?? null) : terms.geo_scope,
 				stakeholders,
 			};
 		}
@@ -311,7 +400,12 @@ export function MissionEditor({
 			return { itinerary, resources };
 		}
 
-		return { responsibilities };
+		return {
+			responsibilities,
+			approval_mode: approvalMode,
+			notes,
+			required_certifications: requirements,
+		};
 	};
 
 	const save = async () => {
@@ -320,6 +414,11 @@ export function MissionEditor({
 		setSaved(false);
 
 		try {
+			if (tab === "mission" && !torName.trim()) {
+				setFailure("The title of mission is required.");
+				return;
+			}
+
 			await call.post(API.updateTerms, { name: terms.name, ...payloadFor(tab) });
 			setSaved(true);
 			onSaved();
@@ -357,12 +456,45 @@ export function MissionEditor({
 				{tab === "mission" && (
 					<div className="space-y-5">
 						<div className="grid gap-4 sm:grid-cols-2">
+							<Labelled label="Title of mission" hint="What your society calls this piece of work.">
+								<input
+									className={INPUT}
+									value={torName}
+									onChange={(event) => setTorName(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Reference" hint="Stable after creation; deployments point to this key.">
+								<input className={cx(INPUT, "bg-surface")} value={terms.tor_key} readOnly />
+							</Labelled>
+							<Labelled label="Project" hint="Optional. The programme these terms belong to.">
+								<select className={INPUT} value={project} onChange={(event) => setProject(event.target.value)}>
+									<option value="">No project</option>
+									{terms.project && !projectOptions.some((row) => row.name === terms.project) && (
+										<option value={terms.project}>{terms.project_name ?? terms.project}</option>
+									)}
+									{projectOptions.map((row) => (
+										<option key={row.name} value={row.name}>
+											{row.project_name}
+										</option>
+									))}
+								</select>
+							</Labelled>
+							<Labelled label="Availability" hint="Inactive terms take no new deployments or requests.">
+								<span className="flex min-h-[38px] items-center gap-2 rounded-card border border-hairline-strong bg-white px-3 py-2 text-[13px] text-slate-body">
+									<input
+										type="checkbox"
+										checked={isActive}
+										onChange={(event) => setIsActive(event.target.checked)}
+									/>
+									Active for new work
+								</span>
+							</Labelled>
 							<Labelled
 								label="Expected start"
 								hint="Optional. Offered as the default when a deployment is set up under these terms."
 							>
 								<input
-									type="date"
+									type="datetime-local"
 									className={INPUT}
 									value={startsOn}
 									onChange={(event) => setStartsOn(event.target.value)}
@@ -370,17 +502,48 @@ export function MissionEditor({
 							</Labelled>
 							<Labelled label="Expected end" hint="Optional, and never a rule.">
 								<input
-									type="date"
+									type="datetime-local"
 									className={INPUT}
 									value={endsOn}
 									onChange={(event) => setEndsOn(event.target.value)}
 								/>
 							</Labelled>
+							<Labelled label="Usual duration (days)" hint="Zero means there is no usual length.">
+								<input
+									type="number"
+									min="0"
+									className={INPUT}
+									value={duration}
+									onChange={(event) => setDuration(event.target.value)}
+								/>
+							</Labelled>
+						</div>
+
+						<div>
+							<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+								Where these terms may be used
+							</p>
+							<GeoSelects
+								chain={geoChain}
+								onChain={setGeoChain}
+								idPrefix={`terms-${terms.name}`}
+								disabled={!geoRestored}
+							/>
+							<p className="mt-2 text-[12px] text-slate-faint">
+								Optional. Leave it empty to allow these terms anywhere.
+							</p>
+							{restoredGeo.error && (
+								<div className="mt-2">
+									<ErrorNote>
+										{errorMessage(restoredGeo.error, "The current geographic scope could not be loaded.")}
+									</ErrorNote>
+								</div>
+							)}
 						</div>
 
 						<Labelled
 							label="Purpose"
-							hint="One or two sentences. This is the line that appears wherever these terms are named in a list."
+							hint="One or two sentences. It appears wherever these terms are listed."
 						>
 							<textarea
 								className={cx(INPUT, "min-h-[64px] resize-y")}
@@ -391,7 +554,7 @@ export function MissionEditor({
 
 						<Labelled
 							label="Mission background"
-							hint="The situation this mission answers to: what happened, what is needed, what has already been done. This is the part a society lifts from a situation report."
+							hint="What happened, what is needed, and what has already been done."
 						>
 							<textarea
 								className={cx(INPUT, "min-h-[140px] resize-y")}
@@ -438,7 +601,7 @@ export function MissionEditor({
 
 						<RowEditor
 							title="Expected outputs"
-							lead="What the mission will leave behind. Kept apart from the objectives because reporting afterwards reports against these."
+							lead="What the mission will leave behind."
 							addLabel="Add an output"
 							empty="No outputs written yet."
 							rows={outputs}
@@ -483,7 +646,7 @@ export function MissionEditor({
 					<div className="space-y-6">
 						<RowEditor<TermsItineraryRow>
 							title="Itinerary"
-							lead="The plan by day. Every dated row has to fall inside the mission's own period, which is checked on save."
+							lead="The plan by day. Every date has to fall inside the mission's own period."
 							addLabel="Add a day"
 							empty="No itinerary yet."
 							rows={itinerary}
@@ -505,7 +668,7 @@ export function MissionEditor({
 						<div>
 							<RowEditor<TermsResource>
 								title="Resources"
-								lead="What the mission needs and what it is expected to cost. Each line's total is worked out from its quantity and unit cost when you save."
+								lead="What the mission needs and what it is expected to cost."
 								addLabel="Add a resource"
 								empty="Nothing listed yet."
 								rows={resources}
@@ -541,7 +704,7 @@ export function MissionEditor({
 					<div className="space-y-5">
 						<Labelled
 							label="Responsibilities"
-							hint="What a volunteer deployed under these terms is expected to do. One per line reads best on the printed document."
+							hint="What a volunteer deployed under these terms is expected to do. One per line."
 						>
 							<textarea
 								className={cx(INPUT, "min-h-[140px] resize-y")}
@@ -550,34 +713,60 @@ export function MissionEditor({
 							/>
 						</Labelled>
 
-						<div className="rounded-card border border-hairline bg-surface px-4 py-3">
-							<p className="text-[12px] font-bold uppercase tracking-wider text-slate-faint">
-								Required certifications
-							</p>
-							{terms.required_certifications.length === 0 &&
-							terms.desirable_certifications.length === 0 ? (
-								<p className="mt-1.5 text-[12.5px] text-slate-faint">
-									None required. Anybody deployable is a candidate for this work.
-								</p>
-							) : (
-								<div className="mt-2 flex flex-wrap gap-1.5">
-									{terms.required_certifications.map((key) => (
-										<Pill key={key} tone="navy">
-											{key} · must hold
-										</Pill>
-									))}
-									{terms.desirable_certifications.map((key) => (
-										<Pill key={key} tone="quiet">
-											{key} · desirable
-										</Pill>
-									))}
-								</div>
-							)}
-							<p className="mt-2 text-[11.5px] text-slate-faint">
-								Set on the desk. A mandatory row is a hard filter on the candidate search; a
-								desirable one ranks people higher without excluding anybody.
-							</p>
+						<RowEditor<TermsCertificationRequirement>
+							title="Required certifications"
+							lead="Mandatory rows filter candidates; desirable rows rank them higher without excluding them."
+							addLabel="Add a certification"
+							empty="No certification requirements. Anybody deployable is a candidate."
+							rows={requirements}
+							onChange={setRequirements}
+							blank={() => ({
+								certification_type: "",
+								is_mandatory: true,
+								requirement_notes: "",
+							})}
+							columns={[
+								{
+									key: "certification_type",
+									label: "Certification type",
+									kind: "select",
+									span: 5,
+									options: certificationOptions,
+								},
+								{ key: "is_mandatory", label: "Mandatory", kind: "check", span: 3 },
+								{ key: "requirement_notes", label: "Notes", span: 4 },
+							]}
+						/>
+
+						<div className="grid gap-4 sm:grid-cols-2">
+							<Labelled
+								label="Approval mode"
+								hint="Direct fulfils locally; routed sends a deployment request through approval."
+							>
+								<select
+									className={INPUT}
+									value={approvalMode}
+									onChange={(event) => setApprovalMode(event.target.value)}
+								>
+									<option value="direct">Direct</option>
+									<option value="routed">Routed</option>
+								</select>
+							</Labelled>
+
+							<Labelled label="Notes" hint="Anything about these terms that is not covered above.">
+								<textarea
+									className={cx(INPUT, "min-h-[84px] resize-y")}
+									value={notes}
+									onChange={(event) => setNotes(event.target.value)}
+								/>
+							</Labelled>
 						</div>
+
+						{terms.amended_from && (
+							<Labelled label="Amended from" hint="The submitted document this draft replaces.">
+								<input className={cx(INPUT, "bg-surface")} value={terms.amended_from} readOnly />
+							</Labelled>
+						)}
 					</div>
 				)}
 			</div>
@@ -613,6 +802,10 @@ export function MissionEditor({
  */
 export function MissionView({ terms }: { terms: TermsMission }) {
 	const parts: Array<[string, ReactNode]> = [];
+
+	if (terms.mission_background) {
+		parts.push(["Mission background", <p className="whitespace-pre-line">{terms.mission_background}</p>]);
+	}
 
 	if (terms.objectives.length > 0) {
 		parts.push([
@@ -691,6 +884,7 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 					<thead>
 						<tr className="text-[11px] uppercase tracking-wide text-slate-faint">
 							<th className="pb-1.5 text-left font-bold">Resource</th>
+							<th className="pb-1.5 text-left font-bold">Needed on</th>
 							<th className="pb-1.5 text-right font-bold">Qty</th>
 							<th className="pb-1.5 text-left font-bold">Unit</th>
 							<th className="pb-1.5 text-right font-bold">Unit cost</th>
@@ -702,6 +896,9 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 						{terms.resources.map((row, index) => (
 							<tr key={index} className="border-t border-hairline">
 								<td className="py-1.5">{row.resource}</td>
+								<td className="py-1.5">
+									{row.needed_on ? formatDate(row.needed_on) : "Throughout"}
+								</td>
 								<td className="py-1.5 text-right">{row.quantity ?? ""}</td>
 								<td className="py-1.5">{row.unit}</td>
 								<td className="py-1.5 text-right">{row.unit_cost ?? ""}</td>
@@ -712,7 +909,7 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 					</tbody>
 					<tfoot>
 						<tr className="border-t border-hairline-strong">
-							<td className="pt-1.5 font-semibold" colSpan={4}>
+							<td className="pt-1.5 font-semibold" colSpan={5}>
 								Total
 							</td>
 							<td className="pt-1.5 text-right font-bold text-ink">{terms.resources_total}</td>
@@ -721,6 +918,21 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 					</tfoot>
 				</table>
 			</div>,
+		]);
+	}
+
+	if ((terms.certification_requirements ?? []).length > 0) {
+		parts.push([
+			"Certification requirements",
+			<ul className="space-y-1">
+				{(terms.certification_requirements ?? []).map((row, index) => (
+					<li key={`${row.certification_type}-${index}`}>
+						<span className="font-semibold text-ink">{row.certification_type}</span>
+						{row.is_mandatory ? " · mandatory" : " · desirable"}
+						{row.requirement_notes ? ` — ${row.requirement_notes}` : ""}
+					</li>
+				))}
+			</ul>,
 		]);
 	}
 

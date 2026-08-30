@@ -4,6 +4,7 @@ import { Navigate, useParams } from "react-router-dom";
 
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
+import { useSocietyBranding } from "../ui/brand";
 import { GeoSelects } from "../ui/GeoSelects";
 import { Icon } from "../ui/icons";
 import {
@@ -199,11 +200,11 @@ export default function Communication() {
 						<EditableText k={`admin.communication.${channel}.heading`} fallback={`Compose ${channel === "system" ? "notification" : channel}`} />
 					</h2>
 					<p className="mt-1 text-[12px] text-slate-faint">
-						<EditableText k="admin.communication.lead" fallback="Choose the audience, write the message, then review its real reach before sending." />
+						<EditableText k="admin.communication.lead" fallback="Sent to the volunteers and members your branches cover." />
 					</p>
 				</div>
 				<div className="ml-auto flex items-center gap-2">
-					<span className="hidden rounded-full border border-hairline-strong bg-white px-3 py-2 text-[11px] text-slate-faint sm:block">Drafts and scheduling unavailable</span>
+					<span className="hidden rounded-full border border-hairline-strong bg-white px-3 py-2 text-[11px] text-slate-faint sm:block">Sends immediately</span>
 					<Button variant="navy" disabled={!ready || !answer.can_send} onClick={() => setConfirming(true)}>
 						{channel === "sms" ? "Create SMS draft" : `Send ${channel === "system" ? "notification" : channel}`}
 						{counts ? ` to ${counts[channelKey as keyof CommunicationReach] ?? 0}` : ""}
@@ -334,7 +335,7 @@ export default function Communication() {
 								value={body}
 								onChange={(event) => setBody(event.target.value)}
 								rows={6}
-								placeholder="Plain words. This is what people read in the portal and in their email."
+								placeholder="Write the message"
 								className="w-full resize-y rounded-card border border-hairline-strong px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy"
 							/>
 						</label>}
@@ -617,16 +618,35 @@ function ComposerSection({
 	);
 }
 
+/**
+ * A mock of what the message will look like where it lands.
+ *
+ * **Everything in it is either what was typed or what the site actually knows.**
+ * The email mock named the sender in its header bar and the bar said "Tanzania
+ * Red Cross Society" — shipped source, so every other society composing an email
+ * was shown a preview signed by a society on another continent. The name is read
+ * from National Society Settings now, through the same call and the same SWR key
+ * the lockup uses, and a site that has not named itself gets a neutral stand-in
+ * rather than somebody else's name.
+ *
+ * **And it stopped inventing a greeting.** The mock opened "Hello Amina," over
+ * every message. `announce._email` passes `subject=doc.title` and `content=` the
+ * escaped body and nothing else, so no recipient has ever been greeted by name —
+ * the preview was showing a line the email does not contain. The subject leads
+ * now, which is what an inbox shows, and the body follows it.
+ */
 function MessagePreview({ channel, title, body }: { channel: string; title: string; body: string }) {
-	if (channel === "sms") return <><div className="relative mx-auto h-[390px] max-w-[220px] rounded-[34px] border-[7px] border-[#D8DCE2] bg-[#F8F8F8] px-3 pb-4 pt-14 shadow-inner before:absolute before:left-1/2 before:top-3 before:h-4 before:w-[62px] before:-translate-x-1/2 before:rounded-full before:bg-[#E2E5E9]"><div className="rounded-[13px] rounded-bl-[4px] bg-[#E8E8E8] p-3 text-[11px] leading-relaxed text-slate-body">{body || "Your message preview appears here."}</div></div><p className="mt-3 text-[10.5px] leading-relaxed text-slate-faint">{body.length} characters. Segment count is not shown because the provider has not supplied an encoding-aware estimator.</p></>;
+	const society = useSocietyBranding();
 
-	if (channel === "email") return <div className="overflow-hidden rounded-[14px] border border-hairline"><div className="bg-[#24272C] px-4 py-3 text-[11px] font-semibold text-white">Tanzania Red Cross Society</div><div className="bg-white p-4"><p className="mb-3 text-[10px] text-slate-faint">{title || "Your subject"}</p><h4 className="text-[15px] font-medium text-ink">Hello Amina,</h4><p className="mt-3 whitespace-pre-wrap text-[11px] leading-relaxed text-slate-body">{body || "Your email preview appears here."}</p></div></div>;
+	if (channel === "sms") return <><div className="relative mx-auto h-[390px] max-w-[220px] rounded-[34px] border-[7px] border-[#D8DCE2] bg-[#F8F8F8] px-3 pb-4 pt-14 shadow-inner before:absolute before:left-1/2 before:top-3 before:h-4 before:w-[62px] before:-translate-x-1/2 before:rounded-full before:bg-[#E2E5E9]"><div className="rounded-[13px] rounded-bl-[4px] bg-[#E8E8E8] p-3 text-[11px] leading-relaxed text-slate-body">{body || "Your message preview appears here."}</div></div><p className="mt-3 text-[10.5px] leading-relaxed text-slate-faint">{body.length} characters.</p></>;
+
+	if (channel === "email") return <div className="overflow-hidden rounded-[14px] border border-hairline"><div className="bg-[#24272C] px-4 py-3 text-[11px] font-semibold text-white">{society?.name || society?.short_name || "Your society"}</div><div className="bg-white p-4"><h4 className="text-[15px] font-medium text-ink">{title || "Your subject"}</h4><p className="mt-3 whitespace-pre-wrap text-[11px] leading-relaxed text-slate-body">{body || "Your email preview appears here."}</p></div></div>;
 
 	return <div className="rounded-[14px] bg-[#F5F5F5] p-3"><div className="grid grid-cols-[32px_minmax(0,1fr)] gap-2.5 rounded-[12px] bg-white p-3 shadow-nav"><span className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#EDF3FF] text-blue"><Icon.bell size={15} /></span><div><h3 className="text-[11px] font-semibold text-ink">{title || "Notification title"}</h3><p className="mt-1 whitespace-pre-wrap text-[10.5px] leading-relaxed text-slate-body">{body || "Your notification preview appears here."}</p></div></div></div>;
 }
 
 function CommunicationHistory({ channel }: { channel: string }) {
-	return <><PageHeading title={`Sent ${channel === "system" ? "notifications" : channel}`} lead="A server-paged campaign history will appear here when VMMS exposes a permission-scoped history contract." /><Card><SectionTitle>History unavailable</SectionTitle><p className="text-[13px] leading-relaxed text-slate-body">The current backend can publish announcements and file SMS drafts, but it does not expose a coordinator-safe campaign listing, delivery summary, recipient-level results, or provider status feed. No delivery states are fabricated.</p></Card></>;
+	return <><PageHeading title={`Sent ${channel === "system" ? "notifications" : channel}`} lead="Nothing sent has been recorded here yet." /><Card><SectionTitle>Not available yet</SectionTitle><p className="text-[13px] leading-relaxed text-slate-body">You can post announcements and prepare SMS from here. A record of what has been sent, and who received it, is not available yet — and nothing is shown that cannot be confirmed.</p></Card></>;
 }
 
 /**

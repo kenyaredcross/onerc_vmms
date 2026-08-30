@@ -139,6 +139,11 @@ export function DeploymentsHub() {
 		undefined,
 		"admin:hub:requests",
 	);
+	const documents = useFrappeGetCall<{ message: { count: number } }>(
+		API.operationsDocuments,
+		undefined,
+		"admin:hub:documents",
+	);
 
 	const rows = deployments.data?.message?.deployments ?? [];
 	const pendingRequests = (requests.data?.message?.requests ?? []).filter(
@@ -163,8 +168,8 @@ export function DeploymentsHub() {
 	return (
 		<>
 			<PageHeading
-				title={<EditableText k="admin.deployments.dashboard" fallback="Deployment dashboard" />}
-				lead="Operations across your authorised geographic scope."
+				title={<EditableText k="admin.deployments.dashboard" fallback="Operations overview" />}
+				lead="Operations in the areas you cover."
 				actions={<ButtonLink to="/portal/admin/deployments/new">Create deployment</ButtonLink>}
 			/>
 
@@ -270,13 +275,13 @@ export function DeploymentsHub() {
 				</Card>
 			</div>
 
-			<div className="grid gap-4 sm:grid-cols-3">
+			<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				<HubCard
 					to="/admin/deployments/terms"
 					newTo="/admin/deployments/terms?new=1"
 					title="Terms of Reference"
 					count={terms.data?.message?.count}
-					lead="The mission: what the work is, what it will achieve, and what a volunteer must hold to do it."
+					lead="What the work is, what it will achieve, and what a volunteer must hold to do it."
 				/>
 				<HubCard
 					to="/admin/deployments/ongoing"
@@ -292,6 +297,12 @@ export function DeploymentsHub() {
 					count={requests.data?.message?.count}
 					detail={pendingRequests > 0 ? `${pendingRequests} awaiting an outcome` : undefined}
 					lead="Asks for volunteers, and where each one's approval stands."
+				/>
+				<HubCard
+					to="/admin/deployments/documents"
+					title="Documents"
+					count={documents.data?.message?.count}
+					lead="Private plans, briefings, assessments, evidence, and reports kept with their operational record."
 				/>
 			</div>
 		</>
@@ -373,6 +384,125 @@ function WhereTheyAre({ answer, loading }: { answer?: DeploymentMapAnswer; loadi
 			)}
 		</Card>
 	);
+}
+
+interface OperationsFile {
+	name: string;
+	file_name: string;
+	file_url: string;
+	file_size: number | null;
+	is_private: boolean;
+	attached_to_doctype: string;
+	attached_to_name: string;
+	owner: string;
+	modified: string;
+}
+
+interface DocumentTarget {
+	doctype: string;
+	name: string;
+}
+
+/** A scoped, private repository for the paperwork an operation produces. */
+export function OperationsDocuments() {
+	const [search, setSearch] = useState("");
+	const [target, setTarget] = useState("");
+	const [uploading, setUploading] = useState(false);
+	const [failure, setFailure] = useState<string | null>(null);
+	const documents = useFrappeGetCall<{
+		message: { count: number; files: OperationsFile[]; targets: DocumentTarget[] };
+	}>(API.operationsDocuments, { search }, `admin:operations:documents:${search}`);
+	const answer = documents.data?.message;
+	const targets = answer?.targets ?? [];
+
+	const upload = async (file: File) => {
+		const selected = targets.find((item) => `${item.doctype}\n${item.name}` === target);
+		if (!selected) {
+			setFailure("Choose the operational record this file belongs to.");
+			return;
+		}
+		setUploading(true);
+		setFailure(null);
+		try {
+			const body = new FormData();
+			body.append("file", file);
+			body.append("is_private", "1");
+			body.append("doctype", selected.doctype);
+			body.append("docname", selected.name);
+			const response = await fetch("/api/method/upload_file", {
+				method: "POST",
+				body,
+				credentials: "same-origin",
+				headers: { "X-Frappe-CSRF-Token": window.csrf_token ?? "" },
+			});
+			if (!response.ok) throw new Error("The upload was refused.");
+			await documents.mutate();
+		} catch (uploadError) {
+			setFailure(errorMessage(uploadError, "That document could not be uploaded."));
+		} finally {
+			setUploading(false);
+		}
+	};
+
+	return (
+		<>
+			<PageHeading
+				title="Operations documents"
+				lead="Private files attached to the project, terms, or deployment they support."
+				trail={[{ label: "Operations", to: "/admin/deployments" }, { label: "Documents" }]}
+			/>
+
+			<Card className="mb-5">
+				<div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+					<Labelled label="Store against" hint="This keeps the file with its operational record and permission scope.">
+						<select className={INPUT} value={target} onChange={(event) => setTarget(event.target.value)}>
+							<option value="">Choose a project, terms of reference, or deployment</option>
+							{targets.map((item) => (
+								<option key={`${item.doctype}:${item.name}`} value={`${item.doctype}\n${item.name}`}>
+									{shortDoctype(item.doctype)} · {item.name}
+								</option>
+							))}
+						</select>
+					</Labelled>
+					<label className={cx("inline-flex cursor-pointer items-center justify-center gap-2 rounded-control bg-navy px-4 py-2.5 font-display text-[12.5px] font-bold text-white", uploading && "pointer-events-none opacity-60")}>
+						<Icon.upload size={16} /> {uploading ? "Uploading…" : "Upload private file"}
+						<input type="file" className="hidden" disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); event.currentTarget.value = ""; }} />
+					</label>
+				</div>
+				{failure && <div className="mt-4"><ErrorNote>{failure}</ErrorNote></div>}
+			</Card>
+
+			<Card pad={false}>
+				<div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4">
+					<div><SectionTitle>File library</SectionTitle><p className="mt-1 text-[11.5px] text-slate-faint">{answer?.count ?? 0} files · private by default</p></div>
+					<div className="relative"><Icon.search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-faint" size={15} /><input type="search" className={`${INPUT} w-64 pl-9`} placeholder="Search files or records" value={search} onChange={(event) => setSearch(event.target.value)} /></div>
+				</div>
+				{documents.isLoading && <div className="p-5"><Skeleton className="h-32" /></div>}
+				{documents.error && <div className="p-5"><ErrorNote>{errorMessage(documents.error)}</ErrorNote></div>}
+				{!documents.isLoading && !documents.error && (answer?.files.length ?? 0) === 0 && <Empty title="No operational files yet">Upload the first plan, briefing, assessment, photograph, or report and attach it to the record it belongs to.</Empty>}
+				<ul className="divide-y divide-hairline">
+					{(answer?.files ?? []).map((file) => (
+						<li key={file.name} className="flex items-center gap-3 px-5 py-3.5">
+							<span className="grid h-9 w-9 flex-none place-items-center rounded-control bg-surface text-navy"><Icon.file size={17} /></span>
+							<div className="min-w-0 flex-1"><a href={file.file_url} target="_blank" rel="noreferrer" className="block truncate text-[13px] font-semibold text-ink hover:text-navy hover:underline">{file.file_name}</a><p className="mt-0.5 truncate text-[11.5px] text-slate-faint">{shortDoctype(file.attached_to_doctype)} · {file.attached_to_name}</p></div>
+							<div className="hidden text-right text-[11px] text-slate-faint sm:block"><div>{formatBytes(file.file_size)}</div><div>{formatDate(file.modified)}</div></div>
+							<Pill tone={file.is_private ? "navy" : "quiet"}>{file.is_private ? "Private" : "Shared"}</Pill>
+						</li>
+					))}
+				</ul>
+			</Card>
+		</>
+	);
+}
+
+function shortDoctype(doctype: string): string {
+	return doctype.replace(/^VMMS /, "");
+}
+
+function formatBytes(size: number | null): string {
+	if (!size) return "—";
+	if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+	return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function HubCard({
@@ -632,6 +762,8 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
 	const [required, setRequired] = useState("");
+	const [status, setStatus] = useState("Planned");
+	const [emailTemplate, setEmailTemplate] = useState("");
 	const [notes, setNotes] = useState("");
 	const [chain, setChain] = useState<GeoNode[]>([]);
 	const [busy, setBusy] = useState(false);
@@ -642,6 +774,9 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 		{ mine: 1, active_only: 1 },
 		"admin:terms:for-deployment",
 	);
+	const deploymentOptions = useFrappeGetCall<{
+		message: { email_templates: Array<{ name: string; subject: string | null }> };
+	}>(API.deploymentOptions, undefined, "admin:deployment:options");
 
 	const options = (available.data?.message?.terms ?? []).filter((row) => row.is_offered);
 	const node = selectedNode(chain);
@@ -672,12 +807,16 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 				start_date: startDate,
 				end_date: endDate,
 				volunteers_required: required ? Number(required) : undefined,
+				status,
+				email_template: emailTemplate || undefined,
 				notes: notes.trim() || undefined,
 			});
 			setTerms("");
 			setStartDate("");
 			setEndDate("");
 			setRequired("");
+			setStatus("Planned");
+			setEmailTemplate("");
 			setNotes("");
 			setChain([]);
 			onCreated();
@@ -740,10 +879,10 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 						</div>
 					</div>
 
-					<div className="mt-4 sm:w-1/2">
+					<div className="mt-4 grid gap-4 sm:grid-cols-3">
 						<Labelled
 							label="Volunteers needed"
-							hint="Optional. Once this many are on it, the server refuses another — leave it empty and it is never full."
+							hint="Optional. Leave it empty for no limit."
 						>
 							<input
 								type="number"
@@ -752,6 +891,29 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 								value={required}
 								onChange={(event) => setRequired(event.target.value)}
 							/>
+						</Labelled>
+						<Labelled label="Status" hint="Where this deployment starts in its lifecycle.">
+							<select className={INPUT} value={status} onChange={(event) => setStatus(event.target.value)}>
+								{["Planned", "Active", "Completed", "Cancelled"].map((option) => (
+									<option key={option} value={option}>
+										{option}
+									</option>
+								))}
+							</select>
+						</Labelled>
+						<Labelled label="Email template" hint="Optional wording for volunteer invitations.">
+							<select
+								className={INPUT}
+								value={emailTemplate}
+								onChange={(event) => setEmailTemplate(event.target.value)}
+							>
+								<option value="">Use the standard invitation</option>
+								{(deploymentOptions.data?.message?.email_templates ?? []).map((template) => (
+									<option key={template.name} value={template.name}>
+										{template.name}
+									</option>
+								))}
+							</select>
 						</Labelled>
 					</div>
 
@@ -818,7 +980,7 @@ export function DeploymentCreate() {
 		<>
 			<PageHeading
 				title="Create deployment"
-				lead="A deployment is raised from a submitted terms of reference. Choose the mission first — the rest of the form follows from it."
+				lead="Choose the terms of reference first. The rest of the form follows from it."
 				trail={[
 					{ label: "Deployments", to: "/admin/deployments" },
 					{ label: "Create deployment" },
@@ -910,6 +1072,23 @@ export function DeploymentDetail() {
 
 					{deployment.terms?.purpose && (
 						<p className="mt-3 text-[12.5px] text-slate-body">{deployment.terms.purpose}</p>
+					)}
+
+					{(deployment.email_template || deployment.notes) && (
+						<dl className="mt-3 grid gap-3 text-[12px] sm:grid-cols-2">
+							{deployment.email_template && (
+								<div>
+									<dt className="text-slate-faint">Email template</dt>
+									<dd className="font-semibold text-ink">{deployment.email_template}</dd>
+								</div>
+							)}
+							{deployment.notes && (
+								<div>
+									<dt className="text-slate-faint">Notes</dt>
+									<dd className="whitespace-pre-line text-slate-body">{deployment.notes}</dd>
+								</div>
+							)}
+						</dl>
 					)}
 
 					<div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -1330,7 +1509,7 @@ function CandidatePane({
 			</p>
 
 			<div className="mt-3.5 grid gap-3 sm:grid-cols-2">
-				<Labelled label="Search" hint="A name, or a volunteer's docname.">
+				<Labelled label="Search" hint="A name, or a record number.">
 					<input
 						type="search"
 						className={INPUT}

@@ -59,7 +59,6 @@ export default function Hours() {
 			<PageHeading
 				title={<EditableText k="portal.hours.heading" fallback="My hours" />}
 				trail={[{ label: "Home", to: "/dashboard" }, { label: "My hours" }]}
-				lead={<EditableText k="portal.hours.intro" />}
 			/>
 
 			{isLoading && <Spinner label="Loading your hours…" />}

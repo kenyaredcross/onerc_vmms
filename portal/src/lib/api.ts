@@ -254,6 +254,8 @@ export const API = {
 	updateTerms: "vmmsx.api.deployment.update_terms",
 	submitTerms: "vmmsx.api.deployment.submit_terms",
 	torMethodologies: "vmmsx.api.deployment.tor_methodologies",
+	deploymentOptions: "vmmsx.api.deployment.deployment_options",
+	operationsDocuments: "vmmsx.api.deployment.operations_documents",
 	createDeployment: "vmmsx.api.deployment.create_deployment",
 
 	// vmmsx/api/tasks.py — two doors into one doctype, checked differently.

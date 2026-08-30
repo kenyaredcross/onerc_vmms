@@ -139,6 +139,7 @@
 {% endmacro %}
 
 {% macro heading(eyebrow, title, body="") %}
+{% include "templates/includes/auth/journey.html" %}
 <div class="page-card-head">
 	<p class="auth-eyebrow">{{ eyebrow }}</p>
 	<h1 class="auth-title">{{ title }}</h1>
@@ -259,6 +260,7 @@
 					    what the person just typed, and seeing it is how they catch the
 					    typo that is otherwise a link into nowhere. -#}
 					<div class="signup-sent hidden">
+						{% include "templates/includes/auth/journey.html" %}
 						<div class="page-card-head">
 							<p class="auth-eyebrow">{{ words.get("login.signup.sent_eyebrow") or _("Almost there") }}</p>
 							<h1 class="auth-title">{{ words.get("login.signup.sent_title") or _("Check your email") }}</h1>

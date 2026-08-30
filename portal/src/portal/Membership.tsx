@@ -154,16 +154,12 @@ export default function Membership() {
 							/>
 						)}
 					</h2>
-					<p className="mx-auto mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-body">
-						{pending.length > 0 ? (
-							"Your application is with your branch. There is nothing to choose until they have decided on it."
-						) : (
-							<EditableText
-								k="portal.membership.plans.blurb"
-								fallback="Every fee, benefit and eligibility note here is set by your society on the membership type itself."
-							/>
-						)}
-					</p>
+					{pending.length > 0 && (
+						<p className="mx-auto mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-body">
+							Your application is with your branch. There is nothing to choose until they have
+							decided on it.
+						</p>
+					)}
 				</div>
 
 				{/* No `onSelect` while something is undecided, so the cards read rather

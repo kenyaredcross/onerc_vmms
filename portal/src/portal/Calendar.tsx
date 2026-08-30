@@ -183,12 +183,12 @@ export default function Calendar() {
 					<Card>
 						{!selected ? (
 							<Empty framed={false} title="Nothing selected" icon={Icon.calendar}>
-								Days with something on are pressable. Choose one to see what it is.
+								Choose a day to see what is on.
 							</Empty>
 						) : onDay.length === 0 ? (
 							<Empty framed={false} title="Nothing on this day" icon={Icon.calendar}>
 								{mineOnly
-									? "You have nothing on. Turn off “Only mine” to see what else your society has planned."
+									? "Nothing of yours on this day. Turn off “Only mine” to see everything else."
 									: `Nothing is scheduled for ${formatDate(selected)}.`}
 							</Empty>
 						) : (
@@ -205,13 +205,6 @@ export default function Calendar() {
 							</ul>
 						)}
 					</Card>
-
-					<p className="mt-3 px-1 text-[11.5px] leading-relaxed text-slate-faint">
-						<EditableText
-							k="portal.calendar.note"
-							fallback="Saying you are going tells your branch to expect you. It does not book a ticket or hold a place."
-						/>
-					</p>
 				</div>
 			</div>
 
@@ -224,15 +217,7 @@ export default function Calendar() {
 
 function Heading() {
 	return (
-		<PageHeading
-			title={<EditableText k="portal.calendar.heading" fallback="Your calendar" />}
-			lead={
-				<EditableText
-					k="portal.calendar.intro"
-					fallback="What your society has on, and which of it you have said you are coming to."
-				/>
-			}
-		/>
+		<PageHeading title={<EditableText k="portal.calendar.heading" fallback="Your calendar" />} />
 	);
 }
 
@@ -273,11 +258,11 @@ function Legend() {
 		<div className="ml-auto flex items-center gap-4 text-[11px] text-slate-faint">
 			<span className="flex items-center gap-1.5">
 				<span className="h-3 w-3 rounded-[4px] bg-signal" aria-hidden="true" />
-				<EditableText k="portal.calendar.legend.mine" fallback="You are going" />
+				<EditableText k="portal.calendar.legend.mine" fallback="Attending" />
 			</span>
 			<span className="flex items-center gap-1.5">
 				<span className="h-3 w-3 rounded-[4px] bg-tint-navy-soft" aria-hidden="true" />
-				<EditableText k="portal.calendar.legend.other" fallback="Something on" />
+				<EditableText k="portal.calendar.legend.other" fallback="Scheduled" />
 			</span>
 		</div>
 	);
@@ -326,7 +311,7 @@ function DayEvent({
 				{going && (
 					<Pill tone="signal">
 						<Icon.check size={11} />
-						<EditableText k="portal.calendar.day.badge" fallback="Going" />
+						<EditableText k="portal.calendar.day.badge" fallback="Attending" />
 					</Pill>
 				)}
 			</div>
@@ -345,9 +330,9 @@ function DayEvent({
 				{busy ? (
 					<EditableText k="portal.events.attending.saving" fallback="Saving…" />
 				) : going ? (
-					<EditableText k="portal.calendar.day.withdraw" fallback="I can't make it" />
+					<EditableText k="portal.calendar.day.withdraw" fallback="Cancel" />
 				) : (
-					<EditableText k="portal.calendar.day.attend" fallback="I'm going" />
+					<EditableText k="portal.calendar.day.attend" fallback="Attend" />
 				)}
 			</button>
 		</li>

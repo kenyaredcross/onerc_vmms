@@ -13,12 +13,15 @@ import type { ApplicationOptions, GeoLevel, GeoNode, RedProfile } from "../porta
  * the product here — a step that exists to be dismissed is a step that costs
  * every applicant a page — so the list is asserted rather than left to drift.
  *
- * **And that leaving a step saves.** Everything typed used to live in a browser
- * tab between one press of "Save draft" and the next, so a closed laptop took
- * six screens of answers with it.
+ * **And that leaving a step saves, quietly.** Everything typed used to live in a
+ * browser tab between one press of "Save draft" and the next, so a closed laptop
+ * took six screens of answers with it. It happens on every step change now, and
+ * says nothing when it does: an applicant did not ask for the save and is not
+ * waiting to hear about it.
  */
 const reads = new Map<string, unknown>();
 const posted: Array<{ path: string; payload: Record<string, unknown> }> = [];
+let currentUser: string | null = "amina@example.com";
 
 /**
  * A stubbed read is a path *and its arguments*.
@@ -83,7 +86,7 @@ vi.mock("frappe-react-sdk", async (importOriginal) => {
 		useFrappeGetCall: (path: string, params?: unknown, swrKey?: string | null) =>
 			answer(swrKey === null ? NO_REQUEST : reads.get(keyFor(path, params))),
 		useFrappeAuth: () => ({
-			currentUser: "amina@example.com",
+			currentUser,
 			isLoading: false,
 			logout: () => Promise.resolve(undefined),
 		}),
@@ -124,6 +127,7 @@ const PROFILE: Partial<RedProfile> = {
 beforeEach(() => {
 	reads.clear();
 	posted.length = 0;
+	currentUser = "amina@example.com";
 
 	reads.set(API.myProfile, PROFILE);
 	reads.set(API.myOpenRegistrations, { volunteer: null, member: null });
@@ -140,6 +144,12 @@ beforeEach(() => {
 
 function open() {
 	return mount(<Join />, { route: "/join?path=volunteer" });
+}
+
+function openAsGuest(route: string) {
+	currentUser = "Guest";
+	window.history.replaceState({}, "", route);
+	return mount(<Join />, { route });
 }
 
 /**
@@ -159,12 +169,70 @@ async function goOn() {
 	});
 }
 
+describe("the guest registration hand-off", () => {
+	it("keeps a declared volunteer path visible through authentication", () => {
+		openAsGuest("/join?path=volunteer");
+
+		expect(screen.getByText("Volunteer registration")).toBeTruthy();
+		expect(screen.getByText("You chose to register as a volunteer.", { exact: false })).toBeTruthy();
+		expect(screen.getByText("Account").closest("li")?.getAttribute("aria-current")).toBe("step");
+		expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe(
+			"/login?redirect-to=%2Fjoin%3Fpath%3Dvolunteer",
+		);
+		expect(screen.getByRole("link", { name: "Create an account" }).getAttribute("href")).toBe(
+			"/login?redirect-to=%2Fjoin%3Fpath%3Dvolunteer#signup",
+		);
+	});
+
+	it("names a declared member path instead of showing a generic bridge", () => {
+		openAsGuest("/join?path=member&type=annual");
+
+		expect(screen.getByText("Member registration")).toBeTruthy();
+		expect(screen.getByText("You chose to register as a member.", { exact: false })).toBeTruthy();
+		expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe(
+			"/login?redirect-to=%2Fjoin%3Fpath%3Dmember%26type%3Dannual",
+		);
+	});
+
+	it("asks for a path before handing a bare entry to authentication", async () => {
+		openAsGuest("/join");
+
+		expect(screen.getByRole("heading", { name: "How would you like to join?" })).toBeTruthy();
+		expect(screen.queryByRole("heading", { name: "Sign in to continue" })).toBeNull();
+
+		fireEvent.click(screen.getByRole("radio", { name: /Volunteer/ }));
+
+		expect(await screen.findByText("Volunteer registration")).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Sign in to continue" })).toBeTruthy();
+	});
+});
+
 describe("the road a volunteer walks", () => {
 	it("asks where they would volunteer, not where they would serve", async () => {
 		open();
 
 		expect(await screen.findByText("Where you'd volunteer")).toBeTruthy();
 		expect(screen.queryByText("Where you'd serve")).toBeNull();
+	});
+
+	/**
+	 * A step is a heading and the controls under it, and nothing in between.
+	 *
+	 * Every screen used to carry a line of explanation beneath its title, and
+	 * every one of them described the controls already on the page — "Answer each
+	 * field in turn, the one below narrows to what sits inside your answer" over
+	 * three selects that do exactly that.
+	 */
+	it("puts no line of explanation under a step's heading", async () => {
+		open();
+
+		await onTheIdentityStep();
+		await goOn();
+
+		expect(await screen.findByRole("heading", { name: "Where would you volunteer?" })).toBeTruthy();
+		expect(screen.queryByText(/narrows to what sits inside your answer/)).toBeNull();
+		expect(screen.queryByText(/reviewed by the people responsible/)).toBeNull();
+		expect(screen.queryByText("The branch or area you want to volunteer with.")).toBeNull();
 	});
 
 	it("has no step of its own for citizenship, and never asks where they live", async () => {
@@ -220,11 +288,19 @@ describe("leaving a step", () => {
 		expect(posted[0].payload.geo_node).toBe(BRANCH.name);
 	});
 
-	it("says so briefly, and does not read a document reference back", async () => {
+	it("says nothing about having done it", async () => {
 		await reachTheFirstSavableStep();
 		await goOn();
 
-		expect(await screen.findByText("Draft saved")).toBeTruthy();
+		await waitFor(() => expect(posted.length).toBe(1));
+		expect(screen.queryByText("Draft saved")).toBeNull();
+	});
+
+	it("never shows the applicant a document reference", async () => {
+		await reachTheFirstSavableStep();
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBe(1));
 		expect(screen.queryByText(/VAPP-00017/)).toBeNull();
 		expect(screen.queryByText(/sign out and continue later/)).toBeNull();
 	});

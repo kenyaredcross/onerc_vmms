@@ -141,7 +141,6 @@ export default function Dashboard() {
 						? `Welcome back, ${firstName(profile?.full_name?.trim() || user)}`
 						: "Welcome back"
 				}
-				lead={<EditableText k="portal.home.intro" />}
 				actions={
 					// Where this person sits in the society. A real fact off their own
 					// record, and absent rather than guessed when they have no
@@ -931,10 +930,6 @@ function UnderReview({ row }: { row: OpenRegistration }) {
 							<Icon.chevron size={14} className="-rotate-90" />
 						</Link>
 					)}
-
-					<p className="mt-3 text-[12px] text-slate-faint">
-						Your reference is <span className="font-semibold text-slate-body">{row.name}</span>
-					</p>
 				</div>
 			</div>
 		</Card>

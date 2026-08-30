@@ -149,7 +149,7 @@ function Attending() {
 			>
 				<EditableText
 					k="portal.events.attending.label"
-					fallback="Events you are going to"
+					fallback="Your events"
 				/>
 			</SectionLabel>
 
@@ -219,12 +219,6 @@ function Attending() {
 							onMonth={(nextYear, nextMonth) => setPicked({ year: nextYear, month: nextMonth })}
 							size="compact"
 						/>
-						<p className="mt-4 border-t border-hairline-soft pt-3 text-[11px] leading-relaxed text-slate-faint">
-							<EditableText
-								k="portal.events.attending.calendar_note"
-								fallback="The days you are expected. Everything else your society has on is on the full calendar."
-							/>
-						</p>
 					</Panel>
 				)}
 			</div>
@@ -352,10 +346,10 @@ function Withdraw({
 					<Icon.check size={13} className="group-hover:hidden group-focus-visible:hidden" />
 					<Icon.cross size={13} className="hidden group-hover:block group-focus-visible:block" />
 					<span className="group-hover:hidden group-focus-visible:hidden">
-						<EditableText k="portal.events.attending.going" fallback="Going" />
+						<EditableText k="portal.events.attending.going" fallback="Attending" />
 					</span>
 					<span className="hidden group-hover:block group-focus-visible:block">
-						<EditableText k="portal.events.attending.withdraw" fallback="Can't make it" />
+						<EditableText k="portal.events.attending.withdraw" fallback="Cancel" />
 					</span>
 				</>
 			)}
@@ -623,7 +617,7 @@ function Hero({
 		<div className="relative">
 			<div className="overflow-hidden rounded-feature bg-gradient-to-br from-navy via-navy to-signal/80 px-7 pb-20 pt-12 text-center shadow-hero md:px-12 md:pb-24 md:pt-16">
 				<div className="eyebrow text-white/60">
-					<EditableText k="portal.events.hero.eyebrow" fallback="Find your next experience" />
+					<EditableText k="portal.events.hero.eyebrow" fallback="What's on" />
 				</div>
 				<h1 className="mx-auto mt-3 max-w-2xl font-display text-[30px] font-extrabold leading-tight tracking-tight text-white md:text-[38px]">
 					<EditableText
@@ -1179,7 +1173,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 			<div className="flex flex-wrap items-center gap-2">
 				<span className="inline-flex items-center gap-1.5 rounded-full bg-signal/10 px-3 py-1 text-[11.5px] font-bold text-signal">
 					<Icon.check size={13} />
-					<EditableText k="portal.events.attend.confirmed" fallback="You're going" />
+					<EditableText k="portal.events.attend.confirmed" fallback="Attending" />
 				</span>
 			</div>
 
@@ -1217,7 +1211,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 					className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2.5 font-display text-[12.5px] font-bold text-white transition hover:bg-signal"
 				>
 					<Icon.calendar size={15} />
-					<EditableText k="portal.events.attend.calendar" fallback="Add to my calendar" />
+					<EditableText k="portal.events.attend.calendar" fallback="Add to calendar" />
 				</button>
 
 				{row.venue_address && (
@@ -1247,14 +1241,14 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 					{busy ? (
 						<EditableText k="portal.events.attending.saving" fallback="Saving…" />
 					) : (
-						<EditableText k="portal.events.attend.withdraw" fallback="I can no longer come" />
+						<EditableText k="portal.events.attend.withdraw" fallback="Cancel" />
 					)}
 				</button>
 
 				<span className="text-[11.5px] text-slate-faint">
 					<EditableText
 						k="portal.events.attend.claim"
-						fallback="Your branch has been told to expect you. This does not book a ticket or hold a place."
+						fallback="Your branch has been told to expect you. This does not hold a place."
 					/>
 				</span>
 			</div>

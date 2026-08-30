@@ -1,4 +1,4 @@
-import { type ReactNode, useContext, useState } from "react";
+import { type ReactNode, useContext, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
@@ -9,10 +9,18 @@ import type {
 	GeoNode,
 	ProjectDossier,
 	ProjectSummary,
+	TermsApproach,
+	TermsCertificationRequirement,
 	TermsDocument,
+	TermsItineraryRow,
+	TermsMethodology,
 	TermsOfReference,
+	TermsObjective,
+	TermsOutput,
+	TermsResource,
+	TermsStakeholder,
 } from "../portal/types";
-import { MissionEditor, MissionView } from "./Mission";
+import { MissionEditor, MissionView, RowEditor } from "./Mission";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import {
 	Button,
@@ -189,10 +197,13 @@ export function ProjectDetail() {
 			<PageHeading title={project.project_name} trail={trail} />
 
 			<div className="space-y-4">
-				<Card>
-					<div className="flex flex-wrap items-start justify-between gap-3">
-						<div>
-							<p className="text-[12px] text-slate-body">{geoPath(project.geo_path)}</p>
+					<Card>
+						<div className="flex flex-wrap items-start justify-between gap-3">
+							<div>
+								<p className="text-[11px] font-semibold uppercase tracking-wide text-slate-faint">
+									Project number {project.name}
+								</p>
+								<p className="text-[12px] text-slate-body">{geoPath(project.geo_path)}</p>
 							<p className="mt-0.5 text-[12px] text-slate-faint">
 								{project.start_date ? formatDate(project.start_date) : "No start date"}
 								{project.end_date ? ` → ${formatDate(project.end_date)}` : ""}
@@ -401,6 +412,8 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 
 	const [name, setName] = useState("");
 	const [summary, setSummary] = useState("");
+	const [notes, setNotes] = useState("");
+	const [status, setStatus] = useState("Planned");
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
 	const [chain, setChain] = useState<GeoNode[]>([]);
@@ -419,11 +432,15 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 				project_name: name.trim(),
 				geo_node: node?.name,
 				summary: summary.trim() || undefined,
+				notes: notes.trim() || undefined,
+				status,
 				start_date: startDate || undefined,
 				end_date: endDate || undefined,
 			});
 			setName("");
 			setSummary("");
+			setNotes("");
+			setStatus("Planned");
 			setStartDate("");
 			setEndDate("");
 			setChain([]);
@@ -448,6 +465,19 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 					<input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} />
 				</Labelled>
 
+				<Labelled label="Status" hint="Where the project starts in its lifecycle.">
+					<select className={INPUT} value={status} onChange={(e) => setStatus(e.target.value)}>
+						{["Planned", "Active", "Completed", "Cancelled"].map((option) => (
+							<option key={option} value={option}>
+								{option}
+							</option>
+						))}
+					</select>
+				</Labelled>
+
+			</div>
+
+			<div className="mt-4 grid gap-4 sm:grid-cols-2">
 				<div className="grid grid-cols-2 gap-3">
 					<Labelled label="Starts" hint="Optional.">
 						<input
@@ -468,12 +498,19 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 				</div>
 			</div>
 
-			<div className="mt-4">
-				<Labelled label="Background" hint="Printed at the head of every terms of reference under it.">
+			<div className="mt-4 grid gap-4 sm:grid-cols-2">
+				<Labelled label="Summary" hint="Printed at the head of every terms of reference under it.">
 					<textarea
 						className={cx(INPUT, "min-h-[84px] resize-y")}
 						value={summary}
 						onChange={(e) => setSummary(e.target.value)}
+					/>
+				</Labelled>
+				<Labelled label="Notes" hint="Anything about this project that is not covered above.">
+					<textarea
+						className={cx(INPUT, "min-h-[84px] resize-y")}
+						value={notes}
+						onChange={(e) => setNotes(e.target.value)}
 					/>
 				</Labelled>
 			</div>
@@ -654,6 +691,42 @@ export function TermsDetail() {
 						</div>
 					</div>
 
+					<dl className="mt-4 grid gap-x-5 gap-y-2 border-t border-hairline pt-3 text-[12px] sm:grid-cols-2 lg:grid-cols-4">
+						<div>
+							<dt className="text-slate-faint">Reference</dt>
+							<dd className="font-semibold text-ink">{terms.tor_key}</dd>
+						</div>
+						<div>
+							<dt className="text-slate-faint">Expected period</dt>
+							<dd className="font-semibold text-ink">
+								{terms.expected_start_date ? formatDate(terms.expected_start_date) : "No start set"}
+								{terms.expected_end_date ? ` → ${formatDate(terms.expected_end_date)}` : ""}
+							</dd>
+						</div>
+						<div>
+							<dt className="text-slate-faint">Usual duration</dt>
+							<dd className="font-semibold text-ink">
+								{terms.default_duration_days ? `${terms.default_duration_days} days` : "No usual length"}
+							</dd>
+						</div>
+						<div>
+							<dt className="text-slate-faint">Approval mode</dt>
+							<dd className="font-semibold capitalize text-ink">{terms.approval_mode || "direct"}</dd>
+						</div>
+						<div>
+							<dt className="text-slate-faint">Applies within</dt>
+							<dd className="font-semibold text-ink">
+								{terms.geo_scope_path ? geoPath(terms.geo_scope_path) : "Anywhere"}
+							</dd>
+						</div>
+						{terms.amended_from && (
+							<div>
+								<dt className="text-slate-faint">Amended from</dt>
+								<dd className="font-semibold text-ink">{terms.amended_from}</dd>
+							</div>
+						)}
+					</dl>
+
 					{failure && (
 						<div className="mt-3">
 							<ErrorNote>{failure}</ErrorNote>
@@ -709,9 +782,22 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 
 	const [torName, setTorName] = useState("");
 	const [project, setProject] = useState("");
+	const [isActive, setIsActive] = useState(true);
+	const [startsOn, setStartsOn] = useState("");
+	const [endsOn, setEndsOn] = useState("");
 	const [purpose, setPurpose] = useState("");
+	const [background, setBackground] = useState("");
 	const [responsibilities, setResponsibilities] = useState("");
 	const [duration, setDuration] = useState("");
+	const [approvalMode, setApprovalMode] = useState("direct");
+	const [notes, setNotes] = useState("");
+	const [stakeholders, setStakeholders] = useState<TermsStakeholder[]>([]);
+	const [objectives, setObjectives] = useState<TermsObjective[]>([]);
+	const [outputs, setOutputs] = useState<TermsOutput[]>([]);
+	const [approach, setApproach] = useState<TermsApproach[]>([]);
+	const [itinerary, setItinerary] = useState<TermsItineraryRow[]>([]);
+	const [resources, setResources] = useState<TermsResource[]>([]);
+	const [requirements, setRequirements] = useState<TermsCertificationRequirement[]>([]);
 	const [chain, setChain] = useState<GeoNode[]>([]);
 	const [busy, setBusy] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
@@ -723,6 +809,29 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 		API.branchProjects,
 		{ mine: 1 },
 		"admin:projects:for-terms",
+	);
+	const vocabularies = useFrappeGetCall<{
+		message: {
+			methodologies: TermsMethodology[];
+			certification_types: Array<{ name: string; certification_type_name: string }>;
+		};
+	}>(API.torMethodologies, undefined, "admin:tor:vocabularies");
+
+	const methodOptions = useMemo(
+		() =>
+			(vocabularies.data?.message?.methodologies ?? []).map((row) => ({
+				value: row.name,
+				label: row.methodology_name,
+			})),
+		[vocabularies.data],
+	);
+	const certificationOptions = useMemo(
+		() =>
+			(vocabularies.data?.message?.certification_types ?? []).map((row) => ({
+				value: row.name,
+				label: row.certification_type_name,
+			})),
+		[vocabularies.data],
 	);
 
 	const options = (projects.data?.message?.projects ?? []).filter((row) => row.is_open);
@@ -737,16 +846,42 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 			await call.post(API.createTerms, {
 				tor_name: torName.trim(),
 				project: project || undefined,
+				is_active: isActive,
 				purpose: purpose.trim() || undefined,
+				mission_background: background.trim() || undefined,
 				responsibilities: responsibilities.trim() || undefined,
 				geo_scope: node?.name ?? undefined,
+				expected_start_date: startsOn || undefined,
+				expected_end_date: endsOn || undefined,
 				default_duration_days: duration ? Number(duration) : undefined,
+				approval_mode: approvalMode,
+				notes: notes.trim() || undefined,
+				stakeholders,
+				objectives,
+				expected_outputs: outputs,
+				approach_methods: approach,
+				itinerary,
+				resources,
+				required_certifications: requirements,
 			});
 			setTorName("");
 			setProject("");
+			setIsActive(true);
+			setStartsOn("");
+			setEndsOn("");
 			setPurpose("");
+			setBackground("");
 			setResponsibilities("");
 			setDuration("");
+			setApprovalMode("direct");
+			setNotes("");
+			setStakeholders([]);
+			setObjectives([]);
+			setOutputs([]);
+			setApproach([]);
+			setItinerary([]);
+			setResources([]);
+			setRequirements([]);
 			setChain([]);
 			onCreated();
 		} catch (problem) {
@@ -793,6 +928,57 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				</Labelled>
 			</div>
 
+			<div className="mt-4 grid gap-4 sm:grid-cols-2">
+				<Labelled label="Availability" hint="Inactive terms take no new deployments or requests.">
+					<span className="flex min-h-[38px] items-center gap-2 rounded-card border border-hairline-strong bg-white px-3 py-2 text-[13px] text-slate-body">
+						<input
+							type="checkbox"
+							checked={isActive}
+							onChange={(event) => setIsActive(event.target.checked)}
+						/>
+						Active for new work
+					</span>
+				</Labelled>
+				<Labelled label="Approval mode" hint="Direct fulfils locally; routed requires approval.">
+					<select
+						className={INPUT}
+						value={approvalMode}
+						onChange={(event) => setApprovalMode(event.target.value)}
+					>
+						<option value="direct">Direct</option>
+						<option value="routed">Routed</option>
+					</select>
+				</Labelled>
+			</div>
+
+			<div className="mt-4 grid gap-4 sm:grid-cols-3">
+				<Labelled label="Expected start" hint="Optional deployment default.">
+					<input
+						type="datetime-local"
+						className={INPUT}
+						value={startsOn}
+						onChange={(event) => setStartsOn(event.target.value)}
+					/>
+				</Labelled>
+				<Labelled label="Expected end" hint="Must not precede the start.">
+					<input
+						type="datetime-local"
+						className={INPUT}
+						value={endsOn}
+						onChange={(event) => setEndsOn(event.target.value)}
+					/>
+				</Labelled>
+				<Labelled label="Usual duration (days)" hint="Zero means no usual length.">
+					<input
+						type="number"
+						min="0"
+						className={INPUT}
+						value={duration}
+						onChange={(event) => setDuration(event.target.value)}
+					/>
+				</Labelled>
+			</div>
+
 			<div className="mt-4">
 				<Labelled label="Purpose" hint="What a deployment under these terms is for.">
 					<textarea
@@ -804,9 +990,19 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 			</div>
 
 			<div className="mt-4">
+				<Labelled label="Mission background" hint="What happened, what is needed, and what has been done already.">
+					<textarea
+						className={cx(INPUT, "min-h-[120px] resize-y")}
+						value={background}
+						onChange={(event) => setBackground(event.target.value)}
+					/>
+				</Labelled>
+			</div>
+
+			<div className="mt-4">
 				<Labelled
 					label="Responsibilities"
-					hint="What the volunteer is expected to do. One per line reads best on the printed document."
+					hint="What the volunteer is expected to do. One per line."
 				>
 					<textarea
 						className={cx(INPUT, "min-h-[96px] resize-y")}
@@ -816,14 +1012,143 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				</Labelled>
 			</div>
 
-			<div className="mt-4 sm:w-1/2">
-				<Labelled label="Usual duration (days)" hint="Optional. A planning figure, never a rule.">
-					<input
-						type="number"
-						min="0"
-						className={INPUT}
-						value={duration}
-						onChange={(e) => setDuration(e.target.value)}
+			<div className="mt-6 space-y-6 border-t border-hairline pt-5">
+				<RowEditor<TermsStakeholder>
+					title="Stakeholders"
+					lead="Who the mission deals with and how deployed volunteers can reach them."
+					addLabel="Add a stakeholder"
+					empty="Nobody named yet."
+					rows={stakeholders}
+					onChange={setStakeholders}
+					blank={() => ({ designation: "", full_name: "", phone_number: "", email: "" })}
+					columns={[
+						{ key: "designation", label: "Designation", span: 4 },
+						{ key: "full_name", label: "Name", span: 3 },
+						{ key: "phone_number", label: "Phone number", span: 2 },
+						{ key: "email", label: "Email", span: 3 },
+					]}
+				/>
+
+				<RowEditor<TermsObjective>
+					title="Objectives"
+					lead="What this mission sets out to achieve, in printed order."
+					addLabel="Add an objective"
+					empty="No objectives written yet."
+					rows={objectives}
+					onChange={setObjectives}
+					blank={() => ({ objective: "" })}
+					columns={[{ key: "objective", label: "Objective", kind: "area" }]}
+				/>
+
+				<RowEditor<TermsOutput>
+					title="Expected outputs"
+					lead="What will exist, or be true, after the mission."
+					addLabel="Add an output"
+					empty="No outputs written yet."
+					rows={outputs}
+					onChange={setOutputs}
+					blank={() => ({ output: "" })}
+					columns={[{ key: "output", label: "Expected output", kind: "area" }]}
+				/>
+
+				<RowEditor<TermsApproach>
+					title="Approach methodology"
+					lead="How the work will be done, using your society's configured methodologies."
+					addLabel="Add a method"
+					empty="No approach described yet."
+					rows={approach}
+					onChange={setApproach}
+					blank={() => ({ methodology: "", notes: "" })}
+					columns={[
+						{
+							key: "methodology",
+							label: "Methodology",
+							kind: "select",
+							span: 4,
+							options: methodOptions,
+						},
+						{ key: "notes", label: "Notes", kind: "area", span: 8 },
+					]}
+				/>
+
+				<RowEditor<TermsItineraryRow>
+					title="Itinerary"
+					lead="The dated plan for the mission."
+					addLabel="Add an activity"
+					empty="No itinerary yet."
+					rows={itinerary}
+					onChange={setItinerary}
+					blank={() => ({
+						activity_date: "",
+						activity_time: "",
+						activity: "",
+						person_responsible: "",
+					})}
+					columns={[
+						{ key: "activity_date", label: "Date", kind: "date", span: 3 },
+						{ key: "activity_time", label: "Time", kind: "time", span: 2 },
+						{ key: "activity", label: "Activity", kind: "area", span: 4 },
+						{ key: "person_responsible", label: "Person responsible", span: 3 },
+					]}
+				/>
+
+				<RowEditor<TermsResource>
+					title="Resources"
+					lead="What is needed, when, in what quantity, at what unit cost, and from whom."
+					addLabel="Add a resource"
+					empty="No resources listed yet."
+					rows={resources}
+					onChange={setResources}
+					blank={() => ({
+						resource: "",
+						needed_on: "",
+						quantity: null,
+						unit: "",
+						unit_cost: null,
+						donor: "",
+					})}
+					columns={[
+						{ key: "resource", label: "Resource", span: 3 },
+						{ key: "needed_on", label: "Needed on", kind: "date", span: 2 },
+						{ key: "quantity", label: "Quantity", kind: "number", span: 2 },
+						{ key: "unit", label: "Unit", span: 2 },
+						{ key: "unit_cost", label: "Unit cost", kind: "number", span: 3 },
+						{ key: "donor", label: "Donor", span: 4 },
+					]}
+				/>
+
+				<RowEditor<TermsCertificationRequirement>
+					title="Required certifications"
+					lead="Mandatory rows filter candidates; desirable rows rank them higher."
+					addLabel="Add a certification"
+					empty="No certification requirements."
+					rows={requirements}
+					onChange={setRequirements}
+					blank={() => ({
+						certification_type: "",
+						is_mandatory: true,
+						requirement_notes: "",
+					})}
+					columns={[
+						{
+							key: "certification_type",
+							label: "Certification type",
+							kind: "select",
+							span: 5,
+							options: certificationOptions,
+						},
+						{ key: "is_mandatory", label: "Mandatory", kind: "check", span: 3 },
+						{ key: "requirement_notes", label: "Notes", span: 4 },
+					]}
+				/>
+			</div>
+
+			<div className="mt-5">
+				<Labelled label="Notes" hint="Anything about these terms that is not covered above.">
+					<textarea
+						className={cx(INPUT, "min-h-[84px] resize-y")}
+						value={notes}
+						onChange={(event) => setNotes(event.target.value)}
 					/>
 				</Labelled>
 			</div>

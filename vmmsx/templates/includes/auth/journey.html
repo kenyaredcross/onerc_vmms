@@ -1,0 +1,21 @@
+{#-
+	The selected registration path across the authentication boundary.
+
+	`registration_path` is derived server-side from an exact local join route;
+	the URL is never printed. Account creation, email and password setup are all
+	still the first stage, so the same item remains current on both auth pages.
+-#}
+{%- if registration_path %}
+<div class="registration-context">
+	<p class="registration-label">
+		{{ _("Volunteer registration") if registration_path == "volunteer" else _("Member registration") }}
+	</p>
+	<ol class="registration-progress" aria-label="{{ _('Registration progress') }}">
+		<li class="current" aria-current="step">{{ _("Account") }}</li>
+		<li aria-hidden="true">&rarr;</li>
+		<li>{{ _("Your details") }}</li>
+		<li aria-hidden="true">&rarr;</li>
+		<li>{{ _("Branch review") }}</li>
+	</ol>
+</div>
+{%- endif %}

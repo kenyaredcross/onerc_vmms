@@ -64,7 +64,7 @@ export function CommunicationSubNav({ horizontal = false }: { horizontal?: boole
 
 function UnavailableItem({ label }: { label: string }) {
 	return (
-		<div className="flex items-center justify-between rounded-[12px] px-3.5 py-3 text-[11px] text-slate-faint" aria-disabled="true" title="Not available in the current VMMS API">
+		<div className="flex items-center justify-between rounded-[12px] px-3.5 py-3 text-[11px] text-slate-faint" aria-disabled="true" title="Not available yet">
 			<span>{label}</span>
 			<span className="text-[9px]">—</span>
 		</div>

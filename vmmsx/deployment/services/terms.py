@@ -214,6 +214,7 @@ def create(
 	expected_end_date: str | None = None,
 	default_duration_days: int | None = None,
 	approval_mode: str | None = None,
+	is_active: bool | int | str = True,
 	required_certifications: list | None = None,
 	stakeholders: list | None = None,
 	objectives: list | None = None,
@@ -257,7 +258,7 @@ def create(
 			"tor_key": _unique_key(tor_name),
 			"tor_name": tor_name,
 			"project": project or None,
-			"is_active": 1,
+			"is_active": 1 if frappe.utils.cint(is_active) else 0,
 			"purpose": purpose,
 			"mission_background": mission_background,
 			"responsibilities": responsibilities,
@@ -271,6 +272,7 @@ def create(
 				{
 					"certification_type": row.get("certification_type"),
 					"is_mandatory": 1 if row.get("is_mandatory") else 0,
+					"requirement_notes": row.get("requirement_notes"),
 				}
 				for row in (required_certifications or [])
 				if row.get("certification_type")
@@ -448,6 +450,14 @@ def mission_dto(terms_of_reference: str) -> dict:
 		**dto(terms_of_reference),
 		"mission_background": terms.mission_background,
 		"notes": terms.notes,
+		"certification_requirements": [
+			{
+				"certification_type": row.certification_type,
+				"is_mandatory": bool(row.is_mandatory),
+				"requirement_notes": row.requirement_notes,
+			}
+			for row in (terms.required_certifications or [])
+		],
 		**{
 			field: [{key: row.get(key) for key in columns} for row in (terms.get(field) or [])]
 			for field, columns in _MISSION_TABLES.items()
@@ -503,6 +513,7 @@ def update(terms_of_reference: str, **values) -> dict:
 				{
 					"certification_type": row.get("certification_type"),
 					"is_mandatory": 1 if row.get("is_mandatory") else 0,
+					"requirement_notes": row.get("requirement_notes"),
 				}
 				for row in (values["required_certifications"] or [])
 				if isinstance(row, dict) and row.get("certification_type")

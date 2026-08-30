@@ -35,7 +35,10 @@ everybody locked out. Every value below is therefore optional, and every caller
 in the templates has its own fallback wording.
 """
 
+from urllib.parse import parse_qs, urlparse
+
 import frappe
+from frappe.utils import sha256_hash
 
 from vmmsx.content.services import blocks as block_service
 from vmmsx.registration.services.desk import PORTAL_HOME
@@ -51,6 +54,7 @@ def context() -> dict:
 	"""The society's mark, the page's wording, and the panel photograph."""
 	society = _society()
 	words, panel = _content()
+	registration_path = _registration_path(_registration_destination())
 
 	return {
 		"society_name": society.get("name") or society.get("short_name") or "",
@@ -60,7 +64,66 @@ def context() -> dict:
 		"panel_image": panel.get("image") or "",
 		"panel_image_alt": panel.get("image_alt") or "",
 		"panel_image_credit": panel.get("image_credit") or "",
+		"registration_path": registration_path,
 	}
+
+
+def _registration_destination() -> str:
+	"""The local destination this authentication journey will return to.
+
+	On `/login` it is present in the request. A welcome-email link cannot carry
+	it: Frappe stores the destination against the new account and places only a
+	password key in the email. Looking up that key here is read-only and uses the
+	same hash Frappe uses when the password is eventually submitted; the cached
+	destination remains untouched for the framework to consume after success.
+	"""
+	try:
+		request = getattr(frappe.local, "request", None)
+		if not request:
+			return ""
+
+		destination = request.args.get("redirect-to")
+		if destination:
+			return destination
+
+		key = request.args.get("key")
+		return _password_registration_destination(key) if key else ""
+	except Exception:
+		# Authentication must remain usable even when optional journey context
+		# cannot be read. See the module-level failure rule above.
+		return ""
+
+
+def _password_registration_destination(key: str) -> str:
+	"""Read, but never consume, the destination attached to a password key."""
+	user = frappe.db.get_value("User", {"reset_password_key": sha256_hash(key)}, "name")
+	if not user:
+		return ""
+
+	destination = frappe.cache.hget("redirect_after_login", user) or ""
+	if isinstance(destination, bytes):
+		return destination.decode("utf-8", errors="ignore")
+	return str(destination)
+
+
+def _registration_path(destination: str) -> str:
+	"""Return `volunteer` or `member` only for this app's local join route.
+
+	The destination arrived in a URL and is therefore untrusted. Exact local
+	paths keep an external redirect, a similarly named page, or an arbitrary
+	`path` query from becoming trusted-looking authentication context.
+	"""
+	if not destination:
+		return ""
+
+	parsed = urlparse(destination)
+	if parsed.scheme or parsed.netloc:
+		return ""
+	if parsed.path not in {"/join", "/home/join", "/portal/join"}:
+		return ""
+
+	path = parse_qs(parsed.query).get("path", [""])[0]
+	return path if path in {"volunteer", "member"} else ""
 
 
 def _society() -> dict:
