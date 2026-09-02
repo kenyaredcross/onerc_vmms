@@ -89,4 +89,32 @@ export const Icon = {
 	/** Taking a copy of what is on the screen away with you. */
 	download: (p: IconProps) => <Glyph {...p} d="M12 4v12m-4-4 4 4 4-4M5 20h14" />,
 	globe: (p: IconProps) => <Glyph {...p} d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-8.5-9h17M12 3c2.2 2.4 3.4 5.6 3.4 9S14.2 18.6 12 21c-2.2-2.4-3.4-5.6-3.4-9S9.8 5.4 12 3Z" />,
+	/** A ring buoy: help, offered rather than demanded. The service desk. */
+	lifebuoy: (p: IconProps) => (
+		<Glyph
+			{...p}
+			d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-3-7L5.6 5.6m9.2 3.2 3.6-3.2m-3.6 9.4 3.4 3.4M9 15l-3.4 3.4"
+		/>
+	),
+	/** A mortar board. Learning, and the one glyph that has to read at 17px. */
+	graduation: (p: IconProps) => (
+		<Glyph {...p} d="M2.5 9 12 4.5 21.5 9 12 13.5 2.5 9Zm4 2.4V16c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5v-4.6M21 9.5v5" />
+	),
 };
+
+/**
+ * The glyph a companion app is drawn with in the rails.
+ *
+ * Keyed on the Frappe app name, which is what `api/companions.py` returns and
+ * is an identifier rather than a society's vocabulary — the *label* beside it
+ * is still a content block. An app this build has no glyph for gets the
+ * leaving-the-app arrow, which is the truthful fallback: every one of these
+ * links is a full navigation out of the portal.
+ */
+export function companionIcon(app: string) {
+	if (app === "lms") return Icon.graduation;
+	if (app === "raven") return Icon.chat;
+	if (app === "helpdesk") return Icon.lifebuoy;
+
+	return Icon.external;
+}

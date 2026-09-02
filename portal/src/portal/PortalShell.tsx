@@ -36,7 +36,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { EditableText } from "../content/Editable";
 import { EditToolbar } from "../content/EditToolbar";
 import { BrandLockup } from "../ui/brand";
-import { Icon } from "../ui/icons";
+import { Icon, companionIcon } from "../ui/icons";
 import { AccountMenu } from "./chrome/AccountMenu";
 import { AvailabilityControl } from "./chrome/AvailabilityControl";
 import { NotificationMenu } from "./chrome/NotificationMenu";
@@ -52,6 +52,19 @@ export interface PortalNavItem {
 	group?: string;
 	groupFallback?: string;
 	badge?: number;
+}
+
+/**
+ * A door out of this app. Route and label both come from the server —
+ * `api/companions.py` reads each app's own `add_to_apps_screen` declaration —
+ * so nothing about where Learning or the service desk is mounted is written
+ * down on this side.
+ */
+export interface PortalCompanion {
+	app: string;
+	href: string;
+	labelKey: string;
+	fallback: string;
 }
 
 /** Route → header title, for the addresses that are not a nav item. */
@@ -85,6 +98,7 @@ function titleFor(pathname: string, items: PortalNavItem[]): { key?: string; fal
  */
 export function PortalShell({
 	items,
+	companions = [],
 	unread,
 	onUnreadChange,
 	console: consolePath,
@@ -93,6 +107,8 @@ export function PortalShell({
 	branch,
 }: {
 	items: PortalNavItem[];
+	/** Apps installed beside this one, or none. Empty is the ordinary case. */
+	companions?: PortalCompanion[];
 	unread: number;
 	onUnreadChange: () => void;
 	/** Where the console switch points, or nothing — passed only when permitted. */
@@ -177,6 +193,47 @@ export function PortalShell({
 		</nav>
 	);
 
+	/**
+	 * The apps installed beside this one.
+	 *
+	 * Under a rule of their own and under their own heading, because these are
+	 * not destinations in this product: clicking Learning leaves the portal for
+	 * another app with its own navigation, and a row that does that sitting in
+	 * the same list as Tasks would be a trapdoor. Each carries the app's own
+	 * glyph, so the three are told apart at a glance rather than by reading.
+	 *
+	 * Nothing is drawn when nothing is installed — no heading, no rule, no
+	 * empty state. An absent companion app is the ordinary case, not a gap.
+	 */
+	const companionNav = companions.length > 0 && (
+		<div className="mt-4 border-t border-white/15 pt-3">
+			<div className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/60">
+				<EditableText k="portal.nav.companions" fallback="Also available" />
+			</div>
+			<nav aria-label="Other apps" className="flex flex-col gap-0.5">
+				{companions.map((item) => {
+					const Glyph = companionIcon(item.app);
+
+					return (
+						<a
+							key={item.app}
+							href={item.href}
+							className="group flex min-h-[36px] items-center gap-3 rounded-[9px] px-2.5 py-2 text-[13.5px] font-medium text-white/80 transition-colors hover:bg-white/[0.06] hover:text-white"
+						>
+							<span className="flex-none text-white/65 transition-colors group-hover:text-white">
+								<Glyph size={17} />
+							</span>
+							<EditableText k={item.labelKey} fallback={item.fallback} className="flex-1 truncate" />
+							{/* The one place the arrow still earns its keep: it is what
+							    says this row leaves the product. */}
+							<Icon.external size={13} className="flex-none text-white/40" />
+						</a>
+					);
+				})}
+			</nav>
+		</div>
+	);
+
 	const railBody = (
 		<>
 			<Link
@@ -187,6 +244,7 @@ export function PortalShell({
 				<BrandLockup wrap tone="dark" />
 			</Link>
 			{nav}
+			{companionNav}
 			{branch && (
 				<div className="mt-auto border-t border-white/15 px-2.5 pb-1 pt-4">
 					<div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/60">
@@ -298,6 +356,7 @@ export function PortalShell({
 								</button>
 							</div>
 							{nav}
+							{companionNav}
 							{branch && (
 								<div className="mt-auto border-t border-white/15 px-2.5 pb-1 pt-4">
 									<div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/60">

@@ -610,6 +610,46 @@ def membership_types() -> dict:
 		# plan cards and the proof form are the same screen: the person choosing a
 		# plan is one click from the form that needs this.
 		"declarations": declarations.shown_on(MEMBERSHIP_DOCTYPE),
+		# How this society will take the money, so the chooser and the way of
+		# paying arrive together. Served here for the reason the questions above
+		# it are: the wizard draws both in one pass, and a society that charges
+		# nothing gets an empty list and no question about it.
+		"payment_methods": payment_methods()["methods"],
+	}
+
+
+@frappe.whitelist()
+def payment_methods() -> dict:
+	"""The ways this society will take a membership fee.
+
+	**Configuration, and deliberately readable by anybody who may join.** The
+	rows come from `member/services/methods.py`, which intersects what the
+	society ticked with what `onerc_payments` reports as active and able to take
+	money in. Nothing here is a secret: it is the list of buttons on the form
+	that asks somebody to pay, and a person cannot choose a way of paying they
+	are not shown.
+
+	What is *not* here is any credential, any shortcode and any callback URL.
+	Those live in the payments app's own settings and this endpoint has never
+	seen them — the DTO is built field by field for exactly that reason.
+
+	Empty is ordinary and means one of three things, none of them an error: the
+	payments app is not installed, the society has switched every method off, or
+	nothing on this site charges a fee. A form reading this shows no payment
+	question at all rather than an empty picker.
+	"""
+	from vmmsx.member.services import methods
+
+	return {
+		"methods": [
+			{
+				"gateway": row["gateway"],
+				"label": row["label"],
+				"description": row["description"],
+				"instructions": row["instructions"],
+			}
+			for row in methods.offered()
+		]
 	}
 
 

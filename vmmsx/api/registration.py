@@ -57,6 +57,15 @@ REGISTRATION_PATHS = (
 	("member", MEMBERSHIP_DOCTYPE),
 )
 
+# The two disability fields, named once. They are Custom Fields on core's
+# `Red Profile` rather than columns of it — see
+# `patches/install_disability_fields.py` — which is why every read of them goes
+# through `_disability()` below rather than naming the column in a query: a site
+# between syncing this module and running that patch has the doctype and not yet
+# the fields, and a `get_value` on a column that is not there raises.
+DISABILITY_FIELD = "vmms_disability_status"
+DISABILITY_NEEDS_FIELD = "vmms_disability_needs"
+
 # What a person may correct about themselves, and the closed list `update_my_
 # profile` writes. `email` and `user` are absent and must stay absent: they are
 # the binding between a login and a person, and somebody who could rewrite
@@ -74,6 +83,13 @@ SELF_EDITABLE_FIELDS = (
 	"home_geo_node",
 	"country_of_residence",
 	"residence_address",
+	# Whether somebody has a disability, and what would help. Person-owned like
+	# everything else in this list and correctable by them for the same reason:
+	# it is a fact about them, it changes, and the person it is about is the one
+	# who knows. Installed by `patches/install_disability_fields.py`, which
+	# records why it sits on core's spine rather than on the volunteer record.
+	DISABILITY_FIELD,
+	DISABILITY_NEEDS_FIELD,
 	# A photograph is a fact about the person, like the six above it, and it goes
 	# on the card they carry. What a *branch* decided — serving branch, status,
 	# certifications — is not here and must not be, which is the whole of what
@@ -91,6 +107,24 @@ SELF_EDITABLE_FIELDS = (
 FILE_FIELDS = ("profile_photo",)
 
 UPLOAD_PREFIXES = evidence.UPLOAD_PREFIXES
+
+# What an applicant may say about one of their identity documents. A closed
+# list, for the reason `rows_from` gives at length: these arrive as loose dicts
+# from a browser and `is_primary` is decided by position rather than by the
+# caller — the first document somebody lists is their main one, and a form that
+# let a caller set the flag could produce a profile with two primaries or none.
+#
+# `attachment` is deliberately absent. A copy of a document is not something the
+# registration form collects: the file would be uploaded before the application
+# exists, unattached and readable only by whoever uploaded it, and there would
+# be nothing to anchor it to on the way in. Existing attachments already on a
+# profile survive a rewrite — see `_identification_rows` — so a branch that
+# attached a scan on the desk does not lose it because somebody corrected the
+# number beside it.
+IDENTIFICATION_FIELDS = (
+	"id_type",
+	"id_number",
+)
 
 # What an applicant may say about an emergency contact. A closed list, because
 # these arrive as loose dicts from a browser and `document.update()` on a child
@@ -138,6 +172,11 @@ GUARDIAN_CONSENT_FILE_FIELDS = ("consent_evidence",)
 # Core refuses a profile with either of these empty, so an edit that blanks one
 # is refused here with a sentence rather than at the ORM with a stack trace.
 NAME_FIELDS = ("first_name", "last_name")
+
+# How the applicant said they want to pay. A Custom Field on `VMMS Membership`,
+# installed by `patches/install_membership_payment_methods.py`; named here so
+# the endpoint and the patch agree on the spelling.
+PAYMENT_METHOD_FIELD = "payment_method"
 
 
 def _assert_signed_in() -> str:
@@ -203,6 +242,7 @@ def _profile_dto(profile: str) -> dict:
 		"country_of_citizenship": person.country_of_citizenship,
 		"citizenship_status": person.citizenship_status,
 		"residency_type": person.residency_type,
+		**_disability(profile),
 		# Served because `update_my_profile` already accepts it: a form that can
 		# set a photograph and cannot read back the one already on file would show
 		# an empty control to somebody who has had a portrait on their card for a
@@ -222,6 +262,28 @@ def _profile_dto(profile: str) -> dict:
 			}
 			for row in identifications
 		],
+	}
+
+
+def _disability(profile: str) -> dict:
+	"""What this person said about disability, or nothing on a site mid-migrate.
+
+	Read separately from the rest of the profile and guarded on the meta, for the
+	reason `DISABILITY_FIELD` gives: these are Custom Fields, a site that has
+	synced this module but not yet run the patch does not have them, and a form
+	that raised there would be a registration nobody could open. Absent reads as
+	unanswered, which is the honest answer.
+	"""
+	if not frappe.get_meta(PROFILE_DOCTYPE).has_field(DISABILITY_FIELD):
+		return {"disability_status": None, "disability_needs": None}
+
+	row = frappe.db.get_value(
+		PROFILE_DOCTYPE, profile, [DISABILITY_FIELD, DISABILITY_NEEDS_FIELD], as_dict=True
+	)
+
+	return {
+		"disability_status": (row or {}).get(DISABILITY_FIELD),
+		"disability_needs": (row or {}).get(DISABILITY_NEEDS_FIELD),
 	}
 
 
@@ -320,8 +382,11 @@ def update_my_profile(
 	home_geo_node: str | None = None,
 	country_of_residence: str | None = None,
 	residence_address: str | None = None,
+	disability_status: str | None = None,
+	disability_needs: str | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
+	identifications: list | None = None,
 ) -> dict:
 	"""Correct the caller's own Red Profile. The details are theirs.
 
@@ -382,9 +447,17 @@ def update_my_profile(
 		"home_geo_node": home_geo_node,
 		"country_of_residence": country_of_residence,
 		"residence_address": residence_address,
+		DISABILITY_FIELD: disability_status,
+		DISABILITY_NEEDS_FIELD: disability_needs,
 	}
 
-	_write_profile(profile, supplied, id_type=id_type, id_number=id_number)
+	_write_profile(
+		profile,
+		supplied,
+		id_type=id_type,
+		id_number=id_number,
+		identifications=identifications,
+	)
 
 	return _profile_dto(profile)
 
@@ -395,16 +468,34 @@ def _write_profile(
 	*,
 	id_type: str | None = None,
 	id_number: str | None = None,
+	identifications: list | None = None,
 ) -> None:
-	"""Write person-owned registration facts to one already-resolved profile."""
+	"""Write person-owned registration facts to one already-resolved profile.
+
+	**Identity documents arrive two ways and mean the same thing.** `Red Profile`
+	has always held a *table* of them — a passport and a national card are two
+	documents, not two versions of one — but this endpoint only ever accepted one
+	pair, so a society asking for two could not be satisfied through the form
+	that asks. `identifications` is the list; `id_type`/`id_number` remain for the
+	callers that send a single document and are folded into a one-row list.
+
+	The two are never combined. A caller that sends the list has said what the
+	whole set is, and a scalar arriving beside it would be a second opinion about
+	the same table.
+	"""
+
+	meta = frappe.get_meta(PROFILE_DOCTYPE)
 
 	changes = {
 		field: value
 		for field, value in supplied.items()
-		if field in SELF_EDITABLE_FIELDS and value is not None
+		# `has_field` as well as the allow-list, because two of the names in it
+		# are Custom Fields rather than columns of core's doctype — see
+		# `DISABILITY_FIELD`. A site that has synced this module and not yet run
+		# the patch drops them rather than writing an attribute the save will not
+		# persist and nobody will notice is missing.
+		if field in SELF_EDITABLE_FIELDS and value is not None and meta.has_field(field)
 	}
-
-	meta = frappe.get_meta(PROFILE_DOCTYPE)
 
 	for field, value in list(changes.items()):
 		if str(value).strip():
@@ -431,14 +522,8 @@ def _write_profile(
 		# string on a Date is not a date, and a Link would store one.
 		changes[field] = None
 
-	identification_supplied = id_type is not None or id_number is not None
-
-	if identification_supplied and not (str(id_type or "").strip() and str(id_number or "").strip()):
-		frappe.throw(
-			_("Identification Type and Identification Number must be provided together."),
-			frappe.MandatoryError,
-			title=_("Incomplete Identification"),
-		)
+	documents = _identifications_supplied(identifications, id_type, id_number)
+	identification_supplied = documents is not None
 
 	if changes or identification_supplied:
 		# Elevated, and narrowly. A volunteer or member holds no write permission
@@ -455,28 +540,146 @@ def _write_profile(
 			document.update(changes)
 
 			if identification_supplied:
-				primary = next((row for row in document.identifications if row.is_primary), None)
-
-				if primary is None and document.identifications:
-					primary = document.identifications[0]
-					primary.is_primary = 1
-
-				if primary is None:
-					document.append(
-						"identifications",
-						{
-							"id_type": str(id_type).strip(),
-							"id_number": str(id_number).strip(),
-							"is_primary": 1,
-						},
-					)
-				else:
-					primary.id_type = str(id_type).strip()
-					primary.id_number = str(id_number).strip()
+				document.identifications = _identification_rows(document, documents)
 
 			document.save()
 
 		frappe.clear_document_cache(PROFILE_DOCTYPE, profile)
+
+
+def _offered_method(payment_method: str | None) -> str | None:
+	"""The chosen way to pay, if the society offers it. None otherwise.
+
+	Silent about a value it does not recognise, deliberately. The alternative is
+	an error on a registration form for a choice the applicant has not committed
+	to yet, and the consequence of dropping it is that the fee goes through the
+	society's own first choice — which is what happened for every membership
+	before anybody was asked. What must never happen is an unchecked name
+	reaching the payments app as a gateway, and that is what this stops.
+	"""
+	from vmmsx.member.services import methods
+
+	chosen = (payment_method or "").strip()
+
+	return chosen if chosen and methods.is_offered(chosen) else None
+
+
+def _identifications_supplied(
+	identifications: list | None,
+	id_type: str | None,
+	id_number: str | None,
+) -> list[dict] | None:
+	"""What the caller said about their documents, or None for "leave them".
+
+	Three answers, and the difference between the last two matters:
+
+	    None    the caller said nothing about identity documents. The table is
+	            not touched — which is what makes a caller that sends three
+	            unrelated fields safe.
+	    []      the caller said they hold none. The table is emptied.
+	    [rows]  the caller said this is the set. The table becomes it.
+
+	A list and a scalar pair are never merged: a caller sending the list has
+	described the whole table, and folding a stray `id_type` in beside it would
+	add a document nobody listed.
+	"""
+	if identifications is not None:
+		return _checked_identifications(rows_from(identifications, IDENTIFICATION_FIELDS))
+
+	if id_type is None and id_number is None:
+		return None
+
+	# The single-document form, kept for every caller that sends one. Half of a
+	# pair is refused rather than stored: a type with no number is not a document
+	# anybody can check, and a number with no type is not one anybody can read.
+	if not (str(id_type or "").strip() and str(id_number or "").strip()):
+		frappe.throw(
+			_("Identification Type and Identification Number must be provided together."),
+			frappe.MandatoryError,
+			title=_("Incomplete Identification"),
+		)
+
+	return _checked_identifications([{"id_type": id_type, "id_number": id_number}])
+
+
+def _checked_identifications(rows: list[dict]) -> list[dict]:
+	"""Clean the supplied documents, and refuse the two that cannot be stored.
+
+	**Half a document.** `rows_from` drops a row that is entirely empty, which is
+	the spare blank at the bottom of a form and not an answer. A row with one of
+	the two filled in is different: somebody meant to enter a document and did
+	not finish, and storing a passport with no number would put an unusable row
+	in front of an approver.
+
+	**The same type twice.** `application._assert_identification_complete` keys
+	what somebody holds by type, so two rows of one type is a set where one of
+	them cannot be seen. A person has one national card; two rows saying so is a
+	mistake in a form, not a second document.
+	"""
+	cleaned = []
+	seen = set()
+
+	for row in rows:
+		kind = str(row.get("id_type") or "").strip()
+		number = str(row.get("id_number") or "").strip()
+
+		if not (kind and number):
+			frappe.throw(
+				_("Every identification needs both a type and a number."),
+				frappe.MandatoryError,
+				title=_("Incomplete Identification"),
+			)
+
+		if kind in seen:
+			frappe.throw(
+				_("{0} is listed twice. Each kind of identification is entered once.").format(
+					frappe.bold(_identification_label(kind))
+				),
+				frappe.ValidationError,
+				title=_("Repeated Identification"),
+			)
+
+		seen.add(kind)
+		cleaned.append({"id_type": kind, "id_number": number})
+
+	return cleaned
+
+
+def _identification_label(id_type: str) -> str:
+	"""The society's own word for a document type, for an error message."""
+	return frappe.db.get_value("Identification Type", id_type, "identification_type_name") or id_type
+
+
+def _identification_rows(document, supplied: list[dict]) -> list[dict]:
+	"""The table this profile should now hold, keeping what the applicant cannot send.
+
+	**An attachment is not the applicant's to lose.** A branch that scanned
+	somebody's national card attached it on the desk, and the registration form
+	neither shows nor collects files — see `IDENTIFICATION_FIELDS`. Replacing the
+	table wholesale would therefore delete the scan every time somebody corrected
+	the number printed beside it. So a document that comes back unchanged keeps
+	the file that was already against it, matched on the pair that identifies it.
+
+	**The first row is the primary one.** Ordering is the applicant's statement
+	of which document is their main one, and it is the only statement they make
+	about it: the flag itself is not in the allow-list, so a caller cannot send a
+	table with two primaries in it.
+	"""
+	held = {
+		(row.id_type, (row.id_number or "").strip()): row.attachment
+		for row in document.get("identifications") or []
+		if row.id_type
+	}
+
+	return [
+		{
+			"id_type": row["id_type"],
+			"id_number": row["id_number"],
+			"attachment": held.get((row["id_type"], row["id_number"])),
+			"is_primary": 1 if index == 0 else 0,
+		}
+		for index, row in enumerate(supplied)
+	]
 
 
 # --- registering yourself -------------------------------------------------
@@ -1042,6 +1245,10 @@ def _registration_dto(document, path: str) -> dict:
 				"membership_type": document.get("membership_type"),
 				"membership_status": document.get("membership_status"),
 				"membership_source": membership_service.source(document),
+				# How they said they want to pay, so resuming a draft re-selects
+				# it rather than asking again. Empty on a site that has not
+				# installed the field yet, which reads as "not chosen".
+				"payment_method": document.get(PAYMENT_METHOD_FIELD) or "",
 				"proof_attachment": document.get("proof_attachment"),
 				# The claim as it stands, so a proof an approver sent back opens
 				# with what was submitted rather than an empty form somebody has
@@ -1080,8 +1287,11 @@ def save_my_volunteer_draft(
 	home_geo_node: str | None = None,
 	country_of_residence: str | None = None,
 	residence_address: str | None = None,
+	disability_status: str | None = None,
+	disability_needs: str | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
+	identifications: list | None = None,
 	skills: list | None = None,
 	languages: list | None = None,
 	availability: list | None = None,
@@ -1146,9 +1356,12 @@ def save_my_volunteer_draft(
 			"home_geo_node": home_geo_node,
 			"country_of_residence": country_of_residence,
 			"residence_address": residence_address,
+			DISABILITY_FIELD: disability_status,
+			DISABILITY_NEEDS_FIELD: disability_needs,
 		},
 		id_type=id_type,
 		id_number=id_number,
+		identifications=identifications,
 	)
 
 	values = {
@@ -1188,9 +1401,17 @@ def save_my_member_draft(
 	gender: str | None = None,
 	date_of_birth: str | None = None,
 	profile_photo: str | None = None,
+	payment_method: str | None = None,
 	answers: dict | None = None,
 ) -> dict:
-	"""Create or replace the caller's membership draft without starting payment or review."""
+	"""Create or replace the caller's membership draft without starting payment or review.
+
+	`payment_method` is how the applicant said they want to pay, and it is stored
+	rather than acted on: no fee is requested until submission. It is checked
+	against what the society actually offers here as well as at the moment the
+	fee is requested — `payment.request` re-asks, because a draft can sit for a
+	fortnight and a society can stop offering a method in that time.
+	"""
 	_assert_signed_in()
 	profile = intake.for_user(
 		frappe.session.user,
@@ -1223,6 +1444,14 @@ def save_my_member_draft(
 	)
 
 	values = {"membership_type": membership_type, "geo_node": geo_node}
+
+	# `None` leaves whatever the draft already carries — a form that sends four
+	# fields must not blank a fifth. An unrecognised method is dropped rather
+	# than refused: the applicant is still choosing, the fee has not been asked
+	# for, and `payment.request` falls back to the society's own first choice.
+	if payment_method is not None:
+		values[PAYMENT_METHOD_FIELD] = _offered_method(payment_method)
+
 	document = _editable_registration("member")
 
 	if document:
@@ -1239,6 +1468,7 @@ def save_my_member_draft(
 				"doctype": MEMBERSHIP_DOCTYPE,
 				"membership_type": membership_type,
 				"geo_node": geo_node,
+				PAYMENT_METHOD_FIELD: _offered_method(payment_method),
 				**_intake_fields(first_name, last_name, phone, gender, date_of_birth),
 			},
 			answers=answers,

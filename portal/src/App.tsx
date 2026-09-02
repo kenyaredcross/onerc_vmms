@@ -28,6 +28,8 @@ const Join = lazy(() => import("./guest/Join"));
 // screen loads, so keeping it separate is what stops a map library reaching a
 // volunteer's dashboard.
 const Locations = lazy(() => import("./guest/Locations"));
+const Faq = lazy(() => import("./guest/Faq"));
+const Help = lazy(() => import("./portal/Help"));
 // Its own chunk, and a small one: this is the only screen in the app that is
 // routinely opened on a phone camera's browser, on whatever connection a field
 // site has.
@@ -303,6 +305,8 @@ const ROUTE_NAMES: Record<string, string> = {
 	"admin/analytics": "analytics",
 	"admin/content": "page content",
 	"admin/questions": "form questions",
+	faq: "the answers",
+	help: "the answers",
 };
 
 function RouteFallback() {
@@ -320,6 +324,11 @@ export default function App() {
 				<Route path="/" element={<Landing />} />
 				<Route path="/join" element={<Join />} />
 				<Route path="/locations" element={<Locations />} />
+				{/* The society's own answers, at a public address. Guest by design,
+				    like the locations directory: somebody asking what volunteering
+				    involves has not signed in and is often reading in order to
+				    decide whether to. `/help` is the same body inside the portal. */}
+				<Route path="/faq" element={<Faq />} />
 				{/* Where a scanned card lands. Guest by design: the person checking a
 				    card at a gate has no account and never will. */}
 				{/* Both reach the same read. The QR encodes the second; the first is
@@ -355,6 +364,7 @@ export default function App() {
 					<Route path="/tasks" element={<Tasks />} />
 					<Route path="/tasks/:name" element={<TaskRecord />} />
 					<Route path="/profile" element={<Profile />} />
+					<Route path="/help" element={<Help />} />
 					{/* Learning is a tab in the sidebar, but it is a link out to the
 					    LMS rather than a screen here. The route stays so an old
 					    bookmark still lands somewhere real. */}

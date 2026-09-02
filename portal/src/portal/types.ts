@@ -242,6 +242,13 @@ export interface RedProfile {
 		attachment: string | null;
 		is_primary: boolean;
 	}>;
+	/**
+	 * The disability question and its optional description, both vmmsx-owned
+	 * Custom Fields on core's Red Profile. Null means unanswered — which is not
+	 * the same as `"Prefer not to say"`, an answer somebody gave.
+	 */
+	disability_status: string | null;
+	disability_needs: string | null;
 }
 
 /**
@@ -1748,6 +1755,24 @@ export interface EventCard {
 	geo_node: string;
 	href: string | null;
 	multi_day: boolean;
+	/**
+	 * How many people have told the society they mean to be there.
+	 *
+	 * The society's own number, from `VMMS Event Attendance` — not a booking
+	 * count, which is Buzz's and is a different number. Absent on the public
+	 * teaser, which is why it is optional: a signed-out visitor is shown what is
+	 * on, not who from the society is going.
+	 */
+	going?: number;
+}
+
+/** `api/events.py::attendees` — who is coming, for a coordinator's screen. */
+export interface EventAttendee {
+	red_profile: string;
+	full_name: string;
+	email: string | null;
+	phone: string | null;
+	responded_on: string;
 }
 
 /* ------------------------------------------------- people, in the aggregate */

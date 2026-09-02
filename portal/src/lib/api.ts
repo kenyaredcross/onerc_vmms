@@ -412,6 +412,12 @@ export const API = {
 	// nothing else. `branchLocations` is the coordinator's, geo-scoped, and carries
 	// the internal notes the public one does not have.
 	publishedLocations: "vmmsx.api.locations.published",
+
+	// vmmsx/api/faq.py — the society's published answers, in its own categories.
+	// The fourth guest-readable method, and the content behind it is core's `FAQ`
+	// rather than anything this app stores: one set of answers, shown on the
+	// public page and inside the portal.
+	faq: "vmmsx.api.faq.published",
 	branchLocations: "vmmsx.api.locations.branch_locations",
 
 	// vmmsx/api/opportunities.py — the notice board, and browsing only. There is
@@ -446,6 +452,11 @@ export const API = {
 	eventsAttending: "vmmsx.api.events.attending",
 	attendEvent: "vmmsx.api.events.attend",
 	cancelEventAttendance: "vmmsx.api.events.cancel_attendance",
+	// Who said they are coming — names, and the coordinator's screen only. The
+	// one method in this group with a permission check on it: a volunteer's card
+	// gets the *number*, because somebody who ticked "I will be there" told their
+	// branch rather than every other volunteer on the site.
+	eventAttendees: "vmmsx.api.events.attendees",
 	// The month grid's one read. Everything published in a window, plus which of
 	// it is the caller's, in a single answer — a day cannot be drawn correctly
 	// until both are known, and two requests would mean markings that appear

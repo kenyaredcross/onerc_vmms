@@ -149,6 +149,14 @@ SURFACES = (
 		False,
 	),
 	(
+		"faq",
+		"Questions and Answers",
+		"The wording around the public answers page. The questions and answers themselves are"
+		" not here — they are FAQ records, written once and shown on the public page and inside"
+		" the portal alike.",
+		True,
+	),
+	(
 		"admin",
 		"Manager Console",
 		"Headings and section labels across the manager side: the review queue, the registry"
@@ -204,14 +212,16 @@ def _landing_nav():
 	# one a visitor most often wants, because "where are you" is the question
 	# somebody asks before any of the others.
 	#
-	# The fifth slot ships empty, and the note on each block explains that an
-	# empty one is dropped. That is how a society adds its own.
+	# The fifth slot carries the society's published answers, from core's `FAQ`.
+	# It is last because it is the one somebody reaches for when the four above
+	# it did not settle the question — and a society that would rather use the
+	# slot for something else empties it, which drops the item entirely.
 	items = (
 		("Volunteering", "#volunteer"),
 		("Membership", "#membership"),
 		("Events", "#events"),
 		("Branches", "/portal/locations"),
-		("", ""),
+		("Help", "/portal/faq"),
 	)
 	rows = []
 	for i, (text, href) in enumerate(items, start=1):
@@ -655,6 +665,7 @@ def _portal():
 		("membership", "Membership"),
 		("hours", "My hours"),
 		("profile", "Profile"),
+		("help", "Help"),
 		("companions", "Also available"),
 		("learning", "Learning"),
 		("raven", "Raven"),
@@ -677,6 +688,20 @@ def _portal():
 	for i, (slug, text) in enumerate(groups, start=1):
 		rows.append(_block(f"portal.nav.group.{slug}", f"Sidebar heading: {text}", s, 150 + i, text))
 	rows += [
+		# The answers page inside the portal, which draws the same body as the
+		# public one at `/portal/faq`. Only the wording around it differs, and
+		# only because a volunteer reading it is already inside the society and a
+		# stranger is not.
+		_block("portal.help.eyebrow", "Help page eyebrow", s, 196, "Help"),
+		_block("portal.help.heading", "Help page heading", s, 197, "Questions and answers"),
+		_block(
+			"portal.help.lead",
+			"Help page lead",
+			s,
+			198,
+			"What people ask most often. If your question is not here, your branch would rather"
+			" be asked twice than not at all.",
+		),
 		_block("portal.home.heading", "Dashboard heading", s, 200, "Your dashboard"),
 		# The home hero. The photograph is a slot rather than a shipped asset, for
 		# the reason at the top of this file: an empty one draws the branded
@@ -944,6 +969,21 @@ def _admin():
 	return rows
 
 
+def _faq():
+	"""The wording *around* the public answers page, and none of the answers.
+
+	Two blocks, and that is the whole surface on purpose. The questions and the
+	answers are `FAQ` records in onerc_core — a society writes them once and this
+	product shows them; a content block holding one would be a second copy that
+	goes stale the moment somebody edits the record.
+	"""
+	s = "faq"
+	return [
+		_block("faq.eyebrow", "Answers page eyebrow", s, 10, "Help"),
+		_block("faq.heading", "Answers page heading", s, 20, "Questions we are asked"),
+	]
+
+
 def blocks() -> list[dict]:
 	"""Every default block, in the order the desk list should show them."""
 	return (
@@ -957,6 +997,7 @@ def blocks() -> list[dict]:
 		+ _landing_close()
 		+ _landing_footer()
 		+ _login()
+		+ _faq()
 		+ _portal()
 		+ _admin()
 	)

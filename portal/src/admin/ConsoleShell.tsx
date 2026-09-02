@@ -36,7 +36,7 @@ import { EditableText } from "../content/Editable";
 import { EditToolbar } from "../content/EditToolbar";
 import { initials, useSession } from "../lib/session";
 import { BrandLockup } from "../ui/brand";
-import { Icon } from "../ui/icons";
+import { Icon, companionIcon } from "../ui/icons";
 import { cx } from "../portal/ui/kit";
 import { ToastProvider } from "../portal/ui/overlays";
 
@@ -464,7 +464,14 @@ export function ConsoleShell({
 						</div>
 					)}
 					<nav aria-label="Other apps" className="flex flex-col gap-0.5">
-						{companions.map((item) => (
+						{companions.map((item) => {
+							// The app's own glyph rather than one arrow for all three:
+							// a rail where every companion looks identical is a rail
+							// nobody reads, and these are the rows somebody scans for
+							// rather than walks through.
+							const Glyph = companionIcon(item.app);
+
+							return (
 							<a
 								key={item.app}
 								href={item.href}
@@ -476,13 +483,14 @@ export function ConsoleShell({
 								)}
 							>
 								<span className="flex-none text-white/65 group-hover:text-white">
-									<Icon.external size={17} />
+									<Glyph size={17} />
 								</span>
 								{(!narrow || compact) && (
 									<EditableText k={item.labelKey} fallback={item.fallback} className="flex-1 truncate" />
 								)}
 							</a>
-						))}
+							);
+						})}
 					</nav>
 				</>
 			)}

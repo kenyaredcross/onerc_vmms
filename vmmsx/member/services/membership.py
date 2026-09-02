@@ -619,6 +619,9 @@ def _report(membership, previous: str | None) -> None:
 		contract.state(membership),
 		{
 			"email": person.get("email"),
+			# As above, and for the same reason: the same four events, the same
+			# nudge, one implementation of both.
+			"phone": person.get("phone"),
 			"name": identity.display_name(member),
 			"kind": _("membership"),
 			"geo_path": _geo_path(membership),

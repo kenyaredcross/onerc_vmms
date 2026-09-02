@@ -110,3 +110,18 @@ vmmsx.patches.purge_retired_project_metadata
 # was made against. See the patch's own docstring for why published_on is the
 # declaration's modified date and not the date of the deploy.
 vmmsx.patches.publish_declaration_versions
+# Whether somebody has a disability, and what would help — two Custom Fields on
+# core's Red Profile. Volunteer registration asks for the first and will not be
+# submitted without an answer; "Prefer not to say" is one. See the patch's own
+# docstring for why it sits on the spine rather than on the volunteer record.
+vmmsx.patches.install_disability_fields
+# The public FAQ has a page now. Points the fifth top-navigation slot at it on a
+# site seeded before that page existed — and only when the slot is still
+# entirely empty, so nothing a society wrote is touched.
+vmmsx.patches.link_faq_in_navigation
+# Which ways of paying a society will take a membership fee, and which one an
+# applicant chose. A table on core's National Society Settings seeded from the
+# payments app's own gateway register, and one field on the membership. See the
+# patch's own docstring for why the choice is the society's and the applicant's
+# rather than a single setting in another app.
+vmmsx.patches.install_membership_payment_methods

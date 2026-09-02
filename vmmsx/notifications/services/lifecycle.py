@@ -47,6 +47,7 @@ different people on purpose.
 import re
 
 import frappe
+from frappe import _
 from frappe.email.doctype.email_template.email_template import get_email_template
 from frappe.utils import get_url
 
@@ -75,6 +76,28 @@ _ON_ENTERING = {
 # map to the acknowledgement and only one of them is ever the state a save ends
 # in. Belt and braces against a workflow whose stages all resolve nobody.
 _ACKNOWLEDGEMENTS = (states.SUBMITTED, states.IN_REVIEW)
+
+# What each of the four events says in a text message.
+#
+# **Deliberately not the email, cut down.** A text is read on a lock screen,
+# possibly by somebody standing next to the person it is for, so none of these
+# carries a reason for a refusal, a name, or anything a person would mind being
+# read over a shoulder. Each says what happened, gives the reference so it can be
+# quoted at a branch office, and points at the letter that has the detail.
+#
+# **Society-neutral, like the email bodies.** `{0}` is what the society calls
+# this kind of application — "volunteer", "membership" — and `{1}` is the
+# reference. Nothing here names a country, a currency or a society.
+#
+# **Rejection is absent on purpose.** Being turned down is not something to
+# learn from a notification tone in a queue at a bus stop; that one is a letter
+# and only a letter. Same for the request for more information, which is
+# unactionable in 160 characters: the email says what is actually needed.
+_SMS_ON_ENTERING = {
+	states.IN_REVIEW: "We have your {0} application. Reference {1}. We will email you when there is a decision.",
+	states.SUBMITTED: "We have your {0} application. Reference {1}. We will email you when there is a decision.",
+	states.APPROVED: "Good news — your {0} application has been approved. Reference {1}. Check your email for the details.",
+}
 
 
 def install() -> dict:
@@ -263,6 +286,11 @@ def notify(doc, previous: str | None, current: str | None, subject: dict) -> str
 			reference_name=doc.name,
 		)
 
+		# The nudge, after the letter and never instead of it. Its own failures
+		# are its own — `sms.tell` never raises — so a gateway that is down costs
+		# a text message and not the email that was already queued above.
+		_text(doc, previous, current, subject)
+
 		return template
 	except Exception:
 		# Deliberately broad and deliberately swallowed. See the docstring: the
@@ -273,6 +301,29 @@ def notify(doc, previous: str | None, current: str | None, subject: dict) -> str
 		)
 
 		return None
+
+
+def _text(doc, previous: str | None, current: str | None, subject: dict) -> bool:
+	"""Send the short version to the person's phone, if there is one to send.
+
+	Three ways this quietly does nothing, and all three are ordinary: the site
+	has no SMS app, the person has no number on file, or this event is one of the
+	two that is a letter and not a text. See `_SMS_ON_ENTERING`.
+	"""
+	from vmmsx.notifications.services import sms
+
+	if previous == current:
+		return False
+
+	if current in _ACKNOWLEDGEMENTS and previous in _ACKNOWLEDGEMENTS:
+		return False
+
+	wording = _SMS_ON_ENTERING.get(current or "")
+
+	if not wording:
+		return False
+
+	return sms.tell(subject.get("phone"), _(wording).format(subject.get("kind") or "", doc.name))
 
 
 def _copies(subject: dict, recipient: str) -> list[str]:

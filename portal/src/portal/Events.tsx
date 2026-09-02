@@ -861,6 +861,17 @@ function Card({
 							<dd className="min-w-0 break-words">{row.venue || row.medium}</dd>
 						</div>
 					)}
+					{/* Drawn only once somebody is going. "Nobody yet" on every card in
+					    a listing of a season's events is a grid of discouragement, and
+					    it is what an event published this morning honestly says. */}
+					{Boolean(row.going) && (
+						<div className="flex items-start gap-1.5">
+							<Icon.people size={13} className="mt-0.5 flex-none text-slate-faint" />
+							<dd className="min-w-0">
+								<GoingLine going={row.going} />
+							</dd>
+						</div>
+					)}
 				</dl>
 
 				<div className="mt-3 flex-1" />
@@ -1025,6 +1036,17 @@ export function Event() {
 									{row.medium}
 								</Fact>
 							)}
+
+							{/* The society's own count, not a ticket count. Everybody who
+							    told their branch they mean to be there — which is the
+							    number a coordinator plans transport around, and the
+							    number a person deciding whether to go actually wants.
+							    Names are deliberately not here: saying yes tells the
+							    society, not every other volunteer. The full list lives
+							    in Buzz, behind the link below. */}
+							<Fact icon={<Icon.people size={16} />} label="Going">
+								<GoingLine going={row.going} />
+							</Fact>
 						</dl>
 
 						{/* Buzz's own page copy for the event. Another app's authors, on
@@ -1048,6 +1070,40 @@ export function Event() {
 						</div>
 					</div>
 				</article>
+			)}
+		</>
+	);
+}
+
+/**
+ * How many people have said they will be there, in one sentence.
+ *
+ * **It is careful about what it claims.** These are people who told the society
+ * they mean to come, through this portal — not tickets, not bookings, not
+ * confirmed places. Buzz owns all three of those and the card's call to action
+ * still goes there. So the wording is "going", never "registered" and never
+ * "booked", and the two numbers are allowed to differ without either being
+ * wrong.
+ *
+ * A society renames it like any other label; the count itself is a number and
+ * is not content.
+ */
+function GoingLine({ going }: { going?: number }) {
+	if (!going) {
+		return (
+			<span className="text-slate-faint">
+				<EditableText k="portal.events.going.none" fallback="Nobody has said yet" />
+			</span>
+		);
+	}
+
+	return (
+		<>
+			<span className="font-semibold text-ink">{going}</span>{" "}
+			{going === 1 ? (
+				<EditableText k="portal.events.going.one" fallback="person is going" />
+			) : (
+				<EditableText k="portal.events.going.many" fallback="people are going" />
 			)}
 		</>
 	);

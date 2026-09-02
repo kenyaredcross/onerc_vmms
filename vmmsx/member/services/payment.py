@@ -108,6 +108,21 @@ def request(membership, membership_type) -> dict | None:
 	collect or a transaction is already outstanding. Re-requesting would leave a
 	member with two live payment requests for one membership, which is a
 	support call, not a feature.
+
+	**Which way the fee is collected is the applicant's answer, checked here.**
+	`membership.payment_method` is what they chose on the form; it is validated
+	against what the society actually offers rather than trusted, because it
+	arrived from a browser and a name that is not on the society's list would
+	otherwise reach the payments app as a gateway request. A membership with no
+	method on it — one entered at a desk, or created before anybody was asked —
+	falls back to the society's first offered method, and then to the payments
+	app's own active gateway, which is what this did before anybody was asked at
+	all.
+
+	**This file still knows nothing about a gateway.** It passes a name through
+	and does not read it: there is no M-Pesa here, no STK push and no branch on
+	which driver is active, and swapping one for another remains a setting in the
+	payments app. MEM-01 is unchanged.
 	"""
 	if not is_payable(membership_type):
 		return None
@@ -132,6 +147,8 @@ def request(membership, membership_type) -> dict | None:
 	person = identity.read(member, ("full_name", "email", "phone"))
 	charge = fee(membership_type)
 
+	chosen = _chosen_method(membership)
+
 	response = initiate_payment(
 		amount=charge["amount"],
 		currency=charge["currency"],
@@ -143,11 +160,46 @@ def request(membership, membership_type) -> dict | None:
 		payer_phone=person.get("phone"),
 		payer_email=person.get("email"),
 		metadata=frappe.as_json({"membership_type": membership_type.name, "geo_node": membership.geo_node}),
+		# None means "whatever the payments app has active", which is exactly
+		# what this call did before a method could be chosen.
+		gateway=chosen,
 	)
 
 	membership.payment_transaction = response.get("transaction_id")
 
+	if chosen:
+		# Recorded so a coordinator can see what the applicant asked for even
+		# after the transaction has been reconciled by hand onto another
+		# gateway. What actually collected the money is the payments app's fact
+		# and is read live — see `settlement`.
+		membership.payment_method = chosen
+
 	return response
+
+
+def _chosen_method(membership) -> str | None:
+	"""Which of the society's offered methods this fee should go through.
+
+	Three answers in order, and the middle one is the reason this is a function:
+
+	1. **What the applicant chose**, if the society still offers it. Checked
+	   rather than trusted — the value came from a form.
+	2. **The society's own first choice**, for a membership created without
+	   anybody being asked: a desk entry, a renewal, or a record made before this
+	   question existed. `methods.default()` reads the top of the society's list,
+	   which is their statement of what they would rather people used.
+	3. **None**, which the payments app reads as its own active gateway. That is
+	   what every fee did before this, so a site with no methods configured is
+	   not a site that stops taking money.
+	"""
+	from vmmsx.member.services import methods
+
+	asked = (membership.get("payment_method") or "").strip()
+
+	if asked and methods.is_offered(asked):
+		return asked
+
+	return methods.default()
 
 
 def record_confirmation(membership, amount=None, receipt=None, transaction_id=None) -> bool:

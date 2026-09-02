@@ -180,6 +180,10 @@ const PROFILE: Partial<RedProfile> = {
 	first_name: "Amina",
 	last_name: "Otieno",
 	date_of_birth: "1998-04-02",
+	// Answered, so every walk below gets off the first step. The requirement
+	// itself has its own suite — see "the disability question" — and this is a
+	// person who has already been asked rather than a way around the rule.
+	disability_status: "Prefer not to say",
 };
 
 beforeEach(() => {

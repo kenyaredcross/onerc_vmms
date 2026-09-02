@@ -58,6 +58,12 @@ REQUIRED_DOCUMENT_FIELD = "vmms_is_required_for_volunteers"
 DOCUMENT_ATTACHMENT_FIELD = "vmms_requires_attachment"
 DOCUMENT_MINIMUM_AGE_FIELD = "vmms_minimum_age"
 
+# The vmmsx-owned Custom Field on core's `Red Profile` that holds whether
+# somebody has a disability. Installed by
+# `patches/install_disability_fields.py`, which records why it lives on the
+# spine rather than on the volunteer record.
+DISABILITY_FIELD = "vmms_disability_status"
+
 ACCEPTANCE_FLAG = "vmms_application_accepting"
 
 
@@ -138,6 +144,7 @@ def assert_ready(application) -> None:
 	_assert_identification(application)
 	_assert_identity_documents(application)
 	_assert_date_of_birth(application)
+	_assert_disability_answered(application)
 	_assert_residency_complete(application)
 	questions.assert_answered(application)
 	declarations.assert_accepted(application)
@@ -152,6 +159,37 @@ def _assert_country_of_citizenship(application) -> None:
 		_("Add your Country of Citizenship to your profile before submitting."),
 		frappe.MandatoryError,
 		title=_("Missing Citizenship"),
+	)
+
+
+def _assert_disability_answered(application) -> None:
+	"""A volunteer application needs an answer about disability. Any of the three.
+
+	**Answered, not disclosed.** "Prefer not to say" satisfies this, and that is
+	the whole design: a society running an inclusive programme has to know what
+	adjustments to offer, and the way to ask without coercing anybody is to make
+	*answering* required and disclosure optional. Blank means nobody was asked;
+	declining is a different state and the field holds it.
+
+	**Silent on a site that has not installed the field.** These are Custom
+	Fields, and a bench between syncing this module and running its patch has the
+	doctype and not the column — the same guard `_required_document_types` makes,
+	for the same reason. A society is not refusing every application because a
+	migration has not finished.
+	"""
+	if not frappe.get_meta("Red Profile").has_field(DISABILITY_FIELD):
+		return
+
+	if _profile_value(application, DISABILITY_FIELD):
+		return
+
+	frappe.throw(
+		_(
+			"Answer the disability question on your profile before submitting. You may choose"
+			" not to say."
+		),
+		frappe.MandatoryError,
+		title=_("Question Not Answered"),
 	)
 
 
@@ -627,8 +665,8 @@ def _report(application, previous: str | None) -> None:
 	this function owns is the subject — who the applicant is, the card that goes
 	with an approval, and who else is copied.
 	"""
-	from vmmsx.registration.services import guardian
 	from vmmsx.notifications.services import lifecycle
+	from vmmsx.registration.services import guardian
 
 	person = identity.read(application)
 
@@ -638,6 +676,9 @@ def _report(application, previous: str | None) -> None:
 		contract.state(application),
 		{
 			"email": person.get("email"),
+			# The number the society already holds. A text is the nudge to go and
+			# read the letter, never the letter — see `lifecycle._sms_for`.
+			"phone": person.get("phone"),
 			"name": identity.display_name(application),
 			"kind": _("volunteer"),
 			"geo_path": _geo_path(application),
@@ -910,6 +951,12 @@ def decision_dto(application) -> dict:
 		"gender": person.get("gender"),
 		"date_of_birth": person.get("date_of_birth"),
 		"preferred_language": person.get("preferred_language"),
+		# What the applicant answered about disability, so the branch arranging
+		# their first shift knows to ask about adjustments rather than finding
+		# out on the day. Read live from Red Profile like everything above it.
+		# `None` on a site whose Custom Fields have not been installed yet, which
+		# reads the same as unanswered.
+		"disability_status": person.get(DISABILITY_FIELD),
 		"applied_on": application.applied_on,
 		"country_of_citizenship": person.get("country_of_citizenship"),
 		**residency,

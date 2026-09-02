@@ -107,18 +107,20 @@ def upcoming(
 	different sentences to put in front of somebody, and asking twice would mean
 	a page that changes its mind after it has rendered.
 	"""
+	events = seam.upcoming(
+		search=search,
+		category=category,
+		near=near,
+		venue=venue,
+		host=host,
+		date_from=date_from,
+		date_to=date_to,
+		limit=limit,
+	)
+
 	return {
 		"available": seam.is_available(),
-		"events": seam.upcoming(
-			search=search,
-			category=category,
-			near=near,
-			venue=venue,
-			host=host,
-			date_from=date_from,
-			date_to=date_to,
-			limit=limit,
-		),
+		"events": _with_counts(events),
 	}
 
 
@@ -139,7 +141,49 @@ def detail(event: str) -> dict | None:
 	to `href`. There is no ticket, price or availability in this DTO, because
 	acquiring one is a flow with money in it that this app does not re-implement.
 	"""
-	return seam.detail(event)
+	found = seam.detail(event)
+
+	if not found:
+		return None
+
+	# How many people have told the society they mean to be there. Ours, not
+	# Buzz's — see `attendance.counts` for why the two are different numbers and
+	# why this one is the one a branch plans around.
+	return {**found, "going": attendance.count(event)}
+
+
+@frappe.whitelist()
+def attendees(event: str, limit: int = 200) -> dict:
+	"""Who said they are coming. For the coordinator's screen, not the volunteer's.
+
+	**The only endpoint in this file that names other people, and the only one
+	with a permission check.** Everything else here is either public listing data
+	or the caller's own answer derived from their session. This one hands back a
+	roster, so it asks the framework the plain question — may this person read
+	the attendance register — and refuses otherwise. No self-service role holds
+	that permission and none should: somebody who ticked "I will be there" told
+	their branch, not the whole site.
+
+	The number is served beside the roster rather than counted from it, so a
+	screen showing "20 going" above a list capped at `limit` says something true.
+	"""
+	if not frappe.has_permission(attendance.ATTENDANCE_DOCTYPE, "read"):
+		frappe.throw(
+			frappe._("You are not allowed to see who is attending."), frappe.PermissionError
+		)
+
+	return {
+		"event": event,
+		"going": attendance.count(event),
+		"attendees": attendance.roster(event, limit=limit),
+	}
+
+
+def _with_counts(events: list[dict]) -> list[dict]:
+	"""Put the society's own attendance number on each card, in one query."""
+	tally = attendance.counts([row.get("event") for row in events])
+
+	return [{**row, "going": tally.get(row.get("event"), 0)} for row in events]
 
 
 @frappe.whitelist()
@@ -167,7 +211,9 @@ def attending(include_finished: int = 0) -> dict:
 		# able to tell "you are attending nothing" from "the one thing you were
 		# attending is no longer listed" without asking a second time.
 		"answered": names,
-		"events": seam.by_names(names, include_finished=bool(int(include_finished or 0))),
+		"events": _with_counts(
+			seam.by_names(names, include_finished=bool(int(include_finished or 0)))
+		),
 	}
 
 

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
 	FrappeContext,
@@ -110,6 +110,65 @@ type StepId =
  */
 const LOCAL = "Local";
 const ABROAD = "Abroad";
+
+/**
+ * The three answers to the disability question, spelled as the field spells
+ * them.
+ *
+ * A closed list on both sides — `patches/install_disability_fields.py` holds the
+ * same three — because it is a `Select` and a fourth word here would be an
+ * answer the server refuses. "Prefer not to say" is one of them and not an
+ * absence: declining is a real answer and it satisfies the requirement.
+ */
+const DISABILITY_ANSWERS = ["No", "Yes", "Prefer not to say"];
+
+/* --------------------------------------------------------- identification */
+
+/**
+ * One identity document, as this form holds it.
+ *
+ * Deliberately narrower than the row `Red Profile` stores: `is_primary` is not
+ * here because position says it — the first document somebody lists is their
+ * main one — and `attachment` is not here because this form does not collect
+ * files. A scan a branch attached on the desk survives a correction made here;
+ * see `registration._identification_rows`.
+ */
+type Identification = { id_type: string; id_number: string };
+
+function blankIdentification(): Identification {
+	return { id_type: "", id_number: "" };
+}
+
+/** Enough of a document to be worth sending: a kind, and the number on it. */
+function identificationIsUsable(row: Identification): boolean {
+	return Boolean(row.id_type && row.id_number.trim());
+}
+
+/**
+ * Not half-filled. Either the row is untouched, or it is complete.
+ *
+ * The same bargain `contactIsCoherent` strikes, for the same reason: a passport
+ * with no number is not a document anybody can check, and the server refuses
+ * the pair rather than storing half of it.
+ */
+function identificationIsCoherent(row: Identification): boolean {
+	const touched = Boolean(row.id_type || row.id_number.trim());
+
+	return !touched || identificationIsUsable(row);
+}
+
+/**
+ * The same kind of document listed twice.
+ *
+ * A person has one national card. The server refuses the set — the required
+ * documents check keys by type, so a repeat is a row nobody can see — and this
+ * says so on the step rather than at submission.
+ */
+function repeatedIdentification(rows: Identification[]): boolean {
+	const kinds = rows.filter(identificationIsUsable).map((row) => row.id_type);
+
+	return new Set(kinds).size !== kinds.length;
+}
 
 /* ------------------------------------------------- emergency and guardian */
 
@@ -276,9 +335,39 @@ function JoinBody() {
 	// the selects as they were left. `selectedNode` derives the node from it.
 	const [servingChain, setServingChain] = useState<GeoNode[]>([]);
 	// Arriving from a plan card on the membership tab, the plan is already
-	// chosen. It is a docname, and the step still draws every type with this one
-	// selected, so a person who changed their mind is one click from doing so.
+	// chosen. It is a docname, and it travels with the person into the wizard.
 	const [membershipType, setMembershipType] = useState(params.get("type") ?? "");
+
+	/**
+	 * Was the plan chosen *before* this wizard opened?
+	 *
+	 * Somebody who arrives here has already read the plans, compared what each
+	 * covers and pressed the one they wanted; a step that asks them to choose
+	 * again is the same question twice, and the second time it is asked in a
+	 * worse place — a wizard rail, without the comparison that made the choice.
+	 * So the step is not drawn for them at all.
+	 *
+	 * Read once from the URL the wizard was opened with, exactly like
+	 * `declared`. Changing `membershipType` later must not make a step appear
+	 * underneath somebody, which would renumber every rung mid-registration.
+	 */
+	const [planPreselected, setPlanPreselected] = useState(() => Boolean(params.get("type")));
+
+	/**
+	 * Whether this person has a disability, and what would help.
+	 *
+	 * On the Red Profile like the name and the date of birth, and asked of a
+	 * volunteer only: the society has to know what adjustments to make before it
+	 * sends somebody anywhere, and a membership does not turn on it.
+	 *
+	 * **Answering is required; disclosing is not.** "Prefer not to say" is one of
+	 * the three answers and it satisfies the step — the same rule
+	 * `application._assert_disability_answered` applies on the server. The free
+	 * text beside it is optional whatever was answered: a form that demanded a
+	 * description would punish the disclosure it just asked for.
+	 */
+	const [disability, setDisability] = useState("");
+	const [disabilityNeeds, setDisabilityNeeds] = useState("");
 
 	// --- nationality, which the identity step asks
 	const [citizenship, setCitizenship] = useState("");
@@ -293,16 +382,25 @@ function JoinBody() {
 	const [isCitizen, setIsCitizen] = useState(true);
 
 	// --- identification
-	const [idType, setIdType] = useState("");
-	const [idNumber, setIdNumber] = useState("");
+	//
+	// A list, because `Red Profile` has always held one and a society can insist
+	// on two: a national card *and* a driving licence is a real requirement, and
+	// a form that took a single pair could not satisfy it. One blank row to
+	// begin with, so the step opens as a form rather than as an empty state with
+	// a button on it.
+	const [identifications, setIdentifications] = useState<Identification[]>(() => [
+		blankIdentification(),
+	]);
 
 	// --- who to call, and — for a minor — who says they may volunteer
 	//
-	// One contact and one guardian, because that is what a society needs before
-	// it can approve somebody and what a person filling in a form on a phone will
-	// actually complete. The doctypes are tables and take more; a branch adds the
-	// second on the desk.
-	const [contact, setContact] = useState<EmergencyContact>(() => blankContact());
+	// Contacts are a list for the same reason documents are: `VMMS Emergency
+	// Contact` is a table, a household has more than one number worth holding,
+	// and the branch that has to reach somebody at three in the morning should
+	// not be down to whichever one fitted on the form. The guardian stays
+	// singular — a consent is given by one person, and a second would be a
+	// second answer to whether a minor may volunteer.
+	const [contacts, setContacts] = useState<EmergencyContact[]>(() => [blankContact()]);
 	const [guardian, setGuardian] = useState<GuardianConsent>(() => blankGuardian());
 
 	// Keys of the declarations ticked so far. A set rather than a per-declaration
@@ -387,7 +485,12 @@ function JoinBody() {
 		setExperience(remembered.prior_experience ?? "");
 		setAnswers(remembered.answers ?? {});
 		setAccepted(remembered.declarations ?? []);
-		setContact(remembered.emergency_contacts?.[0] ?? blankContact());
+		// A draft with no contacts on it still gets one empty row to type into.
+		setContacts(
+			remembered.emergency_contacts?.length
+				? remembered.emergency_contacts
+				: [blankContact()],
+		);
 		setGuardian(remembered.guardian_consents?.[0] ?? blankGuardian());
 		setRestoredDraft(remembered.name);
 	}, [draft.data, restoredDraft]);
@@ -404,10 +507,21 @@ function JoinBody() {
 		setDateOfBirth(known.date_of_birth ?? "");
 		setPhoto(known.profile_photo ?? "");
 		setCitizenship(known.country_of_citizenship ?? "");
+		setDisability(known.disability_status ?? "");
+		setDisabilityNeeds(known.disability_needs ?? "");
 
-		const primaryIdentification = known.identifications?.[0];
-		setIdType(primaryIdentification?.id_type ?? "");
-		setIdNumber(primaryIdentification?.id_number ?? "");
+		// Everything core already holds, primary first — `my_profile` orders it —
+		// rather than only the main one. A returning applicant who produced two
+		// documents last time sees both, and correcting one does not silently
+		// drop the other.
+		setIdentifications(
+			known.identifications?.length
+				? known.identifications.map((row) => ({
+						id_type: row.id_type,
+						id_number: row.id_number,
+					}))
+				: [blankIdentification()],
+		);
 	}, [existing.data]);
 
 	const identityOptions = useFrappeGetCall<{ message: IdentityOptions }>(
@@ -445,6 +559,21 @@ function JoinBody() {
 	const priced = types.data?.message?.types ?? [];
 	const memberQuestions = types.data?.message?.questions;
 	const chosenType = priced.find((row) => row.membership_type === membershipType) ?? null;
+
+	/**
+	 * A `type` that names nothing puts the step back.
+	 *
+	 * The docname arrives in a URL, and a URL can be stale, hand-typed, or point
+	 * at a membership the society has since retired. Skipping the step on the
+	 * strength of it alone would strand somebody on a registration carrying a
+	 * plan they can neither see nor change. Held until the types have actually
+	 * loaded, because "not fetched yet" and "not offered" are both an empty list
+	 * and only one of them should redraw the rail.
+	 */
+	useEffect(() => {
+		if (!planPreselected || !types.data) return;
+		if (!chosenType) setPlanPreselected(false);
+	}, [planPreselected, types.data, chosenType]);
 
 	// Citizenship starts where the society's own configuration says it starts —
 	// the same society default the registration endpoint uses, shown on the form
@@ -598,8 +727,8 @@ function JoinBody() {
 	}, [minorAge, dateOfBirth]);
 
 	const steps = useMemo(
-		() => stepsFor(path, declared, questions, declarations),
-		[path, declared, questions, declarations],
+		() => stepsFor(path, declared, questions, declarations, planPreselected),
+		[path, declared, questions, declarations, planPreselected],
 	);
 
 	// A tick that was never touched still has to be sent, because not sending it
@@ -634,11 +763,18 @@ function JoinBody() {
 					// dropped, and it is required of a volunteer for the same reason
 					// `assert_ready` requires it: a country of citizenship, not a
 					// screen, is what the society actually needs.
-					(path !== "volunteer" || (dateOfBirth && citizenship)),
+					(path !== "volunteer" || (dateOfBirth && citizenship && disability)),
 			);
 		if (id === "plan") return Boolean(membershipType);
 		if (id === "placement") return Boolean(node);
-		if (id === "identification") return Boolean(idType && idNumber.trim());
+		// One complete document at least, nothing half-filled, and no kind listed
+		// twice — which is exactly what the server will accept.
+		if (id === "identification")
+			return (
+				identifications.some(identificationIsUsable) &&
+				identifications.every(identificationIsCoherent) &&
+				!repeatedIdentification(identifications)
+			);
 
 		// An emergency contact is a condition of *approval*, not of submission —
 		// `assert_approvable`, not `assert_ready` — so this step can be walked
@@ -648,7 +784,8 @@ function JoinBody() {
 		// The guardian block is the same bargain, and deliberately so. A minor
 		// whose parent has not signed anything yet should be able to send the
 		// application and let the branch chase the form.
-		if (id === "emergency") return contactIsCoherent(contact) && guardianIsCoherent(guardian);
+		if (id === "emergency")
+			return contacts.every(contactIsCoherent) && guardianIsCoherent(guardian);
 
 		// Every required declaration, which is `declarations.assert_accepted`
 		// asked here so the button says so rather than the submission failing.
@@ -782,11 +919,20 @@ function JoinBody() {
 						...identity,
 						geo_node: node?.name,
 						country_of_citizenship: citizenship,
+						disability_status: disability,
+						// Sent as an empty string rather than omitted when it is
+						// blank, so clearing a description somebody no longer wants
+						// on file actually clears it. `None` means "leave alone" on
+						// the server; "" means "cleared".
+						disability_needs: disabilityNeeds,
 						// Not collected on any screen — derived, or left alone. See
 						// `residence`.
 						...residence,
-						id_type: idType || undefined,
-						id_number: idNumber || undefined,
+						// The whole set, not the first of it. Half-filled rows are
+						// dropped rather than sent: the server refuses a document
+						// with a type and no number, and a spare row at the bottom
+						// of a form is a browser artefact rather than an answer.
+						identifications: identifications.filter(identificationIsUsable),
 						skills,
 						languages,
 						availability,
@@ -794,10 +940,10 @@ function JoinBody() {
 						prior_experience: experience,
 						answers,
 						declarations_accepted: accepted,
-						// One row or none. A half-filled contact is dropped rather
-						// than stored, because the server counts contacts and a
-						// nameless one would count.
-						emergency_contacts: contactIsUsable(contact) ? [contact] : [],
+						// Every contact somebody actually filled in. Half-filled
+						// rows are dropped rather than stored, because the server
+						// counts contacts and a nameless one would count.
+						emergency_contacts: contacts.filter(contactIsUsable),
 						// Only ever sent for a minor. An applicant who turns out to
 						// be an adult must not leave a guardian record behind them,
 						// and one who was a minor when they started the form and is
@@ -912,13 +1058,32 @@ function JoinBody() {
 		return () => window.clearTimeout(timer);
 	}, [saved]);
 
+	/**
+	 * What the rail says about identification, in one line.
+	 *
+	 * The society's own word for the document rather than its docname, and a
+	 * count when there is more than one — "National ID +1" is what somebody
+	 * scanning a rail can read, and the full list is on the last step.
+	 */
+	const usableIdentifications = identifications.filter(identificationIsUsable);
+	const identificationSummary =
+		usableIdentifications.length === 0
+			? null
+			: [
+					options?.id_types.find((row) => row.key === usableIdentifications[0].id_type)?.label ??
+						usableIdentifications[0].id_type,
+					usableIdentifications.length > 1 ? `+${usableIdentifications.length - 1}` : "",
+				]
+					.filter(Boolean)
+					.join(" ");
+
 	const ready = complete(step.id);
 	const canSaveDraft = Boolean(
 		firstName.trim() &&
 			lastName.trim() &&
 			node &&
 			(path !== "member" || membershipType) &&
-			(path !== "volunteer" || Boolean(idType) === Boolean(idNumber.trim())),
+			(path !== "volunteer" || identifications.every(identificationIsCoherent)),
 	);
 
 	return (
@@ -1016,7 +1181,7 @@ function JoinBody() {
 									node={node}
 									type={chosenType}
 									citizenship={citizenship}
-									idType={options?.id_types.find((row) => row.key === idType)?.label ?? null}
+									idType={identificationSummary}
 									chips={skills.length + languages.length + availability.length + motivations.length}
 								/>
 							}
@@ -1109,6 +1274,10 @@ function JoinBody() {
 												onGender={setGender}
 												onDateOfBirth={setDateOfBirth}
 												onPhoto={setPhoto}
+												disability={disability}
+												onDisability={setDisability}
+												disabilityNeeds={disabilityNeeds}
+												onDisabilityNeeds={setDisabilityNeeds}
 											/>
 										)}
 
@@ -1135,10 +1304,8 @@ function JoinBody() {
 											<IdentificationStep
 												options={options}
 												loading={applicationOptions.isLoading}
-												idType={idType}
-												onIdType={setIdType}
-												idNumber={idNumber}
-												onIdNumber={setIdNumber}
+												rows={identifications}
+												onRows={setIdentifications}
 											/>
 										)}
 
@@ -1161,8 +1328,8 @@ function JoinBody() {
 
 										{step.id === "emergency" && (
 											<EmergencyStep
-												contact={contact}
-												onContact={setContact}
+												contacts={contacts}
+												onContacts={setContacts}
 												isMinor={isMinor}
 												minorAge={minorAge}
 												guardian={guardian}
@@ -1211,10 +1378,13 @@ function JoinBody() {
 												chain={servingChain}
 												type={chosenType}
 												citizenship={citizenship}
-												idTypeLabel={
-													options?.id_types.find((row) => row.key === idType)?.label ?? idType
-												}
-												idNumber={idNumber}
+												disability={disability}
+												identifications={usableIdentifications.map((row) => ({
+													label:
+														options?.id_types.find((entry) => entry.key === row.id_type)
+															?.label ?? row.id_type,
+													number: row.id_number,
+												}))}
 												declared={{
 													skills: labelsFor(options?.skills, skills),
 													languages: labelsFor(options?.languages, languages),
@@ -1238,7 +1408,7 @@ function JoinBody() {
 																	? "File attached"
 																	: answers[question.name],
 													}))}
-												contact={contact}
+												contacts={contacts.filter(contactIsUsable)}
 												isMinor={isMinor}
 												guardian={guardian}
 												consents={declarations.map((declaration) => ({
@@ -1382,6 +1552,7 @@ function stepsFor(
 	asked: boolean,
 	questions: SocietyQuestion[],
 	declarations: Declaration[],
+	planChosen: boolean = false,
 ): StepDef[] {
 	const shared: Record<"path" | "identity" | "questions" | "consents" | "confirm", StepDef> = {
 		path: {
@@ -1523,6 +1694,11 @@ function stepsFor(
 
 	return steps
 		.filter((entry) => entry.id !== "path" || !asked)
+		// A plan chosen on the way in is a question already answered. See
+		// `planPreselected`: asking it a second time, in a worse place than the
+		// one it was answered in, is not a confirmation — it is a form doubting
+		// somebody. What they picked is still on the last step to check.
+		.filter((entry) => entry.id !== "plan" || !planChosen)
 		// A society that asks nothing extra gets no step for it, rather than an
 		// empty page between the last answer and Submit.
 		.filter((entry) => entry.id !== "questions" || questions.length > 0)
@@ -1932,6 +2108,10 @@ function IdentityStep({
 	onGender,
 	onDateOfBirth,
 	onPhoto,
+	disability,
+	onDisability,
+	disabilityNeeds,
+	onDisabilityNeeds,
 }: {
 	profile: RedProfile | null;
 	genders: string[];
@@ -1953,6 +2133,10 @@ function IdentityStep({
 	onGender: (v: string) => void;
 	onDateOfBirth: (v: string) => void;
 	onPhoto: (v: string) => void;
+	disability: string;
+	onDisability: (v: string) => void;
+	disabilityNeeds: string;
+	onDisabilityNeeds: (v: string) => void;
 }) {
 	return (
 		<div className="space-y-5">
@@ -2032,6 +2216,46 @@ function IdentityStep({
 						isCitizen={isCitizen}
 						onIsCitizen={onIsCitizen}
 					/>
+				</FieldSet>
+			)}
+
+			{/* Volunteers only, for the same reason nationality is: a society has
+			    to know what adjustments to make before it sends somebody
+			    anywhere, and a membership does not turn on it. */}
+			{path === "volunteer" && (
+				<FieldSet
+					title="Access and support"
+					description="So your branch knows what to arrange. Answering is required; saying more is not."
+				>
+					<div className="grid gap-5 sm:grid-cols-2">
+						<Field label="Do you have a disability?" required htmlFor="join-disability">
+							<SelectInput
+								id="join-disability"
+								value={disability}
+								options={DISABILITY_ANSWERS}
+								onChange={onDisability}
+								placeholder="Choose an answer"
+							/>
+						</Field>
+
+						{/* Drawn only on "Yes". A description box under "No" is a form
+						    asking a question it has already been answered, and under
+						    "Prefer not to say" it is a form arguing with somebody. */}
+						{disability === "Yes" && (
+							<Field
+								label="Anything that would help"
+								htmlFor="join-disability-needs"
+								hint="Access, equipment, the kind of task. Optional — leave it blank and your branch will ask."
+							>
+								<TextArea
+									id="join-disability-needs"
+									value={disabilityNeeds}
+									onChange={onDisabilityNeeds}
+									rows={3}
+								/>
+							</Field>
+						)}
+					</div>
 				</FieldSet>
 			)}
 
@@ -2230,20 +2454,36 @@ function CitizenshipQuestion({
 	);
 }
 
+/**
+ * The documents somebody produces, however many that is.
+ *
+ * **One was never the model.** `Red Profile` has held a *table* of
+ * identifications since it was written, the coordinator's view has always shown
+ * all of them, and a society can mark two different types required at once —
+ * which made this step, asking for a single pair, a form that could not satisfy
+ * the configuration sitting next to it. So the step lists documents and the
+ * person adds the ones they hold.
+ *
+ * **The first row is the main one, and nothing says so on screen.** Order is
+ * the whole statement — the server reads position and sets the flag — because a
+ * "primary" radio beside two rows is a control asking somebody to rank their own
+ * passport, which is a question nobody has an opinion about.
+ *
+ * **Removing is only offered when there is something to remove.** A single row
+ * has no remove button: emptying the step is not a thing anybody wants, and a
+ * control that would leave a required step blank is a trap rather than a
+ * choice.
+ */
 function IdentificationStep({
 	options,
 	loading,
-	idType,
-	onIdType,
-	idNumber,
-	onIdNumber,
+	rows,
+	onRows,
 }: {
 	options?: ApplicationOptions;
 	loading: boolean;
-	idType: string;
-	onIdType: (v: string) => void;
-	idNumber: string;
-	onIdNumber: (v: string) => void;
+	rows: Identification[];
+	onRows: (next: Identification[]) => void;
 }) {
 	if (loading || !options) return <Spinner label="Loading…" />;
 
@@ -2256,20 +2496,84 @@ function IdentificationStep({
 		);
 	}
 
-	return (
-		<div className="grid max-w-xl gap-5 sm:grid-cols-2">
-			<Field label="ID type" required htmlFor="join-id-type">
-				<VocabularySelect
-					id="join-id-type"
-					value={idType}
-					onChange={onIdType}
-					options={options.id_types}
-				/>
-			</Field>
+	const set = (index: number, key: keyof Identification, value: string) =>
+		onRows(rows.map((row, at) => (at === index ? { ...row, [key]: value } : row)));
 
-			<Field label="ID number" required htmlFor="join-id-number">
-				<TextInput id="join-id-number" value={idNumber} onChange={onIdNumber} />
-			</Field>
+	const remove = (index: number) => onRows(rows.filter((_row, at) => at !== index));
+
+	// A kind already listed is not offered again in the other rows' pickers, so
+	// the repeat this step refuses cannot be chosen in the first place. The row's
+	// own current value always stays in its own list, or choosing it would
+	// remove it from under the person who chose it.
+	const taken = new Set(rows.map((row) => row.id_type).filter(Boolean));
+
+	return (
+		<div className="max-w-xl space-y-4">
+			{rows.map((row, index) => (
+				<div
+					key={index}
+					className={cx(
+						"grid gap-5 sm:grid-cols-2",
+						index > 0 && "border-t border-card-line pt-4",
+					)}
+				>
+					<Field
+						label={index === 0 ? "ID type" : "Another ID type"}
+						required={index === 0}
+						htmlFor={`join-id-type-${index}`}
+					>
+						<VocabularySelect
+							id={`join-id-type-${index}`}
+							value={row.id_type}
+							onChange={(value) => set(index, "id_type", value)}
+							options={options.id_types.filter(
+								(entry) => entry.key === row.id_type || !taken.has(entry.key),
+							)}
+						/>
+					</Field>
+
+					<Field
+						label="ID number"
+						required={index === 0}
+						htmlFor={`join-id-number-${index}`}
+					>
+						<TextInput
+							id={`join-id-number-${index}`}
+							value={row.id_number}
+							onChange={(value) => set(index, "id_number", value)}
+						/>
+					</Field>
+
+					{rows.length > 1 && (
+						<div className="sm:col-span-2">
+							<button
+								type="button"
+								onClick={() => remove(index)}
+								className="text-[11.5px] font-semibold text-slate-faint underline-offset-2 hover:text-danger hover:underline"
+							>
+								Remove this document
+							</button>
+						</div>
+					)}
+				</div>
+			))}
+
+			{/* Offered only when the society actually recognises another kind, so
+			    a society with one document type gets no button that adds a row
+			    with nothing to put in it. */}
+			{rows.length < options.id_types.length && (
+				<Button
+					variant="navy"
+					onClick={() => onRows([...rows, blankIdentification()])}
+					disabled={!rows.every(identificationIsCoherent)}
+				>
+					Add another document
+				</Button>
+			)}
+
+			<p className="text-[11.5px] leading-relaxed text-slate-faint">
+				One is enough for most people. Add more if your branch has asked for them.
+			</p>
 		</div>
 	);
 }
@@ -2615,22 +2919,24 @@ function DeclarationStep({
  * still send the application in and let the branch chase it.
  */
 function EmergencyStep({
-	contact,
-	onContact,
+	contacts,
+	onContacts,
 	isMinor,
 	minorAge,
 	guardian,
 	onGuardian,
 }: {
-	contact: EmergencyContact;
-	onContact: (next: EmergencyContact) => void;
+	contacts: EmergencyContact[];
+	onContacts: (next: EmergencyContact[]) => void;
 	isMinor: boolean;
 	minorAge: number | null;
 	guardian: GuardianConsent;
 	onGuardian: (next: GuardianConsent) => void;
 }) {
-	const set = <K extends keyof EmergencyContact>(key: K, value: EmergencyContact[K]) =>
-		onContact({ ...contact, [key]: value });
+	const first = contacts[0] ?? blankContact();
+
+	const set = <K extends keyof EmergencyContact>(index: number, key: K, value: EmergencyContact[K]) =>
+		onContacts(contacts.map((row, at) => (at === index ? { ...row, [key]: value } : row)));
 	const setGuardian = <K extends keyof GuardianConsent>(key: K, value: GuardianConsent[K]) =>
 		onGuardian({ ...guardian, [key]: value });
 
@@ -2638,78 +2944,121 @@ function EmergencyStep({
 		<div className="space-y-9">
 			<FieldSet
 				title="Someone we can call"
-				description="If something happens while you are volunteering, this is who we would contact. You can change it later."
+				description="If something happens while you are volunteering, this is who we would contact. You can add more than one, and you can change them later."
 			>
-				<div className="grid gap-5 sm:grid-cols-2">
-					<Field label="Their name" htmlFor="ec-name">
-						<TextInput
-							id="ec-name"
-							value={contact.contact_name}
-							onChange={(value) => set("contact_name", value)}
-							placeholder="Full name"
-						/>
-					</Field>
-
-					<Field label="How you know them" htmlFor="ec-rel">
-						<TextInput
-							id="ec-rel"
-							value={contact.relationship}
-							onChange={(value) => set("relationship", value)}
-							placeholder="Mother, brother, friend"
-						/>
-					</Field>
-
-					<Field label="Phone number" htmlFor="ec-phone">
-						<TextInput
-							id="ec-phone"
-							type="tel"
-							value={contact.primary_phone}
-							onChange={(value) => set("primary_phone", value)}
-							placeholder="Their main number"
-						/>
-					</Field>
-
-					<Field
-						label="Another number"
-						htmlFor="ec-alt"
-						hint="If there is somewhere else we could try."
-					>
-						<TextInput
-							id="ec-alt"
-							type="tel"
-							value={contact.alternative_phone ?? ""}
-							onChange={(value) => set("alternative_phone", value)}
-							placeholder="Optional"
-						/>
-					</Field>
-
-					<div className="sm:col-span-2">
-						{/* Not a formality. An unticked box means we hold a number we
-						    have been told not to call, which is a different state
-						    from holding no number — and the server counts only the
-						    contacts somebody actually permitted. */}
-						<label
-							htmlFor="ec-permission"
-							className="flex cursor-pointer items-start gap-3 rounded-xl border border-card-line bg-canvas-soft p-4"
+				<div className="space-y-6">
+					{contacts.map((contact, index) => (
+						<div
+							key={index}
+							className={cx(
+								"grid gap-5 sm:grid-cols-2",
+								index > 0 && "border-t border-card-line pt-6",
+							)}
 						>
-							<input
-								id="ec-permission"
-								type="checkbox"
-								className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
-								checked={Boolean(contact.may_contact_in_emergency)}
-								onChange={(event) => set("may_contact_in_emergency", event.target.checked)}
-							/>
-							<span>
-								<span className="block text-[13px] font-semibold leading-snug text-ink">
-									We may contact this person in an emergency
-								</span>
-								<span className="mt-1 block text-[11.5px] leading-relaxed text-slate-faint">
-									Leave this unticked and we will keep the number on file without using
-									it.
-								</span>
-							</span>
-						</label>
-					</div>
+							{/* The second and later contacts are numbered, because two
+							    blocks of identically labelled fields on one screen are
+							    ambiguous to read and unusable with a screen reader. The
+							    first is not, because on the overwhelmingly common form
+							    with one contact there is nothing to number. */}
+							{index > 0 && (
+								<p className="sm:col-span-2 text-[11px] font-bold uppercase tracking-wider text-slate-faint">
+									Contact {index + 1}
+								</p>
+							)}
+
+							<Field label="Their name" htmlFor={`ec-name-${index}`}>
+								<TextInput
+									id={`ec-name-${index}`}
+									value={contact.contact_name}
+									onChange={(value) => set(index, "contact_name", value)}
+									placeholder="Full name"
+								/>
+							</Field>
+
+							<Field label="How you know them" htmlFor={`ec-rel-${index}`}>
+								<TextInput
+									id={`ec-rel-${index}`}
+									value={contact.relationship}
+									onChange={(value) => set(index, "relationship", value)}
+									placeholder="Mother, brother, friend"
+								/>
+							</Field>
+
+							<Field label="Phone number" htmlFor={`ec-phone-${index}`}>
+								<TextInput
+									id={`ec-phone-${index}`}
+									type="tel"
+									value={contact.primary_phone}
+									onChange={(value) => set(index, "primary_phone", value)}
+									placeholder="Their main number"
+								/>
+							</Field>
+
+							<Field
+								label="Another number"
+								htmlFor={`ec-alt-${index}`}
+								hint="If there is somewhere else we could try."
+							>
+								<TextInput
+									id={`ec-alt-${index}`}
+									type="tel"
+									value={contact.alternative_phone ?? ""}
+									onChange={(value) => set(index, "alternative_phone", value)}
+									placeholder="Optional"
+								/>
+							</Field>
+
+							<div className="sm:col-span-2">
+								{/* Not a formality. An unticked box means we hold a number we
+								    have been told not to call, which is a different state
+								    from holding no number — and the server counts only the
+								    contacts somebody actually permitted. */}
+								<label
+									htmlFor={`ec-permission-${index}`}
+									className="flex cursor-pointer items-start gap-3 rounded-xl border border-card-line bg-canvas-soft p-4"
+								>
+									<input
+										id={`ec-permission-${index}`}
+										type="checkbox"
+										className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
+										checked={Boolean(contact.may_contact_in_emergency)}
+										onChange={(event) =>
+											set(index, "may_contact_in_emergency", event.target.checked)
+										}
+									/>
+									<span>
+										<span className="block text-[13px] font-semibold leading-snug text-ink">
+											We may contact this person in an emergency
+										</span>
+										<span className="mt-1 block text-[11.5px] leading-relaxed text-slate-faint">
+											Leave this unticked and we will keep the number on file without using
+											it.
+										</span>
+									</span>
+								</label>
+							</div>
+
+							{contacts.length > 1 && (
+								<div className="sm:col-span-2">
+									<button
+										type="button"
+										onClick={() => onContacts(contacts.filter((_row, at) => at !== index))}
+										className="text-[11.5px] font-semibold text-slate-faint underline-offset-2 hover:text-danger hover:underline"
+									>
+										Remove this contact
+									</button>
+								</div>
+							)}
+						</div>
+					))}
+
+					<Button
+						variant="navy"
+						onClick={() => onContacts([...contacts, blankContact()])}
+						disabled={!contacts.every(contactIsCoherent)}
+					>
+						Add another contact
+					</Button>
 				</div>
 			</FieldSet>
 
@@ -2724,12 +3073,12 @@ function EmergencyStep({
 							onClick={() =>
 								onGuardian({
 									...guardian,
-									guardian_name: contact.contact_name,
-									relationship: contact.relationship,
-									phone: contact.primary_phone,
+									guardian_name: first.contact_name,
+									relationship: first.relationship,
+									phone: first.primary_phone,
 								})
 							}
-							disabled={!contact.contact_name.trim()}
+							disabled={!first.contact_name.trim()}
 						>
 							Same as the person above
 						</Button>
@@ -2940,12 +3289,12 @@ function ConfirmStep({
 	chain,
 	type,
 	citizenship,
-	idTypeLabel,
-	idNumber,
+	disability,
+	identifications,
 	declared,
 	experience,
 	societyAnswers,
-	contact,
+	contacts,
 	isMinor,
 	guardian,
 	consents,
@@ -2963,17 +3312,24 @@ function ConfirmStep({
 	chain: GeoNode[];
 	type: PricedType | null;
 	citizenship: string;
-	idTypeLabel: string;
-	idNumber: string;
+	/** The disability answer, or an empty string on the member path. */
+	disability: string;
+	/** Already resolved to the society's own words, and already filtered. */
+	identifications: Array<{ label: string; number: string }>;
 	declared: Record<"skills" | "languages" | "availability" | "motivations", string[]>;
 	experience: string;
 	societyAnswers: Array<{ label: string; shown: string }>;
-	contact: EmergencyContact;
+	/** Only the ones that will actually be sent. */
+	contacts: EmergencyContact[];
 	isMinor: boolean;
 	guardian: GuardianConsent;
 	consents: Array<{ name: string; title: string; version: string; accepted: boolean }>;
 }) {
 	const indexOf = (id: StepId) => steps.findIndex((entry) => entry.id === id);
+
+	// A step this registration never drew has nowhere to send anybody. Undefined
+	// rather than -1, which `goTo` would clamp to the first screen.
+	const editor = (id: StepId) => (indexOf(id) < 0 ? undefined : () => onEdit(indexOf(id)));
 
 	return (
 		<div className="space-y-5">
@@ -2987,11 +3343,12 @@ function ConfirmStep({
 				// Read back where it was answered. Nationality has no step of its
 				// own any more, so it belongs on the card for the step that asks it.
 				citizenship={path === "volunteer" ? citizenship : null}
-				onEdit={() => onEdit(indexOf("identity"))}
+				disability={path === "volunteer" ? disability || null : null}
+				onEdit={editor("identity")}
 			/>
 
 			{path === "member" && (
-				<Review title="Your membership" onEdit={() => onEdit(indexOf("plan"))}>
+				<Review title="Your membership" onEdit={editor("plan")}>
 					<Line label="Membership" value={type?.membership_type_name ?? null} />
 					<Line
 						label="Fee"
@@ -3016,7 +3373,7 @@ function ConfirmStep({
 
 			<Review
 				title={path === "member" ? "Your branch" : "Where you would serve"}
-				onEdit={() => onEdit(indexOf("placement"))}
+				onEdit={editor("placement")}
 			>
 				<Trail label="Placement" chain={chain} />
 				<Line label="Recorded at" value={node?.level_name ?? null} />
@@ -3024,12 +3381,20 @@ function ConfirmStep({
 
 			{path === "volunteer" && (
 				<>
-					<Review title="Identification" onEdit={() => onEdit(indexOf("identification"))}>
-						<Line label="ID type" value={idTypeLabel} />
-						<Line label="ID number" value={idNumber} mono />
+					<Review title="Identification" onEdit={editor("identification")}>
+						{identifications.length === 0 ? (
+							<Line label="ID type" value={null} />
+						) : (
+							// The document's own name as the label, so two rows do not
+							// read as "ID type / ID type" with no way to tell which
+							// number belongs to which.
+							identifications.map((row) => (
+								<Line key={row.label} label={row.label} value={row.number} mono />
+							))
+						)}
 					</Review>
 
-					<Review title="Your volunteering" onEdit={() => onEdit(indexOf("declaration"))}>
+					<Review title="Your volunteering" onEdit={editor("declaration")}>
 						<Chips label="Skills" values={declared.skills} />
 						<Chips label="Languages" values={declared.languages} />
 						<Chips label="Availability" values={declared.availability} />
@@ -3037,27 +3402,38 @@ function ConfirmStep({
 						<Block label="Anything done before" value={experience} />
 					</Review>
 
-					<Review title="If something happens" onEdit={() => onEdit(indexOf("emergency"))}>
-						<Line label="We would call" value={contact.contact_name || null} />
-						<Line label="Who they are" value={contact.relationship || null} />
-						<Line label="On" value={contact.primary_phone || null} mono />
-						<Line
-							label="Another number"
-							value={contact.alternative_phone || null}
-							mono
-						/>
-						{contactIsUsable(contact) && !contact.may_contact_in_emergency && (
-							<Block
-								label="Permission"
-								value="You have asked us not to contact this person. We will keep the number on file without using it."
-							/>
+					<Review title="If something happens" onEdit={editor("emergency")}>
+						{contacts.length === 0 ? (
+							<Line label="We would call" value={null} />
+						) : (
+							contacts.map((entry, index) => (
+								<Fragment key={index}>
+									<Line
+										label={contacts.length > 1 ? `We would call (${index + 1})` : "We would call"}
+										value={entry.contact_name || null}
+									/>
+									<Line label="Who they are" value={entry.relationship || null} />
+									<Line label="On" value={entry.primary_phone || null} mono />
+									<Line
+										label="Another number"
+										value={entry.alternative_phone || null}
+										mono
+									/>
+									{!entry.may_contact_in_emergency && (
+										<Block
+											label="Permission"
+											value={`You have asked us not to contact ${entry.contact_name || "this person"}. We will keep the number on file without using it.`}
+										/>
+									)}
+								</Fragment>
+							))
 						)}
 					</Review>
 
 					{isMinor && (
 						<Review
 							title="Your parent or guardian"
-							onEdit={() => onEdit(indexOf("emergency"))}
+							onEdit={editor("emergency")}
 						>
 							<Line label="Name" value={guardian.guardian_name || null} />
 							<Line label="Who they are" value={guardian.relationship || null} />
@@ -3080,7 +3456,7 @@ function ConfirmStep({
 			    Drawn from the answers rather than the question list, so a question
 			    left blank because it was optional takes no room here. */}
 			{societyAnswers.length > 0 && (
-				<Review title="What your society asked" onEdit={() => onEdit(indexOf("questions"))}>
+				<Review title="What your society asked" onEdit={editor("questions")}>
 					{societyAnswers.map((answer) => (
 						<Block key={answer.label} label={answer.label} value={answer.shown} />
 					))}
@@ -3092,7 +3468,7 @@ function ConfirmStep({
 			    would bury the rest of the review. The version is shown because it
 			    is what gets stored beside their acceptance. */}
 			{consents.length > 0 && (
-				<Review title="What you agreed to" onEdit={() => onEdit(indexOf("consents"))}>
+				<Review title="What you agreed to" onEdit={editor("consents")}>
 					{consents.map((consent) => (
 						<Line
 							key={consent.name}
@@ -3128,7 +3504,15 @@ function Review({
 	children,
 }: {
 	title: string;
-	onEdit: () => void;
+	/**
+	 * Where Edit goes, or nothing when there is no screen to go back to.
+	 *
+	 * A plan chosen before the wizard opened has no step in it — see
+	 * `planPreselected` — and an Edit that quietly landed on step one would be
+	 * worse than no Edit at all. Absent rather than disabled: a control that
+	 * cannot act is not a control.
+	 */
+	onEdit?: () => void;
 	children: React.ReactNode;
 }) {
 	return (
@@ -3137,13 +3521,15 @@ function Review({
 				<h3 className="text-[12px] font-semibold uppercase tracking-wider text-ink">
 					{title}
 				</h3>
-				<button
-					type="button"
-					onClick={onEdit}
-					className="rounded-[4px] px-1.5 py-0.5 text-[11.5px] font-bold text-ink transition hover:bg-rail/10"
-				>
-					Edit
-				</button>
+				{onEdit && (
+					<button
+						type="button"
+						onClick={onEdit}
+						className="rounded-[4px] px-1.5 py-0.5 text-[11.5px] font-bold text-ink transition hover:bg-rail/10"
+					>
+						Edit
+					</button>
+				)}
 			</header>
 			<dl className="grid gap-x-6 gap-y-4 px-4 py-4 sm:grid-cols-2">{children}</dl>
 		</section>
@@ -3277,6 +3663,7 @@ function PersonCard({
 	dateOfBirth,
 	photo,
 	citizenship,
+	disability,
 	onEdit,
 }: {
 	name: string;
@@ -3287,7 +3674,12 @@ function PersonCard({
 	photo: string;
 	/** Null on the member path, which is never asked for one. */
 	citizenship: string | null;
-	onEdit: () => void;
+	/** The disability answer, or null on the member path. Never the free text:
+	    what somebody wrote about themselves belongs on the record their branch
+	    reads, not on a summary card. */
+	disability: string | null;
+	/** Absent when this registration never drew the step. See `Review`. */
+	onEdit?: () => void;
 }) {
 	const monogram =
 		name
@@ -3332,13 +3724,15 @@ function PersonCard({
 					</p>
 				</div>
 
-				<button
-					type="button"
-					onClick={onEdit}
-					className="flex-none rounded-[4px] px-1.5 py-0.5 text-[11.5px] font-bold text-ink transition hover:bg-rail/10"
-				>
-					Edit
-				</button>
+				{onEdit && (
+					<button
+						type="button"
+						onClick={onEdit}
+						className="flex-none rounded-[4px] px-1.5 py-0.5 text-[11.5px] font-bold text-ink transition hover:bg-rail/10"
+					>
+						Edit
+					</button>
+				)}
 			</div>
 
 			<dl className="grid gap-x-6 gap-y-4 px-4 py-4 sm:grid-cols-3">
@@ -3346,6 +3740,7 @@ function PersonCard({
 				<Line label="Gender" value={gender} />
 				<Line label="Date of birth" value={dateOfBirth ? formatDate(dateOfBirth) : null} />
 				{citizenship && <Line label="Nationality" value={citizenship} />}
+				{disability && <Line label="Disability" value={disability} />}
 			</dl>
 		</section>
 	);

@@ -4,7 +4,7 @@ import { ContentProvider } from "../content/ContentProvider";
 import { API } from "../lib/api";
 import { geoPath } from "../lib/format";
 import { Icon } from "../ui/icons";
-import { PortalShell, type PortalNavItem } from "./PortalShell";
+import { PortalShell, type PortalCompanion, type PortalNavItem } from "./PortalShell";
 import type { DeploymentInvitation, RedProfile, TaskSummary, VolunteerProfile } from "./types";
 
 /**
@@ -65,7 +65,21 @@ export default function PortalLayout() {
 		message: { volunteer: string; waiting: DeploymentInvitation[]; answered: DeploymentInvitation[] } | null;
 	}>(API.myInvitations, undefined, "portal:my_invitations");
 
+	// Learning, chat and the service desk, when a society runs them beside this.
+	// Shared SWR key with the console's rail: a coordinator who moves between
+	// the two surfaces pays for this answer once.
+	const companions = useFrappeGetCall<{
+		message: { apps: Array<{ app: string; href: string; label_key: string; fallback: string }> };
+	}>(API.companionApps, undefined, "portal:companion_apps");
+
 	const openTasks = tasks.data?.message?.tasks.length ?? 0;
+
+	const companionItems: PortalCompanion[] = (companions.data?.message?.apps ?? []).map((row) => ({
+		app: row.app,
+		href: row.href,
+		labelKey: row.label_key,
+		fallback: row.fallback,
+	}));
 	const waitingInvites = invitations.data?.message?.waiting.length ?? 0;
 
 	const items: PortalNavItem[] = [
@@ -84,6 +98,10 @@ export default function PortalLayout() {
 		{ to: "/events", labelKey: "portal.nav.events", fallback: "Events", icon: Icon.sparkle, ...SOCIETY },
 		{ to: "/opportunities", labelKey: "portal.nav.opportunities", fallback: "Opportunities", icon: Icon.compass, ...SOCIETY },
 		{ to: "/stories", labelKey: "portal.nav.stories", fallback: "Stories", icon: Icon.book, ...SOCIETY },
+		// The society's own answers, from core's FAQ. Under "From the society"
+		// because that is what it is — what the society says, rather than
+		// anything asked of this person.
+		{ to: "/help", labelKey: "portal.nav.help", fallback: "Help", icon: Icon.lifebuoy, ...SOCIETY },
 	];
 
 	const path = volunteer.data?.message?.geo_path;
@@ -93,6 +111,7 @@ export default function PortalLayout() {
 		<ContentProvider surface="chrome,portal">
 			<PortalShell
 				items={items}
+				companions={companionItems}
 				unread={unread.data?.message?.unread ?? 0}
 				onUnreadChange={() => void unread.mutate()}
 				console={console_.data?.message?.available ? "/admin" : null}

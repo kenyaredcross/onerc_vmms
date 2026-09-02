@@ -87,6 +87,17 @@ _READABLE = (
 	"residency_type",
 	"country_of_residence",
 	"residence_address",
+	# **This is not the withheld one.** Core keeps `disability` off the spine for
+	# a gated extension it has not built yet, and the line below still refuses
+	# that name out loud. `vmms_disability_status` is a different field with a
+	# different owner: it is vmmsx's own Custom Field, it holds an *answer* to a
+	# question the applicant was asked and could decline — see
+	# `patches/install_disability_fields.py` — and it is here because the branch
+	# reviewing an application is the one who has to arrange the adjustment. The
+	# free-text `vmms_disability_needs` is deliberately absent: it is what
+	# somebody chose to write about themselves, it is read on the record by
+	# whoever may open it, and a general reader has no use for it.
+	"vmms_disability_status",
 )
 
 # The sensitive set, named so that keeping it out is a decision this file states
@@ -124,7 +135,15 @@ def read(volunteer, fields: tuple[str, ...] = _READABLE) -> dict:
 			" core's gated extension; see _WITHHELD in vmmsx/volunteer/services/identity.py."
 		)
 
-	allowed = tuple(field for field in requested if field in _READABLE)
+	# The allow-list *and* the meta. One of the names in `_READABLE` is a Custom
+	# Field rather than a column of core's doctype, and a site between syncing
+	# this module and running its patch does not have it — asking `get_value`
+	# for a column that is not there raises, and a volunteer page that will not
+	# render because a migration is half done is worse than one missing a field.
+	meta = frappe.get_meta(PROFILE_DOCTYPE)
+	allowed = tuple(
+		field for field in requested if field in _READABLE and meta.has_field(field)
+	)
 	values = frappe.db.get_value(PROFILE_DOCTYPE, volunteer.red_profile, allowed, as_dict=True)
 
 	return dict(values or {})

@@ -4,7 +4,7 @@ import { useFrappeGetCall } from "frappe-react-sdk";
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
 import { formatDate } from "../lib/format";
-import type { EventCard } from "../portal/types";
+import type { EventAttendee, EventCard } from "../portal/types";
 import {
 	ButtonLink,
 	Card,
@@ -68,6 +68,12 @@ export default function AdminEvents() {
 
 	const categories = filters.data?.message?.categories ?? [];
 
+	// Everybody who told the society they mean to be at one of these, summed from
+	// the rows already fetched rather than by a second query — so the figure and
+	// the cards under it can never disagree. It is *not* a booking total: Buzz
+	// owns those and they are a different number. See `attendance.counts`.
+	const saidTheyAreComing = events.reduce((total, event) => total + (event.going ?? 0), 0);
+
 	return (
 		<>
 			<PageHeading title={<EditableText k="admin.nav.events" fallback="Events" />} />
@@ -92,7 +98,7 @@ export default function AdminEvents() {
 							<Stat value={runningNow} label="Running today" />
 						</Card>
 						<Card>
-							<Stat value={categories.length || "—"} label="Categories" />
+							<Stat value={saidTheyAreComing} label="People coming" />
 						</Card>
 					</div>
 
@@ -173,11 +179,79 @@ function EventTile({ event }: { event: EventCard }) {
 				<p className="mt-2 line-clamp-3 text-[12.5px] text-muted">{event.summary}</p>
 			)}
 
+			<Roster event={event} />
+
 			{event.href && (
 				<div className="mt-3">
 					<ButtonLink to={event.href}>Manage in Buzz</ButtonLink>
 				</div>
 			)}
 		</Card>
+	);
+}
+
+/**
+ * Who from the society said they are coming, on demand.
+ *
+ * **The count is always shown; the names are asked for.** The number rides on
+ * the listing and costs nothing, and it is what a coordinator glances at. The
+ * roster is a request per event, made only when somebody opens it, because a
+ * page of twenty cards eagerly fetching twenty rosters is twenty queries to
+ * draw a screen most of which nobody reads.
+ *
+ * **These are intentions, not bookings**, and the wording says so. Somebody who
+ * told their branch they would be there is on this list whether or not they ever
+ * took a ticket; Buzz holds the tickets, and "Manage in Buzz" below is still
+ * where the registration list lives. The two lists answer different questions
+ * and a coordinator planning transport wants this one.
+ */
+function Roster({ event }: { event: EventCard }) {
+	const [open, setOpen] = useState(false);
+
+	const { data, error, isLoading } = useFrappeGetCall<{
+		message: { going: number; attendees: EventAttendee[] };
+	}>(
+		API.eventAttendees,
+		{ event: event.event },
+		// Null until asked for. `useFrappeGetCall` treats a null key as "do not
+		// fetch", which is what keeps a listing to one request.
+		open ? `admin:event_attendees:${event.event}` : null,
+	);
+
+	const attendees = data?.message?.attendees ?? [];
+
+	return (
+		<div className="mt-3 border-t border-card-line pt-3">
+			<button
+				type="button"
+				onClick={() => setOpen((shown) => !shown)}
+				className="text-[12px] font-semibold text-ink transition hover:text-blue"
+			>
+				{event.going ?? 0} said they are coming
+				<span className="ml-1.5 text-slate-faint">{open ? "· hide" : "· show who"}</span>
+			</button>
+
+			{open && (
+				<div className="mt-2">
+					{isLoading && <Spinner label="Loading…" />}
+					{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
+
+					{!isLoading && !error && attendees.length === 0 && (
+						<p className="text-[12px] italic text-slate-faint">
+							Nobody has said they are coming yet.
+						</p>
+					)}
+
+					<ul className="space-y-1">
+						{attendees.map((person) => (
+							<li key={person.red_profile} className="text-[12px] text-muted">
+								<span className="font-semibold text-ink">{person.full_name}</span>
+								{person.phone && <span className="ml-2 text-slate-faint">{person.phone}</span>}
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+		</div>
 	);
 }

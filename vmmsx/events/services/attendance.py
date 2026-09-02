@@ -144,6 +144,111 @@ def my_events() -> list[str]:
 	]
 
 
+def counts(events: list[str]) -> dict[str, int]:
+	"""How many people have said they are going to each of these events.
+
+	**The society's own answer to "how many are coming", and not Buzz's.** Buzz
+	holds bookings — a seat, a ticket, a payment — and this holds intentions
+	told to the branch. They are different numbers and the difference is the
+	point: the coordinator planning transport counts the people who said they
+	would be there, which includes everybody who never books anything, and
+	`buzz/tests/test_delegation.py` still fails the build if this app so much as
+	names a booking doctype.
+
+	One grouped query for a whole page of cards. A count per card would be sixty
+	round trips to draw a listing, and the number is decoration on a card rather
+	than the reason for it.
+
+	Elevated, and narrowly. What comes back is a count and nothing else — no
+	name, no profile, no row — for events the caller was already shown, and a
+	volunteer holds no role on this register for the reason `_write` sets out.
+	"""
+	wanted = [str(event).strip() for event in events or [] if str(event or "").strip()]
+
+	if not wanted:
+		return {}
+
+	rows = frappe.get_all(
+		ATTENDANCE_DOCTYPE,
+		filters={"event": ("in", sorted(set(wanted))), "status": ATTENDING},
+		fields=["event", "count(name) as going"],
+		group_by="event",
+		limit_page_length=0,
+		ignore_permissions=True,
+	)
+
+	return {row.event: row.going for row in rows}
+
+
+def count(event: str) -> int:
+	"""The same for one event, for the screen a card opens."""
+	return counts([event]).get(str(event or "").strip(), 0)
+
+
+def roster(event: str, limit: int = 200) -> list[dict]:
+	"""Who said they are coming, for somebody entitled to know.
+
+	**Not for the volunteer's own screen, and that is a deliberate line.** A
+	person marking "I will be there" is telling their society, not publishing it
+	to every other volunteer on the site, and a portal card listing the names of
+	everybody going would be a disclosure nobody consented to when they pressed
+	the button. So the volunteer's card gets the number and the coordinator's
+	screen gets the names — `api/events.py::attendees` is the only caller and it
+	is gated on read permission for this register, which no self-service role
+	holds.
+
+	The names come from Red Profile, live, because that is where a person's name
+	is; nothing is copied onto the attendance row and never has been.
+	"""
+	event = str(event or "").strip()
+
+	if not event:
+		return []
+
+	rows = frappe.get_all(
+		ATTENDANCE_DOCTYPE,
+		filters={"event": event, "status": ATTENDING},
+		fields=["red_profile", "responded_on"],
+		order_by="responded_on asc",
+		limit_page_length=limit,
+		# The caller's entitlement was established at the endpoint, on this
+		# doctype, before this was called. Elevated here so the read can join to
+		# Red Profile in one pass rather than through a per-row permission check
+		# on a register a coordinator already holds.
+		ignore_permissions=True,
+	)
+
+	profiles = [row.red_profile for row in rows if row.red_profile]
+
+	if not profiles:
+		return []
+
+	people = {
+		row.name: row
+		for row in frappe.get_all(
+			"Red Profile",
+			filters={"name": ("in", profiles)},
+			# Named explicitly, so a field added to core's spine never starts
+			# appearing on an events screen. The same discipline
+			# `volunteer/services/identity._READABLE` keeps.
+			fields=["name", "full_name", "email", "phone"],
+			limit_page_length=0,
+		)
+	}
+
+	return [
+		{
+			"red_profile": row.red_profile,
+			"full_name": (people.get(row.red_profile) or {}).get("full_name") or row.red_profile,
+			"email": (people.get(row.red_profile) or {}).get("email"),
+			"phone": (people.get(row.red_profile) or {}).get("phone"),
+			"responded_on": str(row.responded_on or ""),
+		}
+		for row in rows
+		if row.red_profile in people
+	]
+
+
 def is_attending(event: str) -> bool:
 	"""Whether this session's owner has said yes to one event."""
 	if not event:

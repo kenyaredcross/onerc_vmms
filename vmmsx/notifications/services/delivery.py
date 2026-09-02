@@ -36,6 +36,7 @@ person cannot get the check wrong.
 from collections.abc import Callable
 
 import frappe
+from frappe import _
 from frappe.utils import now_datetime
 
 NOTIFICATION_DOCTYPE = "VMMS Notification"
@@ -193,10 +194,12 @@ def _system_rows(limit: int) -> list[dict]:
 		ignore_permissions=True,
 	)
 
-	return [_as_system(row) for row in rows]
+	held = _still_held(rows)
+
+	return [_as_system(row, held) for row in rows]
 
 
-def _as_system(row: dict) -> dict | None:
+def _as_system(row: dict, held: set[tuple[str, str]] | None = None) -> dict | None:
 	"""One framework notification as the shared DTO.
 
 	Ranked at zero: the urgency vocabulary belongs to announcements, and
@@ -206,7 +209,7 @@ def _as_system(row: dict) -> dict | None:
 	return {
 		"id": row.get("name"),
 		"source": SOURCE_SYSTEM,
-		"title": _plain(row.get("subject")),
+		"title": _title(row, held or set()),
 		"summary": "",
 		"body": "",
 		"urgency": "",
@@ -361,3 +364,121 @@ def _plain(value: str | None) -> str:
 		return ""
 
 	return frappe.utils.strip_html(value).strip()
+
+
+# ------------------------------------------------------- saying it in English
+
+# What each thing a person can be handed is *called* when it lands in their
+# queue. The framework's own sentence for an assignment is written for a desk
+# user looking at a document register — "Administrator assigned a new task VMMS
+# Volunteer Application VAPP-00017 to you" — and every part of it is wrong for
+# the audience this product has: the person who did the assigning is usually the
+# engine rather than a colleague, "task" is this app's word for something else
+# entirely, and a naming series is not a thing anybody recognises.
+#
+# So the feed says what arrived instead of who moved it. The doctype is the only
+# input, which is why this is a table and not a branch: a doctype absent from it
+# falls back to its own label with the product prefix taken off, so a new
+# reviewable record reads sensibly on the day it is added and gets its own
+# wording when somebody has a better word for it.
+_QUEUE_NOUNS = {
+	"VMMS Volunteer Application": "volunteer application",
+	"VMMS Membership": "membership application",
+	"VMMS Deployment Request": "deployment request",
+	"VMMS Branch Transfer": "branch transfer request",
+	"VMMS Stipend Payment Form": "stipend payment form",
+	"VMMS Stipend Progress Report": "stipend progress report",
+	"VMMS Task": "task",
+	"VMMS Deployment": "deployment",
+	"Job Applicant": "job application",
+}
+
+# The framework's word for the notification an assignment raises, on both the
+# handing over and the taking back.
+ASSIGNMENT = "Assignment"
+
+
+def _noun(doctype: str | None) -> str:
+	"""What to call this kind of record in a sentence.
+
+	The fallback is the doctype's own label with the product prefix removed and
+	lowercased, so `VMMS Deployment Update` reads as "deployment update" without
+	anybody having to add a row above. `get_meta` rather than the raw name, so a
+	society that renamed a doctype's label gets its own word.
+	"""
+	if not doctype:
+		return "record"
+
+	if doctype in _QUEUE_NOUNS:
+		return _QUEUE_NOUNS[doctype]
+
+	try:
+		label = frappe.get_meta(doctype).get_label() or doctype
+	except Exception:
+		label = doctype
+
+	return label.removeprefix("VMMS ").strip().lower() or "record"
+
+
+def _still_held(rows: list[dict]) -> set[tuple[str, str]]:
+	"""Which of these assignments the reader still has open, in one query.
+
+	The framework raises the same notification `type` whether a document was
+	handed to somebody or taken back off them, and the only difference is in the
+	English of the subject — which is translated, and so is not something to
+	pattern-match on. What is *not* translated is whether the reader still holds
+	an open ToDo for that document, and that is the same fact the two sentences
+	were reporting.
+
+	One query for the whole page rather than one per row: a feed is fifty rows
+	and fifty round trips to answer a question about wording would be a page
+	load spent on a caption.
+	"""
+	wanted = {
+		(row.get("document_type"), row.get("document_name"))
+		for row in rows
+		if row.get("type") == ASSIGNMENT and row.get("document_type") and row.get("document_name")
+	}
+
+	if not wanted:
+		return set()
+
+	open_rows = frappe.get_all(
+		"ToDo",
+		filters={
+			"allocated_to": frappe.session.user,
+			"status": ("in", ("Open", "Overdue")),
+			"reference_type": ("in", sorted({doctype for doctype, _name in wanted})),
+			"reference_name": ("in", sorted({name for _doctype, name in wanted})),
+		},
+		fields=["reference_type", "reference_name"],
+		# The reader's own queue, filtered on the session user. The same
+		# argument every other read in this module makes: no caller names a
+		# person, so there is nobody else's list to reach.
+		ignore_permissions=True,
+	)
+
+	return {(row.reference_type, row.reference_name) for row in open_rows} & wanted
+
+
+def _title(row: dict, held: set[tuple[str, str]]) -> str:
+	"""The one line this notification shows in the list.
+
+	Only assignments are rewritten. Everything else in `Notification Log` was
+	written by whichever app raised it — a mention, a share, an alert a society
+	configured itself — and putting this app's words over somebody else's
+	message would be worse than the sentence it replaced.
+	"""
+	if row.get("type") != ASSIGNMENT:
+		return _plain(row.get("subject"))
+
+	noun = _noun(row.get("document_type"))
+	reference = (row.get("document_type"), row.get("document_name"))
+
+	if reference in held:
+		# "A new" rather than the reference, deliberately. The docname is on the
+		# record this row links to, and a person reading a list wants to know
+		# what turned up, not to memorise a series.
+		return _("A new {0} has been added to your queue.").format(noun)
+
+	return _("A {0} has been taken off your queue.").format(noun)
