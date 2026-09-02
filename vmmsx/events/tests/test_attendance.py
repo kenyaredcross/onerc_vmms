@@ -205,6 +205,53 @@ class TestAttendance(IntegrationTestCase):
 			"one row per person per event, not one row per event",
 		)
 
+	# --- the number on the card ---------------------------------------------
+
+	def test_counts_answers_a_whole_page_at_once(self):
+		"""The grouped query behind every card on the events listing.
+
+		It is here because the listing broke in the browser and no test noticed:
+		the aggregate was written as the string `"count(name) as going"`, which
+		Frappe rejects, and the page rendered the refusal where the cards should
+		have been.
+		"""
+		attendance.attend(self.event)
+
+		frappe.set_user(self.other_user)
+		attendance.attend(self.event)
+		attendance.attend(self.other_event)
+
+		frappe.set_user(self.user)
+		self.assertEqual(
+			attendance.counts([self.event, self.other_event]),
+			{self.event: 2, self.other_event: 1},
+		)
+
+	def test_counts_leaves_out_the_people_who_withdrew(self):
+		attendance.attend(self.event)
+
+		frappe.set_user(self.other_user)
+		attendance.attend(self.event)
+		attendance.cancel(self.event)
+
+		frappe.set_user(self.user)
+		self.assertEqual(attendance.counts([self.event]), {self.event: 1})
+
+	def test_an_event_nobody_answered_is_absent_rather_than_zero(self):
+		"""Grouped rows only exist where there are rows. `count` fills the gap."""
+		self.assertEqual(attendance.counts([self.event]), {})
+		self.assertEqual(attendance.count(self.event), 0)
+
+	def test_counts_of_nothing_asks_nothing(self):
+		self.assertEqual(attendance.counts([]), {})
+		self.assertEqual(attendance.counts([""]), {})
+
+	def test_count_is_counts_for_one_event(self):
+		attendance.attend(self.event)
+
+		self.assertEqual(attendance.count(self.event), 1)
+		self.assertEqual(attendance.count(f" {self.event} "), 1)
+
 	# --- the refusals -------------------------------------------------------
 
 	def test_a_login_with_no_profile_is_told_to_register(self):

@@ -159,6 +159,11 @@ def counts(events: list[str]) -> dict[str, int]:
 	round trips to draw a listing, and the number is decoration on a card rather
 	than the reason for it.
 
+	The count goes in as `{"COUNT": "name", "as": "going"}` and not as the string
+	`"count(name) as going"`: Frappe rejects SQL functions written as strings in a
+	SELECT, and the dict form is what its query builder accepts. `api/people.py`
+	counts the registers the same way.
+
 	Elevated, and narrowly. What comes back is a count and nothing else — no
 	name, no profile, no row — for events the caller was already shown, and a
 	volunteer holds no role on this register for the reason `_write` sets out.
@@ -171,7 +176,7 @@ def counts(events: list[str]) -> dict[str, int]:
 	rows = frappe.get_all(
 		ATTENDANCE_DOCTYPE,
 		filters={"event": ("in", sorted(set(wanted))), "status": ATTENDING},
-		fields=["event", "count(name) as going"],
+		fields=["event", {"COUNT": "name", "as": "going"}],
 		group_by="event",
 		limit_page_length=0,
 		ignore_permissions=True,
