@@ -1,5 +1,5 @@
 import { useContext, useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, NavLink, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
@@ -21,14 +21,23 @@ import {
 	Row,
 	SectionTitle,
 	Spinner,
+	StateBadge,
 	Table,
 	Tabs,
 	cx,
 	type TabDef,
 } from "../ui/primitives";
-import { QUEUES, type QueueKind, type QueueSpec } from "./queues";
+import {
+	QUEUES,
+	QUEUE_BANDS,
+	bandRoute,
+	type QueueBand,
+	type QueueKind,
+	type QueueSpec,
+} from "./queues";
 import type {
 	ApplicationDecision,
+	ApprovalCases,
 	ApprovalStatus,
 	MembershipReview,
 	Registers,
@@ -81,33 +90,67 @@ const NO_ANSWERS: SocietyAnswer[] = [];
 
 /* ------------------------------------------------------------------- lists */
 
-export function VolunteerQueue() {
-	return <Queue kind="volunteers" />;
+export function VolunteerQueue({ band }: { band?: string } = {}) {
+	return <Queue kind="volunteers" band={band} />;
 }
 
-export function MembershipQueue() {
-	return <Queue kind="members" />;
+export function MembershipQueue({ band }: { band?: string } = {}) {
+	return <Queue kind="members" band={band} />;
 }
 
-function Queue({ kind }: { kind: QueueKind }) {
+/**
+ * One registration's applications, in one of three routed bands.
+ *
+ * **The two queues never touch each other's endpoints.** `my_queue` and
+ * `my_cases` both take the doctype off this queue's own spec, so a coordinator
+ * on the membership page never asks for volunteer applications and the other way
+ * round. That is not a filter drawn over a mixed read — it is two calls with two
+ * arguments, which is why a branch with four hundred volunteer applications
+ * costs nothing to somebody clearing eleven memberships.
+ *
+ * **The bands come from the server and none of them is derived here.**
+ * `actionable` is what the engine routes to this user right now; `changes` is a
+ * Draft with a recorded "More info requested" decision behind it; `closed` is
+ * one of the four terminal states. Filtering an array in the browser could not
+ * answer any of the last two, because neither is in this user's queue at all.
+ */
+function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	const spec = QUEUES[kind];
+	const band = QUEUE_BANDS.find((row) => row.segment === (segment ?? "")) ?? QUEUE_BANDS[0];
+	const isActionable = band.key === "actionable";
 
-	const { data, error, isLoading } = useFrappeGetCall<{ message: ApprovalStatus[] }>(
+	// Two reads, and exactly one of them ever runs: `swrKey === null` is how
+	// this codebase says "do not ask". The open band is `my_queue`, which
+	// re-checks routing per row; the other two are `my_cases`, which reads the
+	// governed doctype through a scoped listing because neither band is an
+	// assignment anybody holds.
+	const open = useFrappeGetCall<{ message: ApprovalStatus[] }>(
 		API.myQueue,
 		{ doctype: spec.doctype },
-		`admin:my_queue:${kind}`,
+		isActionable ? `admin:my_queue:${kind}` : null,
+	);
+	const history = useFrappeGetCall<{ message: ApprovalCases }>(
+		API.myCases,
+		{ doctype: spec.doctype, group: band.key },
+		isActionable ? null : `admin:my_cases:${kind}:${band.key}`,
 	);
 
-	const rows = data?.message ?? [];
+	const rows = isActionable ? (open.data?.message ?? []) : (history.data?.message?.cases ?? []);
+	const isLoading = isActionable ? open.isLoading : history.isLoading;
+	const error = isActionable ? open.error : history.error;
 	const overdue = rows.filter((row) => row.stage?.is_breached).length;
 
 	return (
 		<>
 			<PageHeading
 				title={<EditableText k={spec.headingKey} fallback={spec.heading} />}
+				lead={band.lead}
+				trail={[{ label: "People", to: "/admin/people" }, { label: spec.heading }]}
 				actions={
 					<div className="flex flex-wrap items-center gap-2">
-						<Pill tone="navy">{rows.length} waiting</Pill>
+						<Pill tone="navy">
+							{rows.length} {isActionable ? "waiting" : "shown"}
+						</Pill>
 						{/* Only when there are any. A permanent "0 overdue" is a
 						    reassurance nobody reads, and it takes the place of the
 						    one that matters. */}
@@ -116,91 +159,165 @@ function Queue({ kind }: { kind: QueueKind }) {
 				}
 			/>
 
+			<QueueBands spec={spec} current={band} />
+
 			{isLoading && <Spinner label="Loading the queue…" />}
 			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
 
 			{!isLoading && !error && rows.length === 0 && (
-				<Empty title={spec.empty}>
-					Applications appear here when the engine routes one to you specifically, not to
-					everybody who holds your role.
-				</Empty>
+				<Empty title={isActionable ? spec.empty : band.empty}>{band.lead}</Empty>
 			)}
 
 			{rows.length > 0 && (
-				<Table head={["Applicant", "Branch", "Stage", "Waiting since", "Due", ""]}>
-					{rows.map((row) => {
-						const to = `${spec.list}/${encodeURIComponent(row.name)}`;
-
-						return (
-							<Row key={row.name}>
-								<Cell>
-									<Link to={to} className="flex items-center gap-3 group">
-										<Avatar
-											name={row.applicant?.full_name}
-											photo={row.applicant?.photo}
-											size={34}
-										/>
-										<span className="min-w-0">
-											{/* The whole reason `applicant` was added to the
-											    engine's status DTO. A membership used to arrive
-											    here as `MSHIP-00042` and a stage label, which is
-											    not something anybody can approve. */}
-											<span className="block truncate font-semibold text-ink group-hover:text-navy group-hover:underline">
-												{row.applicant?.full_name ?? row.name}
-											</span>
-											<span className="tabular mt-0.5 block font-mono text-[11px] text-slate-faint">
-												{row.name}
-											</span>
-										</span>
-									</Link>
-								</Cell>
-								<Cell className="text-slate-body">{branchPath(row.geo_path)}</Cell>
-								<Cell>
-									{row.stage && (
-										<>
-											<span className="block text-[12.5px] font-semibold text-navy">
-												{row.stage.label}
-											</span>
-											{/* The stage resolved nobody at its own level, so the
-											    engine entered it blocked and escalated upward —
-											    which is the only reason this row is in *this*
-											    person's queue rather than the branch's. Without
-											    the line it reads as an ordinary assignment and
-											    the unstaffed branch behind it stays invisible. */}
-											{row.stage.is_blocked && (
-												<span className="mt-0.5 block text-[11px] text-slate-faint">
-													Nobody at this level — escalated to you
-												</span>
-											)}
-										</>
-									)}
-								</Cell>
-								<Cell className="text-slate-body">
-									{formatDate(row.stage?.entered_on ?? null)}
-								</Cell>
-								<Cell>
-									{row.stage?.is_breached ? (
-										<Pill tone="signal">{row.stage.days_overdue} days over</Pill>
-									) : (
-										<span className="text-slate-body">
-											{formatDate(row.stage?.due_on ?? null)}
-										</span>
-									)}
-								</Cell>
-								<Cell className="text-right">
-									<Link
-										to={to}
-										className="font-display text-[12.5px] font-bold text-navy hover:underline"
-									>
-										Open
-									</Link>
-								</Cell>
-							</Row>
-						);
-					})}
+				<Table
+					head={
+						isActionable
+							? ["Applicant", "Branch", "Stage", "Waiting since", "Due", ""]
+							: ["Applicant", "Branch", "State", "Last moved", "Last decision", ""]
+					}
+				>
+					{rows.map((row) => (
+						<QueueRow key={row.name} row={row} spec={spec} actionable={isActionable} />
+					))}
 				</Table>
 			)}
 		</>
+	);
+}
+
+/**
+ * The band navigation, as three routed links.
+ *
+ * `NavLink` rather than buttons, so each band is a real address with
+ * `aria-current` on the one you are standing in — which is what a screen reader
+ * announces, and what colour alone would say nothing about.
+ */
+function QueueBands({ spec, current }: { spec: QueueSpec; current: QueueBand }) {
+	return (
+		<nav aria-label={`${spec.heading} states`} className="mb-5 flex flex-wrap gap-1.5">
+			{QUEUE_BANDS.map((band) => (
+				<NavLink
+					key={band.key}
+					to={bandRoute(spec, band)}
+					end
+					className={cx(
+						"rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition",
+						band.key === current.key
+							? "border-blue bg-blue-soft text-blue-press"
+							: "border-card-line bg-white text-slate-strong hover:border-blue hover:text-ink",
+					)}
+				>
+					{band.label}
+				</NavLink>
+			))}
+		</nav>
+	);
+}
+
+/**
+ * One application in a queue.
+ *
+ * The three right-hand columns differ by band because the questions do: an open
+ * application is read for what stage it is at and how late it is, and a closed
+ * one for what was decided and when. The applicant, the branch and the way in
+ * are the same in both.
+ */
+function QueueRow({
+	row,
+	spec,
+	actionable,
+}: {
+	row: ApprovalStatus;
+	spec: QueueSpec;
+	actionable: boolean;
+}) {
+	const to = `${spec.list}/${encodeURIComponent(row.name)}`;
+	const last = row.decisions.at(-1);
+
+	return (
+		<Row>
+			<Cell>
+				<Link to={to} className="flex items-center gap-3 group">
+					<Avatar name={row.applicant?.full_name} photo={row.applicant?.photo} size={34} />
+					<span className="min-w-0">
+						{/* The whole reason `applicant` was added to the engine's
+						    status DTO. A membership used to arrive here as
+						    `MSHIP-00042` and a stage label, which is not something
+						    anybody can approve. */}
+						<span className="block truncate font-semibold text-ink group-hover:text-ink group-hover:underline">
+							{row.applicant?.full_name ?? row.name}
+						</span>
+						<span className="tabular mt-0.5 block font-mono text-[11px] text-slate-faint">
+							{row.name}
+						</span>
+					</span>
+				</Link>
+			</Cell>
+
+			<Cell className="text-muted">{branchPath(row.geo_path)}</Cell>
+
+			{actionable ? (
+				<>
+					<Cell>
+						{row.stage && (
+							<>
+								<span className="block text-[12.5px] font-semibold text-ink">
+									{row.stage.label}
+								</span>
+								{/* The stage resolved nobody at its own level, so the
+								    engine entered it blocked and escalated upward —
+								    which is the only reason this row is in *this*
+								    person's queue rather than the branch's. Without
+								    the line it reads as an ordinary assignment and
+								    the unstaffed branch behind it stays invisible. */}
+								{row.stage.is_blocked && (
+									<span className="mt-0.5 block text-[11px] text-slate-faint">
+										Nobody at this level — escalated to you
+									</span>
+								)}
+							</>
+						)}
+					</Cell>
+					<Cell className="text-muted">{formatDate(row.stage?.entered_on ?? null)}</Cell>
+					<Cell>
+						{row.stage?.is_breached ? (
+							<Pill tone="signal">{row.stage.days_overdue} days over</Pill>
+						) : (
+							<span className="text-muted">{formatDate(row.stage?.due_on ?? null)}</span>
+						)}
+					</Cell>
+				</>
+			) : (
+				<>
+					<Cell>
+						{/* One of the seven in `states.py`. Shown, never compared:
+						    the server put this row in this band. */}
+						<StateBadge state={row.state} />
+					</Cell>
+					<Cell className="text-muted">{formatDate(last?.decided_on ?? null)}</Cell>
+					<Cell>
+						{last ? (
+							<>
+								<span className="block text-[12.5px] font-semibold text-ink">
+									{last.decision}
+								</span>
+								<span className="mt-0.5 block truncate text-[11px] text-slate-faint">
+									{last.stage_label}
+								</span>
+							</>
+						) : (
+							<span className="text-muted">No decision recorded</span>
+						)}
+					</Cell>
+				</>
+			)}
+
+			<Cell className="text-right">
+				<Link to={to} className="text-[12.5px] font-bold text-ink hover:underline">
+					Open
+				</Link>
+			</Cell>
+		</Row>
 	);
 }
 
@@ -315,6 +432,11 @@ function Review({
 		isVolunteer
 			? { key: "declaration", label: "What they declared" }
 			: { key: "membership", label: "Membership" },
+		// The tab that carries the two things this decision can be refused over.
+		// Volunteer-only, and only once the record has loaded: an approver who
+		// cannot see the emergency contact would press Approve, be told no, and
+		// have nowhere to look.
+		...(isVolunteer && record ? [{ key: "safeguarding", label: "Contacts and consent" }] : []),
 		...grouped.map((group) => ({
 			key: `q:${group.name}`,
 			label: group.name,
@@ -341,7 +463,7 @@ function Review({
 			    a page that can only be left by retyping a URL is a dead end. */}
 			<Link
 				to={spec.list}
-				className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-navy hover:underline"
+				className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink hover:underline"
 			>
 				<Icon.back size={14} />
 				All {spec.heading.toLowerCase()}
@@ -406,7 +528,7 @@ function Review({
 					<Declared label="Motivation" rows={record.motivation} />
 
 					{record.prior_experience && (
-						<div className="mt-5 border-t border-hairline pt-5">
+						<div className="mt-5 border-t border-card-line pt-5">
 							<SectionTitle>In their own words</SectionTitle>
 							<p className="whitespace-pre-line text-[13px] leading-relaxed text-ink">
 								{record.prior_experience}
@@ -415,6 +537,8 @@ function Review({
 					)}
 				</Card>
 			)}
+
+			{active === "safeguarding" && record && <Safeguarding record={record} />}
 
 			{active === "membership" && review && <MembershipFacts review={review} />}
 
@@ -545,17 +669,181 @@ function MembershipFacts({ review }: { review: MembershipReview }) {
 				{/* The single thing an approver of a proof-of-payment membership is
 				    actually here to look at, so it is a button rather than a field. */}
 				{review.proof_attachment && (
-					<div className="mt-5 border-t border-hairline pt-5">
+					<div className="mt-5 border-t border-card-line pt-5">
 						<a
 							href={review.proof_attachment}
 							target="_blank"
 							rel="noreferrer"
-							className="inline-flex items-center gap-2 font-display text-[13px] font-bold text-navy hover:underline"
+							className="inline-flex items-center gap-2 text-[13px] font-bold text-ink hover:underline"
 						>
 							<Icon.external size={15} />
 							Open the proof of payment
 						</a>
 					</div>
+				)}
+			</Card>
+		</>
+	);
+}
+
+/**
+ * The two things this decision can be refused over, and what was agreed to.
+ *
+ * **Written to be read before pressing Approve.** `application.assert_approvable`
+ * refuses the save that carries an approval when there is no emergency contact
+ * the applicant permitted us to call, or when a minor's guardian consent has not
+ * been verified — so both are stated here in the terms the refusal will use,
+ * with the missing case called out rather than left as an empty field somebody
+ * has to notice.
+ *
+ * The verification itself is not done here: it is a tick on the application in
+ * the desk, by whoever actually checked. This screen reports whether it has
+ * happened, because that is what the approver needs to know and it is not their
+ * job to vouch for it from a queue.
+ */
+function Safeguarding({ record }: { record: ApplicationDecision }) {
+	const callable = record.emergency_contacts.filter((row) => row.may_contact_in_emergency);
+	const verified = record.guardian_consents.filter((row) => row.consent_given && row.is_verified);
+
+	return (
+		<>
+			<Card>
+				<SectionTitle>If something happens</SectionTitle>
+
+				{callable.length === 0 && (
+					<p className="mb-4 rounded-xl border border-blue/30 bg-blue/[0.06] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-ink">
+						{record.emergency_contacts.length === 0
+							? "No emergency contact. This application cannot be approved until one is added."
+							: "A contact is on file, but the applicant has not agreed to us calling them. This application cannot be approved until one we may contact is added."}
+					</p>
+				)}
+
+				{record.emergency_contacts.length === 0 ? (
+					<Empty title="Nobody has been named yet." />
+				) : (
+					record.emergency_contacts.map((row, index) => (
+						<dl
+							key={`${row.contact_name}-${index}`}
+							className="mb-5 grid gap-4 border-b border-card-line pb-5 last:mb-0 last:border-0 last:pb-0 sm:grid-cols-2"
+						>
+							<Field label="Name" value={row.contact_name} />
+							<Field label="Relationship" value={row.relationship} />
+							<Field label="Phone" value={row.primary_phone} />
+							<Field label="Alternative" value={row.alternative_phone} />
+							<Field
+								label="May we call them"
+								value={row.may_contact_in_emergency ? "Yes" : "No — permission withheld"}
+							/>
+						</dl>
+					))
+				)}
+			</Card>
+
+			{record.is_minor && (
+				<Card>
+					<SectionTitle>Guardian consent</SectionTitle>
+
+					{verified.length === 0 && (
+						<p className="mb-4 rounded-xl border border-blue/30 bg-blue/[0.06] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-ink">
+							This applicant is a minor. Their application cannot be approved until a
+							guardian's consent has been recorded and somebody has marked it verified on
+							the application itself.
+						</p>
+					)}
+
+					{record.guardian_consents.length === 0 ? (
+						<Empty title="No guardian has been recorded." />
+					) : (
+						record.guardian_consents.map((row, index) => (
+							<dl
+								key={`${row.guardian_name}-${index}`}
+								className="mb-5 grid gap-4 border-b border-card-line pb-5 last:mb-0 last:border-0 last:pb-0 sm:grid-cols-2"
+							>
+								<Field label="Guardian" value={row.guardian_name} />
+								<Field label="Relationship" value={row.relationship} />
+								<Field label="Phone" value={row.phone} />
+								<Field label="Email" value={row.email} />
+								<Field
+									label="Consent given"
+									value={
+										row.consent_given
+											? `Yes${row.consent_date ? ` · ${formatDate(row.consent_date)}` : ""}`
+											: "Not recorded"
+									}
+								/>
+								<Field
+									label="Verified"
+									value={
+										row.is_verified
+											? `Yes · ${row.verified_by ?? "unknown"}${row.verified_on ? ` · ${formatDate(row.verified_on)}` : ""}`
+											: "Not yet"
+									}
+								/>
+								{row.consent_evidence && (
+									<div className="sm:col-span-2">
+										<span className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+											Evidence
+										</span>
+										<div className="mt-1">
+											<a
+												href={row.consent_evidence}
+												target="_blank"
+												rel="noreferrer"
+												className="text-[13px] font-semibold text-ink underline"
+											>
+												Open the uploaded consent
+											</a>
+										</div>
+									</div>
+								)}
+							</dl>
+						))
+					)}
+				</Card>
+			)}
+
+			<Card>
+				<SectionTitle>What they agreed to</SectionTitle>
+
+				{record.declarations.length === 0 ? (
+					<Empty title="This society asked them to agree to nothing." />
+				) : (
+					<dl className="grid gap-4 sm:grid-cols-2">
+						{record.declarations.map((row) => (
+							<div key={row.declaration}>
+								<Field
+									label={row.title}
+									// The version, because that is what identifies the wording
+									// stored against this acceptance. The text itself is on the
+									// application; reprinting four declarations here would bury
+									// the two things above that actually gate the decision.
+									value={
+										row.accepted
+											? `Agreed · version ${row.version}${row.accepted_on ? ` · ${formatDate(row.accepted_on)}` : ""}`
+											: "Not agreed"
+									}
+								/>
+
+								{/* Where the society published the policy on its own site
+								    rather than here, the address is the whole of what the
+								    register holds — there are no words to fall back on. So
+								    it is shown, and shown as what it is: the page as it was
+								    addressed on the day, not a promise about what it says
+								    now. */}
+								{row.source === "Link" && row.external_url && (
+									<a
+										href={row.external_url}
+										target="_blank"
+										rel="noreferrer noopener"
+										className="mt-1 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-ink hover:underline"
+									>
+										<Icon.external size={12} />
+										The page they were shown
+									</a>
+								)}
+							</div>
+						))}
+					</dl>
 				)}
 			</Card>
 		</>
@@ -574,7 +862,7 @@ function Declared({ label, rows }: { label: string; rows: Array<{ key: string; l
 			{rows.map((row) => (
 				<span
 					key={row.key}
-					className="rounded-full bg-surface px-2.5 py-1 text-[11.5px] font-medium text-slate-body"
+					className="rounded-full bg-surface px-2.5 py-1 text-[11.5px] font-medium text-muted"
 				>
 					{row.label}
 				</span>
@@ -601,7 +889,7 @@ function Answers({ rows }: { rows: SocietyAnswer[] }) {
 						{answer.is_file ? (
 							answer.file_url ? (
 								<a
-									className="inline-flex items-center gap-1.5 font-semibold text-navy underline underline-offset-2"
+									className="inline-flex items-center gap-1.5 font-semibold text-ink underline underline-offset-2"
 									href={answer.file_url}
 									target="_blank"
 									rel="noreferrer"
@@ -708,7 +996,7 @@ const DECISIONS = {
 		button: (noun: string) => `Decline this ${noun}`,
 		confirm: "Yes, decline",
 		tone: "primary" as const,
-		pill: "border-signal/40 bg-signal/[.07] text-signal-dark",
+		pill: "border-blue/40 bg-blue/[.07] text-blue-press",
 		icon: Icon.cross,
 		hint: "Ends the application. Needs a reason.",
 		consequence: "This ends the application. It cannot be undone from this screen.",
@@ -794,7 +1082,7 @@ function Decision({
 				    is a staffing gap, not a broken record, and it is fixed in Geo
 				    Assignment rather than here. */}
 				{status.stage?.is_blocked && (
-					<p className="mt-4 rounded-card bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-slate-body">
+					<p className="mt-4 rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
 						Nobody holds <b>{status.stage.required_role}</b> at this stage's level
 						here, so it was escalated
 						{status.escalated_to?.length ? ` to ${status.escalated_to.join(", ")}` : " upward"}.
@@ -811,9 +1099,13 @@ function Decision({
 						{status.decisions.map((decision, index) => (
 							<Row key={index}>
 								<Cell className="font-semibold text-ink">{decision.decision}</Cell>
-								<Cell className="text-slate-body">{decision.stage_label}</Cell>
-								<Cell className="text-slate-body">{decision.decided_by}</Cell>
-								<Cell className="text-slate-body">
+								<Cell className="text-muted">{decision.stage_label}</Cell>
+								{/* `approver`, not `decided_by`. The column read the
+								    latter for as long as it has existed and rendered
+								    nothing: the engine's DTO has never had a field by
+								    that name, and the type here said it did. */}
+								<Cell className="text-muted">{decision.approver}</Cell>
+								<Cell className="text-muted">
 									{formatDate(decision.decided_on ?? null)}
 									{decision.reason && (
 										<span className="mt-1 block text-[11.5px] text-slate-faint">
@@ -835,7 +1127,7 @@ function Decision({
 				)}
 
 				{!status.can_act ? (
-					<p className="rounded-card bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-slate-body">
+					<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
 						You cannot act on this one right now. The engine resolves approvers per
 						document, so holding the role is not the same as being this document's
 						approver.
@@ -881,7 +1173,7 @@ function Decision({
 									{picked.verb}
 								</span>
 
-								<p className="mt-3 text-[12.5px] leading-relaxed text-slate-body">
+								<p className="mt-3 text-[12.5px] leading-relaxed text-muted">
 									{picked.consequence}
 								</p>
 
@@ -893,7 +1185,7 @@ function Decision({
 								</label>
 								<textarea
 									id="decision-reason"
-									className="min-h-[90px] w-full resize-y rounded-card border border-hairline-strong px-3.5 py-2.5 text-[13px] outline-none focus:border-navy"
+									className="min-h-[90px] w-full resize-y rounded-xl border border-card-line px-3.5 py-2.5 text-[13px] outline-none focus:border-blue"
 									value={reason}
 									onChange={(event) => setReason(event.target.value)}
 									placeholder={

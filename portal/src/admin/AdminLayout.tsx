@@ -4,21 +4,26 @@ import { Navigate, useLocation } from "react-router-dom";
 import { ContentProvider } from "../content/ContentProvider";
 import { API } from "../lib/api";
 import { Icon } from "../ui/icons";
-import { Shell, type NavGroup, type NavItem } from "../ui/Shell";
+import { ConsoleShell, type NavGroup, type NavItem } from "./ConsoleShell";
 import { DeploymentSubNav, inDeployments } from "./DeploymentNav";
 import { CommunicationSubNav, inCommunication } from "./CommunicationNav";
 import { PeopleSubNav, inPeople } from "./PeopleNav";
-import { Spinner } from "../ui/primitives";
+import { Spinner } from "../portal/ui/kit";
 import { QUEUES, QUEUE_KINDS, queueOf } from "./queues";
 import type { ApprovalStatus, RedProfile } from "../portal/types";
 
 /**
  * The manager console.
  *
- * Same shell as the volunteer portal in a darker skin, which is the design's
- * way of saying "you are acting on other people's records now". The queue count
- * in the sidebar is live and comes from the same `my_queue` the queue screen
- * renders, so the two can never disagree.
+ * **The same workspace as the volunteer portal, carrying different work.** One
+ * face, one canvas, one navy rail, one blue — see `ConsoleShell.tsx`'s direction
+ * contract. The console used to be a *darker skin* on a shared shell, which said
+ * "you are acting on other people's records now" and also said "this is a
+ * different product". It is not: being staff is a role somebody holds, and
+ * moving between the two surfaces should feel like changing rooms.
+ *
+ * The queue count in the sidebar is live and comes from the same `my_queue` the
+ * queue screen renders, so the two can never disagree.
  *
  * **There is still no role name in this file, and there is now a role check.**
  * Those are different things, and the file used to conflate them: it drew all
@@ -36,7 +41,7 @@ import type { ApprovalStatus, RedProfile } from "../portal/types";
  * link; it is nine screens that look broken.
  *
  * **Two of the tabs are `NavGroup`s now — real pages that also collapse a
- * clutch of others under them, the way `Shell.tsx`'s own docstring on
+ * clutch of others under them, the way `ConsoleShell.tsx`'s own docstring on
  * `NavGroup` describes.** People & Insight opens Analytics and reveals
  * Members, Volunteers and the review queue beneath it: all four answer "who
  * are my people and how are things going," read-first, nothing here is an
@@ -98,6 +103,26 @@ const QUEUE_MEMBERS: TabDef = {
 	fallback: QUEUES.members.heading,
 	icon: Icon.card,
 };
+// The third way somebody asks to join the society, beside the two application
+// queues. Gated on "recruitment", which `staff/services/console.py` answers
+// from HRMS's `Job Opening` / `Job Applicant` — a *companion* section, because
+// vmmsx does not require HRMS and a society running without it has no
+// recruitment at all rather than a broken tab.
+const OPENINGS: TabDef = {
+	section: "recruitment",
+	to: "/admin/recruitment/openings",
+	labelKey: "admin.nav.recruitment.openings",
+	fallback: "Job openings",
+	icon: Icon.briefcase,
+};
+const JOB_APPLICATIONS: TabDef = {
+	section: "recruitment",
+	to: "/admin/recruitment/applications",
+	labelKey: "admin.nav.recruitment.applications",
+	fallback: "Job applications",
+	icon: Icon.inbox,
+};
+
 // Gated on "deployments", the same section `staff/services/permissions.py`
 // grants `VMMS Project` under alongside `VMMS Deployment` and `VMMS Terms of
 // Reference` — the one scope role named by `vmms_deployment_scope_role`. A
@@ -124,7 +149,7 @@ const TASKS: TabDef = {
 
 const STIPENDS: TabDef = {
 	section: "stipends",
-	to: "/admin/stipends",
+	to: "/admin/finance/stipends",
 	labelKey: "admin.nav.stipends",
 	fallback: "Stipends",
 	icon: Icon.coins,
@@ -187,7 +212,15 @@ const PEOPLE: GroupDef = {
 	fallback: "People Management",
 	icon: Icon.people,
 	hasSubNav: true,
-	children: [QUEUE_VOLUNTEERS, QUEUE_MEMBERS, MEMBERS, VOLUNTEERS],
+	// The two application queues, then recruitment, then the two registers.
+	// **Everybody asking to join, then everybody who already has.** A job
+	// opening is the third door into the society alongside volunteering and
+	// membership, and a coordinator clearing job applications is doing the same
+	// shape of work as one clearing volunteer applications — so it sits with
+	// them rather than in a recruitment tab of its own across the rail. The two
+	// recruitment rows drop out entirely on a site without HRMS, which is why
+	// `narrowGroup` below has to cope with a group losing half its children.
+	children: [QUEUE_VOLUNTEERS, QUEUE_MEMBERS, OPENINGS, JOB_APPLICATIONS, MEMBERS, VOLUNTEERS],
 };
 
 // The queue left People & Insight and became a group of its own. That group
@@ -229,8 +262,36 @@ const OPERATIONS: GroupDef = {
  */
 OPERATIONS.hasSubNav = true;
 
-const GROUPS = [PEOPLE, OPERATIONS];
-const FLAT = [OVERVIEW, COMMUNICATION, STIPENDS, EVENTS, CONTENT, QUESTIONS];
+/**
+ * Money, in one place.
+ *
+ * Stipends was a top-level tab and is now this group's second row, which is the
+ * one existing tab this change moves. The reason is that a stipend payment form
+ * is *the* expense record in this product — there is no other — so a sidebar
+ * with Finance and Stipends as siblings was asking a coordinator to know that
+ * "what did we pay out" and "the paperwork that pays it out" are two different
+ * rows. They are one question at two altitudes: the overview is the position,
+ * Stipends is where a single payment is acted on.
+ *
+ * The group's own route is the overview, gated on `finance`; the child keeps
+ * its own `stipends` section, so somebody holding one permission and not the
+ * other still gets the row they are entitled to and no heading over an empty
+ * group.
+ */
+const FINANCE: GroupDef = {
+	section: "finance",
+	to: "/admin/finance",
+	labelKey: "admin.nav.group.finance",
+	fallback: "Finance",
+	icon: Icon.receipt,
+	// One child, and that is the right number. The group's *own* row is the
+	// overview — the way `OPERATIONS` opens the deployments hub — so listing the
+	// overview again beneath itself would be two rows for one page.
+	children: [STIPENDS],
+};
+
+const GROUPS = [PEOPLE, OPERATIONS, FINANCE];
+const FLAT = [OVERVIEW, COMMUNICATION, EVENTS, CONTENT, QUESTIONS];
 
 /**
  * Every routable tab this console can ever draw, gated or not — flattened out
@@ -388,7 +449,7 @@ export default function AdminLayout() {
 			    remember. Unconditional here, because everybody who can see this
 			    shell has a portal — being staff is a role somebody holds, not a
 			    thing they are instead of a volunteer. */}
-			<Shell
+			<ConsoleShell
 				items={ordered}
 				// The Deployments section's own navigation, and only while the
 				// current route is inside it. Passed from here rather than resolved
@@ -403,7 +464,7 @@ export default function AdminLayout() {
 								? (horizontal) => <PeopleSubNav horizontal={horizontal} />
 								: undefined
 				}
-				console="/dashboard"
+				portal="/dashboard"
 				// The Frappe desk, for whoever the server says may open it. The
 				// console covers the day-to-day; the desk is where the settings,
 				// the reports and every doctype without a screen of its own live,
@@ -417,7 +478,6 @@ export default function AdminLayout() {
 				// configured SMS role. See `console.sms_access()`'s own docstring
 				// for why this doctype cannot be a gated section like the tabs above.
 				sms={answer?.sms ? "/app/sms-campaign/new" : null}
-				tone="admin"
 				person={me.data?.message?.full_name ?? null}
 				subtitle="Manager"
 			/>

@@ -127,6 +127,12 @@ def fulfil(request) -> dict:
 			"start_date": request.needed_from,
 			"end_date": request.needed_until,
 			"status": deployment_service.STATUS_PLANNED,
+			# The request's own owner, which on this path is whoever raised it.
+			# A deployment names somebody answerable for it, and the person who
+			# asked for the volunteers is that person until the branch says
+			# otherwise — better than the approver, who decided rather than ran
+			# it, and better than an empty field on a mandatory one.
+			"coordinator": request.owner,
 			# How many the request asked for becomes how many the deployment needs.
 			# The request already carries the number and somebody already approved
 			# it, so making a coordinator retype it on the deployment would be a
@@ -197,8 +203,24 @@ def status(request) -> dict:
 		"volunteers_requested": request.volunteers_requested,
 		"needed_from": request.needed_from,
 		"needed_until": request.needed_until,
+		# Why the branch is asking. On the DTO because it is the whole substance
+		# of a request — an approver deciding one, and a coordinator reading the
+		# register, are both reading this and were both being shown a headcount
+		# and two dates instead.
+		"justification": request.justification,
+		# Whether volunteers can see this ask at all. A request that is approved
+		# and unpublished has nobody applying to it, which looks identical to one
+		# nobody wants until the flag is on the row.
+		"is_published": bool(request.is_published),
 		"approval_mode": mode,
 		"requires_approver": approval.requires_approver(mode, _where(request)),
+		# What will actually happen on this site, which is not always what the
+		# terms of reference asked for: `routed` with no approval workflow
+		# configured for this doctype is handled directly. Said out loud rather
+		# than left to be inferred from the absence of a decision — see
+		# `approval.effective_mode`.
+		"effective_approval_mode": approval.effective_mode(request, mode, _where(request)),
+		"approval_unconfigured": approval.downgraded(request, mode, _where(request)),
 		"approval_settled": is_settled(request),
 		"is_refused": approval.is_refused(request),
 		"deployment": request.deployment,

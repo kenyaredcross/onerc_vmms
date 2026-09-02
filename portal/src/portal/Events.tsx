@@ -110,7 +110,7 @@ function Attending() {
 		return (
 			<section className="mt-9">
 				<Skeleton className="mb-3 h-4 w-44" />
-				<Skeleton className="h-32 rounded-feature" />
+				<Skeleton className="h-32 rounded-2xl" />
 			</section>
 		);
 	}
@@ -133,7 +133,7 @@ function Attending() {
 							type="button"
 							onClick={() => setCalendarOpen((open) => !open)}
 							aria-expanded={calendarOpen}
-							className="whitespace-nowrap text-[12px] font-bold text-navy transition hover:text-signal"
+							className="whitespace-nowrap text-[12px] font-bold text-ink transition hover:text-blue"
 						>
 							{calendarOpen ? (
 								<EditableText k="portal.events.attending.hide_calendar" fallback="Hide calendar" />
@@ -175,7 +175,7 @@ function Attending() {
 											key={row.event}
 											lead={
 												<span
-													className="grid h-9 w-9 flex-none place-items-center rounded-control bg-tint-navy-soft text-tint-navy"
+													className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-tint-navy-soft text-tint-navy"
 													aria-hidden="true"
 												>
 													<Icon.calendar size={17} />
@@ -184,7 +184,7 @@ function Attending() {
 											title={
 												<Link
 													to={`/events/${encodeURIComponent(row.event)}`}
-													className="transition hover:text-navy"
+													className="transition hover:text-ink"
 												>
 													{row.title}
 												</Link>
@@ -237,7 +237,7 @@ function Attending() {
  */
 function Featured({ row, busy, onToggle }: { row: EventCard; busy: boolean; onToggle: () => void }) {
 	return (
-		<article className="relative overflow-hidden rounded-feature bg-navy text-white shadow-hero">
+		<article className="relative overflow-hidden rounded-2xl bg-rail text-white shadow-hero">
 			{row.image && (
 				<>
 					<img
@@ -248,7 +248,7 @@ function Featured({ row, busy, onToggle }: { row: EventCard; busy: boolean; onTo
 					/>
 					<div
 						aria-hidden="true"
-						className="absolute inset-0 bg-gradient-to-r from-navy via-navy/95 to-navy/60"
+						className="absolute inset-0 bg-gradient-to-r from-rail via-rail/95 to-rail/60"
 					/>
 				</>
 			)}
@@ -258,7 +258,7 @@ function Featured({ row, busy, onToggle }: { row: EventCard; busy: boolean; onTo
 
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
-						<span className="rounded-full bg-signal px-2.5 py-1 text-[9.5px] font-extrabold uppercase tracking-eyebrow text-white">
+						<span className="rounded-full bg-blue px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-eyebrow text-white">
 							<EditableText k="portal.events.attending.next" fallback="Next up" />
 						</span>
 						{row.category && (
@@ -268,7 +268,7 @@ function Featured({ row, busy, onToggle }: { row: EventCard; busy: boolean; onTo
 						)}
 					</div>
 
-					<h3 className="mt-2.5 font-display text-[20px] font-extrabold leading-tight tracking-tight [overflow-wrap:anywhere] sm:text-[26px]">
+					<h3 className="mt-2.5 text-[20px] font-semibold leading-tight tracking-tight [overflow-wrap:anywhere] sm:text-[26px]">
 						{row.title}
 					</h3>
 
@@ -288,7 +288,7 @@ function Featured({ row, busy, onToggle }: { row: EventCard; busy: boolean; onTo
 					<Withdraw busy={busy} onClick={onToggle} onDark />
 					<Link
 						to={`/events/${encodeURIComponent(row.event)}`}
-						className="whitespace-nowrap rounded-full bg-white/15 px-4 py-2.5 font-display text-[12.5px] font-bold text-white backdrop-blur transition hover:bg-white/25"
+						className="whitespace-nowrap rounded-full bg-white/15 px-4 py-2.5 text-[12.5px] font-bold text-white backdrop-blur transition hover:bg-white/25"
 					>
 						<EditableText k="portal.events.attending.details" fallback="Details" />
 					</Link>
@@ -330,10 +330,10 @@ function Withdraw({
 			// reading and the verb appears the moment it is reachable.
 			aria-label="Say you can no longer come"
 			className={cx(
-				"group relative z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 font-display text-[11.5px] font-bold transition disabled:opacity-50",
+				"group relative z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-[11.5px] font-bold transition disabled:opacity-50",
 				onDark
-					? "bg-white text-navy hover:bg-white/90"
-					: "border border-hairline-strong bg-white text-slate-strong hover:border-signal hover:text-signal",
+					? "bg-white text-ink hover:bg-white/90"
+					: "border border-card-line bg-white text-slate-strong hover:border-blue hover:text-blue",
 				className,
 			)}
 		>
@@ -373,11 +373,11 @@ function DateChip({ date }: { date: string }) {
 	const day = valid ? valid.toLocaleDateString(undefined, { day: "numeric" }) : "";
 
 	return (
-		<div className="flex-none rounded-control bg-white px-4 py-3 text-center shadow-card">
-			<div className="text-[9.5px] font-extrabold uppercase tracking-wider text-signal">
+		<div className="flex-none rounded-lg bg-white px-4 py-3 text-center border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]">
+			<div className="text-[9.5px] font-semibold uppercase tracking-wider text-blue">
 				{month || ""}
 			</div>
-			<div className="font-display text-[26px] font-extrabold leading-none text-ink">
+			<div className="text-[26px] font-semibold leading-none text-ink">
 				{day || "?"}
 			</div>
 		</div>
@@ -507,10 +507,10 @@ export default function Events() {
 
 			<section className="mt-9">
 				<div className="text-center">
-					<div className="eyebrow text-signal">
+					<div className="eyebrow text-blue">
 						<EditableText k="portal.events.eyebrow" fallback="Upcoming events" />
 					</div>
-					<h2 className="mt-2 font-display text-[26px] font-extrabold tracking-tight text-ink">
+					<h2 className="mt-2 text-[26px] font-semibold tracking-tight text-ink">
 						<EditableText k="portal.events.heading" fallback="Featured events" />
 					</h2>
 				</div>
@@ -615,11 +615,11 @@ function Hero({
 
 	return (
 		<div className="relative">
-			<div className="overflow-hidden rounded-feature bg-gradient-to-br from-navy via-navy to-signal/80 px-7 pb-20 pt-12 text-center shadow-hero md:px-12 md:pb-24 md:pt-16">
+			<div className="overflow-hidden rounded-2xl bg-gradient-to-br from-rail via-rail to-blue/80 px-7 pb-20 pt-12 text-center shadow-hero md:px-12 md:pb-24 md:pt-16">
 				<div className="eyebrow text-white/60">
 					<EditableText k="portal.events.hero.eyebrow" fallback="What's on" />
 				</div>
-				<h1 className="mx-auto mt-3 max-w-2xl font-display text-[30px] font-extrabold leading-tight tracking-tight text-white md:text-[38px]">
+				<h1 className="mx-auto mt-3 max-w-2xl text-[30px] font-semibold leading-tight tracking-tight text-white md:text-[38px]">
 					<EditableText
 						k="portal.events.hero.headline"
 						fallback="Discover and join upcoming events"
@@ -638,7 +638,7 @@ function Hero({
 					event.preventDefault();
 					onSearch();
 				}}
-				className="relative z-10 mx-auto -mt-11 flex max-w-3xl flex-col gap-2 rounded-panel bg-white p-2.5 shadow-pop"
+				className="relative z-10 mx-auto -mt-11 flex max-w-3xl flex-col gap-2 rounded-2xl bg-white p-2.5 shadow-pop"
 			>
 				{/* Two rows, because there are six controls here and a single row of
 				    six is either six unreadably narrow cells or a row that wraps and
@@ -662,13 +662,13 @@ function Hero({
 						type="submit"
 						disabled={disabled}
 						aria-label="Search"
-						className="grid h-11 w-11 flex-none place-items-center rounded-full bg-signal text-white transition hover:bg-signal-dark disabled:opacity-50"
+						className="grid h-11 w-11 flex-none place-items-center rounded-full bg-blue text-white transition hover:bg-blue-press disabled:opacity-50"
 					>
 						<Icon.search size={16} />
 					</button>
 				</div>
 
-				<div className="grid gap-2 border-t border-hairline-soft pt-2 sm:grid-cols-2 lg:grid-cols-4">
+				<div className="grid gap-2 border-t border-card-line pt-2 sm:grid-cols-2 lg:grid-cols-4">
 					<label className="control">
 						<Icon.tag size={15} className="flex-none text-slate-faint" />
 						<span className="sr-only">Category</span>
@@ -791,7 +791,7 @@ function Card({
 	const href = `/events/${encodeURIComponent(row.event)}`;
 
 	return (
-		<article className="group relative flex flex-col overflow-hidden rounded-card bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-lift">
+		<article className="group relative flex flex-col overflow-hidden rounded-xl bg-white border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_10px_rgba(30,50,73,0.07)]">
 			<div className="relative h-20 flex-none overflow-hidden sm:h-24">
 				{row.image ? (
 					<img
@@ -806,31 +806,31 @@ function Card({
 					// and better than a stock photograph this app invented.
 					<div
 						aria-hidden="true"
-						className="h-full w-full bg-gradient-to-br from-navy via-navy to-signal/70"
+						className="h-full w-full bg-gradient-to-br from-rail via-rail to-blue/70"
 					/>
 				)}
 
 				{/* Both overlays shrink with the band. At the previous size they took
 				    a third of an 80px image between them, which reads as a picture of
 				    two badges rather than a picture with two badges on it. */}
-				<div className="absolute left-3 top-3 rounded-control bg-white/95 px-2.5 py-1.5 text-center shadow-card backdrop-blur">
-					<div className="font-display text-[13px] font-extrabold leading-none text-ink">
+				<div className="absolute left-3 top-3 rounded-lg bg-white/95 px-2.5 py-1.5 text-center border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] backdrop-blur">
+					<div className="text-[13px] font-semibold leading-none text-ink">
 						{formatDayMonth(row.start_date).split(" ")[0] || "?"}
 					</div>
-					<div className="text-[8px] font-bold uppercase tracking-wider text-signal">
+					<div className="text-[8px] font-bold uppercase tracking-wider text-blue">
 						{formatDayMonth(row.start_date).split(" ")[1] || ""}
 					</div>
 				</div>
 
 				{row.category && (
-					<span className="absolute right-2.5 top-2.5 max-w-[60%] truncate rounded-full bg-navy/80 px-2 py-0.5 text-[9.5px] font-bold text-white backdrop-blur">
+					<span className="absolute right-2.5 top-2.5 max-w-[60%] truncate rounded-full bg-rail/80 px-2 py-0.5 text-[9.5px] font-bold text-white backdrop-blur">
 						{row.category}
 					</span>
 				)}
 			</div>
 
 			<div className="flex flex-1 flex-col p-4">
-				<h3 className="font-display text-[14px] font-bold leading-snug text-ink transition group-hover:text-navy [overflow-wrap:anywhere]">
+				<h3 className="text-[14px] font-bold leading-snug text-ink transition group-hover:text-ink [overflow-wrap:anywhere]">
 					{/* The stretched link. `before:absolute inset-0` puts an invisible
 					    hit area over the whole card while keeping the accessible name
 					    on the title, which is what a screen reader should announce. */}
@@ -840,14 +840,14 @@ function Card({
 				</h3>
 
 				{row.summary && (
-					<p className="mt-1.5 line-clamp-2 text-[11.5px] leading-relaxed text-slate-body [overflow-wrap:anywhere]">
+					<p className="mt-1.5 line-clamp-2 text-[11.5px] leading-relaxed text-muted [overflow-wrap:anywhere]">
 						{row.summary}
 					</p>
 				)}
 
 				{/* `items-start` and no `truncate`: a long venue name wraps onto a
 				    second line rather than being cut off mid-word. */}
-				<dl className="mt-3 space-y-1.5 text-[11.5px] text-slate-body">
+				<dl className="mt-3 space-y-1.5 text-[11.5px] text-muted">
 					<div className="flex items-start gap-1.5">
 						<Icon.calendar size={13} className="mt-0.5 flex-none text-slate-faint" />
 						<dd className="min-w-0">
@@ -883,7 +883,7 @@ function Card({
 							type="button"
 							onClick={onToggle}
 							disabled={busy}
-							className="relative z-10 inline-flex items-center justify-center self-start rounded-full bg-navy px-4 py-2 font-display text-[12px] font-bold text-white transition hover:bg-signal disabled:opacity-50"
+							className="relative z-10 inline-flex items-center justify-center self-start rounded-full bg-rail px-4 py-2 text-[12px] font-bold text-white transition hover:bg-blue disabled:opacity-50"
 						>
 							{busy ? (
 								<EditableText k="portal.events.attending.saving" fallback="Saving…" />
@@ -937,7 +937,7 @@ export function Event() {
 		<>
 			<Link
 				to="/events"
-				className="mb-6 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-navy hover:underline"
+				className="mb-6 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink hover:underline"
 			>
 				<Icon.back size={14} />
 				All events
@@ -955,7 +955,7 @@ export function Event() {
 
 			{row && (
 				<article>
-					<div className="overflow-hidden rounded-feature shadow-hero">
+					<div className="overflow-hidden rounded-2xl shadow-hero">
 						{row.banner ? (
 							<img
 								src={row.banner}
@@ -965,7 +965,7 @@ export function Event() {
 						) : (
 							<div
 								aria-hidden="true"
-								className="aspect-[10/3] w-full bg-gradient-to-br from-navy via-navy to-signal/70"
+								className="aspect-[10/3] w-full bg-gradient-to-br from-rail via-rail to-blue/70"
 							/>
 						)}
 					</div>
@@ -978,24 +978,24 @@ export function Event() {
 					    the only value that breaks mid-token, and it is applied to text
 					    a *society* typed rather than to layout, so nothing that should
 					    stay on one line is affected. */}
-					<div className="mx-auto -mt-14 min-w-0 max-w-3xl rounded-panel bg-white p-7 shadow-pop sm:p-9">
+					<div className="mx-auto -mt-14 min-w-0 max-w-3xl rounded-2xl bg-white p-7 shadow-pop sm:p-9">
 						{row.category && (
-							<span className="inline-block rounded-full bg-signal/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-signal-dark">
+							<span className="inline-block rounded-full bg-blue/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-press">
 								{row.category}
 							</span>
 						)}
 
-						<h1 className="mt-3 font-display text-[28px] font-extrabold leading-tight tracking-tight text-ink [overflow-wrap:anywhere] sm:text-[32px]">
+						<h1 className="mt-3 text-[28px] font-semibold leading-tight tracking-tight text-ink [overflow-wrap:anywhere] sm:text-[32px]">
 							{row.title}
 						</h1>
 
 						{row.summary && (
-							<p className="mt-3 text-[14.5px] leading-relaxed text-slate-body [overflow-wrap:anywhere]">
+							<p className="mt-3 text-[14.5px] leading-relaxed text-muted [overflow-wrap:anywhere]">
 								{row.summary}
 							</p>
 						)}
 
-						<dl className="mt-7 grid gap-4 border-y border-hairline py-6 sm:grid-cols-2">
+						<dl className="mt-7 grid gap-4 border-y border-card-line py-6 sm:grid-cols-2">
 							<Fact icon={<Icon.calendar size={16} />} label="When">
 								{dateLine(row)}
 								{row.start_time && (
@@ -1032,7 +1032,7 @@ export function Event() {
 						    apply to a Text Editor field. */}
 						{row.about && (
 							<div
-								className="article-body mt-7 text-[14.5px] leading-[1.75] text-slate-body [overflow-wrap:anywhere]"
+								className="article-body mt-7 text-[14.5px] leading-[1.75] text-muted [overflow-wrap:anywhere]"
 								dangerouslySetInnerHTML={{ __html: row.about }}
 							/>
 						)}
@@ -1041,7 +1041,7 @@ export function Event() {
 							{row.href ? (
 								<Attend row={row} />
 							) : (
-								<p className="rounded-card bg-surface px-4 py-3 text-[12.5px] italic text-slate-faint">
+								<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] italic text-slate-faint">
 									Registration is not open yet.
 								</p>
 							)}
@@ -1065,7 +1065,7 @@ function Fact({
 }) {
 	return (
 		<div className="flex min-w-0 gap-3">
-			<span className="mt-0.5 flex-none text-navy" aria-hidden="true">
+			<span className="mt-0.5 flex-none text-ink" aria-hidden="true">
 				{icon}
 			</span>
 			<div className="min-w-0">
@@ -1157,7 +1157,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 				type="button"
 				onClick={() => void toggle(row.event)}
 				disabled={busy}
-				className="inline-flex items-center justify-center rounded-full bg-signal px-6 py-3 font-display text-[13.5px] font-bold text-white transition hover:bg-signal-dark disabled:opacity-50"
+				className="inline-flex items-center justify-center rounded-full bg-blue px-6 py-3 text-[13.5px] font-bold text-white transition hover:bg-blue-press disabled:opacity-50"
 			>
 				{busy ? (
 					<EditableText k="portal.events.attending.saving" fallback="Saving…" />
@@ -1169,15 +1169,15 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 	}
 
 	return (
-		<div className="rounded-card border border-hairline bg-surface/60 p-5 sm:p-6">
+		<div className="rounded-xl border border-card-line bg-surface/60 p-5 sm:p-6">
 			<div className="flex flex-wrap items-center gap-2">
-				<span className="inline-flex items-center gap-1.5 rounded-full bg-signal/10 px-3 py-1 text-[11.5px] font-bold text-signal">
+				<span className="inline-flex items-center gap-1.5 rounded-full bg-blue/10 px-3 py-1 text-[11.5px] font-bold text-blue">
 					<Icon.check size={13} />
 					<EditableText k="portal.events.attend.confirmed" fallback="Attending" />
 				</span>
 			</div>
 
-			<h3 className="mt-4 font-display text-[15px] font-bold tracking-tight text-ink">
+			<h3 className="mt-4 text-[15px] font-bold tracking-tight text-ink">
 				<EditableText k="portal.events.attend.heading" fallback="What you need on the day" />
 			</h3>
 
@@ -1186,7 +1186,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 					<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">When</dt>
 					<dd className="mt-1 text-[13.5px] font-semibold text-ink">
 						{when}
-						{time && <span className="block font-normal text-slate-body">{time}</span>}
+						{time && <span className="block font-normal text-muted">{time}</span>}
 						{row.time_zone && (
 							<span className="block text-[12px] font-normal text-slate-faint">{row.time_zone}</span>
 						)}
@@ -1198,7 +1198,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 					<dd className="mt-1 text-[13.5px] font-semibold text-ink">
 						{row.venue || row.medium || "To be confirmed"}
 						{row.venue_address && (
-							<span className="block font-normal text-slate-body">{row.venue_address}</span>
+							<span className="block font-normal text-muted">{row.venue_address}</span>
 						)}
 					</dd>
 				</div>
@@ -1208,7 +1208,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 				<button
 					type="button"
 					onClick={calendar}
-					className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2.5 font-display text-[12.5px] font-bold text-white transition hover:bg-signal"
+					className="inline-flex items-center gap-2 rounded-full bg-rail px-4 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-blue"
 				>
 					<Icon.calendar size={15} />
 					<EditableText k="portal.events.attend.calendar" fallback="Add to calendar" />
@@ -1219,7 +1219,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 						href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(row.venue_address)}`}
 						target="_blank"
 						rel="noreferrer"
-						className="inline-flex items-center gap-2 rounded-full border border-hairline-strong bg-white px-4 py-2.5 font-display text-[12.5px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
+						className="inline-flex items-center gap-2 rounded-full border border-card-line bg-white px-4 py-2.5 text-[12.5px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
 					>
 						<Icon.pin size={15} />
 						<EditableText k="portal.events.attend.directions" fallback="Find the venue" />
@@ -1231,12 +1231,12 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 			    it undoes what they are for. A branch that is expecting somebody
 			    needs to be told when they cannot come, so this is as reachable as
 			    saying yes was; it is quieter, not hidden. */}
-			<div className="mt-5 flex flex-wrap items-center gap-3 border-t border-hairline pt-4">
+			<div className="mt-5 flex flex-wrap items-center gap-3 border-t border-card-line pt-4">
 				<button
 					type="button"
 					onClick={() => void toggle(row.event)}
 					disabled={busy}
-					className="text-[12px] font-bold text-slate-faint underline underline-offset-2 transition hover:text-signal disabled:opacity-50"
+					className="text-[12px] font-bold text-slate-faint underline underline-offset-2 transition hover:text-blue disabled:opacity-50"
 				>
 					{busy ? (
 						<EditableText k="portal.events.attending.saving" fallback="Saving…" />

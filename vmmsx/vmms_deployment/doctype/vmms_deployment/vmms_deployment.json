@@ -11,21 +11,64 @@
   "terms_of_reference",
   "column_break_deployment",
   "geo_node",
+  "coordinator",
   "status",
   "volunteers_required",
   "email_template",
   "period_section",
+  "planned_start",
   "start_date",
   "column_break_period",
+  "planned_end",
   "end_date",
+  "schedule_section",
+  "briefing_on",
+  "check_in_deadline",
+  "expected_return",
+  "column_break_schedule",
+  "actual_start",
+  "actual_end",
+  "place_tab",
+  "site_section",
+  "site_name",
+  "site_address",
+  "column_break_site",
+  "site_latitude",
+  "site_longitude",
+  "site_located_on",
+  "meeting_section",
+  "meeting_point",
+  "meeting_address",
+  "column_break_meeting",
+  "meeting_latitude",
+  "meeting_longitude",
+  "meeting_located_on",
+  "travel_section",
+  "travel_notes",
+  "column_break_travel",
+  "local_contact_name",
+  "local_contact_phone",
   "roster_section",
   "participants",
   "feed_section",
   "updates",
   "notes_section",
-  "notes"
+  "notes",
+  "change_reason",
+  "closeout_tab",
+  "closeout_section",
+  "closed_out_on",
+  "closed_out_by",
+  "column_break_closeout",
+  "lessons_learned",
+  "mission_report"
  ],
  "fields": [
+  {
+   "fieldname": "deployment_section",
+   "fieldtype": "Section Break",
+   "label": "Deployment"
+  },
   {
    "default": "DEP-.#####",
    "description": "Automatic series for the deployment number.",
@@ -35,11 +78,6 @@
    "label": "Series",
    "options": "DEP-.#####",
    "reqd": 1
-  },
-  {
-   "fieldname": "deployment_section",
-   "fieldtype": "Section Break",
-   "label": "Deployment"
   },
   {
    "description": "The terms this deployment runs against: what the work is, what a volunteer must hold to join it, and where it may be used.",
@@ -64,13 +102,22 @@
    "reqd": 1
   },
   {
+   "description": "The person answerable for this deployment: who volunteers ask, and whose contact details go on every invitation. Required, because a deployment nobody is named against is one a volunteer in the field has nobody to ring.",
+   "fieldname": "coordinator",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Responsible Coordinator",
+   "options": "User",
+   "reqd": 1
+  },
+  {
    "default": "Planned",
-   "description": "Where this deployment stands: planned, active, completed or cancelled. Volunteers can still file time against a completed one.",
+   "description": "Where the deployment has got to. Suspended is a pause somebody intends to lift; Closed Out is Completed plus the paperwork. Cancelled and Closed Out are final.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Planned\nActive\nCompleted\nCancelled",
+   "options": "Planned\nActive\nSuspended\nCompleted\nClosed Out\nCancelled",
    "reqd": 1
   },
   {
@@ -93,24 +140,187 @@
    "label": "Period"
   },
   {
-   "description": "The first day of the deployment. Certifications are checked against this date when candidates are matched.",
+   "description": "When the deployment is planned to begin, to the hour.",
+   "fieldname": "planned_start",
+   "fieldtype": "Datetime",
+   "label": "Planned Start"
+  },
+  {
+   "description": "The day the deployment begins. Derived from the planned start and shown here because every register in this app windows on days; edit the planned start above.",
    "fieldname": "start_date",
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Start Date",
-   "reqd": 1
+   "reqd": 0,
+   "read_only": 1
   },
   {
    "fieldname": "column_break_period",
    "fieldtype": "Column Break"
   },
   {
-   "description": "The last day of the deployment. Never earlier than the start date; a one-day deployment repeats the same date.",
+   "description": "When it is planned to end. Must not fall before the planned start.",
+   "fieldname": "planned_end",
+   "fieldtype": "Datetime",
+   "label": "Planned End"
+  },
+  {
+   "description": "The day the deployment ends. Derived from the planned end.",
    "fieldname": "end_date",
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "End Date",
-   "reqd": 1
+   "reqd": 0,
+   "read_only": 1
+  },
+  {
+   "fieldname": "schedule_section",
+   "fieldtype": "Section Break",
+   "label": "Schedule"
+  },
+  {
+   "description": "When the team is briefed. Carried on every invitation, because it is the time a volunteer actually has to be somewhere.",
+   "fieldname": "briefing_on",
+   "fieldtype": "Datetime",
+   "label": "Briefing"
+  },
+  {
+   "description": "By when somebody who is going has to have checked in on site.",
+   "fieldname": "check_in_deadline",
+   "fieldtype": "Datetime",
+   "label": "Check-in Deadline"
+  },
+  {
+   "description": "When the team is expected back. What a family or a branch desk is told.",
+   "fieldname": "expected_return",
+   "fieldtype": "Datetime",
+   "label": "Expected Return"
+  },
+  {
+   "fieldname": "column_break_schedule",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "When it actually began. Recorded afterwards; blank until it does.",
+   "fieldname": "actual_start",
+   "fieldtype": "Datetime",
+   "label": "Actual Start"
+  },
+  {
+   "description": "When it actually ended.",
+   "fieldname": "actual_end",
+   "fieldtype": "Datetime",
+   "label": "Actual End"
+  },
+  {
+   "fieldname": "place_tab",
+   "fieldtype": "Tab Break",
+   "label": "Place"
+  },
+  {
+   "fieldname": "site_section",
+   "fieldtype": "Section Break",
+   "label": "Deployment Point"
+  },
+  {
+   "description": "What the society calls the place the work happens.",
+   "fieldname": "site_name",
+   "fieldtype": "Data",
+   "label": "Deployment Point"
+  },
+  {
+   "description": "Where it is, in words. What the geocoder is given when there are no coordinates.",
+   "fieldname": "site_address",
+   "fieldtype": "Small Text",
+   "label": "Address or Description"
+  },
+  {
+   "fieldname": "column_break_site",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Filled in by geocoding, or dropped by hand. A pin set by hand is never overwritten.",
+   "fieldname": "site_latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "site_longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6"
+  },
+  {
+   "description": "When these coordinates were last resolved from the address. Blank where somebody placed the pin themselves.",
+   "fieldname": "site_located_on",
+   "fieldtype": "Datetime",
+   "label": "Located On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "meeting_section",
+   "fieldtype": "Section Break",
+   "label": "Meeting Point"
+  },
+  {
+   "description": "Where the team gathers before going on. Often not the same place as the work.",
+   "fieldname": "meeting_point",
+   "fieldtype": "Data",
+   "label": "Meeting Point"
+  },
+  {
+   "fieldname": "meeting_address",
+   "fieldtype": "Small Text",
+   "label": "Address or Description"
+  },
+  {
+   "fieldname": "column_break_meeting",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "meeting_latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "meeting_longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "meeting_located_on",
+   "fieldtype": "Datetime",
+   "label": "Located On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "travel_section",
+   "fieldtype": "Section Break",
+   "label": "Getting There"
+  },
+  {
+   "description": "How to travel, what to bring, what the road is like. Carried on every invitation.",
+   "fieldname": "travel_notes",
+   "fieldtype": "Small Text",
+   "label": "Travel Notes"
+  },
+  {
+   "fieldname": "column_break_travel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Somebody at the other end. Not the coordinator: the person on site.",
+   "fieldname": "local_contact_name",
+   "fieldtype": "Data",
+   "label": "Local Contact"
+  },
+  {
+   "fieldname": "local_contact_phone",
+   "fieldtype": "Data",
+   "label": "Local Contact Phone"
   },
   {
    "fieldname": "roster_section",
@@ -149,6 +359,52 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "description": "Why the last material change was made. Required once anybody has been invited: a volunteer who arranged their week around a date is owed a sentence when it moves. Every one of these is kept in the deployment's own feed.",
+   "fieldname": "change_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason For The Last Change"
+  },
+  {
+   "fieldname": "closeout_tab",
+   "fieldtype": "Tab Break",
+   "label": "Close-out"
+  },
+  {
+   "fieldname": "closeout_section",
+   "fieldtype": "Section Break",
+   "label": "Close-out"
+  },
+  {
+   "description": "Recorded automatically when the deployment is closed out.",
+   "fieldname": "closed_out_on",
+   "fieldtype": "Datetime",
+   "label": "Closed Out On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closed_out_by",
+   "fieldtype": "Link",
+   "label": "Closed Out By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_closeout",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "What the society would do differently. Optional, and closing out never waits for it.",
+   "fieldname": "lessons_learned",
+   "fieldtype": "Text",
+   "label": "Lessons Learned"
+  },
+  {
+   "description": "The mission report, if one was written. Optional.",
+   "fieldname": "mission_report",
+   "fieldtype": "Attach",
+   "label": "Mission Report"
   }
  ],
  "grid_page_length": 50,

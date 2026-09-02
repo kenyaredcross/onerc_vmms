@@ -36,11 +36,21 @@ import { cx } from "./primitives";
  * `MULTILINE` is the exception, and it has to be: a capsule three lines tall is
  * a stadium with text in it, and the first character sits under the curve.
  */
+// One control, everywhere somebody types.
+//
+// **It was a pill.** `rounded-full` was the previous system's most
+// characteristic move and it is not this one's: a fully rounded single-line
+// field beside a 12px card and an 8px button reads as a control borrowed from
+// another product, and the concept's own registration sheet draws a rounded
+// *rectangle* with a search glyph rather than a lozenge. The radius, the border
+// colour and the focus halo are now identical to `admin/ui/kit.tsx`'s, so a
+// coordinator writing a job opening and a member of the public filling in the
+// registration wizard are operating the same field.
 const CONTROL =
-	"w-full rounded-full border border-hairline-strong bg-white px-4 py-2.5 text-[13.5px] text-ink transition placeholder:text-slate-faint hover:border-hairline-strong/80 focus:border-navy disabled:cursor-not-allowed disabled:bg-surface disabled:text-slate-body";
+	"w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft disabled:cursor-not-allowed disabled:bg-surface disabled:text-muted";
 
 const MULTILINE =
-	"w-full rounded-card border border-hairline-strong bg-white px-4 py-3 text-[13.5px] text-ink transition placeholder:text-slate-faint hover:border-hairline-strong/80 focus:border-navy disabled:cursor-not-allowed disabled:bg-surface disabled:text-slate-body";
+	"w-full rounded-lg border border-rail-line bg-white px-3 py-2.5 text-[13px] leading-relaxed text-ink transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft disabled:cursor-not-allowed disabled:bg-surface disabled:text-muted";
 
 /* ------------------------------------------------------------------ layout */
 
@@ -65,17 +75,25 @@ export function Field({
 			    as their answer. */}
 			<label
 				htmlFor={htmlFor}
-				className="mb-2 flex items-center gap-1 text-[12.5px] font-semibold text-slate-strong"
+				className="mb-1.5 flex items-center gap-1 text-[12px] font-semibold text-slate-strong"
 			>
 				{label}
-				{required && (
-					<span className="text-signal" aria-hidden="true">
+				{/* Red, not blue. Blue means "act on this" everywhere in this
+				    product, and a required marker is not an action; red asterisk is
+				    also the one convention every form on the web already shares.
+				    `label &&` because a marker with nothing to mark is an orphan
+				    asterisk on a line of its own. */}
+				{required && label && (
+					<span className="text-danger" aria-hidden="true">
 						*
 					</span>
 				)}
 			</label>
 			{children}
-			{hint && <p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-faint">{hint}</p>}
+			{/* `muted`, not `slate-faint`: 11.5px at #9AA0A8 is about 2.5:1 on
+			    white, which fails AA for the one line on a form that explains what
+			    an answer is for. */}
+			{hint && <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted">{hint}</p>}
 		</div>
 	);
 }
@@ -92,9 +110,9 @@ export function FieldSet({
 }) {
 	return (
 		<section>
-			<h3 className="font-display text-[16px] font-extrabold tracking-tight text-ink">{title}</h3>
+			<h3 className="text-[16px] font-semibold tracking-tight text-ink">{title}</h3>
 			{description && (
-				<p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-slate-body">
+				<p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-muted">
 					{description}
 				</p>
 			)}
@@ -348,7 +366,7 @@ export function Combo({
 				<ul
 					id={listId}
 					role="listbox"
-					className="absolute z-20 mt-1.5 max-h-60 w-full overflow-y-auto rounded-card border border-hairline-strong bg-white py-1 shadow-pop"
+					className="absolute z-20 mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border border-card-line bg-white py-1 shadow-pop"
 				>
 					{matches.length === 0 && (
 						<li className="px-3.5 py-2.5 text-[12.5px] text-slate-faint">Nothing matches.</li>
@@ -367,11 +385,11 @@ export function Combo({
 								className={cx(
 									"flex w-full items-center justify-between px-3.5 py-2 text-left text-[13px]",
 									index === active ? "bg-surface text-ink" : "text-slate-strong",
-									option === value && "font-bold text-navy",
+									option === value && "font-bold text-ink",
 								)}
 							>
 								{option}
-								{option === value && <Tick className="text-navy" />}
+								{option === value && <Tick className="text-ink" />}
 							</button>
 						</li>
 					))}
@@ -399,7 +417,7 @@ export function Segmented({
 		<div
 			role="radiogroup"
 			aria-label={label}
-			className="inline-flex rounded-full border border-hairline-strong bg-surface p-1"
+			className="inline-flex rounded-full border border-card-line bg-surface p-1"
 		>
 			{options.map((option) => (
 				<button
@@ -409,10 +427,10 @@ export function Segmented({
 					aria-checked={value === option}
 					onClick={() => onChange(option)}
 					className={cx(
-						"rounded-full px-4 py-1.5 font-display text-[12.5px] font-bold transition",
+						"rounded-full px-4 py-1.5 text-[12.5px] font-bold transition",
 						value === option
-							? "bg-white text-navy shadow-card"
-							: "text-slate-body hover:text-slate-strong",
+							? "bg-white text-ink border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]"
+							: "text-muted hover:text-slate-strong",
 					)}
 				>
 					{option}
@@ -442,18 +460,18 @@ export function TokenTray({
 	if (tokens.length === 0) return null;
 
 	return (
-		<ul className="mb-3 flex flex-wrap gap-1.5" aria-label={`${label} chosen`}>
+		<ul className="mt-2.5 flex flex-wrap gap-1.5" aria-label={`${label} chosen`}>
 			{tokens.map((token) => (
 				<li key={token.key}>
 					<button
 						type="button"
 						onClick={() => onRemove(token.key)}
-						className="group inline-flex items-center gap-1.5 rounded-full border border-navy/25 bg-navy/[0.06] py-1 pl-3 pr-2 text-[12px] font-semibold text-navy transition hover:border-navy/50 hover:bg-navy/10"
+						className="group inline-flex items-center gap-1.5 rounded-full border border-blue-line bg-blue-soft py-1 pl-3 pr-2 text-[12px] font-semibold text-blue-press transition hover:border-blue hover:bg-blue-line/40"
 					>
 						{token.label}
 						<span
 							aria-hidden="true"
-							className="grid h-3.5 w-3.5 place-items-center rounded-full bg-navy/15 text-navy transition group-hover:bg-navy group-hover:text-white"
+							className="grid h-3.5 w-3.5 place-items-center rounded-full bg-blue/20 text-blue-press transition group-hover:bg-blue group-hover:text-white"
 						>
 							<svg viewBox="0 0 24 24" width="9" height="9" fill="none">
 								<path
@@ -526,7 +544,7 @@ export function MultiCombo({
 
 	if (options.length === 0) {
 		return (
-			<p className="rounded-card bg-surface px-4 py-3 text-[12.5px] text-slate-body">
+			<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] text-muted">
 				{empty ?? "This society has not configured any options here yet."}
 			</p>
 		);
@@ -547,14 +565,18 @@ export function MultiCombo({
 
 	return (
 		<div>
-			<TokenTray
-				tokens={chosen.map((option) => ({ key: option.key, label: option.label }))}
-				onRemove={onToggle}
-				label={label}
-			/>
+			{/* A visible label, not only an `aria-label`. This control sits in a
+			    grid of `Field`s that all carry one, and the odd one out reads as a
+			    stray search box rather than as an answer to a question. */}
+			<label
+				htmlFor={id}
+				className="mb-1.5 block text-[12px] font-semibold text-slate-strong"
+			>
+				{label}
+			</label>
 
 			<div className="relative" ref={wrap}>
-				<span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-faint">
+				<span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-faint">
 					<svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true">
 						<circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
 						<path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -568,7 +590,7 @@ export function MultiCombo({
 					aria-controls={listId}
 					aria-autocomplete="list"
 					aria-label={label}
-					className={cx(CONTROL, "pl-10")}
+					className={cx(CONTROL, "pl-9")}
 					value={query}
 					placeholder={placeholder}
 					onFocus={() => setOpen(true)}
@@ -602,7 +624,7 @@ export function MultiCombo({
 						id={listId}
 						role="listbox"
 						aria-multiselectable="true"
-						className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-card border border-hairline-strong bg-white py-1 shadow-pop"
+						className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-xl border border-card-line bg-white py-1 shadow-pop"
 					>
 						{matches.length === 0 && (
 							<li className="px-3.5 py-3 text-[12.5px] leading-relaxed text-slate-faint">
@@ -629,7 +651,7 @@ export function MultiCombo({
 										<span
 											className={cx(
 												"mt-px grid h-4 w-4 flex-none place-items-center rounded-[4px] border transition",
-												on ? "border-navy bg-navy" : "border-hairline-strong bg-white",
+												on ? "border-blue bg-blue" : "border-card-line bg-white",
 											)}
 											aria-hidden="true"
 										>
@@ -639,7 +661,7 @@ export function MultiCombo({
 											<span
 												className={cx(
 													"block text-[13px]",
-													on ? "font-bold text-navy" : "text-slate-strong",
+													on ? "font-semibold text-ink" : "text-slate-strong",
 												)}
 											>
 												{option.label}
@@ -657,6 +679,16 @@ export function MultiCombo({
 					</ul>
 				)}
 			</div>
+
+			{/* Below the field, the way the concept's registration sheet draws it:
+			    the input is where you look to *add*, the tray is what you have
+			    already said, and putting the tray above pushed the field down the
+			    page every time somebody picked something. */}
+			<TokenTray
+				tokens={chosen.map((option) => ({ key: option.key, label: option.label }))}
+				onRemove={onToggle}
+				label={label}
+			/>
 		</div>
 	);
 }
@@ -684,17 +716,17 @@ export function ChoiceCard({
 			aria-checked={selected}
 			onClick={onSelect}
 			className={cx(
-				"group relative flex w-full items-start gap-3.5 rounded-card border p-5 text-left transition",
+				"group relative flex w-full items-start gap-3.5 rounded-xl border p-5 text-left transition",
 				selected
-					? "border-navy bg-navy/[0.04] shadow-card ring-1 ring-navy"
-					: "border-hairline bg-white hover:-translate-y-0.5 hover:border-hairline-strong hover:shadow-card",
+					? "border-blue bg-rail/[0.04] border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] ring-1 ring-blue"
+					: "border-card-line bg-white hover:-translate-y-0.5 hover:border-card-line hover:border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]",
 			)}
 		>
 			{icon && (
 				<span
 					className={cx(
-						"grid h-10 w-10 flex-none place-items-center rounded-card transition",
-						selected ? "bg-navy text-white" : "bg-surface text-navy",
+						"grid h-10 w-10 flex-none place-items-center rounded-xl transition",
+						selected ? "bg-rail text-white" : "bg-surface text-ink",
 					)}
 					aria-hidden="true"
 				>
@@ -704,18 +736,18 @@ export function ChoiceCard({
 
 			<span className="min-w-0 flex-1">
 				<span className="flex items-baseline justify-between gap-3">
-					<span className="font-display text-[15px] font-bold text-ink">{title}</span>
+					<span className="text-[15px] font-bold text-ink">{title}</span>
 					{aside}
 				</span>
 				{body && (
-					<span className="mt-1.5 block text-[12.5px] leading-relaxed text-slate-body">{body}</span>
+					<span className="mt-1.5 block text-[12.5px] leading-relaxed text-muted">{body}</span>
 				)}
 			</span>
 
 			<span
 				className={cx(
 					"grid h-5 w-5 flex-none place-items-center rounded-full border transition",
-					selected ? "border-navy bg-navy" : "border-hairline-strong bg-white",
+					selected ? "border-blue bg-rail" : "border-card-line bg-white",
 				)}
 				aria-hidden="true"
 			>

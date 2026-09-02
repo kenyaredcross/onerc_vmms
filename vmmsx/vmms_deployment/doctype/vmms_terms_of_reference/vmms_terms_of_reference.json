@@ -36,6 +36,7 @@
   "itinerary",
   "resources_section",
   "resources",
+  "has_no_resources",
   "governance_tab",
   "requirements_section",
   "required_certifications",
@@ -45,6 +46,14 @@
   "approval_mode",
   "notes_section",
   "notes",
+  "supersedes",
+  "approval_tab",
+  "approval_section",
+  "approval_state",
+  "approval_stage",
+  "column_break_approval",
+  "approval_stage_entered_on",
+  "approval_decisions",
   "amended_from"
  ],
  "fields": [
@@ -77,12 +86,12 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "The programme of work these terms belong to. Optional: standing duties belong to no project.",
+   "description": "The programme of work these terms are written under \u2014 ERPNext's own Project, the same record the society's costs, timesheets and project dashboard hang off. Required before these terms can be submitted.",
    "fieldname": "project",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Project",
-   "options": "VMMS Project"
+   "options": "Project"
   },
   {
    "default": "1",
@@ -126,11 +135,12 @@
    "label": "Where It Applies"
   },
   {
-   "description": "The part of the organisation these terms may be used in \u2014 that branch and everything under it. Empty means anywhere.",
+   "description": "The part of the organisation these terms may be used in \u2014 that branch and everything under it. Terms written for the whole society name the national node; naming nothing is not an option, because a mission document that applies nowhere in particular cannot be routed for approval and cannot be told apart from one somebody had not finished.",
    "fieldname": "geo_scope",
    "fieldtype": "Link",
    "label": "Geo Scope",
-   "options": "Geo Node"
+   "options": "Geo Node",
+   "reqd": 1
   },
   {
    "fieldname": "background_section",
@@ -234,6 +244,13 @@
    "options": "VMMS TOR Resource"
   },
   {
+   "default": "0",
+   "description": "Tick where this mission genuinely needs nothing budgeted. Submission requires either resource lines or this, so that an empty table is always a deliberate answer rather than one somebody had not got to yet.",
+   "fieldname": "has_no_resources",
+   "fieldtype": "Check",
+   "label": "This Mission Needs No Resources"
+  },
+  {
    "fieldname": "governance_tab",
    "fieldtype": "Tab Break",
    "label": "Requirements & Governance"
@@ -287,6 +304,62 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "description": "The terms these replace. Set when a mission has to be respecified after deployments have already been run under the original \u2014 the one case a cancel-and-amend cannot serve, because the deployments already agreed keep the wording they were agreed under. This is the thread back to it.",
+   "fieldname": "supersedes",
+   "fieldtype": "Link",
+   "label": "Supersedes",
+   "no_copy": 1,
+   "options": "VMMS Terms of Reference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_tab",
+   "fieldtype": "Tab Break",
+   "label": "Approval"
+  },
+  {
+   "depends_on": "eval:doc.approval_state",
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "description": "Where this document has got to in the society's own approval workflow, if it has configured one for terms of reference. Empty means it has not, and a user with submit permission may submit directly. Written by the approval engine only.",
+   "fieldname": "approval_state",
+   "fieldtype": "Select",
+   "label": "Approval State",
+   "no_copy": 1,
+   "options": "\nDraft\nSubmitted\nIn Review\nApproved\nRejected\nWithdrawn\nExpired",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_stage",
+   "fieldtype": "Data",
+   "label": "Approval Stage",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approval_stage_entered_on",
+   "fieldtype": "Datetime",
+   "label": "Stage Entered On",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "description": "Every decision recorded against this document, in the order they were made.",
+   "fieldname": "approval_decisions",
+   "fieldtype": "Table",
+   "label": "Approval Decisions",
+   "no_copy": 1,
+   "options": "VMMS Approval Decision",
+   "read_only": 1
   },
   {
    "description": "The terms this document amends. Deployments already run under the original keep pointing at the original.",

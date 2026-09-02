@@ -163,7 +163,7 @@ function Totals({ data, loading }: { data: MyTimeLogs | null; loading: boolean }
 
 			{kinds.length > 0 && (
 				<Card>
-					<div className="mb-4 text-[11.5px] font-semibold text-slate-body">By kind of work</div>
+					<div className="mb-4 text-[11.5px] font-semibold text-muted">By kind of work</div>
 					<div className="space-y-3.5">
 						{kinds.map(([kind, total], index) => (
 							<Meter
@@ -237,7 +237,7 @@ function LogEntry({ row }: { row: TimeLogRow }) {
 		<ListRow
 			lead={
 				<span
-					className="grid h-9 w-9 flex-none place-items-center rounded-control bg-tint-navy-soft text-tint-navy"
+					className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-tint-navy-soft text-tint-navy"
 					aria-hidden="true"
 				>
 					<Icon.clock size={17} />
@@ -247,7 +247,7 @@ function LogEntry({ row }: { row: TimeLogRow }) {
 			meta={
 				<span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
 					{row.category_label && (
-						<span className="rounded-full bg-navy/[.06] px-2 py-0.5 font-semibold text-navy">
+						<span className="rounded-full bg-rail/[.06] px-2 py-0.5 font-semibold text-ink">
 							{row.category_label}
 						</span>
 					)}
@@ -255,13 +255,13 @@ function LogEntry({ row }: { row: TimeLogRow }) {
 				</span>
 			}
 			trailing={
-				<span className="tabular font-display text-[13.5px] font-extrabold text-navy">
+				<span className="tabular text-[13.5px] font-semibold text-ink">
 					{hours(row.hours)}h
 				</span>
 			}
 		>
 			{row.notes && (
-				<p className="pl-[50px] text-[12.5px] leading-relaxed text-slate-body">{row.notes}</p>
+				<p className="pl-[50px] text-[12.5px] leading-relaxed text-muted">{row.notes}</p>
 			)}
 		</ListRow>
 	);
@@ -321,7 +321,7 @@ function LogForm({ profile, onLogged }: { profile: VolunteerProfile; onLogged: (
 	};
 
 	const field =
-		"w-full rounded-full border border-hairline-strong bg-white px-4 py-2.5 text-[13.5px] text-ink transition placeholder:text-slate-faint focus:border-navy focus:outline-none";
+		"w-full rounded-full border border-card-line bg-white px-4 py-2.5 text-[13.5px] text-ink transition placeholder:text-slate-faint focus:border-blue focus:outline-none";
 
 	const valid = Boolean(date) && Number(hoursGiven) > 0 && Boolean(profile.geo_node);
 
@@ -334,7 +334,7 @@ function LogForm({ profile, onLogged }: { profile: VolunteerProfile; onLogged: (
 			)}
 
 			{done && (
-				<p className="mb-5 flex items-center gap-2.5 rounded-card border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] font-medium text-emerald-800">
+				<p className="mb-5 flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13px] font-medium text-emerald-800">
 					<Icon.check size={16} />
 					Logged. Your branch sees it against your record.
 				</p>
@@ -380,11 +380,11 @@ function LogForm({ profile, onLogged }: { profile: VolunteerProfile; onLogged: (
 					</Field>
 				)}
 
-				{/* Read-only, and `rounded-card` rather than a capsule: a society with
+				{/* Read-only, and `rounded-xl` rather than a capsule: a society with
 				    a four-rung ladder has a path that wraps, and a two-line capsule
 				    puts the first character under the curve. */}
 				<Field label="Branch">
-					<p className="flex items-start gap-2.5 rounded-card bg-surface px-4 py-3 text-[13px] leading-snug text-slate-strong">
+					<p className="flex items-start gap-2.5 rounded-xl bg-surface px-4 py-3 text-[13px] leading-snug text-slate-strong">
 						<Icon.pin size={15} className="mt-px flex-none text-slate-faint" />
 						{profile.geo_path ?? "No serving branch on your record"}
 					</p>

@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:{declaration}-{version}",
+ "creation": "2026-09-01 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "version_section",
+  "declaration",
+  "version",
+  "column_break_version",
+  "source",
+  "published_on",
+  "text_section",
+  "body",
+  "link_section",
+  "external_url",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "version_section",
+   "fieldtype": "Section Break",
+   "label": "Version"
+  },
+  {
+   "description": "The declaration this is a version of. A declaration is the standing policy; a version is one wording of it.",
+   "fieldname": "declaration",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Declaration",
+   "options": "VMMS Declaration",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "description": "Your own version label, unique within this declaration. It is what an acceptance is stamped with, so two people who agreed to different wording are never recorded as having agreed to the same thing.",
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_version",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Text",
+   "description": "Whether this version is wording held here, or a page the society publishes on its own website.",
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "Text\nLink",
+   "reqd": 1
+  },
+  {
+   "description": "Stamped when this version is submitted. Until then it is a draft nobody has been shown.",
+   "fieldname": "published_on",
+   "fieldtype": "Datetime",
+   "label": "Published On",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.source==\"Text\"",
+   "fieldname": "text_section",
+   "fieldtype": "Section Break",
+   "label": "Text"
+  },
+  {
+   "depends_on": "eval:doc.source==\"Text\"",
+   "description": "The declaration exactly as the applicant reads it, and exactly as it is stored on every acceptance made against this version.",
+   "fieldname": "body",
+   "fieldtype": "Text Editor",
+   "label": "Text",
+   "translatable": 1
+  },
+  {
+   "depends_on": "eval:doc.source==\"Link\"",
+   "fieldname": "link_section",
+   "fieldtype": "Section Break",
+   "label": "Published Page"
+  },
+  {
+   "depends_on": "eval:doc.source==\"Link\"",
+   "description": "The address of the page the applicant is asked to read, on the society's own website. What is recorded against an acceptance is this address and this version label, not the words on the page.",
+   "fieldname": "external_url",
+   "fieldtype": "Data",
+   "label": "Page Address",
+   "options": "URL"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "VMMS Declaration Version",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-09-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Declaration Version",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

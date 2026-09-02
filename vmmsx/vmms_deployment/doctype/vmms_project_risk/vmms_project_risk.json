@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-31 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "risk",
+  "likelihood",
+  "impact",
+  "responsible",
+  "mitigation"
+ ],
+ "fields": [
+  {
+   "columns": 4,
+   "description": "What could stop this programme, in your own words.",
+   "fieldname": "risk",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Risk",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "columns": 1,
+   "description": "How likely the society judges this to be. Left blank where nobody has judged it.",
+   "fieldname": "likelihood",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Likelihood",
+   "options": "\nLow\nMedium\nHigh"
+  },
+  {
+   "columns": 1,
+   "description": "What it would cost the programme if it happened.",
+   "fieldname": "impact",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Impact",
+   "options": "\nLow\nMedium\nHigh"
+  },
+  {
+   "columns": 2,
+   "description": "Who is watching this one. A name or a job title, whichever the society uses.",
+   "fieldname": "responsible",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Watched By"
+  },
+  {
+   "columns": 4,
+   "description": "What the society intends to do about it.",
+   "fieldname": "mitigation",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Mitigation",
+   "translatable": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-31 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Deployment",
+ "name": "VMMS Project Risk",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

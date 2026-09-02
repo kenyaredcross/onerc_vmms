@@ -64,6 +64,12 @@ const Stories = lazy(() => import("./portal/Stories"));
 const Story = lazy(() => import("./portal/Stories").then((m) => ({ default: m.Story })));
 
 const Tasks = lazy(() => import("./portal/Tasks"));
+// One task at its own address — the brief, the checklist, the evidence, the
+// conversation and the outcome. Shares the listing's chunk for the same reason
+// every other detail view does: whoever opens a list is one click from a row.
+const TaskRecord = lazy(() =>
+	import("./portal/Tasks").then((module) => ({ default: module.TaskRecord })),
+);
 
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 // The review queue is two lists and one detail page, all in one chunk: an
@@ -76,6 +82,30 @@ const VolunteerQueue = lazy(() =>
 );
 const MembershipQueue = lazy(() =>
 	import("./admin/ReviewQueue").then((module) => ({ default: module.MembershipQueue })),
+);
+// The other two bands of each queue, at addresses of their own. Routes rather
+// than tabs inside one page, for the reason every other split in this file
+// gives: "what is waiting on me", "what went back to the applicant" and "what
+// is finished" are three jobs, and each needs a link somebody can send.
+const VolunteerQueueChanges = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({
+		default: () => <module.VolunteerQueue band="changes" />,
+	})),
+);
+const VolunteerQueueClosed = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({
+		default: () => <module.VolunteerQueue band="closed" />,
+	})),
+);
+const MembershipQueueChanges = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({
+		default: () => <module.MembershipQueue band="changes" />,
+	})),
+);
+const MembershipQueueClosed = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({
+		default: () => <module.MembershipQueue band="closed" />,
+	})),
 );
 const ApplicationReview = lazy(() => import("./admin/ReviewQueue"));
 // Addressing a branch's own people. Its own chunk because it is the one console
@@ -102,8 +132,15 @@ const AdminTasks = lazy(() => import("./admin/Tasks"));
 // `api/analytics.py`, so it has its own chunk like the rest of them.
 const Analytics = lazy(() => import("./admin/Analytics"));
 
-const Deployments = lazy(() =>
-	import("./portal/Discover").then((module) => ({ default: module.Deployments })),
+const Deployments = lazy(() => import("./portal/Deployments"));
+// The two deployment records a volunteer opens: the invitation they are being
+// asked to answer, and the mission file of one they served on. Both share the
+// listing's chunk.
+const DeploymentRequest = lazy(() =>
+	import("./portal/Deployments").then((module) => ({ default: module.DeploymentRequest })),
+);
+const DeploymentRecord = lazy(() =>
+	import("./portal/Deployments").then((module) => ({ default: module.DeploymentRecord })),
 );
 const Training = lazy(() =>
 	import("./portal/Discover").then((module) => ({ default: module.Training })),
@@ -140,15 +177,17 @@ const DeploymentList = lazy(() =>
 // Separate routes rather than a filter somebody sets again after every reload:
 // "what is running now" and "what did we do" are different questions, and each
 // deserves an address a coordinator can send to a colleague.
+// The approved operational board: four columns over the doctype's own statuses.
+// Its own component rather than a scoped `DeploymentList`, because it is not a
+// filtered list — it is a different reading of the register.
 const DeploymentsOngoing = lazy(() =>
-	import("./admin/Deployments").then((module) => ({
-		default: () => <module.DeploymentList scope="ongoing" />,
-	})),
+	import("./admin/Deployments").then((module) => ({ default: module.DeploymentsOngoing })),
 );
+// A shelf of closed mission files rather than a filtered list. Its own component
+// for the same reason the ongoing board is: it is a different reading of the
+// register, not a narrower one.
 const DeploymentsPast = lazy(() =>
-	import("./admin/Deployments").then((module) => ({
-		default: () => <module.DeploymentList scope="past" />,
-	})),
+	import("./admin/Deployments").then((module) => ({ default: module.PastDeployments })),
 );
 const DeploymentCreate = lazy(() =>
 	import("./admin/Deployments").then((module) => ({ default: module.DeploymentCreate })),
@@ -172,6 +211,27 @@ const TermsOfReferenceDetail = lazy(() =>
 	import("./admin/Projects").then((module) => ({ default: module.TermsDetail })),
 );
 const Stipends = lazy(() => import("./admin/Stipends"));
+// What the society took in and what it paid out. A report over two existing
+// registers rather than a book of account — see `admin/Finance.tsx`.
+const Finance = lazy(() => import("./admin/Finance"));
+// Recruitment: the society's job openings and the people who answered them.
+// Four screens over HRMS's own records; absent entirely on a site without it.
+const Openings = lazy(() =>
+	import("./admin/Recruitment").then((module) => ({ default: module.Openings })),
+);
+const OpeningForm = lazy(() =>
+	import("./admin/Recruitment").then((module) => ({ default: module.OpeningForm })),
+);
+const OpeningDetail = lazy(() =>
+	import("./admin/Recruitment").then((module) => ({ default: module.OpeningDetailPage })),
+);
+const JobApplications = lazy(() =>
+	import("./admin/Recruitment").then((module) => ({ default: module.JobApplications })),
+);
+const JobApplicant = lazy(() =>
+	import("./admin/Recruitment").then((module) => ({ default: module.JobApplicant })),
+);
+const WhatsAppChannel = lazy(() => import("./admin/WhatsApp"));
 const AdminEvents = lazy(() => import("./admin/Events"));
 
 /**
@@ -237,6 +297,8 @@ const ROUTE_NAMES: Record<string, string> = {
 	"admin/projects": "projects",
 	"admin/deployments": "deployments",
 	"admin/stipends": "stipends",
+	"admin/finance": "income and expenses",
+	"admin/recruitment": "recruitment",
 	"admin/events": "events",
 	"admin/analytics": "analytics",
 	"admin/content": "page content",
@@ -283,10 +345,15 @@ export default function App() {
 					<Route path="/stories/:slug" element={<Story />} />
 					<Route path="/notifications" element={<Notifications />} />
 					<Route path="/deployments" element={<Deployments />} />
+					{/* Declared before the docname route for a reader; React Router
+					    ranks the more specific static segment itself. */}
+					<Route path="/deployments/requests/:assignment" element={<DeploymentRequest />} />
+					<Route path="/deployments/:name" element={<DeploymentRecord />} />
 					<Route path="/availability" element={<Availability />} />
 					<Route path="/membership" element={<Membership />} />
 					<Route path="/hours" element={<Hours />} />
 					<Route path="/tasks" element={<Tasks />} />
+					<Route path="/tasks/:name" element={<TaskRecord />} />
 					<Route path="/profile" element={<Profile />} />
 					{/* Learning is a tab in the sidebar, but it is a link out to the
 					    LMS rather than a screen here. The route stays so an old
@@ -312,6 +379,14 @@ export default function App() {
 					<Route path="queue" element={<Navigate to="/admin/queue/volunteers" replace />} />
 					<Route path="queue/volunteers" element={<VolunteerQueue />} />
 					<Route path="queue/members" element={<MembershipQueue />} />
+					{/* The two history bands. Declared before `queue/:kind/:name`
+					    for a reader; React Router ranks a static segment above a
+					    dynamic one itself, so neither can be shadowed by a
+					    docname. */}
+					<Route path="queue/volunteers/changes" element={<VolunteerQueueChanges />} />
+					<Route path="queue/volunteers/closed" element={<VolunteerQueueClosed />} />
+					<Route path="queue/members/changes" element={<MembershipQueueChanges />} />
+					<Route path="queue/members/closed" element={<MembershipQueueClosed />} />
 					{/* Last of the queue routes, and one segment shorter than none
 					    of them — `:kind` would happily match `volunteers`, so the
 					    two static routes above have to be declared first for a
@@ -342,12 +417,29 @@ export default function App() {
 					    segments first regardless of declaration order, so this never
 					    shadows `terms`, `list` or `requests`. */}
 					<Route path="deployments/:name" element={<DeploymentDetail />} />
-					<Route path="stipends" element={<Stipends />} />
+					{/* Money, in one place. The overview is the position; Stipends is
+					    where a single payment is acted on. `/admin/stipends` was the
+					    old address and every existing bookmark still lands. */}
+					<Route path="finance" element={<Finance />} />
+					<Route path="finance/stipends" element={<Stipends />} />
+					<Route path="stipends" element={<Navigate to="/admin/finance/stipends" replace />} />
+					{/* Recruitment. The two static list routes are declared before the
+					    docname routes for a reader; React Router ranks them itself. */}
+					<Route path="recruitment" element={<Navigate to="/admin/recruitment/openings" replace />} />
+					<Route path="recruitment/openings" element={<Openings />} />
+					<Route path="recruitment/openings/new" element={<OpeningForm />} />
+					<Route path="recruitment/openings/:name" element={<OpeningDetail />} />
+					<Route path="recruitment/openings/:name/edit" element={<OpeningForm />} />
+					<Route path="recruitment/applications" element={<JobApplications />} />
+					<Route path="recruitment/applications/:name" element={<JobApplicant />} />
 					<Route path="events" element={<AdminEvents />} />
 					<Route path="tasks" element={<AdminTasks />} />
 					<Route path="analytics" element={<Analytics />} />
 					<Route path="people" element={<PeopleOverview />} />
 					<Route path="communication" element={<Navigate to="/admin/communication/system/compose" replace />} />
+					{/* Declared before the generic `:channel/:view` for a reader: the
+					    channel screen is not a composer and is WhatsApp's alone. */}
+					<Route path="communication/whatsapp/channel" element={<WhatsAppChannel />} />
 					<Route path="communication/:channel/:view" element={<Communication />} />
 					<Route path="content" element={<ContentAdmin />} />
 					<Route path="questions" element={<Questions />} />

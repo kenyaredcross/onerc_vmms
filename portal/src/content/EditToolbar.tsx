@@ -18,7 +18,7 @@ export function EditToolbar() {
 	if (!canEdit) return null;
 
 	return (
-		<div className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-hairline bg-white/95 px-2 py-1.5 shadow-pop backdrop-blur">
+		<div className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-card-line bg-white/95 px-2 py-1.5 shadow-pop backdrop-blur">
 			<span className="pl-2 text-[11px] font-bold uppercase tracking-wider text-slate-faint">
 				{editing ? "Editing" : "Page"}
 			</span>
@@ -28,8 +28,8 @@ export function EditToolbar() {
 				aria-pressed={editing}
 				className={
 					editing
-						? "rounded-full bg-signal px-4 py-1.5 text-[12px] font-bold text-white transition hover:bg-signal-dark"
-						: "rounded-full bg-navy px-4 py-1.5 text-[12px] font-bold text-white transition hover:bg-navy/90"
+						? "rounded-full bg-blue px-4 py-1.5 text-[12px] font-bold text-white transition hover:bg-blue-press"
+						: "rounded-full bg-rail px-4 py-1.5 text-[12px] font-bold text-white transition hover:bg-rail/90"
 				}
 			>
 				{editing ? "Done" : "Edit content"}

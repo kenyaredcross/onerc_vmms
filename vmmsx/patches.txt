@@ -14,6 +14,9 @@ vmmsx.patches.register_task_module
 vmmsx.patches.register_branch_module
 vmmsx.patches.register_registration_module
 vmmsx.patches.register_events_module
+# VMMS HR, and the six doctypes the Job Opening screening port brings with it.
+# Eleventh instance of the pattern the patch's own docstring names.
+vmmsx.patches.register_hr_module
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
@@ -70,3 +73,40 @@ vmmsx.patches.seed_scheduling_vocabularies
 # Tanzania demo site: people, memberships, projects, TORs, deployments, tasks,
 # notifications and historical email records. Other sites are left untouched.
 vmmsx.patches.seed_tanzania_presentation_scale
+# Which identity documents a volunteer must produce, and the age this society
+# treats as adult. Custom Fields vmmsx owns on core's Identification Type and
+# National Society Settings; all four ship empty, and empty narrows nothing.
+vmmsx.patches.install_identity_document_rules
+# The starting vocabulary for how a guardian's consent was checked. An open set
+# a society edits from the moment it lands.
+vmmsx.patches.seed_guardian_verification_methods
+# The programme of work moved onto ERPNext's own Project and VMMS Project was
+# retired. Migrates the records rather than deleting them, and repoints every
+# terms of reference written under one. See the patch's own docstring for why the
+# links are repointed with db.set_value and why summary and notes swap homes.
+vmmsx.patches.adopt_standard_project
+# A mission's resource lines now count in ERPNext's UOM register rather than in
+# free text. Matches every value already written onto a real UOM, and creates the
+# ones a society used that ERPNext does not ship.
+vmmsx.patches.link_tor_resource_units
+# Every deployment now names a responsible coordinator and carries its period as
+# datetimes. Fills both in from what each record already says, so a register
+# written before those fields existed is not one nobody can save. See the
+# patch's own docstring for why the owner is the honest answer and why it writes
+# columns rather than saving documents.
+vmmsx.patches.complete_deployment_records
+# Every task now carries its deadline as a datetime and a priority. Fills both
+# in from what each record already says, so the overdue sweep and the register's
+# ordering see the whole register rather than only rows saved since.
+vmmsx.patches.complete_task_records
+# The metadata a deleted doctype leaves behind — a naming-series Property Setter,
+# a Custom Field targeting it. The sweep runs at the end of adopt_standard_project
+# now; this is the same sweep under a name the Patch Log has not seen, for sites
+# where that patch had already run. See its own docstring.
+vmmsx.patches.purge_retired_project_metadata
+# A declaration's wording is now a submitted version record rather than a field
+# somebody can edit. Publishes what each declaration is showing today as its
+# first version, and points every acceptance already recorded at the version it
+# was made against. See the patch's own docstring for why published_on is the
+# declaration's modified date and not the date of the deploy.
+vmmsx.patches.publish_declaration_versions

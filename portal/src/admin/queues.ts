@@ -21,7 +21,7 @@
 export interface QueueSpec {
 	/** What `approvals.my_queue` and `approvals.get_status` are asked about. */
 	doctype: string;
-	/** Where the list lives. Detail pages hang under it. */
+	/** Where the list lives. Detail pages and state bands hang under it. */
 	list: string;
 	heading: string;
 	/** Content key for the heading, so a society renames its own screens. */
@@ -29,6 +29,61 @@ export interface QueueSpec {
 	/** What the person under review is, for a confirmation sentence. */
 	noun: string;
 	empty: string;
+}
+
+/**
+ * The three bands a queue navigates between, and the one place they are named.
+ *
+ * **Each is a route, not a tab index.** "What is waiting on me", "what has gone
+ * back to the applicant" and "what is finished" are three different jobs, and
+ * each deserves an address somebody can link, bookmark and come back to. A
+ * component-local tab would give three screens one URL.
+ *
+ * `group` is what `approvals.my_cases` is asked for. `segment` is what appears
+ * in the address, and it is empty for the band the queue opens on — so the
+ * queue's own route stays `/admin/queue/volunteers` and every existing bookmark
+ * and sidebar badge still lands where it always did.
+ *
+ * **None of these is a state and none is a stage.** The states are the closed
+ * set in `approvals/states.py` and the server maps a band onto them; a stage is
+ * a society's own wording and is compared nowhere in this app.
+ */
+export interface QueueBand {
+	key: string;
+	segment: string;
+	label: string;
+	/** What an empty band means, in words that say why it is empty. */
+	empty: string;
+	lead: string;
+}
+
+export const QUEUE_BANDS: QueueBand[] = [
+	{
+		key: "actionable",
+		segment: "",
+		label: "Applications",
+		empty: "Nothing is waiting on you.",
+		lead: "Routed to you specifically by the approval engine, not to everybody who holds your role.",
+	},
+	{
+		key: "changes",
+		segment: "changes",
+		label: "Changes requested",
+		empty: "Nothing has been sent back for corrections.",
+		lead: "Sent back to the applicant. They are drafts again, and review restarts from the first stage when they resubmit.",
+	},
+	{
+		key: "closed",
+		segment: "closed",
+		label: "Closed",
+		empty: "Nothing here has been decided yet.",
+		lead: "Approved, rejected, withdrawn and expired applications, kept with their decisions and evidence.",
+	},
+];
+
+/** Where one band of a queue lives. */
+export function bandRoute(spec: QueueSpec, band: QueueBand): string {
+	return band.segment ? `${spec.list}/${band.segment}` : spec.list;
 }
 
 export const QUEUES = {

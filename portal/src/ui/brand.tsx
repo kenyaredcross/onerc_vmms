@@ -131,13 +131,18 @@ export function BrandLockup({
 					// only rule that does not distort somebody's emblem.
 				/>
 			) : (
-				<CrossMark className="flex-none text-signal" size={compact ? 20 : small ? 17 : 21} />
+				// White on a dark surface (the portal's blue rail), the action blue
+				// on a light one. A geometric stand-in, never the emblem itself.
+				<CrossMark
+					className={cx("flex-none", dark ? "text-white" : "text-blue")}
+					size={compact ? 20 : small ? 17 : 21}
+				/>
 			)}
 
 			{name && (
 				<span
 					className={cx(
-						"font-display font-extrabold leading-tight tracking-tight",
+						"font-semibold leading-tight tracking-tight",
 						wrap ? "line-clamp-2 break-words" : "truncate",
 						compact ? "text-[13px]" : small ? "text-[14px]" : "text-[16px]",
 						dark ? "text-white" : "text-ink",

@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-31 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "question_id",
+  "question",
+  "question_type",
+  "is_required",
+  "answer",
+  "answer_file"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "description": "The question's own identifier on the opening, so an answer can be matched back to it even after the wording changes.",
+   "fieldname": "question_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Question ID",
+   "read_only": 1
+  },
+  {
+   "columns": 4,
+   "description": "The question exactly as it was asked. A snapshot, so an application decided next year still reads as the conversation it was.",
+   "fieldname": "question",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Question",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "description": "What kind of answer was asked for, as at the time it was asked.",
+   "fieldname": "question_type",
+   "fieldtype": "Data",
+   "label": "Type",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "label": "Was Required",
+   "read_only": 1
+  },
+  {
+   "columns": 3,
+   "description": "What they wrote. Every answer type but an upload lands here, as text.",
+   "fieldname": "answer",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Answer"
+  },
+  {
+   "description": "What they uploaded, where the question asked for a file. Private, and readable only by the applicant and whoever may read the application.",
+   "fieldname": "answer_file",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-31 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS HR",
+ "name": "VMMS Application Answer",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

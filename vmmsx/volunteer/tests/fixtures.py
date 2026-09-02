@@ -78,6 +78,8 @@ WORKFLOW_DOCTYPE = "VMMS Approval Workflow"
 # put somebody on one.
 DEPLOYMENT_DOCTYPE = "VMMS Deployment"
 TERMS_DOCTYPE = "VMMS Terms of Reference"
+# ERPNext's own, and the programme every terms of reference is written under.
+PROJECT_DOCTYPE = "Project"
 
 SKILL_DOCTYPE = "VMMS Skill"
 MOTIVATION_DOCTYPE = "VMMS Motivation"
@@ -519,10 +521,62 @@ def make_application(profile: str, geo_node: str, **overrides):
 		"doctype": APPLICATION_DOCTYPE,
 		"red_profile": profile,
 		"geo_node": geo_node,
+		# What every real registration now carries. Defaulted here rather than in
+		# each suite because these are conditions of submitting and of approving,
+		# and a fixture without them models an application nobody could actually
+		# make — see `accept_declarations` for the declarations' own half.
+		"emergency_contacts": emergency_contact(),
 	}
 	values.update(overrides)
 
-	return frappe.get_doc(values).insert()
+	application = frappe.get_doc(values)
+	accept_declarations(application)
+
+	return application.insert()
+
+
+def emergency_contact(**values) -> list[dict]:
+	"""One emergency contact, in the shape a registration stores.
+
+	`application.assert_approvable` refuses an approval without one the applicant
+	has permitted us to call, so a suite about routing or acceptance needs one
+	without wanting to know why. A test about the requirement itself passes
+	`emergency_contacts=[]`; those live in the registration suite, which owns the
+	rule.
+	"""
+	row = {
+		"contact_name": "Mercy Otieno",
+		"relationship": "Sister",
+		"primary_phone": "+254700000001",
+		"may_contact_in_emergency": 1,
+	}
+	row.update(values)
+
+	return [row]
+
+
+def required_declarations() -> list[str]:
+	"""The keys a caller would send with every required box ticked.
+
+	Read from the live list rather than named here, so this suite does not have
+	to know which four the app ships and a society's fifth is accepted without
+	anybody editing this file.
+	"""
+	from vmmsx.registration.services import declarations
+
+	return [row["name"] for row in declarations.shown_on(APPLICATION_DOCTYPE) if row["is_required"]]
+
+
+def accept_declarations(application) -> list[str]:
+	"""Record those acceptances on a document being built directly.
+
+	`declarations.assert_accepted` refuses a submission with a required
+	declaration unaccepted whichever door it came through, so a fixture that
+	builds an application by hand has to do what every real door does.
+	"""
+	from vmmsx.registration.services import declarations
+
+	return declarations.apply(application, required_declarations())
 
 
 def make_volunteer(profile: str, home_geo_node: str):
@@ -547,6 +601,41 @@ def make_member(profile: str):
 	return member
 
 
+def make_project(geo_node: str) -> str:
+	"""The programme this suite's terms of reference are written under.
+
+	One per node, found by name afterwards. Borrowed in shape from the Deployment
+	module's own fixture and kept here for the reason `make_deployment` gives
+	about its terms of reference: importing that module would drag a second geo
+	hierarchy into every run of this suite for one record.
+
+	Inserted as Administrator because `project.on_validate` refuses a programme
+	anchored where the caller does not run, and a fixture is arranging scenery
+	rather than exercising that rule.
+	"""
+	name = f"{TEST_PREFIX} Programme {geo_node}"
+	existing = frappe.db.get_value(PROJECT_DOCTYPE, {"project_name": name}, "name")
+
+	if existing:
+		return existing
+
+	caller = frappe.session.user
+	frappe.set_user("Administrator")
+
+	try:
+		return frappe.get_doc(
+			{
+				"doctype": PROJECT_DOCTYPE,
+				"project_name": name,
+				"company": frappe.db.get_value("Company", {}, "name"),
+				"status": "Open",
+				"vmms_geo_node": geo_node,
+			}
+		).insert().name
+	finally:
+		frappe.set_user(caller)
+
+
 def make_deployment(geo_node: str, participants: list[str] | None = None, **overrides):
 	"""A deployment running in *this* suite's geo, with a roster.
 
@@ -564,6 +653,11 @@ def make_deployment(geo_node: str, participants: list[str] | None = None, **over
 	from frappe.utils import add_days, today
 
 	key = f"{TEST_PREFIX}-tor-{frappe.generate_hash(length=8)}"
+	# A complete mission document, because an incomplete one cannot be submitted
+	# and an unsubmitted one takes no deployment. `terms.REQUIRED_AT_SUBMISSION`
+	# is the list; nothing below the purpose is read by any assertion here. The
+	# programme and the scope are this suite's own node, so the deployment about
+	# to be anchored there is inside the terms that govern it.
 	terms = frappe.get_doc(
 		{
 			"doctype": TERMS_DOCTYPE,
@@ -572,6 +666,16 @@ def make_deployment(geo_node: str, participants: list[str] | None = None, **over
 			"purpose": "Whatever this society uses these terms for.",
 			"approval_mode": "direct",
 			"is_active": 1,
+			"geo_scope": geo_node,
+			"project": make_project(geo_node),
+			"expected_start_date": today(),
+			"expected_end_date": add_days(today(), 7),
+			"mission_background": "<p>Why this society keeps a written specification for this work.</p>",
+			"objectives": [{"objective": "Do the work these terms describe."}],
+			"expected_outputs": [{"output": "A record of what was done."}],
+			"stakeholders": [{"designation": "Branch Coordinator"}],
+			"itinerary": [{"activity_date": today(), "activity": "Briefing"}],
+			"has_no_resources": 1,
 		}
 	).insert()
 	# Submitted, because `terms.assert_offered` refuses a draft: a deployment
@@ -582,6 +686,7 @@ def make_deployment(geo_node: str, participants: list[str] | None = None, **over
 		"doctype": DEPLOYMENT_DOCTYPE,
 		"terms_of_reference": terms.name,
 		"geo_node": geo_node,
+		"coordinator": frappe.session.user,
 		"start_date": today(),
 		"end_date": add_days(today(), 7),
 		"status": "Planned",
@@ -657,6 +762,13 @@ def reset() -> None:
 		TERMS_DOCTYPE, filters={"tor_key": ("like", f"{TEST_PREFIX}-%")}, pluck="name"
 	):
 		frappe.delete_doc(TERMS_DOCTYPE, name, force=True)
+
+	# After the terms that point at them, and named rather than emptied
+	# wholesale: `Project` is ERPNext's and this bench holds other people's.
+	for name in frappe.get_all(
+		PROJECT_DOCTYPE, filters={"project_name": ("like", f"{TEST_PREFIX}%")}, pluck="name"
+	):
+		frappe.delete_doc(PROJECT_DOCTYPE, name, force=True)
 
 	for name in frappe.get_all(VOLUNTEER_DOCTYPE, pluck="name"):
 		frappe.delete_doc(VOLUNTEER_DOCTYPE, name, force=True)

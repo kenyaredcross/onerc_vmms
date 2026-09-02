@@ -37,6 +37,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, cstr, getdate
 
+from vmmsx.registration.services import evidence
+
 QUESTION_DOCTYPE = "VMMS Application Question"
 ANSWER_DOCTYPE = "VMMS Application Answer"
 
@@ -182,20 +184,22 @@ def apply(doc, answers: dict | None) -> list[str]:
 
 
 def anchor_files(doc) -> list[str]:
-	"""Tie uploaded answer files to the document, so the approver can open them.
+	"""Tie uploaded answer files to the document, and make them private.
 
-	**This is what makes an uploaded chief's letter readable by anybody but the
-	applicant.** A private `File` with no `attached_to_doctype` belongs to
-	whoever uploaded it and to System Manager, and to nobody else — so an
-	approver opening the application would see a filename and get a permission
-	error clicking it. Attached to the application, the file inherits the
-	document's own permissions, which are already the right answer: exactly the
-	people who may read the application may read what was uploaded to it.
+	**This is what makes an uploaded chief's letter readable by the approver and
+	by nobody else.** Both halves — the anchoring and the privacy — are
+	`evidence.secure`'s, which is shared with the guardian consent path and will
+	be shared with the membership proof, because one copy of a rule about who may
+	read somebody's documents is the most this app should ever have.
+
+	What is left here is the part that is about *answers*: which rows carry a
+	file, and repointing the row when securing the file moves it. A row still
+	holding the old public URL would be a link to nothing at best, and to a stale
+	public copy at worst.
 
 	Runs after the insert, because the document it points at has to exist. The
-	desk path never needs it: an `Attach` field inside a grid attaches to its own
-	parent as it uploads, and this refuses to move a file that is already
-	anchored somewhere.
+	desk path needs it too: an `Attach` field inside a grid anchors itself as it
+	uploads but says nothing about privacy.
 	"""
 	if not asks(doc.doctype):
 		return []
@@ -206,26 +210,13 @@ def anchor_files(doc) -> list[str]:
 		if row.field_type != ATTACH or not row.answer_file:
 			continue
 
-		name = frappe.db.get_value(
-			"File", {"file_url": row.answer_file, "attached_to_name": ("is", "not set")}, "name"
-		)
+		secured = evidence.secure(doc, row.answer_file)
 
-		if not name:
-			continue
+		if secured and secured != row.answer_file:
+			row.answer_file = secured
+			frappe.db.set_value(row.doctype, row.name, "answer_file", secured, update_modified=False)
 
-		# Elevated because the person this runs for is the applicant, who holds no
-		# permission on `File` beyond their own upload and none at all on the
-		# register they have just applied to join. The write is bounded to a file
-		# they own and already uploaded, and it only ever *narrows* who can reach
-		# it: an unattached private file is theirs alone, and this hands it to the
-		# document's own permission rules.
-		frappe.db.set_value(
-			"File",
-			name,
-			{"attached_to_doctype": doc.doctype, "attached_to_name": doc.name},
-			update_modified=False,
-		)
-		anchored.append(row.answer_file)
+		anchored.append(secured or row.answer_file)
 
 	return anchored
 
@@ -356,24 +347,14 @@ def _choice(question: dict, value) -> str:
 def _file(question: dict, value) -> str:
 	"""A site-relative file URL, and nothing else.
 
-	The applicant uploads through the framework's own file handler and sends back
-	the URL it returned. Refusing anything that does not look like one stops this
-	field becoming a way to point the approver's browser at somebody else's
-	server, which is the same rule `links.py` applies to a content block's href.
+	Delegated to `evidence.assert_uploaded`, which is the one implementation of
+	"did this come from us". Both upload paths are accepted and privacy is
+	settled later in `anchor_files`: a browser that uploaded to `/files/` has
+	already written the file by the time this runs, so refusing the URL would
+	leave the public copy sitting on disk and cost the applicant their answer as
+	well. See `evidence`'s own docstring.
 	"""
-	url = cstr(value).strip()
-
-	if not url:
-		return ""
-
-	if url.startswith("/files/") or url.startswith("/private/files/"):
-		return url
-
-	frappe.throw(
-		_("The file answering {0} was not uploaded to this site.").format(frappe.bold(question["label"])),
-		frappe.ValidationError,
-		title=_("File Not Recognised"),
-	)
+	return evidence.assert_uploaded(value, question["label"])
 
 
 # --- small shared questions -----------------------------------------------

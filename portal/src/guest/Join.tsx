@@ -31,7 +31,10 @@ import { Icon } from "../ui/icons";
 import { Button, Card, ErrorNote, Spinner, StateBadge, cx } from "../ui/primitives";
 import type {
 	ApplicationOptions,
+	Declaration,
+	EmergencyContact,
 	GeoNode,
+	GuardianConsent,
 	IdentityOptions,
 	OpenRegistration,
 	PricedType,
@@ -53,6 +56,11 @@ type DraftRegistration = OpenRegistration & {
 	availability?: string[];
 	motivation?: string[];
 	prior_experience?: string;
+	/** Keys of the declarations already accepted, ready to re-tick on resume. */
+	declarations?: string[];
+	emergency_contacts?: EmergencyContact[];
+	guardian_consents?: GuardianConsent[];
+	is_minor?: boolean;
 };
 
 /**
@@ -64,6 +72,13 @@ type DraftRegistration = OpenRegistration & {
  * Composing the list per path and addressing steps by id keeps every "which step
  * am I on" question out of index arithmetic.
  */
+/**
+ * **`declaration` is not the consent step**, and the two must not be confused.
+ * It predates the consents and it is "About your volunteering" — the skills,
+ * languages, availability and motivation somebody *declares* about themselves.
+ * What the applicant legally agrees to is `consents`, and it is a separate id
+ * for exactly that reason.
+ */
 type StepId =
 	| "path"
 	| "identity"
@@ -71,7 +86,9 @@ type StepId =
 	| "placement"
 	| "identification"
 	| "declaration"
+	| "emergency"
 	| "questions"
+	| "consents"
 	| "confirm";
 
 /**
@@ -93,6 +110,85 @@ type StepId =
  */
 const LOCAL = "Local";
 const ABROAD = "Abroad";
+
+/* ------------------------------------------------- emergency and guardian */
+
+function blankContact(): EmergencyContact {
+	return {
+		contact_name: "",
+		relationship: "",
+		primary_phone: "",
+		alternative_phone: "",
+		// Ticked to begin with, because somebody who names an emergency contact
+		// means us to call them. Unticking is the deliberate act.
+		may_contact_in_emergency: true,
+	};
+}
+
+function blankGuardian(): GuardianConsent {
+	return {
+		guardian_name: "",
+		relationship: "",
+		phone: "",
+		email: "",
+		consent_given: false,
+		consent_date: "",
+		verification_method: null,
+		consent_evidence: null,
+	};
+}
+
+/**
+ * Whole years old today, by the same arithmetic the server uses.
+ *
+ * Local rather than fetched, because the answer has to change while somebody is
+ * still typing their date of birth — but it decides nothing on its own: it only
+ * chooses whether to *draw* the guardian block. The rule that actually governs
+ * an approval is `application.is_minor`, on the server, and this cannot widen
+ * or narrow it.
+ */
+function ageOn(dateOfBirth: string): number {
+	const born = new Date(dateOfBirth);
+	if (Number.isNaN(born.getTime())) return Number.POSITIVE_INFINITY;
+
+	const now = new Date();
+	const hadBirthday =
+		now.getMonth() > born.getMonth() ||
+		(now.getMonth() === born.getMonth() && now.getDate() >= born.getDate());
+
+	return now.getFullYear() - born.getFullYear() - (hadBirthday ? 0 : 1);
+}
+
+/** Enough of a contact to be worth storing: somebody to call, and a number. */
+function contactIsUsable(contact: EmergencyContact): boolean {
+	return Boolean(contact.contact_name.trim() && contact.primary_phone.trim());
+}
+
+/**
+ * Not half-filled. Either nothing has been entered, or enough has.
+ *
+ * A name with no number is not somebody anybody can call, and letting it through
+ * would store a contact that satisfies nothing and looks like it does.
+ */
+function contactIsCoherent(contact: EmergencyContact): boolean {
+	const touched = Boolean(
+		contact.contact_name.trim() || contact.relationship.trim() || contact.primary_phone.trim(),
+	);
+
+	return !touched || contactIsUsable(contact);
+}
+
+function guardianIsUsable(guardian: GuardianConsent): boolean {
+	return Boolean(guardian.guardian_name.trim() && guardian.phone.trim());
+}
+
+function guardianIsCoherent(guardian: GuardianConsent): boolean {
+	const touched = Boolean(
+		guardian.guardian_name.trim() || guardian.relationship.trim() || guardian.phone.trim(),
+	);
+
+	return !touched || guardianIsUsable(guardian);
+}
 
 /**
  * Registering yourself, in the single-page app.
@@ -200,6 +296,19 @@ function JoinBody() {
 	const [idType, setIdType] = useState("");
 	const [idNumber, setIdNumber] = useState("");
 
+	// --- who to call, and — for a minor — who says they may volunteer
+	//
+	// One contact and one guardian, because that is what a society needs before
+	// it can approve somebody and what a person filling in a form on a phone will
+	// actually complete. The doctypes are tables and take more; a branch adds the
+	// second on the desk.
+	const [contact, setContact] = useState<EmergencyContact>(() => blankContact());
+	const [guardian, setGuardian] = useState<GuardianConsent>(() => blankGuardian());
+
+	// Keys of the declarations ticked so far. A set rather than a per-declaration
+	// boolean, so a society adding a fifth needs no new state container.
+	const [accepted, setAccepted] = useState<string[]>([]);
+
 	// --- the declaration
 	const [skills, setSkills] = useState<string[]>([]);
 	const [languages, setLanguages] = useState<string[]>([]);
@@ -277,6 +386,9 @@ function JoinBody() {
 		setMotivations(remembered.motivation ?? []);
 		setExperience(remembered.prior_experience ?? "");
 		setAnswers(remembered.answers ?? {});
+		setAccepted(remembered.declarations ?? []);
+		setContact(remembered.emergency_contacts?.[0] ?? blankContact());
+		setGuardian(remembered.guardian_consents?.[0] ?? blankGuardian());
 		setRestoredDraft(remembered.name);
 	}, [draft.data, restoredDraft]);
 
@@ -459,7 +571,36 @@ function JoinBody() {
 		[path, memberQuestions, options?.questions],
 	);
 
-	const steps = useMemo(() => stepsFor(path, declared, questions), [path, declared, questions]);
+	// What this society asks people to agree to. Empty on the member path, which
+	// has no declarations of its own yet, and empty on a site whose settings have
+	// never been saved — in both cases the step is simply not drawn.
+	const declarations = useMemo(
+		() => (path === "volunteer" ? (options?.declarations ?? []) : []),
+		[path, options?.declarations],
+	);
+
+	/**
+	 * Is the person filling this in a minor, by this society's own reckoning?
+	 *
+	 * Derived from the date of birth on the form and the age the server served,
+	 * so the guardian block appears while somebody is still typing rather than
+	 * after a refused approval. **Both halves come from the server** — the
+	 * threshold from `application_options.minor_age` and the rule itself from
+	 * `application.is_minor` — so this is the same question asked in the same
+	 * terms, not a second opinion. `null` means the society has not configured an
+	 * age of majority, and nothing about guardians is ever shown.
+	 */
+	const minorAge = options?.minor_age ?? null;
+	const isMinor = useMemo(() => {
+		if (!minorAge || !dateOfBirth) return false;
+
+		return ageOn(dateOfBirth) < minorAge;
+	}, [minorAge, dateOfBirth]);
+
+	const steps = useMemo(
+		() => stepsFor(path, declared, questions, declarations),
+		[path, declared, questions, declarations],
+	);
 
 	// A tick that was never touched still has to be sent, because not sending it
 	// is indistinguishable from not answering and a required one would be
@@ -498,6 +639,24 @@ function JoinBody() {
 		if (id === "plan") return Boolean(membershipType);
 		if (id === "placement") return Boolean(node);
 		if (id === "identification") return Boolean(idType && idNumber.trim());
+
+		// An emergency contact is a condition of *approval*, not of submission —
+		// `assert_approvable`, not `assert_ready` — so this step can be walked
+		// past. What it does insist on is that a half-filled contact is not sent:
+		// a name with no number is not somebody anyone can call.
+		//
+		// The guardian block is the same bargain, and deliberately so. A minor
+		// whose parent has not signed anything yet should be able to send the
+		// application and let the branch chase the form.
+		if (id === "emergency") return contactIsCoherent(contact) && guardianIsCoherent(guardian);
+
+		// Every required declaration, which is `declarations.assert_accepted`
+		// asked here so the button says so rather than the submission failing.
+		if (id === "consents") {
+			return declarations
+				.filter((row) => row.is_required)
+				.every((row) => accepted.includes(row.name));
+		}
 
 		// The same rule `questions.assert_answered` applies server-side, asked
 		// here so the button says so rather than the submission failing. A tick is
@@ -634,6 +793,16 @@ function JoinBody() {
 						motivation: motivations,
 						prior_experience: experience,
 						answers,
+						declarations_accepted: accepted,
+						// One row or none. A half-filled contact is dropped rather
+						// than stored, because the server counts contacts and a
+						// nameless one would count.
+						emergency_contacts: contactIsUsable(contact) ? [contact] : [],
+						// Only ever sent for a minor. An applicant who turns out to
+						// be an adult must not leave a guardian record behind them,
+						// and one who was a minor when they started the form and is
+						// not now has no guardian rule to satisfy.
+						guardian_consents: isMinor && guardianIsUsable(guardian) ? [guardian] : [],
 					}
 				: {
 						...identity,
@@ -753,21 +922,34 @@ function JoinBody() {
 	);
 
 	return (
-		<div className="min-h-screen bg-page">
-			<header className="sticky top-0 z-30 border-b border-hairline bg-white/95 backdrop-blur">
-				<div className="mx-auto flex h-[58px] max-w-shell items-center px-6">
-					<Link to="/">
-						<BrandLockup />
-					</Link>
-					{!done && !isGuest && (
-						<span className="ml-auto hidden text-[12px] text-slate-faint sm:block">
-							Step {cursor + 1} of {steps.length}
-						</span>
-					)}
-				</div>
+		<div className="min-h-screen bg-canvas">
+			{/* The concept's own top bar: the society's navy, edge to edge, with the
+			    journey named beside the mark and one way out of it. A registration
+			    is not a page of the site with a header on it — it is a room you are
+			    in — and the dark bar is what says so. */}
+			<header className="sticky top-0 z-30 flex h-[72px] items-center border-b border-white/[0.13] bg-rail px-5 sm:px-[34px]">
+				<Link to="/" className="min-w-0">
+					<BrandLockup tone="dark" />
+				</Link>
+
+				{!isGuest && (
+					<p className="ml-[30px] hidden border-l border-white/[0.22] pl-[30px] text-[12px] text-white/[0.58] sm:block">
+						{path === "member" ? "Membership registration" : "Volunteer registration"}
+					</p>
+				)}
+
+				{/* Never `/` for somebody signed in — that is the public landing page,
+				    and leaving a half-finished application through it reads as having
+				    been signed out. A guest has no portal to be sent back to. */}
+				<Link
+					to={isGuest ? "/" : "/dashboard"}
+					className="ml-auto flex-none rounded-full border border-white/30 px-3.5 py-[9px] text-[11px] font-bold text-white transition hover:bg-white/10"
+				>
+					{isGuest ? "Back to site" : "Save & exit"}
+				</Link>
 			</header>
 
-			<div className="mx-auto max-w-shell px-6 py-8 lg:py-12">
+			<div className="mx-auto w-[min(1180px,calc(100%-28px))] py-7 sm:w-[min(1180px,calc(100%-48px))] lg:pb-[70px] lg:pt-[34px]">
 				{sessionLoading && <Spinner label="Checking your session…" />}
 
 				{!sessionLoading && isGuest && (
@@ -816,7 +998,7 @@ function JoinBody() {
 					!done &&
 					(!openApplication || resumable) &&
 					!draft.isLoading && (
-					<div className="grid gap-8 lg:grid-cols-[228px_minmax(0,1fr)] lg:gap-10">
+					<div className="grid gap-6 lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-[26px]">
 						{resumable && openApplication?.reason && (
 							<div className="lg:col-span-2">
 								<DraftNotice reason={openApplication.reason} />
@@ -851,13 +1033,45 @@ function JoinBody() {
 								    replays the entrance animation. */}
 								<div
 									key={step.id}
-									className={direction === "forward" ? "step-forward" : "step-back"}
+									className={cx(
+										"overflow-hidden rounded-2xl border border-card-line bg-white shadow-[0_9px_26px_rgba(1,30,65,0.035)]",
+										direction === "forward" ? "step-forward" : "step-back",
+									)}
 								>
-									<div className="mb-5">
-										<p className="eyebrow">{step.eyebrow}</p>
-										<h1 className="mt-2 font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink sm:text-[30px]">
+									{/* The concept's step head: where you are, how much is
+									    left, and a bar that shows it. The count and the bar
+									    say the same thing twice on purpose — one of them is
+									    readable, the other is glanceable. */}
+									<header className="border-b border-card-line px-6 pb-6 pt-7 sm:px-9 sm:pb-[25px] sm:pt-[30px]">
+										<div className="mb-3.5 flex items-center justify-between gap-5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-body">
+											<span>
+												Step {cursor + 1} of {steps.length}
+											</span>
+											<strong className="text-blue">
+												{Math.round(((cursor + 1) / steps.length) * 100)}% complete
+												{steps.length - cursor - 1 > 0 &&
+													` · ${steps.length - cursor - 1} ${
+														steps.length - cursor - 1 === 1 ? "step" : "steps"
+													} left`}
+											</strong>
+										</div>
+
+										<div className="mb-[22px] h-[5px] overflow-hidden rounded-full bg-[#E7ECF2]">
+											<div
+												className="h-full rounded-full bg-gradient-to-r from-blue to-[#49A7DD] transition-[width] duration-500 ease-out"
+												style={{ width: `${((cursor + 1) / steps.length) * 100}%` }}
+											/>
+										</div>
+
+										<h1 className="font-display text-[26px] font-bold leading-[1.2] tracking-[-0.035em] text-ink sm:text-[30px]">
 											{step.title}
 										</h1>
+
+										{step.blurb && (
+											<p className="mt-2.5 max-w-[650px] text-[13px] leading-[1.55] text-slate-body">
+												{step.blurb}
+											</p>
+										)}
 										{/* The choice the path step would have asked, kept
 										    reversible without a screen of its own. Drawn only on
 										    the first step, and only when the answer arrived with
@@ -868,9 +1082,9 @@ function JoinBody() {
 										{declared && cursor === 0 && (
 											<PathSwitch path={path} onChange={choosePath} />
 										)}
-									</div>
+									</header>
 
-									<Card className="p-6 sm:p-7">
+									<div className="px-6 py-7 sm:px-9 sm:py-8">
 										{step.id === "path" && <PathStep path={path} onChange={choosePath} />}
 
 										{step.id === "identity" && (
@@ -945,12 +1159,39 @@ function JoinBody() {
 											/>
 										)}
 
+										{step.id === "emergency" && (
+											<EmergencyStep
+												contact={contact}
+												onContact={setContact}
+												isMinor={isMinor}
+												minorAge={minorAge}
+												guardian={guardian}
+												onGuardian={setGuardian}
+											/>
+										)}
+
 										{step.id === "questions" && (
 											<QuestionsStep
 												questions={questions}
 												answers={answers}
 												onAnswer={(question, value) =>
 													setAnswers((current) => ({ ...current, [question]: value }))
+												}
+											/>
+										)}
+
+										{step.id === "consents" && (
+											<ConsentsStep
+												declarations={declarations}
+												accepted={accepted}
+												onToggle={(name, yes) =>
+													setAccepted((current) =>
+														yes
+															? current.includes(name)
+																? current
+																: [...current, name]
+															: current.filter((key) => key !== name),
+													)
 												}
 											/>
 										)}
@@ -997,6 +1238,15 @@ function JoinBody() {
 																	? "File attached"
 																	: answers[question.name],
 													}))}
+												contact={contact}
+												isMinor={isMinor}
+												guardian={guardian}
+												consents={declarations.map((declaration) => ({
+													name: declaration.name,
+													title: declaration.title,
+													version: declaration.version,
+													accepted: accepted.includes(declaration.name),
+												}))}
 											/>
 										)}
 
@@ -1005,54 +1255,65 @@ function JoinBody() {
 												<ErrorNote>{failure}</ErrorNote>
 											</div>
 										)}
+									</div>
 
-										<div className="mt-7 flex items-center justify-between gap-3 border-t border-hairline pt-5">
-											<Button
-												variant="ghost"
-												onClick={() => goTo(cursor - 1)}
-												disabled={cursor === 0 || busy}
-											>
-												Back
-											</Button>
+									{/* The concept's action bar: a tinted foot to the card
+									    rather than a rule across it, so the controls read as
+									    belonging to the whole step and not to the last field
+									    above them. */}
+									<div className="flex flex-wrap items-center gap-3 border-t border-card-line bg-[#FBFCFD] px-6 py-5 sm:px-9">
+										{/* Only ever an answer to the button beside it. The
+										    autosave is silent — see `autosave` — so this is
+										    shown to somebody who pressed something and is
+										    waiting to hear, never on a step change. */}
+										<span className="order-last w-full text-[11px] text-slate-faint sm:order-none sm:mr-auto sm:w-auto">
+											{saved && !busy ? (
+												<span className="flex items-center gap-1.5 font-semibold text-success">
+													<Icon.check size={13} />
+													{saved}
+												</span>
+											) : !ready && step.needs ? (
+												step.needs
+											) : (
+												"Your draft is saved whenever you continue."
+											)}
+										</span>
 
-											<div className="flex items-center gap-3">
-												{/* Only ever an answer to the button beside it. The
-												    autosave is silent — see `autosave` — so this is
-												    shown to somebody who pressed something and is
-												    waiting to hear, never on a step change. */}
-												{saved && !busy && (
-													<span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-emerald-700">
-														<Icon.check size={13} />
-														{saved}
-													</span>
-												)}
-												<Button
-													type="button"
-													variant="ghost"
-													onClick={() => void saveDraft()}
-													disabled={!canSaveDraft || busy}
-												>
-													{busyAction === "save" ? "Saving…" : "Save draft"}
-												</Button>
-												{!ready && (
-													<span className="hidden text-[11.5px] text-slate-faint sm:block">
-														{step.needs}
-													</span>
-												)}
-												<Button
-													type="submit"
-													variant={step.id === "confirm" ? "primary" : "navy"}
-													disabled={!ready || busy}
-												>
-											{step.id === "confirm"
-												? busyAction === "submit"
-													? "Submitting…"
-													: "Submit registration"
-												: "Continue"}
-												</Button>
-											</div>
-										</div>
-									</Card>
+										<Button
+											type="button"
+											variant="ghost"
+											onClick={() => void saveDraft()}
+											disabled={!canSaveDraft || busy}
+										>
+											{busyAction === "save" ? "Saving…" : "Save draft"}
+										</Button>
+
+										<Button
+											variant="quiet"
+											onClick={() => goTo(cursor - 1)}
+											disabled={cursor === 0 || busy}
+										>
+											<span aria-hidden="true">←</span> Back
+										</Button>
+
+										<Button
+											type="submit"
+											variant="primary"
+											disabled={!ready || busy}
+										>
+											{step.id === "confirm" ? (
+												busyAction === "submit" ? (
+													"Submitting…"
+												) : (
+													"Submit registration"
+												)
+											) : (
+												<>
+													Continue <span aria-hidden="true">→</span>
+												</>
+											)}
+										</Button>
+									</div>
 								</div>
 							</form>
 						</div>
@@ -1080,6 +1341,13 @@ interface StepDef {
 	 * the field, as its hint.
 	 */
 	title: string;
+	/**
+	 * One line under the title, and only where it carries a fact the controls
+	 * do not. Not a description of the screen — see the note on `title` — but
+	 * the thing a person would otherwise have to ask: who reads this, what is
+	 * already known about them, whether an answer can still be changed.
+	 */
+	blurb: string;
 	/** Shown beside a disabled Continue, so "why can't I go on" is answered. */
 	needs: string;
 }
@@ -1109,13 +1377,19 @@ interface StepDef {
  * Dropping the first step renumbers the rest for the same reason, with no
  * arithmetic anywhere.
  */
-function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): StepDef[] {
-	const shared: Record<"path" | "identity" | "questions" | "confirm", StepDef> = {
+function stepsFor(
+	path: Path,
+	asked: boolean,
+	questions: SocietyQuestion[],
+	declarations: Declaration[],
+): StepDef[] {
+	const shared: Record<"path" | "identity" | "questions" | "consents" | "confirm", StepDef> = {
 		path: {
 			id: "path",
 			rail: "Your path",
 			eyebrow: "Registration",
 			title: "What are you here to do?",
+			blurb: "Both start the same way, and you can change your mind on the next step.",
 			needs: "",
 		},
 		identity: {
@@ -1123,6 +1397,8 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 			rail: "About you",
 			eyebrow: "",
 			title: "About you",
+			blurb:
+				"What your account already knows is filled in. Correct anything that has changed.",
 			needs: "A first and last name are needed",
 		},
 		/**
@@ -1138,13 +1414,32 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 			rail: "Their questions",
 			eyebrow: "",
 			title: "What your society asks",
+			blurb: "Questions this society asks every applicant, set by its own branches.",
 			needs: "Answer everything marked required",
+		},
+		/**
+		 * What the applicant agrees to, drawn from `VMMS Declaration` and not
+		 * written in this file. Placed immediately before Submit on purpose: a
+		 * consent read at the point of committing is a consent; the same words
+		 * four screens earlier are something somebody clicked past.
+		 *
+		 * Volunteer-only for now, and drawn only where a society has declarations
+		 * pointed at the registration being filled in.
+		 */
+		consents: {
+			id: "consents",
+			rail: "What you agree to",
+			eyebrow: "",
+			title: "Before you send this",
+			blurb: "Read each one. What you accept is recorded against the version shown.",
+			needs: "Accept everything marked required",
 		},
 		confirm: {
 			id: "confirm",
 			rail: "Check and submit",
 			eyebrow: "Last step",
 			title: "Check and submit",
+			blurb: "Nothing is sent until you press submit. Anything here can still be changed.",
 			needs: "",
 		},
 	};
@@ -1159,6 +1454,7 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Your plan",
 						eyebrow: "",
 						title: "Choose your membership",
+						blurb: "What you pay and what it covers. You can change this before you submit.",
 						needs: "Choose a membership type",
 					},
 					{
@@ -1166,6 +1462,7 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Your branch",
 						eyebrow: "",
 						title: "Which branch are you joining through?",
+						blurb: "The branch you choose holds your membership and reviews this application.",
 						needs: "Choose a branch",
 					},
 					shared.questions,
@@ -1179,6 +1476,7 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Where you'd volunteer",
 						eyebrow: "",
 						title: "Where would you volunteer?",
+						blurb: "Where you serve decides who reviews this and who you hear from.",
 						needs: "Choose a branch or area",
 					},
 					{
@@ -1186,6 +1484,7 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Identification",
 						eyebrow: "",
 						title: "Identification",
+						blurb: "One government identification, so your branch can confirm who you are.",
 						needs: "An ID type and number are needed",
 					},
 					{
@@ -1193,19 +1492,44 @@ function stepsFor(path: Path, asked: boolean, questions: SocietyQuestion[]): Ste
 						rail: "Your volunteering",
 						eyebrow: "",
 						title: "About your volunteering",
+						blurb: "What you can do and when. This is what your branch matches you against.",
+						needs: "",
+					},
+					{
+						id: "emergency",
+						rail: "In an emergency",
+						eyebrow: "",
+						title: "If something happens",
+						blurb: "Somebody we can reach while you are on duty. Only your branch sees this.",
 						needs: "",
 					},
 					shared.questions,
+					shared.consents,
 					shared.confirm,
 				];
 
-	const ordinals = ["one", "two", "three", "four", "five", "six", "seven", "eight"];
+	const ordinals = [
+		"one",
+		"two",
+		"three",
+		"four",
+		"five",
+		"six",
+		"seven",
+		"eight",
+		"nine",
+		"ten",
+	];
 
 	return steps
 		.filter((entry) => entry.id !== "path" || !asked)
 		// A society that asks nothing extra gets no step for it, rather than an
 		// empty page between the last answer and Submit.
 		.filter((entry) => entry.id !== "questions" || questions.length > 0)
+		// Same rule for the consents: a society with no declarations pointed at
+		// this registration gets no page telling somebody there is nothing to
+		// agree to.
+		.filter((entry) => entry.id !== "consents" || declarations.length > 0)
 		.map((entry, index) => ({
 			...entry,
 			eyebrow: entry.eyebrow || `Step ${ordinals[index] ?? index + 1}`,
@@ -1246,6 +1570,17 @@ function labelsFor(
 
 /* -------------------------------------------------------------------- rail */
 
+/**
+ * The ladder down the side, as the approved concept draws it: a white card with
+ * a navy head that counts the steps, numbered rungs inside it, and a way to ask
+ * for help under the last one.
+ *
+ * The rungs are not the concept's plain anchors. A step already walked shows a
+ * tick rather than its number, and a step not yet reached is not a link at all —
+ * `furthest` is the wizard's own record of how far the answers go, and offering
+ * somebody a jump to a screen whose prerequisites are blank is offering them a
+ * dead end.
+ */
 function Rail({
 	steps,
 	cursor,
@@ -1260,81 +1595,88 @@ function Rail({
 	summary: React.ReactNode;
 }) {
 	return (
-		<div className="lg:sticky lg:top-[86px] lg:self-start">
-			{/* Small screens get a bar and a count; a seven-rung ladder down the
+		<div className="lg:sticky lg:top-[92px] lg:self-start">
+			{/* Small screens get a bar and a count; an eight-rung ladder down the
 			    side of a phone would push the form itself below the fold. */}
 			<div className="lg:hidden">
 				<div className="flex items-baseline justify-between">
-					<span className="font-display text-[13px] font-bold text-ink">
-						{steps[cursor]?.rail}
-					</span>
+					<span className="text-[13px] font-bold text-ink">{steps[cursor]?.rail}</span>
 					<span className="text-[11.5px] text-slate-faint">
 						{cursor + 1} / {steps.length}
 					</span>
 				</div>
-				<div className="mt-2 h-1 overflow-hidden rounded-full bg-hairline">
+				<div className="mt-2 h-1 overflow-hidden rounded-full bg-card-line">
 					<div
-						className="h-full rounded-full bg-signal transition-[width] duration-500 ease-out"
+						className="h-full rounded-full bg-blue transition-[width] duration-500 ease-out"
 						style={{ width: `${((cursor + 1) / steps.length) * 100}%` }}
 					/>
 				</div>
 			</div>
 
-			<div className="hidden lg:block">
-				<ol>
+			<aside className="hidden overflow-hidden rounded-2xl border border-card-line bg-white lg:block">
+				<div className="bg-rail-soft px-[23px] py-[22px]">
+					<p className="text-[9px] font-extrabold uppercase tracking-[0.15em] text-aqua">
+						Your application
+					</p>
+					<h2 className="mt-1.5 font-display text-[17px] font-bold leading-tight text-white">
+						{steps.length} short steps
+					</h2>
+					<span className="mt-2 block text-[10px] leading-[1.45] text-white/60">
+						Your draft is saved whenever you move to another step.
+					</span>
+				</div>
+
+				<nav aria-label="Application progress" className="grid p-2.5">
 					{steps.map((entry, index) => {
 						const isDone = index < cursor;
 						const isNow = index === cursor;
 						const reachable = index <= furthest;
 
 						return (
-							<li key={entry.id} className="relative flex gap-3 pb-6 last:pb-0">
-								{index < steps.length - 1 && (
-									<span
-										aria-hidden="true"
-										className={cx(
-											"absolute left-[11px] top-7 h-[calc(100%-16px)] w-px transition-colors",
-											isDone ? "bg-navy/40" : "bg-hairline",
-										)}
-									/>
+							<button
+								key={entry.id}
+								type="button"
+								disabled={!reachable}
+								onClick={() => onJump(index)}
+								aria-current={isNow ? "step" : undefined}
+								className={cx(
+									"grid min-h-[49px] grid-cols-[27px_minmax(0,1fr)] items-center gap-2.5 rounded-[9px] px-[9px] py-1.5 text-left text-[11.5px] font-semibold transition",
+									isNow
+										? "bg-blue-soft text-ink"
+										: reachable
+											? "text-slate-body hover:bg-blue-soft/60 hover:text-ink"
+											: "cursor-default text-slate-faint",
 								)}
-
+							>
 								<span
 									className={cx(
-										"relative z-10 grid h-[23px] w-[23px] flex-none place-items-center rounded-full text-[10.5px] font-bold transition",
+										"grid h-[25px] w-[25px] place-items-center rounded-full text-[9.5px] font-bold transition",
 										isNow
-											? "bg-signal text-white ring-4 ring-signal/15"
+											? "bg-rail text-white"
 											: isDone
-												? "bg-navy text-white"
-												: "bg-white text-slate-faint ring-1 ring-hairline-strong",
+												? "bg-rail/85 text-white"
+												: "bg-[#EEF2F6] text-slate-faint",
 									)}
-									aria-current={isNow ? "step" : undefined}
 								>
 									{isDone ? <Tick className="text-white" size={11} /> : index + 1}
 								</span>
-
-								<button
-									type="button"
-									disabled={!reachable}
-									onClick={() => onJump(index)}
-									className={cx(
-										"-mt-0.5 text-left text-[12.5px] leading-snug transition",
-										isNow
-											? "font-bold text-ink"
-											: reachable
-												? "text-slate-body hover:text-navy"
-												: "cursor-default text-slate-faint",
-									)}
-								>
-									{entry.rail}
-								</button>
-							</li>
+								<span className="truncate">{entry.rail}</span>
+							</button>
 						);
 					})}
-				</ol>
+				</nav>
 
-				<div className="mt-7 border-t border-hairline pt-6">{summary}</div>
-			</div>
+				<div className="mx-[18px] mb-5 border-t border-card-line pt-4">
+					{summary}
+
+					<p className="mt-4 border-t border-card-line pt-3.5 text-[10.5px] leading-[1.5] text-slate-body">
+						Stuck on something?{" "}
+						<Link to="/locations" className="font-bold text-blue hover:underline">
+							Contact your branch →
+						</Link>
+					</p>
+				</div>
+			</aside>
 		</div>
 	);
 }
@@ -1409,10 +1751,10 @@ function ChoosePathFirst({ onChoose }: { onChoose: (path: Path) => void }) {
 	return (
 		<Card className="p-7 sm:p-9">
 			<p className="eyebrow">Registration</p>
-			<h1 className="mt-2 font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink">
+			<h1 className="mt-2 text-[26px] font-semibold leading-tight tracking-tight text-ink">
 				How would you like to join?
 			</h1>
-			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
+			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
 				Choose a path first. We will keep your choice through account creation and bring you back
 				to the right registration.
 			</p>
@@ -1450,7 +1792,7 @@ function SignInFirst({ path }: { path: Path }) {
 			<p className="eyebrow">{registration}</p>
 			<nav className="mt-3" aria-label={`${registration} progress`}>
 				<ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-slate-faint">
-					<li className="font-bold text-navy" aria-current="step">
+					<li className="font-bold text-ink" aria-current="step">
 						Account
 					</li>
 					<li aria-hidden="true">→</li>
@@ -1460,13 +1802,13 @@ function SignInFirst({ path }: { path: Path }) {
 				</ol>
 			</nav>
 
-			<div className="mb-4 mt-7 grid h-11 w-11 place-items-center rounded-card bg-navy/5 text-navy">
+			<div className="mb-4 mt-7 grid h-11 w-11 place-items-center rounded-xl bg-rail/5 text-ink">
 				<Icon.user size={21} />
 			</div>
-			<h1 className="font-display text-[24px] font-extrabold tracking-tight text-ink">
+			<h1 className="text-[24px] font-semibold tracking-tight text-ink">
 				Sign in to continue
 			</h1>
-			<p className="mt-2.5 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
+			<p className="mt-2.5 max-w-lg text-[13.5px] leading-relaxed text-muted">
 				You chose to register as {volunteering ? "a volunteer" : "a member"}. Sign in and you
 				will come straight back to this registration.
 			</p>
@@ -1476,20 +1818,20 @@ function SignInFirst({ path }: { path: Path }) {
 			    that promised "you will come straight back here" and then sent
 				    somebody to their inbox was the reason that felt like being thrown
 				    out. `signupUrl` is what makes the sentence below true. */}
-			<p className="mb-6 mt-3 max-w-lg text-[12.5px] leading-relaxed text-slate-body">
+			<p className="mb-6 mt-3 max-w-lg text-[12.5px] leading-relaxed text-muted">
 				New here? Creating an account sends you an email to set your password. Open that link and
 				you will return to your {volunteering ? "volunteer" : "member"} registration.
 			</p>
 			<div className="flex flex-wrap gap-2.5">
 				<a
 					href={loginUrl(here())}
-					className="inline-flex items-center rounded-card bg-signal px-5 py-2.5 font-display text-[13px] font-bold text-white transition hover:bg-signal-dark"
+					className="inline-flex items-center rounded-xl bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-blue-press"
 				>
 					Sign in
 				</a>
 				<a
 					href={signupUrl(here())}
-					className="inline-flex items-center rounded-card border border-hairline-strong bg-white px-5 py-2.5 font-display text-[13px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
+					className="inline-flex items-center rounded-xl border border-card-line bg-white px-5 py-2.5 text-[13px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
 				>
 					Create an account
 				</a>
@@ -1538,8 +1880,8 @@ function PathSwitch({ path, onChange }: { path: Path; onChange: (p: Path) => voi
 	const volunteering = path === "volunteer";
 
 	return (
-		<p className="mt-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-card border border-hairline bg-surface px-3.5 py-2 text-[12.5px] text-slate-body">
-			<span className="inline-flex items-center gap-1.5 font-semibold text-navy">
+		<p className="mt-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-card-line bg-surface px-3.5 py-2 text-[12.5px] text-muted">
+			<span className="inline-flex items-center gap-1.5 font-semibold text-ink">
 				{volunteering ? <Icon.people size={15} /> : <Icon.card size={15} />}
 				Registering as {volunteering ? "a volunteer" : "a member"}
 			</span>
@@ -1549,7 +1891,7 @@ function PathSwitch({ path, onChange }: { path: Path; onChange: (p: Path) => voi
 			<button
 				type="button"
 				onClick={() => onChange(volunteering ? "member" : "volunteer")}
-				className="font-semibold text-navy underline decoration-navy/30 underline-offset-2 transition hover:decoration-navy"
+				className="font-semibold text-ink underline decoration-navy/30 underline-offset-2 transition hover:decoration-navy"
 			>
 				{volunteering ? "Join as a member instead" : "Volunteer instead"}
 			</button>
@@ -1637,7 +1979,7 @@ function IdentityStep({
 					{/* Never an input, on either path. The login is the identity: a
 					    form field here would let anybody claim anybody's record, and
 					    `update_my_profile` does not accept one for the same reason. */}
-					<div className="flex items-center gap-2 rounded-card border border-hairline bg-surface px-3.5 py-2.5 text-[13.5px] text-slate-body">
+					<div className="flex items-center gap-2 rounded-xl border border-card-line bg-surface px-3.5 py-2.5 text-[13.5px] text-muted">
 						<span className="flex-none text-slate-faint">
 							<Icon.lock size={14} />
 						</span>
@@ -1748,7 +2090,7 @@ function PhotoField({
 			hint="Optional. It goes on your card and beside your name."
 		>
 			<div className="flex flex-wrap items-center gap-4">
-				<div className="grid h-[72px] w-[72px] flex-none place-items-center overflow-hidden rounded-card border border-hairline bg-surface text-slate-faint">
+				<div className="grid h-[72px] w-[72px] flex-none place-items-center overflow-hidden rounded-xl border border-card-line bg-surface text-slate-faint">
 					{value ? (
 						<img src={value} alt="" className="h-full w-full object-cover" />
 					) : (
@@ -1760,7 +2102,7 @@ function PhotoField({
 					<div className="flex items-center gap-2.5">
 						<label
 							htmlFor={id}
-							className="cursor-pointer rounded-card border border-hairline-strong bg-white px-3.5 py-2 font-display text-[12.5px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
+							className="cursor-pointer rounded-xl border border-card-line bg-white px-3.5 py-2 text-[12.5px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
 						>
 							{loading ? "Uploading…" : value ? "Replace picture" : "Choose a picture"}
 						</label>
@@ -1780,7 +2122,7 @@ function PhotoField({
 									setFailure(null);
 									onChange("");
 								}}
-								className="text-[11.5px] font-semibold text-slate-body hover:text-danger hover:underline"
+								className="text-[11.5px] font-semibold text-muted hover:text-danger hover:underline"
 							>
 								Remove
 							</button>
@@ -1907,7 +2249,7 @@ function IdentificationStep({
 
 	if (options.id_types.length === 0) {
 		return (
-			<p className="rounded-card bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-slate-body">
+			<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
 				This society has not configured any identification types yet, and an application cannot be
 				submitted without one. Ask your branch to add them before registering.
 			</p>
@@ -1977,7 +2319,7 @@ function QuestionsStep({
 			{groups.map((group) => (
 				<div key={group.name || "ungrouped"}>
 					{group.name && (
-						<h3 className="mb-3 font-display text-[14px] font-bold text-ink">
+						<h3 className="mb-3 text-[14px] font-bold text-ink">
 							{group.name}
 						</h3>
 					)}
@@ -2025,7 +2367,7 @@ function QuestionField({
 		return (
 			<label
 				htmlFor={id}
-				className="flex cursor-pointer items-start gap-3 rounded-xl border border-hairline bg-canvas-soft p-4"
+				className="flex cursor-pointer items-start gap-3 rounded-xl border border-card-line bg-canvas-soft p-4"
 			>
 				<input
 					id={id}
@@ -2123,7 +2465,7 @@ function AnswerUpload({
 			<div className="flex items-center gap-3">
 				<label
 					htmlFor={id}
-					className="cursor-pointer rounded-lg border border-hairline bg-canvas px-3 py-2 text-[12px] font-semibold text-ink hover:border-brand"
+					className="cursor-pointer rounded-lg border border-card-line bg-canvas px-3 py-2 text-[12px] font-semibold text-ink hover:border-brand"
 				>
 					{loading ? "Uploading…" : value ? "Replace file" : "Choose file"}
 				</label>
@@ -2253,6 +2595,337 @@ function DeclarationStep({
 	);
 }
 
+/**
+ * Who to call, and — where the society counts this applicant as a child — who
+ * says they may volunteer at all.
+ *
+ * **One screen for two records, and they stay two records.** A guardian
+ * consents; an emergency contact is called. Those are different acts with
+ * different legal weight, and a society that withdrew one must not thereby have
+ * withdrawn the other, so the server stores `VMMS Guardian Consent` and
+ * `VMMS Emergency Contact` separately and this form posts them separately. What
+ * it does offer is the copy button, because the same person fills both roles
+ * more often than not and typing a mother's name twice is not a principle worth
+ * defending — it copies values into the second record rather than merging them.
+ *
+ * **The guardian block appears from the date of birth**, using the age of
+ * majority the server served. A society that has configured none never sees any
+ * of it. Neither half blocks the step: both are conditions of *approval* rather
+ * than of submission, so somebody whose parent has not signed the form yet can
+ * still send the application in and let the branch chase it.
+ */
+function EmergencyStep({
+	contact,
+	onContact,
+	isMinor,
+	minorAge,
+	guardian,
+	onGuardian,
+}: {
+	contact: EmergencyContact;
+	onContact: (next: EmergencyContact) => void;
+	isMinor: boolean;
+	minorAge: number | null;
+	guardian: GuardianConsent;
+	onGuardian: (next: GuardianConsent) => void;
+}) {
+	const set = <K extends keyof EmergencyContact>(key: K, value: EmergencyContact[K]) =>
+		onContact({ ...contact, [key]: value });
+	const setGuardian = <K extends keyof GuardianConsent>(key: K, value: GuardianConsent[K]) =>
+		onGuardian({ ...guardian, [key]: value });
+
+	return (
+		<div className="space-y-9">
+			<FieldSet
+				title="Someone we can call"
+				description="If something happens while you are volunteering, this is who we would contact. You can change it later."
+			>
+				<div className="grid gap-5 sm:grid-cols-2">
+					<Field label="Their name" htmlFor="ec-name">
+						<TextInput
+							id="ec-name"
+							value={contact.contact_name}
+							onChange={(value) => set("contact_name", value)}
+							placeholder="Full name"
+						/>
+					</Field>
+
+					<Field label="How you know them" htmlFor="ec-rel">
+						<TextInput
+							id="ec-rel"
+							value={contact.relationship}
+							onChange={(value) => set("relationship", value)}
+							placeholder="Mother, brother, friend"
+						/>
+					</Field>
+
+					<Field label="Phone number" htmlFor="ec-phone">
+						<TextInput
+							id="ec-phone"
+							type="tel"
+							value={contact.primary_phone}
+							onChange={(value) => set("primary_phone", value)}
+							placeholder="Their main number"
+						/>
+					</Field>
+
+					<Field
+						label="Another number"
+						htmlFor="ec-alt"
+						hint="If there is somewhere else we could try."
+					>
+						<TextInput
+							id="ec-alt"
+							type="tel"
+							value={contact.alternative_phone ?? ""}
+							onChange={(value) => set("alternative_phone", value)}
+							placeholder="Optional"
+						/>
+					</Field>
+
+					<div className="sm:col-span-2">
+						{/* Not a formality. An unticked box means we hold a number we
+						    have been told not to call, which is a different state
+						    from holding no number — and the server counts only the
+						    contacts somebody actually permitted. */}
+						<label
+							htmlFor="ec-permission"
+							className="flex cursor-pointer items-start gap-3 rounded-xl border border-card-line bg-canvas-soft p-4"
+						>
+							<input
+								id="ec-permission"
+								type="checkbox"
+								className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
+								checked={Boolean(contact.may_contact_in_emergency)}
+								onChange={(event) => set("may_contact_in_emergency", event.target.checked)}
+							/>
+							<span>
+								<span className="block text-[13px] font-semibold leading-snug text-ink">
+									We may contact this person in an emergency
+								</span>
+								<span className="mt-1 block text-[11.5px] leading-relaxed text-slate-faint">
+									Leave this unticked and we will keep the number on file without using
+									it.
+								</span>
+							</span>
+						</label>
+					</div>
+				</div>
+			</FieldSet>
+
+			{isMinor && (
+				<FieldSet
+					title="A parent or guardian"
+					description={`Because you are under ${minorAge ?? 18}, we need a parent or guardian to agree to you volunteering with us. Someone from your branch will check this with them before your application is decided.`}
+				>
+					<div className="mb-5">
+						<Button
+							variant="navy"
+							onClick={() =>
+								onGuardian({
+									...guardian,
+									guardian_name: contact.contact_name,
+									relationship: contact.relationship,
+									phone: contact.primary_phone,
+								})
+							}
+							disabled={!contact.contact_name.trim()}
+						>
+							Same as the person above
+						</Button>
+					</div>
+
+					{/* Labelled apart from the emergency contact above rather than
+					    repeating "Their name" and "Phone number" on the same page.
+					    Two identical labels on one screen is ambiguous to read and
+					    unusable with a screen reader, and this block sits directly
+					    under the block it would have collided with. */}
+					<div className="grid gap-5 sm:grid-cols-2">
+						<Field label="Parent or guardian's name" htmlFor="gc-name">
+							<TextInput
+								id="gc-name"
+								value={guardian.guardian_name}
+								onChange={(value) => setGuardian("guardian_name", value)}
+								placeholder="Full name"
+							/>
+						</Field>
+
+						<Field label="How they are related to you" htmlFor="gc-rel">
+							<TextInput
+								id="gc-rel"
+								value={guardian.relationship}
+								onChange={(value) => setGuardian("relationship", value)}
+								placeholder="Mother, father, guardian"
+							/>
+						</Field>
+
+						<Field label="A number for them" htmlFor="gc-phone">
+							<TextInput
+								id="gc-phone"
+								type="tel"
+								value={guardian.phone}
+								onChange={(value) => setGuardian("phone", value)}
+								placeholder="A number we can reach them on"
+							/>
+						</Field>
+
+						<Field label="Email address" htmlFor="gc-email" hint="If they have one.">
+							<TextInput
+								id="gc-email"
+								value={guardian.email ?? ""}
+								onChange={(value) => setGuardian("email", value)}
+								placeholder="Optional"
+							/>
+						</Field>
+
+						<div className="sm:col-span-2">
+							<label
+								htmlFor="gc-given"
+								className="flex cursor-pointer items-start gap-3 rounded-xl border border-card-line bg-canvas-soft p-4"
+							>
+								<input
+									id="gc-given"
+									type="checkbox"
+									className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
+									checked={Boolean(guardian.consent_given)}
+									onChange={(event) => setGuardian("consent_given", event.target.checked)}
+								/>
+								<span>
+									<span className="block text-[13px] font-semibold leading-snug text-ink">
+										They have agreed to me volunteering
+									</span>
+									<span className="mt-1 block text-[11.5px] leading-relaxed text-slate-faint">
+										Someone from the branch will confirm this with them directly.
+									</span>
+								</span>
+							</label>
+						</div>
+
+						{Boolean(guardian.consent_given) && (
+							<Field label="When they agreed" htmlFor="gc-date">
+								<TextInput
+									id="gc-date"
+									type="date"
+									value={guardian.consent_date ?? ""}
+									onChange={(value) => setGuardian("consent_date", value)}
+								/>
+							</Field>
+						)}
+					</div>
+				</FieldSet>
+			)}
+		</div>
+	);
+}
+
+/**
+ * What the applicant agrees to, in the society's own current words.
+ *
+ * **Nothing on this screen is written in this file.** Every title and every
+ * paragraph is a `VMMS Declaration` record, so a society's legal officer
+ * rewrites all four without a deploy — and what gets stored on the application
+ * is the exact wording shown here at the version shown here, which is the whole
+ * reason the step exists at its own page rather than as a line of small print
+ * beside the Submit button.
+ *
+ * **Four boxes, not one.** Bundling them is the thing this prevents: agreeing to
+ * have your data processed so a society can consider your application is a
+ * different act from agreeing to be contacted about other things, and somebody
+ * who wants one and not the other has no way to say so if they share a tick.
+ *
+ * The text is rendered as the HTML a society wrote. It is authored on the desk
+ * by an administrator — the same trust boundary `VMMS Content Block` sits on —
+ * and never by an applicant.
+ */
+function ConsentsStep({
+	declarations,
+	accepted,
+	onToggle,
+}: {
+	declarations: Declaration[];
+	accepted: string[];
+	onToggle: (name: string, yes: boolean) => void;
+}) {
+	return (
+		<div className="space-y-4">
+			{declarations.map((declaration) => {
+				const id = `declaration-${declaration.name}`;
+				const ticked = accepted.includes(declaration.name);
+
+				return (
+					<section
+						key={declaration.name}
+						className={cx(
+							"overflow-hidden rounded-xl border transition",
+							ticked ? "border-blue bg-rail/[0.03]" : "border-card-line bg-white",
+						)}
+					>
+						<header className="flex items-baseline justify-between gap-4 border-b border-card-line px-5 py-3">
+							<h3 className="text-[14.5px] font-bold text-ink">
+								{declaration.title}
+								{declaration.is_required && (
+									<span className="ml-1 text-blue" aria-hidden="true">
+										*
+									</span>
+								)}
+							</h3>
+							{/* Shown because it is stored. A person who asks later what
+							    they agreed to gets an answer that names a version. */}
+							<span className="flex-none text-[10.5px] font-semibold uppercase tracking-wider text-slate-faint">
+								Version {declaration.version}
+							</span>
+						</header>
+
+						{/* Two ways a society publishes a policy, and the second one
+						    is not a degraded first. A society whose legal team owns
+						    the privacy notice on its own website is asked to link to
+						    it rather than to keep a second copy here, so the form
+						    sends the applicant to the page it names instead of
+						    reprinting words it does not have. */}
+						{declaration.source === "Link" ? (
+							<div className="px-5 py-4">
+								<a
+									href={declaration.external_url ?? undefined}
+									target="_blank"
+									rel="noreferrer noopener"
+									className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink underline"
+								>
+									Read {declaration.title.toLowerCase()}
+									<span aria-hidden="true">↗</span>
+								</a>
+								<p className="mt-2 text-[12px] leading-relaxed text-slate-faint">
+									This opens in a new tab, so you will not lose what you have filled in.
+								</p>
+							</div>
+						) : (
+							<div
+								className="space-y-2.5 px-5 py-4 text-[13px] leading-relaxed text-muted [&_a]:font-semibold [&_a]:text-ink [&_a]:underline"
+								dangerouslySetInnerHTML={{ __html: declaration.body ?? "" }}
+							/>
+						)}
+
+						<label
+							htmlFor={id}
+							className="flex cursor-pointer items-center gap-3 border-t border-card-line bg-surface/60 px-5 py-3.5"
+						>
+							<input
+								id={id}
+								type="checkbox"
+								className="h-4 w-4 shrink-0 accent-brand"
+								checked={ticked}
+								onChange={(event) => onToggle(declaration.name, event.target.checked)}
+							/>
+							<span className="text-[13px] font-semibold text-ink">
+								I have read this and I agree
+							</span>
+						</label>
+					</section>
+				);
+			})}
+		</div>
+	);
+}
+
 function ConfirmStep({
 	path,
 	steps,
@@ -2272,6 +2945,10 @@ function ConfirmStep({
 	declared,
 	experience,
 	societyAnswers,
+	contact,
+	isMinor,
+	guardian,
+	consents,
 }: {
 	path: Path;
 	steps: StepDef[];
@@ -2291,6 +2968,10 @@ function ConfirmStep({
 	declared: Record<"skills" | "languages" | "availability" | "motivations", string[]>;
 	experience: string;
 	societyAnswers: Array<{ label: string; shown: string }>;
+	contact: EmergencyContact;
+	isMinor: boolean;
+	guardian: GuardianConsent;
+	consents: Array<{ name: string; title: string; version: string; accepted: boolean }>;
 }) {
 	const indexOf = (id: StepId) => steps.findIndex((entry) => entry.id === id);
 
@@ -2355,6 +3036,43 @@ function ConfirmStep({
 						<Chips label="Motivation" values={declared.motivations} />
 						<Block label="Anything done before" value={experience} />
 					</Review>
+
+					<Review title="If something happens" onEdit={() => onEdit(indexOf("emergency"))}>
+						<Line label="We would call" value={contact.contact_name || null} />
+						<Line label="Who they are" value={contact.relationship || null} />
+						<Line label="On" value={contact.primary_phone || null} mono />
+						<Line
+							label="Another number"
+							value={contact.alternative_phone || null}
+							mono
+						/>
+						{contactIsUsable(contact) && !contact.may_contact_in_emergency && (
+							<Block
+								label="Permission"
+								value="You have asked us not to contact this person. We will keep the number on file without using it."
+							/>
+						)}
+					</Review>
+
+					{isMinor && (
+						<Review
+							title="Your parent or guardian"
+							onEdit={() => onEdit(indexOf("emergency"))}
+						>
+							<Line label="Name" value={guardian.guardian_name || null} />
+							<Line label="Who they are" value={guardian.relationship || null} />
+							<Line label="Phone" value={guardian.phone || null} mono />
+							<Line label="Email" value={guardian.email || null} />
+							<Block
+								label="Their agreement"
+								value={
+									guardian.consent_given
+										? `Recorded${guardian.consent_date ? ` on ${guardian.consent_date}` : ""}. Someone from your branch will confirm it with them before your application is decided.`
+										: "Not recorded yet. Your branch will follow this up before your application can be decided."
+								}
+							/>
+						</Review>
+					)}
 				</>
 			)}
 
@@ -2365,6 +3083,22 @@ function ConfirmStep({
 				<Review title="What your society asked" onEdit={() => onEdit(indexOf("questions"))}>
 					{societyAnswers.map((answer) => (
 						<Block key={answer.label} label={answer.label} value={answer.shown} />
+					))}
+				</Review>
+			)}
+
+			{/* Titles and versions, not the text again. Somebody has just read all
+			    four in full on the step before this one, and reprinting them here
+			    would bury the rest of the review. The version is shown because it
+			    is what gets stored beside their acceptance. */}
+			{consents.length > 0 && (
+				<Review title="What you agreed to" onEdit={() => onEdit(indexOf("consents"))}>
+					{consents.map((consent) => (
+						<Line
+							key={consent.name}
+							label={consent.title}
+							value={consent.accepted ? `Agreed — version ${consent.version}` : null}
+						/>
 					))}
 				</Review>
 			)}
@@ -2398,15 +3132,15 @@ function Review({
 	children: React.ReactNode;
 }) {
 	return (
-		<section className="overflow-hidden rounded-card border border-hairline bg-white">
-			<header className="flex items-center justify-between gap-4 border-b border-hairline bg-surface/60 px-4 py-2.5">
-				<h3 className="font-display text-[12px] font-extrabold uppercase tracking-wider text-navy">
+		<section className="overflow-hidden rounded-xl border border-card-line bg-white">
+			<header className="flex items-center justify-between gap-4 border-b border-card-line bg-surface/60 px-4 py-2.5">
+				<h3 className="text-[12px] font-semibold uppercase tracking-wider text-ink">
 					{title}
 				</h3>
 				<button
 					type="button"
 					onClick={onEdit}
-					className="rounded-[4px] px-1.5 py-0.5 text-[11.5px] font-bold text-navy transition hover:bg-navy/10"
+					className="rounded-[4px] px-1.5 py-0.5 text-[11.5px] font-bold text-ink transition hover:bg-rail/10"
 				>
 					Edit
 				</button>
@@ -2444,7 +3178,7 @@ function Block({ label, value }: { label: string; value: string }) {
 				className={cx(
 					"mt-1",
 					value
-						? "whitespace-pre-line rounded-card bg-surface px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-strong"
+						? "whitespace-pre-line rounded-xl bg-surface px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-strong"
 						: MISSING,
 				)}
 			>
@@ -2467,7 +3201,7 @@ function Chips({ label, values }: { label: string; values: string[] }) {
 						{values.map((value) => (
 							<span
 								key={value}
-								className="rounded-full border border-navy/20 bg-navy/[0.06] px-2.5 py-1 text-[12px] font-semibold text-navy"
+								className="rounded-full border border-blue/20 bg-rail/[0.06] px-2.5 py-1 text-[12px] font-semibold text-ink"
 							>
 								{value}
 							</span>
@@ -2510,7 +3244,7 @@ function Trail({ label, chain }: { label: string; chain: GeoNode[] }) {
 											"text-[13.5px]",
 											index === chain.length - 1
 												? "font-bold text-ink"
-												: "font-semibold text-slate-body",
+												: "font-semibold text-muted",
 										)}
 									>
 										{entry.label}
@@ -2564,8 +3298,8 @@ function PersonCard({
 			.join("") || "?";
 
 	return (
-		<section className="overflow-hidden rounded-card border border-hairline bg-white">
-			<div className="flex items-start gap-4 border-b border-hairline bg-surface/60 px-4 py-4">
+		<section className="overflow-hidden rounded-xl border border-card-line bg-white">
+			<div className="flex items-start gap-4 border-b border-card-line bg-surface/60 px-4 py-4">
 				{/* The portrait, where there is one. This step is a *check*, and the
 				    picture is the one answer on it somebody can get wrong without
 				    noticing — a monogram here said nothing about whether the file they
@@ -2575,22 +3309,22 @@ function PersonCard({
 					<img
 						src={photo}
 						alt=""
-						className="h-12 w-12 flex-none rounded-full border border-hairline object-cover"
+						className="h-12 w-12 flex-none rounded-full border border-card-line object-cover"
 					/>
 				) : (
 					<span
 						aria-hidden="true"
-						className="grid h-12 w-12 flex-none place-items-center rounded-full bg-navy font-display text-[15px] font-extrabold text-white"
+						className="grid h-12 w-12 flex-none place-items-center rounded-full bg-rail text-[15px] font-semibold text-white"
 					>
 						{monogram}
 					</span>
 				)}
 
 				<div className="min-w-0 flex-1">
-					<p className="truncate font-display text-[17px] font-extrabold leading-tight text-ink">
+					<p className="truncate text-[17px] font-semibold leading-tight text-ink">
 						{name || "Your name"}
 					</p>
-					<p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-slate-body">
+					<p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-muted">
 						<span className="flex-none text-slate-faint">
 							<Icon.lock size={12} />
 						</span>
@@ -2601,7 +3335,7 @@ function PersonCard({
 				<button
 					type="button"
 					onClick={onEdit}
-					className="flex-none rounded-[4px] px-1.5 py-0.5 text-[11.5px] font-bold text-navy transition hover:bg-navy/10"
+					className="flex-none rounded-[4px] px-1.5 py-0.5 text-[11.5px] font-bold text-ink transition hover:bg-rail/10"
 				>
 					Edit
 				</button>
@@ -2655,8 +3389,8 @@ function PersonCard({
  */
 function DraftNotice({ reason }: { reason: string }) {
 	return (
-		<div className="rounded-card border border-amber-200 bg-amber-50 px-5 py-4 text-amber-950">
-			<p className="font-display text-[14px] font-bold">Your reviewer needs more information.</p>
+		<div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-amber-950">
+			<p className="text-[14px] font-bold">Your reviewer needs more information.</p>
 			<p className="mt-1.5 text-[12.5px] leading-relaxed">{reason}</p>
 		</div>
 	);
@@ -2677,15 +3411,15 @@ function AlreadyApplied({
 
 	return (
 		<Card className="p-7 sm:p-9">
-			<div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-navy/[0.07] text-navy">
+			<div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-rail/[0.07] text-ink">
 				<Icon.clock size={26} />
 			</div>
 
-			<h1 className="font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink">
+			<h1 className="text-[26px] font-semibold leading-tight tracking-tight text-ink">
 				You have already applied.
 			</h1>
 
-			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
+			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
 				Your {path === "volunteer" ? "volunteer application" : "membership"} is with your branch
 				and has not been decided yet, so there is nothing more to fill in.
 				{otherOpen
@@ -2700,7 +3434,7 @@ function AlreadyApplied({
 			<div className="mt-7 flex flex-wrap gap-2.5">
 				<Link
 					to="/dashboard"
-					className="inline-flex items-center rounded-card bg-navy px-5 py-2.5 font-display text-[13px] font-bold text-white transition hover:bg-navy/90"
+					className="inline-flex items-center rounded-xl bg-rail px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-rail/90"
 				>
 					See where it got to
 				</Link>
@@ -2708,7 +3442,7 @@ function AlreadyApplied({
 					<button
 						type="button"
 						onClick={onSwitch}
-						className="inline-flex items-center rounded-card border border-hairline-strong bg-white px-5 py-2.5 font-display text-[13px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
+						className="inline-flex items-center rounded-xl border border-card-line bg-white px-5 py-2.5 text-[13px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
 					>
 						Register as a {other} instead
 					</button>
@@ -2734,11 +3468,11 @@ function Success({ path }: { path: Path }) {
 				</svg>
 			</div>
 
-			<h1 className="font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink">
+			<h1 className="text-[26px] font-semibold leading-tight tracking-tight text-ink">
 				That is with your branch now.
 			</h1>
 
-			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-slate-body">
+			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
 				Your {path === "volunteer" ? "application" : "membership"} has gone to the branch you chose,
 				and somebody there will review it.
 			</p>
@@ -2751,14 +3485,14 @@ function Success({ path }: { path: Path }) {
 			<div className="mt-7 flex flex-wrap gap-2.5">
 				<Link
 					to="/dashboard"
-					className="inline-flex items-center rounded-card bg-navy px-5 py-2.5 font-display text-[13px] font-bold text-white transition hover:bg-navy/90"
+					className="inline-flex items-center rounded-xl bg-rail px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-rail/90"
 				>
 					Go to your portal
 				</Link>
 				<Link
 					to={`/join?path=${path === "volunteer" ? "member" : "volunteer"}`}
 					reloadDocument
-					className="inline-flex items-center rounded-card border border-hairline-strong bg-white px-5 py-2.5 font-display text-[13px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
+					className="inline-flex items-center rounded-xl border border-card-line bg-white px-5 py-2.5 text-[13px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
 				>
 					Also register as a {path === "volunteer" ? "member" : "volunteer"}
 				</Link>

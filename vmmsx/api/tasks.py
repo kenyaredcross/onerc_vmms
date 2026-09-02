@@ -27,10 +27,12 @@ change.
 import frappe
 from frappe import _
 
+from vmmsx.task.services import batch as batch_service
 from vmmsx.task.services import states
 from vmmsx.task.services import task as task_service
 
 TASK_DOCTYPE = "VMMS Task"
+BATCH_DOCTYPE = "VMMS Task Batch"
 
 # A list is a list. A coordinator with a thousand tasks behind them wants the
 # open ones, and the closed ones are a report rather than a screen.
@@ -48,12 +50,19 @@ def assign_task(
 	geo_node: str | None = None,
 	due_on: str | None = None,
 	deployment: str | None = None,
+	**extra,
 ) -> dict:
 	"""Assign a task to a volunteer and notify them.
 
 	`create` permission on the task, checked before anything is written, and the
 	anchor is checked by core's own scoping when the document is inserted: a
 	coordinator cannot anchor a task outside the area they hold.
+
+	Everything past `deployment` is optional and arrives through `**extra`,
+	filtered against `task.ASSIGNABLE` and `task.ASSIGNABLE_TABLES` by the
+	service — so a caller that sends an extra key writes nothing rather than
+	writing a field nobody reviewed. The three tables are parsed out of the JSON
+	they may arrive as, the same way the terms editor's payload is.
 	"""
 	frappe.has_permission(TASK_DOCTYPE, ptype="create", throw=True)
 
@@ -65,8 +74,26 @@ def assign_task(
 			geo_node=geo_node,
 			due_on=due_on,
 			deployment=deployment,
+			**_payload(extra),
 		)
 	)
+
+
+def _payload(values: dict) -> dict:
+	"""A task payload with its child tables parsed out of the JSON they arrive as.
+
+	Frappe hands a whitelisted method either a real list or the JSON string it was
+	sent, depending on how the caller framed the request. Parsed here so the
+	service takes lists either way; unknown keys are left for the service to
+	ignore rather than being filtered twice in two places that could disagree.
+	"""
+	parsed = dict(values)
+
+	for field in task_service.ASSIGNABLE_TABLES:
+		if isinstance(parsed.get(field), str):
+			parsed[field] = frappe.parse_json(parsed[field]) or []
+
+	return parsed
 
 
 @frappe.whitelist()
@@ -147,9 +174,46 @@ def request_progress(name: str, note: str | None = None) -> dict:
 
 
 @frappe.whitelist()
-def sign_off(name: str, note: str | None = None) -> dict:
-	"""Agree that submitted work is done. Idempotent."""
-	return task_service.sign_off(_writable(name), note)
+def sign_off(
+	name: str,
+	note: str | None = None,
+	outcome: str | None = None,
+	rating: int | None = None,
+	lessons: str | None = None,
+	hours: float | None = None,
+) -> dict:
+	"""Agree that submitted work is done. Idempotent.
+
+	Everything past `note` is optional and nothing waits for any of it: a sign-off
+	that could be blocked by an unfilled rating is a sign-off that does not
+	happen.
+	"""
+	return task_service.sign_off(
+		_writable(name), note, outcome=outcome, rating=rating, lessons=lessons, hours=hours
+	)
+
+
+@frappe.whitelist()
+def reassign_task(name: str, volunteer: str, reason: str) -> dict:
+	"""Give the same work to somebody else, keeping both records.
+
+	The original is never overwritten: it moves to `reassigned` and points at the
+	task that took over, which points back. Editing the volunteer instead would
+	erase the fact that anybody had ever been asked — and quietly remove an entry
+	from the first person's own record of what they were asked to do.
+	"""
+	return task_service.reassign(_writable(name), volunteer, reason)
+
+
+@frappe.whitelist()
+def escalate_task(name: str, reason: str | None = None) -> dict:
+	"""Raise a task with whoever the coordinator named on it. Records it.
+
+	Silent where nobody was named, which is the shipped state: escalating to a
+	person a society never chose would mean guessing at a hierarchy this app does
+	not have.
+	"""
+	return task_service.escalate(_writable(name), reason)
 
 
 @frappe.whitelist()
@@ -221,25 +285,239 @@ def ask_about_task(name: str, question: str) -> dict:
 
 
 @frappe.whitelist()
-def report_progress(name: str, note: str, proof: str | None = None) -> dict:
+def report_progress(
+	name: str, note: str, proof: str | None = None, percent: float | None = None
+) -> dict:
 	"""Say how the work is going, optionally attaching a photograph.
 
 	`proof` is a file URL Frappe's own upload endpoint returned, not a file: the
 	upload is the framework's business and it has already decided what this
 	person may store and how large it may be.
+
+	`percent` is the volunteer's own estimate and is never inferred from the
+	checklist: a number this app worked out would be this app's opinion wearing
+	their name.
 	"""
-	return task_service.report_progress(_mine(name), note, proof=proof)
+	return task_service.report_progress(_mine(name), note, proof=proof, percent=percent)
 
 
 @frappe.whitelist()
-def submit_task(name: str, note: str | None = None, proof: str | None = None) -> dict:
+def decline_task(name: str, reason: str) -> dict:
+	"""Say no to a task, before starting it. Idempotent.
+
+	Only from `assigned`: somebody who accepted work and then cannot do it has not
+	declined it, and that belongs in front of the coordinator rather than in a
+	button. A reason is required, because a refusal nobody explained teaches the
+	next coordinator nothing.
+	"""
+	return task_service.decline(_mine(name), reason)
+
+
+@frappe.whitelist()
+def tick_checklist(
+	name: str,
+	index: int,
+	done: bool | int | str = True,
+	notes: str | None = None,
+	evidence: str | None = None,
+) -> dict:
+	"""Mark one checklist item done, or undo it. Idempotent on the same answer."""
+	return task_service.tick(
+		_mine(name), index, done=_flag(done), notes=notes, evidence=evidence
+	)
+
+
+@frappe.whitelist()
+def submit_task(
+	name: str,
+	note: str | None = None,
+	proof: str | None = None,
+	hours: float | None = None,
+	evidence: str | None = None,
+) -> dict:
 	"""Offer the work as done, for a coordinator to sign off. Idempotent.
 
 	This does not complete the task, and the name says so. Completion is
 	`sign_off`, on the other door, which is the whole point of `submitted` being
 	a state of its own.
+
+	Refused while a required checklist item is unticked — the one thing on a task
+	that stops a submission, and the reason the checklist has a required flag at
+	all.
 	"""
-	return task_service.submit(_mine(name), note=note, proof=proof)
+	return task_service.submit(
+		_mine(name), note=note, proof=proof, hours=hours, evidence=evidence
+	)
+
+
+# --- the batch door -------------------------------------------------------
+#
+# A batch is a coordinator's record, so every endpoint here is on the
+# coordinator's door: ordinary permission, which brings core's geo scoping with
+# it. A volunteer never sees a batch — they see the task it made them, which is
+# an ordinary task from the moment it exists.
+
+
+@frappe.whitelist()
+def create_batch(
+	subject: str,
+	brief: str,
+	geo_node: str,
+	volunteers: list | str | None = None,
+	**values,
+) -> dict:
+	"""Open a batch: the brief, where it belongs, and who it is for.
+
+	Creating it generates nothing. Drawing up the list and sending the work are
+	two acts, and a coordinator wants to look at the list — and at
+	`preview_batch`'s verdict on it — before forty people are told anything.
+	"""
+	frappe.has_permission(BATCH_DOCTYPE, ptype="create", throw=True)
+
+	names = frappe.parse_json(volunteers) if isinstance(volunteers, str) else (volunteers or [])
+
+	doc = frappe.get_doc(
+		{
+			"doctype": BATCH_DOCTYPE,
+			"subject": subject,
+			"brief": brief,
+			"geo_node": geo_node,
+			**{field: values[field] for field in _BATCH_FIELDS if field in values},
+			"volunteers": [{"volunteer": name} for name in names if name],
+		}
+	)
+	doc.insert()
+
+	return batch_service.report(doc)
+
+
+# What a caller may set on a batch beyond the three it must. Named as data so an
+# extra key in a request writes nothing rather than a field nobody reviewed.
+_BATCH_FIELDS = ("project", "deployment", "due_at", "task_type", "priority", "notes")
+
+
+@frappe.whitelist()
+def add_to_batch(name: str, volunteers: list | str) -> dict:
+	"""Add people to a batch. Legal after generation, unlike everything else on it.
+
+	The one part of a generated batch that is still a coordinator's to change,
+	and deliberately: adding somebody and generating again is how a batch grows.
+	The rows already resolved are untouched by the next run.
+	"""
+	doc = _batch(name)
+	names = frappe.parse_json(volunteers) if isinstance(volunteers, str) else (volunteers or [])
+	held = {row.volunteer for row in doc.volunteers or []}
+
+	for volunteer in names:
+		if volunteer and volunteer not in held:
+			doc.append("volunteers", {"volunteer": volunteer})
+
+	doc.save()
+
+	return batch_service.report(doc)
+
+
+@frappe.whitelist()
+def preview_batch(name: str) -> dict:
+	"""What generating this batch would do, without doing any of it.
+
+	The same predicate `generate_batch` uses, so the preview and the run cannot
+	disagree about who is going to get a task.
+	"""
+	return batch_service.preview(_batch(name, write=False))
+
+
+@frappe.whitelist()
+def generate_batch(name: str) -> dict:
+	"""Create one task per unresolved volunteer, and report row by row.
+
+	Safe to run again: a row that already has its task is passed over, a row that
+	failed is tried again. One bad row never blocks a good one — each person is
+	written inside their own savepoint.
+	"""
+	return batch_service.generate(_batch(name))
+
+
+@frappe.whitelist()
+def get_batch(name: str) -> dict:
+	"""One batch: its rows, and how the work it generated is going."""
+	doc = _batch(name, write=False)
+
+	return {
+		"batch": {
+			"name": doc.name,
+			"subject": doc.subject,
+			"brief": doc.brief,
+			"geo_node": doc.geo_node,
+			"project": doc.project,
+			"deployment": doc.deployment,
+			"due_at": doc.due_at,
+			"task_type": doc.task_type,
+			"priority": doc.priority,
+			"notes": doc.notes,
+			"generated_on": doc.generated_on,
+			"generated_by": doc.generated_by,
+			"is_generated": bool(doc.generated_on),
+		},
+		"report": batch_service.report(doc),
+		"counts": batch_service.counts(doc),
+	}
+
+
+@frappe.whitelist()
+def branch_batches(limit: int | None = None) -> dict:
+	"""Batches in the caller's own area, newest first.
+
+	`frappe.get_list`, not `get_all`: only the first runs core's permission query
+	condition, and the second is a whole-site answer wearing the shape of a scoped
+	one.
+	"""
+	names = frappe.get_list(
+		BATCH_DOCTYPE,
+		order_by="creation desc",
+		limit_page_length=min(int(limit or PAGE), PAGE),
+		pluck="name",
+	)
+	rows = []
+
+	for batch in names:
+		doc = frappe.get_doc(BATCH_DOCTYPE, batch)
+		rows.append(
+			{
+				"name": doc.name,
+				"subject": doc.subject,
+				"geo_node": doc.geo_node,
+				"generated_on": doc.generated_on,
+				"counts": batch_service.counts(doc),
+			}
+		)
+
+	return {"count": len(rows), "batches": rows}
+
+
+@frappe.whitelist()
+def batch_candidates(name: str, **filters) -> dict:
+	"""Volunteers this batch could go to, within the caller's own area.
+
+	`matching.candidates` with the batch's own defaults filled in — its anchor,
+	its deployment's terms of reference where it has one, and its due date as the
+	day the availability question is asked about. The scope is the caller's
+	session and cannot be supplied.
+	"""
+	return batch_service.candidates(_batch(name, write=False), **filters)
+
+
+def _batch(name: str, write: bool = True):
+	"""A batch the caller may see, and may act on where `write` is asked for.
+
+	Ordinary permission, which brings core's geo scoping with it. The same shape
+	`_writable`/`_visible` have below, kept separate because a batch is not a task
+	and neither door's ownership rule applies to it.
+	"""
+	doc = frappe.get_doc(BATCH_DOCTYPE, name)
+	doc.check_permission("write" if write else "read")
+
+	return doc
 
 
 # --- shared ---------------------------------------------------------------

@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:declaration_key",
+ "creation": "2026-08-30 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "declaration_section",
+  "title",
+  "declaration_key",
+  "applies_to",
+  "column_break_declaration",
+  "version",
+  "sequence",
+  "is_required",
+  "is_active",
+  "source",
+  "text_section",
+  "body",
+  "external_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "declaration_section",
+   "fieldtype": "Section Break",
+   "label": "Declaration"
+  },
+  {
+   "description": "What the applicant sees above the text, such as \"How we use your information\".",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "description": "The stable key acceptances point at. Rewording a declaration never orphans what people have already agreed to.",
+   "fieldname": "declaration_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Declaration Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "Which registration this declaration is shown on. To show it on both, create it twice.",
+   "fieldname": "applies_to",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Applies To",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_declaration",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "The version currently published, mirrored from VMMS Declaration Version. Publish a new version to change it.",
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Version",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "description": "Order on the form, lowest first. Declarations sharing a number fall back to the order they were created in.",
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sequence"
+  },
+  {
+   "default": "1",
+   "description": "Required declarations must be accepted before the application can be submitted. Never applied to applications already sent.",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Required"
+  },
+  {
+   "default": "1",
+   "description": "Unticked, the declaration stops being shown to new applicants. Acceptances already recorded are kept.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "default": "Text",
+   "description": "Whether the published version holds its wording here or points at a page on the society's own website. Mirrored from VMMS Declaration Version.",
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Text\nLink",
+   "read_only": 1
+  },
+  {
+   "fieldname": "text_section",
+   "fieldtype": "Section Break",
+   "label": "Text"
+  },
+  {
+   "description": "The wording currently published, mirrored from VMMS Declaration Version. Publish a new version to change it.",
+   "fieldname": "body",
+   "fieldtype": "Text Editor",
+   "label": "Text",
+   "translatable": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.source==\"Link\"",
+   "description": "The page applicants are asked to read, when the published version points at one. Mirrored from VMMS Declaration Version.",
+   "fieldname": "external_url",
+   "fieldtype": "Data",
+   "label": "Page Address",
+   "options": "URL",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-30 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Declaration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "sequence",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "title",
+ "track_changes": 1
+}

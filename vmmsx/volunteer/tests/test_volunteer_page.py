@@ -671,6 +671,11 @@ class TestTheDeclaredFields(VerifiedVolunteerTestCase):
 			skills=[skill.name],
 			motivation=[motivation.name],
 			prior_experience="School cadet",
+			# What a coordinator transcribes off the signed form. The clerk's
+			# door is held to the same standard as the browser, so it carries
+			# the same two things.
+			declarations_accepted=fixtures.required_declarations(),
+			emergency_contacts=fixtures.emergency_contact(),
 		)
 
 		stored = frappe.get_doc(fixtures.APPLICATION_DOCTYPE, result["name"])

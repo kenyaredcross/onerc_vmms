@@ -38,6 +38,8 @@ from collections.abc import Callable
 import frappe
 from onerc_core.geo.services import adapter
 
+from vmmsx.registration.services import guardian
+
 PROFILE_DOCTYPE = "Red Profile"
 
 VOLUNTEER_DOCTYPE = "VMMS Volunteer"
@@ -184,6 +186,13 @@ def phones(profiles_: set[str]) -> list[str]:
 
 	Deduplicated and sorted, so a household sharing a number is texted once and
 	a campaign built twice from the same audience is the same campaign.
+
+	**A young volunteer's guardian is in this list**, on the same rule as the
+	address list below and for the same reason. Worth saying out loud because of
+	what it costs: SMS is billed per message, so a branch with young volunteers
+	sees a recipient count higher than its roll. That is the correct count — the
+	messages are genuinely being sent — and `campaign.draft` reports it before
+	anything is spent.
 	"""
 	if not profiles_:
 		return []
@@ -195,7 +204,9 @@ def phones(profiles_: set[str]) -> list[str]:
 		ignore_permissions=True,  # Same argument as `_volunteers`.
 	)
 
-	return sorted({(row or "").strip() for row in rows if (row or "").strip()})
+	numbers = {(row or "").strip() for row in rows if (row or "").strip()}
+
+	return sorted(numbers | set(guardian.phones_for_many(profiles_)))
 
 
 def emails(profiles_: set[str]) -> list[str]:
@@ -205,6 +216,16 @@ def emails(profiles_: set[str]) -> list[str]:
 	somebody's address is. Deliberately independent of `logins()`: the whole
 	point of the email channel is that it reaches the people the in-app list
 	cannot, which is exactly the people with no login.
+
+	**A young volunteer's guardian is added here**, which is what makes a branch
+	announcement reach a parent without every announcement service having to know
+	what a guardian is. Two properties inherited from `guardian.emails_for_many`
+	and both load-bearing: the age is judged today rather than at registration, so
+	a volunteer who has turned eighteen drops their parents from the list by
+	themselves; and a society that has set no age of majority adds nobody.
+
+	Merged into one set rather than appended, so a parent who is also on the roll
+	in their own right is written to once.
 	"""
 	if not profiles_:
 		return []
@@ -216,4 +237,4 @@ def emails(profiles_: set[str]) -> list[str]:
 		ignore_permissions=True,  # Same argument as `_volunteers`.
 	)
 
-	return sorted({row for row in rows if row})
+	return sorted({row for row in rows if row} | set(guardian.emails_for_many(profiles_)))

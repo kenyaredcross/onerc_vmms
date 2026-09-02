@@ -25,6 +25,11 @@ class TestVolunteerDrafts(RegistrationTestCase):
 			"home_geo_node": self.branch(),
 			"id_type": fixtures.make_identification_type(),
 			"id_number": f"{fixtures.TEST_PREFIX}-{frappe.generate_hash(length=8)}",
+			# What a browser now sends. Defaulted here because these suites are
+			# about drafting and resuming rather than about the two requirements,
+			# and a draft nobody could submit would not be testing resume.
+			"declarations_accepted": fixtures.required_declarations(),
+			"emergency_contacts": fixtures.emergency_contact(),
 		}
 		values.update(changes)
 

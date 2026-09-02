@@ -189,7 +189,7 @@ export default function Analytics() {
 												    somebody wants to look inside. */}
 												<button
 													type="button"
-													className="text-[12px] font-semibold text-navy underline underline-offset-2"
+													className="text-[12px] font-semibold text-ink underline underline-offset-2"
 													onClick={() =>
 														setTrail([...trail, { name: row.geo_node, label: row.label }])
 													}
@@ -293,7 +293,7 @@ function Crumb({ label, active, onClick }: { label: string; active: boolean; onC
 	}
 
 	return (
-		<button type="button" className="text-navy underline underline-offset-2" onClick={onClick}>
+		<button type="button" className="text-ink underline underline-offset-2" onClick={onClick}>
 			{label}
 		</button>
 	);

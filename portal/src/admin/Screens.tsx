@@ -76,14 +76,19 @@ export function Overview() {
 				/>
 				<StatTile
 					label="Members in scope"
-					value={members.isLoading ? "—" : (members.data?.message.member_count ?? "—")}
+					// `?.` after `message` as well as after `data`. A read the server
+					// refuses answers `{"message": null}`, not an error — so the
+					// optional chain has to reach the *field*, or the console's front
+					// page throws on exactly the permission gap it was built to
+					// report honestly.
+					value={members.isLoading ? "—" : (members.data?.message?.member_count ?? "—")}
 					icon={Icon.card}
 					tint="violet"
 					to="/admin/registry/members"
 				/>
 				<StatTile
 					label="Volunteers in scope"
-					value={volunteers.isLoading ? "—" : (volunteers.data?.message.count ?? "—")}
+					value={volunteers.isLoading ? "—" : (volunteers.data?.message?.count ?? "—")}
 					icon={Icon.people}
 					tint="teal"
 					to="/admin/registry/volunteers"
@@ -120,11 +125,13 @@ export function Overview() {
 								<div className="mb-5 flex flex-wrap items-end justify-between gap-3">
 									<div>
 										<SectionTitle>Geographic coverage</SectionTitle>
-										<p className="text-[12.5px] text-slate-body">One level below your current management scope</p>
+										<p className="text-[12.5px] text-muted">One level below your current management scope</p>
 									</div>
-									<div className="flex gap-4 text-[11px] font-semibold text-slate-body">
-										<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-navy" />Volunteers</span>
-										<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-blue" />Members</span>
+									<div className="flex gap-4 text-[11px] font-semibold text-muted">
+										{/* The same two hexes `GeoBars` draws with. A legend that
+										    names a colour the bars are not is worse than none. */}
+										<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#6B4FA8]" />Volunteers</span>
+										<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#A9640F]" />Members</span>
 									</div>
 								</div>
 								<GeoBars rows={summary.coverage} />
@@ -174,7 +181,7 @@ function ChartCard({ title, total, columns }: { title: string; total: number; co
 					<p className="text-[11.5px] text-slate-faint">Last 12 months</p>
 				</div>
 				<div className="text-right">
-					<div className="font-display text-[28px] font-semibold leading-none tabular-nums text-ink">{total}</div>
+					<div className="text-[28px] font-semibold leading-none tabular-nums text-ink">{total}</div>
 					<div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-faint">total joined</div>
 				</div>
 			</div>
@@ -184,7 +191,11 @@ function ChartCard({ title, total, columns }: { title: string; total: number; co
 }
 
 function GeoBars({ rows }: { rows: OverviewSummary["coverage"] }) {
-	if (!rows.length) return <p className="py-10 text-center text-[12.5px] text-slate-faint">No areas below this scope to compare.</p>;
+	// `rows` is typed as an array and is not guaranteed to be one: a summary
+	// assembled from several permission-scoped reads can legitimately come back
+	// without the key at all, and this component was crashing the whole console
+	// front page on `.length` when it did.
+	if (!rows?.length) return <p className="py-10 text-center text-[12.5px] text-muted">No areas below this scope to compare.</p>;
 	const max = Math.max(...rows.flatMap((row) => [row.volunteers, row.members]), 1);
 	return (
 		<div className="space-y-4">
@@ -192,8 +203,11 @@ function GeoBars({ rows }: { rows: OverviewSummary["coverage"] }) {
 				<div key={row.geo_node} className="grid gap-2 sm:grid-cols-[minmax(110px,0.65fr)_minmax(0,2fr)] sm:items-center">
 					<div className="truncate text-[12.5px] font-semibold text-ink" title={row.label}>{row.label}</div>
 					<div className="space-y-1.5">
-						<GeoBar value={row.volunteers} max={max} tone="bg-navy" label="volunteers" />
-						<GeoBar value={row.members} max={max} tone="bg-blue" label="members" />
+						{/* The two-series pair from `ui/chart.tsx`, not navy-and-blue:
+						    blue means "act on this" everywhere else in the product and a
+						    blue data bar dilutes it. */}
+						<GeoBar value={row.volunteers} max={max} tone="bg-[#6B4FA8]" label="volunteers" />
+						<GeoBar value={row.members} max={max} tone="bg-[#A9640F]" label="members" />
 					</div>
 				</div>
 			))}
@@ -214,8 +228,8 @@ function GeoBar({ value, max, tone, label }: { value: number; max: number; tone:
 
 function Attention({ value, label, urgent = false }: { value: number; label: string; urgent?: boolean }) {
 	return (
-		<div className="flex items-center gap-3 sm:border-r sm:border-hairline sm:last:border-0">
-			<div className={`grid h-11 w-11 place-items-center rounded-full font-display text-[18px] font-bold tabular-nums ${urgent ? "bg-danger-soft text-danger" : "bg-surface text-navy"}`}>{value}</div>
+		<div className="flex items-center gap-3 sm:border-r sm:border-card-line sm:last:border-0">
+			<div className={`grid h-11 w-11 place-items-center rounded-full text-[18px] font-bold tabular-nums ${urgent ? "bg-danger-soft text-danger" : "bg-surface text-ink"}`}>{value}</div>
 			<div className="text-[12.5px] font-semibold text-slate-strong">{label}</div>
 		</div>
 	);

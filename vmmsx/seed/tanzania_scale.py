@@ -216,17 +216,26 @@ def _time_logs(volunteers: list[dict]) -> int:
 
 
 def _portfolio(nodes: list[str]) -> tuple[list[str], list[str], list[str]]:
+	from vmmsx.deployment.services import project as project_service
+
 	projects, terms, deployments = [], [], []
 	for index, node in enumerate(nodes):
 		label = frappe.db.get_value("Geo Node", node, "geo_node_name") or f"Area {index + 1}"
 		theme, summary = PROJECT_THEMES[index % len(PROJECT_THEMES)]
 		project_name = f"{label} {theme} 2026"
-		project = frappe.db.get_value("VMMS Project", {"project_name": project_name}, "name")
+		# ERPNext's own Project; `VMMS Project` was retired for it. `notes` is the
+		# story of the programme (what `summary` used to hold and what the printed
+		# terms of reference puts at its head) and `vmms_planning_notes` the aside
+		# beside the risks — see `setup/project_fields.py`.
+		project = frappe.db.get_value("Project", {"project_name": project_name}, "name")
 		if not project:
 			project = frappe.get_doc({
-				"doctype": "VMMS Project", "project_name": project_name, "status": "Active",
-				"geo_node": node, "start_date": add_days(today(), -180), "end_date": add_days(today(), 180),
-				"summary": summary, "notes": "Fictional presentation programme with realistic branch activity.",
+				"doctype": "Project", "project_name": project_name, "status": "Open",
+				"company": project_service.default_company(),
+				"vmms_geo_node": node,
+				"expected_start_date": add_days(today(), -180), "expected_end_date": add_days(today(), 180),
+				"notes": summary,
+				"vmms_planning_notes": "Fictional presentation programme with realistic branch activity.",
 			}).insert(ignore_permissions=True).name
 		projects.append(project)
 
@@ -244,6 +253,27 @@ def _portfolio(nodes: list[str]) -> tuple[list[str], list[str], list[str]]:
 				"approval_mode": "direct",
 				"objectives": [{"objective": "Deliver the planned activity safely and reach the intended community."}],
 				"expected_outputs": [{"output": "A completed activity register and branch summary report."}],
+				# The mission period, the people and the days — the rest of what a
+				# terms of reference has to say before its wording can be frozen.
+				# See `deployment/services/terms.py::REQUIRED_AT_SUBMISSION`.
+				"expected_start_date": add_days(today(), -180),
+				"expected_end_date": add_days(today(), 180),
+				"stakeholders": [
+					{"designation": "Branch Coordinator"},
+					{"designation": "Team Leader"},
+				],
+				"itinerary": [
+					{"activity_date": add_days(today(), -180), "activity": "Team briefing and assignment",
+						"person_responsible": "Team Leader"},
+					{"activity_date": add_days(today(), -90), "activity": f"{label} field activity",
+						"person_responsible": "Team Leader"},
+					{"activity_date": add_days(today(), 180), "activity": "Debrief and hand over the record",
+						"person_responsible": "Branch Coordinator"},
+				],
+				# Standing branch work resourced from the branch's own stock. Said
+				# out loud, because an empty resources table has to be a deliberate
+				# answer rather than one nobody got to.
+				"has_no_resources": 1,
 			})
 			doc.insert(ignore_permissions=True)
 			doc.submit()
@@ -261,6 +291,7 @@ def _portfolio(nodes: list[str]) -> tuple[list[str], list[str], list[str]]:
 			status = "Completed" if sequence == 0 else ("Active" if index % 3 else "Planned")
 			deployment = frappe.get_doc({
 				"doctype": "VMMS Deployment", "terms_of_reference": tor, "geo_node": node,
+				"coordinator": frappe.session.user,
 				"start_date": start, "end_date": add_days(start, 6), "status": status,
 				"volunteers_required": ASSIGNMENTS_PER_DEPLOYMENT,
 				"notes": f"{label} team deployment. Fictional presentation record.",

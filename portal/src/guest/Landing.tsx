@@ -83,7 +83,7 @@ function Header() {
 	const { isGuest, user } = useSession();
 
 	return (
-		<header className="sticky top-0 z-30 border-b border-hairline-soft bg-white/90 backdrop-blur-xl">
+		<header className="sticky top-0 z-30 border-b border-card-line bg-white/90 backdrop-blur-xl">
 			<div className="mx-auto flex h-[68px] max-w-shell items-center gap-2 px-4 sm:gap-5 sm:px-6">
 				<Link to="/" className="flex min-w-0 items-center">
 					<BrandLockup />
@@ -141,7 +141,7 @@ function Header() {
 
 function Hero() {
 	return (
-		<section className="relative overflow-hidden border-b border-hairline-soft bg-white">
+		<section className="relative overflow-hidden border-b border-card-line bg-white">
 			<div
 				aria-hidden="true"
 				className="pointer-events-none absolute -left-32 top-16 h-72 w-72 rounded-full bg-blue-soft blur-3xl"
@@ -153,24 +153,24 @@ function Hero() {
 						<EditableText
 							k="landing.hero.eyebrow"
 							as="div"
-							className="relative text-[11px] font-extrabold uppercase tracking-eyebrow text-slate-strong"
+							className="relative text-[11px] font-semibold uppercase tracking-eyebrow text-slate-strong"
 						/>
 					</div>
 					<EditableText
 						k="landing.hero.headline"
 						as="h1"
-						className="relative max-w-[11ch] font-display text-[44px] font-extrabold leading-[.98] tracking-[-.045em] text-ink sm:text-[60px] lg:text-[70px]"
+						className="relative max-w-[11ch] text-[44px] font-semibold leading-[.98] tracking-[-.045em] text-ink sm:text-[60px] lg:text-[70px]"
 					/>
 					<EditableText
 						k="landing.hero.body"
 						as="p"
-						className="relative mt-6 max-w-[560px] text-pretty text-[15px] leading-[1.75] text-slate-body sm:text-[17px]"
+						className="relative mt-6 max-w-[560px] text-pretty text-[15px] leading-[1.75] text-muted sm:text-[17px]"
 					/>
 					<div className="mt-8 flex flex-wrap items-center gap-3">
 						<HeroPrimary />
 						<Link
 							to="/join?path=member"
-							className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-hairline-strong bg-white px-5 py-3.5 font-display text-[13.5px] font-bold text-ink transition hover:border-blue-line hover:bg-blue-soft"
+							className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-card-line bg-white px-5 py-3.5 text-[13.5px] font-bold text-ink transition hover:border-blue-line hover:bg-blue-soft"
 						>
 							<EditableText k="landing.hero.cta_secondary" fallback="Explore membership" />
 							<Icon.arrow size={15} />
@@ -181,17 +181,17 @@ function Hero() {
 				<div className="relative mx-auto w-full max-w-[650px] lg:ml-auto">
 					<div
 						aria-hidden="true"
-						className="absolute -bottom-4 -right-4 h-[92%] w-[92%] rounded-feature bg-blue-soft sm:-bottom-6 sm:-right-6"
+						className="absolute -bottom-4 -right-4 h-[92%] w-[92%] rounded-2xl bg-blue-soft sm:-bottom-6 sm:-right-6"
 					/>
 					<EditableImage
 						k="landing.hero.image"
-						className="relative h-[350px] overflow-hidden rounded-feature shadow-shell sm:h-[520px] lg:h-[590px]"
+						className="relative h-[350px] overflow-hidden rounded-2xl shadow-shell sm:h-[520px] lg:h-[590px]"
 						imgClassName="transition duration-700"
 						objectPosition="center 24%"
 						showCredit
 						eager
 					/>
-					<div className="absolute -bottom-3 left-4 flex items-center gap-3 rounded-card border border-hairline bg-white px-4 py-3 shadow-lift sm:bottom-7 sm:left-[-24px] sm:px-5">
+					<div className="absolute -bottom-3 left-4 flex items-center gap-3 rounded-xl border border-card-line bg-white px-4 py-3 shadow-[0_2px_10px_rgba(30,50,73,0.07)] sm:bottom-7 sm:left-[-24px] sm:px-5">
 						<span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-blue-soft text-blue">
 							<Icon.pin size={17} />
 						</span>
@@ -218,7 +218,7 @@ function HeroPrimary() {
 	return (
 		<Link
 			to="/join?path=volunteer"
-			className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-blue px-6 py-3.5 font-display text-[13.5px] font-bold text-white transition hover:bg-blue-hover"
+			className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-blue px-6 py-3.5 text-[13.5px] font-bold text-white transition hover:bg-blue-hover"
 		>
 			<EditableText k="landing.hero.cta_primary" fallback="Become a volunteer" />
 			<Icon.arrow size={15} />
@@ -253,8 +253,8 @@ function ParticipationCard({ index, featured = false }: { index: number; feature
 			id={index === 2 ? "membership" : undefined}
 			className={
 				featured
-					? "group overflow-hidden rounded-feature bg-white shadow-card transition hover:shadow-lift"
-					: "group grid grid-cols-[118px_1fr] overflow-hidden rounded-card border border-hairline bg-white shadow-card transition hover:shadow-lift sm:grid-cols-[210px_1fr]"
+					? "group overflow-hidden rounded-2xl bg-white border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] transition hover:shadow-[0_2px_10px_rgba(30,50,73,0.07)]"
+					: "group grid grid-cols-[118px_1fr] overflow-hidden rounded-xl border border-card-line bg-white border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] transition hover:shadow-[0_2px_10px_rgba(30,50,73,0.07)] sm:grid-cols-[210px_1fr]"
 			}
 		>
 			<EditableImage
@@ -274,14 +274,14 @@ function ParticipationCard({ index, featured = false }: { index: number; feature
 					as="h2"
 					className={
 						featured
-							? "relative font-display text-[28px] font-extrabold leading-tight tracking-[-.025em] text-ink sm:text-[32px]"
-							: "relative font-display text-[18px] font-extrabold leading-tight tracking-[-.02em] text-ink sm:text-[21px]"
+							? "relative text-[28px] font-semibold leading-tight tracking-[-.025em] text-ink sm:text-[32px]"
+							: "relative text-[18px] font-semibold leading-tight tracking-[-.02em] text-ink sm:text-[21px]"
 					}
 				/>
 				<EditableText
 					k={`landing.card${index}.body`}
 					as="p"
-					className="relative mt-3 flex-1 text-pretty text-[13.5px] leading-[1.7] text-slate-body"
+					className="relative mt-3 flex-1 text-pretty text-[13.5px] leading-[1.7] text-muted"
 				/>
 				<EditableLink
 					k={`landing.card${index}.link`}
@@ -310,7 +310,7 @@ function FeatureGrid() {
 						<EditableLink
 							k="landing.band1.cta"
 							chevron
-							className="relative inline-flex rounded-full bg-white px-5 py-3 text-[13px] font-bold text-authority transition hover:bg-blue-soft"
+							className="relative inline-flex rounded-full bg-white px-5 py-3 text-[13px] font-bold text-ink transition hover:bg-blue-soft"
 						/>
 					}
 				/>
@@ -324,14 +324,14 @@ function FeatureGrid() {
 						<>
 							<Link
 								to="/join?path=member"
-								className="rounded-full bg-blue px-5 py-3 font-display text-[13px] font-bold text-white transition hover:bg-blue-hover"
+								className="rounded-full bg-blue px-5 py-3 text-[13px] font-bold text-white transition hover:bg-blue-hover"
 							>
 								<EditableText k="landing.band2.cta_primary" />
 							</Link>
 							<EditableLink
 								k="landing.band2.cta_secondary"
 								chevron
-								className="relative inline-flex rounded-full border border-hairline-strong px-5 py-3 text-[13px] font-bold text-ink transition hover:border-blue-line hover:bg-blue-soft"
+								className="relative inline-flex rounded-full border border-card-line px-5 py-3 text-[13px] font-bold text-ink transition hover:border-blue-line hover:bg-blue-soft"
 							/>
 						</>
 					}
@@ -362,8 +362,8 @@ function StoryCard({
 		<article
 			className={
 				dark
-					? "group overflow-hidden rounded-feature bg-authority text-white shadow-card"
-					: "group overflow-hidden rounded-feature border border-hairline bg-white shadow-card"
+					? "group overflow-hidden rounded-2xl bg-rail text-white border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]"
+					: "group overflow-hidden rounded-2xl border border-card-line bg-white border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]"
 			}
 		>
 			<EditableImage
@@ -379,8 +379,8 @@ function StoryCard({
 					as="div"
 					className={
 						dark
-							? "relative text-[10.5px] font-extrabold uppercase tracking-eyebrow text-white/55"
-							: "relative text-[10.5px] font-extrabold uppercase tracking-eyebrow text-blue"
+							? "relative text-[10.5px] font-semibold uppercase tracking-eyebrow text-white/55"
+							: "relative text-[10.5px] font-semibold uppercase tracking-eyebrow text-blue"
 					}
 				/>
 				<EditableText
@@ -388,8 +388,8 @@ function StoryCard({
 					as="h2"
 					className={
 						dark
-							? "relative mt-3 max-w-[18ch] font-display text-[29px] font-extrabold leading-[1.08] tracking-[-.03em] text-white sm:text-[36px]"
-							: "relative mt-3 max-w-[18ch] font-display text-[29px] font-extrabold leading-[1.08] tracking-[-.03em] text-ink sm:text-[36px]"
+							? "relative mt-3 max-w-[18ch] text-[29px] font-semibold leading-[1.08] tracking-[-.03em] text-white sm:text-[36px]"
+							: "relative mt-3 max-w-[18ch] text-[29px] font-semibold leading-[1.08] tracking-[-.03em] text-ink sm:text-[36px]"
 					}
 				/>
 				<EditableText
@@ -398,7 +398,7 @@ function StoryCard({
 					className={
 						dark
 							? "relative mt-4 flex-1 text-pretty text-[13.5px] leading-[1.75] text-white/65"
-							: "relative mt-4 flex-1 text-pretty text-[13.5px] leading-[1.75] text-slate-body"
+							: "relative mt-4 flex-1 text-pretty text-[13.5px] leading-[1.75] text-muted"
 					}
 				/>
 				<div className="mt-7 flex flex-wrap items-center gap-3">{actions}</div>
@@ -463,7 +463,7 @@ function StatStrip() {
 
 	return (
 		<section className="bg-white px-4 py-8 sm:px-6 sm:py-10">
-			<div className="mx-auto grid max-w-shell grid-cols-2 overflow-hidden rounded-feature bg-authority py-7 text-center shadow-card lg:grid-cols-4 lg:py-9">
+			<div className="mx-auto grid max-w-shell grid-cols-2 overflow-hidden rounded-2xl bg-rail py-7 text-center border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] lg:grid-cols-4 lg:py-9">
 				{shown.map((entry) => (
 					<div
 						key={entry.key}
@@ -484,10 +484,10 @@ function StatStrip() {
 							<EditableText
 								k={`landing.${entry.key}.value`}
 								as="div"
-								className="relative font-display text-[30px] font-extrabold leading-none tracking-[-.04em] text-white sm:text-[38px]"
+								className="relative text-[30px] font-semibold leading-none tracking-[-.04em] text-white sm:text-[38px]"
 							/>
 						) : (
-							<div className="font-display text-[30px] font-extrabold leading-none tracking-[-.04em] text-white sm:text-[38px]">
+							<div className="text-[30px] font-semibold leading-none tracking-[-.04em] text-white sm:text-[38px]">
 								{entry.live}
 							</div>
 						)}
@@ -555,13 +555,13 @@ function EventsTeaser() {
 			<EditableText
 				k="landing.events.heading"
 				as="h2"
-				className="relative max-w-[18ch] font-display text-[30px] font-extrabold leading-tight tracking-[-.03em] text-ink sm:text-[38px]"
+				className="relative max-w-[18ch] text-[30px] font-semibold leading-tight tracking-[-.03em] text-ink sm:text-[38px]"
 			/>
 			{(!isGuest || editing) && (
 				<EditableLink
 					k="landing.events.link"
 					chevron
-					className="relative whitespace-nowrap rounded-full border border-hairline-strong bg-white px-4 py-2.5 text-[12.5px] font-bold text-ink transition hover:border-blue-line hover:bg-blue-soft"
+					className="relative whitespace-nowrap rounded-full border border-card-line bg-white px-4 py-2.5 text-[12.5px] font-bold text-ink transition hover:border-blue-line hover:bg-blue-soft"
 				/>
 			)}
 		</div>
@@ -580,7 +580,7 @@ function EventsTeaser() {
 					</ul>
 
 					{(isGuest || editing) && (
-						<p className="mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12.5px] leading-relaxed text-slate-body">
+						<p className="mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12.5px] leading-relaxed text-muted">
 							<EditableText k="landing.events.more" as="span" className="relative" />
 							<Link to="/join?path=volunteer" className="chev font-bold text-blue hover:underline">
 								<EditableText k="landing.events.join" fallback="Become a volunteer" />
@@ -601,12 +601,12 @@ function EventsTeaser() {
 					{typed.map((index) => (
 						<li
 							key={index}
-							className="flex min-h-[185px] items-start gap-4 rounded-card border border-hairline bg-white p-6 shadow-card"
+							className="flex min-h-[185px] items-start gap-4 rounded-xl border border-card-line bg-white p-6 border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]"
 						>
 						<EditableText
 							k={`landing.event${index}.date`}
 							as="div"
-							className="relative flex h-14 w-14 flex-none flex-col items-center justify-center rounded-control bg-blue-soft text-center"
+							className="relative flex h-14 w-14 flex-none flex-col items-center justify-center rounded-lg bg-blue-soft text-center"
 							// One field, two treatments: a small red month over a
 							// large day. Anything after the first word is the day,
 							// so "AUG 20" and "20 AUG" both read as somebody meant.
@@ -614,11 +614,11 @@ function EventsTeaser() {
 								const [month, ...rest] = value.split(/\s+/);
 								return (
 									<>
-									<span className="block text-[9.5px] font-extrabold text-blue">
+									<span className="block text-[9.5px] font-semibold text-blue">
 											{month}
 										</span>
 										{rest.length > 0 && (
-											<span className="block font-display text-[26px] font-extrabold leading-none text-ink">
+											<span className="block text-[26px] font-semibold leading-none text-ink">
 												{rest.join(" ")}
 											</span>
 										)}
@@ -630,7 +630,7 @@ function EventsTeaser() {
 							<EditableText
 								k={`landing.event${index}.title`}
 								as="div"
-								className="relative font-display text-[15px] font-extrabold leading-snug text-ink"
+								className="relative text-[15px] font-semibold leading-snug text-ink"
 							/>
 							<EditableText
 								k={`landing.event${index}.meta`}
@@ -670,15 +670,15 @@ function LiveEvent({ row }: { row: EventCard }) {
 	const meta = [formatClock(row.start_time), place].filter(Boolean).join(" · ");
 
 	return (
-		<li className="flex min-h-[185px] items-start gap-4 rounded-card border border-hairline bg-white p-6 shadow-card">
-			<div className="flex h-14 w-14 flex-none flex-col items-center justify-center rounded-control bg-blue-soft text-center">
-				<span className="block text-[9.5px] font-extrabold text-blue">{month}</span>
-				<span className="block font-display text-[26px] font-extrabold leading-none text-ink">
+		<li className="flex min-h-[185px] items-start gap-4 rounded-xl border border-card-line bg-white p-6 border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]">
+			<div className="flex h-14 w-14 flex-none flex-col items-center justify-center rounded-lg bg-blue-soft text-center">
+				<span className="block text-[9.5px] font-semibold text-blue">{month}</span>
+				<span className="block text-[26px] font-semibold leading-none text-ink">
 					{day}
 				</span>
 			</div>
 			<div className="min-w-0 flex-1">
-				<div className="font-display text-[15px] font-extrabold leading-snug text-ink">{row.title}</div>
+				<div className="text-[15px] font-semibold leading-snug text-ink">{row.title}</div>
 				{meta && <div className="mt-1 text-[12px] text-slate-faint">{meta}</div>}
 				{row.href && (
 					<a
@@ -700,7 +700,7 @@ function ClosingPanel() {
 
 	return (
 		<section className="bg-white px-4 py-14 sm:px-6 sm:py-20">
-			<div className="relative mx-auto max-w-shell overflow-hidden rounded-feature bg-authority px-7 py-10 shadow-shell sm:px-12 sm:py-14 lg:px-16">
+			<div className="relative mx-auto max-w-shell overflow-hidden rounded-2xl bg-rail px-7 py-10 shadow-shell sm:px-12 sm:py-14 lg:px-16">
 				<div
 					aria-hidden="true"
 					className="pointer-events-none absolute -right-24 -top-36 h-80 w-80 rounded-full border-[54px] border-blue/20"
@@ -710,7 +710,7 @@ function ClosingPanel() {
 						<EditableText
 							k="landing.cta.heading"
 							as="h2"
-							className="relative max-w-[16ch] font-display text-[34px] font-extrabold leading-[1.05] tracking-[-.035em] text-white sm:text-[46px]"
+							className="relative max-w-[16ch] text-[34px] font-semibold leading-[1.05] tracking-[-.035em] text-white sm:text-[46px]"
 						/>
 						<EditableText
 							k="landing.cta.body"
@@ -720,7 +720,7 @@ function ClosingPanel() {
 					</div>
 					<Link
 						to="/join"
-						className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-blue px-6 py-3.5 font-display text-[14px] font-bold text-white transition hover:bg-blue-hover"
+						className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-blue px-6 py-3.5 text-[14px] font-bold text-white transition hover:bg-blue-hover"
 					>
 						<EditableText k="landing.cta.button" fallback="Join us today" />
 						<Icon.arrow size={16} />
@@ -747,7 +747,7 @@ function ClosingPanel() {
 
 function Footer() {
 	return (
-		<footer className="border-t border-white/10 bg-authority-deep text-white">
+		<footer className="border-t border-white/10 bg-rail text-white">
 			{/* One row of three at desktop, as the design draws it. It only stays
 			    one row because the society's block is the one allowed to shrink:
 			    an emergency number is longer in some societies than in others,

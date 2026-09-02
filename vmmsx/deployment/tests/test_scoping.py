@@ -152,8 +152,18 @@ class TestScopeIsSubtreeShaped(ScopingTestCase):
 		self.assertFalse(is_in_scope(fixtures.DEPLOYMENT_DOCTYPE, above.geo_node, self.deployment_viewer))
 
 	def test_a_viewer_does_not_see_another_society(self):
-		"""ACC-01: two disjoint subtrees, and no path between them."""
-		elsewhere = fixtures.make_deployment(self.terms.name, self.society_b["ward"])
+		"""ACC-01: two disjoint subtrees, and no path between them.
+
+		Its own terms of reference, scoped to the other society, because a terms
+		of reference now has to say where it applies and `self.terms` says society
+		A. That is the rule working rather than an obstacle to this test: the
+		deployment here is genuinely somebody else's, and it needs somebody else's
+		specification to be run under.
+		"""
+		theirs = fixtures.make_terms(
+			f"{fixtures.TEST_PREFIX}-tor-other-society", geo_scope=self.society_b["region"]
+		)
+		elsewhere = fixtures.make_deployment(theirs.name, self.society_b["ward"])
 
 		self.assertFalse(is_in_scope(fixtures.DEPLOYMENT_DOCTYPE, elsewhere.geo_node, self.deployment_viewer))
 

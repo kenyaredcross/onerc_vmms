@@ -110,7 +110,15 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 		),
 		(
 			holder(deployment_society.DEPLOYMENT_SCOPE_ROLE_FIELD),
-			{"VMMS Project": FULL, "VMMS Deployment": FULL, "VMMS Terms of Reference": FULL},
+			# `Project` is ERPNext's, and it is the one standard doctype this table
+			# grants on. It ships with `Projects Manager`, `Projects User` and
+			# `Employee` rows of its own, which is a recruitment and accounting
+			# audience rather than a volunteering one; a society's deployment
+			# coordinator holds none of them. The grant is narrowed by core's geo
+			# scoping like every other row here — `hooks.py` registers `Project` on
+			# `vmms_geo_node` — so it widens who may open the programmes in their own
+			# branch and nothing beyond it.
+			{"Project": FULL, "VMMS Deployment": FULL, "VMMS Terms of Reference": FULL},
 		),
 		(
 			holder(deployment_society.REQUEST_SCOPE_ROLE_FIELD),
@@ -122,7 +130,15 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 		# The volunteer holding a task needs none of this: their own portal reaches
 		# it by ownership, through `api/tasks.py`, and never by role. This grant is
 		# for the coordinator who assigns work and signs it off.
-		(holder(TASK_SCOPE_ROLE_FIELD), {"VMMS Task": FULL}),
+		# `VMMS Task Batch` rides on the same role for the reason `hooks.py` gives
+		# at its scope registration: a coordinator who may see the tasks must be
+		# able to open the record that explains why forty of them exist. `VMMS
+		# Task Type` is the society's own vocabulary for this module, maintained
+		# by the same people.
+		(
+			holder(TASK_SCOPE_ROLE_FIELD),
+			{"VMMS Task": FULL, "VMMS Task Batch": FULL, "VMMS Task Type": FULL},
+		),
 		# `read` here is the desk's, and it is narrowed by geo scoping like every
 		# other row in this table. What a signed-out visitor sees on the public map
 		# is `is_published` on each location and has nothing to do with this grant.

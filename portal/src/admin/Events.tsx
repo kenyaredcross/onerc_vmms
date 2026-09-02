@@ -106,8 +106,8 @@ export default function AdminEvents() {
 									className={cx(
 										"rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
 										category === option.category
-											? "border-navy bg-navy text-white"
-											: "border-hairline-strong bg-white text-slate-body hover:border-navy hover:text-navy",
+											? "border-blue bg-rail text-white"
+											: "border-card-line bg-white text-muted hover:border-blue hover:text-ink",
 									)}
 								>
 									{option.label}
@@ -138,9 +138,9 @@ export default function AdminEvents() {
 			 * live. Rosters and check-in are not missing from this app — they are
 			 * another app's records, which is a different sentence and gets its own.
 			 */}
-			<div className="mt-8 rounded-panel border border-hairline bg-white px-6 py-5">
+			<div className="mt-8 rounded-2xl border border-card-line bg-white px-6 py-5">
 				<SectionTitle>Rosters, RSVPs and check-in are managed in Buzz</SectionTitle>
-				<p className="max-w-2xl text-[12.5px] leading-relaxed text-slate-body">
+				<p className="max-w-2xl text-[12.5px] leading-relaxed text-muted">
 					Buzz owns registration, ticket types, coupons, payment, guest verification and
 					check-in. vmmsx deliberately does not re-implement any of them: a second copy of a
 					booking rule would have to stay in step with Buzz's forever, and the first time the
@@ -161,7 +161,7 @@ function EventTile({ event }: { event: EventCard }) {
 				{event.category && <Pill tone="page">{event.category}</Pill>}
 			</div>
 
-			<p className="text-[12px] text-slate-body">
+			<p className="text-[12px] text-muted">
 				{event.start_date ? formatDate(event.start_date) : "No date"}
 				{event.multi_day && event.end_date ? ` → ${formatDate(event.end_date)}` : ""}
 				{event.start_time ? ` · ${event.start_time.slice(0, 5)}` : ""}
@@ -170,7 +170,7 @@ function EventTile({ event }: { event: EventCard }) {
 			{event.venue && <p className="mt-0.5 text-[12px] text-slate-faint">{event.venue}</p>}
 
 			{event.summary && (
-				<p className="mt-2 line-clamp-3 text-[12.5px] text-slate-body">{event.summary}</p>
+				<p className="mt-2 line-clamp-3 text-[12.5px] text-muted">{event.summary}</p>
 			)}
 
 			{event.href && (

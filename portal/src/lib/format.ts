@@ -75,12 +75,30 @@ export function formatClock(value: string | null | undefined): string {
  * finished setting up. Absent means the number is shown bare, which is honest,
  * rather than a symbol this app picked.
  */
-export function formatMoney(amount: number | null | undefined, currency?: string | null): string {
+export function formatMoney(
+	amount: number | null | undefined,
+	currency?: string | null,
+	/**
+	 * Show the minor unit.
+	 *
+	 * Off by default, and that is the interesting half. `Intl` decides how many
+	 * fraction digits a currency has from the currency *code*, and it does not
+	 * know that a society reporting in Tanzanian shillings never quotes cents —
+	 * so a headline figure came out as "TZS 20,153,204.00", four characters of
+	 * pure noise on the widest number on the page. A report reads in whole
+	 * units; a receipt, where the minor unit is the point, passes `true`.
+	 */
+	cents = false,
+): string {
 	if (amount === null || amount === undefined) return "—";
 
 	if (currency) {
 		try {
-			return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(amount);
+			return new Intl.NumberFormat(undefined, {
+				style: "currency",
+				currency,
+				...(cents ? {} : { maximumFractionDigits: 0 }),
+			}).format(amount);
 		} catch {
 			// An unrecognised currency code is a configuration problem, not a
 			// reason to render nothing. Fall through to code plus number.

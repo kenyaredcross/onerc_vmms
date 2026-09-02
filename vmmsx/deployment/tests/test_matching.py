@@ -181,9 +181,10 @@ class TestScopeIsNeverLeaked(MatchingTestCase):
 				"offset",
 				"search",
 				"skills",
+				"languages",
 				# The deployment's own span, which turns on the availability and
 				# clash answers, and the two toggles that make each a filter. None
-				# of the four says anything about *who is asking* or *where they may
+				# of the five says anything about *who is asking* or *where they may
 				# look*, which is the property this test exists to protect: they
 				# narrow a result that core's scoping has already bounded, exactly
 				# as `search` and `skills` do.
@@ -191,6 +192,7 @@ class TestScopeIsNeverLeaked(MatchingTestCase):
 				"end_date",
 				"only_available",
 				"exclude_conflicts",
+				"max_workload",
 			},
 		)
 

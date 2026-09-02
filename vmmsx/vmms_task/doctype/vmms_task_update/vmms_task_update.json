@@ -20,7 +20,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Entry",
-   "options": "assigned\naccepted\nquestion\nanswer\nprogress requested\nprogress\nsubmitted\ncompleted\nreturned\ncancelled",
+   "options": "assigned\naccepted\nquestion\nanswer\nprogress requested\nprogress\nsubmitted\ncompleted\nreturned\ncancelled\ndeclined\nreassigned\nescalated\nreminded",
    "read_only": 1,
    "reqd": 1
   },

@@ -20,8 +20,10 @@ scope role, which is right for the register and wrong for the person in it.
 """
 
 import frappe
+from frappe.utils import cint
 
-from vmmsx.registration.services import questions
+from vmmsx.registration.services import declarations, questions
+from vmmsx.registration.services import society as registration_society
 from vmmsx.volunteer.services import application as application_service
 from vmmsx.volunteer.services import certification, timelog
 from vmmsx.volunteer.services import volunteer as volunteer_service
@@ -40,6 +42,9 @@ def apply_to_volunteer(
 	availability: list | None = None,
 	motivation: list | None = None,
 	prior_experience: str | None = None,
+	declarations_accepted: list | dict | None = None,
+	emergency_contacts: list | None = None,
+	guardian_consents: list | None = None,
 ) -> dict:
 	"""Create an application and put it into motion.
 
@@ -51,7 +56,31 @@ def apply_to_volunteer(
 	keys — `["first_aid", "driving"]`, not the child-table row shape those
 	fields store internally. Shaping that translation is this endpoint's job,
 	not something every caller should have to know.
+
+	**The clerk's door carries the declarations too, and it has to.**
+	`assert_ready` refuses a submission with a required declaration unaccepted
+	whichever door it came through — deliberately, because a society that asks
+	its applicants to agree to something has not stopped asking merely because
+	the form arrived on paper. So a coordinator entering an application records
+	what the applicant signed, exactly as the wizard records what they ticked.
+	Without this parameter the clerk's door could not satisfy a rule the
+	self-service door could, which is a difference no society asked for.
+
+	`emergency_contacts` and `guardian_consents` are here for the same reason,
+	and they are shaped through the same allow-list the portal uses — so a
+	coordinator can no more mark a guardian's consent verified from this
+	endpoint than an applicant can. Verification is a tick on the application
+	itself, by whoever actually checked, and it is stamped with their name.
 	"""
+	from vmmsx.api.registration import (
+		EMERGENCY_CONTACT_FIELDS,
+		GUARDIAN_CONSENT_FIELDS,
+		GUARDIAN_CONSENT_FILE_FIELDS,
+		rows_from,
+		secure_row_files,
+	)
+	from vmmsx.registration.services import declarations
+
 	frappe.has_permission(APPLICATION_DOCTYPE, ptype="create", throw=True)
 
 	application = frappe.get_doc(
@@ -64,9 +93,18 @@ def apply_to_volunteer(
 			"availability": selector_rows(availability, "availability_slot"),
 			"motivation": selector_rows(motivation, "motivation"),
 			"prior_experience": prior_experience,
+			"emergency_contacts": rows_from(emergency_contacts, EMERGENCY_CONTACT_FIELDS),
+			"guardian_consents": rows_from(
+				guardian_consents, GUARDIAN_CONSENT_FIELDS, GUARDIAN_CONSENT_FILE_FIELDS
+			),
 		}
 	)
+	declarations.apply(application, declarations_accepted)
 	application.insert()
+
+	# After the insert, because a file can only be tied to a document that has a
+	# name — the same reason `questions.anchor_files` runs there.
+	secure_row_files(application, "guardian_consents", GUARDIAN_CONSENT_FILE_FIELDS)
 
 	return application_service.submit(application)
 
@@ -149,7 +187,7 @@ def application_options() -> dict:
 		"languages": _languages(),
 		"availability": _vocabulary("VMMS Availability Slot", "slot_name"),
 		"motivations": _vocabulary("VMMS Motivation", "motivation_name"),
-		"id_types": _vocabulary("Identification Type", "identification_type_name"),
+		"id_types": _id_types(),
 		"countries": [row["name"] for row in frappe.get_all("Country", order_by="name asc")],
 		# A Select's options are newline separated and a leading or trailing
 		# blank line is ordinary in one, so the empties are dropped rather than
@@ -164,6 +202,20 @@ def application_options() -> dict:
 		# membership options endpoint makes, so both wizards draw an added
 		# question the same way and neither knows what one is about.
 		"questions": questions.asked_on(APPLICATION_DOCTYPE),
+		# What the applicant has to agree to, in the society's own current
+		# wording. Served rather than written into the bundle for the reason
+		# every other list here is: the text is a record an administrator edits,
+		# and a copy in a browser bundle would be the version nobody updated.
+		"declarations": declarations.shown_on(APPLICATION_DOCTYPE),
+		# The age this society treats as adult, so the form knows when to ask for
+		# a guardian rather than guessing. `None` means the society has not
+		# configured minor handling and the guardian step is never drawn — the
+		# same answer `application.is_minor` reaches on the server.
+		"minor_age": registration_society.minor_age(),
+		# How a guardian's consent can be verified. Only ever shown to whoever is
+		# recording the verification, but served with the rest of the vocabulary
+		# because it is configuration like everything else in this payload.
+		"guardian_verification_methods": _vocabulary("VMMS Guardian Verification Method", "method_name"),
 	}
 
 
@@ -185,6 +237,55 @@ def _vocabulary(doctype: str, label_field: str) -> list[dict]:
 	return [
 		{"key": row["name"], "label": row[label_field] or row["name"], "description": row["description"]}
 		for row in rows
+	]
+
+
+def _id_types() -> list[dict]:
+	"""The identification types on offer, each carrying what this society asks of it.
+
+	`_vocabulary`'s three keys plus the society's own rules, so a form can mark a
+	document as required and ask for the copy the rule insists on rather than
+	discovering at submission that the server wanted one. The two readings never
+	disagree, because `application._required_document_types()` reads the very same
+	fields off the very same rows.
+
+	**Empty rules on a site that has not run the patch yet.** The Custom Fields
+	are installed by `patches/install_identity_document_rules.py`, and between
+	syncing this module and running it the columns are not there. `_vocabulary`'s
+	answer is still correct — these are the types — and the form simply asks for
+	none of them in particular, which is what an unconfigured society means.
+	"""
+	types = _vocabulary("Identification Type", "identification_type_name")
+	meta = frappe.get_meta("Identification Type")
+
+	if not meta.has_field(application_service.REQUIRED_DOCUMENT_FIELD):
+		return types
+
+	rules = {
+		row["name"]: row
+		for row in frappe.get_all(
+			"Identification Type",
+			filters={"is_active": 1},
+			fields=[
+				"name",
+				application_service.REQUIRED_DOCUMENT_FIELD,
+				application_service.DOCUMENT_ATTACHMENT_FIELD,
+				application_service.DOCUMENT_MINIMUM_AGE_FIELD,
+			],
+		)
+	}
+
+	return [
+		{
+			**row,
+			"is_required": bool(rules.get(row["key"], {}).get(application_service.REQUIRED_DOCUMENT_FIELD)),
+			"requires_attachment": bool(
+				rules.get(row["key"], {}).get(application_service.DOCUMENT_ATTACHMENT_FIELD)
+			),
+			"minimum_age": cint(rules.get(row["key"], {}).get(application_service.DOCUMENT_MINIMUM_AGE_FIELD))
+			or None,
+		}
+		for row in types
 	]
 
 
@@ -437,6 +538,12 @@ def _match_row(volunteer) -> dict:
 		# the surface draws initials.
 		"photo": identity.read(volunteer, ("profile_photo",)).get("profile_photo"),
 		"status": volunteer.status,
+		# When they joined. On the row rather than only in the dossier because
+		# the active register shows it as a column: a coordinator scanning a
+		# branch's volunteers is reading standing and length of service
+		# together, and a column that made them open each record to find the
+		# second is a column that is not there.
+		"joined_on": volunteer.joined_on,
 		**capabilities.placement(volunteer),
 		**capabilities.current(volunteer),
 		# Derived per row, from the same function the dossier uses, so a person
@@ -1005,3 +1112,94 @@ def _my_volunteer() -> str | None:
 		return None
 
 	return frappe.db.get_value(VOLUNTEER_DOCTYPE, {"red_profile": profile}, "name")
+
+
+# How many rows the distinct-branch read will take before it gives up. A ceiling
+# on work rather than a page size; past it the figure is `None` and the screen
+# omits the tile rather than showing one computed from a truncated read.
+_SUMMARY_CEILING = 20_000
+
+
+@frappe.whitelist()
+def register_summary() -> dict:
+	"""The active volunteer register's own figures, **inside the caller's scope**.
+
+	Four aggregates, each computed over the whole scoped register rather than
+	over a page of it — which is the entire reason this exists. The registry
+	screen used to label its page's `total` as a headline figure; a page is not
+	a total and a screen that says it is will be believed.
+
+	    active        volunteers whose standing is Active
+	    joined_month  of those, the ones whose `joined_on` falls in this month
+	    branches      how many distinct serving branches they sit across
+	    deployed      how many people are out on an Active deployment right now
+
+	**Scope is the floor, not a filter.** Every read is `frappe.get_list`, which
+	runs core's permission query condition; `frappe.get_all` appears nowhere in
+	this function. It takes no arguments, so there is nothing a caller could send
+	that would widen it.
+
+	`deployed` is counted from the *deployment* side — the assignments on Active
+	deployments this caller may read — because that is where the fact lives. It
+	is the same `counts_for_many` every deployment listing uses, so this figure
+	and the operations screens cannot disagree.
+	"""
+	from frappe.utils import get_first_day, getdate, today
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	active = {"status": "Active"}
+	month_start = get_first_day(getdate(today()))
+
+	nodes = frappe.get_list(
+		VOLUNTEER_DOCTYPE,
+		filters=active,
+		limit_page_length=_SUMMARY_CEILING + 1,
+		pluck="home_geo_node",
+	)
+	capped = len(nodes) > _SUMMARY_CEILING
+
+	# **Asked before the read, not caught after it.** `get_list` raises on a
+	# doctype the caller has no read permission for at all, and a membership
+	# clerk who may see volunteers and may not see deployments must get the three
+	# figures they are entitled to rather than an error page. `None` says "not
+	# something you can be told" and the screen draws a dash; a zero would say
+	# "nobody is deployed", which is a different and false claim. The same rule
+	# `api/person.py::registers` follows.
+	if frappe.has_permission("VMMS Deployment", "read"):
+		running = frappe.get_list(
+			"VMMS Deployment",
+			filters={"status": "Active"},
+			limit_page_length=0,
+			pluck="name",
+		)
+		tallies = assignment_service.counts_for_many(running) if running else {}
+		deployed = sum(tally.get("on_deployment", 0) for tally in tallies.values())
+		deployments = len(running)
+	else:
+		deployed = None
+		deployments = None
+
+	return {
+		"active": _register_count(VOLUNTEER_DOCTYPE, active),
+		"joined_month": _register_count(
+			VOLUNTEER_DOCTYPE, {**active, "joined_on": (">=", month_start)}
+		),
+		# None rather than a wrong number: see `_SUMMARY_CEILING`.
+		"branches": None if capped else len({node for node in nodes if node}),
+		"deployed": deployed,
+		"deployments": deployments,
+		"capped": capped,
+	}
+
+
+def _register_count(doctype: str, filters: dict) -> int:
+	"""How many rows match, through the scoped listing rather than around it.
+
+	`frappe.db.count` would skip core's permission query condition; `get_list`
+	runs it. The aggregate is the dict form because Frappe rejects a SQL function
+	written as a string in a SELECT.
+	"""
+	rows = frappe.get_list(doctype, filters=filters, fields=[{"COUNT": "name"}], as_list=True)
+
+	return frappe.utils.cint(rows[0][0]) if rows else 0

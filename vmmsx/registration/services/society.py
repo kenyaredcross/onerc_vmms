@@ -1,7 +1,7 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""Society configuration the self-service journey reads. One question, no constants.
+"""Society configuration the self-service journey reads. Two questions, no constants.
 
 **Which role a self-registering account holds** — `vmms_self_service_role`. A
 person who has just created a website account is not yet a volunteer and not yet
@@ -26,12 +26,42 @@ here is what turns a self-registered website account into somebody who can be
 shown a workspace at all. A society that would rather its applicants never reach
 the desk simply leaves this empty and drives registration from the two web form
 routes, which are ordinary portal pages and need none of this.
+
+**At what age somebody stops needing a guardian** — `vmms_minor_age`. Here
+rather than in `volunteer/services/society.py` because it is not a volunteering
+question: the age of majority is a fact about a jurisdiction, it applies to
+every registration a society runs, and putting it beside the volunteer settings
+would mean the membership path eventually asking the volunteer module how old a
+child is. Also a Custom Field vmmsx owns, installed by
+`patches/install_identity_document_rules.py`.
+
+**Empty means the guardian rules are off, not that everyone is a minor.** Same
+fail-open direction as the anchor level and the employee provisioning flag, and
+for the same reason: a society that has not configured minor handling has not
+thereby said it accepts nobody. Guessing eighteen would be this app inventing a
+law.
 """
 
 import frappe
+from frappe.utils import cint
 from onerc_core.society.services import config
 
 SELF_SERVICE_ROLE_FIELD = "vmms_self_service_role"
+MINOR_AGE_FIELD = "vmms_minor_age"
+
+
+def minor_age() -> int | None:
+	"""The age this society treats as adult, or None if it has not said.
+
+	Read through core's settings accessor so a site whose settings single has
+	never been saved degrades to "not configured" instead of throwing, and read
+	on every call so changing the setting takes effect without a restart.
+
+	Zero and empty are the same answer — nobody is a minor — because an Int
+	Custom Field that has never been filled in reads as 0, and a society cannot
+	mean "the age of majority is zero".
+	"""
+	return cint(config.settings().get(MINOR_AGE_FIELD)) or None
 
 
 def self_service_role() -> str | None:

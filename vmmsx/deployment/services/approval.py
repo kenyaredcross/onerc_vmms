@@ -40,6 +40,23 @@ stays at `Draft` and is fulfilled anyway, because the absence of an approval is
 not an approval and writing `Approved` onto a record nobody approved would be a
 lie in an audit trail. `_settled_direct` answers the question the predicate
 actually asks, which is "is anything still owed here", and the answer is no.
+
+**Routed only counts where somebody has been configured to route to.** A society
+sets `routed` on a terms of reference; whether an approval *cycle* exists is a
+separate answer, and it lives on `VMMS Approval Workflow`. Before, a routed
+terms of reference on a site with no workflow for the governed doctype threw
+"no approval workflow is configured" at whoever raised the request — a piece of
+configuration nobody had done blocking work nobody had been told to stop. So
+`effective_mode` asks both questions: the mode a society chose, narrowed by
+whether there is an approval cycle to run it through. With none, the record is
+handled directly, and `downgraded()` is how a screen and a DTO say so out loud
+rather than letting it look like a decision somebody made.
+
+**This is a narrowing, never a widening.** A workflow that exists is always
+used; `direct` is never turned into `routed` by anything here. The only thing
+that changes is what happens on a site that has asked for approvals and not yet
+set any up — which used to be an error and is now work that gets done, visibly
+unapproved.
 """
 
 import frappe
@@ -72,13 +89,51 @@ def assert_mode(configured: str | None, where: str) -> str:
 	)
 
 
+def has_workflow(doctype: str) -> bool:
+	"""Is there an approval cycle configured for this doctype at all?
+
+	Read from configuration on every call rather than cached: a society that sets
+	a workflow up this afternoon must not need a restart before its next request
+	is routed.
+	"""
+	from vmmsx.approvals.services import config
+
+	return config.is_approvable(doctype)
+
+
+def effective_mode(doc, mode: str, where: str) -> str:
+	"""The mode that will actually be applied: what was chosen, narrowed by what exists.
+
+	`routed` with no workflow for the governed doctype is `direct`, because there
+	is nobody to route to and refusing the work would be a piece of unfinished
+	configuration stopping a branch from deploying anybody. The module docstring
+	carries the whole argument.
+	"""
+	chosen = assert_mode(mode, where)
+
+	if chosen == MODE_ROUTED and not has_workflow(doc.doctype):
+		return MODE_DIRECT
+
+	return chosen
+
+
+def downgraded(doc, mode: str, where: str) -> bool:
+	"""Is this record being handled directly *despite* being configured as routed?
+
+	For a DTO and for a screen, so that "nobody approved this" is visible on the
+	record rather than inferred from the absence of a decision. Never for a
+	branch: the branch is `effective_mode`.
+	"""
+	return assert_mode(mode, where) == MODE_ROUTED and not has_workflow(doc.doctype)
+
+
 def begin(doc, mode: str, where: str) -> None:
 	"""Start whatever this mode requires. Idempotent.
 
 	Looked up rather than branched: `_BEGIN[mode]`. There is no `if` on a terms
 	of reference name anywhere in this file.
 	"""
-	_BEGIN[assert_mode(mode, where)](doc)
+	_BEGIN[effective_mode(doc, mode, where)](doc)
 
 
 def is_settled(doc, mode: str, where: str) -> bool:
@@ -88,11 +143,18 @@ def is_settled(doc, mode: str, where: str) -> bool:
 	makes the operational predicates that read it safe to re-evaluate after any
 	event and in any order.
 	"""
-	return _SETTLED[assert_mode(mode, where)](doc)
+	return _SETTLED[effective_mode(doc, mode, where)](doc)
 
 
 def requires_approver(mode: str, where: str) -> bool:
-	"""Whether this mode needs a human at all. For a DTO, never for a branch."""
+	"""Whether this mode asks for a human at all. For a DTO, never for a branch.
+
+	The mode as *configured*, deliberately: this answers "did the society say this
+	needs approving", which is what a terms of reference's own description should
+	report whatever any particular site has set up. Whether an approval will
+	actually be routed on this site is `effective_mode`, which needs a document
+	to know which doctype's workflow to look for.
+	"""
 	return assert_mode(mode, where) == MODE_ROUTED
 
 

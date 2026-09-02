@@ -109,7 +109,7 @@ export function HoverCard({
 					id={id}
 					role="dialog"
 					className={cx(
-						"absolute top-full z-30 mt-1.5 w-[19rem] rounded-card border border-hairline-strong bg-white p-3.5 text-left shadow-lg",
+						"absolute top-full z-30 mt-1.5 w-[19rem] rounded-xl border border-card-line bg-white p-3.5 text-left shadow-lg",
 						align === "right" ? "right-0" : "left-0",
 						cardClassName,
 					)}

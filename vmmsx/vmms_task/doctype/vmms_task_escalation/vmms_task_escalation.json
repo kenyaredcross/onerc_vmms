@@ -1,0 +1,56 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-31 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "escalated_on",
+  "escalated_to",
+  "reason"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "escalated_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Escalated On",
+   "read_only": 1
+  },
+  {
+   "columns": 3,
+   "description": "Who it was raised with.",
+   "fieldname": "escalated_to",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Escalated To",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "columns": 4,
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Reason",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-31 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Task",
+ "name": "VMMS Task Escalation",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

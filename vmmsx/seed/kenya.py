@@ -192,7 +192,12 @@ CERTIFICATE_TEMPLATE_KEY = "membership_certificate"
 APPLICATION_DOCTYPE = "VMMS Volunteer Application"
 MEMBERSHIP_DOCTYPE = "VMMS Membership"
 WORKFLOW_DOCTYPE = "VMMS Approval Workflow"
-PROJECT_DOCTYPE = "VMMS Project"
+# ERPNext's own, adopted as the programme of work; `VMMS Project` was retired.
+# Still in this table for the same reason the other three are: a role holding a
+# Geo Assignment and nothing else fails `frappe.get_list`'s own permission check
+# before geo scoping ever gets a say, and Project's shipped rows are ERPNext's
+# accounting audience rather than a volunteering one.
+PROJECT_DOCTYPE = "Project"
 TERMS_DOCTYPE = "VMMS Terms of Reference"
 DEPLOYMENT_DOCTYPE = "VMMS Deployment"
 REQUEST_DOCTYPE = "VMMS Deployment Request"

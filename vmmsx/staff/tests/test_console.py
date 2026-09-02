@@ -83,6 +83,7 @@ class TestTheSectionTableIsHonest(IntegrationTestCase):
 		named = (
 			{entry["section"] for entry in console.GATED_SECTIONS}
 			| {entry["section"] for entry in console.ADMIN_SECTIONS}
+			| {entry["section"] for entry in console.COMPANION_SECTIONS}
 			| set(console.UNGATED_SECTIONS)
 		)
 
@@ -137,8 +138,27 @@ class TestTheSectionTableIsHonest(IntegrationTestCase):
 		"""One answer to who reaches a tab, not two that could disagree."""
 		gated = {entry["section"] for entry in console.GATED_SECTIONS}
 		admin = {entry["section"] for entry in console.ADMIN_SECTIONS}
+		companion = {entry["section"] for entry in console.COMPANION_SECTIONS}
 
 		self.assertEqual(gated & admin, set())
+		self.assertEqual(gated & companion, set())
+		self.assertEqual(admin & companion, set())
+
+	def test_a_companion_section_names_a_doctype_this_app_does_not_own(self):
+		"""The point of the third tuple.
+
+		`COMPANION_SECTIONS` exists so a section may be gated on a register an
+		optional app owns — which is exactly the case `test_every_gated_doctype_
+		exists` above cannot cover, because the doctype legitimately does not
+		exist on a site without that app. A vmmsx doctype landing here would be
+		one escaping that assertion for no reason, so it is refused.
+		"""
+		for entry in console.COMPANION_SECTIONS:
+			for doctype in entry["doctypes"]:
+				self.assertFalse(
+					doctype.startswith("VMMS "),
+					f"{doctype} is this app's own, so it belongs in GATED_SECTIONS",
+				)
 
 
 class TestWhoGetsWhichTabs(IntegrationTestCase):

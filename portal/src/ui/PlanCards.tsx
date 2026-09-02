@@ -123,11 +123,11 @@ function PlanCard({
 					}
 				: {})}
 			className={cx(
-				"group relative flex flex-col overflow-hidden rounded-panel border bg-white text-left transition",
+				"group relative flex flex-col overflow-hidden rounded-2xl border bg-white text-left transition",
 				selected
-					? "border-signal shadow-pop ring-1 ring-signal"
-					: "border-hairline shadow-card",
-				onSelect && !selected && "hover:-translate-y-0.5 hover:border-hairline-strong hover:shadow-pop",
+					? "border-blue shadow-pop ring-1 ring-blue"
+					: "border-card-line border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]",
+				onSelect && !selected && "hover:-translate-y-0.5 hover:border-card-line hover:shadow-pop",
 			)}
 		>
 			{/* The band across the top is what makes a column read as a plan rather
@@ -137,13 +137,13 @@ function PlanCard({
 				aria-hidden="true"
 				className={cx(
 					"h-1 w-full flex-none transition-colors",
-					selected ? "bg-signal" : "bg-navy/15 group-hover:bg-navy/40",
+					selected ? "bg-blue" : "bg-rail/15 group-hover:bg-rail/40",
 				)}
 			/>
 
 			<div className="flex flex-1 flex-col p-5">
 				<div className="flex items-start justify-between gap-3">
-					<h3 className="font-display text-[15.5px] font-extrabold leading-tight tracking-tight text-ink">
+					<h3 className="text-[15.5px] font-semibold leading-tight tracking-tight text-ink">
 						{row.membership_type_name || row.membership_type}
 					</h3>
 					{held && (
@@ -153,9 +153,9 @@ function PlanCard({
 					)}
 				</div>
 
-				<div className="mt-4 border-t border-hairline pt-4">
+				<div className="mt-4 border-t border-card-line pt-4">
 					<div className="flex items-baseline gap-1.5">
-						<span className="font-display text-[26px] font-extrabold leading-none tracking-tight text-ink">
+						<span className="text-[26px] font-semibold leading-none tracking-tight text-ink">
 							{row.free ? "Free" : formatMoney(row.amount, row.currency)}
 						</span>
 						{!row.free && !row.is_lifetime && (
@@ -165,7 +165,7 @@ function PlanCard({
 						)}
 					</div>
 
-					<p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-body">
+					<p className="mt-1.5 text-[11.5px] leading-relaxed text-muted">
 						{row.is_lifetime
 							? "One payment. Lifetime membership, never renewed."
 							: `Runs for ${row.duration_days} days, then renews.`}
@@ -174,14 +174,14 @@ function PlanCard({
 
 				{row.benefits.length > 0 && (
 					<div className="mt-4">
-						<p className="text-[10px] font-extrabold uppercase tracking-wider text-signal">
+						<p className="text-[10px] font-semibold uppercase tracking-wider text-blue">
 							What is included
 						</p>
 						<ul className="mt-2.5 space-y-2">
 							{row.benefits.map((benefit) => (
 								<li key={benefit.key} className="flex gap-2">
 									<span
-										className="mt-[3px] grid h-3.5 w-3.5 flex-none place-items-center rounded-full bg-signal/10 text-signal"
+										className="mt-[3px] grid h-3.5 w-3.5 flex-none place-items-center rounded-full bg-blue/10 text-blue"
 										aria-hidden="true"
 									>
 										<Tick size={9} />
@@ -201,7 +201,7 @@ function PlanCard({
 				<div className="flex-1" />
 
 				{row.description && (
-					<p className="mt-4 rounded-card bg-surface px-3 py-2.5 text-[11.5px] font-semibold leading-relaxed text-slate-strong">
+					<p className="mt-4 rounded-xl bg-surface px-3 py-2.5 text-[11.5px] font-semibold leading-relaxed text-slate-strong">
 						{row.description}
 					</p>
 				)}
@@ -215,10 +215,10 @@ function PlanCard({
 				{onSelect && (
 					<span
 						className={cx(
-							"mt-4 inline-flex items-center justify-center gap-1.5 rounded-card px-4 py-2.5 font-display text-[12.5px] font-bold transition",
+							"mt-4 inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[12.5px] font-bold transition",
 							selected
-								? "bg-signal text-white"
-								: "border border-hairline-strong bg-white text-slate-strong group-hover:border-navy group-hover:text-navy",
+								? "bg-blue text-white"
+								: "border border-card-line bg-white text-slate-strong group-hover:border-blue group-hover:text-ink",
 						)}
 					>
 						{selected ? (

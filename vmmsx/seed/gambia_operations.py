@@ -42,7 +42,7 @@ Idempotent, and it says what it did.
 import frappe
 from frappe.utils import add_days, today
 
-from vmmsx.seed import gambia
+from vmmsx.seed import gambia, mission
 
 # --- the society's vocabularies -------------------------------------------
 
@@ -619,6 +619,20 @@ def _certification_types() -> list[dict]:
 
 
 def _terms_of_reference() -> list[dict]:
+	"""One terms of reference per advertised role, written and then submitted.
+
+	**Each is a complete mission document, and most of it comes from
+	`seed/mission.py::furnish`.** A terms of reference cannot be submitted until
+	it says what programme it belongs to, when it runs, where, what the
+	background is, what it will achieve, who is involved and what happens on
+	which day — and these entries carry a purpose, some responsibilities and a
+	duration. Everything else is built from those, so nothing here invents a
+	fact about this society; that module's docstring says what the scaffolding
+	is and is not.
+
+	The programme is the society's standing services one, because an advertised
+	role is exactly the standing work that programme exists to hold.
+	"""
 	rows = []
 
 	for opportunity in OPPORTUNITIES:
@@ -641,6 +655,13 @@ def _terms_of_reference() -> list[dict]:
 			if frappe.db.exists("VMMS Certification Type", key)
 		]
 
+		project = mission.standing_project(
+			"Branch Standing Services",
+			node,
+			"The duties this society runs all year rather than as a campaign: the roles it"
+			" advertises to volunteers and staffs from its own register.",
+		)
+
 		doc = frappe.get_doc(
 			{
 				"doctype": "VMMS Terms of Reference",
@@ -660,6 +681,14 @@ def _terms_of_reference() -> list[dict]:
 				"approval_mode": "direct",
 				"required_certifications": required,
 				"is_active": 1,
+				**mission.furnish(
+					name=opportunity["name"],
+					purpose=opportunity["purpose"],
+					responsibilities=opportunity["responsibilities"],
+					geo_node=node,
+					project=project,
+					days=_days(opportunity),
+				),
 			}
 		)
 		doc.insert(ignore_permissions=True)

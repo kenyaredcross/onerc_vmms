@@ -34,6 +34,21 @@
   "membership_source",
   "column_break_proof",
   "proof_attachment",
+  "claimed_section",
+  "proof_claimed_start_date",
+  "proof_claimed_expiry_date",
+  "proof_membership_number",
+  "column_break_claimed",
+  "proof_registered_at",
+  "proof_reference_number",
+  "verified_section",
+  "proof_verified_start_date",
+  "proof_verified_expiry_date",
+  "column_break_verified",
+  "proof_verified_by",
+  "proof_verified_on",
+  "declarations_section",
+  "declarations",
   "questions_section",
   "custom_answers",
   "approval_section",
@@ -235,6 +250,100 @@
    "fieldname": "proof_attachment",
    "fieldtype": "Attach",
    "label": "Proof Attachment"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.membership_source==\"Proof\"",
+   "description": "What the applicant says about the membership they already hold. Claims, not facts — nothing here decides how long this membership is valid for.",
+   "fieldname": "claimed_section",
+   "fieldtype": "Section Break",
+   "label": "Claimed Membership"
+  },
+  {
+   "description": "The date the applicant says they originally registered or joined. This is not the date they paid, and not necessarily the date their membership became active.",
+   "fieldname": "proof_claimed_start_date",
+   "fieldtype": "Date",
+   "label": "Claimed Start Date"
+  },
+  {
+   "description": "The date the applicant says their membership runs to. Empty for a lifetime plan.",
+   "fieldname": "proof_claimed_expiry_date",
+   "fieldtype": "Date",
+   "label": "Claimed Expiry Date"
+  },
+  {
+   "description": "The membership number the applicant was given, if they still have it.",
+   "fieldname": "proof_membership_number",
+   "fieldtype": "Data",
+   "label": "Claimed Membership Number"
+  },
+  {
+   "fieldname": "column_break_claimed",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The branch or place the applicant says they registered at, in their own words. Deliberately not a Geo Node: it is a claim about the past, at a branch this society may since have merged or renamed.",
+   "fieldname": "proof_registered_at",
+   "fieldtype": "Data",
+   "label": "Claimed Branch Or Location"
+  },
+  {
+   "description": "A certificate or receipt number from the original registration, if the applicant has one.",
+   "fieldname": "proof_reference_number",
+   "fieldtype": "Data",
+   "label": "Claimed Certificate Or Receipt Number"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.membership_source==\"Proof\"",
+   "description": "What somebody at this society confirmed against the evidence. These are the only dates that decide membership validity, and they are never filled in from the claim.",
+   "fieldname": "verified_section",
+   "fieldtype": "Section Break",
+   "label": "Verified By The Society"
+  },
+  {
+   "description": "The start date an approver confirmed against the proof. Set through the review screen, never by the applicant.",
+   "fieldname": "proof_verified_start_date",
+   "fieldtype": "Date",
+   "label": "Verified Start Date",
+   "read_only": 1
+  },
+  {
+   "description": "The expiry date an approver confirmed against the proof. Left empty for a lifetime plan.",
+   "fieldname": "proof_verified_expiry_date",
+   "fieldtype": "Date",
+   "label": "Verified Expiry Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_verified",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Who confirmed the dates against the evidence.",
+   "fieldname": "proof_verified_by",
+   "fieldtype": "Link",
+   "label": "Verified By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "proof_verified_on",
+   "fieldtype": "Datetime",
+   "label": "Verified On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declarations_section",
+   "fieldtype": "Section Break",
+   "label": "Declarations"
+  },
+  {
+   "description": "What the applicant agreed to, with the wording and version they agreed to it under.",
+   "fieldname": "declarations",
+   "fieldtype": "Table",
+   "label": "Declarations",
+   "options": "VMMS Declaration Acceptance"
   },
   {
    "fieldname": "questions_section",

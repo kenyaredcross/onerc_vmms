@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-31 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "is_required",
+  "is_done",
+  "done_on",
+  "notes",
+  "evidence"
+ ],
+ "fields": [
+  {
+   "columns": 4,
+   "description": "One thing that has to be done.",
+   "fieldname": "item",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Item",
+   "reqd": 1,
+   "translatable": 1
+  },
+  {
+   "columns": 1,
+   "default": "1",
+   "description": "Ticked, the task cannot be submitted until this item is done. Un-tick for the ones that are helpful rather than necessary.",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Required"
+  },
+  {
+   "columns": 1,
+   "description": "Ticked by whoever is doing the work.",
+   "fieldname": "is_done",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Done"
+  },
+  {
+   "columns": 2,
+   "description": "Stamped when the item is ticked. Written by the service, never typed.",
+   "fieldname": "done_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Done On",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Notes",
+   "translatable": 1
+  },
+  {
+   "description": "A photograph or a document for this item alone, where one is worth keeping.",
+   "fieldname": "evidence",
+   "fieldtype": "Attach",
+   "label": "Evidence"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-31 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Task",
+ "name": "VMMS Task Checklist Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

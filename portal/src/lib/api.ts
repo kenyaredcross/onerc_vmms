@@ -93,6 +93,10 @@ export const API = {
 	timeLogOptions: "vmmsx.api.volunteer.time_log_options",
 	logTime: "vmmsx.api.volunteer.log_time",
 	findVolunteers: "vmmsx.api.volunteer.find_volunteers",
+	// The active register's own figures — counted across the whole scoped
+	// register rather than across the page a listing happened to fetch. The
+	// distinction is the whole reason it exists: a page's `total` is a page.
+	volunteerRegisterSummary: "vmmsx.api.volunteer.register_summary",
 	volunteerDossier: "vmmsx.api.volunteer.get_dossier",
 	// Where one volunteer has served. The coordinator's endpoint: it checks read
 	// on the volunteer and then filters the deployments through core's scoping,
@@ -117,6 +121,11 @@ export const API = {
 	membershipTypes: "vmmsx.api.member.membership_types",
 	memberGeoLevels: "vmmsx.api.member.geo_node_levels",
 	findMembers: "vmmsx.api.member.find_members",
+	// The member register's counterpart of `volunteerRegisterSummary`, and the
+	// same rule: every figure is a scoped aggregate, never a page's length.
+	// Life and term are split on `VMMS Membership Type.is_lifetime`, never on a
+	// type's name — a society names its own types.
+	memberRegisterSummary: "vmmsx.api.member.register_summary",
 	memberDossier: "vmmsx.api.member.get_dossier",
 	// The membership half of a review, and the counterpart of
 	// `applicationDecision` above. Its absence is why a membership reached the
@@ -139,8 +148,21 @@ export const API = {
 	// missing permission costs a chip rather than the page.
 	personRegisters: "vmmsx.api.person.get_registers",
 
+	// vmmsx/api/people.py
+	//
+	// The People overview's figures in one scoped read. It takes no arguments,
+	// so there is nothing this app could send that would widen it: the answer is
+	// a fact about who is asking.
+	peopleSummary: "vmmsx.api.people.summary",
+
 	// vmmsx/api/approvals.py
 	myQueue: "vmmsx.api.approvals.my_queue",
+	// The other two bands a queue screen navigates. `my_queue` answers only
+	// "routed to me now"; corrections and closed applications are not
+	// assignments and cannot be read off a ToDo, so they come off the governed
+	// doctype itself through a scoped listing. Exact states only — never a
+	// stage label, which is a society's own wording.
+	myCases: "vmmsx.api.approvals.my_cases",
 	approvalStatus: "vmmsx.api.approvals.get_status",
 	decide: "vmmsx.api.approvals.decide",
 	withdraw: "vmmsx.api.approvals.withdraw",
@@ -218,7 +240,24 @@ export const API = {
 	// and `unplotted` counts the ones that cannot — a tree is filled in from the
 	// top down over months, and a map that silently omitted them would
 	// under-report exactly where the gaps are.
+	// **Not called by any screen at present.** It aggregates deployments by Geo
+	// Node and answers "where are most of our people"; the Operations overview
+	// now asks `deploymentSites` instead, because a circle over a county cannot
+	// be selected and selecting one deployment is what an operations map is for.
+	// Kept here, with `admin/DeploymentMap.tsx`, because the area answer is a
+	// different and still-useful question — and both are one import away from a
+	// screen that wants it. This is the one entry in this file with nothing
+	// behind it, and it is named so rather than left to be discovered.
 	deploymentMap: "vmmsx.api.deployment.deployment_map",
+	// Individual deployments as points, with the mission picture behind each.
+	// The counterpart of `deploymentMap`, not a replacement: that one aggregates
+	// by area and answers "where are most of our people", and a circle over a
+	// county cannot be selected. Coordinates are the deployment's own; ones with
+	// no point are still in the answer and counted in `unplotted`.
+	deploymentSites: "vmmsx.api.deployment.deployment_sites",
+	// The operations overview's figures, counted across the whole scoped
+	// register rather than across one page of it.
+	operationsSummary: "vmmsx.api.deployment.operations_summary",
 	getDeploymentFeed: "vmmsx.api.deployment.get_deployment_feed",
 	postDeploymentUpdate: "vmmsx.api.deployment.post_deployment_update",
 	// Matching. `findCandidatesForRequest` is the same question asked of a
@@ -266,8 +305,16 @@ export const API = {
 	// calls the endpoint for the person it is drawn for, and the server re-asks.
 	myTasks: "vmmsx.api.tasks.my_tasks",
 	acceptTask: "vmmsx.api.tasks.accept_task",
+	// Saying no, and only from `assigned` — the server refuses it after that, in
+	// words, because somebody who accepted work and then cannot do it has not
+	// declined it. A reason is required and the screen asks for one.
+	declineTask: "vmmsx.api.tasks.decline_task",
 	askAboutTask: "vmmsx.api.tasks.ask_about_task",
 	reportTaskProgress: "vmmsx.api.tasks.report_progress",
+	// One checklist line, ticked or unticked. Possessive like the rest of this
+	// group: `_mine` re-asks that the task belongs to the caller before it writes,
+	// and a required line still unticked is what refuses a submission.
+	tickTaskChecklist: "vmmsx.api.tasks.tick_checklist",
 	submitTask: "vmmsx.api.tasks.submit_task",
 	branchTasks: "vmmsx.api.tasks.branch_tasks",
 	getTask: "vmmsx.api.tasks.get_task",
@@ -303,6 +350,54 @@ export const API = {
 	// one and not another sees real numbers beside honest zeroes rather than a
 	// refusal of the whole screen.
 	branchSummary: "vmmsx.api.analytics.branch_summary",
+
+	// vmmsx/api/finance.py — one method, and it reads. There is no write here
+	// because this app holds no record of money: the figures are derived at read
+	// time from memberships and stipend payment forms, and the payload carries
+	// `basis` so the screen states what they are rather than implying a receipt.
+	// Takes no scope argument — both reads inside go through `get_list`, so the
+	// caller's Geo Assignment is the floor and nothing on the screen widens it.
+	financeSummary: "vmmsx.api.finance.summary",
+
+	// vmmsx/api/hr.py — the recruiter's half of a job opening, and the
+	// counterpart of the `opportunities*` methods further down, which are the
+	// volunteer's. Every one of these is checked by write, or by read on the
+	// record named; none of them is possessive, because advertising a post and
+	// deciding who fills it are acts on the society's own recruitment rather
+	// than on anybody's personal record.
+	//
+	// The record itself stays HRMS's `Job Opening` / `Job Applicant` throughout —
+	// see `hr/services/recruitment.py` — so a society that also uses HRMS's own
+	// desk views is looking at exactly one truth.
+	recruitmentOpenings: "vmmsx.api.hr.openings",
+	recruitmentOpening: "vmmsx.api.hr.opening",
+	recruitmentSaveOpening: "vmmsx.api.hr.save_opening",
+	recruitmentSetOpeningStatus: "vmmsx.api.hr.set_opening_status",
+	// Whether the advertisement is on the society's website, which is a
+	// genuinely different question from whether the society is still recruiting.
+	// HRMS keeps the two apart and so does this.
+	recruitmentSetOpeningPublished: "vmmsx.api.hr.set_opening_published",
+	recruitmentApplicants: "vmmsx.api.hr.applicants",
+	recruitmentApplicant: "vmmsx.api.hr.applicant",
+	recruitmentSetApplicantStatus: "vmmsx.api.hr.set_applicant_status",
+	recruitmentOptions: "vmmsx.api.hr.options",
+	// Turning an accepted application into the work it was for. Deliberately in
+	// `opportunities.py` rather than `hr.py` despite being the coordinator's
+	// act: it is one endpoint and one permission check, and a second name for it
+	// would be a second place the check could drift.
+	convertApplication: "vmmsx.api.opportunities.convert_application",
+
+	// vmmsx/api/whatsapp.py — the channel's own screen. `whatsappChannel` is the
+	// page load and deliberately does *not* ask the gateway anything;
+	// `whatsappConnection` is the one call that does, so a gateway that is slow
+	// or down costs a status line rather than the screen.
+	whatsappChannel: "vmmsx.api.whatsapp.channel",
+	whatsappConnection: "vmmsx.api.whatsapp.connection",
+	whatsappBroadcasts: "vmmsx.api.whatsapp.broadcasts",
+	// Who has asked not to receive these. Phone numbers only — an opt-out record
+	// holds no name, because matching one back to a person would make this list
+	// a way to ask who volunteers for the Red Cross.
+	whatsappOptOuts: "vmmsx.api.whatsapp.opt_outs",
 
 	// vmmsx/api/console.py — which sections of the manager console this person
 	// may open. Takes no arguments and names no role: the answer is about the

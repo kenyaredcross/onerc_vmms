@@ -11,10 +11,14 @@ membership with no Geo Node is refused at creation rather than corrected later,
 because an unplaced record is invisible to geo scoping and unroutable by
 approvals — it would exist with nobody able to see or act on it.
 
-**The Proof-of-Membership guardrail.** `validate_source()` refuses a proof
+**The Proof-of-Membership guardrails.** `validate_source()` refuses a proof
 marked against a type with no approver, and a proof with nothing attached —
 both in `member/services/membership.py::assert_proof_consistent`, alongside the
-type it needs to ask.
+type it needs to ask. `validate_approvable()` is the second and later one: a
+membership somebody *claimed* cannot be approved until an approver has recorded
+the dates they read off the evidence. It is here rather than in `submit()`
+because it is a rule about approving, and here rather than in the approval
+engine because the engine does not know what a membership is.
 
 **The payment hooks.** `onerc_payments` calls back into the source document by
 name, guarded by `hasattr`, so the signatures below must match what that app
@@ -34,6 +38,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from vmmsx.approvals import states
+from vmmsx.approvals.services import contract
 from vmmsx.member.services import membership as membership_service
 from vmmsx.member.services import payment, society
 from vmmsx.registration.services import intake
@@ -78,6 +84,7 @@ class VMMSMembership(Document):
 		self.validate_anchor()
 		self.validate_member()
 		self.validate_source()
+		self.validate_approvable()
 
 		# Whatever path this save came down, no identity is stored here. The
 		# registration path has already emptied these; this is the guarantee
@@ -123,6 +130,34 @@ class VMMSMembership(Document):
 			return
 
 		membership_service.assert_proof_consistent(self)
+
+	def validate_approvable(self):
+		"""A claimed membership cannot be approved until somebody has checked it.
+
+		**Guarded on the transition into Approved, not on the state being it.**
+		`get_doc_before_save()` gives the previous state, so this fires on the one
+		save that carries the decision and never again — a membership approved
+		last year is not re-validated every time somebody touches it, and an
+		approver who has just been refused can fix the verified dates and save
+		without being refused for the state they are already in.
+
+		The rule itself is `proof.assert_verified`, alongside the fields it reads.
+		This is the seam, and the seam is the point: a rule about *approving* has
+		nowhere to live in `submit()`, and must not go into the generic approval
+		engine, which does not know what a membership is. The same arrangement as
+		the volunteer application's guardian gate.
+		"""
+		from vmmsx.member.services import proof
+
+		if contract.state(self) != states.APPROVED:
+			return
+
+		before = self.get_doc_before_save()
+
+		if before and contract.state(before) == states.APPROVED:
+			return
+
+		proof.assert_verified(self)
 
 	def on_update(self):
 		"""Put a registration into motion, then re-evaluate activation.

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { cx } from "./primitives";
+import { cx } from "../portal/ui/kit";
 
 /**
  * The two chart forms this app draws, and deliberately only two.
@@ -29,6 +29,25 @@ import { cx } from "./primitives";
 const AXIS = "#D8DEE9";
 const MARK = "#011E41";
 const MARK_MUTED = "#C7CEDB";
+
+/**
+ * The two-series pair, for the one chart in this product that honestly has two.
+ *
+ * **Blue is not among them, and neither is green-and-red.** Blue means "act on
+ * this" everywhere in the product and a blue data mark would dilute it; green
+ * for income and red for expenditure would reuse the reserved status hues *and*
+ * put a moral valence on a figure that has none — a society paying its
+ * volunteers is not a society doing something wrong.
+ *
+ * A retoned violet and amber from the `tint` family instead, stepped until they
+ * pass every check in the palette validator against this app's canvas:
+ * lightness band, chroma floor, adjacent-pair separation under protanopia and
+ * tritanopia, normal-vision separation, and 3:1 against the surface. Colour is
+ * still never the only signal — the pair is legended, and the read-out names
+ * the series in text.
+ */
+const SERIES_IN = "#6B4FA8";
+const SERIES_OUT = "#A9640F";
 
 export interface Column {
 	label: string;
@@ -159,16 +178,139 @@ export function BarRows({
 						</div>
 						<div className="h-1.5 w-full rounded-full bg-surface">
 							<div
-								className={cx("h-1.5 rounded-full", row.value ? "bg-navy" : "bg-transparent")}
+								className={cx("h-1.5 rounded-full", row.value ? "bg-rail" : "bg-transparent")}
 								style={{ width: `${(row.value / max) * 100}%` }}
 							/>
 						</div>
 					</div>
-					<span className="font-display text-[15px] font-bold tabular-nums text-ink">
+					<span className="text-[15px] font-bold tabular-nums text-ink">
 						{row.value}
 					</span>
 				</li>
 			))}
 		</ul>
+	);
+}
+
+/**
+ * Two commensurable series over the same months, on one shared axis.
+ *
+ * **The one exception to this module's single-series rule, and it is a narrow
+ * one.** The rule at the top of this file exists because two measures on one
+ * frame need a shared scale they usually do not have — volunteers and
+ * memberships are counted in different units of meaning, so putting them on one
+ * axis invites a comparison that was never valid. Money in and money out are
+ * not that case: they are the same unit, in the same currency, over the same
+ * months, and "was more paid out than came in" is *the* question the chart is
+ * being asked. One axis, one maximum, two marks per month.
+ *
+ * It is still never a dual axis. The two series share a scale because they are
+ * the same quantity, not because a second scale was added to make them fit.
+ *
+ * **A legend is always drawn**, because there are two series and colour alone
+ * may not carry identity. The hover read-out names the series in words as well.
+ * A 2px gap sits between the paired marks so the two are separable in print, in
+ * greyscale and under `forced-colors`, where the fills collapse.
+ */
+export function PairedColumnChart({
+	months,
+	labels,
+	currency,
+	emptyLabel = "Nothing recorded in this period",
+}: {
+	months: Array<{ label: string; title?: string; a: number; b: number }>;
+	/** What each series is called. Used in the legend and in the read-out. */
+	labels: { a: string; b: string };
+	/** For the read-out, so a figure is never shown without its money. */
+	currency?: string | null;
+	emptyLabel?: string;
+}) {
+	const [hover, setHover] = useState<number | null>(null);
+
+	if (months.length === 0) {
+		return <p className="py-8 text-center text-[12.5px] text-slate-faint">{emptyLabel}</p>;
+	}
+
+	const max = Math.max(...months.flatMap((month) => [month.a, month.b]), 1);
+	const active = hover === null ? null : months[hover];
+
+	const money = (value: number) =>
+		currency
+			? new Intl.NumberFormat(undefined, {
+					style: "currency",
+					currency,
+					maximumFractionDigits: 0,
+				}).format(value)
+			: value.toLocaleString();
+
+	/** One mark. Zero is drawn as nothing so "none" and "a little" cannot be confused. */
+	const mark = (value: number, colour: string, dimmed: boolean) => (
+		<span
+			className="w-full rounded-t-[4px] transition-colors"
+			style={{
+				height: value ? `max(${(value / max) * 100}%, 2px)` : 0,
+				background: dimmed ? MARK_MUTED : colour,
+			}}
+		/>
+	);
+
+	return (
+		<figure className="m-0">
+			<figcaption className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+				<span className="flex items-center gap-3.5">
+					{[
+						{ colour: SERIES_IN, label: labels.a },
+						{ colour: SERIES_OUT, label: labels.b },
+					].map((entry) => (
+						<span key={entry.label} className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
+							<span
+								aria-hidden="true"
+								className="h-2 w-2 flex-none rounded-[2px]"
+								style={{ background: entry.colour }}
+							/>
+							{entry.label}
+						</span>
+					))}
+				</span>
+
+				{/* The read-out, in text ink rather than a series colour: a number
+				    wearing the mark's colour tells the reader the colour carries the
+				    value, and it does not — it carries which series. */}
+				<span className="min-h-[17px] text-[11.5px] font-semibold text-ink" aria-live="polite">
+					{active
+						? `${active.title ?? active.label} · ${labels.a} ${money(active.a)} · ${labels.b} ${money(active.b)}`
+						: `Peak ${money(max)}`}
+				</span>
+			</figcaption>
+
+			<div
+				className="flex h-[150px] items-end gap-[3px] border-b"
+				style={{ borderColor: AXIS }}
+				onMouseLeave={() => setHover(null)}
+			>
+				{months.map((month, index) => (
+					<button
+						key={month.label}
+						type="button"
+						// The hit target is the full column height, not the mark: a
+						// two-pixel bar for a quiet month is not something to ask
+						// somebody to point at.
+						className="flex h-full flex-1 cursor-default items-end gap-[2px]"
+						onMouseEnter={() => setHover(index)}
+						onFocus={() => setHover(index)}
+						onBlur={() => setHover(null)}
+						title={`${month.title ?? month.label} — ${labels.a} ${money(month.a)}, ${labels.b} ${money(month.b)}`}
+					>
+						{mark(month.a, SERIES_IN, hover !== null && hover !== index)}
+						{mark(month.b, SERIES_OUT, hover !== null && hover !== index)}
+					</button>
+				))}
+			</div>
+
+			<div className="mt-1.5 flex justify-between text-[10.5px] text-slate-faint">
+				<span>{months[0]?.label}</span>
+				<span>{months[months.length - 1]?.label}</span>
+			</div>
+		</figure>
 	);
 }

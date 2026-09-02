@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-30 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "declaration",
+  "title",
+  "version",
+  "declaration_version",
+  "source",
+  "external_url",
+  "accepted",
+  "accepted_on",
+  "body_snapshot"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "description": "The declaration this answers. Rewording a declaration does not orphan the acceptances already recorded against it.",
+   "fieldname": "declaration",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Declaration",
+   "options": "VMMS Declaration",
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "description": "The title as it read when this was accepted.",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "description": "The version accepted. This, with the text below it, is what the applicant actually agreed to.",
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Version",
+   "read_only": 1
+  },
+  {
+   "description": "The exact version record that was shown. What `version` says in words, this says as a document you can open.",
+   "fieldname": "declaration_version",
+   "fieldtype": "Link",
+   "label": "Declaration Version",
+   "options": "VMMS Declaration Version",
+   "read_only": 1
+  },
+  {
+   "description": "Whether what was agreed to was wording held here or a page on the society's website. It says how much the snapshot beside it can be relied on.",
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Text\nLink",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.source==\"Link\"",
+   "description": "The address that was shown, recorded because the page itself is not ours to snapshot.",
+   "fieldname": "external_url",
+   "fieldtype": "Data",
+   "label": "Page Address",
+   "options": "URL",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "default": "0",
+   "fieldname": "accepted",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Accepted",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "description": "When the applicant accepted it.",
+   "fieldname": "accepted_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Accepted On",
+   "read_only": 1
+  },
+  {
+   "description": "The declaration exactly as it read when it was accepted, so a decided application can always be read as it stood.",
+   "fieldname": "body_snapshot",
+   "fieldtype": "Text Editor",
+   "label": "Text Accepted",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-30 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Declaration Acceptance",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

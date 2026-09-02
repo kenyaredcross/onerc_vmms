@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "creation": "2026-09-01 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "phone",
+  "delivery_status",
+  "sent_on",
+  "column_break_recipient",
+  "chat_id",
+  "message_id",
+  "error"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Number",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "default": "Pending",
+   "description": "Skipped means this number asked not to receive these between the broadcast being approved and it being sent.",
+   "fieldname": "delivery_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nSent\nFailed\nSkipped",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "sent_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Sent On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_recipient",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The number as the gateway addresses it.",
+   "fieldname": "chat_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Chat",
+   "read_only": 1
+  },
+  {
+   "fieldname": "message_id",
+   "fieldtype": "Data",
+   "label": "Message Reference",
+   "read_only": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "What Happened",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Notification",
+ "name": "VMMS WhatsApp Recipient",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -94,10 +94,20 @@ class TestACC03TheAnchorLevelIsSocietyConfiguration(DeploymentRecordTestCase):
 		fixtures.set_deployment_anchor_level(self.society_b["levels"]["district"])
 		self.addCleanup(fixtures.set_deployment_anchor_level, None)
 
-		self.assertTrue(fixtures.make_deployment(self.terms.name, self.society_b["district"]).name)
+		# Society B's own terms of reference. `self.terms` says where it applies —
+		# every terms of reference has to now — and what it says is society A, so
+		# work in the other society is run under the other society's
+		# specification. That is the scope rule doing its job, not an obstacle to
+		# this one: what this test is about is the *level*, and it is asked twice
+		# with nothing but configuration changed between the answers.
+		theirs = fixtures.make_terms(
+			f"{fixtures.TEST_PREFIX}-tor-society-b", geo_scope=self.society_b["region"]
+		)
+
+		self.assertTrue(fixtures.make_deployment(theirs.name, self.society_b["district"]).name)
 
 		with self.assertRaises(frappe.ValidationError):
-			fixtures.make_deployment(self.terms.name, self.society_b["ward"])
+			fixtures.make_deployment(theirs.name, self.society_b["ward"])
 
 	def test_a_request_obeys_the_same_setting(self):
 		"""One setting for both, so a request can always become its deployment."""
@@ -115,6 +125,10 @@ class TestTheTermsOwnScope(DeploymentRecordTestCase):
 		certification = fixtures.make_certification_type(fixtures.CERT_RADIO)
 		doc = terms_service.create(
 			f"{fixtures.TEST_PREFIX} TOR editor {frappe.generate_hash(length=6)}",
+			# Mandatory since terms of reference became routable: a mission
+			# document that applies nowhere in particular cannot be sent to
+			# anybody for approval.
+			geo_scope=self.society_a["branch"],
 			is_active=False,
 			approval_mode="routed",
 			notes="Coordinator-only context.",
@@ -144,7 +158,23 @@ class TestTheTermsOwnScope(DeploymentRecordTestCase):
 		)
 
 	def test_empty_scope_permits_anywhere(self):
+		"""An unscoped terms of reference constrains nothing — which is now history.
+
+		Submission requires a scope, so no *new* terms of reference can be
+		unscoped. Records written before that rule can be, and the predicate has
+		to keep answering for them: `assert_within_scope` reads "empty means
+		anywhere", and a register that started refusing every deployment under a
+		2025 specification would be this rule applied retroactively to documents
+		nobody can edit any more.
+
+		So the scope is cleared the way history left it — straight on the column,
+		under the submitted document — and the whole journey is run against it.
+		"""
 		terms = fixtures.make_terms(fixtures.TOR_OPEN)
+		frappe.db.set_value(
+			fixtures.TERMS_DOCTYPE, terms.name, "geo_scope", None, update_modified=False
+		)
+		frappe.clear_document_cache(fixtures.TERMS_DOCTYPE, terms.name)
 
 		self.assertTrue(fixtures.make_deployment(terms.name, self.society_b["ward"]).name)
 

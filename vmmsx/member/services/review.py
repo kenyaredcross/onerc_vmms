@@ -46,8 +46,8 @@ nothing in this module checks anything, in the same way `decision_dto` does not.
 import frappe
 from frappe.utils import getdate, today
 
-from vmmsx.member.services import dossier
-from vmmsx.registration.services import questions
+from vmmsx.member.services import dossier, proof
+from vmmsx.registration.services import declarations, questions
 
 MEMBERSHIP_DOCTYPE = "VMMS Membership"
 MEMBER_DOCTYPE = "VMMS Member"
@@ -79,6 +79,17 @@ def decision_dto(membership, as_of=None) -> dict:
 		# at, and burying it two levels down is how it gets missed.
 		"proof_attachment": membership.proof_attachment,
 		"membership_source": membership.membership_source,
+		# The two halves of an existing-membership proof, side by side and never
+		# merged. This is the one screen where the distinction has to be visible:
+		# the approver is looking at a document, at what somebody said about it,
+		# and at what they themselves have written down — and a single "dates"
+		# block would collapse the first two into the third.
+		#
+		# `claimed` is None for a clerk's proof entry, which asserts nothing;
+		# `verified` is None until somebody has looked. Both render as nothing.
+		"claimed": proof.claimed_dto(membership),
+		"verified": proof.verified_dto(membership),
+		"declarations": declarations.accepted_of(membership),
 		"answers": questions.answers_of(membership),
 	}
 

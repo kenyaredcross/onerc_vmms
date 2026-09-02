@@ -269,8 +269,8 @@ function Rung({
 						onAnswer(nodes.find((node) => node.name === event.target.value) ?? null)
 					}
 					className={cx(
-						"w-full appearance-none rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 pr-9 text-[13.5px] text-ink transition",
-						"focus:border-navy disabled:cursor-not-allowed disabled:bg-surface disabled:text-slate-faint",
+						"w-full appearance-none rounded-xl border border-card-line bg-white px-3.5 py-2.5 pr-9 text-[13.5px] text-ink transition",
+						"focus:border-blue disabled:cursor-not-allowed disabled:bg-surface disabled:text-slate-faint",
 					)}
 				>
 					<option value="">
@@ -339,8 +339,8 @@ function Verdict({
 }) {
 	if (chosen) {
 		return (
-			<p className="mt-4 flex items-center gap-2 rounded-card border border-navy/20 bg-navy/[0.04] px-3.5 py-2.5 text-[12.5px] text-navy">
-				<span className="h-1.5 w-1.5 flex-none rounded-full bg-navy" aria-hidden="true" />
+			<p className="mt-4 flex items-center gap-2 rounded-xl border border-blue/20 bg-rail/[0.04] px-3.5 py-2.5 text-[12.5px] text-ink">
+				<span className="h-1.5 w-1.5 flex-none rounded-full bg-rail" aria-hidden="true" />
 				<span className="min-w-0 truncate font-semibold">
 					{(chain.length > from ? chain.slice(from) : chain)
 						.map((node) => node.label)
@@ -356,7 +356,7 @@ function Verdict({
 			.join(" or ");
 
 		return (
-			<p className="mt-4 rounded-card border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[12.5px] text-amber-800">
+			<p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[12.5px] text-amber-800">
 				Keep going down to a <b>{wanted}</b>. That is the level this society records at.
 			</p>
 		);

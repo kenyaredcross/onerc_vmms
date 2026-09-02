@@ -5,6 +5,7 @@ import { API, errorMessage } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { Button, Empty, ErrorNote, PageHeading, Spinner, cx } from "../ui/primitives";
+import type { NotificationRow } from "./types";
 
 /**
  * What the society has told this person, from both places it comes from.
@@ -21,21 +22,8 @@ import { Button, Empty, ErrorNote, PageHeading, Spinner, cx } from "../ui/primit
  * "what matters" in a system where one of them is the one people act on.
  */
 
-interface Notification {
-	id: string;
-	source: string;
-	title: string;
-	summary: string;
-	body: string;
-	urgency: string;
-	rank: number;
-	label: string;
-	geo_node: string;
-	sent_on: string;
-	read: boolean;
-	link_label: string;
-	href: string;
-}
+/** Shared with the header dropdown — see `NotificationRow` in `types.ts`. */
+type Notification = NotificationRow;
 
 /**
  * Colour by urgency. Keyed off the closed set the server owns, exactly as
@@ -46,8 +34,8 @@ interface Notification {
  */
 const URGENCY: Record<string, { chip: string; rail: string; word: string }> = {
 	urgent: {
-		chip: "border-signal/30 bg-signal/10 text-signal-dark",
-		rail: "bg-signal",
+		chip: "border-blue/30 bg-blue/10 text-blue-press",
+		rail: "bg-blue",
 		word: "Urgent",
 	},
 	important: {
@@ -117,11 +105,11 @@ export default function Notifications() {
 						<li
 							key={`${row.source}:${row.id}`}
 							className={cx(
-								"relative overflow-hidden rounded-card bg-white px-5 transition",
+								"relative overflow-hidden rounded-xl bg-white px-5 transition",
 								// A read notification recedes to the ground rather than
 								// keeping a card's lift: the list is a queue, and what is
 								// left in it should be what is left to do.
-								row.read ? "border border-hairline-soft" : "shadow-card",
+								row.read ? "border border-card-line" : "border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]",
 							)}
 						>
 							{/* The rail is the only thing carrying urgency at a glance, and
@@ -137,13 +125,13 @@ export default function Notifications() {
 									<div className="flex flex-wrap items-center gap-2">
 										{!row.read && (
 											<span
-												className="h-1.5 w-1.5 flex-none rounded-full bg-signal"
+												className="h-1.5 w-1.5 flex-none rounded-full bg-blue"
 												aria-label="Unread"
 											/>
 										)}
 										<h2
 											className={cx(
-												"font-display text-[13.5px] leading-snug text-ink",
+												"text-[13.5px] leading-snug text-ink",
 												row.read ? "font-semibold" : "font-bold",
 											)}
 										>
@@ -160,14 +148,14 @@ export default function Notifications() {
 											</span>
 										)}
 										{row.label && (
-											<span className="rounded-full border border-hairline-strong px-2 py-0.5 text-[10px] font-semibold text-slate-body">
+											<span className="rounded-full border border-card-line px-2 py-0.5 text-[10px] font-semibold text-muted">
 												{row.label}
 											</span>
 										)}
 									</div>
 
 									{(row.summary || row.body) && (
-										<p className="mt-1.5 whitespace-pre-line text-[12.5px] leading-relaxed text-slate-body">
+										<p className="mt-1.5 whitespace-pre-line text-[12.5px] leading-relaxed text-muted">
 											{row.summary || row.body}
 										</p>
 									)}
@@ -179,7 +167,7 @@ export default function Notifications() {
 											// https, mailto or tel. See vmmsx/links.py.
 											<a
 												href={row.href}
-												className="inline-flex items-center gap-1 font-semibold text-navy hover:text-signal"
+												className="inline-flex items-center gap-1 font-semibold text-ink hover:text-blue"
 											>
 												{row.link_label || "Open"}
 												<Icon.external size={11} />
@@ -192,7 +180,7 @@ export default function Notifications() {
 									<button
 										type="button"
 										onClick={() => void read(row)}
-										className="flex-none rounded-full px-3 py-1.5 text-[11px] font-bold text-slate-body transition hover:bg-surface hover:text-navy"
+										className="flex-none rounded-full px-3 py-1.5 text-[11px] font-bold text-muted transition hover:bg-surface hover:text-ink"
 									>
 										Mark read
 									</button>

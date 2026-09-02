@@ -146,9 +146,7 @@ class TestCorrectingYourOwnProfile(RegistrationTestCase):
 			with fixtures.acting_as(user), self.assertRaises(frappe.ValidationError):
 				registration_api.update_my_profile(profile_photo=elsewhere)
 
-		self.assertFalse(
-			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "profile_photo")
-		)
+		self.assertFalse(frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "profile_photo"))
 
 	def test_a_photograph_can_be_taken_off(self):
 		"""It is an optional field, so an empty string clears it. Somebody who
@@ -159,9 +157,7 @@ class TestCorrectingYourOwnProfile(RegistrationTestCase):
 			registration_api.update_my_profile(profile_photo="/files/portrait.png")
 			registration_api.update_my_profile(profile_photo="")
 
-		self.assertFalse(
-			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "profile_photo")
-		)
+		self.assertFalse(frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, "profile_photo"))
 
 	# --- the photograph a *registration* carries ---------------------------
 	#
@@ -185,6 +181,7 @@ class TestCorrectingYourOwnProfile(RegistrationTestCase):
 				id_number="A-1234567",
 				date_of_birth=fixtures.DEFAULT_DATE_OF_BIRTH,
 				profile_photo="/files/portrait.png",
+				declarations_accepted=fixtures.required_declarations(),
 			)
 
 		profile = self.profile_of(user)

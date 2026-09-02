@@ -96,7 +96,7 @@ export function Invitations() {
 										key={invitation.assignment}
 										lead={
 											<span
-												className="grid h-9 w-9 flex-none place-items-center rounded-control bg-surface text-slate-body"
+												className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-surface text-muted"
 												aria-hidden="true"
 											>
 												<Icon.truck size={17} />
@@ -121,7 +121,7 @@ function ResponseBadge({ response }: { response: string }) {
 		response === "Accepted"
 			? "border-emerald-300 text-emerald-700 bg-emerald-50/60"
 			: response === "Declined" || response === "Withdrawn"
-				? "border-hairline-strong text-slate-body bg-surface"
+				? "border-card-line text-muted bg-surface"
 				: "border-amber-300 text-amber-700 bg-amber-50/60";
 
 	return (
@@ -177,15 +177,15 @@ function InvitationCard({
 		<Card>
 			<div className="mb-3 flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h3 className="font-display text-[16px] font-extrabold tracking-tight text-ink">
+					<h3 className="text-[16px] font-semibold tracking-tight text-ink">
 						{invitation.title ?? invitation.deployment}
 					</h3>
-					<p className="mt-1 text-[12.5px] text-slate-body">
+					<p className="mt-1 text-[12.5px] text-muted">
 						{formatDate(invitation.start_date)}
 						{invitation.end_date ? ` to ${formatDate(invitation.end_date)}` : ""}
 					</p>
 					{invitation.role === "leader" && (
-						<p className="mt-1.5 text-[12px] font-semibold text-signal">
+						<p className="mt-1.5 text-[12px] font-semibold text-blue">
 							You are being asked to lead this one.
 						</p>
 					)}
@@ -199,7 +199,7 @@ function InvitationCard({
 				</p>
 			)}
 
-			<div className="mb-3 rounded-card border border-hairline bg-surface px-4 py-3">
+			<div className="mb-3 rounded-xl border border-card-line bg-surface px-4 py-3">
 				<button
 					type="button"
 					aria-expanded={reading}
@@ -209,7 +209,7 @@ function InvitationCard({
 					<span className="text-[12.5px] font-semibold text-ink">
 						{reading ? "Hide the terms of reference" : "Read the terms of reference"}
 					</span>
-					<span className="text-[11.5px] font-semibold text-navy">{reading ? "Hide" : "Read"}</span>
+					<span className="text-[11.5px] font-semibold text-ink">{reading ? "Hide" : "Read"}</span>
 				</button>
 
 				<p className="mt-1 text-[11.5px] text-slate-faint">
@@ -231,7 +231,7 @@ function InvitationCard({
 					Anything to say (optional)
 				</span>
 				<textarea
-					className="min-h-[72px] w-full resize-y rounded-card border border-hairline-strong px-4 py-3 text-[13.5px] leading-relaxed outline-none transition focus:border-navy"
+					className="min-h-[72px] w-full resize-y rounded-xl border border-card-line px-4 py-3 text-[13.5px] leading-relaxed outline-none transition focus:border-blue"
 					value={note}
 					onChange={(event) => setNote(event.target.value)}
 					placeholder="If you cannot go, it helps to say why."
@@ -282,7 +282,7 @@ function Mission({ assignment }: { assignment: string }) {
 	if (!terms) return null;
 
 	return (
-		<div className="mt-3 space-y-3 border-t border-hairline pt-3">
+		<div className="mt-3 space-y-3 border-t border-card-line pt-3">
 			{terms.mission_background && (
 				<Part title="Background">
 					{/* The society's own rich text, written on the desk by a coordinator
@@ -291,7 +291,7 @@ function Mission({ assignment }: { assignment: string }) {
 					    the footing of an Email Template, not something typed into a
 					    public form. */}
 					<div
-						className="prose-vmms text-[12.5px] leading-relaxed text-slate-body"
+						className="prose-vmms text-[12.5px] leading-relaxed text-muted"
 						// eslint-disable-next-line react/no-danger
 						dangerouslySetInnerHTML={{ __html: terms.mission_background }}
 					/>
@@ -367,7 +367,7 @@ function Part({ title, children }: { title: string; children: React.ReactNode })
 	return (
 		<div>
 			<p className="text-[11px] font-bold uppercase tracking-wider text-slate-faint">{title}</p>
-			<div className="mt-1 text-[12.5px] leading-relaxed text-slate-body">{children}</div>
+			<div className="mt-1 text-[12.5px] leading-relaxed text-muted">{children}</div>
 		</div>
 	);
 }

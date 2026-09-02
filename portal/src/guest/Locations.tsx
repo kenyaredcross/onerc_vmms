@@ -38,8 +38,8 @@ import type { BranchLocation } from "../portal/types";
 export default function Locations() {
 	return (
 		<ContentProvider surface="chrome,locations">
-			<div className="min-h-screen bg-page">
-				<header className="sticky top-0 z-30 border-b border-hairline bg-white/95 backdrop-blur">
+			<div className="min-h-screen bg-canvas">
+				<header className="sticky top-0 z-30 border-b border-card-line bg-white/95 backdrop-blur">
 					<div className="mx-auto flex max-w-shell items-center justify-between gap-4 px-5 py-3">
 						<Link to="/">
 							<BrandLockup />
@@ -207,7 +207,7 @@ function MapPanel({
 	return (
 		<div
 			ref={host}
-			className="h-[420px] w-full overflow-hidden rounded-panel border border-hairline bg-white lg:h-full lg:min-h-[520px]"
+			className="h-[420px] w-full overflow-hidden rounded-2xl border border-card-line bg-white lg:h-full lg:min-h-[520px]"
 			// No `role`: a Leaflet canvas is not operable by keyboard in any
 			// meaningful way, and labelling it `application` would promise a
 			// screen reader an interaction model it cannot deliver. The list
@@ -253,22 +253,22 @@ function LocationCard({
 	onFocus: () => void;
 }) {
 	return (
-		<Card className={cx("transition", active && "border-navy shadow-card")}>
+		<Card className={cx("transition", active && "border-blue border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]")}>
 			<button type="button" onClick={onFocus} className="w-full text-left">
 				{location.photo && (
 					<img
 						src={location.photo}
 						alt=""
-						className="mb-3 h-32 w-full rounded-card object-cover"
+						className="mb-3 h-32 w-full rounded-xl object-cover"
 					/>
 				)}
 
-				<h3 className="font-display text-[15px] font-extrabold tracking-tight text-ink">
+				<h3 className="text-[15px] font-semibold tracking-tight text-ink">
 					{location.location_name}
 				</h3>
 
 				{location.address && (
-					<p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed text-slate-body">
+					<p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed text-muted">
 						{location.address}
 					</p>
 				)}
@@ -280,11 +280,11 @@ function LocationCard({
 
 			<dl className="mt-3 space-y-1 text-[12.5px]">
 				{location.opening_hours && (
-					<div className="text-slate-body">{location.opening_hours}</div>
+					<div className="text-muted">{location.opening_hours}</div>
 				)}
 				{location.phone && (
 					<div>
-						<a className="font-semibold text-navy hover:underline" href={`tel:${location.phone}`}>
+						<a className="font-semibold text-ink hover:underline" href={`tel:${location.phone}`}>
 							{location.phone}
 						</a>
 					</div>
@@ -292,7 +292,7 @@ function LocationCard({
 				{location.email && (
 					<div>
 						<a
-							className="font-semibold text-navy hover:underline"
+							className="font-semibold text-ink hover:underline"
 							href={`mailto:${location.email}`}
 						>
 							{location.email}

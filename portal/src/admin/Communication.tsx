@@ -69,9 +69,10 @@ export default function Communication() {
 	const [title, setTitle] = useState("");
 	const [body, setBody] = useState("");
 	const [smsMessage, setSmsMessage] = useState("");
+	const [waMessage, setWaMessage] = useState("");
 	const [smsTemplate, setSmsTemplate] = useState("");
-	const [smsDelivery, setSmsDelivery] = useState<"approval" | "scheduled">("approval");
-	const [smsScheduledAt, setSmsScheduledAt] = useState("");
+	const [delivery, setDelivery] = useState<"approval" | "scheduled">("approval");
+	const [scheduledAt, setScheduledAt] = useState("");
 	const [smsSourceType, setSmsSourceType] = useState("VMMS Audience");
 	const [smsSourceDoctype, setSmsSourceDoctype] = useState("");
 	const [smsPhoneField, setSmsPhoneField] = useState("");
@@ -102,6 +103,11 @@ export default function Communication() {
 	const counts = reach.data?.message;
 	const chosen = new Set(channels);
 	const wantsSms = chosen.has("sms");
+	const wantsWhatsapp = chosen.has("whatsapp");
+	// The two channels that are filed rather than sent, and therefore the two
+	// that can be held until a time. An announcement has nowhere to wait.
+	const canSchedule = wantsSms || wantsWhatsapp;
+	const composed = wantsSms ? smsMessage : wantsWhatsapp ? waMessage : body;
 	const phoneFields = useFrappeGetCall<{ message: string[] }>(API.smsDoctypeFields, { doctype: smsSourceDoctype }, wantsSms && smsSourceType === "Doctype Query" && smsSourceDoctype ? `sms:phones:${smsSourceDoctype}` : null);
 	const filterFields = useFrappeGetCall<{ message: SmsFilterField[] }>(API.smsFilterFields, { doctype: smsSourceDoctype }, wantsSms && smsSourceType === "Doctype Query" && smsSourceDoctype ? `sms:filters:${smsSourceDoctype}` : null);
 
@@ -109,8 +115,8 @@ export default function Communication() {
 		Boolean(geoNode) &&
 		channels.length > 0 &&
 		title.trim().length > 0 &&
-		(wantsSms ? smsMessage.trim().length > 0 : body.trim().length > 0) &&
-		(!wantsSms || smsDelivery === "approval" || Boolean(smsScheduledAt)) &&
+		composed.trim().length > 0 &&
+		(!canSchedule || delivery === "approval" || Boolean(scheduledAt)) &&
 		(!wantsSms || smsSourceType === "VMMS Audience" ||
 			(smsSourceType === "Doctype Query" && Boolean(smsSourceDoctype && smsPhoneField)) ||
 			(smsSourceType === "CSV Upload" && Boolean(smsCsvFile)) ||
@@ -123,7 +129,7 @@ export default function Communication() {
 		try {
 			const response = await call.post<{ message: CommunicationReport }>(API.communicationSend, {
 				title: title.trim(),
-				body: wantsSms ? smsMessage.trim() : body.trim(),
+				body: composed.trim(),
 				geo_node: geoNode,
 				who,
 				channels,
@@ -131,13 +137,15 @@ export default function Communication() {
 				announcement_type: announcementType || undefined,
 				sms_message: smsMessage.trim() || undefined,
 				sms_template: smsTemplate || undefined,
-				sms_scheduled_at: smsDelivery === "scheduled" ? smsScheduledAt : undefined,
+				sms_scheduled_at: delivery === "scheduled" ? scheduledAt : undefined,
 				sms_source_type: smsSourceType,
 				sms_source_doctype: smsSourceDoctype || undefined,
 				sms_phone_field: smsPhoneField || undefined,
 				sms_filters: smsFilters,
 				sms_csv_file: smsCsvFile || undefined,
 				sms_phone_numbers: smsPhoneNumbers || undefined,
+				whatsapp_message: waMessage.trim() || undefined,
+				whatsapp_scheduled_at: delivery === "scheduled" ? scheduledAt : undefined,
 			});
 
 			setReport(response.message);
@@ -148,9 +156,10 @@ export default function Communication() {
 			setTitle("");
 			setBody("");
 			setSmsMessage("");
+			setWaMessage("");
 			setSmsTemplate("");
-			setSmsDelivery("approval");
-			setSmsScheduledAt("");
+			setDelivery("approval");
+			setScheduledAt("");
 		} catch (error) {
 			setFailure(errorMessage(error, "That was not sent."));
 			setConfirming(false);
@@ -184,29 +193,34 @@ export default function Communication() {
 	if (options.error || !answer) {
 		return <ErrorNote>{errorMessage(options.error, "This screen could not be opened.")}</ErrorNote>;
 	}
-	if (!["system", "email", "sms"].includes(channel) || !["compose", "sent"].includes(view)) return <Navigate to="/admin/communication/system/compose" replace />;
+	if (!["system", "email", "sms", "whatsapp"].includes(channel) || !["compose", "sent"].includes(view)) return <Navigate to="/admin/communication/system/compose" replace />;
 	if (view === "sent") return <CommunicationHistory channel={channel} />;
 	if (!answer.channels[channelKey as keyof typeof answer.channels]) {
-		return <><PageHeading title={`Compose ${channel === "system" ? "notification" : channel}`} /><Card><SectionTitle>Channel unavailable</SectionTitle><p className="text-[13px] leading-relaxed text-slate-body">This channel is not available to your account on this site. Availability is determined by the server and the channel provider’s permissions.</p></Card></>;
+		return <><PageHeading title={`Compose ${channel === "system" ? "notification" : channel}`} /><Card><SectionTitle>Channel unavailable</SectionTitle><p className="text-[13px] leading-relaxed text-muted">This channel is not available to your account on this site. Availability is determined by the server and the channel provider’s permissions.</p></Card></>;
 	}
 
 	const available = CHANNELS.filter((channel) => answer.channels[channel.key]);
+	// The channel's name as a person says it, and the verb on the button. Both
+	// were inline ternaries when there were three channels; a fourth is where
+	// that stops being readable, and "Compose whatsapp" is what it produced.
+	const noun = channel === "system" ? "notification" : channel === "sms" ? "SMS" : channel === "whatsapp" ? "WhatsApp" : "email";
+	const verb = canSchedule ? `Create ${noun} draft` : `Send ${noun}`;
 
 	return (
 		<>
 			<div className="mb-4 flex flex-wrap items-center gap-3">
 				<div>
-					<h2 className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
-						<EditableText k={`admin.communication.${channel}.heading`} fallback={`Compose ${channel === "system" ? "notification" : channel}`} />
+					<h2 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-ink">
+						<EditableText k={`admin.communication.${channel}.heading`} fallback={`Compose ${noun}`} />
 					</h2>
-					<p className="mt-1 text-[12px] text-slate-faint">
+					<p className="mt-1.5 text-[13px] text-muted">
 						<EditableText k="admin.communication.lead" fallback="Sent to the volunteers and members your branches cover." />
 					</p>
 				</div>
 				<div className="ml-auto flex items-center gap-2">
-					<span className="hidden rounded-full border border-hairline-strong bg-white px-3 py-2 text-[11px] text-slate-faint sm:block">Sends immediately</span>
-					<Button variant="navy" disabled={!ready || !answer.can_send} onClick={() => setConfirming(true)}>
-						{channel === "sms" ? "Create SMS draft" : `Send ${channel === "system" ? "notification" : channel}`}
+					<span className="hidden rounded-md bg-surface px-2.5 py-1.5 text-[11.5px] font-medium text-muted sm:block">{canSchedule ? "Filed for approval" : "Sends immediately"}</span>
+					<Button variant="primary" disabled={!ready || !answer.can_send} onClick={() => setConfirming(true)}>
+						{verb}
 						{counts ? ` to ${counts[channelKey as keyof CommunicationReach] ?? 0}` : ""}
 					</Button>
 				</div>
@@ -220,7 +234,7 @@ export default function Communication() {
 			)}
 
 			<div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_285px]">
-				<div className="overflow-hidden rounded-[18px] bg-white shadow-card">
+				<div className="p-card overflow-hidden">
 					<ComposerSection number="1" title="Audience" help="Choose a geographic scope and the people within it. The server rechecks this scope when you send.">
 						<div className="mb-4">
 							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
@@ -245,10 +259,10 @@ export default function Communication() {
 										type="button"
 										onClick={() => setWho(option)}
 										className={cx(
-											"rounded-full border px-4 py-2 font-display text-[12.5px] font-bold capitalize transition",
+											"rounded-lg border px-3.5 py-1.5 text-[12.5px] font-semibold capitalize transition",
 											option === who
-												? "border-navy bg-navy text-white"
-												: "border-hairline-strong bg-white text-slate-strong hover:border-navy hover:text-navy",
+												? "border-blue bg-blue-soft text-blue-press"
+												: "border-card-line bg-white text-slate-strong hover:border-blue hover:text-ink",
 										)}
 									>
 										{option}
@@ -257,9 +271,9 @@ export default function Communication() {
 							</div>
 							{geoNode && (
 								<div className="mt-3 flex flex-wrap items-center gap-2">
-									<span className="rounded-full border border-blue/20 bg-[#EDF3FF] px-3 py-1.5 text-[11px] font-medium text-blue">{branchOf(chain)}</span>
-									<span className="rounded-full border border-blue/20 bg-[#EDF3FF] px-3 py-1.5 text-[11px] font-medium capitalize text-blue">{who}</span>
-									{counts && <span className="text-[11px] text-slate-faint">{counts.addressed} people addressed</span>}
+									<span className="rounded-md bg-blue-soft px-2.5 py-1 text-[11.5px] font-semibold text-blue-press">{branchOf(chain)}</span>
+									<span className="rounded-md bg-blue-soft px-2.5 py-1 text-[11.5px] font-semibold capitalize text-blue-press">{who}</span>
+									{counts && <span className="text-[11.5px] text-muted">{counts.addressed} people addressed</span>}
 								</div>
 							)}
 						</div>
@@ -269,42 +283,42 @@ export default function Communication() {
 						<ComposerSection number="2" title="Contact source" help="Use the VMMS audience above, or configure the same query, CSV, or manual source offered by OneRC SMS Desk.">
 							<label className="mb-4 block">
 								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Source type</span>
-								<select value={smsSourceType} onChange={(event) => { setSmsSourceType(event.target.value); setSmsFilters([]); }} className="w-full rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy">
+								<select value={smsSourceType} onChange={(event) => { setSmsSourceType(event.target.value); setSmsFilters([]); }} className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft">
 									<option>VMMS Audience</option><option>Doctype Query</option><option>CSV Upload</option><option>Manual</option>
 								</select>
 							</label>
 
 							{smsSourceType === "Doctype Query" && <>
 								<div className="grid gap-4 sm:grid-cols-2">
-									<label><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Source DocType</span><select value={smsSourceDoctype} onChange={(event) => { setSmsSourceDoctype(event.target.value); setSmsPhoneField(""); setSmsFilters([]); }} className="w-full rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy"><option value="">Select volunteer or member records</option>{(answer.sms_source_doctypes ?? []).map((doctype) => <option key={doctype.value} value={doctype.value}>{doctype.label}</option>)}</select>{(answer.sms_source_doctypes ?? []).length === 0 && <span className="mt-1.5 block text-[11px] text-slate-faint">No volunteer or member DocTypes are readable by your account.</span>}</label>
-									<label><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Phone field</span><select value={smsPhoneField} onChange={(event) => setSmsPhoneField(event.target.value)} disabled={!smsSourceDoctype || phoneFields.isLoading} className="w-full rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy"><option value="">Select phone field</option>{(phoneFields.data?.message ?? []).map((field) => <option key={field}>{field}</option>)}</select></label>
+									<label><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Source DocType</span><select value={smsSourceDoctype} onChange={(event) => { setSmsSourceDoctype(event.target.value); setSmsPhoneField(""); setSmsFilters([]); }} className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"><option value="">Select volunteer or member records</option>{(answer.sms_source_doctypes ?? []).map((doctype) => <option key={doctype.value} value={doctype.value}>{doctype.label}</option>)}</select>{(answer.sms_source_doctypes ?? []).length === 0 && <span className="mt-1.5 block text-[11px] text-slate-faint">No volunteer or member DocTypes are readable by your account.</span>}</label>
+									<label><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Phone field</span><select value={smsPhoneField} onChange={(event) => setSmsPhoneField(event.target.value)} disabled={!smsSourceDoctype || phoneFields.isLoading} className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"><option value="">Select phone field</option>{(phoneFields.data?.message ?? []).map((field) => <option key={field}>{field}</option>)}</select></label>
 								</div>
-								<div className="mt-5 border-t border-hairline-soft pt-4">
-									<div className="mb-3 flex items-center justify-between"><h4 className="text-[12.5px] font-semibold text-ink">Filters</h4><button type="button" onClick={() => setSmsFilters((rows) => [...rows, { filter_field: "", operator: "Equals", filter_value: "" }])} disabled={!smsSourceDoctype} className="rounded-full border border-hairline-strong bg-white px-3 py-1.5 text-[11px] font-medium text-blue disabled:opacity-50">Add filter</button></div>
+								<div className="mt-5 border-t border-card-line pt-4">
+									<div className="mb-3 flex items-center justify-between"><h4 className="text-[12.5px] font-semibold text-ink">Filters</h4><button type="button" onClick={() => setSmsFilters((rows) => [...rows, { filter_field: "", operator: "Equals", filter_value: "" }])} disabled={!smsSourceDoctype} className="rounded-full border border-card-line bg-white px-3 py-1.5 text-[11px] font-medium text-blue disabled:opacity-50">Add filter</button></div>
 									<div className="space-y-2">{smsFilters.map((row, index) => <div key={index} className="grid gap-2 rounded-[12px] bg-surface p-2 sm:grid-cols-[1fr_120px_1fr_30px]">
-										<select aria-label={`Filter ${index + 1} field`} value={row.filter_field} onChange={(event) => updateSmsFilter(setSmsFilters, index, "filter_field", event.target.value)} className="min-w-0 rounded-[9px] border border-hairline-strong bg-white px-2.5 py-2 text-[11.5px]"><option value="">Field</option>{(filterFields.data?.message ?? []).map((field) => <option key={field.value} value={field.value}>{field.label}</option>)}</select>
-										<select aria-label={`Filter ${index + 1} operator`} value={row.operator} onChange={(event) => updateSmsFilter(setSmsFilters, index, "operator", event.target.value)} className="rounded-[9px] border border-hairline-strong bg-white px-2 py-2 text-[11.5px]">{SMS_FILTER_OPERATORS.map((operator) => <option key={operator}>{operator}</option>)}</select>
-										<input aria-label={`Filter ${index + 1} value`} value={row.filter_value} onChange={(event) => updateSmsFilter(setSmsFilters, index, "filter_value", event.target.value)} placeholder="Value" className="min-w-0 rounded-[9px] border border-hairline-strong px-2.5 py-2 text-[11.5px]" />
-										<button type="button" aria-label={`Remove filter ${index + 1}`} onClick={() => setSmsFilters((rows) => rows.filter((_, rowIndex) => rowIndex !== index))} className="grid h-[34px] w-[30px] place-items-center rounded-[9px] text-slate-faint hover:bg-white hover:text-signal">×</button>
+										<select aria-label={`Filter ${index + 1} field`} value={row.filter_field} onChange={(event) => updateSmsFilter(setSmsFilters, index, "filter_field", event.target.value)} className="min-w-0 rounded-[9px] border border-card-line bg-white px-2.5 py-2 text-[11.5px]"><option value="">Field</option>{(filterFields.data?.message ?? []).map((field) => <option key={field.value} value={field.value}>{field.label}</option>)}</select>
+										<select aria-label={`Filter ${index + 1} operator`} value={row.operator} onChange={(event) => updateSmsFilter(setSmsFilters, index, "operator", event.target.value)} className="rounded-[9px] border border-card-line bg-white px-2 py-2 text-[11.5px]">{SMS_FILTER_OPERATORS.map((operator) => <option key={operator}>{operator}</option>)}</select>
+										<input aria-label={`Filter ${index + 1} value`} value={row.filter_value} onChange={(event) => updateSmsFilter(setSmsFilters, index, "filter_value", event.target.value)} placeholder="Value" className="min-w-0 rounded-[9px] border border-card-line px-2.5 py-2 text-[11.5px]" />
+										<button type="button" aria-label={`Remove filter ${index + 1}`} onClick={() => setSmsFilters((rows) => rows.filter((_, rowIndex) => rowIndex !== index))} className="grid h-[34px] w-[30px] place-items-center rounded-[9px] text-slate-faint hover:bg-white hover:text-blue">×</button>
 									</div>)}</div>
 								</div>
 							</>}
 
-							{smsSourceType === "CSV Upload" && <label className="block"><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">CSV file</span><input type="file" accept=".csv,text/csv" disabled={uploadingCsv} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadCsv(file); }} className="w-full rounded-card border border-hairline-strong bg-white px-3 py-2 text-[12px]" /><span className="mt-1.5 block text-[11px] text-slate-faint">{uploadingCsv ? "Uploading…" : smsCsvFile ? `Uploaded: ${smsCsvFile}` : "The file must contain a phone_number column."}</span></label>}
-							{smsSourceType === "Manual" && <label className="block"><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Phone numbers</span><textarea value={smsPhoneNumbers} onChange={(event) => setSmsPhoneNumbers(event.target.value)} rows={6} placeholder={"+255700000001\n+255700000002"} className="w-full resize-y rounded-card border border-hairline-strong px-3.5 py-2.5 font-mono text-[12.5px] outline-none focus:border-navy" /><span className="mt-1.5 block text-[11px] text-slate-faint">One number per line, including country code.</span></label>}
+							{smsSourceType === "CSV Upload" && <label className="block"><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">CSV file</span><input type="file" accept=".csv,text/csv" disabled={uploadingCsv} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadCsv(file); }} className="w-full rounded-xl border border-card-line bg-white px-3 py-2 text-[12px]" /><span className="mt-1.5 block text-[11px] text-slate-faint">{uploadingCsv ? "Uploading…" : smsCsvFile ? `Uploaded: ${smsCsvFile}` : "The file must contain a phone_number column."}</span></label>}
+							{smsSourceType === "Manual" && <label className="block"><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Phone numbers</span><textarea value={smsPhoneNumbers} onChange={(event) => setSmsPhoneNumbers(event.target.value)} rows={6} placeholder={"+255700000001\n+255700000002"} className="w-full resize-y rounded-xl border border-card-line px-3.5 py-2.5 font-mono text-[12.5px] outline-none focus:border-blue" /><span className="mt-1.5 block text-[11px] text-slate-faint">One number per line, including country code.</span></label>}
 						</ComposerSection>
 					)}
 
-					<ComposerSection number={wantsSms ? "3" : "2"} title="Message" help={channel === "sms" ? "Name the campaign, optionally start from a OneRC SMS template, then write the text." : "Write the title and message people will receive."}>
+					<ComposerSection number={wantsSms ? "3" : "2"} title="Message" help={channel === "sms" ? "Name the campaign, optionally start from a OneRC SMS template, then write the text." : channel === "whatsapp" ? "Name the broadcast, then write the message. The name is for your records and is not sent." : "Write the title and message people will receive."}>
 						<label className="mb-4 block">
 							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-								{channel === "sms" ? "Campaign name" : "Subject"}
+								{channel === "sms" ? "Campaign name" : channel === "whatsapp" ? "Broadcast name" : "Subject"}
 							</span>
 							<input
 								value={title}
 								onChange={(event) => setTitle(event.target.value)}
-								placeholder={channel === "sms" ? "Community health outreach reminder" : "Branch meeting moved to Saturday"}
-								className="w-full rounded-card border border-hairline-strong px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy"
+								placeholder={channel === "sms" ? "Community health outreach reminder" : channel === "whatsapp" ? "Flood advisory — Kilombero" : "Branch meeting moved to Saturday"}
+								className="w-full rounded-xl border border-card-line px-3.5 py-2.5 text-[13.5px] outline-none focus:border-blue"
 							/>
 						</label>
 
@@ -319,7 +333,7 @@ export default function Communication() {
 										const template = (answer.sms_templates ?? []).find((item) => item.name === next);
 										if (template) setSmsMessage(template.message);
 									}}
-									className="w-full rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy"
+									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
 								>
 									<option value="">Write without a template</option>
 									{(answer.sms_templates ?? []).map((template) => <option key={template.name} value={template.name}>{template.template_name}{template.category ? ` · ${template.category}` : ""}</option>)}
@@ -327,7 +341,7 @@ export default function Communication() {
 							</label>
 						)}
 
-						{!wantsSms && <label className="mb-4 block">
+						{!wantsSms && !wantsWhatsapp && <label className="mb-4 block">
 							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
 								Message
 							</span>
@@ -336,7 +350,7 @@ export default function Communication() {
 								onChange={(event) => setBody(event.target.value)}
 								rows={6}
 								placeholder="Write the message"
-								className="w-full resize-y rounded-card border border-hairline-strong px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy"
+								className="w-full resize-y rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
 							/>
 						</label>}
 
@@ -352,7 +366,7 @@ export default function Communication() {
 										className={cx(
 											"tabular text-[11.5px] font-bold",
 											(smsMessage || body).length > 160
-												? "text-signal-dark"
+												? "text-blue-press"
 												: "text-slate-faint",
 										)}
 									>
@@ -364,7 +378,7 @@ export default function Communication() {
 									onChange={(event) => setSmsMessage(event.target.value)}
 									rows={3}
 									placeholder="Write the SMS message"
-									className="w-full resize-y rounded-card border border-hairline-strong px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy"
+									className="w-full resize-y rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
 								/>
 								<span className="mt-1.5 block text-[11.5px] leading-relaxed text-slate-faint">
 									Anything over 160 characters is sent as more than one message.
@@ -372,7 +386,28 @@ export default function Communication() {
 							</label>
 						)}
 
-						{!wantsSms && <div className="grid gap-4 sm:grid-cols-2">
+						{/* Its own wording, for the same reason the SMS has its own:
+						    this arrives on a phone in a thread beside messages from
+						    family, and an announcement's register reads oddly there.
+						    No character counter — WhatsApp does not charge by length
+						    and a limit invented here would be a fiction. */}
+						{wantsWhatsapp && (
+							<label className="mb-4 block">
+								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">WhatsApp message</span>
+								<textarea
+									value={waMessage}
+									onChange={(event) => setWaMessage(event.target.value)}
+									rows={5}
+									placeholder="Write the message"
+									className="w-full resize-y rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+								/>
+								<span className="mt-1.5 block text-[11.5px] leading-relaxed text-slate-faint">
+									A line telling people how to stop receiving these is added underneath.
+								</span>
+							</label>
+						)}
+
+						{!wantsSms && !wantsWhatsapp && <div className="grid gap-4 sm:grid-cols-2">
 							<label className="block">
 								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
 									How urgent
@@ -380,7 +415,7 @@ export default function Communication() {
 								<select
 									value={urgency}
 									onChange={(event) => setUrgency(event.target.value)}
-									className="w-full rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 text-[13.5px] capitalize outline-none focus:border-navy"
+									className="w-full rounded-xl border border-card-line bg-white px-3.5 py-2.5 text-[13.5px] capitalize outline-none focus:border-blue"
 								>
 									{answer.urgencies.map((option) => (
 										<option key={option} value={option} className="capitalize">
@@ -401,7 +436,7 @@ export default function Communication() {
 									<select
 										value={announcementType}
 										onChange={(event) => setAnnouncementType(event.target.value)}
-										className="w-full rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy"
+										className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
 									>
 										<option value="">Not filed under one</option>
 										{answer.types.map((type) => (
@@ -418,46 +453,45 @@ export default function Communication() {
 						</div>}
 					</ComposerSection>
 
-					<ComposerSection number={wantsSms ? "4" : "3"} title="Delivery" help={channel === "sms" ? "The SMS provider receives a draft campaign for approval; it is not sent immediately." : "Delivery begins after you review and confirm the audience."} last>
+					<ComposerSection number={wantsSms ? "4" : "3"} title="Delivery" help={channel === "sms" ? "The SMS provider receives a draft campaign for approval; it is not sent immediately." : channel === "whatsapp" ? "This is filed for approval and never sent from here. Once approved it goes out steadily rather than all at once, which is what keeps the society's number in good standing." : "Delivery begins after you review and confirm the audience."} last>
 						<div className="grid gap-3 sm:grid-cols-2">
-							<button type="button" onClick={() => setSmsDelivery("approval")} aria-pressed={!wantsSms || smsDelivery === "approval"} className={cx("rounded-[13px] border p-4 text-left", !wantsSms || smsDelivery === "approval" ? "border-blue/30 bg-[#EDF3FF]" : "border-hairline bg-white")}>
-								<div className="flex items-center gap-2 text-[12px] font-semibold text-blue"><Icon.check size={15} />{channel === "sms" ? "As soon as approved" : "Send now"}</div>
+							<button type="button" onClick={() => setDelivery("approval")} aria-pressed={!canSchedule || delivery === "approval"} className={cx("rounded-[13px] border p-4 text-left", !canSchedule || delivery === "approval" ? "border-blue/30 bg-[#EDF3FF]" : "border-card-line bg-white")}>
+								<div className="flex items-center gap-2 text-[12px] font-semibold text-blue"><Icon.check size={15} />{canSchedule ? "As soon as approved" : "Send now"}</div>
 								<p className="mt-1 text-[11px] leading-relaxed text-slate-faint">{CHANNELS.find((item) => item.key === channelKey)?.hint}</p>
 							</button>
-							<button type="button" disabled={!wantsSms} onClick={() => setSmsDelivery("scheduled")} aria-pressed={wantsSms && smsDelivery === "scheduled"} className={cx("rounded-[13px] border p-4 text-left", wantsSms && smsDelivery === "scheduled" ? "border-blue/30 bg-[#EDF3FF]" : "border-hairline bg-surface/70", !wantsSms && "opacity-60")}>
-								<div className="text-[12px] font-semibold text-slate-body">Schedule</div>
-								<p className="mt-1 text-[11px] text-slate-faint">{wantsSms ? "Provider sends after approval at the chosen time." : "Not supported for this channel."}</p>
+							<button type="button" disabled={!canSchedule} onClick={() => setDelivery("scheduled")} aria-pressed={canSchedule && delivery === "scheduled"} className={cx("rounded-[13px] border p-4 text-left", canSchedule && delivery === "scheduled" ? "border-blue/30 bg-[#EDF3FF]" : "border-card-line bg-surface/70", !canSchedule && "opacity-60")}>
+								<div className="text-[12px] font-semibold text-muted">Schedule</div>
+								<p className="mt-1 text-[11px] text-slate-faint">{wantsSms ? "Provider sends after approval at the chosen time." : wantsWhatsapp ? "Held until this time once it has been approved." : "Not supported for this channel."}</p>
 							</button>
 						</div>
-						{wantsSms && smsDelivery === "scheduled" && (
+						{canSchedule && delivery === "scheduled" && (
 							<label className="mt-4 block">
 								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Scheduled at</span>
-								<input type="datetime-local" value={smsScheduledAt} onChange={(event) => setSmsScheduledAt(event.target.value)} className="w-full rounded-card border border-hairline-strong bg-white px-3.5 py-2.5 text-[13.5px] outline-none focus:border-navy" />
-								<span className="mt-1.5 block text-[11px] text-slate-faint">Stored on the OneRC SMS campaign and evaluated when an approver submits it.</span>
+								<input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft" />
+								<span className="mt-1.5 block text-[11px] text-slate-faint">{wantsSms ? "Stored on the OneRC SMS campaign and evaluated when an approver submits it." : "A broadcast approved after this time goes out on approval rather than waiting."}</span>
 							</label>
 						)}
 					</ComposerSection>
 				</div>
 
 				<aside className="space-y-3 lg:sticky lg:top-6">
-					<div className="rounded-[18px] bg-white p-4 shadow-card">
+					<div className="rounded-[18px] bg-white p-4 border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]">
 						<div className="mb-4 flex items-center justify-between gap-2">
-							<h3 className="font-display text-[13px] font-semibold text-ink">{channel === "system" ? "Notification" : channel.toUpperCase()} preview</h3>
+							<h3 className="text-[13px] font-semibold text-ink">{channel === "system" ? "Notification" : channel.toUpperCase()} preview</h3>
 							<span className="rounded-full border border-blue/20 bg-[#EDF3FF] px-2.5 py-1 text-[10px] font-medium text-blue">{counts ? `${counts[channelKey as keyof CommunicationReach] ?? 0} reachable` : "Choose audience"}</span>
 						</div>
 						<MessagePreview channel={channel} title={title} body={channel === "sms" ? (smsMessage || body) : body} />
 					</div>
-					<div className="rounded-[18px] bg-white p-4 shadow-card">
-						<h3 className="mb-3 font-display text-[13px] font-semibold text-ink">Before you send</h3>
+					<div className="p-card p-4">
+						<h3 className="mb-3 text-[13px] font-semibold text-ink">Before you send</h3>
 
-						{!geoNode ? (
-							<p className="text-[12.5px] leading-relaxed text-slate-body">
-								Choose a branch on the left and this will say how many people that
-								reaches, on each channel.
-							</p>
-						) : (
+						{/* Nothing here until a branch is chosen. This used to carry a
+						    sentence explaining that choosing one would fill it in, which
+						    is the panel describing itself to somebody already looking at
+						    it being empty. The reach appears when there is reach. */}
+						{!geoNode ? null : (
 							<>
-								<p className="mb-4 text-[12.5px] leading-relaxed text-slate-body">
+								<p className="mb-4 text-[12.5px] leading-relaxed text-muted">
 									<b className="text-ink">{branchOf(chain)}</b> and everything under it
 									· <span className="capitalize">{who}</span>
 								</p>
@@ -471,12 +505,12 @@ export default function Communication() {
 										    numbers that only mean anything against each other,
 										    and a tile each would spread the comparison over half
 										    a screen. */}
-										<dl className="divide-y divide-hairline-soft">
+										<dl className="divide-y divide-card-line">
 											<div className="flex items-baseline justify-between gap-3 pb-2.5">
 												<dt className="text-[12.5px] font-semibold text-ink">
 													People addressed
 												</dt>
-												<dd className="tabular font-display text-[20px] font-extrabold leading-none text-ink">
+												<dd className="tabular text-[20px] font-semibold leading-none text-ink">
 													{counts.addressed}
 												</dd>
 											</div>
@@ -489,7 +523,7 @@ export default function Communication() {
 														className={cx(
 															"flex items-center gap-2 text-[12.5px]",
 															chosen.has(channel.key)
-																? "font-semibold text-navy"
+																? "font-semibold text-ink"
 																: "text-slate-faint",
 														)}
 													>
@@ -498,7 +532,7 @@ export default function Communication() {
 													</dt>
 													<dd
 														className={cx(
-															"tabular font-display text-[16px] font-bold leading-none",
+															"tabular text-[16px] font-bold leading-none",
 															chosen.has(channel.key)
 																? "text-ink"
 																: "text-slate-faint",
@@ -522,7 +556,7 @@ export default function Communication() {
 							</>
 						)}
 
-						<div className="mt-4 border-t border-hairline pt-4">
+						<div className="mt-4 border-t border-card-line pt-4">
 							<Button
 								variant="navy"
 								disabled={!ready || !answer.can_send}
@@ -538,7 +572,15 @@ export default function Communication() {
 								</p>
 							)}
 						</div>
-						<p className="mt-3 text-[10.5px] leading-relaxed text-slate-faint">Recipient selection is resolved from the geographic scope and audience group. Individual selection, reusable templates, and scheduling are not yet supported.</p>
+						{/* An honest statement of what this screen cannot do, which is
+						    worth saying once. The sentence in front of it — "recipient
+						    selection is resolved from the geographic scope and audience
+						    group" — described the two controls directly above it, and
+						    went. */}
+						<p className="mt-3 text-[11px] leading-relaxed text-muted">
+							Picking individual people, saving a message to reuse and scheduling are not
+							available yet.
+						</p>
 					</div>
 				</aside>
 			</div>
@@ -568,6 +610,7 @@ export default function Communication() {
 								<span>
 									<b>{channel.label}</b> — {counts?.[channel.key] ?? 0} reachable
 									{channel.key === "sms" && ", filed as a draft campaign for approval"}
+									{channel.key === "whatsapp" && ", filed as a draft broadcast for approval"}
 								</span>
 							</li>
 						))}
@@ -607,10 +650,10 @@ function ComposerSection({
 	children: ReactNode;
 }) {
 	return (
-		<section className={cx("grid grid-cols-[34px_minmax(0,1fr)] gap-3 p-4 sm:p-5", !last && "border-b border-hairline-soft")}>
+		<section className={cx("grid grid-cols-[34px_minmax(0,1fr)] gap-3 p-4 sm:p-5", !last && "border-b border-card-line")}>
 			<div className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#EDF3FF] text-[12px] font-semibold text-blue">{number}</div>
 			<div className="min-w-0">
-				<h3 className="font-display text-[13px] font-semibold text-ink">{title}</h3>
+				<h3 className="text-[13px] font-semibold text-ink">{title}</h3>
 				<p className="mb-4 mt-1 text-[11px] leading-relaxed text-slate-faint">{help}</p>
 				{children}
 			</div>
@@ -638,19 +681,26 @@ function ComposerSection({
 function MessagePreview({ channel, title, body }: { channel: string; title: string; body: string }) {
 	const society = useSocietyBranding();
 
-	if (channel === "sms") return <><div className="relative mx-auto h-[390px] max-w-[220px] rounded-[34px] border-[7px] border-[#D8DCE2] bg-[#F8F8F8] px-3 pb-4 pt-14 shadow-inner before:absolute before:left-1/2 before:top-3 before:h-4 before:w-[62px] before:-translate-x-1/2 before:rounded-full before:bg-[#E2E5E9]"><div className="rounded-[13px] rounded-bl-[4px] bg-[#E8E8E8] p-3 text-[11px] leading-relaxed text-slate-body">{body || "Your message preview appears here."}</div></div><p className="mt-3 text-[10.5px] leading-relaxed text-slate-faint">{body.length} characters.</p></>;
+	if (channel === "sms") return <><div className="relative mx-auto h-[390px] max-w-[220px] rounded-[34px] border-[7px] border-[#D8DCE2] bg-[#F8F8F8] px-3 pb-4 pt-14 shadow-inner before:absolute before:left-1/2 before:top-3 before:h-4 before:w-[62px] before:-translate-x-1/2 before:rounded-full before:bg-[#E2E5E9]"><div className="rounded-[13px] rounded-bl-[4px] bg-[#E8E8E8] p-3 text-[11px] leading-relaxed text-muted">{body || "Your message preview appears here."}</div></div><p className="mt-3 text-[10.5px] leading-relaxed text-slate-faint">{body.length} characters.</p></>;
 
-	if (channel === "email") return <div className="overflow-hidden rounded-[14px] border border-hairline"><div className="bg-[#24272C] px-4 py-3 text-[11px] font-semibold text-white">{society?.name || society?.short_name || "Your society"}</div><div className="bg-white p-4"><h4 className="text-[15px] font-medium text-ink">{title || "Your subject"}</h4><p className="mt-3 whitespace-pre-wrap text-[11px] leading-relaxed text-slate-body">{body || "Your email preview appears here."}</p></div></div>;
+	// The green ground and the right-aligned bubble are what a WhatsApp thread
+	// looks like from the reader's side, and the point of a preview is to show
+	// the message where it will actually be read. The opt-out line is drawn in
+	// too, greyed, because the server appends it and a preview that omitted it
+	// would be showing a message nobody receives.
+	if (channel === "whatsapp") return <><div className="relative mx-auto h-[390px] max-w-[220px] overflow-hidden rounded-[34px] border-[7px] border-[#D8DCE2] bg-[#ECE5DD] px-3 pb-4 pt-14 shadow-inner before:absolute before:left-1/2 before:top-3 before:h-4 before:w-[62px] before:-translate-x-1/2 before:rounded-full before:bg-[#E2E5E9]"><div className="ml-auto max-w-[92%] rounded-[13px] rounded-br-[4px] bg-[#D9FDD3] p-2.5 text-[11px] leading-relaxed text-[#111B21]"><p className="whitespace-pre-wrap">{body || "Your message preview appears here."}</p><p className="mt-2 whitespace-pre-wrap text-[10px] text-[#667781]">Reply STOP to stop receiving messages from us.</p></div></div><p className="mt-3 text-[10.5px] leading-relaxed text-slate-faint">Sent one at a time, not all at once.</p></>;
 
-	return <div className="rounded-[14px] bg-[#F5F5F5] p-3"><div className="grid grid-cols-[32px_minmax(0,1fr)] gap-2.5 rounded-[12px] bg-white p-3 shadow-nav"><span className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#EDF3FF] text-blue"><Icon.bell size={15} /></span><div><h3 className="text-[11px] font-semibold text-ink">{title || "Notification title"}</h3><p className="mt-1 whitespace-pre-wrap text-[10.5px] leading-relaxed text-slate-body">{body || "Your notification preview appears here."}</p></div></div></div>;
+	if (channel === "email") return <div className="overflow-hidden rounded-[14px] border border-card-line"><div className="bg-[#24272C] px-4 py-3 text-[11px] font-semibold text-white">{society?.name || society?.short_name || "Your society"}</div><div className="bg-white p-4"><h4 className="text-[15px] font-medium text-ink">{title || "Your subject"}</h4><p className="mt-3 whitespace-pre-wrap text-[11px] leading-relaxed text-muted">{body || "Your email preview appears here."}</p></div></div>;
+
+	return <div className="rounded-[14px] bg-[#F5F5F5] p-3"><div className="grid grid-cols-[32px_minmax(0,1fr)] gap-2.5 rounded-[12px] bg-white p-3 shadow-[0_1px_2px_rgba(30,50,73,0.06)]"><span className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#EDF3FF] text-blue"><Icon.bell size={15} /></span><div><h3 className="text-[11px] font-semibold text-ink">{title || "Notification title"}</h3><p className="mt-1 whitespace-pre-wrap text-[10.5px] leading-relaxed text-muted">{body || "Your notification preview appears here."}</p></div></div></div>;
 }
 
 function CommunicationHistory({ channel }: { channel: string }) {
-	return <><PageHeading title={`Sent ${channel === "system" ? "notifications" : channel}`} lead="Nothing sent has been recorded here yet." /><Card><SectionTitle>Not available yet</SectionTitle><p className="text-[13px] leading-relaxed text-slate-body">You can post announcements and prepare SMS from here. A record of what has been sent, and who received it, is not available yet — and nothing is shown that cannot be confirmed.</p></Card></>;
+	return <><PageHeading title={`Sent ${channel === "system" ? "notifications" : channel}`} lead="Nothing sent has been recorded here yet." /><Card><SectionTitle>Not available yet</SectionTitle><p className="text-[13px] leading-relaxed text-muted">You can post announcements and prepare SMS from here. A record of what has been sent, and who received it, is not available yet — and nothing is shown that cannot be confirmed.</p></Card></>;
 }
 
 /**
- * The three channels, and what each of them actually is.
+ * The four channels, and what each of them actually is.
  *
  * The keys match the server's own closed set — `api/communication.py` refuses a
  * channel it does not know rather than silently dropping it, so a typo here is
@@ -674,6 +724,12 @@ const CHANNELS = [
 		label: "SMS",
 		icon: Icon.phone,
 		hint: "Filed as a draft campaign for approval.",
+	},
+	{
+		key: "whatsapp" as const,
+		label: "WhatsApp",
+		icon: Icon.chat,
+		hint: "Filed for approval, then sent steadily rather than all at once.",
 	},
 ];
 
@@ -708,8 +764,8 @@ function Report({ report, onDismiss }: { report: CommunicationReport; onDismiss:
 		<Card className="mb-5 border border-emerald-200 bg-emerald-50/40">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h2 className="font-display text-[15px] font-extrabold text-ink">That went out.</h2>
-					<ul className="mt-2 space-y-1 text-[12.5px] text-slate-body">
+					<h2 className="text-[15px] font-semibold text-ink">That went out.</h2>
+					<ul className="mt-2 space-y-1 text-[12.5px] text-muted">
 						{report.notification_sent && sent && (
 							<li>
 								<b className="text-ink">{sent.delivered}</b> people now hold a copy in
@@ -721,6 +777,25 @@ function Report({ report, onDismiss }: { report: CommunicationReport; onDismiss:
 								Email queued to everybody in that audience with an address on file.
 							</li>
 						)}
+						{report.whatsapp && (
+							<li>
+								{/* Same plainness as the SMS line, and the extra sentence
+								    is there because "approved" does not mean "arrived"
+								    on this channel: the sending is paced, so a large
+								    branch is still receiving it an hour later. */}
+								<b className="text-ink">Nothing has been sent on WhatsApp yet.</b> A
+								draft broadcast to {report.whatsapp.recipients} numbers is waiting for
+								approval —{" "}
+								<a
+									href={report.whatsapp.url}
+									className="font-semibold text-ink underline underline-offset-2"
+								>
+									finish it here
+								</a>
+								. Once approved it goes out steadily, so a large branch takes a while
+								to reach.
+							</li>
+						)}
 						{report.sms && (
 							<li>
 								{/* Said as plainly as possible: nothing has been texted yet,
@@ -730,7 +805,7 @@ function Report({ report, onDismiss }: { report: CommunicationReport; onDismiss:
 								campaign to {report.sms.recipients} numbers is waiting for approval —{" "}
 								<a
 									href={report.sms.url}
-									className="font-semibold text-navy underline underline-offset-2"
+									className="font-semibold text-ink underline underline-offset-2"
 								>
 									finish it here
 								</a>

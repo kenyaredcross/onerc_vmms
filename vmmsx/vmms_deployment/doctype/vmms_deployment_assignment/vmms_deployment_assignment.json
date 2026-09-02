@@ -15,20 +15,43 @@
   "geo_node",
   "status",
   "role_section",
+  "assignment_title",
+  "assignment_description",
   "role",
   "column_break_role",
+  "supervisor",
   "start_date",
   "end_date",
   "response_section",
   "invited_on",
+  "invited_by",
+  "invitation_expires_on",
   "responded_on",
   "column_break_response",
   "response_note",
+  "decline_reason",
   "service_section",
   "joined_on",
   "left_on",
   "column_break_service",
   "participation_notes",
+  "readiness_section",
+  "briefing_completed_on",
+  "safety_acknowledged_on",
+  "column_break_readiness",
+  "checked_in_at",
+  "checked_out_at",
+  "attendance_section",
+  "verified_hours",
+  "column_break_attendance",
+  "attendance_verified_by",
+  "attendance_verified_on",
+  "replacement_section",
+  "replaces",
+  "replaced_by",
+  "column_break_replacement",
+  "replacement_reason",
+  "replacement_authorised_by",
   "notes_section",
   "notes"
  ],
@@ -97,13 +120,13 @@
   },
   {
    "default": "Pending",
-   "description": "Where this assignment stands: assigned, pending an answer, accepted, declined or withdrawn. Set by the system.",
+   "description": "What this person's deployment has come to. The first five are the question and the answer; Expired is a question nobody answered in time; Participated, Partial Attendance and No Show are what actually happened; Replaced is somebody else going instead, with the original kept.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Assigned\nPending\nAccepted\nDeclined\nWithdrawn",
+   "options": "Assigned\nPending\nAccepted\nDeclined\nWithdrawn\nExpired\nParticipated\nPartial Attendance\nNo Show\nReplaced",
    "reqd": 1,
    "search_index": 1
   },
@@ -111,6 +134,17 @@
    "fieldname": "role_section",
    "fieldtype": "Section Break",
    "label": "Role & Period"
+  },
+  {
+   "description": "What this person is being asked to do, if it differs from everybody else.",
+   "fieldname": "assignment_title",
+   "fieldtype": "Data",
+   "label": "Assignment Title"
+  },
+  {
+   "fieldname": "assignment_description",
+   "fieldtype": "Small Text",
+   "label": "Assignment Description"
   },
   {
    "default": "member",
@@ -125,6 +159,13 @@
   {
    "fieldname": "column_break_role",
    "fieldtype": "Column Break"
+  },
+  {
+   "description": "Who this person reports to on the deployment. Somebody on the same roster.",
+   "fieldname": "supervisor",
+   "fieldtype": "Link",
+   "label": "Supervisor",
+   "options": "VMMS Volunteer"
   },
   {
    "description": "When this person's own deployment begins. Copied from the deployment, and editable if they join for part of it.",
@@ -151,6 +192,19 @@
    "read_only": 1
   },
   {
+   "fieldname": "invited_by",
+   "fieldtype": "Link",
+   "label": "Asked By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "description": "When the question stops standing. An unanswered invitation past this is Expired, which frees the place without pretending the person said no.",
+   "fieldname": "invitation_expires_on",
+   "fieldtype": "Datetime",
+   "label": "Answer By"
+  },
+  {
    "description": "When they answered.",
    "fieldname": "responded_on",
    "fieldtype": "Datetime",
@@ -166,6 +220,13 @@
    "fieldname": "response_note",
    "fieldtype": "Small Text",
    "label": "Their Note"
+  },
+  {
+   "depends_on": "eval:doc.status=='Declined'",
+   "description": "Why they cannot go. Their own words, kept so nobody has to guess.",
+   "fieldname": "decline_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason For Declining"
   },
   {
    "fieldname": "service_section",
@@ -193,6 +254,110 @@
    "fieldname": "participation_notes",
    "fieldtype": "Small Text",
    "label": "Participation Notes"
+  },
+  {
+   "fieldname": "readiness_section",
+   "fieldtype": "Section Break",
+   "label": "Readiness"
+  },
+  {
+   "description": "When this person completed the briefing. Blank means they have not.",
+   "fieldname": "briefing_completed_on",
+   "fieldtype": "Datetime",
+   "label": "Briefed On"
+  },
+  {
+   "description": "When they acknowledged the safety brief. A fact recorded, never a gate: refusing to deploy somebody is a coordinator's decision, not a field's.",
+   "fieldname": "safety_acknowledged_on",
+   "fieldtype": "Datetime",
+   "label": "Safety Acknowledged On"
+  },
+  {
+   "fieldname": "column_break_readiness",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "checked_in_at",
+   "fieldtype": "Datetime",
+   "label": "Checked In"
+  },
+  {
+   "fieldname": "checked_out_at",
+   "fieldtype": "Datetime",
+   "label": "Checked Out"
+  },
+  {
+   "fieldname": "attendance_section",
+   "fieldtype": "Section Break",
+   "label": "Attendance"
+  },
+  {
+   "description": "Hours a coordinator has verified for this deployment. Separate from the volunteer's own time logs, which are their account of it.",
+   "fieldname": "verified_hours",
+   "fieldtype": "Float",
+   "label": "Verified Hours",
+   "precision": "2"
+  },
+  {
+   "fieldname": "column_break_attendance",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attendance_verified_by",
+   "fieldtype": "Link",
+   "label": "Verified By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attendance_verified_on",
+   "fieldtype": "Datetime",
+   "label": "Verified On",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.replaces || doc.replaced_by",
+   "fieldname": "replacement_section",
+   "fieldtype": "Section Break",
+   "label": "Replacement"
+  },
+  {
+   "description": "The assignment this one takes over from. The original is kept exactly as it was.",
+   "fieldname": "replaces",
+   "fieldtype": "Link",
+   "label": "Replaces",
+   "no_copy": 1,
+   "options": "VMMS Deployment Assignment",
+   "read_only": 1
+  },
+  {
+   "description": "Who went instead.",
+   "fieldname": "replaced_by",
+   "fieldtype": "Link",
+   "label": "Replaced By",
+   "no_copy": 1,
+   "options": "VMMS Deployment Assignment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_replacement",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "replacement_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "description": "The manager who authorised the swap.",
+   "fieldname": "replacement_authorised_by",
+   "fieldtype": "Link",
+   "label": "Authorised By",
+   "no_copy": 1,
+   "options": "User",
+   "read_only": 1
   },
   {
    "fieldname": "notes_section",

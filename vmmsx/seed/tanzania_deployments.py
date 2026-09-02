@@ -62,9 +62,11 @@ Idempotent. A second run finds every project by name and does nothing.
 import frappe
 from frappe.utils import add_days, today
 
-from vmmsx.seed import tanzania
+from vmmsx.seed import mission, tanzania
 
-PROJECT_DOCTYPE = "VMMS Project"
+# ERPNext's own, adopted as the programme of work; `VMMS Project` was retired
+# for it. See `deployment/services/project.py`.
+PROJECT_DOCTYPE = "Project"
 TERMS_DOCTYPE = "VMMS Terms of Reference"
 DEPLOYMENT_DOCTYPE = "VMMS Deployment"
 ASSIGNMENT_DOCTYPE = "VMMS Deployment Assignment"
@@ -221,17 +223,35 @@ PROJECTS = (
 			" the next heavy season rather than during it."
 		),
 	},
+	# The programme the society's standing services are written under. Every
+	# terms of reference belongs to a programme now, and a branch first aid rota
+	# or a family links desk genuinely is one: a piece of work the society runs
+	# continuously rather than a campaign with an end. Anchored nationally, and
+	# deliberately left open — standing work does not finish.
+	{
+		"key": "standing-services",
+		"name": "Branch Standing Services",
+		"where": ("national",),
+		"status": "Active",
+		"start_in": -365,
+		"end_in": 365,
+		"summary": (
+			"The services the society runs all year rather than as a campaign: branch first aid"
+			" duty, the blood drive rota, and the restoring family links desk."
+		),
+	},
 )
 
 PROJECTS_BY_KEY = {project["key"]: project for project in PROJECTS}
 
 # --- the terms the work is done under -----------------------------------------
 #
-# `project` is one of `PROJECTS`' keys, or absent. **Two of these have no
-# project on purpose**: a branch's standing first aid duty and the family links
-# desk are not programmes with a start and an end, and a demo in which
-# everything has been filed under something teaches that the link is mandatory
-# when the field is deliberately optional.
+# `project` is one of `PROJECTS`' keys. **Every one of them has a project**, and
+# that changed: the two standing services — branch first aid duty and the family
+# links desk — used to have none, on the grounds that neither is a programme
+# with a start and an end. They now sit under `standing-services`, which is that
+# argument answered rather than abandoned: continuous work is still a programme,
+# and a terms of reference cannot be submitted without one.
 #
 # `requires` is (certification type, mandatory). A mandatory requirement is what
 # `matching.candidates()` filters on, so the three terms carrying one are the
@@ -333,7 +353,12 @@ TERMS = (
 			("direct_service", "Two shifts a day, 07:00 to 19:00 and 19:00 to 07:00, four people each."),
 			("observation", "Occupancy counted at every shift change. Nobody sleeps here unregistered."),
 		),
-		"itinerary": (),
+		"itinerary": (
+			(-36, "07:00", "Site survey and agreement with the school", "Centre Manager"),
+			(-35, "08:00", "Sleeping, washing and cooking areas set up", "Centre Manager"),
+			(-34, "06:00", "Registration desk opens and families are received", "Reception team leader"),
+			(-26, "16:00", "Centre handed back and the register closed", "Centre Manager"),
+		),
 		"stakeholders": (
 			("Centre Manager", "", "", ""),
 			("School Head Teacher", "", "", ""),
@@ -374,7 +399,12 @@ TERMS = (
 			("community_mobilisation", "Pairs, never alone, and one of each pair CBHA-certified."),
 			("key_informant_interview", "The ward health officer, at the start and end of each round."),
 		),
-		"itinerary": (),
+		"itinerary": (
+			(-120, "08:00", "Ward briefing with the health officer", "Ward Health Officer"),
+			(-119, "08:30", "Household visits, first cluster", "Team leader"),
+			(-105, "08:30", "Household visits, second cluster", "Team leader"),
+			(-101, "15:00", "Referral list handed to the health facility", "Ward Health Officer"),
+		),
 		"stakeholders": (
 			("Regional Medical Officer", "", "", ""),
 			("Ward Health Officer", "", "", ""),
@@ -408,7 +438,11 @@ TERMS = (
 			("observation", "Water point condition assessed alongside the ward technician."),
 			("training", "Household treatment demonstrated at each point, with attendance recorded."),
 		),
-		"itinerary": (),
+		"itinerary": (
+			(-90, "08:00", "Water point survey with the ward technician", "Ward Water Technician"),
+			(-88, "07:30", "Cleaning and chlorination round", "Team leader"),
+			(-79, "10:00", "Latrine promotion meetings", "Team leader"),
+		),
 		"stakeholders": (("Ward Water Technician", "", "", ""),),
 		"resources": (("Water treatment sachets", -120, 5000, "unit", 200, "Regional health office"),),
 	},
@@ -416,7 +450,7 @@ TERMS = (
 		"key": "road-safety-awareness",
 		"name": "Road Safety Awareness Team",
 		"project": "road-safety",
-		"scope": None,
+		"scope": ("national",),
 		"duration_days": 7,
 		"requires": (),
 		"purpose": "Public awareness at bus stands and schools ahead of the December travel season.",
@@ -438,7 +472,12 @@ TERMS = (
 			),
 			("training", "School sessions where the branch and the head teacher have scheduled one."),
 		),
-		"itinerary": (),
+		"itinerary": (
+			(30, "08:00", "Briefing and materials handover", "Campaign lead"),
+			(31, "07:00", "Bus stand awareness, morning peak", "Team leader"),
+			(34, "10:00", "School assemblies", "Team leader"),
+			(36, "16:00", "Debrief and count of materials distributed", "Campaign lead"),
+		),
 		"stakeholders": (("National Road Safety Council", "", "", ""),),
 		"resources": (("Campaign banner", 24, 40, "unit", 65000, "National headquarters"),),
 	},
@@ -503,7 +542,10 @@ TERMS = (
 			("direct_service", "Reception, refreshment and recovery: three stations, two volunteers each."),
 			("community_mobilisation", "Donor recruitment at the campus and the market the week before."),
 		),
-		"itinerary": (),
+		"itinerary": (
+			(-20, "07:00", "Reception, refreshment and recovery areas set up", "Team leader"),
+			(-19, "08:00", "Drive day: donors received and cared for", "Team leader"),
+		),
 		"stakeholders": (("National Blood Transfusion Service", "", "", ""),),
 		"resources": (("Refreshment pack", -60, 400, "unit", 3000, "NBTS"),),
 	},
@@ -541,7 +583,12 @@ TERMS = (
 				"The district disaster management officer, once per village cluster.",
 			),
 		),
-		"itinerary": (),
+		"itinerary": (
+			(21, "08:00", "Village entry meeting and mapping brief", "Village Chairperson"),
+			(22, "07:30", "Slope walkover and hazard mapping", "Team leader"),
+			(26, "09:00", "Early warning arrangements agreed with the village", "District Disaster Management Officer"),
+			(28, "15:00", "Findings handed to the district office", "District Disaster Management Officer"),
+		),
 		"stakeholders": (
 			("District Disaster Management Officer", "", "", ""),
 			("Village Chairperson", "", "", ""),
@@ -551,8 +598,8 @@ TERMS = (
 	{
 		"key": "branch-first-aid-duty",
 		"name": "Branch First Aid Duty",
-		"project": None,
-		"scope": None,
+		"project": "standing-services",
+		"scope": ("national",),
 		"duration_days": 1,
 		"requires": (("first-aid", True),),
 		"purpose": "The standing first aid post a branch staffs at a public event on request.",
@@ -569,15 +616,19 @@ TERMS = (
 		"objectives": ("Cover the event from gates open to gates closed.",),
 		"outputs": ("A treatment log per duty.",),
 		"approach": (("direct_service", "Never fewer than two on a post: a first aider and an assistant."),),
-		"itinerary": (),
+		"itinerary": (
+			(-7, "07:00", "Post set up and equipment checked", "Post leader"),
+			(-7, "08:00", "First aid post staffed for the event", "Post leader"),
+			(-7, "18:00", "Treatment log handed to the branch", "Post leader"),
+		),
 		"stakeholders": (("Event Organiser", "", "", ""),),
 		"resources": (("First aid kit, post", 0, 2, "unit", 120000, "Branch stock"),),
 	},
 	{
 		"key": "family-links-desk",
 		"name": "Restoring Family Links Desk",
-		"project": None,
-		"scope": None,
+		"project": "standing-services",
+		"scope": ("national",),
 		"duration_days": 30,
 		"requires": (("rfl", True),),
 		"purpose": "Taking tracing requests and following them through the Family Links Network.",
@@ -599,7 +650,11 @@ TERMS = (
 				"The request taken face to face, on the Network's own form, unmodified.",
 			),
 		),
-		"itinerary": (),
+		"itinerary": (
+			(-60, "09:00", "Desk opens and tracing requests are taken", "RFL focal point"),
+			(-45, "09:00", "Case follow-up through the Family Links Network", "RFL focal point"),
+			(-31, "15:00", "Monthly case report to the national focal point", "RFL focal point"),
+		),
 		"stakeholders": (("National RFL Focal Point", "", "", ""),),
 		"resources": (),
 	},
@@ -952,7 +1007,7 @@ def _projects() -> list[dict]:
 	one: a society writes the terms while the programme is running and marks it
 	Completed once the work under it is done, not before.
 	"""
-	from vmmsx.api.deployment import create_project, set_project_status
+	from vmmsx.api.deployment import create_project
 
 	rows = []
 
@@ -980,11 +1035,10 @@ def _projects() -> list[dict]:
 				summary=project["summary"],
 			)
 
-			# Opened Planned by the endpoint, like any other. Anything else is a
-			# move through the grammar, recorded as one — and the furthest this
-			# step goes is Active, whatever the entry's final status is.
-			if project["status"] in ("Active", "Completed"):
-				set_project_status(created["name"], "Active")
+			# Opened Open by the endpoint, like any other, and left there whatever
+			# the entry's final status is. ERPNext expresses "planned" and
+			# "running" as one status, so the only move this seed still makes is
+			# the closing one, and `_close_projects` makes it after the work.
 		finally:
 			frappe.set_user("Administrator")
 
@@ -1088,6 +1142,12 @@ def _terms() -> list[dict]:
 				responsibilities=spec["responsibilities"],
 				geo_scope=_node(spec["scope"]),
 				default_duration_days=spec["duration_days"],
+				# The mission period, taken from the itinerary the entry already
+				# wrote rather than stated twice: a document cannot then say it
+				# runs to Friday and carry an activity on Saturday, which is
+				# exactly what `validate_itinerary` refuses.
+				expected_start_date=add_days(today(), min(day for day, *_ in spec["itinerary"])),
+				expected_end_date=add_days(today(), max(day for day, *_ in spec["itinerary"])),
 				required_certifications=[
 					{"certification_type": key, "is_mandatory": 1 if mandatory else 0}
 					for key, mandatory in spec["requires"]
@@ -1118,12 +1178,20 @@ def _terms() -> list[dict]:
 						"resource": resource,
 						"needed_on": add_days(today(), day),
 						"quantity": quantity,
-						"unit": unit,
+						# A resource line counts in ERPNext's UOM register now, so
+						# the seed's own word for a unit is resolved to one — and
+						# created where ERPNext does not ship it, which is the case
+						# for "kit". See `seed/mission.py::uom`.
+						"unit": mission.uom(unit),
 						"unit_cost": cost,
 						"donor": donor,
 					}
 					for resource, day, quantity, unit, cost, donor in spec["resources"]
 				],
+				# The other half of the resources rule: a mission that lists nothing
+				# has to say so out loud, which is what distinguishes it from a
+				# table somebody had not got to yet.
+				has_no_resources=0 if spec["resources"] else 1,
 			)
 			submit_terms(created["name"])
 		finally:

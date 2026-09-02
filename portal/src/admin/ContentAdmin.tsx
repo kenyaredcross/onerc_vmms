@@ -76,7 +76,7 @@ export default function ContentAdmin() {
 		<>
 			<PageHeading title="Page content" actions={<Pill tone="page">{total} slots</Pill>} />
 
-			<p className="-mt-2 mb-6 max-w-2xl text-[13.5px] text-slate-body">
+			<p className="-mt-2 mb-6 max-w-2xl text-[13.5px] text-muted">
 				Every heading, paragraph, button and photograph in this product is one of these. You
 				can also edit any of them in place, on the page itself, with the pencil.
 			</p>
@@ -92,7 +92,7 @@ export default function ContentAdmin() {
 
 			<div className="mb-6 flex flex-wrap items-center gap-3">
 				<input
-					className="min-w-[240px] flex-1 rounded-card border border-hairline-strong px-3.5 py-2.5 text-[13px] outline-none focus:border-navy"
+					className="min-w-[240px] flex-1 rounded-xl border border-card-line px-3.5 py-2.5 text-[13px] outline-none focus:border-blue"
 					placeholder="Search by wording, label or key"
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
@@ -106,7 +106,7 @@ export default function ContentAdmin() {
 						"whitespace-nowrap rounded-full px-4 py-2 text-[12px] font-semibold transition",
 						onlyEmpty
 							? "bg-ink text-white"
-							: "border border-hairline-strong bg-white text-slate-strong hover:border-navy",
+							: "border border-card-line bg-white text-slate-strong hover:border-blue",
 					)}
 				>
 					Only empty
@@ -119,7 +119,7 @@ export default function ContentAdmin() {
 				{surfaces.map((surface) => (
 					<section key={surface.key}>
 						<div className="mb-3 flex flex-wrap items-center gap-2.5">
-							<h2 className="font-display text-[16px] font-extrabold tracking-tight text-ink">
+							<h2 className="text-[16px] font-semibold tracking-tight text-ink">
 								{surface.label}
 							</h2>
 							{surface.is_public && <Pill tone="page">Public</Pill>}
@@ -188,11 +188,11 @@ function BlockRow({
 					<img
 						src={block.image}
 						alt=""
-						className="h-12 w-20 flex-none rounded-card border border-hairline object-cover"
+						className="h-12 w-20 flex-none rounded-xl border border-card-line object-cover"
 					/>
 				)}
 				<textarea
-					className="min-h-[42px] min-w-[220px] flex-1 resize-y rounded-card border border-hairline-strong px-3 py-2 text-[13px] outline-none focus:border-navy disabled:bg-surface"
+					className="min-h-[42px] min-w-[220px] flex-1 resize-y rounded-xl border border-card-line px-3 py-2 text-[13px] outline-none focus:border-blue disabled:bg-surface"
 					value={value}
 					disabled={!canEdit}
 					onChange={(event) => setValue(event.target.value)}
@@ -202,7 +202,7 @@ function BlockRow({
 					type="button"
 					onClick={commit}
 					disabled={!canEdit || !dirty || busy}
-					className="flex-none rounded-card bg-navy px-4 py-2 text-[12px] font-bold text-white transition hover:bg-navy/90 disabled:opacity-40"
+					className="flex-none rounded-xl bg-rail px-4 py-2 text-[12px] font-bold text-white transition hover:bg-rail/90 disabled:opacity-40"
 				>
 					{busy ? "Saving…" : saved ? "Saved" : "Save"}
 				</button>
@@ -217,7 +217,7 @@ function BlockRow({
 				</p>
 			)}
 
-			{failure && <p className="mt-2 text-[11.5px] text-signal">{failure}</p>}
+			{failure && <p className="mt-2 text-[11.5px] text-blue">{failure}</p>}
 		</Card>
 	);
 }

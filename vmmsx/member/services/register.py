@@ -88,6 +88,7 @@ def search(
 	status: str | None = None,
 	membership_type: str | None = None,
 	current_only: bool = False,
+	search: str | None = None,
 	as_of=None,
 	limit: int = 100,
 	offset: int = 0,
@@ -99,6 +100,13 @@ def search(
 	database can be asked about; `current_only` filters on the *effective* one,
 	derived per row as at `as_of`, which is a question no query can answer and
 	so is applied after the read.
+
+	`search` matches a person's name, their member docname or the membership's
+	own docname, and it narrows the same scoped result everything else here
+	narrows: it is not a way to reach somebody outside the caller's own area.
+	Applied after the read for the same reason `current_only` is — the name is
+	not a column on `VMMS Membership`, it is read live from Red Profile, so no
+	query could have filtered on it.
 
 	`as_of` is resolved once here and threaded into every row's derivation, the
 	same rule the dossier follows and for the same reason.
@@ -150,6 +158,11 @@ def search(
 	if current_only:
 		rows = [row for row in rows if row["is_current"]]
 
+	needle = (search or "").strip().lower()
+
+	if needle:
+		rows = [row for row in rows if _matches(row, needle)]
+
 	page = rows[offset : offset + limit] if limit else rows
 
 	return {
@@ -165,6 +178,20 @@ def search(
 		"as_of": as_of,
 		"rows": page,
 	}
+
+
+def _matches(row: dict, needle: str) -> bool:
+	"""Does this row answer to what somebody typed?
+
+	Three fields, because a coordinator searching a register knows one of three
+	things: who the person is, what their member record is called, or what the
+	membership itself is called. Case-folded, substring, and nothing cleverer —
+	a register search that guessed would be a register search nobody trusts.
+	"""
+	return any(
+		needle in (row.get(field) or "").lower()
+		for field in ("full_name", "member", "membership")
+	)
 
 
 def _row(record, as_of, names: dict, type_names: dict) -> dict:

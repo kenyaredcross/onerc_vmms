@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "creation": "2026-09-01 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "gateway_section",
+  "enabled",
+  "gateway_url",
+  "column_break_gateway",
+  "session_id",
+  "api_key",
+  "pacing_section",
+  "pacing_seconds",
+  "randomise_pacing",
+  "column_break_pacing",
+  "daily_limit",
+  "opt_out_section",
+  "opt_out_notice",
+  "opt_out_keywords",
+  "column_break_opt_out",
+  "webhook_token"
+ ],
+ "fields": [
+  {
+   "fieldname": "gateway_section",
+   "fieldtype": "Section Break",
+   "label": "Gateway"
+  },
+  {
+   "default": "0",
+   "description": "Until this is on, the Communication screen does not offer WhatsApp at all.",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "description": "Where the society's open-wa gateway answers, without a trailing slash. For example http://localhost:2785, or https://wa.example.org behind your own certificate.",
+   "fieldname": "gateway_url",
+   "fieldtype": "Data",
+   "label": "Gateway Address"
+  },
+  {
+   "fieldname": "column_break_gateway",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The identifier of the linked session on that gateway. It is created once, when the society's phone scans the code, and does not change afterwards.",
+   "fieldname": "session_id",
+   "fieldtype": "Data",
+   "label": "Session"
+  },
+  {
+   "description": "A key from the gateway with permission to send. Stored encrypted and never shown again once saved.",
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "pacing_section",
+   "fieldtype": "Section Break",
+   "label": "Pacing"
+  },
+  {
+   "default": "3",
+   "description": "Seconds to wait between messages. Sending a broadcast in a burst is what gets a number restricted; this is the setting that stops that, and lowering it is a decision about the society's own number.",
+   "fieldname": "pacing_seconds",
+   "fieldtype": "Int",
+   "label": "Seconds Between Messages"
+  },
+  {
+   "default": "1",
+   "description": "Vary the wait either side of that figure, so the sending does not arrive on a metronome.",
+   "fieldname": "randomise_pacing",
+   "fieldtype": "Check",
+   "label": "Vary The Wait"
+  },
+  {
+   "fieldname": "column_break_pacing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "The most messages to send in one day, across every broadcast. Zero means no limit. A broadcast that reaches the limit stops and finishes the next day; nobody is dropped.",
+   "fieldname": "daily_limit",
+   "fieldtype": "Int",
+   "label": "Daily Limit"
+  },
+  {
+   "fieldname": "opt_out_section",
+   "fieldtype": "Section Break",
+   "label": "Leaving"
+  },
+  {
+   "default": "Reply STOP to stop receiving messages from us.",
+   "description": "Added to the end of every broadcast. Clear it to send nothing extra.",
+   "fieldname": "opt_out_notice",
+   "fieldtype": "Small Text",
+   "label": "Opt-Out Notice"
+  },
+  {
+   "default": "STOP\nUNSUBSCRIBE",
+   "description": "One word per line. A reply that is only one of these words takes that number off the list. Add the word your own volunteers would actually use in their own language \u2014 the two here are a starting point, not a complete list.",
+   "fieldname": "opt_out_keywords",
+   "fieldtype": "Small Text",
+   "label": "Opt-Out Words"
+  },
+  {
+   "fieldname": "column_break_opt_out",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "A secret of your choosing. Set the same value as a header on the gateway's webhook so this site can tell a real reply from anything else that finds the address.",
+   "fieldname": "webhook_token",
+   "fieldtype": "Password",
+   "label": "Webhook Token"
+  }
+ ],
+ "grid_page_length": 50,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Notification",
+ "name": "VMMS WhatsApp Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

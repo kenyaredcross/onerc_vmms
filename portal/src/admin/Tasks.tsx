@@ -93,8 +93,8 @@ export default function AdminTasks() {
 						className={cx(
 							"rounded-full border px-3.5 py-1.5 text-[12px] font-semibold capitalize transition",
 							status === option
-								? "border-navy bg-navy text-white"
-								: "border-hairline-strong bg-white text-slate-body hover:border-navy hover:text-navy",
+								? "border-blue bg-rail text-white"
+								: "border-card-line bg-white text-muted hover:border-blue hover:text-ink",
 						)}
 					>
 						{option || "All"}
@@ -121,17 +121,17 @@ export default function AdminTasks() {
 									type="button"
 									onClick={() => setOpen(row.name)}
 									className={cx(
-										"w-full rounded-card border bg-white px-4 py-3 text-left transition",
+										"w-full rounded-xl border bg-white px-4 py-3 text-left transition",
 										(open ?? rows[0]?.name) === row.name
-											? "border-navy shadow-card"
-											: "border-hairline hover:border-hairline-strong",
+											? "border-blue border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]"
+											: "border-card-line hover:border-card-line",
 									)}
 								>
 									<div className="flex items-start justify-between gap-2">
 										<span className="text-[13.5px] font-bold text-ink">{row.subject}</span>
 										<TaskState status={row.status} />
 									</div>
-									<div className="mt-1 text-[11.5px] text-slate-body">
+									<div className="mt-1 text-[11.5px] text-muted">
 										{row.volunteer}
 										{row.due_on ? ` · due ${formatDate(row.due_on)}` : ""}
 										{row.open_question && " · question waiting"}
@@ -187,7 +187,7 @@ function SupervisePane({ name, onChanged }: { name: string; onChanged: () => voi
 			<Card>
 				<div className="mb-4 flex flex-wrap items-start justify-between gap-3">
 					<div>
-						<h2 className="font-display text-[19px] font-extrabold tracking-tight text-ink">
+						<h2 className="text-[19px] font-semibold tracking-tight text-ink">
 							{task.subject}
 						</h2>
 						<p className="mt-1 font-mono text-[12px] text-slate-faint">
@@ -197,12 +197,12 @@ function SupervisePane({ name, onChanged }: { name: string; onChanged: () => voi
 					<TaskState status={task.status} />
 				</div>
 
-				<p className="whitespace-pre-wrap border-y border-hairline py-4 text-[13.5px] leading-relaxed text-slate-strong">
+				<p className="whitespace-pre-wrap border-y border-card-line py-4 text-[13.5px] leading-relaxed text-slate-strong">
 					{task.description}
 				</p>
 
 				{task.completion_notes && (
-					<div className="border-b border-hairline py-4">
+					<div className="border-b border-card-line py-4">
 						<SectionTitle>What they said when they finished</SectionTitle>
 						<p className="whitespace-pre-wrap text-[13px] text-slate-strong">
 							{task.completion_notes}
@@ -226,7 +226,7 @@ function SupervisePane({ name, onChanged }: { name: string; onChanged: () => voi
 						</label>
 						<textarea
 							id="supervise-note"
-							className="min-h-[76px] w-full resize-y rounded-card border border-hairline-strong px-3 py-2.5 text-[13px] outline-none focus:border-navy"
+							className="min-h-[76px] w-full resize-y rounded-xl border border-card-line px-3 py-2.5 text-[13px] outline-none focus:border-blue"
 							value={note}
 							onChange={(event) => setNote(event.target.value)}
 						/>
@@ -416,7 +416,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 }
 
 const INPUT =
-	"w-full rounded-card border border-hairline-strong px-3 py-2.5 text-[13px] outline-none focus:border-navy";
+	"w-full rounded-xl border border-card-line px-3 py-2.5 text-[13px] outline-none focus:border-blue";
 
 function Labelled({
 	label,
@@ -478,7 +478,7 @@ function VolunteerPicker({
 
 	if (value) {
 		return (
-			<div className="flex items-center gap-2 rounded-card border border-hairline bg-surface px-3 py-2">
+			<div className="flex items-center gap-2 rounded-xl border border-card-line bg-surface px-3 py-2">
 				<span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
 					{chosen?.full_name || value}
 					<span className="ml-2 font-normal text-slate-faint">{value}</span>
@@ -489,7 +489,7 @@ function VolunteerPicker({
 						onChange("");
 						setTerm("");
 					}}
-					className="flex-none rounded px-2 py-1 text-[11px] font-bold text-slate-body hover:text-ink"
+					className="flex-none rounded px-2 py-1 text-[11px] font-bold text-muted hover:text-ink"
 				>
 					Change
 				</button>
@@ -512,7 +512,7 @@ function VolunteerPicker({
 			/>
 
 			{open && query.length >= 2 && (
-				<div className="absolute z-20 mt-1 w-full overflow-hidden rounded-card border border-hairline bg-white shadow-lg">
+				<div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-card-line bg-white shadow-lg">
 					{isLoading && <p className="px-3 py-2 text-[12px] text-slate-faint">Searching…</p>}
 
 					{!isLoading && !rows.length && (

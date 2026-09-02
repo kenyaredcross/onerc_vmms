@@ -49,7 +49,7 @@ export function SearchField({
 				</label>
 			)}
 
-			<div className="control border border-hairline-strong bg-white">
+			<div className="control border border-card-line bg-white">
 				<Icon.search size={15} className="flex-none text-slate-faint" />
 				<input
 					id={id}
@@ -102,7 +102,7 @@ export function FilterSelect({
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
 				aria-label={showLabel ? undefined : label}
-				className="w-full rounded-full border border-hairline-strong bg-white px-4 py-2.5 text-[13px] text-ink outline-none"
+				className="w-full rounded-full border border-card-line bg-white px-4 py-2.5 text-[13px] text-ink outline-none"
 			>
 				{options.map((option) => (
 					<option key={option.value} value={option.value}>
@@ -142,7 +142,7 @@ export function FilterBar({
 
 				{children && (
 					<details className="group min-w-0 lg:hidden">
-						<summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-full border border-hairline-strong bg-white px-4 py-2.5 text-[13px] font-medium text-slate-strong">
+						<summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-full border border-card-line bg-white px-4 py-2.5 text-[13px] font-medium text-slate-strong">
 							<Icon.filter size={15} className="flex-none text-slate-faint" />
 							Filters
 							{count !== undefined && count > 0 && (
@@ -199,7 +199,7 @@ export function FolderCard({
 	return (
 		<Link
 			to={to}
-			className="card group flex h-full flex-col overflow-hidden transition duration-200 hover:shadow-lift focus-visible:shadow-lift"
+			className="card group flex h-full flex-col overflow-hidden transition duration-200 hover:shadow-[0_2px_10px_rgba(30,50,73,0.07)] focus-visible:shadow-[0_2px_10px_rgba(30,50,73,0.07)]"
 		>
 			<div className="grid h-[128px] place-items-center bg-surface">
 				<svg
@@ -222,7 +222,7 @@ export function FolderCard({
 			</div>
 
 			<div className="flex flex-1 flex-col gap-1.5 px-5 pb-4 pt-4">
-				<h3 className="font-display text-[14.5px] font-medium leading-snug tracking-tight text-ink">
+				<h3 className="text-[14.5px] font-medium leading-snug tracking-tight text-ink">
 					{name}
 				</h3>
 				{summary && (
@@ -230,7 +230,7 @@ export function FolderCard({
 				)}
 			</div>
 
-			<div className="flex items-center justify-between gap-3 border-t border-hairline-soft px-5 py-3">
+			<div className="flex items-center justify-between gap-3 border-t border-card-line px-5 py-3">
 				<span className="tabular min-w-0 truncate text-[11.5px] text-muted">{counts}</span>
 				{status && <StateBadge state={status} />}
 			</div>
@@ -308,7 +308,7 @@ export function DiscoveryHero({
 		<div className="mb-6">
 			<div
 				className={cx(
-					"rounded-feature bg-authority px-6 text-center text-white sm:px-10",
+					"rounded-2xl bg-rail px-6 text-center text-white sm:px-10",
 					children ? "pb-20 pt-12 sm:pb-24 sm:pt-16" : "py-12 sm:py-16",
 				)}
 			>
@@ -318,7 +318,7 @@ export function DiscoveryHero({
 					</p>
 				)}
 
-				<h2 className="mx-auto max-w-2xl text-balance font-display text-[28px] font-medium leading-[1.15] tracking-tight sm:text-[36px]">
+				<h2 className="mx-auto max-w-2xl text-balance text-[28px] font-medium leading-[1.15] tracking-tight sm:text-[36px]">
 					{title}
 				</h2>
 
@@ -379,7 +379,7 @@ export function ActivityTile({
 				)}
 			</div>
 
-			<div className="tabular mt-3 font-display text-[26px] font-medium leading-none tracking-tight text-ink">
+			<div className="tabular mt-3 text-[26px] font-medium leading-none tracking-tight text-ink">
 				{value}
 			</div>
 
@@ -388,7 +388,7 @@ export function ActivityTile({
 	);
 
 	const shell = cx(
-		"block rounded-control px-4 py-3.5 transition",
+		"block rounded-lg px-4 py-3.5 transition",
 		selected ? "bg-blue-soft" : "bg-surface",
 	);
 
@@ -429,7 +429,7 @@ export function FeaturePanel({
 	link?: { to: string; label: string };
 }) {
 	return (
-		<section className="relative overflow-hidden rounded-card bg-authority p-6 text-white">
+		<section className="relative overflow-hidden rounded-xl bg-rail p-6 text-white">
 			{/* The soft arc in the approved design. Decorative, drawn with a
 			    border rather than an image so it costs nothing and inherits
 			    nothing that could fail to load. */}
@@ -451,7 +451,7 @@ export function FeaturePanel({
 					)}
 				</div>
 
-				<h3 className="mt-2 font-display text-[19px] font-medium tracking-tight">{title}</h3>
+				<h3 className="mt-2 text-[19px] font-medium tracking-tight">{title}</h3>
 
 				{children && (
 					<div className="mt-2 max-w-xl text-[12.5px] leading-relaxed text-white/70">{children}</div>
@@ -499,7 +499,7 @@ export function DatedRow({
 		<>
 			<time
 				dateTime={iso}
-				className="grid h-11 w-11 flex-none place-content-center rounded-control bg-surface text-center leading-none"
+				className="grid h-11 w-11 flex-none place-content-center rounded-lg bg-surface text-center leading-none"
 			>
 				<span className="tabular block text-[14px] font-medium text-ink">{day}</span>
 				<span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-wider text-muted">
@@ -516,7 +516,7 @@ export function DatedRow({
 
 	if (to) {
 		return (
-			<Link to={to} className="flex items-center gap-3 rounded-control p-1 transition hover:bg-surface">
+			<Link to={to} className="flex items-center gap-3 rounded-lg p-1 transition hover:bg-surface">
 				{body}
 			</Link>
 		);

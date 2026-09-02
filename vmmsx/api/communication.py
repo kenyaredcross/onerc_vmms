@@ -1,9 +1,9 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""Addressing the people a branch is responsible for, on three channels.
+"""Addressing the people a branch is responsible for, on four channels.
 
-One screen in the console, three ways of reaching the same audience, and the
+One screen in the console, four ways of reaching the same audience, and the
 audience is resolved once for all of them — `notifications/services/audience.py`,
 which is what `VMMS Announcement`'s fan-out has always used. That single
 resolver is the whole point: a coordinator who sends a notification and then
@@ -14,10 +14,21 @@ second send re-asks a question the first one answered.
     email          the same words to everybody with an address, login or not
     sms            a Draft `SMS Campaign` filed with onerc_sms, for its own
                    approval workflow to release
+    whatsapp       a draft `VMMS WhatsApp Broadcast`, for somebody with submit
+                   permission to approve and a worker to pace out
 
 The first two are `announce.publish()`, unchanged and already idempotent. The
 third is `notifications/services/campaign.py`, which is the seam to a companion
-app and sends nothing itself.
+app and sends nothing itself. The fourth is
+`notifications/services/whatsapp.py`, the seam to the society's own open-wa
+gateway, and it sends nothing from this request either.
+
+**The two filed channels are filed for different reasons, and the difference is
+worth keeping straight.** SMS is filed because the approval policy belongs to
+another app and this one does not overrule it. WhatsApp is filed because a
+broadcast on the society's own WhatsApp number is the one send here that can
+cost the society the channel itself, and a second pair of eyes is cheap against
+that. Neither is filed because filing is tidy.
 
 **Scope is a check made once, at the top, on the anchor.** Every endpoint here
 that reaches people takes a `geo_node` and asserts the caller may create an
@@ -42,7 +53,7 @@ is going to 4,300 people" a decision rather than a discovery.
 import frappe
 from frappe import _
 
-from vmmsx.notifications.services import announce, audience, campaign
+from vmmsx.notifications.services import announce, audience, campaign, whatsapp
 
 ANNOUNCEMENT_DOCTYPE = "VMMS Announcement"
 
@@ -52,6 +63,7 @@ ANNOUNCEMENT_DOCTYPE = "VMMS Announcement"
 CHANNEL_NOTIFICATION = "notification"
 CHANNEL_EMAIL = "email"
 CHANNEL_SMS = "sms"
+CHANNEL_WHATSAPP = "whatsapp"
 
 
 @frappe.whitelist()
@@ -67,7 +79,10 @@ def options() -> dict:
 	this app's own and are available to anybody who may open the screen; SMS
 	depends on a companion app being installed *and* on onerc_sms's own
 	permissions admitting them, so a coordinator without it sees two channels
-	rather than a third that would refuse them.
+	rather than a third that would refuse them. WhatsApp is the same shape for a
+	different reason — it needs a gateway the society has actually stood up and
+	linked to a phone — and it is answered without calling that gateway, so a
+	container that is down slows nobody's screen down.
 	"""
 	_assert_may_read()
 
@@ -109,6 +124,7 @@ def options() -> dict:
 			CHANNEL_NOTIFICATION: True,
 			CHANNEL_EMAIL: True,
 			CHANNEL_SMS: campaign.available(),
+			CHANNEL_WHATSAPP: whatsapp.available(),
 		},
 		"sms_templates": sms_templates,
 		"sms_source_doctypes": sms_source_doctypes,
@@ -122,12 +138,16 @@ def options() -> dict:
 def preview(geo_node: str, who: str) -> dict:
 	"""How many people this would reach, per channel, before anything is sent.
 
-	Three counts from one resolved set, because they are genuinely three
-	different numbers and a screen that showed one of them would mislead:
-	`notification` needs a login, `email` needs an address, `sms` needs a number
-	with a country code, and the people who have each are three overlapping sets.
-	Somebody enrolled at a branch counter years ago may be reachable only by
-	phone.
+	Four counts from one resolved set, because they are genuinely four different
+	numbers and a screen that showed one of them would mislead: `notification`
+	needs a login, `email` needs an address, `sms` needs a number with a country
+	code, `whatsapp` needs that same number minus everybody who has asked to be
+	left alone, and the people who have each are four overlapping sets. Somebody
+	enrolled at a branch counter years ago may be reachable only by phone.
+
+	`whatsapp` is the only one of the four that can be smaller than `sms` for a
+	reason that is not missing data: somebody who replied STOP is deliberately
+	not in it, and that gap is the channel working.
 
 	`addressed` is the size of the audience itself — the honest denominator, and
 	the number that makes a low reach visible as a data problem rather than as a
@@ -144,6 +164,7 @@ def preview(geo_node: str, who: str) -> dict:
 		CHANNEL_NOTIFICATION: len(set(audience.logins(addressed).values())),
 		CHANNEL_EMAIL: len(audience.emails(addressed)),
 		CHANNEL_SMS: campaign.reachable(geo_node, who)["reachable"] if campaign.installed() else 0,
+		CHANNEL_WHATSAPP: whatsapp.reachable(geo_node, who)["reachable"] if whatsapp.configured() else 0,
 	}
 
 
@@ -169,6 +190,8 @@ def send(
 	sms_filters: list | str | None = None,
 	sms_csv_file: str | None = None,
 	sms_phone_numbers: str | None = None,
+	whatsapp_message: str | None = None,
+	whatsapp_scheduled_at: str | None = None,
 ) -> dict:
 	"""Compose and send on every channel asked for. Returns what each one did.
 
@@ -186,6 +209,13 @@ def send(
 	is that wording; falling back to the summary or the body is a convenience,
 	not a merge.
 
+	**WhatsApp is a separate document for the same reason and a different one.**
+	Its wording is its own — a WhatsApp message is read on a phone in a thread
+	beside messages from family, and an announcement's formal register reads
+	oddly there — and it is filed rather than sent because approving it is a
+	submit somebody else performs. `whatsapp_message` is that wording, with the
+	same fallback and the same caveat.
+
 	The report names each channel and what happened, including the channels that
 	were not asked for, so a screen can say "notification: 412, email: 380, sms:
 	not sent" rather than leaving a reader to infer silence.
@@ -197,7 +227,7 @@ def send(
 	if not chosen:
 		frappe.throw(_("Choose at least one way to reach them."), frappe.ValidationError)
 
-	unknown = chosen - {CHANNEL_NOTIFICATION, CHANNEL_EMAIL, CHANNEL_SMS}
+	unknown = chosen - {CHANNEL_NOTIFICATION, CHANNEL_EMAIL, CHANNEL_SMS, CHANNEL_WHATSAPP}
 
 	if unknown:
 		# Refused rather than ignored: a channel the caller believes it asked for
@@ -211,7 +241,7 @@ def send(
 			title=_("Unknown Channel"),
 		)
 
-	report: dict = {"announcement": None, "sms": None}
+	report: dict = {"announcement": None, "sms": None, "whatsapp": None}
 
 	if chosen & {CHANNEL_NOTIFICATION, CHANNEL_EMAIL}:
 		announcement = _publish(
@@ -234,20 +264,29 @@ def send(
 		report["email_sent"] = CHANNEL_EMAIL in chosen
 
 	if CHANNEL_SMS in chosen:
-			report["sms"] = campaign.draft(
+		report["sms"] = campaign.draft(
 			name=title,
 			message=(sms_message or summary or body or "").strip(),
 			geo_node=geo_node,
 			who=who,
 			template=sms_template,
-				scheduled_at=sms_scheduled_at,
-				source_type=sms_source_type,
-				source_doctype=sms_source_doctype,
-				phone_field=sms_phone_field,
-				filters=frappe.parse_json(sms_filters) if isinstance(sms_filters, str) else sms_filters,
-				csv_file=sms_csv_file,
-				phone_numbers=sms_phone_numbers,
-			)
+			scheduled_at=sms_scheduled_at,
+			source_type=sms_source_type,
+			source_doctype=sms_source_doctype,
+			phone_field=sms_phone_field,
+			filters=frappe.parse_json(sms_filters) if isinstance(sms_filters, str) else sms_filters,
+			csv_file=sms_csv_file,
+			phone_numbers=sms_phone_numbers,
+		)
+
+	if CHANNEL_WHATSAPP in chosen:
+		report["whatsapp"] = whatsapp.draft(
+			title=title,
+			message=(whatsapp_message or summary or body or "").strip(),
+			geo_node=geo_node,
+			who=who,
+			scheduled_at=whatsapp_scheduled_at,
+		)
 
 	return report
 
@@ -298,9 +337,7 @@ def _select_options(meta, fieldname: str) -> list[str]:
 	field = meta.get_field(fieldname)
 
 	return [
-		option.strip()
-		for option in ((field.options if field else "") or "").split("\n")
-		if option.strip()
+		option.strip() for option in ((field.options if field else "") or "").split("\n") if option.strip()
 	]
 
 

@@ -18,7 +18,18 @@ original never see. `amended_from` records the chain.
 **Retiring is not cancelling.** `is_active` is what a society un-ticks when it
 stops using a piece of work, and it leaves every deployment run under it intact.
 Cancelling a submitted document is for a terms of reference that should never
-have existed, and `on_cancel` refuses it once anything points at it.
+have existed, and `on_cancel` refuses it once anything points at it. A mission
+that has to be *respecified* while people are already in the field is neither of
+those, and gets `terms.supersede` — a fresh document carrying the mission across,
+with a link back, and the original left exactly as everybody agreed to it.
+
+**Finished before frozen, and approved before finished where a society says so.**
+`before_submit` is the one door every submission goes through — the desk's own
+button, the API and a test alike — and it asks two questions: is the mission
+document complete (`terms.REQUIRED_AT_SUBMISSION`), and, where this society has
+configured a `VMMS Approval Workflow` for terms of reference, have its approvers
+finished saying yes. There is exactly one approval status on the record, the
+engine's; `docstatus` is its consequence and not a second opinion about it.
 
 Four things on it are read by code, and each is a society's answer rather than
 this app's:
@@ -42,16 +53,37 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, getdate
 
-from vmmsx.deployment.services import terms
+from vmmsx.deployment.services import project, terms
 
 
 class VMMSTermsofReference(Document):
 	def validate(self):
+		self.validate_project()
 		self.validate_requirements()
 		self.validate_approval_mode()
 		self.validate_period()
 		self.validate_itinerary()
 		self.price_resources()
+
+	def validate_project(self):
+		"""New work may only be written under a programme that is still open.
+
+		**Only when the link changes.** A draft written under a programme the
+		society has since completed is a real and ordinary situation — somebody
+		closed the programme while a specification under it was half-written — and
+		a rule that fired on every save would make that draft unopenable and
+		unfixable. What is refused is *pointing* a terms of reference at a closed
+		programme, which is the act the rule is about.
+		"""
+		if not self.project:
+			return
+
+		before = self.get_doc_before_save() if not self.is_new() else None
+
+		if before and before.project == self.project:
+			return
+
+		project.assert_open(self.project)
 
 	def validate_requirements(self):
 		"""One row per certification type. Two would be two answers to one question.
@@ -147,30 +179,49 @@ class VMMSTermsofReference(Document):
 		for row in self.resources or []:
 			row.total_cost = flt(row.quantity) * flt(row.unit_cost)
 
+	def before_submit(self):
+		"""Finished, and — where the society routes them — approved.
+
+		The one door. The desk's Submit button, `terms.submit`, `try_freeze` and a
+		test all arrive here, which is what stops the form being a way round the
+		rule. `terms.assert_may_freeze` holds both halves and says why.
+		"""
+		terms.assert_may_freeze(self)
+
+	def on_update(self):
+		"""Freeze the wording once the society's approvers have finished. Idempotent.
+
+		A predicate, not a step in a sequence: `try_freeze` asks whether this is a
+		draft whose approval has landed, off the record rather than off which code
+		path ran, so it is safe after any event and in any order. That is how a
+		decision recorded by the approval engine becomes a submitted document
+		without the engine knowing that terms of reference exist — the same shape
+		`VMMS Deployment Request` uses to become a deployment.
+		"""
+		terms.try_freeze(self)
+
 	def on_cancel(self):
 		"""Refuse to cancel terms that something already points at.
 
 		Cancelling is for a document that should never have existed. Once a
 		deployment or a request has been raised under these terms, the way to stop
 		offering them is to un-tick `is_active`, which keeps the history that
-		cancelling would orphan. Frappe's own link check would catch the deployment
+		cancelling would orphan; and the way to respecify the mission is
+		`terms.supersede`, which writes a new document and leaves what people
+		already agreed to alone. Frappe's own link check would catch the deployment
 		on delete but not on cancel, so this is said explicitly.
 		"""
-		for doctype, label in (
-			("VMMS Deployment", _("deployment")),
-			("VMMS Deployment Request", _("request")),
-		):
-			count = frappe.db.count(doctype, {"terms_of_reference": self.name})
-
+		for doctype, count in terms.references(self.name).items():
 			if not count:
 				continue
 
 			frappe.throw(
 				_(
-					"{0} cannot be cancelled: {1} {2}(s) have been raised under it. To stop offering"
-					" this work, un-tick Is Active instead — that keeps everything already run under"
-					" these terms exactly as it is."
-				).format(frappe.bold(self.tor_name or self.name), count, label),
+					"{0} cannot be cancelled: {1} {2} record(s) have been raised under it. To stop"
+					" offering this work, un-tick Is Active instead; to respecify the mission,"
+					" supersede it. Either way everything already run under these terms stays"
+					" exactly as it is."
+				).format(frappe.bold(self.tor_name or self.name), count, _(doctype)),
 				frappe.ValidationError,
 				title=_("Terms Already In Use"),
 			)

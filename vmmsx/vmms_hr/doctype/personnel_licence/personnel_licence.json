@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-31 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "license_type",
+  "license_name",
+  "institution",
+  "description",
+  "attachment",
+  "column_break_mxfd",
+  "qualification",
+  "registration_no",
+  "does_not_expire",
+  "valid_from",
+  "valid_to"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "license_type",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "License Type",
+   "options": "Personnel License Type",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "institution",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Institution",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Description"
+  },
+  {
+   "columns": 2,
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  },
+  {
+   "fieldname": "column_break_mxfd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "qualification",
+   "fieldtype": "Data",
+   "label": "Qualification",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "registration_no",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Registration No"
+  },
+  {
+   "columns": 1,
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "depends_on": "eval: doc.does_not_expire == 0",
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "label": "Valid To",
+   "mandatory_depends_on": "eval: doc.does_not_expire == 0"
+  },
+  {
+   "columns": 2,
+   "depends_on": "eval: doc.license_type == \"Other\"",
+   "fieldname": "license_name",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "License Name",
+   "mandatory_depends_on": "eval: doc.license_type == \"Other\""
+  },
+  {
+   "default": "0",
+   "fieldname": "does_not_expire",
+   "fieldtype": "Check",
+   "label": "Does not expire"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-31 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS HR",
+ "name": "Personnel Licence",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

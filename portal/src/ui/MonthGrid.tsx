@@ -149,7 +149,7 @@ export function MonthGrid({
 			<div className="mb-3 flex items-center justify-between gap-2">
 				<h3
 					className={cx(
-						"font-display font-bold tracking-tight text-ink",
+						"font-bold tracking-tight text-ink",
 						compact ? "text-[13.5px]" : "text-[16px]",
 					)}
 				>
@@ -235,19 +235,19 @@ function Day({
 	const any = (mark?.total ?? 0) > 0;
 
 	const shape = cx(
-		"relative grid place-items-center rounded-control font-display font-bold tabular-nums transition",
+		"relative grid place-items-center rounded-lg font-bold tabular-nums transition",
 		compact ? "h-8 text-[11.5px]" : "h-11 text-[13px]",
 	);
 
 	const tone = selected
-		? "bg-navy text-white"
+		? "bg-rail text-white"
 		: mine
-			? "bg-signal text-white hover:bg-signal-dark"
+			? "bg-blue text-white hover:bg-blue-press"
 			: any
-				? "bg-tint-navy-soft text-navy hover:bg-hairline"
+				? "bg-tint-navy-soft text-ink hover:bg-card-line"
 				: outside
 					? "text-slate-faint/60"
-					: "text-slate-body";
+					: "text-muted";
 
 	// What the day says out loud. A screen reader gets the whole sentence rather
 	// than a number, because "14" on its own is the one thing the visual
@@ -268,7 +268,7 @@ function Day({
 	if (!any || !onSelect) {
 		return (
 			<div
-				className={cx(shape, tone, today && !selected && !mine && "ring-1 ring-inset ring-navy/35")}
+				className={cx(shape, tone, today && !selected && !mine && "ring-1 ring-inset ring-blue/35")}
 				aria-label={label}
 			>
 				{day}
@@ -285,8 +285,8 @@ function Day({
 			className={cx(
 				shape,
 				tone,
-				"focus:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-1",
-				today && !selected && !mine && "ring-1 ring-inset ring-navy/35",
+				"focus:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-1",
+				today && !selected && !mine && "ring-1 ring-inset ring-blue/35",
 				outside && "opacity-60",
 			)}
 		>
@@ -297,7 +297,7 @@ function Day({
 			{any && !mine && !selected && (
 				<span
 					aria-hidden="true"
-					className="absolute bottom-1 h-1 w-1 rounded-full bg-navy/50"
+					className="absolute bottom-1 h-1 w-1 rounded-full bg-rail/50"
 				/>
 			)}
 		</button>
@@ -318,7 +318,7 @@ function Step({
 			type="button"
 			onClick={onClick}
 			aria-label={label}
-			className="grid h-7 w-7 place-items-center rounded-full text-slate-faint transition hover:bg-surface hover:text-navy"
+			className="grid h-7 w-7 place-items-center rounded-full text-slate-faint transition hover:bg-surface hover:text-ink"
 		>
 			<Icon.chevron size={15} className={rotate} />
 		</button>

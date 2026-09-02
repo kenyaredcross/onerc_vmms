@@ -37,7 +37,7 @@ from vmmsx.member.services import certificate
 from vmmsx.member.services import member as member_service
 from vmmsx.member.services import membership as membership_service
 from vmmsx.member.services import renewal as renewal_service
-from vmmsx.registration.services import questions
+from vmmsx.registration.services import declarations, questions
 
 MEMBERSHIP_DOCTYPE = "VMMS Membership"
 MEMBER_DOCTYPE = "VMMS Member"
@@ -83,6 +83,50 @@ def apply_for_membership(
 	membership.insert()
 
 	return membership_service.submit(membership)
+
+
+@frappe.whitelist()
+def verify_membership_proof(
+	membership: str,
+	proof_verified_start_date: str | None = None,
+	proof_verified_expiry_date: str | None = None,
+) -> dict:
+	"""Record the dates an approver read off the uploaded evidence.
+
+	**Verifying is not deciding, which is why this is here and approving is not.**
+	The module docstring says approving a membership lives in `api/approvals.py`
+	because the person-gate lives there and a second door into the same decision
+	would be a second place to get it wrong. That argument is about the
+	*decision*. Reading a date off a document and writing it down is a fact about
+	the membership, like a receipt number or an attachment, and it belongs with
+	the rest of them.
+
+	It is also deliberately a **separate act from the approval**, in the ordinary
+	order somebody actually works: open the proof, look at it, write down what it
+	says, then decide. Folding the dates into the decide call would mean a
+	coordinator could only correct a typo by re-deciding.
+
+	`_writable` is the gate — the ordinary permission layer, which brings core's
+	geo scoping with it, so this reaches only memberships the caller could already
+	edit. The holder bypass in `_readable` is deliberately not used: this is the
+	society writing down what it checked, and the one person who must never be
+	able to do it is the applicant.
+	"""
+	from vmmsx.member.services import proof
+
+	document = _writable(membership)
+
+	if not membership_service.is_proof(document):
+		frappe.throw(
+			frappe._("There is nothing to verify on a membership that was paid for through the gateway."),
+			frappe.ValidationError,
+			title=frappe._("Not A Proof Of Membership"),
+		)
+
+	proof.verify(document, proof_verified_start_date, proof_verified_expiry_date)
+	document.save()
+
+	return membership_service.status(document)
 
 
 @frappe.whitelist()
@@ -414,6 +458,7 @@ def find_members(
 	status: str | None = None,
 	membership_type: str | None = None,
 	current_only: bool = False,
+	search: str | None = None,
 	as_of: str | None = None,
 	limit: int = 100,
 	offset: int = 0,
@@ -437,6 +482,9 @@ def find_members(
 		geo_node=geo_node,
 		status=status,
 		membership_type=membership_type,
+		# By a person's name, their member docname or the membership's own —
+		# see `register._matches`. It narrows the same scoped read.
+		search=search,
 		current_only=frappe.parse_json(current_only) if isinstance(current_only, str) else current_only,
 		as_of=as_of,
 		limit=limit,
@@ -553,6 +601,15 @@ def membership_types() -> dict:
 		# types because the wizard draws both in one pass, and a second round trip
 		# for a list that is usually empty is a spinner for nothing.
 		"questions": questions.asked_on(MEMBERSHIP_DOCTYPE),
+		# What somebody proving an existing membership must agree to, with the
+		# version and the exact wording they will be agreeing to — the same shape
+		# the volunteer wizard reads, from the same service.
+		#
+		# Served here rather than from an endpoint of its own for the reason above
+		# it, and served on this endpoint rather than a proof-only one because the
+		# plan cards and the proof form are the same screen: the person choosing a
+		# plan is one click from the form that needs this.
+		"declarations": declarations.shown_on(MEMBERSHIP_DOCTYPE),
 	}
 
 
@@ -779,3 +836,101 @@ def _is_holder(membership) -> bool:
 		return False
 
 	return certificate.owner_user(membership) == user
+
+
+# How many scoped memberships the register summary will read before it stops.
+# A ceiling on work, not a page size: the figures below are derived per row
+# because "current" is a comparison against a date and no query can be asked it.
+_SUMMARY_CEILING = 20_000
+
+# How soon a membership has to fall due to count as a renewal approaching.
+_RENEWAL_WINDOW_DAYS = 60
+
+
+@frappe.whitelist()
+def register_summary(as_of: str | None = None) -> dict:
+	"""The active member register's own figures, **inside the caller's scope**.
+
+	Four aggregates over the whole scoped register rather than over a page of
+	it, which is the entire reason this exists — a screen that labels its
+	current page's length as "active memberships" will be believed, and will be
+	wrong on every page after the first.
+
+	    active       memberships that are current as at `as_of`
+	    lifetime     of those, the ones whose type never expires
+	    term         of those, the ones that do — the renewable ones
+	    renewing     of the term ones, those falling due within the window
+
+	**Life and term are read off `VMMS Membership Type.is_lifetime`, never off a
+	type's name.** A society names its own membership types; "Annual" and "Life"
+	are words one society happens to use and another does not, and code that
+	compared them would break at the first society that called theirs something
+	else. The flag is the fact.
+
+	**Scope is the floor, not a filter.** `frappe.get_list` runs core's
+	permission query condition for `VMMS Membership`; `frappe.get_all` is used
+	below only to read the *type* vocabulary, which is configuration rather than
+	somebody's record.
+
+	`capped` says the read hit its ceiling, and a screen must present the figures
+	as a floor rather than as a total when it does.
+	"""
+	from frappe.utils import add_days, getdate, today
+
+	from vmmsx.member.services import membership as membership_service
+
+	moment = getdate(as_of or today())
+	horizon = add_days(moment, _RENEWAL_WINDOW_DAYS)
+
+	rows = frappe.get_list(
+		MEMBERSHIP_DOCTYPE,
+		filters={"membership_status": "Active"},
+		fields=["name", "membership_type", "valid_to", "membership_status"],
+		limit_page_length=_SUMMARY_CEILING + 1,
+	)
+
+	capped = len(rows) > _SUMMARY_CEILING
+	rows = rows[:_SUMMARY_CEILING]
+
+	lifetime = _lifetime_types({row.get("membership_type") for row in rows})
+	current = [row for row in rows if membership_service.is_current(frappe._dict(row), moment)]
+
+	life = [row for row in current if row.get("membership_type") in lifetime]
+	term = [row for row in current if row.get("membership_type") not in lifetime]
+
+	return {
+		"as_of": moment,
+		"active": len(current),
+		"lifetime": len(life),
+		"term": len(term),
+		"renewing": len(
+			[
+				row
+				for row in term
+				if row.get("valid_to") and moment <= getdate(row["valid_to"]) <= horizon
+			]
+		),
+		"renewal_window_days": _RENEWAL_WINDOW_DAYS,
+		"capped": capped,
+	}
+
+
+def _lifetime_types(keys: set) -> set:
+	"""Which of these membership types never expire.
+
+	Read from the type vocabulary, which is society configuration rather than
+	anybody's record — the same footing `register._type_names_for` reads names
+	on, and the reason this one read is not scoped.
+	"""
+	keys = {key for key in keys if key}
+
+	if not keys:
+		return set()
+
+	return set(
+		frappe.get_all(
+			"VMMS Membership Type",
+			filters={"name": ("in", sorted(keys)), "is_lifetime": 1},
+			pluck="name",
+		)
+	)

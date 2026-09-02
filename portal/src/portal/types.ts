@@ -194,12 +194,26 @@ export interface ApprovalStatus {
 	escalated_to: string[] | null;
 	allow_withdrawal: boolean;
 	can_withdraw: boolean;
+	/**
+	 * The audit trail, oldest first — `engine.status`'s own rows.
+	 *
+	 * **Written out in full to match the server**, which it did not before: the
+	 * shape here named `decided_by` where the DTO says `approver` and omitted
+	 * `stage` and `stage_sequence` entirely, so a screen reading either got
+	 * `undefined` with the compiler's blessing. `stage_label` is the label the
+	 * stage carried *at the time* — snapshotted by `contract.record_decision`,
+	 * so a society that relabels a stage next year does not rewrite what
+	 * happened this year. Display only, like every stage label in this app.
+	 */
 	decisions: Array<{
-		decision?: string;
-		decided_by?: string;
-		decided_on?: string;
-		reason?: string;
-		stage_label?: string;
+		stage: string | null;
+		stage_sequence: number | null;
+		stage_label: string | null;
+		approver: string;
+		/** One of the three in `states.DECISIONS`. Shown, never branched on. */
+		decision: string;
+		reason: string | null;
+		decided_on: string | null;
 	}>;
 }
 
@@ -314,6 +328,34 @@ export interface ApplicationDecision {
 		is_primary: boolean;
 	}>;
 	answers: SocietyAnswer[];
+	/**
+	 * The three things `application.assert_approvable` will refuse the decision
+	 * over, so the approver can see them before pressing Approve rather than
+	 * afterwards.
+	 */
+	emergency_contacts: EmergencyContact[];
+	is_minor: boolean;
+	/** Carries the reviewer's own verification, unlike the applicant's view. */
+	guardian_consents: Array<
+		GuardianConsent & {
+			is_verified: boolean;
+			verified_by: string | null;
+			verified_on: string | null;
+		}
+	>;
+	/** What was agreed to, in the wording that stood on the day. */
+	declarations: Array<{
+		declaration: string;
+		title: string;
+		version: string;
+		declaration_version: string | null;
+		/** See `Declaration.source`. `Link` acceptances have no body to show. */
+		source: "Text" | "Link";
+		body: string | null;
+		external_url: string | null;
+		accepted: boolean;
+		accepted_on: string | null;
+	}>;
 }
 
 /** One answer as an approver reads it, from `questions.answers_of`. */
@@ -329,16 +371,94 @@ export interface SocietyAnswer {
 }
 
 /** `api/volunteer.py::application_options`. */
+/**
+ * One declaration a society asks an applicant to agree to, from
+ * `registration/services/declarations.py::shown_on`.
+ *
+ * `body` is HTML the society wrote and is rendered as such. `version` travels
+ * with it because what gets stored on the application is this exact wording at
+ * this exact version — see `VMMS Declaration Acceptance`.
+ */
+export interface Declaration {
+	name: string;
+	title: string;
+	version: string;
+	/**
+	 * Whether the wording is held here or published on the society's own site.
+	 * A closed set this app owns — see `declarations.SOURCE_TEXT` — so a screen
+	 * may branch on it. `body` carries the words for `Text`; `external_url`
+	 * carries the address for `Link`, and exactly one of the two is filled.
+	 */
+	source: "Text" | "Link";
+	body: string | null;
+	external_url: string | null;
+	/** The `VMMS Declaration Version` being shown, recorded on the acceptance. */
+	declaration_version: string | null;
+	is_required: boolean;
+}
+
+/**
+ * An identification type, and what this society asks of it.
+ *
+ * The three rule fields come from vmmsx-owned Custom Fields on core's
+ * `Identification Type`, and they are the same rows
+ * `application._required_document_types` reads on the server — so a form built
+ * from these can never ask for less than the submission will insist on.
+ * `minimum_age` is null where the document exists for everybody.
+ */
+export interface IdentificationTypeRow extends VocabularyRow {
+	is_required: boolean;
+	requires_attachment: boolean;
+	minimum_age: number | null;
+}
+
+/** One emergency contact, as the portal posts it and reads it back. */
+export interface EmergencyContact {
+	contact_name: string;
+	relationship: string;
+	primary_phone: string;
+	alternative_phone: string | null;
+	may_contact_in_emergency: boolean | number;
+}
+
+/**
+ * A guardian's consent, in the applicant's half of the record.
+ *
+ * The reviewer's own three fields — `is_verified`, `verified_by`, `verified_on`
+ * — are deliberately absent. The portal cannot send them and is not handed
+ * them: an applicant who could set them could verify their own guardian's
+ * consent, which is the single thing the feature exists to prevent.
+ */
+export interface GuardianConsent {
+	guardian_name: string;
+	relationship: string;
+	phone: string;
+	email: string | null;
+	consent_given: boolean | number;
+	consent_date: string | null;
+	verification_method: string | null;
+	consent_evidence: string | null;
+}
+
 export interface ApplicationOptions {
 	questions: SocietyQuestion[];
 	skills: VocabularyRow[];
 	languages: VocabularyRow[];
 	availability: VocabularyRow[];
 	motivations: VocabularyRow[];
-	id_types: VocabularyRow[];
+	id_types: IdentificationTypeRow[];
 	countries: string[];
 	residency_types: string[];
 	default_country_of_citizenship: string | null;
+	declarations: Declaration[];
+	/**
+	 * The age this society treats as adult, or null where it has not said. Null
+	 * means the guardian step is never drawn — the same answer
+	 * `application.is_minor` reaches on the server, so the form and the approval
+	 * gate agree by construction rather than by a number written twice.
+	 */
+	minor_age: number | null;
+	guardian_verification_methods: VocabularyRow[];
 }
 
 /**
@@ -467,20 +587,103 @@ export interface TaskSummary {
 	volunteer: string;
 	geo_node: string;
 	due_on: string | null;
+	due_at: string | null;
 	assigned_on: string | null;
 	/** A question the volunteer asked that nobody has answered. A flag, not a state. */
 	open_question: boolean;
 	is_open: boolean;
+	/** The society's own words, both of them. Neither is a closed set this app owns. */
+	priority: string | null;
+	task_type: string | null;
+	/**
+	 * The volunteer's own estimate, written by `report_progress`. **Never derived
+	 * here from the checklist** — the server refuses to do that for the same
+	 * reason, because a number this app worked out would be its opinion wearing
+	 * somebody else's name.
+	 */
+	percent_complete: number;
+	/** Derived on every read from `due_at` and the state. Never stored, never re-derived here. */
+	is_overdue: boolean;
 }
 
-/** `api/tasks.py::get_task` — one task in full, with its thread. */
+/** One line of a task's checklist, as the volunteer ticks it. */
+export interface TaskChecklistItem {
+	idx: number;
+	item: string;
+	is_required: boolean;
+	is_done: boolean;
+	done_on: string | null;
+	notes: string | null;
+	evidence: string | null;
+}
+
+/** One place on a task, from `deployment/services/geocoding.py::dto`. */
+export interface TaskPlace {
+	name: string | null;
+	address: string | null;
+	latitude: number | null;
+	longitude: number | null;
+	/** Whether there is a coordinate pair to draw. Never inferred from `0.0`. */
+	has_point: boolean;
+	located_on: string | null;
+	map: string | null;
+	directions: string | null;
+}
+
+/**
+ * `api/tasks.py::get_task` — one task in full, with its thread.
+ *
+ * Everything below `completion_notes` was already on the server's DTO and had
+ * never been declared here, which is why the portal's task screen drew a third
+ * of a record. Nothing in this block is new API surface.
+ */
 export interface TaskDetail extends TaskSummary {
 	description: string;
 	deployment: string | null;
+	project: string | null;
+	batch: string | null;
 	accepted_on: string | null;
 	submitted_on: string | null;
 	closed_on: string | null;
 	completion_notes: string | null;
+	// --- when ---------------------------------------------------------------
+	planned_start: string | null;
+	planned_end: string | null;
+	/** The moment an answer is wanted by, which is not the moment the work is due. */
+	response_deadline: string | null;
+	expected_hours: number | null;
+	actual_hours: number | null;
+	// --- what has to be done -------------------------------------------------
+	checklist: TaskChecklistItem[];
+	/** Required items still unticked. The server's list, and what blocks a submission. */
+	checklist_outstanding: string[];
+	/** The coordinator's own files, kept apart from the volunteer's evidence. */
+	brief_files: Array<{ label: string | null; file: string | null; notes: string | null }>;
+	// --- what comes first ----------------------------------------------------
+	depends_on: string[];
+	/** Only the prerequisites that are not finished. Empty means nothing is in the way. */
+	blocking: Array<{ name: string; subject: string; status: string }>;
+	blocked_override_reason: string | null;
+	// --- where ---------------------------------------------------------------
+	where: {
+		work: TaskPlace;
+		meeting_point: TaskPlace;
+		travel_instructions: string | null;
+		local_contact: { name: string | null; phone: string | null };
+		/** Set when the place came from the deployment rather than the task. */
+		inherited_from: string | null;
+	};
+	// --- how it ended --------------------------------------------------------
+	outcome: string | null;
+	final_evidence: string | null;
+	return_reason: string | null;
+	rework_count: number;
+	manager_rating: number | null;
+	lessons_learned: string | null;
+	decline_reason: string | null;
+	reassigned_to_task: string | null;
+	reassigned_from_task: string | null;
+	reassignment_reason: string | null;
 	thread: Array<{
 		/** Display only. Nothing in this app branches on it. */
 		entry_type: string;
@@ -544,11 +747,41 @@ export interface DeploymentSummary {
 	terms_of_reference: string | null;
 	geo_node: string | null;
 	geo_path: string | null;
-	/** Planned, Active, Completed or Cancelled. The doctype's own closed set. */
+	/**
+	 * One of `DEPLOYMENT_STATUSES` — the doctype's own closed set of **six**.
+	 *
+	 * It used to be described here as four, and the two missing ones were the
+	 * two a screen most needs: Suspended is work that has stopped and not
+	 * finished, and Closed Out is the only thing that distinguishes a mission
+	 * whose paperwork is done from one whose is not.
+	 */
 	status: string;
+	/** Planned, Active or Suspended — still somebody's problem. The server's answer. */
 	is_open: boolean;
+	/** Completed, Closed Out or Cancelled — the work is over, whatever the paperwork says. */
+	is_settled: boolean;
+	is_closed_out: boolean;
+	coordinator: string | null;
 	start_date: string | null;
 	end_date: string | null;
+	/**
+	 * The period to the hour, and the four other moments a deployment has.
+	 * Separate from the two dates above rather than replacing them: registers
+	 * window on days, and a volunteer needs to know what time to be there.
+	 */
+	planned_start: string | null;
+	planned_end: string | null;
+	briefing_on: string | null;
+	check_in_deadline: string | null;
+	expected_return: string | null;
+	actual_start: string | null;
+	actual_end: string | null;
+	/**
+	 * When the paperwork was filed, or null while it has not been. The date a
+	 * closed mission file is filed under — distinct from `end_date`, which dates
+	 * the work rather than the file.
+	 */
+	closed_out_on: string | null;
 	volunteers_required: number;
 	email_template: string | null;
 	/** Assigned + Accepted: who is actually going, not who was asked. */
@@ -778,7 +1011,23 @@ export interface TermsOfReference {
 	is_cancelled: boolean;
 	/** Submitted *and* still active: the one predicate that means "takes new work". */
 	is_offered: boolean;
+	/** Whether this society routes terms for approval at all. */
+	is_governed: boolean;
+	/**
+	 * One of the seven exact states in `approvals/states.py`, or `null` on a
+	 * site that routes nothing. Read straight off the field rather than through
+	 * the engine's default, because "nobody has been asked" and "it is a draft
+	 * awaiting an approver" are different answers and only the first is true
+	 * there. Displayed and compared against the closed set — never against a
+	 * stage label, which is a society's own wording.
+	 */
+	approval_state: string | null;
 	amended_from: string | null;
+	/** The terms this one replaces mid-mission. See `terms.supersede`. */
+	supersedes: string | null;
+	/** What still has to be written before the wording can be frozen. */
+	missing: string[];
+	has_no_resources: boolean;
 	expected_start_date: string | null;
 	expected_end_date: string | null;
 	section_counts: TermsSectionCounts;
@@ -995,6 +1244,14 @@ export interface DeploymentRequestRow {
 	volunteers_requested: number | null;
 	needed_from: string | null;
 	needed_until: string | null;
+	/** Why the branch is asking. The substance of the request, not a note on it. */
+	justification: string | null;
+	/**
+	 * Whether volunteers can see this ask. An approved, unpublished request has
+	 * nobody applying to it and looks identical to one nobody wants, so the flag
+	 * is on the row rather than left to be inferred.
+	 */
+	is_published: boolean;
 	approval_mode: string | null;
 	requires_approver: boolean;
 	approval_settled: boolean;
@@ -1132,6 +1389,13 @@ export interface VolunteerVerification {
 export interface DeploymentHistoryRow {
 	deployment: string;
 	status: string | null;
+	/**
+	 * Whether the deployment itself is over — Completed, Closed Out or
+	 * Cancelled. Derived by the module that owns what a status means, so a card
+	 * counting completed deployments and a register filtering "past" cannot
+	 * hold two answers to the same question.
+	 */
+	is_settled: boolean;
 	start_date: string | null;
 	end_date: string | null;
 	geo_node: string | null;
@@ -1305,6 +1569,33 @@ export interface MembershipReview {
 	answers: SocietyAnswer[];
 }
 
+/* -------------------------------------------------------- notifications */
+
+/**
+ * One row of `notifications/services/delivery.py::feed`, which merges a
+ * branch's own announcements with Frappe's `Notification Log`. The screen and
+ * the header dropdown never branch on `source` — it travels back with `id`
+ * when marking one read, and the pair is opaque to the frontend.
+ */
+export interface NotificationRow {
+	id: string;
+	source: string;
+	title: string;
+	summary: string;
+	body: string;
+	/** The closed set the server owns — `urgent`, `important`, or routine. */
+	urgency: string;
+	rank: number;
+	/** The announcement's own type, a society's word. Display only, never styled. */
+	label: string;
+	geo_node: string;
+	sent_on: string;
+	read: boolean;
+	link_label: string;
+	/** Server-validated on save: site-relative, or http/https/mailto/tel. */
+	href: string;
+}
+
 /* -------------------------------------------------------- communication */
 
 /** `api/communication.py::options` — what this person may compose and send. */
@@ -1315,9 +1606,10 @@ export interface CommunicationOptions {
 	/**
 	 * Per caller, not per site: SMS needs onerc_sms installed *and* this
 	 * person's own permission on it, so a coordinator without the role sees two
-	 * channels rather than a third that would refuse them.
+	 * channels rather than a third that would refuse them. WhatsApp is the same
+	 * shape — it needs a gateway the society has stood up and linked to a phone.
 	 */
-	channels: { notification: boolean; email: boolean; sms: boolean };
+	channels: { notification: boolean; email: boolean; sms: boolean; whatsapp: boolean };
 	sms_templates: Array<{ name: string; template_name: string; category: string | null; message: string }>;
 	sms_source_doctypes: Array<{ value: string; label: string }>;
 	can_send: boolean;
@@ -1326,10 +1618,14 @@ export interface CommunicationOptions {
 /**
  * `api/communication.py::preview` — how far this would reach, per channel.
  *
- * Three different numbers from one audience, because the people with a login,
- * the people with an address and the people with a phone number are three
- * overlapping sets. `addressed` is the denominator that makes a low reach read
- * as a data gap rather than as a small branch.
+ * Four different numbers from one audience, because the people with a login,
+ * the people with an address and the people with a phone number are overlapping
+ * sets. `addressed` is the denominator that makes a low reach read as a data gap
+ * rather than as a small branch.
+ *
+ * `whatsapp` is the one figure that can be lower than `sms` without anything
+ * being missing: it excludes everybody who replied STOP, and that gap is the
+ * channel working rather than failing.
  */
 export interface CommunicationReach {
 	geo_node: string;
@@ -1338,6 +1634,7 @@ export interface CommunicationReach {
 	notification: number;
 	email: number;
 	sms: number;
+	whatsapp: number;
 }
 
 /** `api/communication.py::send` — what each channel actually did. */
@@ -1355,6 +1652,17 @@ export interface CommunicationReport {
 		campaign: string;
 		recipients: number;
 		malformed: number;
+		addressed: number;
+		url: string;
+	} | null;
+	/**
+	 * Filed, never sent. Approving it is submitting the broadcast on the desk,
+	 * and a worker then paces it out over minutes or hours rather than sending
+	 * it in a burst.
+	 */
+	whatsapp: {
+		broadcast: string;
+		recipients: number;
 		addressed: number;
 		url: string;
 	} | null;
@@ -1440,4 +1748,241 @@ export interface EventCard {
 	geo_node: string;
 	href: string | null;
 	multi_day: boolean;
+}
+
+/* ------------------------------------------------- people, in the aggregate */
+
+/**
+ * `api/people.py::summary` — the People overview's figures, in one scoped read.
+ *
+ * **Nothing here is a page's length.** Each figure is counted across the whole
+ * of the caller's scope by the server; the screen that shows them may not
+ * compute a total from a list it happens to hold, and the two fields that
+ * cannot be computed affordably come back as `null` rather than as a number
+ * from a truncated read. See `PeopleReach.capped`.
+ */
+export interface PeopleSummary {
+	/** Keyed by governed doctype. What is routed to *this user* right now. */
+	queue: Record<string, { waiting: number; overdue: number }>;
+	intake: IntakeHealth[];
+	registers: RegisterCount[];
+	people: PeopleReach;
+}
+
+/** One door into the society, and what is stuck in it. */
+export interface IntakeHealth {
+	/** `volunteers` or `members` — the word the console already routes on. */
+	kind: string;
+	doctype: string;
+	/**
+	 * Whether this caller may read the register behind this door at all.
+	 *
+	 * Kept apart from `governed` because they are two different silences and a
+	 * screen has to say the right one: a door with no workflow behind it and a
+	 * door that is not yours to see both come back with `null` figures, and
+	 * telling a membership clerk that volunteer applications are "not
+	 * configured" is simply wrong.
+	 */
+	readable: boolean;
+	/**
+	 * False where no approval workflow governs this doctype yet — or where the
+	 * caller cannot read it, in which case `readable` is what says so. The
+	 * numbers are `null` either way rather than zero, because "nothing to do"
+	 * is a claim neither case supports.
+	 */
+	governed: boolean;
+	/** In the caller's whole scope, not only their own assignments. */
+	in_review: number | null;
+	/** Draft, *and* somebody recorded a "More info requested" decision on it. */
+	changes_requested: number | null;
+	/** Routed to this user, from the same `my_queue` the queue screen renders. */
+	waiting: number;
+	/** Of those, how many are past their stage's configured SLA. */
+	overdue: number;
+	/** Everything in scope past its SLA, whoever it is routed to. */
+	breached: number | null;
+}
+
+export interface RegisterCount {
+	kind: string;
+	doctype: string;
+	/** Whether this caller may read the register at all. See `IntakeHealth`. */
+	readable: boolean;
+	/**
+	 * `null` where this caller may not read the register at all — a membership
+	 * clerk with no volunteer permissions, say. Not being allowed to know is
+	 * indistinguishable, on a screen, from there being nothing to know, so it is
+	 * drawn as a dash rather than as a zero.
+	 */
+	active: number | null;
+}
+
+/**
+ * The two registers counted as *people* rather than as records.
+ *
+ * A person with memberships at two branches is two rows and one human being.
+ * `capped` is true when the read hit its ceiling and every figure here is
+ * `null`: a screen must then omit the block rather than show a number derived
+ * from a truncated read.
+ */
+export interface PeopleReach {
+	unique: number | null;
+	both: number | null;
+	volunteers: number | null;
+	members: number | null;
+	capped: boolean;
+}
+
+/** `api/approvals.py::my_cases` — one band of a queue. */
+export interface ApprovalCases {
+	group: string;
+	count: number;
+	cases: ApprovalStatus[];
+}
+
+/** `api/volunteer.py::register_summary`. */
+export interface VolunteerRegisterSummary {
+	active: number;
+	joined_month: number;
+	/** `null` past the read ceiling — see `PeopleReach.capped` for the rule. */
+	branches: number | null;
+	/**
+	 * How many of them are out on an active deployment, and on how many. Both
+	 * `null` where this caller may not read deployments: a zero would say
+	 * "nobody is deployed", which is a different and false claim.
+	 */
+	deployed: number | null;
+	deployments: number | null;
+	capped: boolean;
+}
+
+/**
+ * `api/member.py::register_summary`.
+ *
+ * `lifetime` and `term` are split on `VMMS Membership Type.is_lifetime`, never
+ * on a type's name: a society names its own types and "Annual" is one society's
+ * word.
+ */
+export interface MemberRegisterSummary {
+	as_of: string;
+	active: number;
+	lifetime: number;
+	term: number;
+	/** Term memberships falling due inside `renewal_window_days`. */
+	renewing: number;
+	renewal_window_days: number;
+	capped: boolean;
+}
+
+/* ------------------------------------------------------ operations, in full */
+
+/**
+ * `api/deployment.py::operations_summary` — the command centre's figures.
+ *
+ * Counted across the whole scoped register rather than across one page of it,
+ * which is the difference between a dashboard and a sample. `capped` says the
+ * read hit its ceiling and the figures are a floor.
+ */
+export interface OperationsSummary {
+	as_of: string;
+	ongoing: number;
+	/** Keyed by deployment status. Never indexed by a literal in a component. */
+	by_status: Record<string, number>;
+	people: number;
+	starting_soon: number;
+	starting_soon_days: number;
+	unfilled_soon: number;
+	pending: number;
+	closing_out: number;
+	/**
+	 * Requests and terms are `null` where this caller may not read that register
+	 * at all — a coordinator who runs deployments and cannot see requests. A zero
+	 * would say "there are none", which is a different and false claim.
+	 */
+	requests: number | null;
+	requests_open: number | null;
+	terms: number | null;
+	terms_awaiting: number | null;
+	capped: boolean;
+}
+
+/** One place a deployment has, with the two links that open it — `geocoding.dto`. */
+export interface DeploymentPlace {
+	name: string | null;
+	address: string | null;
+	latitude: number | null;
+	longitude: number | null;
+	/** False where nobody has located it yet. The screen says so rather than guessing. */
+	has_point: boolean;
+	located_on: string | null;
+	map: string | null;
+	directions: string | null;
+}
+
+/** `deployment/services/deployment.py::where_dto`. */
+export interface DeploymentWhere {
+	site: DeploymentPlace;
+	meeting_point: DeploymentPlace;
+	travel_notes: string | null;
+	local_contact: { name: string | null; phone: string | null };
+}
+
+/** `deployment/services/deployment.py::coordinator_dto`. */
+export interface CoordinatorContact {
+	user: string | null;
+	full_name: string;
+	email: string;
+	phone: string;
+}
+
+/** `assignment.readiness_for_many` — how ready one roster is. */
+export interface DeploymentReadiness {
+	briefed: number;
+	safety: number;
+	checked_in: number;
+	leaders: number;
+}
+
+/** One selectable deployment on the operations map — `api/deployment.py::_site_row`. */
+export interface DeploymentSite extends DeploymentSummary {
+	where: DeploymentWhere;
+	coordinator_contact: CoordinatorContact;
+	readiness: DeploymentReadiness;
+}
+
+/** `api/deployment.py::deployment_sites`. */
+export interface DeploymentSites {
+	deployments: DeploymentSite[];
+	count: number;
+	plotted: number;
+	/** How many carry no coordinates, so the screen says so rather than drawing fewer pins. */
+	unplotted: number;
+	capped: boolean;
+}
+
+/** One file in the operations register — `api/deployment.py::operations_documents`. */
+export interface OperationsFile {
+	name: string;
+	file_name: string;
+	file_url: string;
+	file_size: number | null;
+	is_private: boolean | number;
+	attached_to_doctype: string;
+	attached_to_name: string;
+	owner: string;
+	creation: string;
+	modified: string;
+}
+
+/** A record an upload may be attached to. Returned by the server, never guessed. */
+export interface DocumentTarget {
+	doctype: string;
+	name: string;
+}
+
+export interface OperationsDocumentsAnswer {
+	count: number;
+	files: OperationsFile[];
+	targets: DocumentTarget[];
+	record_types: string[];
 }

@@ -437,7 +437,14 @@ def _tasks() -> dict:
 	return _child_spec(
 		TASKS,
 		"list-checks",
-		(("VMMS Task", "list-checks"),),
+		(
+			("VMMS Task", "list-checks"),
+			# The record that explains why forty tasks exist, and how much of that
+			# work has come back. `task/services/batch.py` says why it is an
+			# administrative grouping rather than a shared task.
+			("VMMS Task Batch", "layers"),
+			("VMMS Task Type", "tag"),
+		),
 		"Work assigned to volunteers: what was asked for, who accepted it, what they"
 		" reported, and what a coordinator signed off.",
 	)
@@ -448,7 +455,10 @@ def _deployments() -> dict:
 		DEPLOYMENTS,
 		"route",
 		(
-			("VMMS Project", "folder-normal"),
+			# ERPNext's own Project, adopted as the programme of work a terms of
+			# reference is written under. `VMMS Project` was retired for it; see
+			# `deployment/services/project.py`.
+			("Project", "folder-normal"),
 			("VMMS Deployment", "map-pin"),
 			# One person's deployment, with its own status and its own record of the
 			# terms they agreed to. Here rather than only inside a deployment,
@@ -521,17 +531,21 @@ def _society_setup() -> dict:
 			("VMMS Availability Slot", "clock-4"),
 			("VMMS TOR Methodology", "compass"),
 			("VMMS Announcement Type", "megaphone"),
+			("VMMS WhatsApp Settings", "message-circle"),
 			("VMMS Approval Workflow", "workflow"),
 			("VMMS Template Category", "layout-list"),
 			("VMMS Template", "layout-template"),
 			("VMMS Application Question", "help-circle"),
+			("VMMS Declaration", "file-text"),
+			("VMMS Declaration Version", "history"),
 		),
 		"Everything a society configures once, before the rest of the app is usable:"
 		" the geo tree and the society's own settings — both onerc_core's — the types"
 		" and categories that membership, volunteering, notifications and templates"
-		" pick from, the approval workflows that govern them, and the volunteer"
-		" application form's own questions. Work through the checklist above top to"
-		" bottom on a fresh site.",
+		" pick from, the approval workflows that govern them, the volunteer"
+		" application form's own questions and the policies applicants agree to, and"
+		" the WhatsApp gateway if the society runs one."
+		" Work through the checklist above top to bottom on a fresh site.",
 	)
 
 
@@ -541,9 +555,10 @@ def _society_setup() -> dict:
 # shortcut grid lists them — the geo tree first (everything else scopes to
 # it), the society's own settings right after, then every *type*/*category*
 # doctype the operational records go on to pick from. `action` is "Create
-# Entry" throughout except National Society Settings, which is a Single: there
-# is nothing to create, only a form to fill in, which is "Update Settings" in
-# Frappe's own onboarding vocabulary and carries `is_single` alongside it.
+# Entry" except for the two Singles — National Society Settings and VMMS
+# WhatsApp Settings — where there is nothing to create, only a form to fill in.
+# That is "Update Settings" in Frappe's own onboarding vocabulary and carries
+# `is_single` alongside it.
 SETUP_STEPS = (
 	(
 		"Geo Level",
@@ -593,6 +608,13 @@ SETUP_STEPS = (
 	),
 	("VMMS Announcement Type", "Create Entry", "The categories an announcement can be posted under."),
 	(
+		"VMMS WhatsApp Settings",
+		"Update Settings",
+		"Only if the society runs a WhatsApp gateway of its own: where it answers, which linked"
+		" number sends, and how fast. Leave it off and the Communication screen simply does not"
+		" offer the channel.",
+	),
+	(
 		"VMMS Approval Workflow",
 		"Create Entry",
 		"The stages a request moves through before it counts as approved.",
@@ -600,6 +622,19 @@ SETUP_STEPS = (
 	("VMMS Template Category", "Create Entry", "How message templates are grouped."),
 	("VMMS Template", "Create Entry", "The wording sent for each notification this app fires."),
 	("VMMS Application Question", "Create Entry", "The questions asked on the volunteer application form."),
+	(
+		"VMMS Declaration",
+		"Create Entry",
+		"The policies an applicant agrees to — your privacy notice, your terms of use, permission"
+		" to contact them. Four ship with the app for your legal officer to rewrite.",
+	),
+	(
+		"VMMS Declaration Version",
+		"Create Entry",
+		"The wording of one policy, on one day. Publish a version to change what applicants are"
+		" shown: submitting it freezes it, so what somebody agreed to can always be read back."
+		" A version may hold the wording here, or point at a page on your own website.",
+	),
 )
 
 MODULE_ONBOARDING_DOCTYPE = "Module Onboarding"

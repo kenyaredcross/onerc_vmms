@@ -68,23 +68,59 @@ STATUS_ACCEPTED = "Accepted"
 STATUS_DECLINED = "Declined"
 STATUS_WITHDRAWN = "Withdrawn"
 
+# What happened to a question nobody answered, and what happened on the day.
+# Added when the roster grew an outcome: "did they go" is a different fact from
+# "what did they say", and a register that only had the second could never
+# answer the first.
+STATUS_EXPIRED = "Expired"
+STATUS_PARTICIPATED = "Participated"
+STATUS_PARTIAL = "Partial Attendance"
+STATUS_NO_SHOW = "No Show"
+
+# Somebody else went instead. The original is kept and points at the new one.
+STATUS_REPLACED = "Replaced"
+
 STATUSES = (
 	STATUS_ASSIGNED,
 	STATUS_PENDING,
 	STATUS_ACCEPTED,
 	STATUS_DECLINED,
 	STATUS_WITHDRAWN,
+	STATUS_EXPIRED,
+	STATUS_PARTICIPATED,
+	STATUS_PARTIAL,
+	STATUS_NO_SHOW,
+	STATUS_REPLACED,
 )
 
-# The two that mean this person is on the deployment: they hold a place against
-# the headcount, and they are what `participation.is_participant` reads.
-ON_DEPLOYMENT = (STATUS_ASSIGNED, STATUS_ACCEPTED)
+# What actually happened on the day. A closed set, and the only three answers to
+# "did they go": all of it, some of it, or none of it.
+OUTCOMES = (STATUS_PARTICIPATED, STATUS_PARTIAL, STATUS_NO_SHOW)
+
+# The two outcomes that mean they were there. `No Show` is deliberately not one:
+# somebody who did not come did not serve, and nothing should let them log time
+# against the deployment as though they had.
+ATTENDED = (STATUS_PARTICIPATED, STATUS_PARTIAL)
+
+# This person is, or was, on the deployment: they hold a place against the
+# headcount, and this is what `participation.is_participant` reads. The two
+# attendance outcomes are in it for a reason worth stating — a deployment that
+# has been closed out and had its attendance recorded must not thereby stop its
+# own participants filing the hours they served, which is exactly the rule
+# `participation.OWNERSHIP_RULE` exists to protect.
+ON_DEPLOYMENT = (STATUS_ASSIGNED, STATUS_ACCEPTED, *ATTENDED)
 
 # Still somebody's problem — a coordinator's or a volunteer's.
 OPEN_STATUSES = (STATUS_ASSIGNED, STATUS_PENDING, STATUS_ACCEPTED)
 
 # Settled. Nothing moves out of these.
-TERMINAL_STATUSES = (STATUS_DECLINED, STATUS_WITHDRAWN)
+TERMINAL_STATUSES = (
+	STATUS_DECLINED,
+	STATUS_WITHDRAWN,
+	STATUS_EXPIRED,
+	STATUS_REPLACED,
+	*OUTCOMES,
+)
 
 # The whole grammar, in the same shape as `deployment.py`'s own table and for
 # the same reason: every legal move is written down once, and every move not
@@ -94,23 +130,51 @@ TERMINAL_STATUSES = (STATUS_DECLINED, STATUS_WITHDRAWN)
 # status is the commonest thing that happens to one.
 TRANSITIONS: dict[str, tuple[str, ...]] = {
 	# Placed directly. The coordinator may still decide to ask after all, and may
-	# take it back. It cannot become Declined: nobody was asked, so there is no
-	# answer to record.
-	STATUS_ASSIGNED: (STATUS_ASSIGNED, STATUS_PENDING, STATUS_WITHDRAWN),
-	# Asked. The volunteer answers, or the coordinator takes the question back.
-	STATUS_PENDING: (STATUS_PENDING, STATUS_ACCEPTED, STATUS_DECLINED, STATUS_WITHDRAWN),
-	# Answered yes. Only a withdrawal moves it now: somebody changing their mind
-	# after accepting is a withdrawal from a deployment that has been planned
+	# take it back or swap somebody in. It cannot become Declined: nobody was
+	# asked, so there is no answer to record. It can reach an outcome, because a
+	# person who was placed and never asked still either turned up or did not.
+	STATUS_ASSIGNED: (
+		STATUS_ASSIGNED,
+		STATUS_PENDING,
+		STATUS_WITHDRAWN,
+		STATUS_REPLACED,
+		*OUTCOMES,
+	),
+	# Asked. The volunteer answers, the coordinator takes the question back or
+	# swaps somebody in, or the clock runs out. **Expired is not Declined** and
+	# the difference is the point: one is a person who said no, the other is a
+	# question nobody ever saw.
+	STATUS_PENDING: (
+		STATUS_PENDING,
+		STATUS_ACCEPTED,
+		STATUS_DECLINED,
+		STATUS_WITHDRAWN,
+		STATUS_EXPIRED,
+		STATUS_REPLACED,
+	),
+	# Answered yes. A withdrawal or a replacement moves it, and so does the day
+	# itself: somebody who accepted either turned up or did not. Changing their
+	# mind after accepting is a withdrawal from a deployment that has been planned
 	# around them, and it belongs in front of a coordinator rather than in a field
 	# that changed underneath them.
-	STATUS_ACCEPTED: (STATUS_ACCEPTED, STATUS_WITHDRAWN),
+	STATUS_ACCEPTED: (STATUS_ACCEPTED, STATUS_WITHDRAWN, STATUS_REPLACED, *OUTCOMES),
 	STATUS_DECLINED: (STATUS_DECLINED,),
 	STATUS_WITHDRAWN: (STATUS_WITHDRAWN,),
+	STATUS_EXPIRED: (STATUS_EXPIRED,),
+	STATUS_REPLACED: (STATUS_REPLACED,),
+	# An outcome is a statement about a day that has happened. Each admits
+	# itself, so re-recording the same one is harmless; none admits another,
+	# because a coordinator who marked the wrong person is correcting a record
+	# rather than moving a lifecycle, and that goes through an amendment where
+	# somebody can see it.
+	STATUS_PARTICIPATED: (STATUS_PARTICIPATED,),
+	STATUS_PARTIAL: (STATUS_PARTIAL,),
+	STATUS_NO_SHOW: (STATUS_NO_SHOW,),
 }
 
 
 def assert_status(status: str | None) -> None:
-	"""Throw unless `status` is one of the five."""
+	"""Throw unless `status` is one of the ten."""
 	if status in STATUSES:
 		return
 
@@ -219,6 +283,10 @@ def create(
 	role: str = "member",
 	joined_on: str | None = None,
 	notes: str | None = None,
+	assignment_title: str | None = None,
+	assignment_description: str | None = None,
+	supervisor: str | None = None,
+	invitation_expires_on: str | None = None,
 ) -> object:
 	"""Raise one assignment against a deployment. Returns the document.
 
@@ -288,7 +356,19 @@ def create(
 			"end_date": deployment_doc.end_date,
 			"joined_on": joined_on,
 			"notes": notes,
+			"assignment_title": assignment_title,
+			"assignment_description": assignment_description,
+			"supervisor": supervisor,
 			"invited_on": now_datetime() if status == STATUS_PENDING else None,
+			# Who asked, so a volunteer opening the invitation knows whose
+			# decision it was, and so a coordinator reading a roster months later
+			# does not have to guess from the document's owner.
+			"invited_by": frappe.session.user if status == STATUS_PENDING else None,
+			# **No default expiry**, deliberately. How long a society leaves a
+			# question standing is a society's answer, and inventing one here would
+			# start expiring invitations on sites that never asked for it. Given a
+			# date, `expire_overdue` acts on it; given none, the question stands.
+			"invitation_expires_on": invitation_expires_on,
 		}
 	)
 	doc.insert()
@@ -422,6 +502,14 @@ def respond(assignment_doc, accepted: bool, note: str | None = None) -> dict:
 	assignment_doc.responded_on = now_datetime()
 	assignment_doc.response_note = note
 
+	# The same words under a second name when the answer is no. `response_note`
+	# is whatever somebody wrote either way; `decline_reason` is the field a
+	# coordinator filters and reports on, and keeping them apart means "I can't,
+	# I'm away that week" is findable as a reason rather than as a note that
+	# happens to sit on a declined row.
+	if not accepted:
+		assignment_doc.decline_reason = note
+
 	# **The one elevated write in this module, and the volunteer is the reason.**
 	# A volunteer holds no Geo Assignment and no role on the deployment register,
 	# both correctly: it is the society's record of work, not a personal one. An
@@ -472,7 +560,276 @@ def withdraw(assignment_doc, reason: str | None = None) -> dict:
 		+ (f" {reason}" if reason else ""),
 	)
 
+	# **And tell them.** Being taken off a deployment is the one lifecycle move
+	# somebody else makes about a volunteer's own week, and a register that
+	# recorded it silently would leave people turning up. The notification points
+	# at their own assignment, which is where the reason is.
+	_tell_volunteer(assignment_doc, _("You are no longer on this deployment"))
+
 	return dto(assignment_doc)
+
+
+def _tell_volunteer(assignment_doc, subject: str) -> None:
+	"""One in-app notification to the person an assignment is about, if they have a login.
+
+	Quiet where they have none — somebody enrolled at a desk who has never signed
+	in — because there is nowhere to send it and failing the withdrawal over it
+	would be the wrong trade entirely.
+
+	**`about` is passed whether or not there is a login**, and that is the point
+	of it: a young volunteer enrolled from a paper form has no screen to show this
+	on and a parent who still has to hear about it. `direct.tell` reads it and
+	copies the guardian by email.
+	"""
+	from vmmsx.notifications.services import direct
+
+	login = direct.login_of(assignment_doc.volunteer)
+
+	direct.tell(
+		[login] if login else [],
+		subject,
+		ASSIGNMENT_DOCTYPE,
+		assignment_doc.name,
+		about=assignment_doc.volunteer,
+	)
+
+
+# --- getting ready, being there, and what came of it ------------------------
+#
+# Four facts about one person on one deployment, and they are four fields rather
+# than one status for the reason this module has drawn apart from the beginning:
+# being briefed, acknowledging a safety brief, turning up, and going home are
+# separate things that happen at separate times, and a status that tried to
+# carry all four would be a status that could only ever say the last one.
+#
+# **None of them gates anything.** A volunteer who never acknowledged the safety
+# brief is not thereby refused a check-in, because refusing somebody at the gate
+# on a field that nobody filled in is how a record-keeping gap becomes an
+# operational failure. Whether an unbriefed person deploys is a coordinator's
+# decision, taken in front of the record rather than by it.
+
+
+def mark_briefed(assignment_doc, when=None) -> dict:
+	"""Record that this person completed the briefing. Idempotent."""
+	return _stamp(assignment_doc, "briefing_completed_on", when)
+
+
+def acknowledge_safety(assignment_doc, when=None) -> dict:
+	"""Record that this person acknowledged the safety brief. Idempotent."""
+	return _stamp(assignment_doc, "safety_acknowledged_on", when)
+
+
+def check_in(assignment_doc, when=None) -> dict:
+	"""Record arrival on site. Idempotent: the first check-in is the one that counts."""
+	return _stamp(assignment_doc, "checked_in_at", when)
+
+
+def check_out(assignment_doc, when=None) -> dict:
+	"""Record leaving. Refused before a check-in, which would be a record of nothing."""
+	if not assignment_doc.checked_in_at:
+		frappe.throw(
+			_("{0} has not checked in, so there is nothing to check out of.").format(
+				frappe.bold(volunteer_label(assignment_doc.volunteer))
+			),
+			frappe.ValidationError,
+			title=_("Not Checked In"),
+		)
+
+	return _stamp(assignment_doc, "checked_out_at", when)
+
+
+def _stamp(assignment_doc, field: str, when=None) -> dict:
+	"""Write one timestamp if it is not already written, and save. Idempotent.
+
+	Idempotent because these are records of a moment, and a second call is a
+	button pressed twice rather than a second arrival. Overwriting would move the
+	moment, which is the one thing a timestamp must not do.
+	"""
+	if assignment_doc.get(field):
+		return dto(assignment_doc)
+
+	assignment_doc.set(field, when or now_datetime())
+	assignment_doc.save()
+
+	return dto(assignment_doc)
+
+
+def record_attendance(
+	assignment_doc, outcome: str, hours: float | None = None, notes: str | None = None
+) -> dict:
+	"""Say what happened on the day: all of it, some of it, or none of it.
+
+	**A statement about the past, made once.** The grammar admits an outcome from
+	Assigned and Accepted and admits no move out of one, so correcting a wrong
+	entry is an amendment somebody can see rather than a field quietly changing
+	back. Idempotent on the same outcome, which is what makes a double-clicked
+	button harmless.
+
+	`hours` is the coordinator's verified figure and is deliberately not the
+	volunteer's time log. The two are different claims by different people, and a
+	register that merged them would have no way to show a disagreement — which is
+	the whole reason anybody verifies anything.
+	"""
+	if outcome not in OUTCOMES:
+		frappe.throw(
+			_("{0} is not something that happened on the day. Expected one of: {1}.").format(
+				frappe.bold(outcome), ", ".join(OUTCOMES)
+			),
+			frappe.ValidationError,
+			title=_("Unknown Outcome"),
+		)
+
+	if assignment_doc.status == outcome and hours is None and not notes:
+		return dto(assignment_doc)
+
+	if assignment_doc.status != outcome:
+		assert_transition(assignment_doc.status, outcome)
+		assignment_doc.status = outcome
+
+	if hours is not None:
+		assignment_doc.verified_hours = frappe.utils.flt(hours)
+		assignment_doc.attendance_verified_by = frappe.session.user
+		assignment_doc.attendance_verified_on = now_datetime()
+
+	if notes:
+		assignment_doc.participation_notes = notes
+
+	assignment_doc.save()
+	_note_in_feed(
+		assignment_doc,
+		_("{0}: {1}.").format(volunteer_label(assignment_doc.volunteer), _(outcome)),
+	)
+
+	return dto(assignment_doc)
+
+
+# --- somebody else going instead --------------------------------------------
+
+
+def replace(assignment_doc, volunteer: str, reason: str, authorised_by: str | None = None) -> dict:
+	"""Swap somebody out and somebody in, keeping both records.
+
+	**The original is never overwritten**, and that is the whole of the design.
+	The person who was asked, what they were asked, and what became of it stay
+	exactly where they were; the original moves to `Replaced` and points at the
+	assignment that took over, which points back. A register that edited the
+	volunteer field instead would erase the fact that anybody had ever been asked
+	— and with it any way of telling a replacement from a typo.
+
+	A reason is required, because a replacement is always somebody's decision and
+	the next coordinator to open the record is entitled to know whose and why.
+
+	Returns both sides, so a caller does not have to reload to find out who is
+	going now.
+	"""
+	if not (reason or "").strip():
+		frappe.throw(
+			_("Say why somebody else is going instead. It is the one thing the record cannot infer."),
+			frappe.MandatoryError,
+			title=_("No Reason Given"),
+		)
+
+	assert_transition(assignment_doc.status, STATUS_REPLACED)
+
+	deployment_doc = frappe.get_doc(DEPLOYMENT_DOCTYPE, assignment_doc.deployment)
+
+	# The original steps aside first, so the replacement is not refused as a
+	# second open assignment against a deployment the outgoing person still holds
+	# a place on. `assert_room` counts the same set.
+	assignment_doc.status = STATUS_REPLACED
+	assignment_doc.replacement_reason = reason
+	assignment_doc.replacement_authorised_by = authorised_by or frappe.session.user
+	assignment_doc.save()
+
+	replacement = create(
+		deployment_doc,
+		volunteer,
+		status=STATUS_PENDING,
+		role=assignment_doc.role,
+		assignment_title=assignment_doc.assignment_title,
+		assignment_description=assignment_doc.assignment_description,
+		supervisor=assignment_doc.supervisor,
+		invitation_expires_on=assignment_doc.invitation_expires_on,
+	)
+	replacement.db_set("replaces", assignment_doc.name, update_modified=False)
+	replacement.db_set("replacement_reason", reason, update_modified=False)
+	replacement.db_set(
+		"replacement_authorised_by", assignment_doc.replacement_authorised_by, update_modified=False
+	)
+	replacement.reload()
+
+	assignment_doc.db_set("replaced_by", replacement.name, update_modified=False)
+	assignment_doc.reload()
+
+	_note_in_feed(
+		assignment_doc,
+		_("{0} is going in place of {1}. {2}").format(
+			volunteer_label(volunteer), volunteer_label(assignment_doc.volunteer), reason
+		),
+	)
+	_tell_about_replacement(assignment_doc, replacement)
+
+	return {"replaced": dto(assignment_doc), "replacement": dto(replacement)}
+
+
+def _tell_about_replacement(original, replacement) -> None:
+	"""Tell the person standing down. The person stepping in has already been told.
+
+	**Only one notification is sent here, and that is not an omission.** The
+	replacement is raised as a question, and the assignment controller's
+	`after_insert` notifies whoever a question is put to — so sending a second
+	one here would put two identical items in the same person's list for the same
+	invitation. What nobody else tells is the person coming off, and that is the
+	one this sends.
+	"""
+	_tell_volunteer(original, _("You are no longer on this deployment"))
+
+
+# --- questions nobody answered ----------------------------------------------
+
+
+def expire_overdue(now=None) -> dict:
+	"""Expire every invitation whose answer-by date has passed. The scheduled sweep.
+
+	**Expired is not Declined**, and keeping them apart is the point of the whole
+	status. A coordinator looking at a roster needs to know the difference between
+	"they said no" and "they never saw it": the first is an answer and the second
+	is a message that did not land, and only one of them is worth chasing.
+
+	Only invitations carrying a date are touched. A society that never sets one
+	has questions that stand until somebody answers them, which is what not
+	setting one means.
+
+	Idempotent and safe to run as often as the scheduler likes: a row that has
+	already expired is no longer Pending and is not selected again.
+	"""
+	moment = now or now_datetime()
+
+	# A list rather than a dict: two conditions on one column, and a dict would
+	# silently keep only the second of them.
+	overdue = frappe.get_all(
+		ASSIGNMENT_DOCTYPE,
+		filters=[
+			[ASSIGNMENT_DOCTYPE, "status", "=", STATUS_PENDING],
+			[ASSIGNMENT_DOCTYPE, "invitation_expires_on", "is", "set"],
+			[ASSIGNMENT_DOCTYPE, "invitation_expires_on", "<", moment],
+		],
+		pluck="name",
+	)
+
+	expired = []
+
+	for name in overdue:
+		doc = frappe.get_doc(ASSIGNMENT_DOCTYPE, name)
+		doc.status = STATUS_EXPIRED
+		doc.save(ignore_permissions=True)
+		_note_in_feed(
+			doc,
+			_("The invitation to {0} expired unanswered.").format(volunteer_label(doc.volunteer)),
+		)
+		expired.append(name)
+
+	return {"expired": expired}
 
 
 def set_role(assignment_doc, role: str) -> dict:
@@ -625,13 +982,37 @@ def dto(assignment_doc) -> dict:
 		"is_on_deployment": assignment_doc.status in ON_DEPLOYMENT,
 		"is_open": assignment_doc.status in OPEN_STATUSES,
 		"is_settled": assignment_doc.status in TERMINAL_STATUSES,
+		# Whether the day itself has been accounted for, and whether they were
+		# there. Two questions rather than one, because a roster nobody has got
+		# round to marking up is a different thing from a roster of no-shows.
+		"has_outcome": assignment_doc.status in OUTCOMES,
+		"attended": assignment_doc.status in ATTENDED,
 		"role": assignment_doc.role,
 		"is_leader": assignment_doc.role == "leader",
+		"assignment_title": assignment_doc.assignment_title,
+		"assignment_description": assignment_doc.assignment_description,
+		"supervisor": assignment_doc.supervisor,
 		"start_date": assignment_doc.start_date,
 		"end_date": assignment_doc.end_date,
 		"invited_on": assignment_doc.invited_on,
+		"invited_by": assignment_doc.invited_by,
+		"invitation_expires_on": assignment_doc.invitation_expires_on,
 		"responded_on": assignment_doc.responded_on,
 		"response_note": assignment_doc.response_note,
+		"decline_reason": assignment_doc.decline_reason,
+		"briefing_completed_on": assignment_doc.briefing_completed_on,
+		"safety_acknowledged_on": assignment_doc.safety_acknowledged_on,
+		"checked_in_at": assignment_doc.checked_in_at,
+		"checked_out_at": assignment_doc.checked_out_at,
+		"verified_hours": frappe.utils.flt(assignment_doc.verified_hours) or None,
+		"attendance_verified_by": assignment_doc.attendance_verified_by,
+		"attendance_verified_on": assignment_doc.attendance_verified_on,
+		# The thread through a swap, both ways, so a reader of either record can
+		# reach the other without knowing which end they started at.
+		"replaces": assignment_doc.replaces,
+		"replaced_by": assignment_doc.replaced_by,
+		"replacement_reason": assignment_doc.replacement_reason,
+		"replacement_authorised_by": assignment_doc.replacement_authorised_by,
 		"joined_on": assignment_doc.joined_on,
 		"left_on": assignment_doc.left_on,
 		"participation_notes": assignment_doc.participation_notes,
@@ -649,11 +1030,28 @@ _ROW_FIELDS = (
 	"geo_node",
 	"status",
 	"role",
+	"assignment_title",
+	"assignment_description",
+	"supervisor",
 	"start_date",
 	"end_date",
 	"invited_on",
+	"invited_by",
+	"invitation_expires_on",
 	"responded_on",
 	"response_note",
+	"decline_reason",
+	"briefing_completed_on",
+	"safety_acknowledged_on",
+	"checked_in_at",
+	"checked_out_at",
+	"verified_hours",
+	"attendance_verified_by",
+	"attendance_verified_on",
+	"replaces",
+	"replaced_by",
+	"replacement_reason",
+	"replacement_authorised_by",
 	"joined_on",
 	"left_on",
 	"participation_notes",
@@ -670,6 +1068,8 @@ def _row(row: dict) -> dict:
 		"is_on_deployment": row.get("status") in ON_DEPLOYMENT,
 		"is_open": row.get("status") in OPEN_STATUSES,
 		"is_settled": row.get("status") in TERMINAL_STATUSES,
+		"has_outcome": row.get("status") in OUTCOMES,
+		"attended": row.get("status") in ATTENDED,
 		"is_leader": row.get("role") == "leader",
 	}
 
@@ -756,6 +1156,11 @@ def counts_for(deployment: str) -> dict:
 		**tally,
 		"on_deployment": sum(tally[status] for status in ON_DEPLOYMENT),
 		"open": sum(tally[status] for status in OPEN_STATUSES),
+		# How much of the day has been accounted for, and how much of it was
+		# attended. A coordinator closing a deployment out reads the first; a
+		# report on turnout reads the second.
+		"outcomes": sum(tally[status] for status in OUTCOMES),
+		"attended": sum(tally[status] for status in ATTENDED),
 		"total": sum(tally.values()),
 	}
 
@@ -774,6 +1179,8 @@ def counts_for_many(deployments: list[str]) -> dict[str, dict]:
 		**{status: 0 for status in STATUSES},
 		"on_deployment": 0,
 		"open": 0,
+		"outcomes": 0,
+		"attended": 0,
 		"total": 0,
 	}
 
@@ -803,6 +1210,8 @@ def counts_for_many(deployments: list[str]) -> dict[str, dict]:
 	for tally in tallies.values():
 		tally["on_deployment"] = sum(tally[status] for status in ON_DEPLOYMENT)
 		tally["open"] = sum(tally[status] for status in OPEN_STATUSES)
+		tally["outcomes"] = sum(tally[status] for status in OUTCOMES)
+		tally["attended"] = sum(tally[status] for status in ATTENDED)
 		tally["total"] = sum(tally[status] for status in STATUSES)
 
 	return tallies
@@ -836,3 +1245,62 @@ def assert_terms_offered(assignment_doc) -> None:
 	"""
 	if assignment_doc.is_new():
 		terms_service.assert_offered(assignment_doc.terms_of_reference)
+
+
+def readiness_for_many(deployments: list[str]) -> dict[str, dict]:
+	"""How ready each deployment's roster is, in one query rather than one per row.
+
+	The four control fields an operations screen reads off a roster — who is
+	leading, who has been briefed, who acknowledged the safety brief, and who has
+	checked in — counted per deployment. `counts_for_many` answers *who is
+	going*; this answers *how ready they are*, and the two are kept apart because
+	a listing that only needs headcounts should not pay for the second.
+
+	**Only assignments that are actually on the deployment are counted.** A
+	person who was briefed and then declined is not somebody who will be there,
+	and counting them would report a roster as readier than it is.
+
+	Every name asked about comes back, so a caller never has to decide what a
+	missing key means.
+	"""
+	empty = {"briefed": 0, "safety": 0, "checked_in": 0, "leaders": 0}
+
+	if not deployments:
+		return {}
+
+	found: dict[str, dict] = {name: dict(empty) for name in deployments}
+
+	table = frappe.qb.DocType(ASSIGNMENT_DOCTYPE)
+
+	rows = (
+		frappe.qb.from_(table)
+		.select(
+			table.deployment,
+			table.briefing_completed_on,
+			table.safety_acknowledged_on,
+			table.checked_in_at,
+			table.role,
+		)
+		.where(table.deployment.isin(deployments) & table.status.isin(ON_DEPLOYMENT))
+		.run(as_dict=True)
+	)
+
+	for row in rows:
+		tally = found.get(row["deployment"])
+
+		if tally is None:
+			continue
+
+		if row.get("briefing_completed_on"):
+			tally["briefed"] += 1
+
+		if row.get("safety_acknowledged_on"):
+			tally["safety"] += 1
+
+		if row.get("checked_in_at"):
+			tally["checked_in"] += 1
+
+		if row.get("role") == "leader":
+			tally["leaders"] += 1
+
+	return found

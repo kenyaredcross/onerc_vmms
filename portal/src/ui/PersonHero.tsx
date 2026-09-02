@@ -95,12 +95,12 @@ export function PersonHero({
 					<Avatar name={name} photo={photo} size={84} ring />
 
 					<div className="min-w-0">
-						<h2 className="font-display text-[21px] font-extrabold leading-tight tracking-tight text-ink">
+						<h2 className="text-[21px] font-semibold leading-tight tracking-tight text-ink">
 							{name || docname || "Unnamed"}
 						</h2>
 
 						{subtitle && (
-							<p className="mt-1 text-[13px] leading-snug text-slate-body">{subtitle}</p>
+							<p className="mt-1 text-[13px] leading-snug text-muted">{subtitle}</p>
 						)}
 
 						{(status || badges) && (
@@ -119,7 +119,7 @@ export function PersonHero({
 				</div>
 
 				{rows.length > 0 && (
-					<dl className="grid content-start gap-x-8 gap-y-3 border-t border-hairline pt-5 sm:grid-cols-2 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+					<dl className="grid content-start gap-x-8 gap-y-3 border-t border-card-line pt-5 sm:grid-cols-2 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
 						{rows.map((fact) => (
 							<div key={fact.label} className="flex items-baseline gap-2">
 								<dt className="w-[96px] flex-none text-[11.5px] leading-snug text-slate-faint">
@@ -135,7 +135,7 @@ export function PersonHero({
 			</div>
 
 			{actions && (
-				<div className="mt-5 flex flex-wrap gap-2 border-t border-hairline pt-5">{actions}</div>
+				<div className="mt-5 flex flex-wrap gap-2 border-t border-card-line pt-5">{actions}</div>
 			)}
 		</Card>
 	);
@@ -175,14 +175,14 @@ export function RegisterLinks({ registers, except }: { registers?: Registers; ex
 				<Link
 					key={entry.kind}
 					to={`/admin/registry/${entry.kind}/${encodeURIComponent(entry.name)}`}
-					className="inline-flex items-center gap-1.5 rounded-full border border-navy/20 bg-navy/[.05] px-3 py-1 text-[11.5px] font-bold text-navy transition hover:border-navy hover:bg-navy/10"
+					className="inline-flex items-center gap-1.5 rounded-full border border-blue/20 bg-rail/[.05] px-3 py-1 text-[11.5px] font-bold text-ink transition hover:border-blue hover:bg-rail/10"
 				>
 					Also a {entry.label.toLowerCase()}
 					{/* The other register's own status word, passed through. It is a
 					    different vocabulary from this page's and is never compared
 					    with it — see `api/person.py`. */}
 					{entry.status && (
-						<span className="font-semibold text-navy/70">· {entry.status}</span>
+						<span className="font-semibold text-ink/70">· {entry.status}</span>
 					)}
 				</Link>
 			))}

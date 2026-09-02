@@ -72,6 +72,12 @@ function main() {
 	if (args["full-page"]) command.push("-FullPage");
 	if (args.prepare) command.push("-Prepare", args.prepare);
 	if (args.edge) command.push("-Edge", args.edge);
+	// An authenticated capture: the value is a Frappe `sid` cookie minted with
+	// `curl -c` against `/api/method/login`. Set on the host before navigation so
+	// an auth-gated route (the portal, the console) renders signed in rather than
+	// bouncing to the login page.
+	if (args.sid) command.push("-Sid", args.sid);
+	if (args.host) command.push("-CookieHost", args.host);
 
 	const result = spawnSync(
 		"/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe",

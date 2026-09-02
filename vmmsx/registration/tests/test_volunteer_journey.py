@@ -205,13 +205,23 @@ class TestThePaperRegistration(RegistrationTestCase):
 		)
 		person.save()
 
+		# What the clerk transcribes off the signed paper form: the branch the
+		# applicant named, the emergency contact they gave, and the declarations
+		# they put their signature under. The requirements live in
+		# `assert_ready` and `assert_approvable` rather than in the portal
+		# endpoint, so the paper door is held to exactly the same standard as the
+		# browser — which is the whole reason this test creates the document by
+		# hand instead of posting a form.
 		application = frappe.get_doc(
 			{
 				"doctype": fixtures.APPLICATION_DOCTYPE,
 				"red_profile": profile,
 				"geo_node": self.branch(),
+				"emergency_contacts": fixtures.emergency_contact(),
 			}
-		).insert()
+		)
+		fixtures.accept_declarations(application)
+		application.insert()
 
 		from vmmsx.volunteer.services import application as application_service
 

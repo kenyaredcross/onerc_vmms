@@ -106,7 +106,7 @@ export default function Opportunities() {
 					// heading is a statement about the board; how many survived a
 					// search is what the grid underneath already shows.
 					available && !board.isLoading && rows.length > 0 && !filtered ? (
-						<span className="rounded-full bg-signal/10 px-3.5 py-1.5 font-display text-[12.5px] font-bold text-signal-dark">
+						<span className="rounded-full bg-blue/10 px-3.5 py-1.5 text-[12.5px] font-bold text-blue-press">
 							{rows.length} open
 						</span>
 					) : undefined
@@ -196,7 +196,7 @@ function FilterBar({
 		"w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-slate-faint";
 
 	return (
-		<div className="mb-6 rounded-panel bg-white p-2.5 shadow-card">
+		<div className="mb-6 rounded-2xl bg-white p-2.5 border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]">
 			<form
 				onSubmit={(event) => {
 					event.preventDefault();
@@ -204,7 +204,7 @@ function FilterBar({
 				}}
 				className="grid gap-2 sm:grid-cols-[1.5fr_1fr_auto]"
 			>
-				<label className="control sm:border-r sm:border-hairline">
+				<label className="control sm:border-r sm:border-card-line">
 					<Icon.search size={15} className="flex-none text-slate-faint" />
 					<span className="sr-only">Search opportunities</span>
 					<input
@@ -241,7 +241,7 @@ function FilterBar({
 				<button
 					type="submit"
 					aria-label="Search"
-					className="grid h-[42px] w-[42px] flex-none place-items-center justify-self-end rounded-full bg-signal text-white transition hover:bg-signal-dark"
+					className="grid h-[42px] w-[42px] flex-none place-items-center justify-self-end rounded-full bg-blue text-white transition hover:bg-blue-press"
 				>
 					<Icon.search size={16} />
 				</button>
@@ -252,7 +252,7 @@ function FilterBar({
 					<button
 						type="button"
 						onClick={onClear}
-						className="text-[11.5px] font-bold text-signal hover:underline"
+						className="text-[11.5px] font-bold text-blue hover:underline"
 					>
 						Clear all filters
 					</button>
@@ -274,11 +274,11 @@ function FilterBar({
  */
 function OpportunityCard({ row }: { row: Opportunity }) {
 	return (
-		<article className="flex flex-col overflow-hidden rounded-card bg-white shadow-card transition duration-200 hover:shadow-lift">
+		<article className="flex flex-col overflow-hidden rounded-xl bg-white border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] transition duration-200 hover:shadow-[0_2px_10px_rgba(30,50,73,0.07)]">
 			<div className="flex-1 p-5 sm:p-6">
 				<div className="flex items-start justify-between gap-3">
-					<h3 className="font-display text-[15.5px] font-extrabold leading-snug tracking-tight text-ink">
-						<Link to={`/opportunities/${encodeURIComponent(row.name)}`} className="hover:text-navy">
+					<h3 className="text-[15.5px] font-semibold leading-snug tracking-tight text-ink">
+						<Link to={`/opportunities/${encodeURIComponent(row.name)}`} className="hover:text-ink">
 							{row.title}
 						</Link>
 					</h3>
@@ -286,7 +286,7 @@ function OpportunityCard({ row }: { row: Opportunity }) {
 					    in the list below; "closes this week" is the one case where it
 					    changes what somebody should do about it today. */}
 					{row.closing_soon && (
-						<span className="flex-none rounded-full bg-signal/10 px-2.5 py-1 text-[10.5px] font-bold text-signal-dark">
+						<span className="flex-none rounded-full bg-blue/10 px-2.5 py-1 text-[10.5px] font-bold text-blue-press">
 							Closing soon
 						</span>
 					)}
@@ -295,12 +295,12 @@ function OpportunityCard({ row }: { row: Opportunity }) {
 				<Tags row={row} />
 
 				{row.summary && (
-					<p className="mt-3 line-clamp-3 text-[12.5px] leading-relaxed text-slate-body [overflow-wrap:anywhere]">
+					<p className="mt-3 line-clamp-3 text-[12.5px] leading-relaxed text-muted [overflow-wrap:anywhere]">
 						{row.summary}
 					</p>
 				)}
 
-				<dl className="mt-4 space-y-1.5 text-[12px] text-slate-body">
+				<dl className="mt-4 space-y-1.5 text-[12px] text-muted">
 					{row.location && (
 						<div className="flex items-center gap-1.5">
 							<Icon.pin size={13} className="flex-none text-slate-faint" />
@@ -322,10 +322,10 @@ function OpportunityCard({ row }: { row: Opportunity }) {
 				</dl>
 			</div>
 
-			<div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline-soft bg-surface/60 px-5 py-3.5 sm:px-6">
+			<div className="flex flex-wrap items-center justify-between gap-3 border-t border-card-line bg-surface/60 px-5 py-3.5 sm:px-6">
 				<Link
 					to={`/opportunities/${encodeURIComponent(row.name)}`}
-					className="inline-flex flex-none items-center gap-1.5 font-display text-[12.5px] font-bold text-navy hover:underline"
+					className="inline-flex flex-none items-center gap-1.5 text-[12.5px] font-bold text-ink hover:underline"
 				>
 					Full details
 					<Icon.chevron size={13} className="-rotate-90" />
@@ -348,7 +348,7 @@ function Tags({ row }: { row: Opportunity }) {
 			{tags.map((tag) => (
 				<span
 					key={tag}
-					className="rounded-full border border-hairline-strong bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-body"
+					className="rounded-full border border-card-line bg-white px-2.5 py-1 text-[11px] font-semibold text-muted"
 				>
 					{tag}
 				</span>
@@ -377,7 +377,7 @@ function ApplyLink({ row, compact = false }: { row: Opportunity; compact?: boole
 			target="_blank"
 			rel="noopener noreferrer"
 			className={cx(
-				"inline-flex flex-none items-center gap-1.5 rounded-card bg-signal font-display font-bold text-white transition hover:bg-signal-dark",
+				"inline-flex flex-none items-center gap-1.5 rounded-xl bg-blue font-bold text-white transition hover:bg-blue-press",
 				compact ? "px-4 py-2 text-[12.5px]" : "px-5 py-2.5 text-[13px]",
 			)}
 		>
@@ -473,13 +473,13 @@ export function MyDeployments() {
 				{rows.map((row) => (
 					<li
 						key={String(row.name ?? row.deployment)}
-						className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-hairline bg-white px-4 py-3"
+						className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-card-line bg-white px-4 py-3"
 					>
 						<div className="min-w-0">
-							<div className="font-display text-[13.5px] font-bold text-ink">
+							<div className="text-[13.5px] font-bold text-ink">
 								{row.title || row.deployment_name || String(row.name ?? "")}
 							</div>
-							<div className="mt-0.5 text-[11.5px] text-slate-body">
+							<div className="mt-0.5 text-[11.5px] text-muted">
 								{row.geo_path}
 								{row.start_date && ` · from ${formatDate(row.start_date)}`}
 							</div>
@@ -517,7 +517,7 @@ export function OpportunityDetail() {
 		<>
 			<Link
 				to="/opportunities"
-				className="mb-6 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-navy hover:underline"
+				className="mb-6 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink hover:underline"
 			>
 				<Icon.back size={14} />
 				All opportunities
@@ -541,7 +541,7 @@ export function OpportunityDetail() {
 function OpportunityBody({ row }: { row: Opportunity }) {
 	return (
 		<article className="mx-auto max-w-3xl">
-			<div className="overflow-hidden rounded-feature bg-gradient-to-br from-navy via-navy to-signal/70 px-7 py-10 text-white shadow-hero sm:px-10 sm:py-12">
+			<div className="overflow-hidden rounded-2xl bg-gradient-to-br from-rail via-rail to-blue/70 px-7 py-10 text-white shadow-hero sm:px-10 sm:py-12">
 				<div className="flex flex-wrap items-center gap-2.5">
 					<span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white/80 backdrop-blur">
 						Opportunity
@@ -552,13 +552,13 @@ function OpportunityBody({ row }: { row: Opportunity }) {
 						</span>
 					)}
 					{row.closing_soon && (
-						<span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-signal-dark">
+						<span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-blue-press">
 							Closing soon
 						</span>
 					)}
 				</div>
 
-				<h1 className="mt-4 font-display text-[30px] font-extrabold leading-tight tracking-tight sm:text-[36px]">
+				<h1 className="mt-4 text-[30px] font-semibold leading-tight tracking-tight sm:text-[36px]">
 					{row.title}
 				</h1>
 
@@ -604,8 +604,8 @@ function OpportunityBody({ row }: { row: Opportunity }) {
 			</div>
 
 			{row.description_html && (
-				<section className="mt-5 rounded-panel border border-hairline bg-white p-6 shadow-card sm:p-7">
-					<h2 className="font-display text-[15px] font-bold tracking-tight text-ink">
+				<section className="mt-5 rounded-2xl border border-card-line bg-white p-6 border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] sm:p-7">
+					<h2 className="text-[15px] font-bold tracking-tight text-ink">
 						About this role
 					</h2>
 					{/*
@@ -624,17 +624,17 @@ function OpportunityBody({ row }: { row: Opportunity }) {
 					 * authored by this app, so neither can be assumed to fit.
 					 */}
 					<div
-						className="article-body mt-3 text-[13.5px] leading-relaxed text-slate-body"
+						className="article-body mt-3 text-[13.5px] leading-relaxed text-muted"
 						dangerouslySetInnerHTML={{ __html: row.description_html }}
 					/>
 				</section>
 			)}
 
-			<section className="mt-5 rounded-panel border border-hairline bg-surface/60 p-6 sm:p-7">
-				<h2 className="font-display text-[15px] font-bold tracking-tight text-ink">
+			<section className="mt-5 rounded-2xl border border-card-line bg-surface/60 p-6 sm:p-7">
+				<h2 className="text-[15px] font-bold tracking-tight text-ink">
 					How to apply
 				</h2>
-				<p className="mt-2 text-[13.5px] leading-relaxed text-slate-body">
+				<p className="mt-2 text-[13.5px] leading-relaxed text-muted">
 					Applying opens the Society's recruitment system, which is where this post is held and
 					where your application will be read. Your volunteer record here is separate: keeping
 					it and your training current is what puts you in a coordinator's search when a
@@ -662,8 +662,8 @@ function Panel({
 	children: ReactNode;
 }) {
 	return (
-		<div className="flex gap-3 rounded-panel border border-hairline bg-white p-5 shadow-card">
-			<span className="mt-0.5 flex-none text-navy" aria-hidden="true">
+		<div className="flex gap-3 rounded-2xl border border-card-line bg-white p-5 border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]">
+			<span className="mt-0.5 flex-none text-ink" aria-hidden="true">
 				{icon}
 			</span>
 			<div className="min-w-0">

@@ -30,7 +30,7 @@ roles. It moves values between the engine and a document.
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
+from frappe.utils import get_datetime, now_datetime
 
 from vmmsx.approvals import states
 
@@ -158,7 +158,47 @@ def decisions(doc) -> list:
 
 
 def decisions_at(doc, stage_name: str) -> list:
-	return [row for row in decisions(doc) if row.stage == stage_name]
+	"""Decisions recorded at this stage **in the round now under review**.
+
+	The round is what makes this correct, and leaving it out was a real defect.
+	An approver who asks for more information sends the application back to
+	Draft; when the applicant resubmits, review restarts at the first stage —
+	*the same stage row*, because a stage is a row in the workflow and not an
+	instance of one. So the earlier "More info requested" was still sitting at
+	this stage, `engine.decide` found it and refused the approver a second
+	decision with "A decision cannot be replaced". The one approver who had
+	already looked at the application was the one person who could no longer
+	decide it, and on a single-stage workflow that is everybody.
+
+	**The round boundary is `approval_stage_entered_on`**, which the engine
+	already writes every time a stage is entered — including on resubmission, so
+	no new state was needed to tell the rounds apart. A decision recorded before
+	the stage was last entered belongs to a previous round: it stays in the
+	audit trail, where it is the record of what happened, and it no longer
+	speaks for what is happening now.
+
+	Within one round nothing changes: a stage waiting on several approvers keeps
+	the same `entered_on` while they answer, so their decisions all count, and
+	the same person deciding twice is still caught.
+
+	A document with no `entered_on` — a terminal application, or one written
+	before this field was filled — falls back to every decision at the stage,
+	which is the old behaviour and the safe direction for a caller that is only
+	reading history.
+	"""
+	at_stage = [row for row in decisions(doc) if row.stage == stage_name]
+	entered_on = stage_entered_on(doc)
+
+	if not entered_on:
+		return at_stage
+
+	# Both sides through `get_datetime`, because one of them is often a string:
+	# a value the engine has just written in memory is a `datetime`, and the
+	# same value read back off a saved document is whatever the driver returned.
+	# Comparing the two directly raises rather than answering.
+	entered_on = get_datetime(entered_on)
+
+	return [row for row in at_stage if row.decided_on and get_datetime(row.decided_on) >= entered_on]
 
 
 def record_decision(doc, stage_row, user: str, decision: str, reason: str | None) -> None:

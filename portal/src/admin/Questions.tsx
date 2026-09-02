@@ -51,7 +51,7 @@ export default function Questions() {
 		"admin:question_targets",
 	);
 
-	const rows = targets.data?.message.targets ?? [];
+	const rows = targets.data?.message?.targets ?? [];
 
 	// The first registration, once we know what they are. Chosen here rather than
 	// defaulted to a name, because this file does not know one.
@@ -84,7 +84,7 @@ export default function Questions() {
 									"whitespace-nowrap rounded-full px-4 py-2 text-[12px] font-semibold transition",
 									target === row.doctype
 										? "bg-ink text-white"
-										: "border border-hairline-strong bg-white text-slate-strong hover:border-navy",
+										: "border border-card-line bg-white text-slate-strong hover:border-blue",
 								)}
 							>
 								{/* The `VMMS ` prefix is dropped for display the same way
@@ -98,7 +98,7 @@ export default function Questions() {
 				}
 			/>
 
-			<p className="mb-6 max-w-2xl text-[13px] text-slate-body">
+			<p className="mb-6 max-w-2xl text-[13px] text-muted">
 				<EditableText
 					k="admin.questions.intro"
 					fallback="Questions added here are asked on the registration form and shown to whoever approves the application. Applications already in are not changed."
@@ -114,8 +114,8 @@ export default function Questions() {
 					<Builder
 						key={target}
 						askedOn={target}
-						fieldTypes={targets.data?.message.field_types ?? []}
-						groups={targets.data?.message.groups ?? []}
+						fieldTypes={targets.data?.message?.field_types ?? []}
+						groups={targets.data?.message?.groups ?? []}
 						onChanged={() => void targets.mutate()}
 					/>
 				)
@@ -268,9 +268,9 @@ function QuestionRow({
 		<Card className={cx(!question.is_active && "opacity-60")}>
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div className="min-w-0">
-					<p className="font-display text-[15px] font-bold text-ink">
+					<p className="text-[15px] font-bold text-ink">
 						{question.label}
-						{question.is_required && <span className="ml-1 text-signal">*</span>}
+						{question.is_required && <span className="ml-1 text-blue">*</span>}
 					</p>
 					<div className="mt-1.5 flex flex-wrap gap-1.5">
 						{/* First, because it is what says where on the form this
@@ -284,7 +284,7 @@ function QuestionRow({
 						)}
 					</div>
 					{question.help_text && (
-						<p className="mt-2 text-[13px] text-slate-body">{question.help_text}</p>
+						<p className="mt-2 text-[13px] text-muted">{question.help_text}</p>
 					)}
 					{question.choices.length > 0 && (
 						<p className="mt-2 text-[12px] text-slate-faint">
@@ -300,7 +300,7 @@ function QuestionRow({
 							onClick={() => void move(-1)}
 							disabled={busy || isFirst}
 							aria-label="Move up"
-							className="grid h-8 w-8 place-items-center rounded-card border border-hairline-strong text-slate-body transition hover:border-navy hover:text-navy disabled:opacity-30"
+							className="grid h-8 w-8 place-items-center rounded-xl border border-card-line text-muted transition hover:border-blue hover:text-ink disabled:opacity-30"
 						>
 							↑
 						</button>
@@ -309,7 +309,7 @@ function QuestionRow({
 							onClick={() => void move(1)}
 							disabled={busy || isLast}
 							aria-label="Move down"
-							className="grid h-8 w-8 place-items-center rounded-card border border-hairline-strong text-slate-body transition hover:border-navy hover:text-navy disabled:opacity-30"
+							className="grid h-8 w-8 place-items-center rounded-xl border border-card-line text-muted transition hover:border-blue hover:text-ink disabled:opacity-30"
 						>
 							↓
 						</button>
@@ -341,7 +341,7 @@ function QuestionRow({
 			{/* Said on the row that has answers, because it is the moment somebody
 			    wonders why there is no delete. */}
 			{canEdit && question.answer_count > 0 && (
-				<p className="mt-3 border-t border-hairline pt-3 text-[12px] text-slate-faint">
+				<p className="mt-3 border-t border-card-line pt-3 text-[12px] text-slate-faint">
 					Retiring stops this being asked. The {question.answer_count} answers already given
 					stay on the applications they were part of.
 				</p>
@@ -422,7 +422,7 @@ function QuestionForm({
 						value={label}
 						onChange={(event) => setLabel(event.target.value)}
 						placeholder="Letter from the area chief"
-						className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+						className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
 					/>
 				</label>
 
@@ -441,7 +441,7 @@ function QuestionForm({
 						list={groupListId}
 						onChange={(event) => setGroup(event.target.value)}
 						placeholder="Health information"
-						className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+						className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
 					/>
 					<datalist id={groupListId}>
 						{groups.map((option) => (
@@ -461,7 +461,7 @@ function QuestionForm({
 					<select
 						value={fieldType}
 						onChange={(event) => setFieldType(event.target.value)}
-						className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+						className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
 					>
 						{fieldTypes.map((type) => (
 							<option key={type} value={type}>
@@ -471,7 +471,7 @@ function QuestionForm({
 					</select>
 				</label>
 
-				<label className="flex items-end gap-2 pb-2 text-[13px] text-slate-body">
+				<label className="flex items-end gap-2 pb-2 text-[13px] text-muted">
 					<input
 						type="checkbox"
 						checked={isRequired}
@@ -489,7 +489,7 @@ function QuestionForm({
 							value={options}
 							onChange={(event) => setOptions(event.target.value)}
 							rows={4}
-							className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+							className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
 						/>
 						<span className="mt-1 block text-[12px] text-slate-faint">
 							{choices.length === 0
@@ -507,7 +507,7 @@ function QuestionForm({
 						value={helpText}
 						onChange={(event) => setHelpText(event.target.value)}
 						rows={2}
-						className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+						className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
 					/>
 				</label>
 			</div>

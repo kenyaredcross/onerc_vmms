@@ -66,8 +66,8 @@ export default function AdminStipends() {
 						className={cx(
 							"rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
 							tab === key
-								? "border-navy bg-navy text-white"
-								: "border-hairline-strong bg-white text-slate-body hover:border-navy hover:text-navy",
+								? "border-blue bg-rail text-white"
+								: "border-card-line bg-white text-muted hover:border-blue hover:text-ink",
 						)}
 					>
 						{label}
@@ -104,7 +104,7 @@ function ApprovalStrip({
 	onAct: (label: string, method: string) => void;
 }) {
 	return (
-		<div className="mt-4 border-t border-hairline pt-3">
+		<div className="mt-4 border-t border-card-line pt-3">
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<div className="flex flex-wrap items-center gap-2">
 					<StateBadge state={approval.approval_state} />
@@ -138,7 +138,7 @@ function ApprovalStrip({
 			</div>
 
 			{approval.is_pending && approval.blocked_because && (
-				<p className="mt-2.5 rounded-card bg-surface px-3 py-2 text-[11.5px] text-slate-body">
+				<p className="mt-2.5 rounded-xl bg-surface px-3 py-2 text-[11.5px] text-muted">
 					{approval.blocked_because}
 				</p>
 			)}
@@ -211,17 +211,17 @@ function ReportList() {
 									type="button"
 									onClick={() => setOpen(row.report)}
 									className={cx(
-										"w-full rounded-card border bg-white px-4 py-3 text-left transition",
+										"w-full rounded-xl border bg-white px-4 py-3 text-left transition",
 										(open ?? rows[0]?.report) === row.report
-											? "border-navy shadow-card"
-											: "border-hairline hover:border-hairline-strong",
+											? "border-blue border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]"
+											: "border-card-line hover:border-card-line",
 									)}
 								>
 									<div className="flex items-start justify-between gap-2">
 										<span className="text-[13.5px] font-bold text-ink">{row.report}</span>
 										<StateBadge state={row.approval.approval_state} />
 									</div>
-									<div className="mt-1 text-[11.5px] text-slate-body">
+									<div className="mt-1 text-[11.5px] text-muted">
 										{geoPath(row.geo_path)}
 									</div>
 									<div className="mt-0.5 text-[11.5px] text-slate-faint">
@@ -252,7 +252,7 @@ function ReportPane({ report, onChanged }: { report: StipendReport; onChanged: (
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<SectionTitle>{report.report}</SectionTitle>
-					<p className="text-[12px] text-slate-body">{geoPath(report.geo_path)}</p>
+					<p className="text-[12px] text-muted">{geoPath(report.geo_path)}</p>
 					<p className="mt-0.5 text-[12px] text-slate-faint">
 						{report.period_from ? formatDate(report.period_from) : "No start"}
 						{report.period_to ? ` → ${formatDate(report.period_to)}` : ""}
@@ -335,10 +335,10 @@ function FormList() {
 									type="button"
 									onClick={() => setOpen(row.payment_form)}
 									className={cx(
-										"w-full rounded-card border bg-white px-4 py-3 text-left transition",
+										"w-full rounded-xl border bg-white px-4 py-3 text-left transition",
 										(open ?? rows[0]?.payment_form) === row.payment_form
-											? "border-navy shadow-card"
-											: "border-hairline hover:border-hairline-strong",
+											? "border-blue border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]"
+											: "border-card-line hover:border-card-line",
 									)}
 								>
 									<div className="flex items-start justify-between gap-2">
@@ -347,7 +347,7 @@ function FormList() {
 										</span>
 										<StateBadge state={row.approval.approval_state} />
 									</div>
-									<div className="mt-1 text-[11.5px] text-slate-body">
+									<div className="mt-1 text-[11.5px] text-muted">
 										{geoPath(row.geo_path)}
 									</div>
 									<div className="mt-0.5 text-[11.5px] text-slate-faint">
@@ -380,7 +380,7 @@ function FormPane({ form, onChanged }: { form: StipendPaymentForm; onChanged: ()
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<SectionTitle>{form.payment_form}</SectionTitle>
-					<p className="text-[12px] text-slate-body">{geoPath(form.geo_path)}</p>
+					<p className="text-[12px] text-muted">{geoPath(form.geo_path)}</p>
 					<p className="mt-0.5 text-[12px] text-slate-faint">
 						{form.period_from ? formatDate(form.period_from) : "No start"}
 						{form.period_to ? ` → ${formatDate(form.period_to)}` : ""}
@@ -388,7 +388,7 @@ function FormPane({ form, onChanged }: { form: StipendPaymentForm; onChanged: ()
 					</p>
 				</div>
 				<div className="text-right">
-					<div className="font-display text-[22px] font-bold text-ink">
+					<div className="text-[22px] font-bold text-ink">
 						{formatMoney(form.total_payable, form.currency)}
 					</div>
 					<div className="text-[11px] text-slate-faint">total payable</div>

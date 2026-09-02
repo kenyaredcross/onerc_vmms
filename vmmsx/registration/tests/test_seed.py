@@ -251,6 +251,15 @@ class TestAJourneyThroughTheSeededSociety(SeedTestCase):
 				home_geo_node=branch,
 				id_type=id_type,
 				id_number="SEED-TEST-0001",
+				declarations_accepted=self._required_declarations(),
+				emergency_contacts=[
+					{
+						"contact_name": "Mercy Otieno",
+						"relationship": "Sister",
+						"primary_phone": "+254700000001",
+						"may_contact_in_emergency": 1,
+					}
+				],
 			)
 		finally:
 			frappe.set_user("Administrator")
@@ -319,6 +328,18 @@ class TestAJourneyThroughTheSeededSociety(SeedTestCase):
 		frappe.clear_cache(user=APPLICANT)
 
 		return APPLICANT
+
+	def _required_declarations(self) -> list[str]:
+		"""Every declaration this society requires, as a browser would send them.
+
+		Read from the live list rather than named, so this suite is about the
+		seeded society rather than about which four declarations the app ships.
+		"""
+		from vmmsx.registration.services import declarations
+
+		return [
+			row["name"] for row in declarations.shown_on("VMMS Volunteer Application") if row["is_required"]
+		]
 
 	def _identification_type(self) -> str:
 		"""An Identification Type, required to submit — created as Administrator,

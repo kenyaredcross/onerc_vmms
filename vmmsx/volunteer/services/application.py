@@ -36,16 +36,27 @@ code here either.
 
 import frappe
 from frappe import _
-from frappe.utils import getdate, today
+from frappe.utils import cint, getdate, today
 
 from vmmsx.approvals import states
 from vmmsx.approvals.services import contract, engine
-from vmmsx.registration.services import questions
+from vmmsx.registration.services import declarations, questions
+from vmmsx.registration.services import society as registration_society
 from vmmsx.volunteer.services import hr, identity
 from vmmsx.volunteer.services import volunteer as volunteer_service
 
 APPLICATION_DOCTYPE = "VMMS Volunteer Application"
 VOLUNTEER_DOCTYPE = "VMMS Volunteer"
+
+IDENTIFICATION_TYPE_DOCTYPE = "Identification Type"
+
+# The three vmmsx-owned Custom Fields on core's `Identification Type` that say
+# what a society insists on seeing. Installed by
+# `patches/install_identity_document_rules.py`; named here so the reader and the
+# patch agree on the spelling and nothing else in this module hardcodes one.
+REQUIRED_DOCUMENT_FIELD = "vmms_is_required_for_volunteers"
+DOCUMENT_ATTACHMENT_FIELD = "vmms_requires_attachment"
+DOCUMENT_MINIMUM_AGE_FIELD = "vmms_minimum_age"
 
 ACCEPTANCE_FLAG = "vmms_application_accepting"
 
@@ -116,12 +127,20 @@ def assert_ready(application) -> None:
 	a question a branch added is as required as identification is, and neither is
 	required to hold a half-finished draft. `assert_answered` is a no-op until
 	somebody creates a question, so a society that has added none is unaffected.
+
+	**What is deliberately not here.** Emergency contacts and a minor's guardian
+	consent are required to *approve*, not to submit — see `assert_approvable`.
+	An applicant should be able to send their application in and have the branch
+	chase the missing consent form, rather than being turned away at the door by
+	a requirement somebody else has to satisfy.
 	"""
 	_assert_country_of_citizenship(application)
 	_assert_identification(application)
+	_assert_identity_documents(application)
 	_assert_date_of_birth(application)
 	_assert_residency_complete(application)
 	questions.assert_answered(application)
+	declarations.assert_accepted(application)
 
 
 def _assert_country_of_citizenship(application) -> None:
@@ -160,6 +179,104 @@ def _assert_identification(application) -> None:
 		frappe.MandatoryError,
 		title=_("Missing Identification"),
 	)
+
+
+def _assert_identity_documents(application) -> None:
+	"""Every document this society insists on, produced and where required copied.
+
+	The floor above is "some identification". This is the society's own answer on
+	top of it, read from the `vmms_`-prefixed Custom Fields on core's
+	`Identification Type` — so a branch that starts requiring a birth certificate
+	ticks a box on a record it already has, and no source file here names a
+	document.
+
+	Three ways this is deliberately quiet:
+
+	1. **A society that has ticked nothing is unaffected.** No required types,
+	   no requirement — the same "empty narrows nothing" direction every other
+	   society setting takes.
+	2. **A required document below its own minimum age is not insisted on.** A
+	   national ID card that is not issued until sixteen cannot be a condition
+	   of a fourteen-year-old volunteering, and a society that has said so on the
+	   type should not have to maintain a second list of exceptions.
+	3. **It does nothing at all before the rules are installed.** A site
+	   mid-migrate has the doctype and not yet the Custom Fields, and a filter on
+	   a column that is not there would throw where the honest answer is that
+	   this society has not configured anything yet.
+	"""
+	required = _required_document_types()
+
+	if not required:
+		return
+
+	age = _age_of(application)
+	# `identity.identifications` already drops any row missing a type or a
+	# number, so what is here is what the applicant has actually produced.
+	held = {row["id_type"]: row for row in identity.identifications(application)}
+
+	for document in required:
+		minimum = cint(document.get(DOCUMENT_MINIMUM_AGE_FIELD))
+
+		if minimum and age is not None and age < minimum:
+			continue
+
+		row = held.get(document["name"])
+
+		if not row:
+			frappe.throw(
+				_(
+					"This society asks every volunteer for {0}. Add it to your profile before submitting."
+				).format(frappe.bold(document["label"])),
+				frappe.MandatoryError,
+				title=_("Missing Identification"),
+			)
+
+		if document.get(DOCUMENT_ATTACHMENT_FIELD) and not row.get("attachment"):
+			frappe.throw(
+				_(
+					"This society asks for a copy of your {0}, not only the number. Upload one to"
+					" your profile before submitting."
+				).format(frappe.bold(document["label"])),
+				frappe.MandatoryError,
+				title=_("Missing Document Copy"),
+			)
+
+
+def _required_document_types() -> list[dict]:
+	"""The active identification types this society insists a volunteer produces.
+
+	Empty — and cheap — on a site whose `Identification Type` does not yet carry
+	the vmmsx rules, which is every site between syncing this module and running
+	the patch that installs them.
+	"""
+	meta = frappe.get_meta(IDENTIFICATION_TYPE_DOCTYPE)
+
+	if not meta.has_field(REQUIRED_DOCUMENT_FIELD):
+		return []
+
+	rows = frappe.get_all(
+		IDENTIFICATION_TYPE_DOCTYPE,
+		filters={"is_active": 1, REQUIRED_DOCUMENT_FIELD: 1},
+		fields=[
+			"name",
+			"identification_type_name",
+			DOCUMENT_ATTACHMENT_FIELD,
+			DOCUMENT_MINIMUM_AGE_FIELD,
+		],
+		order_by="identification_type_name asc",
+	)
+
+	return [
+		{
+			"name": row["name"],
+			# The society's own word for it, falling back to the key so an
+			# unnamed type still produces a message somebody can act on.
+			"label": row.get("identification_type_name") or row["name"],
+			DOCUMENT_ATTACHMENT_FIELD: row.get(DOCUMENT_ATTACHMENT_FIELD),
+			DOCUMENT_MINIMUM_AGE_FIELD: row.get(DOCUMENT_MINIMUM_AGE_FIELD),
+		}
+		for row in rows
+	]
 
 
 def _assert_date_of_birth(application) -> None:
@@ -237,6 +354,151 @@ def _profile_value(application, fieldname: str):
 	return frappe.db.get_value("Red Profile", profile, fieldname) if profile else None
 
 
+# --- age, and the guardian rules that hang off it --------------------------
+#
+# Age is **derived, never stored**. A number written down is wrong the following
+# year, and an application carrying "17" that was approved in 2024 tells nobody
+# anything useful in 2026. `is_minor` on the doctype is a read-only convenience
+# for the desk form's `depends_on`, recomputed on every save from the two things
+# that actually decide it: the person's date of birth on their Red Profile, and
+# the age this society counts as adult.
+
+
+def _age_of(application, reference=None) -> int | None:
+	"""The applicant's age in whole years, or None when nobody has said.
+
+	Read from Red Profile, which is where the date of birth lives — with the
+	intake buffer as a fallback for the one moment it has not landed there yet,
+	the same pair `_assert_date_of_birth` reads.
+
+	None is a real answer and not an error: a draft that has not been asked for a
+	date of birth yet has no age, and every caller here treats that as "no rule
+	fires" rather than guessing one.
+	"""
+	born = application.get("applicant_date_of_birth") or _profile_value(application, "date_of_birth")
+
+	if not born:
+		return None
+
+	born = getdate(born)
+	on = getdate(reference or today())
+
+	# The standard whole-years calculation: subtract the years, then take one
+	# back if this year's birthday has not happened yet.
+	return on.year - born.year - ((on.month, on.day) < (born.month, born.day))
+
+
+def is_minor(application, reference=None) -> bool:
+	"""Is this applicant below the age this society treats as adult?
+
+	False whenever the society has not configured an age of majority, and false
+	when nobody has given a date of birth. Both are "no rule fires": an app that
+	guessed eighteen would be inventing a law, and one that treated an unknown
+	date as a child would block every draft.
+
+	**Asked as of today rather than as of the application date**, and the
+	difference is the whole point. The rule this serves is "a minor's
+	application needs a verified guardian consent before it is approved" — so
+	the question is whether the person being approved is a minor now, not
+	whether they were one when they filled in the form. Somebody who applied at
+	seventeen and turned eighteen while their application sat in a queue does not
+	need their parent's permission, and asking for it would be the system failing
+	to notice a birthday.
+
+	What the birthday does *not* do is erase anything: the guardian consent rows
+	already recorded stay on the application, because they are the record of what
+	happened, and only the gate stops applying.
+	"""
+	threshold = registration_society.minor_age()
+
+	if not threshold:
+		return False
+
+	age = _age_of(application, reference)
+
+	return age is not None and age < threshold
+
+
+# --- readiness to be approved ----------------------------------------------
+
+
+def assert_approvable(application) -> None:
+	"""Refuse an approval the society is not in a position to make.
+
+	**Separate from `assert_ready` on purpose.** Those are the applicant's own
+	obligations, checked while they are still the person who can fix them. These
+	two are the branch's: an emergency contact is something a coordinator can
+	take over the phone, and a guardian's consent is something somebody at the
+	society has to go and verify. Blocking *submission* on either would turn away
+	an application over work that had not started yet; blocking *approval* is the
+	rule actually wanted — nobody is enrolled as a volunteer until the society
+	knows who to call and, for a child, has satisfied itself that a parent
+	agreed.
+
+	Called from the controller's `validate` on the save that moves the
+	application into Approved, so it runs whichever door the decision came
+	through — the API gate, the desk, or a service — and the whole decision rolls
+	back with a sentence the approver can act on.
+	"""
+	_assert_emergency_contact(application)
+	_assert_guardian_consent(application)
+
+
+def _assert_emergency_contact(application) -> None:
+	"""At least one contact the applicant has actually permitted us to call.
+
+	The permission is counted, not merely the row. A number on file that the
+	applicant has told us not to use is not an emergency contact — it is a number
+	we may not call — and treating the two as the same would mean the register
+	answering "yes" to a question it cannot answer.
+	"""
+	contacts = [row for row in application.get("emergency_contacts") or [] if row.may_contact_in_emergency]
+
+	if contacts:
+		return
+
+	frappe.throw(
+		_(
+			"This application has no emergency contact we may call. Add one, with the applicant's"
+			" permission to contact them, before approving it."
+		),
+		frappe.ValidationError,
+		title=_("No Emergency Contact"),
+	)
+
+
+def _assert_guardian_consent(application) -> None:
+	"""A minor needs a guardian's consent, and somebody has to have checked it.
+
+	Two conditions and they are not the same one twice. `consent_given` is what
+	the guardian said; `is_verified` is what a reviewer at the society did about
+	it. An application carrying a claimed consent nobody has looked at is the
+	ordinary state of a freshly submitted application, and it is exactly the
+	state this refuses to approve.
+
+	A no-op for an adult, and a no-op for every applicant at a society that has
+	not configured an age of majority.
+	"""
+	if not is_minor(application):
+		return
+
+	verified = [
+		row for row in application.get("guardian_consents") or [] if row.consent_given and row.is_verified
+	]
+
+	if verified:
+		return
+
+	frappe.throw(
+		_(
+			"This applicant is under {0}. Their application cannot be approved until a parent or"
+			" guardian's consent has been recorded and a reviewer has marked it verified."
+		).format(frappe.bold(registration_society.minor_age())),
+		frappe.ValidationError,
+		title=_("Guardian Consent Not Verified"),
+	)
+
+
 # --- acceptance -----------------------------------------------------------
 
 
@@ -283,7 +545,15 @@ def accept(application) -> dict:
 	the application, and correcting the application does not touch the volunteer.
 	`capabilities.seed()` fills blanks only, so a second application years later
 	cannot overwrite what the society has been maintaining since.
+
+	**A guardian is carried forward for the same reason and at the same moment.**
+	The consent rows on the application are part of the decision and stay there;
+	what is copied out is a standing record of who a young volunteer's parent is,
+	because everything a society writes to them from here — an invitation, a task,
+	a change of plan — happens long after this application is closed and must not
+	be a reason to reopen it. See `registration/services/guardian.adopt`.
 	"""
+	from vmmsx.registration.services import guardian
 	from vmmsx.volunteer.services import capabilities
 
 	volunteer = volunteer_service.ensure(
@@ -308,11 +578,17 @@ def accept(application) -> dict:
 	volunteer.reload()
 	provisioned = hr.provision(volunteer)
 
+	# After the volunteer exists and before the DTO is built, so a caller can
+	# report it. Never raises — see `guardian.adopt`: a guardian record that
+	# could not be written must not roll back somebody's acceptance.
+	guardians = guardian.adopt(application)
+
 	return {
 		**status(application),
 		"volunteer_status": settled["status"],
 		"seeded": sorted(seeded),
 		"hr": provisioned,
+		"guardians": guardians,
 	}
 
 
@@ -348,9 +624,10 @@ def _report(application, previous: str | None) -> None:
 
 	Everything about *when* to send is `lifecycle.notify`'s: it compares the two
 	states and sends nothing when the save did not move the application. What
-	this function owns is the subject — who the applicant is, and the card that
-	goes with an approval.
+	this function owns is the subject — who the applicant is, the card that goes
+	with an approval, and who else is copied.
 	"""
+	from vmmsx.registration.services import guardian
 	from vmmsx.notifications.services import lifecycle
 
 	person = identity.read(application)
@@ -366,6 +643,11 @@ def _report(application, previous: str | None) -> None:
 			"geo_path": _geo_path(application),
 			"portal_path": "/portal/profile",
 			"attachment": _card_attachment(application),
+			# A young applicant's parent, copied on the four letters that decide
+			# their application. Asked of the *person* rather than of this
+			# application's own `is_minor`, and asked now rather than when the
+			# form was filled in — see `guardian.emails_for`.
+			"cc": guardian.emails_for(application.red_profile),
 		},
 	)
 
@@ -648,7 +930,56 @@ def decision_dto(application) -> dict:
 		# application's own snapshots rather than the live question list, so an
 		# application decided last year still shows the question it was asked.
 		"answers": questions.answers_of(application),
+		# The three things an approver has to be able to check before approving,
+		# because `assert_approvable` will refuse the decision over two of them.
+		# A screen that hid them would leave somebody pressing Approve and being
+		# told no, with no way to see what was missing.
+		"emergency_contacts": _emergency_contacts_dto(application),
+		"is_minor": is_minor(application),
+		"guardian_consents": _guardian_consents_dto(application),
+		# Read off the acceptance rows' own snapshots, never the live
+		# declarations: what matters is the wording this applicant agreed to.
+		"declarations": declarations.accepted_of(application),
 	}
+
+
+def _emergency_contacts_dto(application) -> list[dict]:
+	"""Who this applicant said to call, built field by field."""
+	return [
+		{
+			"contact_name": row.contact_name,
+			"relationship": row.relationship,
+			"primary_phone": row.primary_phone,
+			"alternative_phone": row.alternative_phone,
+			"may_contact_in_emergency": bool(row.may_contact_in_emergency),
+		}
+		for row in application.get("emergency_contacts") or []
+	]
+
+
+def _guardian_consents_dto(application) -> list[dict]:
+	"""A minor's guardian consents, including who verified one and when.
+
+	`verified_by` and `verified_on` travel with the row because the approver's
+	question is not only "is there consent" but "has anybody checked it" — and an
+	unverified consent is precisely what stops the approval going through.
+	"""
+	return [
+		{
+			"guardian_name": row.guardian_name,
+			"relationship": row.relationship,
+			"phone": row.phone,
+			"email": row.email,
+			"consent_given": bool(row.consent_given),
+			"consent_date": row.consent_date,
+			"verification_method": row.verification_method,
+			"consent_evidence": row.consent_evidence,
+			"is_verified": bool(row.is_verified),
+			"verified_by": row.verified_by,
+			"verified_on": row.verified_on,
+		}
+		for row in application.get("guardian_consents") or []
+	]
 
 
 def _selector_dto(rows, link_field: str, doctype: str, name_field: str) -> list[dict]:

@@ -1,0 +1,201 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-09-01 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "person_section",
+  "naming_series",
+  "red_profile",
+  "guardian_name",
+  "relationship",
+  "column_break_person",
+  "phone",
+  "email",
+  "is_active",
+  "consent_section",
+  "consent_given",
+  "consent_date",
+  "column_break_consent",
+  "verification_method",
+  "consent_evidence",
+  "verification_section",
+  "is_verified",
+  "verified_by",
+  "column_break_verification",
+  "verified_on",
+  "provenance_section",
+  "source_application"
+ ],
+ "fields": [
+  {
+   "fieldname": "person_section",
+   "fieldtype": "Section Break",
+   "label": "Guardian"
+  },
+  {
+   "default": "GRD-.#####",
+   "description": "Automatic series for this record's number.",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "GRD-.#####",
+   "reqd": 1
+  },
+  {
+   "description": "The young person this guardian acts for.",
+   "fieldname": "red_profile",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Person",
+   "options": "Red Profile",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "guardian_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Guardian Name",
+   "reqd": 1
+  },
+  {
+   "description": "Mother, father, aunt, legal guardian — in the family's own words.",
+   "fieldname": "relationship",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Relationship",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_person",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "options": "Phone",
+   "reqd": 1
+  },
+  {
+   "description": "Where a copy of anything sent to the young person goes. Left empty, the guardian is on the record but is not written to.",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "options": "Email"
+  },
+  {
+   "default": "1",
+   "description": "Unticked, this guardian stops being copied on anything and stays on the record. Use it when a guardian is replaced rather than deleting the one they replaced.",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "consent_section",
+   "fieldtype": "Section Break",
+   "label": "Consent"
+  },
+  {
+   "fieldname": "consent_given",
+   "fieldtype": "Check",
+   "label": "Consent Given"
+  },
+  {
+   "fieldname": "consent_date",
+   "fieldtype": "Date",
+   "label": "Consent Date"
+  },
+  {
+   "fieldname": "column_break_consent",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "verification_method",
+   "fieldtype": "Link",
+   "label": "Verification Method",
+   "options": "VMMS Guardian Verification Method"
+  },
+  {
+   "fieldname": "consent_evidence",
+   "fieldtype": "Attach",
+   "label": "Consent Evidence"
+  },
+  {
+   "fieldname": "verification_section",
+   "fieldtype": "Section Break",
+   "label": "Verification"
+  },
+  {
+   "description": "What somebody at this Society did about the consent, as opposed to what the guardian said. Two ticks, and the second is not the first repeated.",
+   "fieldname": "is_verified",
+   "fieldtype": "Check",
+   "label": "Verified"
+  },
+  {
+   "fieldname": "verified_by",
+   "fieldtype": "Link",
+   "label": "Verified By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_verification",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "verified_on",
+   "fieldtype": "Datetime",
+   "label": "Verified On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "provenance_section",
+   "fieldtype": "Section Break",
+   "label": "Where This Came From"
+  },
+  {
+   "description": "The registration this guardian was first recorded on, where there was one. A guardian added at a branch afterwards has none.",
+   "fieldname": "source_application",
+   "fieldtype": "Link",
+   "label": "Source Application",
+   "options": "VMMS Volunteer Application",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Guardian",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "guardian_name",
+ "track_changes": 1
+}

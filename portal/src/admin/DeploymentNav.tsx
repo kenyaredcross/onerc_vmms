@@ -42,12 +42,6 @@ export const DEPLOYMENT_NAV: SubNavItem[] = [
 		groupFallback: "Manage",
 	},
 	{
-		to: "/admin/deployments/past",
-		labelKey: "admin.deployments.nav.past",
-		fallback: "Past deployments",
-		groupKey: "admin.deployments.nav.group.manage",
-	},
-	{
 		to: "/admin/deployments/requests",
 		labelKey: "admin.deployments.nav.requests",
 		fallback: "Deployment requests",
@@ -57,6 +51,12 @@ export const DEPLOYMENT_NAV: SubNavItem[] = [
 		to: "/admin/deployments/documents",
 		labelKey: "admin.deployments.nav.documents",
 		fallback: "Documents",
+		groupKey: "admin.deployments.nav.group.manage",
+	},
+	{
+		to: "/admin/deployments/past",
+		labelKey: "admin.deployments.nav.past",
+		fallback: "Past deployments",
 		groupKey: "admin.deployments.nav.group.manage",
 	},
 ];

@@ -409,6 +409,110 @@ def clear_society_roles() -> None:
 	set_settings(**dict.fromkeys(role_settings()))
 
 
+# --- what a registration now carries --------------------------------------
+
+
+def required_declarations(doctype: str = APPLICATION_DOCTYPE) -> list[str]:
+	"""The keys a browser would send back with every required box ticked.
+
+	Read from the live declaration list rather than named here, so a suite does
+	not have to know which four this app ships — and so a society's fifth
+	declaration is accepted by every fixture registration without anybody
+	editing this file. A test that wants the *refusal* passes
+	`declarations_accepted=[]` explicitly.
+	"""
+	from vmmsx.registration.services import declarations
+
+	return [row["name"] for row in declarations.shown_on(doctype) if row["is_required"]]
+
+
+def emergency_contact(**values) -> list[dict]:
+	"""One emergency contact, in the shape the portal posts.
+
+	Defaulted into every fixture registration because `assert_approvable` refuses
+	an approval without one, and a suite about routing or acceptance should not
+	have to know that. A test about the requirement itself passes
+	`emergency_contacts=[]`.
+	"""
+	row = {
+		"contact_name": "Mercy Otieno",
+		"relationship": "Sister",
+		"primary_phone": "+254700000001",
+		"alternative_phone": None,
+		"may_contact_in_emergency": 1,
+	}
+	row.update(values)
+
+	return [row]
+
+
+def accept_declarations(document) -> list[str]:
+	"""Record the declarations on a document being built the desk way.
+
+	The portal posts keys to `register_as_volunteer` and the endpoint applies
+	them; a clerk transcribing a signed paper form has no endpoint, so the suite
+	calls the same service the endpoint calls. That is the point rather than a
+	convenience: the requirement lives in `assert_ready`, so it governs the paper
+	door exactly as it governs the browser, and a paper form the applicant signed
+	carries these acceptances whether or not anybody types them in.
+	"""
+	from vmmsx.registration.services import declarations
+
+	return declarations.apply(document, required_declarations(document.doctype))
+
+
+def minor_date_of_birth(years_old: int = 16) -> str:
+	"""A date of birth that makes somebody this many years old *today*.
+
+	Derived rather than fixed, which is the opposite of the rule
+	`DEFAULT_DATE_OF_BIRTH` follows and for the opposite reason. That one is
+	fixed so an age assertion cannot change its answer on somebody's birthday;
+	this one has to stay a minor for ever, and a literal date would quietly
+	become an adult and turn every guardian test green for the wrong reason.
+	"""
+	from frappe.utils import add_years, today
+
+	return str(add_years(today(), -years_old))
+
+
+def guardian_consent(**values) -> list[dict]:
+	"""One guardian consent, in the shape the portal posts.
+
+	Never defaulted anywhere: it only matters for a minor, and only the tests
+	about minors build one. Carries no verification — an applicant cannot send
+	one, which is the point of `GUARDIAN_CONSENT_FIELDS`.
+	"""
+	row = {
+		"guardian_name": "Grace Otieno",
+		"relationship": "Mother",
+		"phone": "+254700000002",
+		"email": None,
+		"consent_given": 1,
+		"consent_date": "2026-08-01",
+		"verification_method": None,
+		"consent_evidence": None,
+	}
+	row.update(values)
+
+	return [row]
+
+
+def verify_guardian_consent(application, user: str | None = None) -> None:
+	"""Tick the reviewer's box, the way somebody at the branch would.
+
+	Elevated, because the fields are the society's rather than the applicant's
+	and the suite is not testing who may save an application. What it *is*
+	testing is that the tick has to exist at all — so it is applied deliberately,
+	by a test that says so, and never by a fixture default.
+	"""
+	document = frappe.get_doc(APPLICATION_DOCTYPE, application.name)
+
+	for row in document.guardian_consents:
+		row.is_verified = 1
+
+	document.save(ignore_permissions=True)
+
+
 # --- the web forms, driven the way a browser drives them ------------------
 
 
@@ -425,6 +529,12 @@ def submit_volunteer_form(geo_node: str, **values):
 	profile rather than on the application. Passing it here is what a browser
 	does; passing `applicant_date_of_birth=None` builds the applicant the
 	requirement is meant to refuse.
+
+	**The declarations and the emergency contact are defaulted in**, because a
+	real browser now sends both and every suite that is about something else
+	would otherwise be asserting against a registration no applicant could
+	actually make. Each is overridable, and the tests about those two
+	requirements override them.
 	"""
 	payload = {
 		"first_name": values.pop("applicant_first_name", "Amina"),
@@ -439,6 +549,8 @@ def submit_volunteer_form(geo_node: str, **values):
 		"id_type": make_identification_type(),
 		"id_number": f"{TEST_PREFIX}-{frappe.generate_hash(length=8)}",
 		"prior_experience": "School first aid club",
+		"declarations_accepted": required_declarations(),
+		"emergency_contacts": emergency_contact(),
 	}
 	payload.update(values)
 

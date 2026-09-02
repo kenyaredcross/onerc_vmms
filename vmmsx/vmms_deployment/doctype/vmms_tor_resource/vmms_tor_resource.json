@@ -7,17 +7,20 @@
  "engine": "InnoDB",
  "field_order": [
   "resource",
+  "description",
   "needed_on",
   "quantity",
   "unit",
+  "currency",
   "unit_cost",
   "total_cost",
+  "funding_status",
   "donor"
  ],
  "fields": [
   {
    "columns": 3,
-   "description": "What the mission needs: a vehicle, fuel, tarpaulins, per-diem, a hall to meet in.",
+   "description": "What the mission needs, in the society's own words.",
    "fieldname": "resource",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -26,17 +29,21 @@
    "translatable": 1
   },
   {
-   "columns": 1,
-   "description": "When it is needed. Leave empty for something needed throughout the mission.",
+   "description": "What it is for and any specification that matters \u2014 the detail a procurement officer would otherwise have to ring somebody about.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "translatable": 1
+  },
+  {
+   "description": "When the mission needs it by. Optional: much of what a mission needs is simply needed throughout.",
    "fieldname": "needed_on",
    "fieldtype": "Date",
-   "in_list_view": 1,
    "label": "Needed On"
   },
   {
    "columns": 1,
-   "default": "0",
-   "description": "How many. Fractions are allowed, for litres, days or kilometres.",
+   "description": "How many.",
    "fieldname": "quantity",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -44,36 +51,53 @@
   },
   {
    "columns": 1,
-   "description": "What the quantity counts: litres, days, vehicles, person-days.",
+   "description": "The unit these are counted in \u2014 ERPNext's own UOM list, so a resource line and a purchase of the same thing are counted the same way.",
    "fieldname": "unit",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Unit"
+   "label": "Unit",
+   "options": "UOM"
   },
   {
-   "columns": 1,
-   "default": "0",
-   "description": "The cost of one unit, in the society's own currency.",
+   "description": "The currency this line is estimated in. Left empty, the site's own default is used.",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "columns": 2,
+   "description": "The planning estimate for one of them. An estimate, not an accounting entry: nothing here reaches a ledger.",
    "fieldname": "unit_cost",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Unit Cost"
+   "label": "Unit Cost",
+   "options": "currency"
   },
   {
-   "columns": 1,
-   "description": "Quantity times unit cost. Worked out on save.",
+   "columns": 2,
+   "description": "Quantity times unit cost. Recomputed on every save of the terms of reference, so it cannot drift from the two numbers it came from.",
    "fieldname": "total_cost",
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Total Cost",
+   "options": "currency",
    "read_only": 1
   },
   {
-   "columns": 2,
-   "description": "Who is expected to fund this line.",
+   "columns": 1,
+   "description": "Where the money for this line has got to. Left blank \u2014 the shipped state \u2014 means nobody has recorded it, which is not the same as unfunded.",
+   "fieldname": "funding_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Funding Status",
+   "options": "\nPlanned\nCommitted\nReceived\nUnfunded"
+  },
+  {
+   "description": "Whose money this line is expected to come from, in the society's own words. The project carries the programme's donor; this is for a line funded from somewhere else.",
    "fieldname": "donor",
    "fieldtype": "Data",
-   "label": "Donor"
+   "label": "Donor or Funding Source"
   }
  ],
  "grid_page_length": 50,

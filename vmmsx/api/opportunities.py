@@ -37,7 +37,10 @@ the screen says so rather than showing a spinner forever.
 
 import frappe
 
+from vmmsx.hr.services import application as application_service
 from vmmsx.hr.services import openings as seam
+
+APPLICANT_DOCTYPE = "Job Applicant"
 
 
 @frappe.whitelist()
@@ -84,3 +87,182 @@ def filters() -> dict:
 		"available": seam.is_available(),
 		"departments": seam.departments(),
 	}
+
+
+# --- applying -----------------------------------------------------------------
+#
+# The board above is a guest surface: anybody may browse what a society has
+# published. Everything below is the volunteer's own door, and every endpoint
+# resolves them from the session rather than taking a person — so no argument
+# names anybody, and nobody can apply as, or read, somebody else.
+#
+# Employment openings are untouched by all of it. They keep HRMS's own public
+# form, and `application.assert_may_apply` says so in words rather than failing
+# a permission check somebody would have to guess at.
+
+
+@frappe.whitelist()
+def opening_questions(name: str) -> dict:
+	"""The screening questions on an opening, and whether the caller may answer them.
+
+	Both in one call, because a form needs them at the same moment: what to draw,
+	and whether to draw a submit button or a sentence explaining why not.
+
+	The society's own marking scheme — the weights, the expected answers, the
+	knock-off flags — is deliberately not here. A candidate who could read it
+	would be answering a different exam.
+	"""
+	opening = seam.detail(name)
+
+	if not opening:
+		return {"opening": None, "questions": [], "may_apply": False, "reason": None}
+
+	volunteer = _my_volunteer()
+	reason = None
+
+	# Asked by catching the refusal rather than by restating its rules, so the
+	# form's explanation and the server's refusal cannot come apart.
+	try:
+		application_service.assert_may_apply(application_service.read(name), volunteer)
+		may_apply = True
+	except Exception:
+		may_apply = False
+		reason = _last_message()
+
+	return {
+		"opening": opening,
+		"questions": application_service.questions(name),
+		"may_apply": may_apply,
+		"reason": reason,
+		"already_applied": bool(
+			volunteer and application_service.live_application(name, volunteer)
+		),
+	}
+
+
+def _last_message() -> str | None:
+	"""The sentence the refusal above queued, taken off the message log.
+
+	`frappe.throw` puts its message there on the way out. Reading it back is how
+	this endpoint reports *why* somebody may not apply without restating the rule
+	— and clearing it is what stops the same sentence being rendered a second
+	time as an error on a request that succeeded.
+	"""
+	log = frappe.local.message_log or []
+
+	if not log:
+		return None
+
+	message = log[-1]
+	frappe.clear_last_message()
+
+	return frappe.utils.strip_html(
+		message.get("message") if isinstance(message, dict) else str(message)
+	).strip() or None
+
+
+@frappe.whitelist()
+def apply_to_opening(name: str, answers: dict | str | None = None, cover_letter: str | None = None) -> dict:
+	"""Apply for a volunteering opening as the caller's own volunteer record.
+
+	The volunteer comes from the session and is never an argument, the same rule
+	every possessive endpoint in this app follows. The service refuses an
+	employment opening, a closed one, somebody who is not an approved active
+	volunteer, and a second live application.
+	"""
+	parsed = frappe.parse_json(answers) if isinstance(answers, str) else (answers or {})
+
+	return application_service.dto(
+		application_service.apply(
+			name, _my_volunteer(), answers=parsed, cover_letter=cover_letter
+		)
+	)
+
+
+@frappe.whitelist()
+def my_applications() -> dict:
+	"""The caller's own applications, with the answers they gave.
+
+	Takes no person, so it names nobody. `ignore_permissions` with the argument
+	stated: a volunteer holds no role on HRMS's applicant register — it is a
+	recruiter's pipeline — and the volunteer here is resolved from the session, so
+	this cannot read anybody else's.
+	"""
+	volunteer = _my_volunteer()
+
+	if not volunteer:
+		return {"volunteer": None, "applications": []}
+
+	names = frappe.get_all(
+		APPLICANT_DOCTYPE,
+		filters={"vmms_volunteer": volunteer},
+		order_by="creation desc",
+		pluck="name",
+		ignore_permissions=True,
+	)
+
+	return {
+		"volunteer": volunteer,
+		"applications": [
+			application_service.dto(frappe.get_doc(APPLICANT_DOCTYPE, name)) for name in names
+		],
+	}
+
+
+@frappe.whitelist()
+def withdraw_application(name: str, reason: str | None = None) -> dict:
+	"""Take an application back. The applicant's own act, and never a rejection.
+
+	Ownership rather than permission, the distinction `api/tasks.py` draws at
+	length: the application has to belong to the caller's own volunteer record.
+	"""
+	return application_service.withdraw(_mine(name), reason)
+
+
+@frappe.whitelist()
+def convert_application(name: str) -> dict:
+	"""Turn an accepted application into the work it was for. Idempotent.
+
+	The **coordinator's** door, unlike everything else below the board: ordinary
+	write permission on the applicant record, because placing somebody on a
+	deployment is an act on the society's register rather than on a personal one.
+	"""
+	applicant = frappe.get_doc(APPLICANT_DOCTYPE, name)
+	applicant.check_permission("write")
+
+	return application_service.convert(applicant)
+
+
+def _mine(name: str):
+	"""An application that belongs to the caller's own volunteer record.
+
+	A `PermissionError` for anybody else, and the same one whether the record
+	exists or not: telling a caller that somebody else's application is there is
+	itself a disclosure.
+	"""
+	volunteer = _my_volunteer()
+	applicant = frappe.get_doc(APPLICANT_DOCTYPE, name)
+
+	if not volunteer or applicant.get("vmms_volunteer") != volunteer:
+		frappe.throw(
+			frappe._("This is not your application."),
+			frappe.PermissionError,
+			title=frappe._("Not Yours"),
+		)
+
+	return applicant
+
+
+def _my_volunteer() -> str | None:
+	"""The caller's own volunteer record, or None.
+
+	Through the Red Profile behind the session, which is this app's one answer to
+	"who is this" — never `doc.owner`, for the reason `member/services/review.py`
+	records: owner is who filed a record, not who it is about.
+	"""
+	profile = frappe.db.get_value("Red Profile", {"user": frappe.session.user}, "name")
+
+	if not profile:
+		return None
+
+	return frappe.db.get_value("VMMS Volunteer", {"red_profile": profile}, "name")

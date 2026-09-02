@@ -11,11 +11,13 @@
 // half-redesigned between commits. They are not deprecated decoration: they are
 // the migration, and they get removed screen by screen as each is refactored.
 //
-// **Red is gone from the palette.** The previous system used the Red Cross red
-// as its action colour, which put a protected emblem's colour on every button
-// in the product. Blue is the action colour now; red survives only as `danger`,
-// for genuinely destructive things, and never as decoration. The emblem itself
-// is a society's uploaded asset and is never redrawn or recoloured here.
+// **Red is not the action colour.** The original system used the Red Cross red
+// for every primary button and focus ring, which put a protected emblem's
+// colour on every control in the product. Blue is the action colour and stays
+// so. Red comes back under two names and neither of them is "button": `danger`
+// for genuinely destructive things, and `red` for the approved concept's brand
+// accents — the greeting's name, a plan card's band, one urgent deadline. The
+// emblem itself is a society's uploaded asset and is never redrawn here.
 export default {
 	content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
 	theme: {
@@ -40,8 +42,11 @@ export default {
 					soft: "#32373E",
 				},
 				// ----------------------------------------------------------- text
-				ink: "#17191D",
-				muted: "#737982",
+				// Navy-tinted, not neutral: the approved concept's ink and body
+				// colours. One line each, and every screen in both shells moves
+				// with them — the migration strategy this file already uses.
+				ink: "#102033",
+				muted: "#627083",
 				// ------------------------------------------------------ the action
 				// Selected navigation, focus, active tabs, primary actions. The only
 				// hue in the product that means "act on this" or "you are here".
@@ -76,6 +81,73 @@ export default {
 				},
 
 				// ================================================================
+				// Portal fork — the volunteer workspace's own ground.
+				//
+				// The portal is "one continuous workspace": a deep TRCS navy left
+				// rail carrying white text, beside a cool paper-grey canvas and a
+				// light header. White panels held by a 1px hairline rather than a
+				// shadow. The console keeps `shell` / `surface` / borderless cards;
+				// these names appear only under `portal/`. `blue` (#155EEF) stays
+				// the interactive colour — primary buttons, links, focus, the
+				// active-nav accent — and is never the rail's field.
+				// ================================================================
+				canvas: "#F4F7FA",
+				rail: {
+					// The sidebar field. Near-black navy; white text clears AA with
+					// enormous headroom (~16:1).
+					DEFAULT: "#011E41",
+					// Light-side helpers, for controls that sit on the canvas — a
+					// hairline, a hover wash, and the tracked micro-label colour
+					// (dark enough to clear WCAG AA on canvas and white alike, which
+					// #9AA0A8 did not). The rail's own text uses white-alpha inline.
+					hover: "#E8EEF6",
+					line: "#E2E7EE",
+					label: "#5E6775",
+					// The lighter navy the concept uses for a *feature* panel on the
+					// light side — the deployment request's summary block. Never the
+					// rail's own field.
+					soft: "#082B56",
+				},
+				// The hairline a portal panel actually carries. One notch cooler and
+				// lighter than the console's `hairline`, tuned to sit on `canvas`.
+				"card-line": "#DFE6ED",
+				// ------------------------------------------------- brand accents
+				// The Red Cross red, back in the palette but not back as the action
+				// colour: `blue` is still what "act on this" means. This is for
+				// identity (the greeting's name, a plan card's band), for genuine
+				// urgency (a response deadline), and for nothing else. `danger`
+				// remains the destructive tone and is deliberately a separate name,
+				// so a delete button can never quietly become brand decoration.
+				red: {
+					DEFAULT: "#D71920",
+					// The readable weight of it, for words on a soft red ground.
+					ink: "#9D2027",
+					soft: "#FFF0F1",
+					line: "#F0C8CA",
+				},
+				// The one cool highlight: a rule under a dark panel, the emphasis
+				// word in a hero, a "ready" caption. Never a text colour on white —
+				// it does not clear AA there and is never asked to.
+				aqua: {
+					DEFAULT: "#75D5D0",
+					deep: "#16909A",
+				},
+				// The four calendar categories — dots on a day, chips in the day
+				// panel. Recognition only; each is always paired with a text label
+				// and a legend, never carrying meaning on colour alone.
+				cal: {
+					// Retoned to the approved concept's calendar: a deadline is red,
+					// an event is the action blue, a deployment is the navy strip
+					// that runs across its own days. Certification keeps the violet
+					// the concept has no fourth colour for.
+					task: "#B32530",
+					deployment: "#011E41",
+					event: "#155EEF",
+					cert: "#6D4AA6",
+					"cert-soft": "#F2EDFB",
+				},
+
+				// ================================================================
 				// Migration aliases — the previous system's names, new values.
 				// ================================================================
 
@@ -92,11 +164,14 @@ export default {
 					DEFAULT: "#155EEF",
 					dark: "#1150D0",
 				},
+				// Retuned with `ink` and `muted` above: the same three weights of body
+				// text, navy-tinted rather than neutral, so a paragraph in a card and
+				// the heading over it belong to one family.
 				slate: {
-					body: "#737982",
-					strong: "#3F444B",
-					faint: "#9AA0A8",
-					mute: "#B4B9C0",
+					body: "#627083",
+					strong: "#3B4A5C",
+					faint: "#8A96A5",
+					mute: "#AEB9C5",
 				},
 				hairline: {
 					DEFAULT: "#E1E3E6",
@@ -137,6 +212,11 @@ export default {
 				// Nothing below depends on a web font having loaded.
 				display: ["'Schibsted Grotesk'", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
 				sans: ["'Public Sans'", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+				// The volunteer portal's own face. The portal is a forked visual
+				// world (see PortalShell.tsx) — one continuous workspace in IBM Plex
+				// Sans, quieter and flatter than the console's grey shell. The
+				// console keeps `display` / `sans`; nothing under `admin/` uses this.
+				plex: ["'IBM Plex Sans'", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
 			},
 			// Radius is chosen by a thing's *size*, not by what it is. A 32px chip
 			// at a panel's radius reads as a lozenge; a 400px panel at a chip's

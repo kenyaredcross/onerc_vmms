@@ -118,11 +118,11 @@ export default function Stories() {
 		<>
 			{/* The banded head. The palette is the society's navy rather than the
 			    reference's blue; the layout is what was being borrowed. */}
-			<div className="-mx-5 -mt-7 mb-0 overflow-hidden bg-gradient-to-br from-navy via-navy to-signal/70 px-5 pb-14 pt-12 text-white md:-mx-8 md:-mt-9 md:px-8">
+			<div className="-mx-5 -mt-7 mb-0 overflow-hidden bg-gradient-to-br from-rail via-rail to-blue/70 px-5 pb-14 pt-12 text-white md:-mx-8 md:-mt-9 md:px-8">
 				<div className="eyebrow text-white/55">
 					<EditableText k="portal.stories.eyebrow" fallback="From the society" />
 				</div>
-				<h1 className="mt-3 font-display text-[34px] font-extrabold leading-none tracking-tight sm:text-[42px]">
+				<h1 className="mt-3 text-[34px] font-semibold leading-none tracking-tight sm:text-[42px]">
 					<EditableText k="portal.stories.heading" fallback="Stories" />
 				</h1>
 				<EditableText
@@ -133,7 +133,7 @@ export default function Stories() {
 			</div>
 
 			{/* The type tabs sit on the band's lower edge, as an underlined rail. */}
-			<div className="-mx-5 border-b border-hairline bg-white px-5 md:-mx-8 md:px-8">
+			<div className="-mx-5 border-b border-card-line bg-white px-5 md:-mx-8 md:px-8">
 				<nav className="flex gap-6 overflow-x-auto" aria-label="Kind of story">
 					<Tab label="All" on={type === ""} onClick={() => changeFacet(() => setType(""))} />
 					{(allTypes.length ? allTypes : types).map((entry) => (
@@ -147,7 +147,7 @@ export default function Stories() {
 				</nav>
 			</div>
 
-			<div className="-mx-5 mb-8 border-b border-hairline bg-surface/50 px-5 py-3.5 md:-mx-8 md:px-8">
+			<div className="-mx-5 mb-8 border-b border-card-line bg-surface/50 px-5 py-3.5 md:-mx-8 md:px-8">
 				<Topics
 					categories={categories.data?.message ?? []}
 					value={category}
@@ -201,12 +201,12 @@ function Tab({ label, on, onClick }: { label: string; on: boolean; onClick: () =
 			onClick={onClick}
 			aria-pressed={on}
 			className={cx(
-				"relative whitespace-nowrap py-3.5 font-display text-[13px] font-bold transition",
-				on ? "text-navy" : "text-slate-faint hover:text-slate-strong",
+				"relative whitespace-nowrap py-3.5 text-[13px] font-bold transition",
+				on ? "text-ink" : "text-slate-faint hover:text-slate-strong",
 			)}
 		>
 			{label}
-			{on && <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-signal" />}
+			{on && <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-blue" />}
 		</button>
 	);
 }
@@ -234,7 +234,7 @@ function Topics({
 				type="button"
 				onClick={() => onChange("")}
 				aria-pressed={value === ""}
-				className={cx(pill, value === "" ? "bg-navy text-white" : "bg-white text-slate-body hover:text-navy")}
+				className={cx(pill, value === "" ? "bg-rail text-white" : "bg-white text-muted hover:text-ink")}
 			>
 				All
 			</button>
@@ -251,7 +251,7 @@ function Topics({
 						title={row.description ?? undefined}
 						className={cx(
 							pill,
-							value === row.name ? "bg-navy text-white" : "bg-white text-slate-body hover:text-navy",
+							value === row.name ? "bg-rail text-white" : "bg-white text-muted hover:text-ink",
 						)}
 					>
 						{label}
@@ -276,14 +276,14 @@ function StoryCard({ article, size }: { article: ArticleCard; size: "lead" | "gr
 
 	return (
 		<Link to={`/stories/${article.slug}`} className="group block">
-			<div className="relative overflow-hidden rounded-card">
+			<div className="relative overflow-hidden rounded-xl">
 				{/* Both crops are shallower than the reference's. A 16/9 lead on a
 				    half-width column was taller than the two paragraphs beside it,
 				    which made the pair read as two posters rather than two stories. */}
 				<Cover src={article.cover_image} className={lead ? "aspect-[2/1]" : "aspect-[3/2]"} />
 
 				{article.article_type && (
-					<span className="absolute left-2.5 top-2.5 rounded-full bg-white/95 px-2.5 py-0.5 text-[9.5px] font-bold text-navy shadow-card backdrop-blur">
+					<span className="absolute left-2.5 top-2.5 rounded-full bg-white/95 px-2.5 py-0.5 text-[9.5px] font-bold text-ink border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] backdrop-blur">
 						{article.article_type}
 					</span>
 				)}
@@ -291,7 +291,7 @@ function StoryCard({ article, size }: { article: ArticleCard; size: "lead" | "gr
 
 			<h3
 				className={cx(
-					"mt-3 font-display font-bold leading-snug tracking-tight text-ink transition group-hover:text-navy",
+					"mt-3 font-bold leading-snug tracking-tight text-ink transition group-hover:text-ink",
 					lead ? "text-[17px]" : "text-[13.5px]",
 				)}
 			>
@@ -299,7 +299,7 @@ function StoryCard({ article, size }: { article: ArticleCard; size: "lead" | "gr
 			</h3>
 
 			{lead && article.subtitle && (
-				<p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-slate-body [overflow-wrap:anywhere]">
+				<p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-muted [overflow-wrap:anywhere]">
 					{article.subtitle}
 				</p>
 			)}
@@ -324,7 +324,7 @@ function Cover({ src, className }: { src: string | null; className?: string }) {
 		return (
 			<div
 				className={cx(
-					"grid w-full place-items-center bg-gradient-to-br from-navy/[0.08] via-page to-signal/[0.08]",
+					"grid w-full place-items-center bg-gradient-to-br from-rail/[0.08] via-canvas to-blue/[0.08]",
 					className,
 				)}
 				aria-hidden="true"
@@ -388,7 +388,7 @@ export function Story() {
 
 	return (
 		<>
-			<div className="-mx-5 -mt-7 overflow-hidden bg-gradient-to-br from-navy via-navy to-signal/70 px-5 pb-32 pt-8 text-white md:-mx-8 md:-mt-9 md:px-8">
+			<div className="-mx-5 -mt-7 overflow-hidden bg-gradient-to-br from-rail via-rail to-blue/70 px-5 pb-32 pt-8 text-white md:-mx-8 md:-mt-9 md:px-8">
 				<Link
 					to="/stories"
 					className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-white/70 transition hover:text-white"
@@ -405,7 +405,7 @@ export function Story() {
 							</span>
 						)}
 
-						<h1 className="mt-3.5 font-display text-[30px] font-extrabold leading-tight tracking-tight sm:text-[40px]">
+						<h1 className="mt-3.5 text-[30px] font-semibold leading-tight tracking-tight sm:text-[40px]">
 							{article.title}
 						</h1>
 
@@ -445,7 +445,7 @@ export function Story() {
 				<>
 					{/* The cover overlaps the band, which is what the reference does and
 					    what stops the head and the body reading as two pages. */}
-					<div className="relative z-10 -mt-24 overflow-hidden rounded-panel shadow-hero">
+					<div className="relative z-10 -mt-24 overflow-hidden rounded-2xl shadow-hero">
 						<Cover src={article.cover_image} className="aspect-[10/3]" />
 					</div>
 
@@ -472,19 +472,19 @@ export function Story() {
 							    exactly that reason. */}
 							{article.body && (
 								<div
-									className="article-body mt-6 text-[14.5px] leading-[1.8] text-slate-body"
+									className="article-body mt-6 text-[14.5px] leading-[1.8] text-muted"
 									dangerouslySetInnerHTML={{ __html: article.body }}
 								/>
 							)}
 
 							{article.category && (
-								<div className="mt-10 border-t border-hairline pt-6">
+								<div className="mt-10 border-t border-card-line pt-6">
 									<p className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 										Topics
 									</p>
 									<Link
 										to="/stories"
-										className="mt-2.5 inline-block rounded-full bg-navy/[0.07] px-3 py-1 text-[11.5px] font-bold text-navy transition hover:bg-navy hover:text-white"
+										className="mt-2.5 inline-block rounded-full bg-rail/[0.07] px-3 py-1 text-[11.5px] font-bold text-ink transition hover:bg-rail hover:text-white"
 									>
 										{article.category}
 									</Link>
@@ -497,7 +497,7 @@ export function Story() {
 									{article.source_url ? (
 										<a
 											href={article.source_url}
-											className="font-semibold text-navy hover:underline"
+											className="font-semibold text-ink hover:underline"
 											rel="noreferrer noopener"
 											target="_blank"
 										>
@@ -513,7 +513,7 @@ export function Story() {
 
 					{more.length > 0 && (
 						<section className="-mx-5 mt-16 bg-surface px-5 py-12 md:-mx-8 md:px-8">
-							<h2 className="font-display text-[26px] font-extrabold tracking-tight text-ink">
+							<h2 className="text-[26px] font-semibold tracking-tight text-ink">
 								Read more
 							</h2>
 
@@ -553,7 +553,7 @@ function Share({ title }: { title: string }) {
 	};
 
 	const button =
-		"grid h-9 w-9 place-items-center rounded-full border border-hairline-strong bg-white text-slate-body transition hover:border-navy hover:text-navy";
+		"grid h-9 w-9 place-items-center rounded-full border border-card-line bg-white text-muted transition hover:border-blue hover:text-ink";
 
 	return (
 		<div className="mb-8 lg:sticky lg:top-24 lg:mb-0 lg:self-start">
@@ -571,7 +571,7 @@ function Share({ title }: { title: string }) {
 					className={button}
 					aria-label="Share on LinkedIn"
 				>
-					<span className="font-display text-[11px] font-extrabold">in</span>
+					<span className="text-[11px] font-semibold">in</span>
 				</a>
 
 				<a

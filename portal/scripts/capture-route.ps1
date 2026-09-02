@@ -12,6 +12,8 @@ param(
 	[switch]$FullPage,
 	[ValidateSet("", "signup-sent", "expired-password-link")]
 	[string]$Prepare = "",
+	[string]$Sid = "",
+	[string]$CookieHost = "vmms.localhost",
 	[string]$Edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 )
 
@@ -131,6 +133,19 @@ try {
 
 	Invoke-Cdp -Client $socket -Method "Page.enable" | Out-Null
 	Invoke-Cdp -Client $socket -Method "Runtime.enable" | Out-Null
+	Invoke-Cdp -Client $socket -Method "Network.enable" | Out-Null
+
+	# An authenticated capture: plant the session cookie before the first
+	# navigation so an auth-gated SPA route renders signed in.
+	if ($Sid -ne "") {
+		Invoke-Cdp -Client $socket -Method "Network.setCookie" -Parameters @{
+			name = "sid"
+			value = $Sid
+			domain = $CookieHost
+			path = "/"
+			httpOnly = $true
+		} | Out-Null
+	}
 	Invoke-Cdp -Client $socket -Method "Emulation.setDeviceMetricsOverride" -Parameters @{
 		width = $Width
 		height = $Height

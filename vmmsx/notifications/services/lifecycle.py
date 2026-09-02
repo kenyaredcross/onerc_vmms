@@ -26,8 +26,16 @@ seven of them forever.
 
 **Nothing here knows what a volunteer is.** The domain hands over a `subject`
 dict — who to write to, what they are called, what the society calls this kind
-of application, and optionally a card to attach. A third kind of registration is
-a third caller.
+of application, optionally a card to attach, and optionally who else to copy. A
+third kind of registration is a third caller.
+
+**Copying a guardian is the caller's answer, not this module's.** `subject["cc"]`
+arrives already resolved, because who counts as a child and who their parent is
+are questions about a *person*, and this module deliberately knows nothing about
+people. `registration/services/guardian.py` owns both, and the two callers ask it
+in one line each. The addresses go in `cc` rather than a second `sendmail`, so
+the young person can see their parent was copied — which is the honest way to
+copy somebody on a letter about them.
 
 **A missing address is not an error.** Somebody enrolled at a branch desk from a
 paper form may have no email at all, and refusing the state change over it would
@@ -210,6 +218,12 @@ def notify(doc, previous: str | None, current: str | None, subject: dict) -> str
 	Nothing is sent when they are equal, when the new state has no message, or
 	when the applicant has no address.
 
+	`subject["cc"]` is copied in — a young volunteer's guardian, in the only case
+	that populates it today. Deliberately dependent on there being a message to
+	the applicant at all: a copy of a letter nobody was sent is not a courtesy,
+	and an applicant with no address is not a reason to write to their parent
+	about them instead.
+
 	Never raises. A message that could not be built or queued must not roll back
 	the approval it was reporting: somebody being approved matters, and the email
 	about it is how they hear rather than the thing itself.
@@ -235,6 +249,10 @@ def notify(doc, previous: str | None, current: str | None, subject: dict) -> str
 
 		frappe.sendmail(
 			recipients=[recipient],
+			# Deduplicated, and never the recipient themselves: a guardian who is
+			# also the applicant's own contact address would otherwise be sent the
+			# same letter twice, once in each header.
+			cc=_copies(subject, recipient),
 			subject=rendered["subject"],
 			message=rendered["message"],
 			attachments=_attachments(subject),
@@ -255,6 +273,19 @@ def notify(doc, previous: str | None, current: str | None, subject: dict) -> str
 		)
 
 		return None
+
+
+def _copies(subject: dict, recipient: str) -> list[str]:
+	"""Who else gets this letter, cleaned up.
+
+	Empty is the ordinary case and costs nothing. The recipient is removed rather
+	than left to the mail server, because a household where the young person's
+	registered address *is* the parent's is common, and two copies of the same
+	message is how a courtesy starts reading as a fault.
+	"""
+	addresses = {(address or "").strip() for address in subject.get("cc") or []}
+
+	return sorted(addresses - {"", recipient.strip()})
 
 
 def _message_for(previous: str | None, current: str | None) -> str | None:

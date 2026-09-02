@@ -70,10 +70,23 @@ export const Icon = {
 	hourglass: (p: IconProps) => <Glyph {...p} d="M7 3h10M7 21h10M8 3v3.5c0 2 4 3.5 4 5.5s-4 3.5-4 5.5V21m8-18v3.5c0 2-4 3.5-4 5.5s4 3.5 4 5.5V21" />,
 	mail: (p: IconProps) => <Glyph {...p} d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm-.6.6 8.6 6.4 8.6-6.4" />,
 	phone: (p: IconProps) => <Glyph {...p} d="M7 3h3l1.5 4.5-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2L21 14v3a2 2 0 0 1-2 2A16 16 0 0 1 5 5a2 2 0 0 1 2-2Z" />,
+	chat: (p: IconProps) => <Glyph {...p} d="M20 12a7.5 7.5 0 0 1-11 6.6L4.5 20l1.4-4.2A7.5 7.5 0 1 1 20 12Z" />,
 	/** A photograph slot with nothing in it yet. */
 	image: (p: IconProps) => <Glyph {...p} d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-.5 12 5-5 3.5 3.5L15 12l5.5 5.5M9 9.5v.01" />,
 	file: (p: IconProps) => <Glyph {...p} d="M6 3h8l4 4v14H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm8 0v5h5M8 13h8m-8 4h6" />,
 	upload: (p: IconProps) => <Glyph {...p} d="M12 16V4m-4 4 4-4 4 4M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" />,
 	/** Somewhere else the person may be. Used on the placement selector. */
+	/** A job opening. The console's recruitment section, and nothing else. */
+	briefcase: (p: IconProps) => <Glyph {...p} d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M4 7h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm0 5h16M12 12v2" />,
+	/** Money that has come in or gone out. Never a currency glyph — a society's
+	    currency is a field, and drawing one would name a country. */
+	receipt: (p: IconProps) => <Glyph {...p} d="M6 3h12a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2V4a1 1 0 0 1 1-1Zm3 5h6M9 12h6M9 16h3" />,
+	/** The one channel glyph in the set: a chat bubble with a handset in it, so
+	    it is recognisable as WhatsApp without redrawing a trademarked mark. */
+	whatsapp: (p: IconProps) => <Glyph {...p} d="M20.5 11.8a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.4-4.3A8.5 8.5 0 1 1 20.5 11.8Zm-11-3.3h1.3l1 2.4-1.1.9a5.5 5.5 0 0 0 2.5 2.5l.9-1.1 2.4 1v1.3a1 1 0 0 1-1 1 7.5 7.5 0 0 1-7-7 1 1 0 0 1 1-1Z" />,
+	/** A figure moving the right way. Paired with a word, never colour alone. */
+	trend: (p: IconProps) => <Glyph {...p} d="M4 17l5.5-5.5 3 3L20 7m0 0h-4.5M20 7v4.5" />,
+	/** Taking a copy of what is on the screen away with you. */
+	download: (p: IconProps) => <Glyph {...p} d="M12 4v12m-4-4 4 4 4-4M5 20h14" />,
 	globe: (p: IconProps) => <Glyph {...p} d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-8.5-9h17M12 3c2.2 2.4 3.4 5.6 3.4 9S14.2 18.6 12 21c-2.2-2.4-3.4-5.6-3.4-9S9.8 5.4 12 3Z" />,
 };

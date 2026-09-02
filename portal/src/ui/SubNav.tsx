@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 
 import { EditableText } from "../content/Editable";
-import { cx } from "./primitives";
+import { cx } from "../portal/ui/kit";
 
 /**
  * One destination inside a section's own navigation.
@@ -18,6 +18,8 @@ export interface SubNavItem {
 	/** The heading this item sits under. Declared by ordering, like the rail's. */
 	groupKey?: string;
 	groupFallback?: string;
+	/** A live count on the right of the row. Omitted when zero. */
+	badge?: number;
 }
 
 /**
@@ -31,9 +33,16 @@ export interface SubNavItem {
  * and the global rail collapses to icons beside it — the global destinations
  * stay one click away as icons rather than being replaced.
  *
- * **The same markup serves both layouts.** On a wide screen `Shell` renders
- * this in a column of its own; below `lg` it renders the same component inside
- * a horizontal scroller under the top row, and `horizontal` switches the
+ * **It sits on white now, not on grey.** The console's three columns used to be
+ * shell-grey / surface-grey / shell-grey, and the selected row was a white pill
+ * lifted off the middle one. In the portal's language the panel is a white
+ * surface on the canvas, so a white pill would be invisible: the selected row
+ * takes the soft blue wash instead, which is the same "you are here" signal the
+ * rest of this world uses.
+ *
+ * **The same markup serves both layouts.** On a wide screen `ConsoleShell`
+ * renders this in a column of its own; below `lg` it renders the same component
+ * inside a horizontal scroller under the header, and `horizontal` switches the
  * arrangement. One component rather than two, because two would drift.
  */
 export function SubNav({
@@ -46,24 +55,31 @@ export function SubNav({
 	items: SubNavItem[];
 	horizontal?: boolean;
 }) {
+	const row = (isActive: boolean) =>
+		cx(
+			"flex min-h-[34px] items-center gap-2 rounded-lg px-3 py-1.5 text-[12.5px] transition-colors",
+			isActive
+				? "bg-blue-soft font-semibold text-blue-press"
+				: "font-medium text-slate-strong hover:bg-canvas hover:text-ink",
+		);
+
+	const count = (badge?: number) =>
+		badge !== undefined && badge > 0 ? (
+			<span className="tabular ml-auto text-[11px] font-semibold text-muted">{badge > 99 ? "99+" : badge}</span>
+		) : null;
+
 	if (horizontal) {
 		return (
-			<nav aria-label={`${title} sections`} className="flex w-max items-center gap-1.5 py-0.5">
+			<nav aria-label={`${title} sections`} className="flex w-max items-center gap-1 py-0.5">
 				{items.map((item) => (
 					<NavLink
 						key={item.to}
 						to={item.to}
 						end={item.end}
-						className={({ isActive }) =>
-							cx(
-								"whitespace-nowrap rounded-full px-3.5 py-2 text-[12.5px] transition-colors",
-								isActive
-									? "bg-white font-medium text-blue shadow-nav"
-									: "font-normal text-slate-strong hover:bg-white/70",
-							)
-						}
+						className={({ isActive }) => cx(row(isActive), "whitespace-nowrap")}
 					>
 						<EditableText k={item.labelKey} fallback={item.fallback} />
+						{count(item.badge)}
 					</NavLink>
 				))}
 			</nav>
@@ -72,9 +88,7 @@ export function SubNav({
 
 	return (
 		<div className="flex flex-col">
-			<h2 className="px-3.5 pb-4 pt-1 font-display text-[15px] font-medium tracking-tight text-ink">
-				{title}
-			</h2>
+			<h2 className="px-3 pb-3.5 pt-1 text-[14px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
 
 			<nav aria-label={`${title} sections`} className="flex flex-col gap-0.5">
 				{items.map((item, index) => {
@@ -84,24 +98,14 @@ export function SubNav({
 					return (
 						<div key={item.to}>
 							{started && (
-								<div className="px-3.5 pb-1.5 pt-4 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-slate-faint">
+								<div className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-[0.09em] text-rail-label">
 									<EditableText k={item.groupKey as string} fallback={item.groupFallback ?? ""} />
 								</div>
 							)}
 
-							<NavLink
-								to={item.to}
-								end={item.end}
-								className={({ isActive }) =>
-									cx(
-										"block rounded-full px-3.5 py-2 text-[12.5px] transition-colors",
-										isActive
-											? "bg-white font-medium text-blue shadow-nav"
-											: "font-normal text-slate-strong hover:bg-white/70 hover:text-ink",
-									)
-								}
-							>
-								<EditableText k={item.labelKey} fallback={item.fallback} />
+							<NavLink to={item.to} end={item.end} className={({ isActive }) => row(isActive)}>
+								<EditableText k={item.labelKey} fallback={item.fallback} className="min-w-0 truncate" />
+								{count(item.badge)}
 							</NavLink>
 						</div>
 					);

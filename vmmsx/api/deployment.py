@@ -28,12 +28,19 @@ from vmmsx.deployment.services import invitation, matching, participation, terms
 from vmmsx.deployment.services import project as project_service
 from vmmsx.deployment.services import request as request_service
 from vmmsx.deployment.services import transfer as transfer_service
+from vmmsx.setup.project_fields import FUNDING_STATUSES as _FUNDING_STATUSES
 
 DEPLOYMENT_DOCTYPE = "VMMS Deployment"
+# One person's place on a deployment. Named here as well as on the service
+# because half the endpoints below act on one directly.
+ASSIGNMENT_DOCTYPE = "VMMS Deployment Assignment"
 REQUEST_DOCTYPE = "VMMS Deployment Request"
 TRANSFER_DOCTYPE = "VMMS Branch Transfer"
 VOLUNTEER_DOCTYPE = "VMMS Volunteer"
-PROJECT_DOCTYPE = "VMMS Project"
+# ERPNext's own, adopted as the canonical programme of work. Named here rather
+# than typed at each call site so the day this app is pointed at something else
+# there is one line to change. See `deployment/services/project.py`.
+PROJECT_DOCTYPE = "Project"
 TERMS_DOCTYPE = "VMMS Terms of Reference"
 # Core's, named here only so `deployment_map` can ask whether a deployment's
 # anchor still exists. Everything else geo goes through the adapter.
@@ -52,10 +59,12 @@ def find_candidates(
 	offset: int = 0,
 	search: str | None = None,
 	skills: list | None = None,
+	languages: list | None = None,
 	start_date: str | None = None,
 	end_date: str | None = None,
 	only_available: bool | int | str = False,
 	exclude_conflicts: bool | int | str = False,
+	max_workload: int | None = None,
 ) -> dict:
 	"""Volunteers who fit this need, within the caller's own area.
 
@@ -70,7 +79,9 @@ def find_candidates(
 
 	`start_date` and `end_date` turn on the availability and clash answers, which
 	rank rather than exclude; `only_available` and `exclude_conflicts` turn each
-	into a filter for a caller who has decided they want one.
+	into a filter for a caller who has decided they want one. `max_workload` is
+	the third of the same kind and drops the people already carrying more open
+	assignments than that.
 	"""
 	return matching.candidates(
 		terms_of_reference,
@@ -80,10 +91,12 @@ def find_candidates(
 		offset=offset,
 		search=search,
 		skills=skills,
+		languages=languages,
 		start_date=start_date,
 		end_date=end_date,
 		only_available=_flag(only_available),
 		exclude_conflicts=_flag(exclude_conflicts),
+		max_workload=max_workload,
 	)
 
 
@@ -265,7 +278,15 @@ def add_participant(name: str, volunteer: str, joined_on: str | None = None) -> 
 
 
 @frappe.whitelist()
-def invite_volunteer(name: str, volunteer: str, joined_on: str | None = None) -> dict:
+def invite_volunteer(
+	name: str,
+	volunteer: str,
+	joined_on: str | None = None,
+	answer_by: str | None = None,
+	assignment_title: str | None = None,
+	assignment_description: str | None = None,
+	supervisor: str | None = None,
+) -> dict:
 	"""Ask a volunteer to join a deployment, and notify them. Idempotent.
 
 	Gated on write permission on the deployment, the same as `add_participant`,
@@ -276,7 +297,15 @@ def invite_volunteer(name: str, volunteer: str, joined_on: str | None = None) ->
 	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
 	deployment.check_permission("write")
 
-	return invitation.invite(deployment, volunteer, joined_on=joined_on)
+	return invitation.invite(
+		deployment,
+		volunteer,
+		joined_on=joined_on,
+		answer_by=answer_by,
+		assignment_title=assignment_title,
+		assignment_description=assignment_description,
+		supervisor=supervisor,
+	)
 
 
 @frappe.whitelist()
@@ -374,6 +403,89 @@ def set_assignment_role(name: str, role: str) -> dict:
 	document.check_permission("write")
 
 	return assignment_service.set_role(document, role)
+
+
+@frappe.whitelist()
+def record_assignment_attendance(
+	name: str, outcome: str, hours: float | None = None, notes: str | None = None
+) -> dict:
+	"""Say what happened on the day: all of it, some of it, or none of it.
+
+	The coordinator's statement, and deliberately not the volunteer's. `hours` is
+	the figure a coordinator verified; a volunteer's own time log is a separate
+	claim on a separate record, and a register that merged the two would have no
+	way to show them disagreeing — which is the only reason anybody verifies
+	anything.
+
+	Gated on write permission on the assignment, which brings core's geo scoping
+	with it.
+	"""
+	doc = _readable(ASSIGNMENT_DOCTYPE, name)
+	doc.check_permission("write")
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	return assignment_service.record_attendance(doc, outcome, hours=hours, notes=notes)
+
+
+@frappe.whitelist()
+def replace_assignment(name: str, volunteer: str, reason: str, authorised_by: str | None = None) -> dict:
+	"""Swap somebody out and somebody in, keeping both records.
+
+	The original is never overwritten: it moves to Replaced and points at the
+	assignment that took over, which points back. Editing the volunteer instead
+	would erase the fact that anybody had ever been asked, and with it any way to
+	tell a replacement from a typo.
+
+	A reason is required. Both people are told, separately, because being taken
+	off a deployment and being asked onto one at short notice are different
+	pieces of news.
+	"""
+	doc = _readable(ASSIGNMENT_DOCTYPE, name)
+	doc.check_permission("write")
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	return assignment_service.replace(doc, volunteer, reason, authorised_by=authorised_by)
+
+
+@frappe.whitelist()
+def record_assignment_readiness(name: str, event: str) -> dict:
+	"""Stamp one of the four moments an assignment has: briefed, safe, in, out.
+
+	One endpoint rather than four, because they are one act — a coordinator (or a
+	gate marshal) recording that something happened at a time — and four
+	near-identical endpoints would be four places to forget the permission check.
+	The event is looked up rather than branched on, so adding a fifth moment is a
+	row in the table below.
+
+	**None of them gates anything.** Somebody who never acknowledged the safety
+	brief is not thereby refused a check-in: refusing people at the gate on a
+	field nobody filled in is how a record-keeping gap becomes an operational
+	failure. Whether an unbriefed person deploys is a coordinator's decision.
+	"""
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	events = {
+		"briefed": assignment_service.mark_briefed,
+		"safety": assignment_service.acknowledge_safety,
+		"check_in": assignment_service.check_in,
+		"check_out": assignment_service.check_out,
+	}
+
+	if event not in events:
+		frappe.throw(
+			frappe._("{0} is not something recorded against an assignment. Expected one of: {1}.").format(
+				frappe.bold(event), ", ".join(events)
+			),
+			frappe.ValidationError,
+			title=frappe._("Unknown Event"),
+		)
+
+	doc = _readable(ASSIGNMENT_DOCTYPE, name)
+	doc.check_permission("write")
+
+	return events[event](doc)
 
 
 @frappe.whitelist()
@@ -611,17 +723,43 @@ def _my_volunteer() -> str | None:
 
 PAGE = 100
 
-_DEPLOYMENT_STATUSES = ("Planned", "Active", "Completed", "Cancelled")
+# Every status a deployment can actually hold, taken from the service that owns
+# them rather than retyped here.
+#
+# **It used to be four of the six**, and the two it left out were the two that
+# matter most to a screen: a Suspended deployment silently answered with nothing
+# when asked for, and a Closed Out one could not be filtered for at all. A
+# filter that fails on a real value is worse than no filter, because the empty
+# list reads as "there are none".
+_DEPLOYMENT_STATUSES = deployment_service.STATUSES
 
 
 @frappe.whitelist()
 def branch_deployments(
-	status: str | None = None, limit: int | None = None, mine: bool | int | str = False
+	status: str | None = None,
+	statuses: list | str | None = None,
+	limit: int | None = None,
+	mine: bool | int | str = False,
 ) -> dict:
 	"""Deployments in the caller's own area, most recently touched first.
 
 	An unknown status answers with nothing rather than with everything, which is
 	the direction a filter should fail in.
+
+	**`statuses` is the plural of `status`, and it exists because a band is not
+	one status.** "Ongoing" means Planned *or* Active *or* Suspended *or*
+	Completed-but-not-closed-out, and a screen that could only ask for one at a
+	time had to fetch the unfiltered page and sieve it in the browser — which
+	means the band was really "whichever members of the band happened to be on
+	the first page". Asking the database for the set is the difference between a
+	register and a sample. Every value is checked against the six the doctype
+	actually has; an unknown one empties the whole filter rather than being
+	quietly dropped.
+
+	`total` is how many there are in the band inside the caller's scope, counted
+	through the same scoped listing rather than taken from the page's length. The
+	two are separate fields because a screen needs both: one labels the list, the
+	other says how much of the register it is showing.
 
 	**`mine` narrows to what this person filed, and it can only narrow.** It adds
 	an owner filter on top of a result core's query condition has already bounded
@@ -631,10 +769,12 @@ def branch_deployments(
 	not who the record is about, and those are the same person for a deployment
 	somebody set up themselves.
 	"""
-	if status and status not in _DEPLOYMENT_STATUSES:
-		return {"count": 0, "deployments": [], "open_count": 0}
+	wanted = _status_filter(status, statuses)
 
-	filters = {"status": status} if status else {}
+	if wanted is None:
+		return {"count": 0, "total": 0, "deployments": [], "open_count": 0}
+
+	filters = dict(wanted)
 
 	if _flag(mine):
 		filters["owner"] = frappe.session.user
@@ -651,12 +791,48 @@ def branch_deployments(
 
 	return {
 		"count": len(rows),
+		# Counted through the same scoped listing and the same filters, so the
+		# pager and the list cannot describe two different questions.
+		"total": _deployment_count(filters),
 		"deployments": rows,
 		# What a coordinator's attention is for: the ones still running. Counted
 		# from the rows already fetched rather than by a second query, so the
 		# number and the list can never disagree.
 		"open_count": len([row for row in rows if row.get("is_open")]),
 	}
+
+
+def _status_filter(status: str | None, statuses: list | str | None) -> dict | None:
+	"""The status clause for a listing, or None when the caller named nonsense.
+
+	None rather than an empty dict, because "no filter" and "a filter that
+	matches nothing" are opposite answers and returning the first for the second
+	would hand back every deployment in scope to somebody who asked for a status
+	that does not exist.
+	"""
+	wanted = _names(statuses) if statuses else ([status] if status else [])
+
+	if not wanted:
+		return {}
+
+	if any(value not in _DEPLOYMENT_STATUSES for value in wanted):
+		return None
+
+	return {"status": ("in", wanted) if len(wanted) > 1 else wanted[0]}
+
+
+def _deployment_count(filters: dict) -> int:
+	"""How many deployments match, through the scoped listing rather than around it.
+
+	`frappe.db.count` would skip core's permission query condition; `get_list`
+	runs it. The aggregate is the dict form because Frappe rejects a SQL function
+	written as a string in a SELECT.
+	"""
+	rows = frappe.get_list(
+		DEPLOYMENT_DOCTYPE, filters=filters, fields=[{"COUNT": "name"}], as_list=True
+	)
+
+	return frappe.utils.cint(rows[0][0]) if rows else 0
 
 
 @frappe.whitelist()
@@ -827,6 +1003,35 @@ def cancel_transfer(name: str, reason: str | None = None) -> dict:
 
 
 @frappe.whitelist()
+def project_options() -> dict:
+	"""What a screen needs before it can offer to open a programme of work.
+
+	The areas this coordinator may file one in, the one to fill in when there is
+	exactly one, and the Company the record will belong to. **The picker is a
+	convenience and not the control** — `project_service.assert_may_anchor` runs
+	again on the way in, because the request behind a dropdown can name any node
+	on the site.
+
+	`default_geo_node` is null where somebody holds several assignments, and that
+	is the answer rather than a missing one: guessing which of a person's areas
+	they meant is how a programme ends up in the wrong branch's register.
+	"""
+	frappe.has_permission(PROJECT_DOCTYPE, ptype="create", throw=True)
+
+	from vmmsx.deployment.services.placement import geo_path
+
+	nodes = project_service.authorised_nodes()
+
+	return {
+		"geo_nodes": [{"name": node, "geo_path": geo_path(node)} for node in nodes],
+		"default_geo_node": project_service.default_node(),
+		"company": project_service.default_company(),
+		"statuses": list(project_service.STATUSES),
+		"funding_statuses": list(_FUNDING_STATUSES),
+	}
+
+
+@frappe.whitelist()
 def create_project(
 	project_name: str,
 	geo_node: str,
@@ -835,12 +1040,22 @@ def create_project(
 	summary: str | None = None,
 	notes: str | None = None,
 	status: str | None = None,
+	company: str | None = None,
+	donor: str | None = None,
+	funding_reference: str | None = None,
+	funding_status: str | None = None,
 ) -> dict:
 	"""Open a programme of work. The Geo Node is required here, at creation.
 
 	ACC-02 is a property of the record existing, not a step in a workflow, and
 	the service refuses an unanchored project before the mandatory check can
-	produce a field name instead of a sentence.
+	produce a field name instead of a sentence. It then refuses one anchored
+	somewhere this caller does not run, which is the rule a filtered picker looks
+	like it enforces and does not.
+
+	Everything else about the programme — its type, priority, cost centre,
+	holiday list, the risks and assumptions — is edited on the record afterwards.
+	This is the door, not the whole form.
 	"""
 	frappe.has_permission(PROJECT_DOCTYPE, ptype="create", throw=True)
 
@@ -852,6 +1067,10 @@ def create_project(
 		summary=summary,
 		notes=notes,
 		status=status,
+		company=company,
+		donor=donor,
+		funding_reference=funding_reference,
+		funding_status=funding_status,
 	)
 
 	return project_service.dto(doc)
@@ -938,7 +1157,13 @@ def get_project(name: str) -> dict:
 
 @frappe.whitelist()
 def set_project_status(name: str, status: str, reason: str | None = None) -> dict:
-	"""Move a project's status. Idempotent, and refuses a move outside the grammar.
+	"""Move a project's status. Idempotent, and refuses a status outside the four.
+
+	The four are ERPNext's — Open, On hold, Completed, Cancelled — and there is
+	deliberately no transition table behind them: a standard field that ERPNext's
+	own screens and a society's native Workflow can both move is not a field this
+	app may quietly put a private grammar over. `project_service` says so at
+	length.
 
 	Write permission, which brings core's geo scoping with it: closing a
 	programme is an act on the branch's register, not on a personal record.
@@ -962,6 +1187,7 @@ def create_terms(
 	default_duration_days: int | None = None,
 	approval_mode: str | None = None,
 	is_active: bool | int | str = True,
+	has_no_resources: bool | int | str = False,
 	notes: str | None = None,
 	**tables,
 ) -> dict:
@@ -993,6 +1219,7 @@ def create_terms(
 		default_duration_days=default_duration_days,
 		approval_mode=approval_mode,
 		is_active=_flag(is_active),
+		has_no_resources=_flag(has_no_resources),
 		notes=notes,
 		**_terms_payload(tables),
 	)
@@ -1060,6 +1287,47 @@ def submit_terms(name: str) -> dict:
 
 
 @frappe.whitelist()
+def send_terms_for_approval(name: str) -> dict:
+	"""Hand a finished mission document to the society's approvers.
+
+	The other of the two submission paths, and which one a site has is that
+	society's configuration rather than a choice made here: with a
+	`VMMS Approval Workflow` for terms of reference, this is the door and
+	`submit_terms` refuses; with none, `submit_terms` is the door and this
+	refuses. Neither ever half-works, which is why the refusals are explicit
+	rather than a silent fallback to the other path.
+
+	Deciding it afterwards is `api/approvals.py`, the generic engine endpoint,
+	for the reason this module's own docstring gives: the person-gate lives there
+	and a second door into the same decision would be a second place to get it
+	wrong.
+	"""
+	_readable(TERMS_DOCTYPE, name)
+
+	return terms.send_for_approval(name)
+
+
+@frappe.whitelist()
+def supersede_terms(name: str, **values) -> dict:
+	"""Start a replacement for terms that deployments are already running under.
+
+	Not an amendment: amending needs a cancel first, and terms a deployment
+	points at refuse to be cancelled, because the people already deployed agreed
+	to exactly that wording. This writes a *new* draft carrying the whole mission
+	across, with `supersedes` pointing back at the original, and leaves the
+	original untouched and still in force.
+
+	`values` overrides any editable field on the copy, parsed the same way the
+	terms editor's own payload is, so respecifying a period or a scope does not
+	mean writing it twice.
+	"""
+	_readable(TERMS_DOCTYPE, name)
+	frappe.has_permission(TERMS_DOCTYPE, ptype="create", throw=True)
+
+	return terms.supersede(name, **_terms_payload(values))
+
+
+@frappe.whitelist()
 def tor_methodologies() -> dict:
 	"""The configured vocabularies used by the terms editor.
 
@@ -1106,23 +1374,55 @@ def deployment_options() -> dict:
 	}
 
 
+# The three operational records a document may be attached to, in the order a
+# register should offer them. A row rather than a branch, so a fourth is a line
+# here and nothing else.
+_DOCUMENT_PARENTS = (PROJECT_DOCTYPE, TERMS_DOCTYPE, DEPLOYMENT_DOCTYPE)
+
+
 @frappe.whitelist()
-def operations_documents(search: str | None = None) -> dict:
-	"""Private files attached to operational records in the caller's scope."""
+def operations_documents(search: str | None = None, doctype: str | None = None) -> dict:
+	"""Private files attached to operational records in the caller's scope.
+
+	**The scope is the parent's, and that is the whole access model.** `File`
+	itself is not geo-scopeable — it is attached to something that is — so the
+	readable parents are listed first through `frappe.get_list`, which runs
+	core's permission query condition, and only files hanging off *those* are
+	read. A file whose parent is outside the caller's areas is never named.
+
+	`doctype` narrows to one kind of parent and `search` narrows by file name or
+	by the record it is attached to. Both narrow the same scoped result; an
+	unknown `doctype` returns nothing rather than everything, which is the
+	direction a filter should fail in.
+
+	`targets` is the subset of those parents the caller may *write*, which is
+	what an upload is allowed to attach to. It is returned rather than computed
+	in the browser so the control offers exactly what the server would accept.
+	"""
+	wanted = _DOCUMENT_PARENTS if not doctype else tuple(d for d in _DOCUMENT_PARENTS if d == doctype)
+
+	if doctype and not wanted:
+		return {"count": 0, "files": [], "targets": [], "record_types": list(_DOCUMENT_PARENTS)}
+
+	# A parent doctype the caller cannot read at all is skipped rather than
+	# allowed to throw: `get_list` raises on one with no DocPerm, and a
+	# coordinator who may run deployments but may not see projects should get the
+	# deployment files rather than an error page. The same rule
+	# `api/person.py::registers` follows.
 	parents: dict[str, list[str]] = {
-		PROJECT_DOCTYPE: frappe.get_list(PROJECT_DOCTYPE, pluck="name", limit_page_length=0),
-		TERMS_DOCTYPE: frappe.get_list(TERMS_DOCTYPE, pluck="name", limit_page_length=0),
-		DEPLOYMENT_DOCTYPE: frappe.get_list(DEPLOYMENT_DOCTYPE, pluck="name", limit_page_length=0),
+		parent: frappe.get_list(parent, pluck="name", limit_page_length=0)
+		for parent in wanted
+		if frappe.has_permission(parent, "read")
 	}
 	files = []
 	needle = (search or "").strip().lower()
 
-	for doctype, names in parents.items():
+	for parent, names in parents.items():
 		if not names:
 			continue
 		rows = frappe.get_all(
 			"File",
-			filters={"attached_to_doctype": doctype, "attached_to_name": ["in", names], "is_folder": 0},
+			filters={"attached_to_doctype": parent, "attached_to_name": ["in", names], "is_folder": 0},
 			fields=["name", "file_name", "file_url", "file_size", "is_private", "attached_to_doctype", "attached_to_name", "owner", "creation", "modified"],
 			order_by="modified desc",
 			limit_page_length=200,
@@ -1133,19 +1433,36 @@ def operations_documents(search: str | None = None) -> dict:
 			files.append(row)
 
 	files.sort(key=lambda row: row.get("modified") or row.get("creation"), reverse=True)
+	# Targets are always every kind, whatever the register is filtered to: the
+	# filter narrows what you are reading, not what you may file a new document
+	# against.
+	writable = {
+		parent: parents.get(parent)
+		if parent in parents
+		else frappe.get_list(parent, pluck="name", limit_page_length=0)
+		for parent in _DOCUMENT_PARENTS
+		if frappe.has_permission(parent, "read")
+	}
 	targets = [
-		{"doctype": doctype, "name": name}
-		for doctype, names in parents.items()
+		{"doctype": parent, "name": name}
+		for parent, names in writable.items()
 		for name in names
-		if frappe.has_permission(doctype, ptype="write", doc=name)
+		if frappe.has_permission(parent, ptype="write", doc=name)
 	]
-	return {"count": len(files), "files": files, "targets": targets}
+	return {
+		"count": len(files),
+		"files": files,
+		"targets": targets,
+		"record_types": list(_DOCUMENT_PARENTS),
+	}
 
 
 @frappe.whitelist()
 def branch_terms(
 	project: str | None = None,
 	active_only: bool | int | str = False,
+	state: str | None = None,
+	search: str | None = None,
 	limit: int | None = None,
 	mine: bool | int | str = True,
 ) -> dict:
@@ -1160,6 +1477,8 @@ def branch_terms(
 	anchored. The owner filter is what keeps this register personal, and it is
 	why `mine` defaults on here.
 	"""
+	from vmmsx.approvals import states as approval_states
+
 	filters = {}
 
 	if project:
@@ -1171,9 +1490,29 @@ def branch_terms(
 	if _flag(mine):
 		filters["owner"] = frappe.session.user
 
+	if state:
+		# One of the seven in `states.py`, never a stage label: stages are a
+		# society's own wording and nothing in this app compares them. An unknown
+		# value empties the result rather than being dropped, which is the
+		# direction a filter should fail in.
+		if state not in approval_states.STATES:
+			return {"count": 0, "terms": [], "states": list(approval_states.STATES)}
+
+		filters["approval_state"] = state
+
+	if search:
+		# Frappe's `like` on the register's own two human-readable columns. An
+		# `or_filters` rather than two reads, so paging still describes one
+		# question.
+		needle = f"%{search.strip()}%"
+		or_filters = {"tor_name": ("like", needle), "tor_key": ("like", needle)}
+	else:
+		or_filters = None
+
 	names = frappe.get_list(
 		TERMS_DOCTYPE,
 		filters=filters,
+		or_filters=or_filters,
 		order_by="creation desc",
 		limit_page_length=min(int(limit or PAGE), PAGE),
 		pluck="name",
@@ -1181,7 +1520,13 @@ def branch_terms(
 
 	rows = [terms.dto(name) for name in names]
 
-	return {"count": len(rows), "terms": rows}
+	return {
+		"count": len(rows),
+		"terms": rows,
+		# The closed set a filter control may offer, handed over rather than
+		# retyped in the browser.
+		"states": list(approval_states.STATES),
+	}
 
 
 @frappe.whitelist()
@@ -1248,6 +1593,8 @@ def create_deployment(
 	status: str | None = None,
 	email_template: str | None = None,
 	notes: str | None = None,
+	coordinator: str | None = None,
+	**place,
 ) -> dict:
 	"""Set up a deployment directly, under terms that already exist.
 
@@ -1270,9 +1617,76 @@ def create_deployment(
 		status=status,
 		email_template=email_template,
 		notes=notes,
+		coordinator=coordinator,
+		**place,
 	)
 
 	return deployment_service.deployment_dto(doc)
+
+
+# --- where it is, and how people get there ---------------------------------
+
+
+@frappe.whitelist()
+def locate_deployment(name: str, place: str, force: bool | int | str = False) -> dict:
+	"""Turn one of a deployment's two addresses into a point. Never fails a save.
+
+	**An explicit act, not a side effect.** Nothing geocodes when a deployment is
+	saved: a third party being slow must never be the reason a coordinator cannot
+	file their work. So this is a button, and everything it can go wrong with
+	comes back as `located: false` and a sentence — no provider configured, an
+	address nobody can place, a timeout — rather than as an error.
+
+	A pin already on the record wins unless `force` is set, because somebody who
+	moved it knew something the address does not.
+	"""
+	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
+	deployment.check_permission("write")
+
+	from vmmsx.deployment.services import geocoding
+
+	geocoding.assert_known(place, geocoding.PLACES)
+
+	return geocoding.locate_place(deployment, place, force=_flag(force))
+
+
+@frappe.whitelist()
+def place_deployment_pin(name: str, place: str, latitude: float, longitude: float) -> dict:
+	"""Drop one of a deployment's two pins by hand. The correction a geocoder cannot make.
+
+	Clears the "located on" stamp, because the point no longer came from the
+	address — which is the difference a later reader needs and the reason an
+	automatic pass will leave it alone.
+	"""
+	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
+	deployment.check_permission("write")
+
+	from vmmsx.deployment.services import geocoding
+
+	geocoding.assert_known(place, geocoding.PLACES)
+
+	return geocoding.relocate(deployment, place, latitude, longitude)
+
+
+# --- ending it -------------------------------------------------------------
+
+
+@frappe.whitelist()
+def close_out_deployment(
+	name: str, lessons: str | None = None, report: str | None = None
+) -> dict:
+	"""Move a completed deployment to Closed Out. Both fields optional, always.
+
+	Nothing blocks it — not an unmarked roster, not an open task, not somebody
+	who never filed their hours. A close-out that can be refused is one that does
+	not happen, and a register full of work that ended in March is worse than one
+	whose paperwork is thin. The transition table is the only rule: Completed is
+	the one status this is reachable from.
+	"""
+	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
+	deployment.check_permission("write")
+
+	return deployment_service.close_out(deployment, lessons=lessons, report=report)
 
 
 # --- shared ---------------------------------------------------------------
@@ -1305,3 +1719,256 @@ def _in_scope(doctype: str, name: str) -> bool:
 		return False
 
 	return True
+
+
+# --- the operations command centre ------------------------------------------
+
+# What "ongoing" means, once, here — and it is four statuses rather than two.
+#
+# A deployment is still somebody's problem while it is Planned, Active or
+# Suspended, and also while it is Completed but not yet Closed Out: the work
+# stopped and the paperwork did not. Closed Out and Cancelled are the two that
+# are genuinely over, and they are the two this band excludes.
+ONGOING_STATUSES = (
+	deployment_service.STATUS_PLANNED,
+	deployment_service.STATUS_ACTIVE,
+	deployment_service.STATUS_SUSPENDED,
+	deployment_service.STATUS_COMPLETED,
+)
+
+# How many deployments the map and the summary will read. A ceiling on work
+# rather than a page size; `capped` says when it was reached so a screen can
+# present its figures as a floor rather than as a total.
+_OPERATIONS_CEILING = 500
+
+# How close to starting counts as "soon", for the summary's own tile.
+_STARTING_SOON_DAYS = 14
+
+
+@frappe.whitelist()
+def operations_summary() -> dict:
+	"""The operations overview's figures, over the caller's whole scope.
+
+	Every number here is counted across the scoped register rather than across
+	one page of it, which is the entire reason it exists: the dashboard used to
+	derive its tiles from `branch_deployments`' capped page and had to say so in
+	a footnote. A footnote is not a fix.
+
+	    ongoing        deployments still somebody's problem, and the four
+	                   statuses that make up that band, each counted separately
+	    people         how many are actually out — Assigned plus Accepted — on
+	                   the ones that are Active
+	    starting_soon  Planned deployments beginning inside the window, and how
+	                   many places are still open on them
+	    pending        invitations asked and unanswered, across the band
+	    requests       deployment requests still waiting on an outcome
+	    terms          terms of reference the caller may read, and how many of
+	                   those are still in an open approval state
+
+	**Scope is the floor, not a filter.** Every read is `frappe.get_list`, so
+	core's permission query condition applies; nothing here takes an argument, so
+	there is nothing a caller could send that would widen it.
+	"""
+	from frappe.utils import add_days, cint, getdate, today
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	moment = getdate(today())
+	horizon = add_days(moment, _STARTING_SOON_DAYS)
+
+	rows = frappe.get_list(
+		DEPLOYMENT_DOCTYPE,
+		filters={"status": ("in", list(ONGOING_STATUSES))},
+		fields=["name", "status", "start_date", "volunteers_required"],
+		order_by="modified desc",
+		limit_page_length=_OPERATIONS_CEILING + 1,
+	)
+
+	capped = len(rows) > _OPERATIONS_CEILING
+	rows = rows[:_OPERATIONS_CEILING]
+
+	tallies = assignment_service.counts_for_many([row["name"] for row in rows])
+
+	def tally(row) -> dict:
+		return tallies.get(row["name"]) or {}
+
+	by_status = {status: 0 for status in ONGOING_STATUSES}
+
+	for row in rows:
+		if row["status"] in by_status:
+			by_status[row["status"]] += 1
+
+	active = [row for row in rows if row["status"] == deployment_service.STATUS_ACTIVE]
+	soon = [
+		row
+		for row in rows
+		if row["status"] == deployment_service.STATUS_PLANNED
+		and row.get("start_date")
+		and moment <= getdate(row["start_date"]) <= horizon
+	]
+
+	return {
+		"as_of": moment,
+		"ongoing": len(rows),
+		"by_status": by_status,
+		"people": sum(tally(row).get("on_deployment", 0) for row in active),
+		"starting_soon": len(soon),
+		"starting_soon_days": _STARTING_SOON_DAYS,
+		"unfilled_soon": sum(
+			max(cint(row.get("volunteers_required")) - tally(row).get("on_deployment", 0), 0)
+			for row in soon
+			if cint(row.get("volunteers_required")) > 0
+		),
+		"pending": sum(tally(row).get("Pending", 0) for row in rows),
+		# Completed and not yet Closed Out: the work is over and the paperwork is
+		# not. Its own figure because it is its own job.
+		"closing_out": by_status.get(deployment_service.STATUS_COMPLETED, 0),
+		**_request_figures(),
+		**_terms_figures(),
+		"capped": capped,
+	}
+
+
+def _request_figures() -> dict:
+	"""Deployment requests in scope, and how many are still waiting on somebody.
+
+	Asked before the read rather than caught after it, the same rule
+	`api/person.py::registers` follows: `get_list` raises on a doctype the caller
+	has no read permission for at all, and one absent permission must cost this
+	block its two numbers rather than the whole dashboard. A coordinator who may
+	run deployments and may not see requests gets `None` here, and the screen
+	draws nothing rather than a zero that would read as "there are none".
+	"""
+	if not frappe.has_permission(REQUEST_DOCTYPE, "read"):
+		return {"requests": None, "requests_open": None}
+
+	names = frappe.get_list(
+		REQUEST_DOCTYPE,
+		order_by="creation desc",
+		limit_page_length=_OPERATIONS_CEILING,
+		pluck="name",
+	)
+
+	open_requests = 0
+
+	for name in names:
+		request = frappe.get_doc(REQUEST_DOCTYPE, name)
+		status = request_service.status(request)
+
+		if not status.get("is_fulfilled") and not status.get("is_refused"):
+			open_requests += 1
+
+	return {"requests": len(names), "requests_open": open_requests}
+
+
+def _terms_figures() -> dict:
+	"""Terms of reference in scope, and how many are still under approval.
+
+	`approval_state` is read off the field and compared against the closed set in
+	`states.py` — never against a stage label, which is a society's own wording
+	and is displayed rather than branched on.
+	"""
+	from vmmsx.approvals import states
+
+	# See `_request_figures`: an absent permission costs this block its numbers,
+	# never the page.
+	if not frappe.has_permission(TERMS_DOCTYPE, "read"):
+		return {"terms": None, "terms_awaiting": None}
+
+	total = frappe.get_list(TERMS_DOCTYPE, fields=[{"COUNT": "name"}], as_list=True)
+	awaiting = frappe.get_list(
+		TERMS_DOCTYPE,
+		filters={"approval_state": ("in", [states.SUBMITTED, states.IN_REVIEW])},
+		fields=[{"COUNT": "name"}],
+		as_list=True,
+	)
+
+	return {
+		"terms": frappe.utils.cint(total[0][0]) if total else 0,
+		"terms_awaiting": frappe.utils.cint(awaiting[0][0]) if awaiting else 0,
+	}
+
+
+@frappe.whitelist()
+def deployment_sites(status: str | None = None) -> dict:
+	"""Every readable deployment as a point on a map, with the mission picture.
+
+	**The counterpart of `deployment_map`, not a replacement for it.** That one
+	aggregates by Geo Node and answers "where are most of our people"; a coloured
+	circle over a county cannot be selected, and selecting one deployment to read
+	its site, its meeting point, its coordinator and its readiness is the whole
+	of what an operations map is for. So this returns the deployments themselves,
+	each with the coordinates already on its own record.
+
+	**The coordinates are the deployment's own, never the geo tree's and never a
+	constant.** `where_dto` reads the two places a deployment has —
+	`geocoding.dto` says which fields those are — and `has_point` is False where
+	nobody has located it yet. A deployment with no point is *still in the
+	answer*, counted in `unplotted`, because a map that silently dropped them
+	would under-report exactly where the gaps in the data are.
+
+	**Scope is the floor.** `frappe.get_list` runs core's permission query
+	condition; `status` narrows within that and an unknown one empties the result
+	rather than widening it.
+	"""
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	wanted = _status_filter(status, None)
+
+	if wanted is None:
+		return {"deployments": [], "count": 0, "plotted": 0, "unplotted": 0, "capped": False}
+
+	filters = dict(wanted) or {"status": ("in", list(ONGOING_STATUSES))}
+
+	names = frappe.get_list(
+		DEPLOYMENT_DOCTYPE,
+		filters=filters,
+		order_by="modified desc",
+		limit_page_length=_OPERATIONS_CEILING + 1,
+		pluck="name",
+	)
+
+	capped = len(names) > _OPERATIONS_CEILING
+	names = names[:_OPERATIONS_CEILING]
+
+	# Two grouped queries for the whole page rather than two per row: a map of
+	# forty deployments must not be eighty queries.
+	tallies = assignment_service.counts_for_many(names)
+	readiness = assignment_service.readiness_for_many(names)
+
+	rows = [
+		_site_row(frappe.get_doc(DEPLOYMENT_DOCTYPE, name), tallies.get(name), readiness.get(name))
+		for name in names
+	]
+
+	plotted = [row for row in rows if row["where"]["site"]["has_point"]]
+
+	return {
+		"deployments": rows,
+		"count": len(rows),
+		"plotted": len(plotted),
+		# Named rather than left to be counted, so the screen says "3 of 11 have
+		# no location yet" instead of quietly drawing eight pins.
+		"unplotted": len(rows) - len(plotted),
+		"capped": capped,
+	}
+
+
+def _site_row(deployment, counts: dict | None, readiness: dict | None) -> dict:
+	"""One deployment as the map's detail panel reads it. Built field by field.
+
+	`status_dto` carries the period, the control times, the headcount and the
+	places left; `where_dto` carries the two places and how to get to them;
+	`coordinator_dto` carries who to ring. All three are the DTOs their own
+	services already build, composed here rather than re-derived — so the map
+	panel and the deployment page cannot come to describe the same deployment
+	differently.
+	"""
+	return {
+		**deployment_service.status_dto(deployment, counts=counts),
+		"where": deployment_service.where_dto(deployment),
+		"coordinator_contact": deployment_service.coordinator_dto(deployment),
+		# How ready the roster is, from the same grouped read the whole page
+		# shares. Empty rather than absent for a deployment with nobody on it.
+		"readiness": readiness or {"briefed": 0, "safety": 0, "checked_in": 0, "leaders": 0},
+	}

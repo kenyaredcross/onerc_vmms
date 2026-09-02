@@ -48,10 +48,11 @@ from frappe import _
 from frappe.utils import add_days, cint, getdate, today
 
 from vmmsx.approvals.services import contract
-from vmmsx.member.services import approval, payment
+from vmmsx.member.services import approval, payment, proof
 from vmmsx.registration.services import questions
 
 MEMBER_DOCTYPE = "VMMS Member"
+MEMBERSHIP_DOCTYPE = "VMMS Membership"
 
 STATUS_DRAFT = "Draft"
 STATUS_AWAITING_PAYMENT = "Awaiting Payment"
@@ -161,12 +162,18 @@ def submit(membership) -> dict:
 	membership_type = type_of(membership)
 
 	_assert_type_usable(membership_type)
+	assert_not_already_held(membership)
 
 	# Before the fee is requested, deliberately. A society's own questions are as
 	# required as anything else on the form, and discovering that after a gateway
 	# has been asked for money would leave a transaction against an application
 	# that never went anywhere. A no-op until a society writes a question.
 	questions.assert_answered(membership)
+
+	# The same seam, for the same reason: everything required *to submit*. A
+	# no-op unless this is somebody proving a membership they already hold — see
+	# `proof.assert_claim_complete`.
+	proof.assert_claim_complete(membership)
 
 	# A proof-sourced membership was already paid for, outside this system —
 	# there is nothing for a gateway to collect, so it never asks for one, even
@@ -216,6 +223,93 @@ def _assert_type_usable(membership_type) -> None:
 	)
 
 
+def assert_not_already_held(membership) -> None:
+	"""Refuse a proof of a membership this member already holds.
+
+	**The gap this closes.** `engine.assert_single_open` refuses a second
+	*undecided* membership per member; nothing refuses a second *active* one. The
+	proof path reaches that state without anybody meaning to — a member who has
+	forgotten they were recorded last year proves the membership they are already
+	holding, and the society ends up with two live windows against one plan, two
+	fees and two certificates for one person.
+
+	**Scoped to proof, which is where the phase that asked for it put it.** The
+	general case — an ordinary Gateway application for a plan somebody already
+	holds — is the same defect and is *not* fixed here, deliberately. It is
+	pre-existing, it is out of this phase's scope, and closing it means changing
+	behaviour several other suites are built on. It is recorded for the
+	integration and hardening phase rather than folded in silently.
+
+	**Member, plan and branch — all three.** The scope was worded "the same member
+	and plan", and the branch is here because this app has a multi-branch
+	membership model that predates it and states itself out loud: `register.py`
+	builds the coordinator's register a row per *membership* rather than per
+	member, precisely so that "somebody enrolled at two branches appears twice,
+	once per branch". A person may hold the same plan at the branch where they
+	live and the branch where they work, and both are real memberships with their
+	own fee and their own validity. Dropping the branch from this key would not
+	tighten a duplicate rule; it would delete a feature that `test_dossier` and
+	`test_renewal` both pin.
+
+	**Current, not stored-Active.** A membership sitting at Active with a
+	`valid_to` that has already passed is current in name only, in the ordinary
+	window before the daily sweep notices. Asked through `is_current` so this and
+	`renewal.is_renewable` agree by construction — and so that proving a
+	membership that has lapsed leaves the person on the renewal path rather than
+	locked out of it.
+
+	At submission rather than at insert, for `assert_single_open`'s reason: a
+	coordinator may have several drafts on their desk, and a draft is not a
+	membership anybody holds.
+	"""
+	if not is_proof(membership):
+		return
+
+	if not membership.member or not membership.membership_type or not membership.geo_node:
+		return
+
+	held = frappe.get_all(
+		MEMBERSHIP_DOCTYPE,
+		filters={
+			"member": membership.member,
+			"membership_type": membership.membership_type,
+			"geo_node": membership.geo_node,
+			"membership_status": STATUS_ACTIVE,
+			"name": ("!=", membership.name),
+		},
+		fields=["name", "membership_status", "valid_to"],
+	)
+
+	current = next((row for row in held if is_current(frappe._dict(row))), None)
+
+	if not current:
+		return
+
+	# The place is named through core's adapter rather than in words. ACC-03: a
+	# geo level is a society's configuration and never a literal in a source
+	# file, and this message used to say "at this branch" — which is wrong on
+	# every site that registers members at a county or a ward.
+	# `member/tests/test_anchor.py::TestNoLevelNamesInSource` walks the AST and
+	# fails the build over it.
+	from onerc_core.geo.services import adapter
+
+	frappe.throw(
+		_(
+			"This person already holds a current {0} membership at {1} ({2}). A second one"
+			" would be two live memberships against the same plan in the same place. Renew that"
+			" one when it expires, or cancel it first."
+		).format(
+			frappe.bold(frappe.get_cached_value(
+				"VMMS Membership Type", membership.membership_type, "membership_type_name"
+			)),
+			frappe.bold(adapter.get_full_path(membership.geo_node)),
+			frappe.bold(current["name"]),
+		),
+		frappe.ValidationError,
+		title=_("Membership Already Held"),
+	)
+
+
 # --- activation -----------------------------------------------------------
 
 
@@ -248,18 +342,63 @@ def activate(membership) -> dict:
 	when somebody actually becomes a member, not when they applied — an
 	application that sat with an approver for three weeks must not lose three
 	weeks of what it paid for.
+
+	**One exception, and it is a decision somebody made rather than a rule.** A
+	membership carrying dates an approver confirmed against uploaded evidence
+	takes those instead, because the person did not become a member today — they
+	became one in 2014 and are asking the society to record what it already knew.
+	Nothing else can produce those dates: they are written only by
+	`proof.verify()`, only from the review screen, and never from the applicant's
+	claim. Every other membership in this app — an ordinary application, a
+	renewal, a clerk's proof entry — has nothing there to read and reaches the
+	fresh period below, unchanged.
 	"""
 	membership_type = type_of(membership)
-	start = getdate(today())
+	start, end = _validity(membership, membership_type)
 
-	membership.membership_status = STATUS_ACTIVE
+	membership.membership_status = _activated_status(end)
 	membership.valid_from = start
-	membership.valid_to = _valid_to(membership_type, start)
+	membership.valid_to = end
 
 	_save(membership)
 	_sync_member(membership)
 
 	return status(membership)
+
+
+def _validity(membership, membership_type):
+	"""The window this membership is being activated for: verified, or fresh."""
+	verified = proof.verified_validity(membership, membership_type)
+
+	if verified:
+		return verified
+
+	start = getdate(today())
+
+	return start, _valid_to(membership_type, start)
+
+
+def _activated_status(end) -> str:
+	"""Active, unless the window being recorded has already closed.
+
+	**A membership proved to have expired is recorded as Expired, not activated.**
+	Somebody whose card lapsed in 2021 is telling the truth about a membership
+	they no longer hold, and putting them on the register as Active for a period
+	that ended years ago would state something false about today in order to
+	record something true about the past. Expired says both.
+
+	It costs nothing to reach from there: `renewal.is_renewable` opens from
+	exactly this state, so the answer to "then what" is the renewal path that
+	already exists, and the daily `expire_lapsed()` sweep finds nothing to do
+	because this membership never spent a moment being wrongly Active.
+
+	Unreachable on the fresh path — a period starting today has not closed — so
+	in practice this only ever fires on a verified historical claim.
+	"""
+	if end and getdate(end) < getdate(today()):
+		return STATUS_EXPIRED
+
+	return STATUS_ACTIVE
 
 
 def _valid_to(membership_type, start):
@@ -465,6 +604,7 @@ def _report(membership, previous: str | None) -> None:
 	"""
 	from vmmsx.member.services import identity
 	from vmmsx.notifications.services import lifecycle
+	from vmmsx.registration.services import guardian
 
 	member = frappe.get_doc(MEMBER_DOCTYPE, membership.member) if membership.member else None
 
@@ -484,6 +624,11 @@ def _report(membership, previous: str | None) -> None:
 			"geo_path": _geo_path(membership),
 			"portal_path": "/portal/membership",
 			"attachment": _card_attachment(membership),
+			# The same copy rule as the volunteer application's, and it is the
+			# same rule rather than a membership one: a child joining as a member
+			# has the same parent as a child volunteering, and the question is
+			# asked of the person either way.
+			"cc": guardian.emails_for(member.red_profile),
 		},
 	)
 
@@ -598,4 +743,9 @@ def status(membership) -> dict:
 		"approval_state": membership.approval_state,
 		"membership_source": source(membership),
 		"proof_attachment": membership.get("proof_attachment"),
+		# The two halves of an existing-membership proof, kept apart all the way
+		# out to the caller. `None` on every membership that is not one, so a
+		# screen renders nothing rather than a block of empty fields.
+		"claimed": proof.claimed_dto(membership),
+		"verified": proof.verified_dto(membership),
 	}

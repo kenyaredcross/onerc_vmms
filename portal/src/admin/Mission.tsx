@@ -101,7 +101,7 @@ export function RowEditor<Row extends object>({
 				<button
 					type="button"
 					onClick={() => onChange([...rows, blank()])}
-					className="text-[12px] font-semibold text-navy hover:underline"
+					className="text-[12px] font-semibold text-ink hover:underline"
 				>
 					+ {addLabel}
 				</button>
@@ -116,7 +116,7 @@ export function RowEditor<Row extends object>({
 					{rows.map((row, index) => (
 						<li
 							key={index}
-							className="rounded-card border border-hairline bg-surface/60 px-3 py-2.5"
+							className="rounded-xl border border-card-line bg-surface/60 px-3 py-2.5"
 						>
 							<div className="grid grid-cols-12 gap-2.5">
 								{columns.map((column) => (
@@ -142,7 +142,7 @@ export function RowEditor<Row extends object>({
 								<button
 									type="button"
 									onClick={() => onChange(rows.filter((_, at) => at !== index))}
-									className="text-[11.5px] font-semibold text-slate-faint hover:text-signal"
+									className="text-[11.5px] font-semibold text-slate-faint hover:text-blue"
 								>
 									Remove
 								</button>
@@ -180,7 +180,7 @@ function Input<Row>({
 
 	if (column.kind === "check") {
 		return (
-			<span className="flex min-h-[38px] items-center gap-2 rounded-card border border-hairline-strong bg-white px-3 py-2 text-[12.5px] text-slate-body">
+			<span className="flex min-h-[38px] items-center gap-2 rounded-xl border border-card-line bg-white px-3 py-2 text-[12.5px] text-muted">
 				<input
 					type="checkbox"
 					checked={Boolean(value)}
@@ -431,7 +431,7 @@ export function MissionEditor({
 
 	return (
 		<Card>
-			<div className="flex flex-wrap items-center gap-1.5 border-b border-hairline pb-3">
+			<div className="flex flex-wrap items-center gap-1.5 border-b border-card-line pb-3">
 				{TABS.map((entry) => (
 					<button
 						key={entry.key}
@@ -443,8 +443,8 @@ export function MissionEditor({
 						className={cx(
 							"rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition",
 							tab === entry.key
-								? "bg-navy text-white"
-								: "text-slate-body hover:bg-surface hover:text-navy",
+								? "bg-rail text-white"
+								: "text-muted hover:bg-surface hover:text-ink",
 						)}
 					>
 						{entry.label}
@@ -480,7 +480,7 @@ export function MissionEditor({
 								</select>
 							</Labelled>
 							<Labelled label="Availability" hint="Inactive terms take no new deployments or requests.">
-								<span className="flex min-h-[38px] items-center gap-2 rounded-card border border-hairline-strong bg-white px-3 py-2 text-[13px] text-slate-body">
+								<span className="flex min-h-[38px] items-center gap-2 rounded-xl border border-card-line bg-white px-3 py-2 text-[13px] text-muted">
 									<input
 										type="checkbox"
 										checked={isActive}
@@ -777,11 +777,11 @@ export function MissionEditor({
 				</div>
 			)}
 
-			<div className="mt-5 flex flex-wrap items-center gap-3 border-t border-hairline pt-4">
+			<div className="mt-5 flex flex-wrap items-center gap-3 border-t border-card-line pt-4">
 				<Button disabled={busy} onClick={() => void save()}>
 					{busy ? "Saving…" : `Save ${TABS.find((entry) => entry.key === tab)?.label.toLowerCase()}`}
 				</Button>
-				{saved && <span className="text-[12px] font-semibold text-navy">Saved.</span>}
+				{saved && <span className="text-[12px] font-semibold text-ink">Saved.</span>}
 				<span className="ml-auto text-[11.5px] text-slate-faint">
 					Each tab saves on its own. The others are left exactly as they are.
 				</span>
@@ -894,7 +894,7 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 					</thead>
 					<tbody>
 						{terms.resources.map((row, index) => (
-							<tr key={index} className="border-t border-hairline">
+							<tr key={index} className="border-t border-card-line">
 								<td className="py-1.5">{row.resource}</td>
 								<td className="py-1.5">
 									{row.needed_on ? formatDate(row.needed_on) : "Throughout"}
@@ -908,7 +908,7 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 						))}
 					</tbody>
 					<tfoot>
-						<tr className="border-t border-hairline-strong">
+						<tr className="border-t border-card-line">
 							<td className="pt-1.5 font-semibold" colSpan={5}>
 								Total
 							</td>
@@ -947,7 +947,7 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 						<p className="text-[11px] font-bold uppercase tracking-wider text-slate-faint">
 							{title}
 						</p>
-						<div className="mt-1.5 text-[12.5px] leading-relaxed text-slate-body">{body}</div>
+						<div className="mt-1.5 text-[12.5px] leading-relaxed text-muted">{body}</div>
 					</div>
 				))}
 			</div>

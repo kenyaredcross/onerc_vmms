@@ -71,6 +71,17 @@ TEST_ROLES = (
 
 SETTINGS_DOCTYPE = "National Society Settings"
 
+# ERPNext's own, and the programme of work every terms of reference is now
+# written under. `VMMS Project` was retired for it.
+PROJECT_DOCTYPE = "Project"
+
+# The two hierarchies, kept here as `build_society_a`/`build_society_b` make
+# them, so a fixture that needs *somewhere* to anchor a document can find one
+# without every caller having to pass a node in. Only `make_terms` reads it,
+# and only for the scope a terms of reference now has to carry; a test that
+# cares which node is used still says so.
+TREES: dict[str, dict] = {}
+
 # The Custom Fields vmmsx installs and registers through onerc_scopeable_doctypes
 # and reads through deployment/services/society.py.
 VOLUNTEER_SCOPE_SETTING = "vmms_volunteer_scope_role"
@@ -130,6 +141,7 @@ def build_society_a() -> dict:
 	tree["post"] = geo_fixtures.make_node("Ruaka", post, tree["branch"])
 	tree["other_branch"] = geo_fixtures.make_node("Limuru", branch, tree["region"], is_group=True)
 	tree["other_post"] = geo_fixtures.make_node("Tigoni", post, tree["other_branch"])
+	TREES["a"] = tree
 
 	return tree
 
@@ -142,6 +154,7 @@ def build_society_b() -> dict:
 	tree["region"] = geo_fixtures.make_node("Delta", province, None, is_group=True)
 	tree["district"] = geo_fixtures.make_node("Estuary", district, tree["region"], is_group=True)
 	tree["ward"] = geo_fixtures.make_node("Shoreline", ward, tree["district"])
+	TREES["b"] = tree
 
 	return tree
 
@@ -320,6 +333,79 @@ def make_certification(volunteer: str, certification_type: str, completion_date=
 	).insert()
 
 
+def company() -> str:
+	"""The Company a fixture project belongs to. Whatever this bench already has.
+
+	ERPNext makes Company mandatory on a `Project`, and a Company is expensive to
+	create — it writes a whole chart of accounts. Every bench this suite runs on
+	has one, so one is reused; the insert is the fallback for a site that somehow
+	has none, and it happens once.
+	"""
+	existing = frappe.db.get_value("Company", {}, "name")
+
+	if existing:
+		return existing
+
+	return frappe.get_doc(
+		{
+			"doctype": "Company",
+			"company_name": f"{TEST_PREFIX} Society",
+			"abbr": "DPT",
+			"default_currency": "USD",
+			"country": "United States",
+		}
+	).insert().name
+
+
+def make_project(geo_node: str):
+	"""The programme of work a fixture's terms of reference is written under.
+
+	One per node, found by name afterwards, because a project is a container and
+	twenty of them per suite would be twenty rows saying the same thing.
+
+	**Inserted as Administrator.** `project.on_validate` refuses a programme
+	anchored somewhere the caller does not run, which is exactly the rule the
+	Phase 3 tests are about — but a fixture is arranging the world, not
+	exercising that rule, and a test that had set itself to a coordinator would
+	otherwise fail while building its own scenery. `test_project.py` calls the
+	service directly for the real thing.
+	"""
+	name = f"{TEST_PREFIX} Programme {geo_node}"
+	existing = frappe.db.get_value(PROJECT_DOCTYPE, {"project_name": name}, "name")
+
+	if existing:
+		return existing
+
+	caller = frappe.session.user
+	frappe.set_user("Administrator")
+
+	try:
+		return frappe.get_doc(
+			{
+				"doctype": PROJECT_DOCTYPE,
+				"project_name": name,
+				"company": company(),
+				"status": "Open",
+				"vmms_geo_node": geo_node,
+			}
+		).insert().name
+	finally:
+		frappe.set_user(caller)
+
+
+def default_scope() -> str | None:
+	"""Where a fixture terms of reference applies when the test does not say.
+
+	Society A's region, so everything beneath it — both branches and both posts —
+	is inside the scope and a deployment anchored anywhere in that society is
+	legal. A test about the other society passes its own node, which is the point
+	of a scope and the reason this is a default rather than a constant.
+	"""
+	tree = TREES.get("a")
+
+	return tree["region"] if tree else None
+
+
 def make_terms(key: str = TOR_FLOOD, submit: bool = True, **overrides):
 	"""One terms of reference. Direct approval unless a test asks otherwise.
 
@@ -327,6 +413,13 @@ def make_terms(key: str = TOR_FLOOD, submit: bool = True, **overrides):
 	take a deployment: `terms.assert_offered` refuses a draft, on the grounds
 	that somebody accepting an assignment is accepting wording that can still be
 	edited. A test about the draft state itself passes `submit=False`.
+
+	**And a complete mission document, because a draft that is not one cannot be
+	submitted.** `terms.REQUIRED_AT_SUBMISSION` is the list; everything below the
+	purpose is here to satisfy it and none of it is read by any assertion. The
+	two that a test does sometimes care about are `geo_scope` — which defaults to
+	society A's region, so a deployment anywhere in that society is inside it —
+	and `project`, which follows the scope. Both are overridable.
 	"""
 	if frappe.db.exists(TERMS_DOCTYPE, key):
 		# Dropped back to a draft before it is deleted. `force=True` skips the
@@ -336,6 +429,8 @@ def make_terms(key: str = TOR_FLOOD, submit: bool = True, **overrides):
 		frappe.db.set_value(TERMS_DOCTYPE, key, "docstatus", 0, update_modified=False)
 		frappe.delete_doc(TERMS_DOCTYPE, key, force=True)
 
+	scope = overrides.pop("geo_scope", None) or default_scope()
+
 	values = {
 		"doctype": TERMS_DOCTYPE,
 		"tor_key": key,
@@ -343,6 +438,16 @@ def make_terms(key: str = TOR_FLOOD, submit: bool = True, **overrides):
 		"purpose": "Whatever this society uses these terms for.",
 		"approval_mode": "direct",
 		"is_active": 1,
+		"geo_scope": scope,
+		"project": make_project(scope) if scope else None,
+		"expected_start_date": today(),
+		"expected_end_date": add_days(today(), 6),
+		"mission_background": "<p>Why this society keeps a written specification for this work.</p>",
+		"objectives": [{"objective": "Do the work these terms describe."}],
+		"expected_outputs": [{"output": "A record of what was done."}],
+		"stakeholders": [{"designation": "Branch Coordinator"}],
+		"itinerary": [{"activity_date": today(), "activity": "Briefing"}],
+		"has_no_resources": 1,
 	}
 	values.update(overrides)
 
@@ -457,6 +562,9 @@ def make_deployment(terms: str, geo_node: str, participants: list[str] | None = 
 		"doctype": DEPLOYMENT_DOCTYPE,
 		"terms_of_reference": terms,
 		"geo_node": geo_node,
+		# A deployment names somebody answerable for it. Whoever the fixture is
+		# running as, unless a test is about the coordinator itself.
+		"coordinator": frappe.session.user,
 		"start_date": today(),
 		"end_date": add_days(today(), 7),
 		"status": "Planned",
@@ -581,11 +689,22 @@ def reset() -> None:
 	for name in frappe.get_all(TERMS_DOCTYPE, filters={"name": ("like", f"{TEST_PREFIX}-%")}, pluck="name"):
 		frappe.delete_doc(TERMS_DOCTYPE, name, force=True)
 
+	# After the terms of reference above, which point at them. Named rather than
+	# emptied wholesale: `Project` is ERPNext's and this bench holds other
+	# people's.
+	for name in frappe.get_all(
+		PROJECT_DOCTYPE, filters={"project_name": ("like", f"{TEST_PREFIX}%")}, pluck="name"
+	):
+		frappe.delete_doc(PROJECT_DOCTYPE, name, force=True)
+
 	for key in (CERT_SWIFT_WATER, CERT_RADIO, CERT_LOGISTICS):
 		if frappe.db.exists(CERTIFICATION_TYPE_DOCTYPE, key):
 			frappe.delete_doc(CERTIFICATION_TYPE_DOCTYPE, key, force=True)
 
-	for doctype in (REQUEST_DOCTYPE, TRANSFER_DOCTYPE):
+	# Terms of Reference is here because a society may now route those for
+	# approval too, and a workflow left behind by one suite governs the next
+	# one's terms — which would refuse every direct submission in it.
+	for doctype in (REQUEST_DOCTYPE, TRANSFER_DOCTYPE, TERMS_DOCTYPE):
 		workflow = frappe.db.get_value(WORKFLOW_DOCTYPE, {"workflow_for": doctype}, "name")
 
 		if workflow:

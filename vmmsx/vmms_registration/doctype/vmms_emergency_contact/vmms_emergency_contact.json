@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-30 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "contact_name",
+  "relationship",
+  "column_break_contact",
+  "primary_phone",
+  "alternative_phone",
+  "may_contact_in_emergency"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "description": "Who to call. A full name, as the applicant gave it.",
+   "fieldname": "contact_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "description": "How this person is related to the applicant, in the applicant's own words.",
+   "fieldname": "relationship",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Relationship",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_contact",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 2,
+   "fieldname": "primary_phone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Primary Phone",
+   "options": "Phone",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "alternative_phone",
+   "fieldtype": "Data",
+   "label": "Alternative Phone",
+   "options": "Phone"
+  },
+  {
+   "columns": 1,
+   "default": "1",
+   "description": "Whether the applicant has said this person may be contacted in an emergency. Unticked, the number is on file but must not be called.",
+   "fieldname": "may_contact_in_emergency",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "May Contact"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-30 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Emergency Contact",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

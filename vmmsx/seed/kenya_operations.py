@@ -53,7 +53,7 @@ from a request.
 import frappe
 from frappe.utils import add_days, today
 
-from vmmsx.seed import kenya
+from vmmsx.seed import kenya, mission
 
 # --- the demo volunteers --------------------------------------------------
 #
@@ -259,12 +259,13 @@ TIME_LOG_CATEGORIES = (
 
 # --- the programmes some of this work is written under ---------------------
 #
-# `VMMS Project` postdates the rest of this file: terms of reference were
-# seeded before a project existed to write them under, which is exactly the
-# situation the doctype itself was built to allow — see its own field
-# description. Not every terms of reference gets one, deliberately: a society
-# that runs standing duties beside its programmes should see both in the demo,
-# not a portfolio where everything has been filed under something.
+# The programmes postdate the rest of this file: terms of reference were seeded
+# before a project existed to write them under. They are ERPNext `Project`
+# records now — `VMMS Project` was retired for it — and **every** terms of
+# reference belongs to one, which is the part that changed: a mission document
+# cannot be submitted without a programme. The standing duties that used to have
+# none are written under a standing-services programme instead, which is that
+# argument answered rather than abandoned. See `seed/mission.py`.
 
 PROJECTS = (
 	{
@@ -905,10 +906,11 @@ def _project(key: str | None) -> str | None:
 	"""The seeded project matching this `PROJECTS` key, by its name.
 
 	Looked up by `project_name` rather than by docname, the same reason
-	`kenya.county()`/`kenya.branch()` resolve geo by shape: `VMMS Project`
-	autonames itself opaquely, and a second bench numbers its projects
-	differently. `None` in, `None` out — most terms of reference name no
-	project at all.
+	`kenya.county()`/`kenya.branch()` resolve geo by shape: `Project` autonames
+	itself opaquely, and a second bench numbers its projects differently.
+	`None` in, `None` out — and a terms of reference that names no programme of
+	its own is written under the society's standing-services one instead, which
+	`_standing()` provides.
 	"""
 	if not key:
 		return None
@@ -918,15 +920,17 @@ def _project(key: str | None) -> str | None:
 	if not spec:
 		return None
 
-	return frappe.db.get_value("VMMS Project", {"project_name": spec["name"]}, "name")
+	return frappe.db.get_value("Project", {"project_name": spec["name"]}, "name")
 
 
 def _projects() -> list[dict]:
-	"""The programmes of work some of this society's terms of reference are written under."""
+	"""The programmes of work this society's terms of reference are written under."""
+	from vmmsx.deployment.services import project as project_service
+
 	rows = []
 
 	for project in PROJECTS:
-		existing = frappe.db.get_value("VMMS Project", {"project_name": project["name"]}, "name")
+		existing = frappe.db.get_value("Project", {"project_name": project["name"]}, "name")
 
 		if existing:
 			rows.append({"key": project["key"], "name": existing, "status": "exists"})
@@ -938,15 +942,20 @@ def _projects() -> list[dict]:
 			rows.append({"key": project["key"], "status": "skipped: no geo node"})
 			continue
 
+		# `notes` is ERPNext's own — the story of the programme, and what the
+		# printed terms of reference puts at its head. Planned and Active both
+		# become Open: ERPNext expresses the two as one status and nothing in this
+		# app ever read the difference. See `setup/project_fields.py`.
 		doc = frappe.get_doc(
 			{
-				"doctype": "VMMS Project",
+				"doctype": "Project",
 				"project_name": project["name"],
-				"geo_node": node,
-				"status": project["status"],
-				"start_date": add_days(today(), project["start_in"]),
-				"end_date": add_days(today(), project["end_in"]),
-				"summary": project["summary"],
+				"company": project_service.default_company(),
+				"vmms_geo_node": node,
+				"status": project_service.STATUS_OPEN,
+				"expected_start_date": add_days(today(), project["start_in"]),
+				"expected_end_date": add_days(today(), project["end_in"]),
+				"notes": project["summary"],
 			}
 		).insert(ignore_permissions=True)
 
@@ -958,17 +967,52 @@ def _projects() -> list[dict]:
 # --- the work --------------------------------------------------------------
 
 
+def _standing() -> str | None:
+	"""The programme this society's standing duties are written under.
+
+	Every terms of reference belongs to a programme now, and the blood drive
+	rota, the event first aid post and the family links desk genuinely are one:
+	work the society runs continuously rather than a campaign with an end.
+	Anchored at the first county, which is where the rest of this seed's
+	county-level work sits.
+	"""
+	node = kenya.county(0)
+
+	if not node:
+		return None
+
+	return mission.standing_project(
+		"Branch Standing Services",
+		node,
+		"The duties this society runs all year rather than as a campaign: the branch first aid"
+		" post, the blood drive rota, and the standing community services.",
+	)
+
+
 def _terms() -> list[dict]:
 	"""The society's terms of reference, each autonamed from its own key.
 
 	A terms of reference that already exists but names a project it is not yet
 	linked to is updated rather than left behind — the ordinary case the first
 	time this runs after `PROJECTS` gained an entry `TERMS` now points at.
+
+	**The mission tables come from `seed/mission.py::furnish`.** A terms of
+	reference cannot be submitted until it is a finished mission document, and
+	these entries carry a purpose, some responsibilities and a duration; the
+	background, objectives, outputs, stakeholders, itinerary and period are built
+	from those, so nothing here invents a fact about this society. That module's
+	docstring says what the scaffolding is and is not.
 	"""
 	rows = []
 
 	for terms in TERMS:
-		project = _project(terms.get("project"))
+		project = _project(terms.get("project")) or _standing()
+
+		if not project:
+			rows.append({"key": terms["key"], "status": "skipped: no programme"})
+			continue
+
+		node = frappe.db.get_value("Project", project, "vmms_geo_node")
 
 		if frappe.db.exists("VMMS Terms of Reference", terms["key"]):
 			if project:
@@ -988,7 +1032,6 @@ def _terms() -> list[dict]:
 				"doctype": "VMMS Terms of Reference",
 				"tor_key": terms["key"],
 				"tor_name": terms["name"],
-				"project": project,
 				"purpose": terms["purpose"],
 				"responsibilities": terms["responsibilities"],
 				"default_duration_days": terms["duration_days"],
@@ -999,6 +1042,14 @@ def _terms() -> list[dict]:
 					{"certification_type": key, "is_mandatory": int(mandatory)}
 					for key, mandatory in terms["requires"]
 				],
+				**mission.furnish(
+					name=terms["name"],
+					purpose=terms["purpose"],
+					responsibilities=terms["responsibilities"],
+					geo_node=node,
+					project=project,
+					days=terms["duration_days"],
+				),
 			}
 		)
 		doc.insert(ignore_permissions=True)

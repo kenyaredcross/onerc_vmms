@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API } from "../lib/api";
 import { mount } from "../test/harness";
-import type { ApplicationOptions, GeoLevel, GeoNode, RedProfile } from "../portal/types";
+import type {
+	ApplicationOptions,
+	Declaration,
+	GeoLevel,
+	GeoNode,
+	RedProfile,
+} from "../portal/types";
 
 /**
  * The registration wizard, as a member of the public walks it.
@@ -111,11 +117,63 @@ const OPTIONS: ApplicationOptions = {
 	languages: [],
 	availability: [],
 	motivations: [],
-	id_types: [{ key: "national-id", label: "National ID", description: null }],
+	id_types: [
+		{
+			key: "national-id",
+			label: "National ID",
+			description: null,
+			is_required: false,
+			requires_attachment: false,
+			minimum_age: null,
+		},
+	],
 	countries: ["Tanzania", "Kenya"],
 	residency_types: ["Local", "Abroad"],
 	default_country_of_citizenship: "Tanzania",
+	// Empty by default, so the suites about the older road walk exactly the road
+	// they always walked. The consent tests below supply their own.
+	declarations: [],
+	minor_age: null,
+	guardian_verification_methods: [],
 };
+
+/** The four a society actually ships, trimmed to two for a readable assertion. */
+const DECLARATIONS: Declaration[] = [
+	{
+		name: "vmms-volunteer-privacy",
+		title: "How we will use your information",
+		version: "1",
+		source: "Text",
+		body: "<p>We record what you tell us so we can consider your application.</p>",
+		external_url: null,
+		declaration_version: "vmms-volunteer-privacy-1",
+		is_required: true,
+	},
+	{
+		name: "vmms-volunteer-accuracy",
+		title: "Your declaration",
+		version: "3",
+		source: "Text",
+		body: "<p>Everything here is true to the best of your knowledge.</p>",
+		external_url: null,
+		declaration_version: "vmms-volunteer-accuracy-3",
+		is_required: true,
+	},
+];
+
+/** The other way a society publishes a policy: on its own website. */
+const LINKED_DECLARATION: Declaration[] = [
+	{
+		name: "vmms-volunteer-privacy",
+		title: "Our privacy notice",
+		version: "4",
+		source: "Link",
+		body: null,
+		external_url: "https://example.redcross.org/privacy",
+		declaration_version: "vmms-volunteer-privacy-4",
+		is_required: true,
+	},
+];
 
 const PROFILE: Partial<RedProfile> = {
 	email: "amina@example.com",
@@ -343,5 +401,259 @@ describe("leaving a step", () => {
 
 		await waitFor(() => expect(posted.length).toBe(1));
 		expect(posted[0].payload.home_geo_node).toBe("GEO-ELSEWHERE");
+	});
+});
+
+
+/**
+ * The two screens Phase 1 added, and the one it deliberately does not draw.
+ *
+ * The consent step is built from records, so what is asserted is the *shape* — a
+ * box per declaration, the society's own words on the page, the version beside
+ * them because that is what gets stored — and never wording this file could have
+ * written down itself.
+ */
+
+/**
+ * A profile carrying an identification, so the walk can get past that step.
+ *
+ * The suites above stop two screens in and never need one. Anything reaching the
+ * later steps does, because `complete("identification")` wants a type and a
+ * number and the wizard prefills both from the profile.
+ */
+const IDENTIFIED: Partial<RedProfile> = {
+	...PROFILE,
+	identifications: [
+		{
+			id_type: "national-id",
+			id_number: "TZ-12345678",
+			attachment: null,
+			is_primary: true,
+		},
+	],
+};
+
+/** A profile whose date of birth makes them a child under any age of majority. */
+const YOUNG: Partial<RedProfile> = { ...IDENTIFIED, date_of_birth: "2014-01-01" };
+
+/** Walk forward until a named step is drawn, pressing Continue as it goes. */
+async function walkTo(heading: string) {
+	open();
+	await onTheIdentityStep();
+
+	for (let press = 0; press < 8; press += 1) {
+		if (screen.queryByRole("heading", { name: heading })) return;
+		await goOn();
+	}
+
+	await screen.findByRole("heading", { name: heading });
+}
+
+describe("what a volunteer agrees to", () => {
+	beforeEach(() => {
+		reads.set(API.myProfile, IDENTIFIED);
+	});
+
+	it("draws no consent step for a society that has written no declarations", async () => {
+		open();
+		await onTheIdentityStep();
+
+		expect(screen.queryByText("What you agree to")).toBeNull();
+	});
+
+	it("gives each declaration its own box, its own words and its own version", async () => {
+		reads.set(API.applicationOptions, { ...OPTIONS, declarations: DECLARATIONS });
+
+		await walkTo("Before you send this");
+
+		expect(screen.getByText("How we will use your information")).toBeTruthy();
+		expect(screen.getByText("Your declaration")).toBeTruthy();
+		expect(
+			screen.getByText("We record what you tell us so we can consider your application."),
+		).toBeTruthy();
+		expect(screen.getByText("Version 1")).toBeTruthy();
+		expect(screen.getByText("Version 3")).toBeTruthy();
+		expect(screen.getAllByRole("checkbox", { name: /I have read this and I agree/ })).toHaveLength(
+			2,
+		);
+	});
+
+	it("will not go on until every required box is ticked", async () => {
+		reads.set(API.applicationOptions, { ...OPTIONS, declarations: DECLARATIONS });
+
+		await walkTo("Before you send this");
+
+		const boxes = screen.getAllByRole("checkbox", { name: /I have read this and I agree/ });
+
+		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+
+		fireEvent.click(boxes[0]);
+		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+
+		fireEvent.click(boxes[1]);
+		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
+	});
+
+	it("links out to a policy the society publishes on its own website", async () => {
+		// A national society whose legal team owns the privacy page will not keep
+		// a second copy here. The form sends people to the page rather than
+		// reprinting words it does not have.
+		reads.set(API.applicationOptions, { ...OPTIONS, declarations: LINKED_DECLARATION });
+
+		await walkTo("Before you send this");
+
+		const link = screen.getByRole("link", { name: /Read our privacy notice/ });
+
+		expect(link.getAttribute("href")).toBe("https://example.redcross.org/privacy");
+		expect(link.getAttribute("target")).toBe("_blank");
+		expect(screen.getByText("Version 4")).toBeTruthy();
+		expect(
+			screen.getAllByRole("checkbox", { name: /I have read this and I agree/ }),
+		).toHaveLength(1);
+	});
+
+	it("sends the keys of what was ticked, not the text of it", async () => {
+		reads.set(API.applicationOptions, { ...OPTIONS, declarations: DECLARATIONS });
+
+		await walkTo("Before you send this");
+
+		for (const box of screen.getAllByRole("checkbox", { name: /I have read this and I agree/ })) {
+			fireEvent.click(box);
+		}
+
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		expect(posted[posted.length - 1].payload.declarations_accepted).toEqual([
+			"vmms-volunteer-privacy",
+			"vmms-volunteer-accuracy",
+		]);
+	});
+});
+
+describe("who to call, and who says a minor may volunteer", () => {
+	beforeEach(() => {
+		reads.set(API.myProfile, IDENTIFIED);
+	});
+
+	it("asks for somebody to call, and lets the step be walked past", async () => {
+		await walkTo("If something happens");
+
+		expect(screen.getByLabelText("Their name")).toBeTruthy();
+		// A condition of approval, not of submission: the branch can chase it.
+		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
+	});
+
+	it("refuses a contact with a name and no number", async () => {
+		await walkTo("If something happens");
+
+		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Mercy" } });
+
+		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+
+		fireEvent.change(screen.getByLabelText("Phone number"), {
+			target: { value: "+255700000001" },
+		});
+
+		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
+	});
+
+	it("sends nothing at all when the contact was left blank", async () => {
+		await walkTo("If something happens");
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		expect(posted[posted.length - 1].payload.emergency_contacts).toEqual([]);
+	});
+
+	it("says nothing about a guardian for a society with no age of majority", async () => {
+		reads.set(API.myProfile, YOUNG);
+
+		await walkTo("If something happens");
+
+		expect(screen.queryByText("A parent or guardian")).toBeNull();
+	});
+
+	it("asks for a guardian once the date of birth makes them a minor", async () => {
+		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
+		reads.set(API.myProfile, YOUNG);
+
+		await walkTo("If something happens");
+
+		expect(screen.getByText("A parent or guardian")).toBeTruthy();
+		expect(screen.getByText(/Because you are under 18/)).toBeTruthy();
+	});
+
+	it("does not ask an adult for one", async () => {
+		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
+
+		await walkTo("If something happens");
+
+		expect(screen.queryByText("A parent or guardian")).toBeNull();
+	});
+
+	it("copies the emergency contact across without merging the two records", async () => {
+		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
+		reads.set(API.myProfile, YOUNG);
+
+		await walkTo("If something happens");
+
+		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Grace Otieno" } });
+		fireEvent.change(screen.getByLabelText("How you know them"), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText("Phone number"), {
+			target: { value: "+255700000002" },
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "Same as the person above" }));
+
+		expect(
+			(screen.getByLabelText("Parent or guardian's name") as HTMLInputElement).value,
+		).toBe("Grace Otieno");
+		expect((screen.getByLabelText("How they are related to you") as HTMLInputElement).value).toBe(
+			"Mother",
+		);
+
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		const payload = posted[posted.length - 1].payload as Record<string, unknown[]>;
+
+		// Two records carrying the same person, never one record doing both jobs.
+		expect(payload.emergency_contacts).toHaveLength(1);
+		expect(payload.guardian_consents).toHaveLength(1);
+	});
+
+	it("never sends the reviewer's verification, whatever the form holds", async () => {
+		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
+		reads.set(API.myProfile, YOUNG);
+
+		await walkTo("If something happens");
+
+		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText("Phone number"), {
+			target: { value: "+255700000002" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Same as the person above" }));
+
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		const payload = posted[posted.length - 1].payload as Record<
+			string,
+			Array<Record<string, unknown>>
+		>;
+
+		expect(payload.guardian_consents[0]).not.toHaveProperty("is_verified");
+		expect(payload.guardian_consents[0]).not.toHaveProperty("verified_by");
+	});
+
+	it("sends no guardian at all for an adult, whatever was typed", async () => {
+		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
+
+		await walkTo("If something happens");
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		expect(posted[posted.length - 1].payload.guardian_consents).toEqual([]);
 	});
 });

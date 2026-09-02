@@ -646,6 +646,7 @@ def _portal():
 	nav = (
 		("home", "Home"),
 		("calendar", "Calendar"),
+		("tasks", "Tasks"),
 		("events", "Events"),
 		("opportunities", "Opportunities"),
 		("stories", "Stories"),
@@ -663,12 +664,55 @@ def _portal():
 		# surface something else renames it here rather than in the frontend.
 		("console", "Manager console"),
 	)
+	# The two headings the rail draws between bands of the nav. Content, like the
+	# items under them: a society that calls its register something else renames
+	# the heading rather than the nine links beneath it.
+	groups = (
+		("record", "My record"),
+		("society", "From the society"),
+	)
 	rows = []
 	for i, (slug, text) in enumerate(nav, start=1):
 		rows.append(_block(f"portal.nav.{slug}", f"Sidebar item: {text}", s, 100 + i, text))
+	for i, (slug, text) in enumerate(groups, start=1):
+		rows.append(_block(f"portal.nav.group.{slug}", f"Sidebar heading: {text}", s, 150 + i, text))
 	rows += [
 		_block("portal.home.heading", "Dashboard heading", s, 200, "Your dashboard"),
+		# The home hero. The photograph is a slot rather than a shipped asset, for
+		# the reason at the top of this file: an empty one draws the branded
+		# gradient, which is a better first run than a picture of somewhere the
+		# society does not work.
+		_block(
+			"portal.home.hero.image",
+			"Home hero photograph",
+			s,
+			205,
+			notes="A wide photograph, at least 1200px across. The wording sits on the left, so keep the left half uncluttered.",
+		),
+		_block(
+			"portal.home.choice.heading",
+			"Home: heading over the two ways to join",
+			s,
+			210,
+			"How would you like to get involved?",
+		),
+		_block(
+			"portal.home.discover.opportunities",
+			"Home: link to the opportunities board",
+			s,
+			215,
+			"Browse opportunities",
+		),
+		_block("portal.home.discover.stories", "Home: link to stories", s, 216, "Volunteer stories"),
+		_block("portal.membership.eyebrow", "Membership page eyebrow", s, 295, "Member account"),
 		_block("portal.membership.heading", "Membership page heading", s, 300, "Membership"),
+		_block(
+			"portal.membership.lead",
+			"Membership page, the line under the heading",
+			s,
+			305,
+			"Choose the membership that fits you, then manage every branch membership from one account.",
+		),
 		_block(
 			"portal.membership.empty",
 			"Membership page, when there is none",
@@ -688,6 +732,16 @@ def _portal():
 			325,
 			"Choose a plan to become a member",
 		),
+		# The same heading for somebody whose application is already with a branch:
+		# there is nothing for them to choose, so the grid reads rather than invites.
+		_block(
+			"portal.membership.plans.heading.pending",
+			"Membership plans heading, while an application is undecided",
+			s,
+			326,
+			"What your society offers",
+		),
+		_block("portal.tasks.heading", "Tasks page heading", s, 340, "Tasks"),
 		_block("portal.hours.heading", "Hours page heading", s, 400, "My hours"),
 		_block("portal.profile.heading", "Profile page heading", s, 500, "Profile"),
 		_block("portal.opportunities.heading", "Opportunities page heading", s, 600, "Opportunities"),

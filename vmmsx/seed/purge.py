@@ -75,13 +75,16 @@ CONFIGURATION_DOCTYPES = (
 	"VMMS Approval Workflow",
 	"VMMS Membership Type",
 	"VMMS Terms of Reference",
-	# A programme of work is operational rather than configuration, and it is
-	# listed here anyway: a terms of reference points at its project, and the
-	# rule this file is ordered by is dependants first. Leaving it out is what
-	# stranded a departing society's projects on an anchor `_empty_geo_nodes`
-	# had already force-deleted underneath them — a register that then threw
-	# "Geo Node GEO-00004 does not exist" at everybody who opened it.
-	"VMMS Project",
+	# A programme of work used to be listed here as `VMMS Project`. It is now
+	# ERPNext's own `Project`, which this file must not empty wholesale — a site
+	# may hold projects that have nothing to do with volunteering — so it is
+	# `_empty_projects` below, filtered on the anchor vmmsx owns, and called
+	# after this list for the ordering reason the old entry recorded: a terms of
+	# reference points at its project, and a project points at a Geo Node. Left
+	# out of both, a departing society's projects were stranded on an anchor
+	# `_empty_geo_nodes` had already force-deleted underneath them — a register
+	# that then threw "Geo Node GEO-00004 does not exist" at everybody who
+	# opened it.
 	"VMMS Certification Type",
 	"VMMS Time Log Category",
 	"VMMS Announcement Type",
@@ -92,6 +95,11 @@ CONFIGURATION_DOCTYPES = (
 
 # Core's records. Deleted last: everything above points at them.
 CORE_DOCTYPES = ("Geo Assignment", "Red Profile", "Article")
+
+# ERPNext's, and the one doctype here this file empties by filter rather than
+# wholesale. See `_empty_projects`.
+PROJECT_DOCTYPE = "Project"
+PROJECT_GEO_FIELD = "vmms_geo_node"
 
 GEO_NODE = "Geo Node"
 GEO_LEVEL = "Geo Level"
@@ -150,6 +158,7 @@ def main(dry_run: bool = False, keep_articles: bool = False) -> dict:
 	for doctype in OPERATIONAL_DOCTYPES + CONFIGURATION_DOCTYPES + core:
 		report[doctype] = _empty(doctype, dry_run)
 
+	report[PROJECT_DOCTYPE] = _empty_projects(dry_run)
 	report[GEO_NODE] = _empty_geo_nodes(dry_run)
 	report[GEO_LEVEL] = _empty(GEO_LEVEL, dry_run)
 	report[SETTINGS_DOCTYPE] = _clear_settings(dry_run)
@@ -165,11 +174,11 @@ def main(dry_run: bool = False, keep_articles: bool = False) -> dict:
 # --- the delete -----------------------------------------------------------
 
 
-def _empty(doctype: str, dry_run: bool) -> dict:
+def _empty(doctype: str, dry_run: bool, filters: dict | None = None) -> dict:
 	if not frappe.db.exists("DocType", doctype):
 		return {"status": "absent", "deleted": 0}
 
-	names = frappe.get_all(doctype, pluck="name", limit_page_length=0)
+	names = frappe.get_all(doctype, filters=filters or {}, pluck="name", limit_page_length=0)
 
 	if dry_run:
 		return {"status": "would delete", "deleted": len(names), "names": names[:5]}
@@ -188,6 +197,24 @@ def _empty(doctype: str, dry_run: bool) -> dict:
 			failed.append(f"{name}: {error}")
 
 	return {"status": "deleted", "deleted": deleted, "failed": failed}
+
+
+def _empty_projects(dry_run: bool) -> dict:
+	"""Only the programmes of work this app anchored. Never every Project on the site.
+
+	`Project` is ERPNext's, and a site running volunteering may perfectly well be
+	running something else through the same doctype — a construction programme, a
+	grant the finance team tracks. Emptying it wholesale to change which society a
+	demo site represents would delete somebody else's records to do it.
+
+	The filter is the Custom Field vmmsx owns, which is exactly the set this app
+	created: `deployment/services/project.py::on_validate` makes it mandatory, so
+	every project written through this app carries one and nothing else does.
+	"""
+	if not frappe.get_meta(PROJECT_DOCTYPE).get_field(PROJECT_GEO_FIELD):
+		return {"status": "absent", "deleted": 0}
+
+	return _empty(PROJECT_DOCTYPE, dry_run, filters={PROJECT_GEO_FIELD: ("is", "set")})
 
 
 def _cancel_if_submitted(doctype: str, name: str) -> None:

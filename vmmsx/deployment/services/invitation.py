@@ -38,6 +38,7 @@ import frappe
 from frappe import _
 
 from vmmsx.deployment.services import assignment
+from vmmsx.deployment.services import deployment as deployment_service
 
 DEPLOYMENT_DOCTYPE = "VMMS Deployment"
 REQUEST_DOCTYPE = "VMMS Deployment Request"
@@ -52,7 +53,15 @@ DECLINED = assignment.STATUS_DECLINED
 RESPONSES = (INVITED, ACCEPTED, DECLINED)
 
 
-def invite(deployment_doc, volunteer: str, joined_on: str | None = None) -> dict:
+def invite(
+	deployment_doc,
+	volunteer: str,
+	joined_on: str | None = None,
+	answer_by: str | None = None,
+	assignment_title: str | None = None,
+	assignment_description: str | None = None,
+	supervisor: str | None = None,
+) -> dict:
 	"""Ask a volunteer to join this deployment. Idempotent.
 
 	Re-asking somebody who already has an open assignment does **not** ask again
@@ -78,6 +87,10 @@ def invite(deployment_doc, volunteer: str, joined_on: str | None = None) -> dict
 		volunteer,
 		status=assignment.STATUS_PENDING,
 		joined_on=joined_on,
+		assignment_title=assignment_title,
+		assignment_description=assignment_description,
+		supervisor=supervisor,
+		invitation_expires_on=answer_by,
 	)
 
 	return {
@@ -157,11 +170,17 @@ def _rows_for(volunteer: str, statuses: tuple[str, ...]) -> list[dict]:
 			"terms_of_reference",
 			"status",
 			"role",
+			"assignment_title",
+			"assignment_description",
+			"supervisor",
 			"start_date",
 			"end_date",
 			"invited_on",
+			"invitation_expires_on",
 			"responded_on",
 			"response_note",
+			"briefing_completed_on",
+			"safety_acknowledged_on",
 		],
 		ignore_permissions=True,
 	)
@@ -174,7 +193,39 @@ def _rows_for(volunteer: str, statuses: tuple[str, ...]) -> list[dict]:
 		for row in frappe.get_all(
 			DEPLOYMENT_DOCTYPE,
 			filters={"name": ("in", [row["deployment"] for row in rows])},
-			fields=["name", "status", "start_date", "end_date", "geo_node", "notes"],
+			# Everything an invitation has to carry. The list is long because the
+			# thing being answered is long: somebody deciding whether they can go
+			# needs to know when to be where, how to get there, who to ring at
+			# either end, and what the road is like. An invitation that gave them
+			# the dates and made them find the rest is the one piece of paper they
+			# actually needed and did not get.
+			fields=[
+				"name",
+				"status",
+				"start_date",
+				"end_date",
+				"geo_node",
+				"notes",
+				"coordinator",
+				"planned_start",
+				"planned_end",
+				"briefing_on",
+				"check_in_deadline",
+				"expected_return",
+				"site_name",
+				"site_address",
+				"site_latitude",
+				"site_longitude",
+				"site_located_on",
+				"meeting_point",
+				"meeting_address",
+				"meeting_latitude",
+				"meeting_longitude",
+				"meeting_located_on",
+				"travel_notes",
+				"local_contact_name",
+				"local_contact_phone",
+			],
 			ignore_permissions=True,  # Same argument as above.
 		)
 	}
@@ -203,11 +254,30 @@ def _rows_for(volunteer: str, statuses: tuple[str, ...]) -> list[dict]:
 				"end_date": row["end_date"] or deployment["end_date"],
 				"geo_node": deployment["geo_node"],
 				"notes": deployment["notes"],
+				# When to be there, where, how to get there, and who to ring. Built
+				# by the deployment service from the row above rather than restated
+				# here, so an invitation and a deployment page cannot describe the
+				# same place differently.
+				"schedule": {
+					"planned_start": deployment["planned_start"],
+					"planned_end": deployment["planned_end"],
+					"briefing_on": deployment["briefing_on"],
+					"check_in_deadline": deployment["check_in_deadline"],
+					"expected_return": deployment["expected_return"],
+				},
+				"where": deployment_service.where_dto(deployment),
+				"coordinator_contact": deployment_service.coordinator_dto(deployment),
 				"response": row["status"],
 				"role": row["role"],
+				"assignment_title": row["assignment_title"],
+				"assignment_description": row["assignment_description"],
+				"supervisor": row["supervisor"],
 				"invited_on": row["invited_on"],
+				"answer_by": row["invitation_expires_on"],
 				"responded_on": row["responded_on"],
 				"response_note": row["response_note"],
+				"briefing_completed_on": row["briefing_completed_on"],
+				"safety_acknowledged_on": row["safety_acknowledged_on"],
 			}
 		)
 

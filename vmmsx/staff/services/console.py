@@ -57,6 +57,16 @@ GATED_SECTIONS = (
 		"section": "stipends",
 		"doctypes": ("VMMS Stipend Progress Report", "VMMS Stipend Payment Form"),
 	},
+	# What the society took in and what it paid out, over the two registers that
+	# are the only records of either. It reports on documents its readers can
+	# already open one at a time — a membership's fee, a payment form's total —
+	# so it is gated on those same two doctypes rather than on a money
+	# permission this app does not have. A coordinator who may read neither has
+	# no figures to be shown and does not get the tab.
+	{
+		"section": "finance",
+		"doctypes": ("VMMS Membership", "VMMS Stipend Payment Form"),
+	},
 	{"section": "content", "doctypes": ("VMMS Content Block",)},
 	# Addressing the people a branch is responsible for. Gated on the
 	# announcement, which is scopeable on its own `geo_node`, so the tab appears
@@ -95,15 +105,40 @@ UNGATED_SECTIONS = ("overview", "queue", "events", "analytics")
 # if they hold no scope role at all.
 ADMIN_SECTIONS = ({"section": "questions", "doctypes": ("VMMS Application Question",)},)
 
+# Sections whose register belongs to an **optional companion app**, and which
+# therefore simply do not exist on a site that has not installed it.
+#
+# A third tuple rather than a fourth entry in `GATED_SECTIONS`, for the reason
+# `sms_access()` gives below: every doctype named there is one
+# `staff/tests/test_console.py` asserts exists on the site, which is a fair
+# assumption for this app's own doctypes and not one it can make about HRMS's.
+# vmmsx does not declare `hrms` in `required_apps` — a society running without
+# it is ordinary, not half-installed — so `_readable` skipping a doctype the
+# site does not have is the whole of the absence handling, and the tab is drawn
+# for nobody.
+#
+# Unlike SMS this *is* a section: the screens behind it are vmmsx's own, and
+# the recruiter never leaves the console for them. See `hr/services/openings.py`
+# for why the record itself stays HRMS's.
+COMPANION_SECTIONS = ({"section": "recruitment", "doctypes": ("Job Opening", "Job Applicant")},)
+
 # The order the sidebar draws every section in, gated or not. Kept here rather
 # than in the frontend so a society reading the list on the desk and a
 # coordinator reading it in the sidebar are reading the same order.
 ORDER = (
 	"overview",
 	"queue",
+	# Beside the two application queues under People: an opening is the third
+	# way somebody asks to join the society, and a recruiter clearing job
+	# applications is doing the same shape of work as one clearing volunteer
+	# applications.
+	"recruitment",
 	"registry",
 	"tasks",
 	"deployments",
+	# The money reads before the paperwork that makes it: a coordinator opens
+	# Finance to see the position and Stipends to act on one payment.
+	"finance",
 	"stipends",
 	"events",
 	"analytics",
@@ -133,6 +168,11 @@ def visible(user: str | None = None) -> list[str]:
 	# otherwise be shown no console at all on the very screen they need to set
 	# the society up from.
 	admitted += [entry["section"] for entry in ADMIN_SECTIONS if _readable(entry["doctypes"], user)]
+
+	# A companion app's register is reason enough to be here too, the same
+	# argument: somebody who may read the society's job openings has real work
+	# in this console even if they hold none of its own scope roles.
+	admitted += [entry["section"] for entry in COMPANION_SECTIONS if _readable(entry["doctypes"], user)]
 
 	# The SMS side door is reason enough to be here too, the same argument as
 	# ADMIN_SECTIONS just above: somebody holding only the society's configured

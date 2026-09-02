@@ -103,7 +103,7 @@ class TestTheClusterIsBuilt(IntegrationTestCase):
 		self._assert_shortcuts(
 			workspaces.DEPLOYMENTS,
 			{
-				"VMMS Project",
+				"Project",
 				"VMMS Deployment",
 				# One person's deployment. A list view of these answers "what has
 				# this volunteer been asked and what did they say" across
@@ -140,10 +140,21 @@ class TestTheClusterIsBuilt(IntegrationTestCase):
 				"VMMS Availability Slot",
 				"VMMS TOR Methodology",
 				"VMMS Announcement Type",
+				# The WhatsApp gateway. Optional in a way the rest of this list is
+				# not — a society without one is an ordinary society — but it is
+				# still configuration set once before the channel works, and the
+				# checklist is where somebody goes looking for it.
+				"VMMS WhatsApp Settings",
 				"VMMS Approval Workflow",
 				"VMMS Template Category",
 				"VMMS Template",
 				"VMMS Application Question",
+				# The policies an applicant agrees to, and the versions of them.
+				# Configuration a society's legal officer owns — and unreachable
+				# from the desk until they were listed here, which is not a state
+				# a privacy notice should be in.
+				"VMMS Declaration",
+				"VMMS Declaration Version",
 			},
 		)
 

@@ -275,6 +275,21 @@ doc_events = {
 		"on_update": "vmmsx.approvals.services.repair.on_authority_changed",
 		"on_trash": "vmmsx.approvals.services.repair.on_authority_changed",
 	},
+	# HRMS's own opening, and the one rule vmmsx adds to it: a screening question
+	# set stops being editable once anybody has answered it. Wording and order
+	# stay editable — `hr/services/application.py::assert_questions_unlocked` says
+	# exactly what is frozen and why. HRMS's controller is not edited.
+	"Job Opening": {
+		"validate": "vmmsx.hr.services.application.on_opening_validate",
+	},
+	# The third doctype this app reaches into, and the only standard ERPNext one.
+	# `Project` is the canonical programme of work here, and the two rules vmmsx
+	# adds to it — it is anchored to a Geo Node, and to one the person filing it
+	# actually runs — cannot live in ERPNext's controller without editing ERPNext.
+	# Locked decision 4: custom fields, hooks and patches, never upstream source.
+	"Project": {
+		"validate": "vmmsx.deployment.services.project.on_validate",
+	},
 }
 
 # Where signing in lands, and the only thing on this site that can decide it for
@@ -314,6 +329,13 @@ on_session_creation = "vmmsx.registration.services.desk.on_session_creation"
 # layer a narrower coordinator role onto one child by naming that doctype's own
 # geo scope role in National Society Settings — see that module's docstring.
 after_migrate = [
+	# The Custom Fields vmmsx owns on ERPNext's `Project`: the owning Geo Node,
+	# the donor block, and the risks and assumptions tables. **First**, and on
+	# every migrate rather than once in a patch, because `onerc_scopeable_doctypes`
+	# above names `vmms_geo_node` and core throws on every Project list view if
+	# the registration points at a field that is not there. A patch runs once per
+	# site by name and could not heal that; this can. See the module's docstring.
+	"vmmsx.setup.project_fields.install",
 	# The six roles every society's ladder needs — approver, approver, deployment
 	# manager, volunteer, member, applicant — before anything below points a
 	# setting at one of them. See the module docstring for why these six and not
@@ -384,6 +406,15 @@ after_migrate = [
 	# approved, declined, and more information needed. Same additive rules as the
 	# welcome email above, and here for the same reason.
 	"vmmsx.notifications.services.lifecycle.install",
+	# The four things a volunteer applicant agrees to: how their information is
+	# used, permission to contact them, use of their personal details, and their
+	# own declaration that what they submitted is true. Here rather than in a
+	# patch for the reason the messages above are — a patch runs once per site by
+	# name, so a declaration added in a later release would never reach a site
+	# that had already migrated. Strictly create-if-absent: unlike the email
+	# templates, shipped wording is never replaced on a deploy, because people
+	# have agreed to this exact text. See the installer's own docstring.
+	"vmmsx.registration.services.declarations.install",
 	# Put every pending approval back in the inbox of whoever the gate admits
 	# today. Authority is recomputed on every call, but the review queue is built
 	# from ToDos written when a stage was entered — so a society that changes who
@@ -400,6 +431,18 @@ after_migrate = [
 	# there. Dormant and idempotent, so on every other deploy it costs one
 	# `frappe.get_installed_apps()`.
 	"vmmsx.patches.setup_buzz_seam.install_geo_anchor_field",
+	# What a society screens an opening on, on HRMS's own `Job Opening`: the
+	# qualification, the years, the licences, the documents and the questions.
+	# Here for the same reason as the Buzz seam above and one more of its own —
+	# three of the fields point at doctypes owned by ERPNext, HRMS and the LMS,
+	# and a site that installs one of those next year should get the field then.
+	# Dormant on a site with no HRMS. See the module docstring.
+	"vmmsx.setup.job_opening_fields.install",
+	# The other half of the HRMS seam: what a volunteering application carries on
+	# HRMS's own `Job Applicant` — who the applicant is in this system, what they
+	# answered, whether they withdrew, and what the application became. Dormant
+	# where HRMS is not installed, like the block above.
+	"vmmsx.setup.job_applicant_fields.install",
 	# Seed the society named in this site's config, if it is not on the site
 	# yet. Does nothing on every deploy after the first, and nothing at all on a
 	# site that names no society. See the module docstring for why this is asked
@@ -450,7 +493,33 @@ scheduler_events = {
 		# script, a site restored from a backup. Idempotent and quiet: it reports
 		# nothing on a day when nothing needed repairing, which is most days.
 		"vmmsx.approvals.services.repair.resync_pending",
-	]
+		# An invitation with an answer-by date that has passed is a question
+		# nobody answered, and it has to stop looking like one still standing:
+		# the place it holds is a place a coordinator could be filling. Only
+		# touches invitations that carry a date — a society that sets none has
+		# questions that stand until somebody answers them, which is what setting
+		# none means. Idempotent: an expired row is no longer Pending.
+		"vmmsx.deployment.services.assignment.expire_overdue",
+		# Work that is past due and that nobody has been reminded about. Only ever
+		# touches tasks carrying a reminder interval a society set — the shipped
+		# state is zero, which sends nothing, because reminders nobody asked for
+		# are how a system trains people to ignore it. Idempotent: a task
+		# contacted inside its own interval is skipped, which is what
+		# `last_contacted_on` is for.
+		"vmmsx.task.services.task.chase_overdue",
+	],
+	# A WhatsApp broadcast approved on Monday and held until Thursday needs
+	# somebody to notice Thursday arriving, and a daily sweep would send a
+	# morning advisory in the middle of the night. Quarter-hourly is close enough
+	# that "not before 14:00" means the afternoon, and coarse enough that the
+	# sweep costs one indexed query most of the time. Idempotent twice over: it
+	# only picks up submitted broadcasts still marked Scheduled, and the job it
+	# queues is deduplicated on the broadcast's own name.
+	"cron": {
+		"*/15 * * * *": [
+			"vmmsx.notifications.services.whatsapp.release_scheduled",
+		]
+	},
 }
 
 # Activation is re-evaluated after every save of a membership — that is how an
@@ -560,16 +629,30 @@ onerc_scopeable_doctypes = [
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_deployment_scope_role",
 	},
-	# `VMMS Project` deliberately reuses the deployment scope role rather than
-	# naming a settings field of its own. A project is the container a deployment
-	# is run under, and a society that has said who may see its deployments has
-	# already answered who may see the programmes they belong to; a second field
-	# would let the two disagree, and a coordinator seeing work whose programme
-	# they cannot open is the wrong side of that disagreement to land on. It
-	# needs no patch for the same reason — the setting it reads already exists.
+	# ERPNext's own `Project` is the programme of work, and vmmsx scopes it on the
+	# Custom Field it owns — see `setup/project_fields.py`, which is also why that
+	# installer runs on every migrate rather than once in a patch: a registration
+	# naming a field that is not there makes every Project list view on the site
+	# throw, and only an idempotent installer can heal that.
+	#
+	# It deliberately reuses the deployment scope role rather than naming a
+	# settings field of its own. A project is the container a deployment is run
+	# under, and a society that has said who may see its deployments has already
+	# answered who may see the programmes they belong to; a second field would let
+	# the two disagree, and a coordinator seeing work whose programme they cannot
+	# open is the wrong side of that disagreement to land on. It needs no patch of
+	# its own for the same reason — the setting it reads already exists.
+	#
+	# **This does narrow a standard doctype**, and that is the intended reading of
+	# "Project is the canonical project record" on a volunteering site: a
+	# programme belongs to a branch, and who may see a branch's work is the
+	# question geo scoping exists to answer. An unanchored Project would be
+	# invisible to everybody but an unrestricted user, which is why the anchor is
+	# mandatory and `deployment/services/project.py::on_validate` says so in
+	# words.
 	{
-		"doctype": "VMMS Project",
-		"geo_node_field": "geo_node",
+		"doctype": "Project",
+		"geo_node_field": "vmms_geo_node",
 		"role_from_setting": "vmms_deployment_scope_role",
 	},
 	# `VMMS Deployment Assignment` reuses the deployment scope role, on the same
@@ -656,6 +739,26 @@ onerc_scopeable_doctypes = [
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_announcement_scope_role",
 	},
+	# A WhatsApp broadcast is scoped exactly as an announcement is, and on
+	# purpose it reuses the announcement's own settings field rather than naming
+	# one of its own. The question both fields would answer is the same question
+	# — who may speak for a branch to the people beneath it — and a society that
+	# has answered it once should not be able to answer it two different ways by
+	# accident. It is the argument `Project` makes for reusing the deployment
+	# scope role, and it means this doctype needs no patch of its own: the
+	# setting it reads already exists.
+	#
+	# Where it differs from an announcement is what happens after the scope check
+	# passes. An announcement is published on the spot, because an advisory that
+	# waits is not an advisory. A broadcast is filed at docstatus 0 and reaches
+	# nobody until somebody with submit permission approves it — so here the geo
+	# scope decides who may *propose* a broadcast and from where, and the submit
+	# permission decides who may release one. Two different people, deliberately.
+	{
+		"doctype": "VMMS WhatsApp Broadcast",
+		"geo_node_field": "geo_node",
+		"role_from_setting": "vmms_announcement_scope_role",
+	},
 	# A task is scoped on the node the work belongs to, and geo scoping does the
 	# same double duty here that it does for an announcement: it decides who may
 	# read a task, and because the anchor has to sit inside the assigner's own
@@ -675,6 +778,17 @@ onerc_scopeable_doctypes = [
 	# chooses the role. Installed by vmmsx.patches.setup_task_module.
 	{
 		"doctype": "VMMS Task",
+		"geo_node_field": "geo_node",
+		"role_from_setting": "vmms_task_scope_role",
+	},
+	# A batch of work is scoped on its own anchor, reusing the task scope role for
+	# the reason `VMMS Project` reuses the deployment one: a society that has said
+	# who may see its tasks has already answered who may see the batch that made
+	# them, and a second field would let the two disagree — leaving a coordinator
+	# able to open forty tasks and not the record explaining why they exist. It
+	# needs no patch for the same reason: the setting it reads already exists.
+	{
+		"doctype": "VMMS Task Batch",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_task_scope_role",
 	},

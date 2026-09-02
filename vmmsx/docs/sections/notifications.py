@@ -16,6 +16,16 @@ SUMMARY = "Alerts, advisories and news from a branch, fanned out once to everybo
 
 MODULE_DOCTYPES = ("VMMS Announcement", "VMMS Notification", "VMMS Announcement Type")
 
+#: The WhatsApp channel's own records. Kept apart from the three above because
+#: they are a different kind of thing — an announcement is a record of something
+#: a society said, and these are the machinery of getting it onto a phone.
+WHATSAPP_DOCTYPES = (
+	"VMMS WhatsApp Broadcast",
+	"VMMS WhatsApp Recipient",
+	"VMMS WhatsApp Opt Out",
+	"VMMS WhatsApp Settings",
+)
+
 
 def render(w) -> None:
 	w.h1(TITLE)
@@ -25,6 +35,7 @@ def render(w) -> None:
 	_who_hears_it(w)
 	_idempotence(w)
 	_the_two_channels(w)
+	_the_whatsapp_channel(w)
 	_the_feed(w)
 	_who_may_send(w)
 	_safety(w)
@@ -192,6 +203,91 @@ def _the_two_channels(w) -> None:
 		" that times out. It goes out bcc, so a society's whole membership list is not printed at"
 		" the top of everybody's copy."
 	)
+
+
+def _the_whatsapp_channel(w) -> None:
+	w.h2("WhatsApp")
+
+	w.lead(
+		"For most of the people on a society's register, WhatsApp is not one app among several —"
+		" it is where messages arrive. An advisory that reaches a volunteer's WhatsApp is read;"
+		" the same words in an inbox they check on Sundays may not be. So the Communication screen"
+		" offers it as a fourth channel, resolved from the same audience as the other three."
+	)
+
+	w.h3("It runs on the society's own gateway")
+
+	w.p(
+		"There is no vendor and no per-message bill. The society runs open-wa — a container on"
+		" their own infrastructure that holds a WhatsApp Web session for one of their phone"
+		" numbers and exposes it over HTTP — and this app talks to it."
+		" `notifications/services/whatsapp.py` is the only file that knows it exists: every route"
+		" and header the gateway owns is gathered in one block at the top of that file, and"
+		" replacing it with Meta's official API later is a change to one module."
+	)
+	w.note(
+		"open-wa is not WhatsApp's own API, and its documentation says plainly that there is"
+		" always a non-zero risk of the number being restricted. Everything below — the pacing,"
+		" the daily limit, the opt-out line on every message, the approval before anything is"
+		" sent — exists because of that sentence. A society running this should keep a second way"
+		" of reaching people for the messages that genuinely cannot fail to arrive."
+	)
+
+	w.h3("Filed, approved, then paced out")
+
+	w.p(
+		"The console composes and files. Nothing is sent by filing and nothing is sent by"
+		" approving: a broadcast sits at docstatus 0 until somebody with submit permission on the"
+		" doctype approves it, which queues a background job, and only that job writes to anybody."
+		" It sends one message at a time with a configurable wait in between, because a burst from"
+		" one number is the pattern that gets a number restricted."
+	)
+	w.bullets(
+		[
+			"An announcement is published on the spot — an advisory that waits is not an advisory.",
+			"A WhatsApp broadcast is approved first, because a mistake here can cost the society"
+			" the channel itself rather than just being an embarrassing notice.",
+			"Every recipient is a row with its own status, so a worker that stopped halfway"
+			" carries on from where it stopped rather than writing to everybody twice.",
+			"The gateway's own bulk route is deliberately not used: it answers before it has sent,"
+			" so the per-person outcome never comes back, and a channel that cannot say who it"
+			" reached is one whose numbers nobody should trust.",
+		]
+	)
+
+	w.h3("Leaving")
+
+	w.p(
+		"Anybody with a phone number on their Red Profile is addressable, so there is no separate"
+		" consent field to collect and no reach that starts at zero. What makes that defensible is"
+		" that the channel can be left: a line telling people how is appended to every broadcast by"
+		" the server rather than typed by the composer, a reply that is only the word STOP records"
+		" a `VMMS WhatsApp Opt Out`, and the words that count as STOP are the society's own"
+		" setting rather than a constant in a source file."
+	)
+	w.p(
+		"Opt-outs are subtracted twice. Once when the broadcast is composed, so the figure an"
+		" approver reads is honest, and again when it is sent — so somebody who asks to be left"
+		" alone on Thursday is left alone by a broadcast approved on Wednesday. Subtracting can"
+		" only shrink the list, so the approved figure stays a ceiling."
+	)
+	w.p(
+		"Replies are read for that one word and go no further. They are not stored and not shown"
+		" to a coordinator, which is a limit rather than an oversight: a reply inbox is a place"
+		" people expect somebody to be, and offering one that nobody is staffing is worse than"
+		" offering none."
+	)
+
+	w.h3("The records")
+
+	for doctype in WHATSAPP_DOCTYPES:
+		w.h3(doctype)
+		w.table(
+			doctypes.FIELD_TABLE_HEADERS,
+			doctypes.fields(doctype),
+			doctypes.FIELD_TABLE_WIDTHS,
+		)
+		w.caption(f"Naming — {doctypes.naming_of(doctype)}")
 
 
 def _the_feed(w) -> None:

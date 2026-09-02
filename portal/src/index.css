@@ -2,7 +2,7 @@
    Loaded from Google rather than self-hosted, and the font stacks in
    tailwind.config.js fall back to system-ui, so a bench with no outbound
    network renders the same layout in a different face rather than breaking. */
-@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -157,6 +157,54 @@
 		@apply rounded-control bg-surface;
 	}
 
+	/* --------------------------------------------------- the signed-in world
+
+	   One continuous workspace in IBM Plex Sans: a cool paper-grey canvas,
+	   white panels held by a hairline rather than a shadow, 10–12px radii.
+
+	   **Two classes, one world.** This began as the volunteer portal's fork,
+	   scoped away from `admin/` so the console could keep its grey shell. The
+	   console has since been rebuilt in the same language — same face, same
+	   canvas, same navy rail — because a coordinator is also a volunteer and
+	   switching between the two surfaces should not feel like switching
+	   products. `.console-root` is set by `admin/ConsoleShell`, `.portal-root`
+	   by `PortalShell`; they differ in what they *contain*, never in how it is
+	   drawn. The `shell` / `page` greys and `ui/primitives.tsx` are what remain
+	   of the old console, and they go as the last screens migrate. */
+	.portal-root,
+	.console-root {
+		@apply bg-canvas font-plex text-ink;
+		font-feature-settings: "kern";
+	}
+
+	/* The left rail is a solid navy field in both shells. Its scrollbar (on a
+	   short viewport) is a light thumb; the old console's `.rail-scroll` is a
+	   separate rule and stays as it is until nothing uses it. */
+	.portal-rail-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: rgb(255 255 255 / 0.3) transparent;
+	}
+
+	.portal-rail-scroll::-webkit-scrollbar-thumb {
+		background-color: rgb(255 255 255 / 0.3);
+	}
+
+	.portal-rail-scroll::-webkit-scrollbar-thumb:hover {
+		background-color: rgb(255 255 255 / 0.45);
+	}
+
+	/* A portal panel: white, a 1px cool hairline, and the faintest lift. The
+	   hairline does the separating; the shadow only stops it looking printed. */
+	.p-card {
+		@apply rounded-xl border border-card-line bg-white;
+		box-shadow: 0 1px 2px rgba(30, 50, 73, 0.025);
+	}
+
+	/* The section rule inside a portal panel — header row, footer divider. */
+	.p-divide {
+		@apply border-card-line;
+	}
+
 	/* The label that sits *outside* and above a card — "Your commitments",
 	   "Recent activity". The single most characteristic move in the reference
 	   set, and the reason its dashboards scan in one pass: the eye reads a
@@ -273,6 +321,28 @@
 	from {
 		opacity: 0;
 		transform: translate3d(0, 10px, 0);
+	}
+}
+
+/* Portal overlays (see portal/ui/overlays.tsx). Named plainly because the
+   arbitrary-value animation utilities reference them by name. */
+@keyframes fade {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translate3d(0, 10px, 0);
+	}
+}
+
+@keyframes slidein {
+	from {
+		transform: translate3d(24px, 0, 0);
+		opacity: 0.4;
 	}
 }
 

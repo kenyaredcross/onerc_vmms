@@ -1,0 +1,175 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-31 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "question_type",
+  "question_id",
+  "is_required",
+  "is_knock_off",
+  "help_text",
+  "column_break_mjrj",
+  "question",
+  "options",
+  "scoring_section",
+  "enable_scoring",
+  "weight",
+  "max_score",
+  "column_break_cklb",
+  "expected_answer",
+  "dependency_logic_section",
+  "depends_on_question",
+  "column_break_vrfy",
+  "show_if_answer_is"
+ ],
+ "fields": [
+  {
+   "default": "Text",
+   "fieldname": "question_type",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Question Type",
+   "options": "Text\nLong Text\nNumber\nSelect\nMultiSelect\nRating\nUpload\nDate\nYes/No\nEmail\nPhone",
+   "reqd": 1,
+   "description": "What kind of answer this asks for. Long Text, Number and the rest are validated when an application is submitted; Rating is not, because nothing in vmmsx grades against it."
+  },
+  {
+   "description": "Unique code or number for this question, e.g., Q1, Q2",
+   "fieldname": "question_id",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Question ID",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_required",
+   "fieldtype": "Check",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Is Required"
+  },
+  {
+   "default": "0",
+   "description": "If enabled, failing this question triggers an automatic rejection regardless of the applicant's overall total screening score.",
+   "fieldname": "is_knock_off",
+   "fieldtype": "Check",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Is Knock Off"
+  },
+  {
+   "description": "Guidance for applicants on how to answer.",
+   "fieldname": "help_text",
+   "fieldtype": "Small Text",
+   "label": "Help Text"
+  },
+  {
+   "fieldname": "column_break_mjrj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "question",
+   "fieldtype": "Small Text",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Question",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval: (doc.question_type == \"Select\") || (doc.question_type == \"MultiSelect\")",
+   "fieldname": "options",
+   "fieldtype": "Small Text",
+   "label": "Options",
+   "mandatory_depends_on": "eval: (doc.question_type == \"Select\") || (doc.question_type == \"MultiSelect\")"
+  },
+  {
+   "fieldname": "scoring_section",
+   "fieldtype": "Section Break",
+   "label": "Scoring"
+  },
+  {
+   "default": "5",
+   "description": "Determines importance in grading. Example: Python skill might have weight = 5; communication skills = 2.",
+   "fieldname": "weight",
+   "fieldtype": "Float",
+   "label": "Weight"
+  },
+  {
+   "default": "5",
+   "description": "Maximum score achievable for this question. Example: rating 1\u20135.",
+   "fieldname": "max_score",
+   "fieldtype": "Float",
+   "label": "Max Score"
+  },
+  {
+   "fieldname": "column_break_cklb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expected_answer",
+   "fieldtype": "Small Text",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Expected Answer",
+   "mandatory_depends_on": "eval: doc.is_knock_off || doc.enable_scoring"
+  },
+  {
+   "fieldname": "dependency_logic_section",
+   "fieldtype": "Section Break",
+   "label": "Dependency Logic"
+  },
+  {
+   "description": "The Question ID of the question this one depends on.",
+   "fieldname": "depends_on_question",
+   "fieldtype": "Data",
+   "label": "Depends On Question"
+  },
+  {
+   "fieldname": "column_break_vrfy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The value(s) of the parent question that trigger this question to appear.",
+   "fieldname": "show_if_answer_is",
+   "fieldtype": "Small Text",
+   "label": "Show If Answer Is"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_scoring",
+   "fieldtype": "Check",
+   "label": "Enable Scoring"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-31 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS HR",
+ "name": "Job Application Screening Questions",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

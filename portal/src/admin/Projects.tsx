@@ -37,6 +37,7 @@ import {
 	cx,
 } from "../ui/primitives";
 import { FolderCard } from "../ui/patterns";
+import { useSocietyBranding } from "../ui/brand";
 
 /**
  * The paperwork a deployment stands on: a programme of work, and the terms of
@@ -203,7 +204,7 @@ export function ProjectDetail() {
 								<p className="text-[11px] font-semibold uppercase tracking-wide text-slate-faint">
 									Project number {project.name}
 								</p>
-								<p className="text-[12px] text-slate-body">{geoPath(project.geo_path)}</p>
+								<p className="text-[12px] text-muted">{geoPath(project.geo_path)}</p>
 							<p className="mt-0.5 text-[12px] text-slate-faint">
 								{project.start_date ? formatDate(project.start_date) : "No start date"}
 								{project.end_date ? ` → ${formatDate(project.end_date)}` : ""}
@@ -213,7 +214,7 @@ export function ProjectDetail() {
 					</div>
 
 					{project.summary && (
-						<p className="mt-3 whitespace-pre-line text-[12.5px] text-slate-body">
+						<p className="mt-3 whitespace-pre-line text-[12.5px] text-muted">
 							{project.summary}
 						</p>
 					)}
@@ -222,7 +223,7 @@ export function ProjectDetail() {
 						<p className="mt-2 whitespace-pre-line text-[12px] text-slate-faint">{project.notes}</p>
 					)}
 
-					<div className="mt-4 border-t border-hairline pt-3">
+					<div className="mt-4 border-t border-card-line pt-3">
 						<StatusRow project={project} onChanged={() => void mutate()} />
 					</div>
 				</Card>
@@ -232,7 +233,7 @@ export function ProjectDetail() {
 						<SectionTitle>Terms of reference under this project ({terms.length})</SectionTitle>
 						<Link
 							to="/admin/deployments/terms?new=1"
-							className="text-[12px] font-semibold text-navy hover:underline"
+							className="text-[12px] font-semibold text-ink hover:underline"
 						>
 							Write terms of reference
 						</Link>
@@ -293,7 +294,7 @@ function TermsRow({ row, showProject }: { row: TermsOfReference; showProject?: b
 		<li>
 			<Link
 				to={`/admin/deployments/terms/${encodeURIComponent(row.name)}`}
-				className="block rounded-card border border-hairline bg-white px-4 py-3 transition hover:border-hairline-strong"
+				className="block rounded-xl border border-card-line bg-white px-4 py-3 transition hover:border-card-line"
 			>
 				<div className="flex flex-wrap items-start justify-between gap-2">
 					<span className="text-[13.5px] font-bold text-ink">{row.tor_name}</span>
@@ -304,7 +305,7 @@ function TermsRow({ row, showProject }: { row: TermsOfReference; showProject?: b
 				</div>
 
 				{showProject && row.project_name && (
-					<div className="mt-1 text-[11.5px] text-slate-body">{row.project_name}</div>
+					<div className="mt-1 text-[11.5px] text-muted">{row.project_name}</div>
 				)}
 
 				<div className="mt-0.5 text-[11.5px] text-slate-faint">
@@ -319,7 +320,7 @@ function TermsRow({ row, showProject }: { row: TermsOfReference; showProject?: b
 					</div>
 				)}
 
-				<div className="mt-1.5 text-[11.5px] text-slate-body">
+				<div className="mt-1.5 text-[11.5px] text-muted">
 					{written.length > 0
 						? written.map(([count, label]) => `${count} ${label}`).join(" · ")
 						: "Nothing written into it yet."}
@@ -335,7 +336,7 @@ function DeploymentRow({ row }: { row: DeploymentSummary }) {
 		<li>
 			<Link
 				to={`/admin/deployments/${encodeURIComponent(row.name)}`}
-				className="block rounded-card border border-hairline bg-white px-4 py-3 transition hover:border-hairline-strong"
+				className="block rounded-xl border border-card-line bg-white px-4 py-3 transition hover:border-card-line"
 			>
 				<div className="flex items-start justify-between gap-2">
 					<span className="text-[13.5px] font-bold text-ink">
@@ -343,7 +344,7 @@ function DeploymentRow({ row }: { row: DeploymentSummary }) {
 					</span>
 					<StateBadge state={row.status} />
 				</div>
-				<div className="mt-1 text-[11.5px] text-slate-body">{geoPath(row.geo_path)}</div>
+				<div className="mt-1 text-[11.5px] text-muted">{geoPath(row.geo_path)}</div>
 				<div className="mt-0.5 text-[11.5px] text-slate-faint">
 					{row.participant_count} on the roster
 					{row.start_date ? ` · from ${formatDate(row.start_date)}` : ""}
@@ -455,7 +456,7 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 	return (
 		<Card>
 			<SectionTitle>Open a project</SectionTitle>
-			<p className="mt-1 text-[12.5px] text-slate-body">
+			<p className="mt-1 text-[12.5px] text-muted">
 				The programme of work: a flood response, a vaccination campaign, a season of branch duty.
 				The terms of reference people are deployed against are written under it.
 			</p>
@@ -543,32 +544,126 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 
 /* ------------------------------------------------------- terms of reference */
 
+/**
+ * The terms of reference register, as a shelf of documents rather than a list
+ * of rows.
+ *
+ * **A terms of reference *is* a document**, and that is why this register looks
+ * like one. It is the thing a volunteer accepts when they take an assignment,
+ * the thing a PDF is printed from on the society's letterhead, and the thing an
+ * approver signs. A table of names and dates made it look like configuration; a
+ * shelf of A5 pages, each carrying the society's own lockup, its reference, what
+ * the mission is for, where it applies, when it expects to run and the stamp of
+ * where its approval stands, makes it look like what it is — and makes the
+ * *state* of each one legible from across the room, which was the practical
+ * failure of the table.
+ *
+ * **The stamp is one of the seven exact states**, read off `approval_state`,
+ * plus the submit state the doctype carries in `docstatus`. A society's stage
+ * names appear nowhere here: a stage is configuration and this app compares none
+ * of them.
+ *
+ * **The card is a summary; the document is the document.** The purpose excerpt
+ * on the front is trimmed for the shelf, and opening one renders the markup the
+ * server produced from the society's own template — the identical markup the PDF
+ * is made from — so what is on the screen and what comes out of the printer
+ * cannot drift. See `TermsDetail`.
+ */
 export function TermsList() {
 	const [searchParams] = useSearchParams();
 	const [mine, setMine] = useState(true);
+	const [state, setState] = useState("");
+	const [search, setSearch] = useState("");
 	const [creating, setCreating] = useState(() => searchParams.get("new") === "1");
 
+	const branding = useSocietyBranding();
+
 	const { data, error, isLoading, mutate } = useFrappeGetCall<{
-		message: { count: number; terms: TermsOfReference[] };
-	}>(API.branchTerms, { mine: mine ? 1 : 0 }, `admin:terms:${mine}`);
+		message: { count: number; terms: TermsOfReference[]; states: string[] };
+	}>(
+		API.branchTerms,
+		{
+			mine: mine ? 1 : 0,
+			...(state ? { state } : {}),
+			...(search.trim() ? { search: search.trim() } : {}),
+		},
+		`admin:terms:${mine}:${state}:${search.trim()}`,
+	);
 
 	const rows = data?.message?.terms ?? [];
+	// The closed set comes from the server rather than being retyped here, so a
+	// state added to `states.py` reaches this control without a frontend change.
+	const states = data?.message?.states ?? [];
 
 	return (
 		<>
 			<PageHeading
 				title="Terms of Reference"
-				trail={[{ label: "Deployments", to: "/admin/deployments" }, { label: "Terms of Reference" }]}
+				lead="Approved scope, resources, schedule and accountability, written before a deployment begins."
+				trail={[
+					{ label: "Operations", to: "/admin/deployments" },
+					{ label: "Terms of Reference" },
+				]}
+				actions={
+					<Button onClick={() => setCreating((was) => !was)}>
+						{creating ? "Close" : "Write terms"}
+					</Button>
+				}
 			/>
 
-			<div className="mb-4 flex flex-wrap items-center gap-2">
-				<MineToggle mine={mine} onChange={setMine} label="Only mine" />
-				<div className="ml-auto">
-					<Button onClick={() => setCreating((was) => !was)}>
-						{creating ? "Close" : "New terms of reference"}
-					</Button>
+			<Card className="mb-5">
+				<div className="flex flex-wrap items-center gap-2.5">
+					<div className="relative min-w-[220px] flex-1">
+						<span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-faint">
+							<svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true">
+								<circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+								<path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+							</svg>
+						</span>
+						<input
+							type="search"
+							value={search}
+							onChange={(event) => setSearch(event.target.value)}
+							placeholder="Search terms by name or reference"
+							aria-label="Search terms by name or reference"
+							className="w-full rounded-full border border-card-line bg-white py-2.5 pl-11 pr-4 text-[13.5px] outline-none transition placeholder:text-slate-faint focus:border-blue"
+						/>
+					</div>
+
+					<label className="relative">
+						<span className="sr-only">Approval state</span>
+						<select
+							value={state}
+							onChange={(event) => setState(event.target.value)}
+							className={cx(
+								"appearance-none rounded-full border bg-white py-2.5 pl-4 pr-9 text-[13.5px] outline-none transition",
+								state
+									? "border-blue bg-blue-soft font-semibold text-blue-press"
+									: "border-card-line text-slate-strong hover:border-blue",
+							)}
+						>
+							<option value="">All approval states</option>
+							{states.map((value) => (
+								<option key={value} value={value}>
+									{value}
+								</option>
+							))}
+						</select>
+						<svg
+							viewBox="0 0 24 24"
+							width="13"
+							height="13"
+							fill="none"
+							aria-hidden="true"
+							className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-faint"
+						>
+							<path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+						</svg>
+					</label>
+
+					<MineToggle mine={mine} onChange={setMine} label="Only mine" />
 				</div>
-			</div>
+			</Card>
 
 			{creating && (
 				<div className="mb-5">
@@ -585,22 +680,190 @@ export function TermsList() {
 			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
 
 			{data && rows.length === 0 && (
-				<Empty title="No terms of reference yet">
+				<Empty title="No terms of reference here">
 					A terms of reference is the specification a deployment is run against: what the work is,
-					what a volunteer is expected to do, and what they must hold to do it. Write one, then set
-					up a deployment under it.
+					what a volunteer is expected to do, and what they must hold to do it. Write one, then
+					set up a deployment under it.
 				</Empty>
 			)}
 
 			{rows.length > 0 && (
-				<ul className="grid gap-2.5 sm:grid-cols-2">
+				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{rows.map((row) => (
-						<TermsRow key={row.name} row={row} showProject />
+						<li key={row.name}>
+							<TermsPaper row={row} society={branding?.name ?? null} />
+						</li>
 					))}
 				</ul>
 			)}
 		</>
 	);
+}
+
+/**
+ * One terms of reference, drawn as the A5 page it becomes when printed.
+ *
+ * The proportion is real: `aspect-[148/210]` is A5, so a shelf of these has the
+ * shape of a shelf of paper. The folded corner and the stamp are the two pieces
+ * of ornament, and each is doing work — the fold says "document", and the stamp
+ * says where the approval stands without the reader parsing a sentence.
+ *
+ * **The society's own name is on the letterhead, read from settings.** Not a
+ * content block and not a constant: the same rule `BrandLockup` follows, so a
+ * society that has named itself sees its own name and one that has not sees the
+ * neutral line rather than somebody else's.
+ */
+function TermsPaper({ row, society }: { row: TermsOfReference; society: string | null }) {
+	const stamp = stampFor(row);
+
+	return (
+		<Link
+			to={`/admin/deployments/terms/${encodeURIComponent(row.name)}`}
+			className="group relative flex aspect-[148/210] flex-col overflow-hidden rounded-[10px] border border-card-line bg-white px-4 pb-3 pt-4 shadow-[0_1px_2px_rgba(16,32,51,0.05)] transition hover:-translate-y-0.5 hover:border-blue hover:shadow-[0_12px_28px_rgba(16,32,51,0.12)]"
+		>
+			{/* The folded corner. Decoration, and hidden from assistive technology
+			    because it says nothing a screen reader needs. */}
+			<span
+				aria-hidden="true"
+				className="absolute right-0 top-0 h-7 w-7 bg-gradient-to-bl from-surface to-card-line [clip-path:polygon(100%_0,0_0,100%_100%)]"
+			/>
+
+			<header className="flex items-start gap-2 pr-6">
+				<span
+					aria-hidden="true"
+					className="grid h-6 w-6 flex-none place-items-center rounded bg-danger-soft text-[13px] font-bold leading-none text-danger"
+				>
+					✚
+				</span>
+				<span className="min-w-0">
+					<span className="block truncate text-[10.5px] font-bold leading-tight text-ink">
+						{society ?? "Terms of Reference"}
+					</span>
+					<span className="block text-[9px] uppercase tracking-[0.09em] text-muted">
+						Operations
+					</span>
+				</span>
+			</header>
+
+			<span aria-hidden="true" className="my-2.5 block h-px bg-card-line" />
+
+			<p className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-muted">
+				Terms of Reference
+			</p>
+			<p className="tabular mt-0.5 truncate font-mono text-[9.5px] text-slate-faint">
+				{row.tor_key || row.name}
+			</p>
+
+			<h3 className="mt-2 line-clamp-3 text-[13px] font-bold leading-snug text-ink">
+				{row.tor_name}
+			</h3>
+
+			{row.project_name && (
+				<p className="mt-1 line-clamp-1 text-[10.5px] font-semibold text-muted">
+					{row.project_name}
+				</p>
+			)}
+
+			<dl className="mt-2.5 min-h-0 flex-1 space-y-1.5 overflow-hidden">
+				{row.purpose && (
+					<div>
+						<dt className="text-[8.5px] font-bold uppercase tracking-[0.1em] text-muted">
+							Purpose
+						</dt>
+						<dd className="line-clamp-3 text-[10.5px] leading-snug text-slate-strong">
+							{row.purpose}
+						</dd>
+					</div>
+				)}
+				<div>
+					<dt className="text-[8.5px] font-bold uppercase tracking-[0.1em] text-muted">Area</dt>
+					<dd className="line-clamp-1 text-[10.5px] text-slate-strong">
+						{row.geo_scope_path ? geoPath(row.geo_scope_path) : "Applies anywhere"}
+					</dd>
+				</div>
+				<div>
+					<dt className="text-[8.5px] font-bold uppercase tracking-[0.1em] text-muted">
+						Expected period
+					</dt>
+					<dd className="text-[10.5px] text-slate-strong">
+						{row.expected_start_date
+							? `${formatDate(row.expected_start_date)}${row.expected_end_date ? ` – ${formatDate(row.expected_end_date)}` : ""}`
+							: row.default_duration_days
+								? `${row.default_duration_days} ${row.default_duration_days === 1 ? "day" : "days"}, no dates set`
+								: "No dates set"}
+					</dd>
+				</div>
+			</dl>
+
+			<footer className="mt-2 flex items-center justify-between gap-2 border-t border-card-line pt-2">
+				<span
+					className={cx(
+						"rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]",
+						stamp.tone,
+					)}
+				>
+					{stamp.label}
+				</span>
+				<span className="text-[10px] font-semibold text-blue-press group-hover:underline">
+					{stamp.action} →
+				</span>
+			</footer>
+		</Link>
+	);
+}
+
+/**
+ * What the stamp on a terms of reference says, and what opening it will do.
+ *
+ * Two facts decide it and neither is a stage label: `docstatus`, which is
+ * whether the wording is still editable, and `approval_state`, which is one of
+ * the seven in `states.py`. A society with no approval workflow configured for
+ * terms has no `approval_state` at all, and "Submitted" is then the honest word
+ * — the wording is frozen and nobody was asked, which is what that society
+ * configured.
+ */
+function stampFor(row: TermsOfReference): { label: string; tone: string; action: string } {
+	if (row.is_draft) {
+		return {
+			label: "Draft",
+			tone: "bg-warning-soft text-warning",
+			action: "Continue writing",
+		};
+	}
+
+	if (row.is_cancelled) {
+		return { label: "Cancelled", tone: "bg-surface text-muted", action: "Open document" };
+	}
+
+	switch (row.approval_state) {
+		case "Approved":
+			return { label: "Approved", tone: "bg-success-soft text-success", action: "Open document" };
+		case "Submitted":
+		case "In Review":
+			return {
+				label: "In review",
+				tone: "bg-blue-soft text-blue-press",
+				action: "Review document",
+			};
+		case "Rejected":
+			return { label: "Rejected", tone: "bg-danger-soft text-danger", action: "Open document" };
+		case "Withdrawn":
+		case "Expired":
+			return {
+				label: row.approval_state,
+				tone: "bg-surface text-muted",
+				action: "Open document",
+			};
+		default:
+			// Frozen wording with no approval workflow governing it. Not "draft"
+			// and not "approved": nobody was asked, because this society did not
+			// ask for anybody to be.
+			return {
+				label: row.is_active ? "Submitted" : "Retired",
+				tone: "bg-surface text-slate-strong",
+				action: "Open document",
+			};
+	}
 }
 
 /**
@@ -691,7 +954,7 @@ export function TermsDetail() {
 						</div>
 					</div>
 
-					<dl className="mt-4 grid gap-x-5 gap-y-2 border-t border-hairline pt-3 text-[12px] sm:grid-cols-2 lg:grid-cols-4">
+					<dl className="mt-4 grid gap-x-5 gap-y-2 border-t border-card-line pt-3 text-[12px] sm:grid-cols-2 lg:grid-cols-4">
 						<div>
 							<dt className="text-slate-faint">Reference</dt>
 							<dd className="font-semibold text-ink">{terms.tor_key}</dd>
@@ -894,7 +1157,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 	return (
 		<Card>
 			<SectionTitle>Write a terms of reference</SectionTitle>
-			<p className="mt-1 text-[12.5px] text-slate-body">
+			<p className="mt-1 text-[12.5px] text-muted">
 				What the work is and what a volunteer deployed to it is expected to do. Deployments point at
 				it, and it prints on your society's letterhead.
 			</p>
@@ -930,7 +1193,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 
 			<div className="mt-4 grid gap-4 sm:grid-cols-2">
 				<Labelled label="Availability" hint="Inactive terms take no new deployments or requests.">
-					<span className="flex min-h-[38px] items-center gap-2 rounded-card border border-hairline-strong bg-white px-3 py-2 text-[13px] text-slate-body">
+					<span className="flex min-h-[38px] items-center gap-2 rounded-xl border border-card-line bg-white px-3 py-2 text-[13px] text-muted">
 						<input
 							type="checkbox"
 							checked={isActive}
@@ -1012,7 +1275,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				</Labelled>
 			</div>
 
-			<div className="mt-6 space-y-6 border-t border-hairline pt-5">
+			<div className="mt-6 space-y-6 border-t border-card-line pt-5">
 				<RowEditor<TermsStakeholder>
 					title="Stakeholders"
 					lead="Who the mission deals with and how deployed volunteers can reach them."
@@ -1197,8 +1460,8 @@ export function MineToggle({
 			className={cx(
 				"rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
 				mine
-					? "border-navy bg-navy text-white"
-					: "border-hairline-strong bg-white text-slate-body hover:border-navy hover:text-navy",
+					? "border-blue bg-rail text-white"
+					: "border-card-line bg-white text-muted hover:border-blue hover:text-ink",
 			)}
 		>
 			{label}
@@ -1207,7 +1470,7 @@ export function MineToggle({
 }
 
 export const INPUT =
-	"w-full rounded-card border border-hairline-strong px-3 py-2.5 text-[13px] outline-none focus:border-navy";
+	"w-full rounded-xl border border-card-line px-3 py-2.5 text-[13px] outline-none focus:border-blue";
 
 export function Labelled({
 	label,

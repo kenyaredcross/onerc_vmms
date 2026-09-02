@@ -142,7 +142,7 @@ def _summary() -> None:
 		"Published locations": frappe.db.count("VMMS Branch Location", {"is_published": 1}),
 		"Volunteer applications": frappe.db.count(tanzania.APPLICATION_DOCTYPE),
 		"Active volunteers": frappe.db.count("VMMS Volunteer", {"status": "Active"}),
-		"Projects": frappe.db.count("VMMS Project"),
+		"Projects": frappe.db.count("Project", {"vmms_geo_node": ("is", "set")}),
 		"Terms of reference": frappe.db.count("VMMS Terms of Reference"),
 		"Deployments": frappe.db.count("VMMS Deployment"),
 		"People on a deployment": frappe.db.count(

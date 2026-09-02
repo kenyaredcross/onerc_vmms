@@ -32,6 +32,13 @@
   "applicant_date_of_birth",
   "questions_section",
   "custom_answers",
+  "emergency_section",
+  "emergency_contacts",
+  "guardian_section",
+  "is_minor",
+  "guardian_consents",
+  "consents_section",
+  "declarations",
   "approval_section",
   "approval_state",
   "approval_stage",
@@ -216,6 +223,51 @@
    "fieldtype": "Table",
    "label": "Answers",
    "options": "VMMS Application Answer"
+  },
+  {
+   "fieldname": "emergency_section",
+   "fieldtype": "Section Break",
+   "label": "Emergency Contacts"
+  },
+  {
+   "description": "Who to call if something happens to this person while they are volunteering. At least one contact the applicant has permitted us to call is needed before the application can be approved.",
+   "fieldname": "emergency_contacts",
+   "fieldtype": "Table",
+   "label": "Emergency Contacts",
+   "options": "VMMS Emergency Contact"
+  },
+  {
+   "fieldname": "guardian_section",
+   "fieldtype": "Section Break",
+   "label": "Guardian Consent"
+  },
+  {
+   "default": "0",
+   "description": "Worked out from the applicant's date of birth and the age this society counts as adult. Not typed, and re-derived on every save.",
+   "fieldname": "is_minor",
+   "fieldtype": "Check",
+   "label": "Applicant Is a Minor",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.is_minor",
+   "description": "A parent or guardian's permission, and the reviewer's check of it. A minor's application cannot be approved until a consent here is both given and verified.",
+   "fieldname": "guardian_consents",
+   "fieldtype": "Table",
+   "label": "Guardian Consent",
+   "options": "VMMS Guardian Consent"
+  },
+  {
+   "fieldname": "consents_section",
+   "fieldtype": "Section Break",
+   "label": "Declarations"
+  },
+  {
+   "description": "What this applicant agreed to, in the wording that stood on the day they agreed to it.",
+   "fieldname": "declarations",
+   "fieldtype": "Table",
+   "label": "Declarations",
+   "options": "VMMS Declaration Acceptance"
   },
   {
    "fieldname": "approval_section",

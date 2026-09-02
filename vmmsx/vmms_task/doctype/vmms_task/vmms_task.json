@@ -13,10 +13,56 @@
   "geo_node",
   "column_break_assignment",
   "status",
-  "due_on",
+  "priority",
+  "task_type",
   "deployment",
+  "project",
+  "batch",
+  "schedule_section",
+  "due_at",
+  "due_on",
+  "planned_start",
+  "planned_end",
+  "column_break_schedule",
+  "response_deadline",
+  "expected_hours",
+  "actual_hours",
+  "percent_complete",
   "brief_section",
   "description",
+  "brief_files",
+  "checklist_section",
+  "checklist",
+  "dependency_section",
+  "depends_on",
+  "blocked_override_reason",
+  "place_tab",
+  "work_section",
+  "work_name",
+  "work_address",
+  "column_break_work",
+  "work_latitude",
+  "work_longitude",
+  "work_located_on",
+  "meeting_section",
+  "meeting_name",
+  "meeting_address",
+  "column_break_meeting",
+  "meeting_latitude",
+  "meeting_longitude",
+  "meeting_located_on",
+  "travel_section",
+  "travel_instructions",
+  "column_break_travel",
+  "local_contact_name",
+  "local_contact_phone",
+  "chase_tab",
+  "chase_section",
+  "reminder_every_days",
+  "last_contacted_on",
+  "column_break_chase",
+  "escalate_to",
+  "escalations",
   "progress_section",
   "open_question",
   "assigned_on",
@@ -26,10 +72,28 @@
   "closed_on",
   "completion_section",
   "completion_notes",
+  "outcome",
+  "final_evidence",
+  "column_break_completion",
+  "return_reason",
+  "rework_count",
+  "manager_rating",
+  "lessons_learned",
+  "lifecycle_section",
+  "decline_reason",
+  "reassigned_to_task",
+  "column_break_lifecycle",
+  "reassigned_from_task",
+  "reassignment_reason",
   "thread_section",
   "updates"
  ],
  "fields": [
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment"
+  },
   {
    "default": "TSK-.#####",
    "description": "Automatic series for the task number.",
@@ -39,11 +103,6 @@
    "label": "Series",
    "options": "TSK-.#####",
    "reqd": 1
-  },
-  {
-   "fieldname": "assignment_section",
-   "fieldtype": "Section Break",
-   "label": "Assignment"
   },
   {
    "description": "What the task is, in one line, as it appears in the volunteer's list. The detail belongs in the description.",
@@ -77,20 +136,30 @@
   },
   {
    "default": "assigned",
-   "description": "Where the task stands. Moved by the system as the task is accepted, submitted and closed.",
+   "description": "Where the work has got to. Declined is a volunteer saying no before starting; reassigned is the same work handed to somebody else, with this record kept.",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "assigned\naccepted\nsubmitted\ncompleted\ncancelled",
+   "options": "assigned\naccepted\nsubmitted\ncompleted\ncancelled\ndeclined\nreassigned",
    "read_only": 1,
    "reqd": 1
   },
   {
-   "description": "When the work is wanted by. Optional, and nothing is refused after it.",
-   "fieldname": "due_on",
-   "fieldtype": "Date",
-   "label": "Due On"
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "default": "Normal",
+   "options": "Low\nNormal\nHigh\nUrgent",
+   "in_standard_filter": 1,
+   "description": "How urgent this is. Ranks a volunteer's list and a coordinator's; nothing else reads it."
+  },
+  {
+   "fieldname": "task_type",
+   "fieldtype": "Link",
+   "label": "Task Type",
+   "options": "VMMS Task Type",
+   "description": "What this society calls this kind of work. An open vocabulary; no rule branches on it."
   },
   {
    "description": "The deployment this task is part of, where it is part of one. Optional.",
@@ -98,6 +167,81 @@
    "fieldtype": "Link",
    "label": "Deployment",
    "options": "VMMS Deployment"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project",
+   "description": "The programme this work belongs to."
+  },
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "VMMS Task Batch",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "The batch this task was generated from, where it was. Editing that batch afterwards changes nothing here."
+  },
+  {
+   "fieldname": "schedule_section",
+   "fieldtype": "Section Break",
+   "label": "Schedule"
+  },
+  {
+   "fieldname": "due_at",
+   "fieldtype": "Datetime",
+   "label": "Due",
+   "description": "When it is due, to the hour. The day beside it is derived from this."
+  },
+  {
+   "description": "The day it is due. Derived from the due datetime beside it and shown because every register in this app windows on days.",
+   "fieldname": "due_on",
+   "fieldtype": "Date",
+   "label": "Due On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "planned_start",
+   "fieldtype": "Datetime",
+   "label": "Planned Start",
+   "description": "When the work is expected to begin."
+  },
+  {
+   "fieldname": "planned_end",
+   "fieldtype": "Datetime",
+   "label": "Planned End"
+  },
+  {
+   "fieldname": "column_break_schedule",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "response_deadline",
+   "fieldtype": "Datetime",
+   "label": "Answer By",
+   "description": "By when the volunteer has to accept or decline. A prompt for whoever is chasing, never an automatic refusal."
+  },
+  {
+   "fieldname": "expected_hours",
+   "fieldtype": "Float",
+   "label": "Expected Hours",
+   "precision": "2",
+   "description": "How long the work is expected to take."
+  },
+  {
+   "fieldname": "actual_hours",
+   "fieldtype": "Float",
+   "label": "Actual Hours",
+   "precision": "2",
+   "description": "How long it took. Recorded at completion; separate from the volunteer's own time log, which is their account of it."
+  },
+  {
+   "fieldname": "percent_complete",
+   "fieldtype": "Percent",
+   "label": "Percent Complete",
+   "description": "How far along the work is, as the volunteer reports it."
   },
   {
    "fieldname": "brief_section",
@@ -110,6 +254,191 @@
    "fieldtype": "Text",
    "label": "Description",
    "reqd": 1
+  },
+  {
+   "fieldname": "brief_files",
+   "fieldtype": "Table",
+   "label": "Briefing Files",
+   "options": "VMMS Task Brief File",
+   "description": "Forms, maps, templates and references provided by whoever set the work. Deliberately not the same place as the volunteer's evidence."
+  },
+  {
+   "fieldname": "checklist_section",
+   "fieldtype": "Section Break",
+   "label": "Checklist"
+  },
+  {
+   "fieldname": "checklist",
+   "fieldtype": "Table",
+   "label": "Checklist",
+   "options": "VMMS Task Checklist Item",
+   "description": "What has to be done. A required item that is not ticked stops the task being submitted."
+  },
+  {
+   "fieldname": "dependency_section",
+   "fieldtype": "Section Break",
+   "label": "Dependencies",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "depends_on",
+   "fieldtype": "Table",
+   "label": "Depends On",
+   "options": "VMMS Task Dependency",
+   "description": "Work that has to finish before this starts. A loop is refused; starting a blocked task needs a written override."
+  },
+  {
+   "fieldname": "blocked_override_reason",
+   "fieldtype": "Small Text",
+   "label": "Override Reason",
+   "description": "Why this task was started while something it depends on was unfinished. Required to start a blocked one, so the decision is somebody's and is written down."
+  },
+  {
+   "fieldname": "place_tab",
+   "fieldtype": "Tab Break",
+   "label": "Place"
+  },
+  {
+   "fieldname": "work_section",
+   "fieldtype": "Section Break",
+   "label": "Where The Work Is"
+  },
+  {
+   "fieldname": "work_name",
+   "fieldtype": "Data",
+   "label": "Work Location",
+   "description": "Where the work happens. A task under a deployment takes the deployment's own point unless this says otherwise."
+  },
+  {
+   "fieldname": "work_address",
+   "fieldtype": "Small Text",
+   "label": "Address or Description"
+  },
+  {
+   "fieldname": "column_break_work",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "work_latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "work_longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "work_located_on",
+   "fieldtype": "Datetime",
+   "label": "Located On",
+   "read_only": 1,
+   "description": "When these coordinates were resolved from the address. Blank where somebody placed the pin themselves."
+  },
+  {
+   "fieldname": "meeting_section",
+   "fieldtype": "Section Break",
+   "label": "Meeting Point"
+  },
+  {
+   "fieldname": "meeting_name",
+   "fieldtype": "Data",
+   "label": "Meeting Point"
+  },
+  {
+   "fieldname": "meeting_address",
+   "fieldtype": "Small Text",
+   "label": "Address or Description"
+  },
+  {
+   "fieldname": "column_break_meeting",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "meeting_latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "meeting_longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6"
+  },
+  {
+   "fieldname": "meeting_located_on",
+   "fieldtype": "Datetime",
+   "label": "Located On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "travel_section",
+   "fieldtype": "Section Break",
+   "label": "Getting There"
+  },
+  {
+   "fieldname": "travel_instructions",
+   "fieldtype": "Small Text",
+   "label": "Travel Instructions"
+  },
+  {
+   "fieldname": "column_break_travel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "local_contact_name",
+   "fieldtype": "Data",
+   "label": "Local Contact"
+  },
+  {
+   "fieldname": "local_contact_phone",
+   "fieldtype": "Data",
+   "label": "Local Contact Phone"
+  },
+  {
+   "fieldname": "chase_tab",
+   "fieldtype": "Tab Break",
+   "label": "Chasing"
+  },
+  {
+   "fieldname": "chase_section",
+   "fieldtype": "Section Break",
+   "label": "Reminders"
+  },
+  {
+   "fieldname": "reminder_every_days",
+   "fieldtype": "Int",
+   "label": "Remind Every (Days)",
+   "description": "How often to nudge whoever holds this, while it is open and overdue. Zero \u2014 the shipped state \u2014 sends nothing."
+  },
+  {
+   "fieldname": "last_contacted_on",
+   "fieldtype": "Datetime",
+   "label": "Last Contacted",
+   "read_only": 1,
+   "description": "When this task last produced a reminder or an escalation. What stops the sweep sending the same nudge every hour."
+  },
+  {
+   "fieldname": "column_break_chase",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "escalate_to",
+   "fieldtype": "Link",
+   "label": "Escalate To",
+   "options": "User",
+   "description": "Who hears about it when a reminder has not worked. Empty means nobody, and nothing is escalated."
+  },
+  {
+   "fieldname": "escalations",
+   "fieldtype": "Table",
+   "label": "Escalations",
+   "options": "VMMS Task Escalation",
+   "read_only": 1,
+   "description": "Every time this task was raised with somebody above the person holding it."
   },
   {
    "fieldname": "progress_section",
@@ -167,6 +496,88 @@
    "fieldtype": "Small Text",
    "label": "Completion Notes",
    "read_only": 1
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Small Text",
+   "label": "Outcome",
+   "description": "What came of the work, in the coordinator's words. Written at sign-off."
+  },
+  {
+   "fieldname": "final_evidence",
+   "fieldtype": "Attach",
+   "label": "Final Evidence",
+   "description": "The finished work itself, where it is a document or a photograph."
+  },
+  {
+   "fieldname": "column_break_completion",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "return_reason",
+   "fieldtype": "Small Text",
+   "label": "Last Return Reason",
+   "read_only": 1,
+   "description": "Why the work was last sent back. Kept after it is resubmitted, so a coordinator can see what was asked for."
+  },
+  {
+   "fieldname": "rework_count",
+   "fieldtype": "Int",
+   "label": "Times Returned",
+   "read_only": 1,
+   "description": "How many times this work has been sent back. A fact about the task, not about the person."
+  },
+  {
+   "fieldname": "manager_rating",
+   "fieldtype": "Rating",
+   "label": "Rating",
+   "description": "Optional. Nothing in this app reads it; it is for a coordinator's own record."
+  },
+  {
+   "fieldname": "lessons_learned",
+   "fieldtype": "Small Text",
+   "label": "Lessons Learned"
+  },
+  {
+   "fieldname": "lifecycle_section",
+   "fieldtype": "Section Break",
+   "label": "Declines and Reassignment",
+   "depends_on": "eval:doc.decline_reason || doc.reassigned_to_task || doc.reassigned_from_task"
+  },
+  {
+   "fieldname": "decline_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason For Declining",
+   "read_only": 1,
+   "description": "Why the volunteer could not take it on. Their own words, kept so nobody has to guess."
+  },
+  {
+   "fieldname": "reassigned_to_task",
+   "fieldtype": "Link",
+   "label": "Reassigned To",
+   "options": "VMMS Task",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "The task that took this one over. This record is kept exactly as it was."
+  },
+  {
+   "fieldname": "column_break_lifecycle",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reassigned_from_task",
+   "fieldtype": "Link",
+   "label": "Reassigned From",
+   "options": "VMMS Task",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "reassignment_reason",
+   "fieldtype": "Small Text",
+   "label": "Reassignment Reason",
+   "read_only": 1,
+   "no_copy": 1
   },
   {
    "fieldname": "thread_section",

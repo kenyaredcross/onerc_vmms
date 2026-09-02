@@ -479,6 +479,11 @@ def status(transfer) -> dict:
 		"is_effective": transfer.transfer_status == STATUS_EFFECTIVE,
 		"approval_mode": configured,
 		"requires_approver": approval.requires_approver(configured, _where()),
+		# The mode as it will actually be applied here. A society that set
+		# `routed` and configured no workflow for transfers gets them handled
+		# directly rather than refused; `approval.effective_mode` says why.
+		"effective_approval_mode": approval.effective_mode(transfer, configured, _where()),
+		"approval_unconfigured": approval.downgraded(transfer, configured, _where()),
 		"approval_settled": is_settled(transfer),
 		"is_refused": approval.is_refused(transfer),
 		"origin_still_holds": origin_still_holds(transfer),

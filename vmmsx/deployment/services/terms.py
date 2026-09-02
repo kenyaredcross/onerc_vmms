@@ -9,7 +9,7 @@ objectives, the outputs, the approach, the itinerary, the stakeholders, the
 resources — is for the people involved, and this module deliberately decides
 nothing from any of it. Four fields govern behaviour:
 
-    geo_scope                where these terms may be used. Empty means anywhere
+    geo_scope                where these terms may be used, and everything under it
     approval_mode            whether a request under them needs an approver
     required_certifications  what a candidate must, or would ideally, hold
     expected_start_date      what a deployment set up under them defaults to
@@ -31,15 +31,67 @@ mean on a given date.
 the geo adapter's `matches_scope`, which compares nested-set bounds, so a
 society whose tree is four levels deep and one whose tree is two behave the same
 and neither is written down.
+
+**Complete before it is frozen.** `REQUIRED_AT_SUBMISSION` is the list a mission
+document has to answer before its wording stops being editable — a programme, a
+period, a place, a background, objectives, outputs, stakeholders, an itinerary,
+and either resource lines or the explicit statement that it needs none. It is
+checked at submission and never on save, because a draft is written over several
+sittings and one that refused to save until it was finished would be a draft
+nobody could use.
+
+**Who freezes it is the society's answer, not this app's.** A society that has
+configured a `VMMS Approval Workflow` for this doctype gets one: the writer sends
+the document for approval, the engine routes it, and the document submits itself
+the moment the last approver says yes — `try_freeze`, called from the
+controller's `on_update`, which is the same predicate-not-sequence shape
+`request.try_fulfil` uses. A society that has configured none gets the plainer
+answer it asked for: anybody with submit permission submits it. Either way there
+is exactly one approval status on the record — the engine's — and `docstatus` is
+its consequence rather than a second opinion about it.
+
+**Superseding is what amending cannot do.** Frappe's amend needs a cancel first,
+and `on_cancel` refuses to cancel terms a deployment already points at, because
+the deployments already agreed keep the wording they were agreed under. So a
+mission that has to be respecified after people are in the field gets `supersede`
+instead: a fresh draft carrying the whole mission across, with `supersedes`
+pointing back, and the original left exactly as it is.
 """
 
 import frappe
 from frappe import _
 
+from vmmsx.approvals import states
+from vmmsx.approvals.services import config as approval_config
+from vmmsx.approvals.services import contract, engine
 from vmmsx.deployment.services import approval
 from vmmsx.deployment.services import project as project_service
 
 TERMS_DOCTYPE = "VMMS Terms of Reference"
+
+# What must be on a terms of reference before its wording can be frozen, keyed
+# by fieldname, with the sentence a writer is shown when it is missing.
+#
+# **A submission gate, never a save gate.** A mission document is written over
+# several sittings — the background one day, the itinerary once the branch has
+# answered — and a draft that refused to save until it was finished would be a
+# draft nobody could use. Everything here is checked at the one moment the
+# wording stops being editable and people start being asked to agree to it.
+#
+# Resources are not in the table because they are the one item with two right
+# answers: lines, or an explicit declaration that the mission needs nothing.
+# `_assert_resources_answered` holds that pair.
+REQUIRED_AT_SUBMISSION: tuple[tuple[str, str], ...] = (
+	("project", "the programme of work these terms are written under"),
+	("expected_start_date", "when the mission is expected to begin"),
+	("expected_end_date", "when the mission is expected to end"),
+	("geo_scope", "where these terms apply"),
+	("mission_background", "the mission background"),
+	("objectives", "at least one specific objective"),
+	("expected_outputs", "at least one expected output"),
+	("stakeholders", "at least one stakeholder"),
+	("itinerary", "at least one itinerary entry"),
+)
 
 
 def read(terms_of_reference: str):
@@ -82,11 +134,17 @@ def _describe(terms) -> str:
 def assert_within_scope(terms_of_reference: str, geo_node: str) -> None:
 	"""Throw unless `geo_node` falls inside these terms' own geo scope.
 
-	Empty scope is unconstrained, which is what a society that has not narrowed
-	its terms means. Where a scope is set, the node must be that node or beneath
-	it: an ancestor is not inside it, which is why `allow_ancestor` is off.
-	Anchoring a deployment at the region when its terms are a particular branch's
-	would put the work outside the very place the terms describe.
+	The node must be that node or beneath it: an ancestor is not inside it, which
+	is why `allow_ancestor` is off. Anchoring a deployment at the region when its
+	terms are a particular branch's would put the work outside the very place the
+	terms describe. Terms meant for the whole society name the national node.
+
+	**An empty scope is unconstrained, and that is history rather than a choice.**
+	A scope is mandatory now — a mission document that applies nowhere in
+	particular cannot be routed for approval — but records written before that
+	rule may carry none, and a register that started refusing every deployment
+	under a specification nobody can edit any more would be this rule applied
+	retroactively.
 	"""
 	from onerc_core.geo.services import adapter
 
@@ -178,6 +236,235 @@ def assert_offered(terms_of_reference: str) -> None:
 	assert_active(terms_of_reference)
 
 
+# --- is it finished? --------------------------------------------------------
+
+
+def missing_at_submission(terms) -> list[str]:
+	"""What this document still has to answer, in the writer's words. Empty when finished.
+
+	Takes the document rather than a name because it runs while the document is
+	being submitted, and the cached copy is the one before this edit.
+
+	Returned as a list rather than thrown, so a screen can grey out the submit
+	button and say why without provoking an error, and so `assert_complete` has
+	exactly one place the list is decided.
+	"""
+	missing = [label for field, label in REQUIRED_AT_SUBMISSION if not terms.get(field)]
+
+	if not (terms.get("resources") or terms.get("has_no_resources")):
+		missing.append(
+			_("the resources this mission needs, or a tick to say it needs none")
+		)
+
+	return missing
+
+
+def assert_complete(terms) -> None:
+	"""Throw unless the mission document is finished.
+
+	**Everything at once, never the first thing missing.** A writer told about one
+	empty field at a time makes one edit at a time, and a nine-item document
+	becomes nine round trips. The whole list comes back in one sentence.
+	"""
+	missing = missing_at_submission(terms)
+
+	if not missing:
+		return
+
+	frappe.throw(
+		_(
+			"{0} is not finished. Somebody accepting a deployment under it is agreeing to"
+			" exactly this document, so it has to say: {1}."
+		).format(frappe.bold(_describe(terms)), ", ".join(str(item) for item in missing)),
+		frappe.MandatoryError,
+		title=_("Mission Document Not Finished"),
+	)
+
+
+# --- who freezes it ---------------------------------------------------------
+
+
+def is_governed() -> bool:
+	"""Has this society put terms of reference under an approval workflow?
+
+	The one question that decides which of the two submission paths applies.
+	Answered from configuration on every call rather than cached, so a society
+	that configures a workflow this afternoon does not need a restart.
+	"""
+	return approval_config.is_approvable(TERMS_DOCTYPE)
+
+
+def is_approved(terms) -> bool:
+	"""Has the engine finished with this document, and said yes?"""
+	return contract.state(terms) == states.APPROVED
+
+
+def assert_may_freeze(terms) -> None:
+	"""Throw unless this document may have its wording frozen now.
+
+	Called from the controller's `before_submit`, which is the one door every
+	submission goes through — the desk's own Submit button, the API, a test, and
+	`try_freeze` alike. Putting the rule anywhere else would leave the desk form
+	as a way round it.
+	"""
+	assert_complete(terms)
+
+	if not is_governed():
+		return
+
+	if is_approved(terms):
+		return
+
+	frappe.throw(
+		_(
+			"{0} has to be approved before its wording can be frozen. This society routes terms"
+			" of reference for approval, so send it for approval rather than submitting it here."
+		).format(frappe.bold(_describe(terms))),
+		frappe.PermissionError,
+		title=_("Approval Required"),
+	)
+
+
+def send_for_approval(terms_of_reference: str, user: str | None = None) -> dict:
+	"""Hand a finished draft to the society's approvers.
+
+	Refuses where no workflow governs the doctype, rather than quietly submitting:
+	the two paths are different acts with different audit trails, and a caller
+	that asked for the routed one on a site that does not route would otherwise
+	get a submitted document and no record of anybody having agreed to it.
+	"""
+	doc = frappe.get_doc(TERMS_DOCTYPE, terms_of_reference)
+	doc.check_permission("submit")
+
+	if not is_governed():
+		frappe.throw(
+			_(
+				"This society has not configured an approval workflow for terms of reference, so"
+				" there is nobody to send this to. Submit it instead."
+			),
+			frappe.ValidationError,
+			title=_("Nothing To Route To"),
+		)
+
+	assert_complete(doc)
+
+	return engine.submit(doc, user)
+
+
+def try_freeze(terms) -> None:
+	"""Submit an approved draft. Idempotent, and silent when there is nothing to do.
+
+	A predicate, not a step in a sequence: it asks whether this document is a
+	draft that the society's approvers have finished saying yes to, and both
+	answers come off the record rather than off which code path happened to run.
+	That is what makes it safe to call from `on_update`, after any event and in
+	any order — the same shape `request.try_fulfil` has, and for the same reason.
+
+	**Submitted through a freshly loaded copy.** This runs inside the save that
+	recorded the final approval, so the row on disk already carries the new state
+	while the in-memory document is mid-flight; re-reading it is what keeps this
+	from saving a document that is still being saved. The reload sees docstatus 0
+	and the approval, submits once, and the second `on_update` that its own submit
+	fires finds docstatus 1 and returns here.
+
+	**The submit bypasses permissions, and this is the justification** — the same
+	one `request.fulfil` gives for inserting a deployment. The caller that matters
+	is the approval engine: this runs inside whichever approver recorded the
+	decision, and an approver holds no submit permission on the terms register and
+	should not need any in order to approve one. The elevation is not a shortcut
+	around a check, because the check already happened, in `engine.decide`, against
+	the person this document routed to. `before_submit` still runs, so the document
+	is still refused unless it is finished and approved.
+	"""
+	if terms.docstatus != 0:
+		return
+
+	if not (is_governed() and is_approved(terms)):
+		return
+
+	doc = frappe.get_doc(TERMS_DOCTYPE, terms.name)
+	doc.flags.ignore_permissions = True
+	doc.submit()
+
+
+# --- respecifying work that is already in the field -------------------------
+
+
+def references(terms_of_reference: str) -> dict[str, int]:
+	"""How many deployments and requests point at these terms. Zero-valued, never empty.
+
+	The question `on_cancel` and `supersede` both ask, in one place, so the two
+	cannot come to different answers about whether a document is still in use.
+	"""
+	return {
+		doctype: frappe.db.count(doctype, {"terms_of_reference": terms_of_reference})
+		for doctype in ("VMMS Deployment", "VMMS Deployment Request")
+	}
+
+
+def is_referenced(terms_of_reference: str) -> bool:
+	"""Has anything been raised under these terms — ever, in any state?
+
+	Any, deliberately: a cancelled deployment is still a record of somebody
+	having been asked to serve under this exact wording, and rewriting the
+	wording underneath it would falsify what they agreed to.
+	"""
+	return any(references(terms_of_reference).values())
+
+
+def supersede(terms_of_reference: str, **values) -> dict:
+	"""Start a replacement for terms that are already in use.
+
+	**What amending cannot do.** Frappe's amend needs a cancel first, and
+	`on_cancel` refuses to cancel terms a deployment points at — the deployments
+	already agreed keep the wording they were agreed under, and that refusal is
+	the point rather than an obstacle. But a mission genuinely does get
+	respecified while people are in the field, and without this the only answers
+	were to falsify the original or to write the replacement from scratch with no
+	thread back to it.
+
+	So: the whole mission document is copied into a new draft, `supersedes` points
+	at the original, and the original is left exactly as it is — still submitted,
+	still the terms every existing deployment is governed by. Retiring it, if the
+	society wants that, is `is_active` and a separate decision.
+
+	`values` overrides any editable field on the copy, so a caller respecifying a
+	period or a scope does not have to write it twice.
+	"""
+	original = frappe.get_doc(TERMS_DOCTYPE, terms_of_reference)
+	original.check_permission("read")
+
+	assert_submitted(terms_of_reference)
+
+	replacement = create(
+		tor_name=values.pop("tor_name", None) or original.tor_name,
+		project=original.project,
+		purpose=original.purpose,
+		mission_background=original.mission_background,
+		responsibilities=original.responsibilities,
+		geo_scope=original.geo_scope,
+		expected_start_date=original.expected_start_date,
+		expected_end_date=original.expected_end_date,
+		default_duration_days=original.default_duration_days,
+		approval_mode=original.approval_mode,
+		notes=original.notes,
+		has_no_resources=original.has_no_resources,
+		required_certifications=[row.as_dict() for row in (original.required_certifications or [])],
+		**{
+			field: [row.as_dict() for row in (original.get(field) or [])]
+			for field in _MISSION_TABLES
+		},
+	)
+
+	replacement.db_set("supersedes", original.name, update_modified=False)
+	replacement.reload()
+
+	if values:
+		return update(replacement.name, **values)
+
+	return mission_dto(replacement.name)
+
+
 # --- what a candidate needs -----------------------------------------------
 
 
@@ -215,6 +502,7 @@ def create(
 	default_duration_days: int | None = None,
 	approval_mode: str | None = None,
 	is_active: bool | int | str = True,
+	has_no_resources: bool | int | str = False,
 	required_certifications: list | None = None,
 	stakeholders: list | None = None,
 	objectives: list | None = None,
@@ -267,6 +555,7 @@ def create(
 			"expected_end_date": expected_end_date or None,
 			"default_duration_days": frappe.utils.cint(default_duration_days),
 			"approval_mode": approval_mode or approval.MODE_DIRECT,
+			"has_no_resources": 1 if frappe.utils.cint(has_no_resources) else 0,
 			"notes": notes,
 			"required_certifications": [
 				{
@@ -305,7 +594,17 @@ _MISSION_TABLES: dict[str, tuple[str, ...]] = {
 	"expected_outputs": ("output",),
 	"approach_methods": ("methodology", "notes"),
 	"itinerary": ("activity_date", "activity_time", "activity", "person_responsible"),
-	"resources": ("resource", "needed_on", "quantity", "unit", "unit_cost", "donor"),
+	"resources": (
+		"resource",
+		"description",
+		"needed_on",
+		"quantity",
+		"unit",
+		"currency",
+		"unit_cost",
+		"funding_status",
+		"donor",
+	),
 }
 
 # The column of each mission table that makes a row worth keeping. A row whose
@@ -371,7 +670,7 @@ def _project_name(project: str | None) -> str | None:
 	if not project:
 		return None
 
-	return frappe.db.get_value("VMMS Project", project, "project_name")
+	return frappe.db.get_value(project_service.PROJECT_DOCTYPE, project, "project_name")
 
 
 def dto(terms_of_reference: str) -> dict:
@@ -409,6 +708,22 @@ def dto(terms_of_reference: str) -> dict:
 		"is_cancelled": terms.docstatus == 2,
 		"is_offered": terms.docstatus == 1 and bool(terms.is_active),
 		"amended_from": terms.amended_from,
+		# The thread back through a mission that had to be respecified while
+		# people were already in the field. `supersede` says why this is not an
+		# amendment.
+		"supersedes": terms.supersedes,
+		# What still has to be written before the wording can be frozen. Empty on
+		# a finished document, and on every submitted one — a screen greys out its
+		# own submit button from this rather than from a rule of its own.
+		"missing": missing_at_submission(terms),
+		"has_no_resources": bool(terms.has_no_resources),
+		# The society's own approval, where it configured one. Read straight off
+		# the field rather than through `contract.state`, which reads an empty one
+		# as Draft: on a site that routes nothing, "nobody has been asked" and "it
+		# is a draft awaiting an approver" are different answers and only the first
+		# is true.
+		"is_governed": is_governed(),
+		"approval_state": terms.approval_state or None,
 		"expected_start_date": terms.expected_start_date,
 		"expected_end_date": terms.expected_end_date,
 		# How much of the mission document has been written, so a list row can say
@@ -506,6 +821,9 @@ def update(terms_of_reference: str, **values) -> dict:
 	if "is_active" in values:
 		doc.is_active = 1 if values["is_active"] else 0
 
+	if "has_no_resources" in values:
+		doc.has_no_resources = 1 if values["has_no_resources"] else 0
+
 	if "required_certifications" in values:
 		doc.set(
 			"required_certifications",
@@ -556,6 +874,11 @@ def submit(terms_of_reference: str) -> dict:
 	which is what makes a double-clicked button harmless; a cancelled one is left
 	to Frappe to refuse, because "already submitted" and "withdrawn" must not
 	both come back as quiet success.
+
+	**The direct path.** On a site whose society routes terms of reference for
+	approval this refuses, in `before_submit`, and `send_for_approval` is the door
+	instead. The refusal lives in the controller rather than here so that the desk
+	form's own Submit button meets the same rule as this function does.
 	"""
 	doc = frappe.get_doc(TERMS_DOCTYPE, terms_of_reference)
 	doc.check_permission("submit")

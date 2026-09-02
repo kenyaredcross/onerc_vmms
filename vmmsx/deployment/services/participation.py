@@ -174,6 +174,11 @@ def history_of(volunteer: str) -> list[dict]:
 	deployment early reads as having left it rather than as never having been
 	there.
 	"""
+	# Imported here rather than at module scope: `deployment.py` imports this
+	# module for its own roster helpers, and naming it at the top would close
+	# the cycle.
+	from vmmsx.deployment.services import deployment as deployment_service
+
 	if not volunteer:
 		return []
 
@@ -211,6 +216,11 @@ def history_of(volunteer: str) -> list[dict]:
 				"deployment": deployment["name"],
 				"assignment": row["name"],
 				"status": deployment["status"],
+				# Whether the deployment itself is over, derived by the module
+				# that owns what a status means rather than by comparing strings
+				# at each call site. A card counting "completed deployments" and
+				# a register filtering "past" must not hold two answers to it.
+				"is_settled": deployment["status"] in deployment_service.SETTLED_STATUSES,
 				"start_date": deployment["start_date"],
 				"end_date": deployment["end_date"],
 				"geo_node": deployment["geo_node"],

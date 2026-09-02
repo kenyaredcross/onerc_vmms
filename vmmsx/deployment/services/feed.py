@@ -122,6 +122,35 @@ def note_roster(deployment_doc, sentence: str) -> None:
 	_append(deployment_doc, ROSTER, sentence, system=True)
 
 
+def stage(deployment_doc, entry_type: str, note: str | None, proof: str | None = None) -> None:
+	"""Append an entry **without saving**, for a caller already inside the save.
+
+	The one shape `_append` cannot serve. Everything else here writes a feed
+	entry from outside a save and has to persist it, so it appends and saves. A
+	caller running in the deployment's own `validate` must not: saving from
+	inside a save either recurses or, worse, succeeds and leaves the document in
+	the caller's hands with a `modified` timestamp that no longer matches the
+	row — which surfaces later as `TimestampMismatchError` on the *next* save,
+	a long way from the code that caused it.
+
+	So this appends the row and lets the save that is already running persist it.
+	That also makes the entry atomic with the change it describes: a save that is
+	refused leaves no feed entry claiming something happened.
+
+	The author and the time still come from the session, exactly as `post` does.
+	"""
+	deployment_doc.append(
+		"updates",
+		{
+			"entry_type": entry_type,
+			"author": frappe.session.user,
+			"posted_on": now_datetime(),
+			"note": (note or "").strip() or None,
+			"proof": proof,
+		},
+	)
+
+
 def _append(
 	deployment_doc,
 	entry_type: str,

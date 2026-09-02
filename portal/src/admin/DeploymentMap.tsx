@@ -98,7 +98,7 @@ export function DeploymentMap({ areas, className }: { areas: DeploymentArea[]; c
 		<div
 			ref={host}
 			className={cx(
-				"h-[340px] w-full overflow-hidden rounded-card border border-hairline bg-white",
+				"h-[340px] w-full overflow-hidden rounded-xl border border-card-line bg-white",
 				className,
 			)}
 			// No `role`: a Leaflet canvas is not operable by keyboard in any

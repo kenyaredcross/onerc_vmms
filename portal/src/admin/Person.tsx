@@ -149,7 +149,7 @@ function VolunteerPage({ name }: { name: string }) {
 					<SectionTitle>Reprint</SectionTitle>
 					<a
 						href={cardUrl("volunteer", dossier.volunteer)}
-						className="inline-flex items-center justify-center rounded-card border border-hairline-strong bg-white px-5 py-2.5 font-display text-[13px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
+						className="inline-flex items-center justify-center rounded-xl border border-card-line bg-white px-5 py-2.5 text-[13px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
 					>
 						Volunteer card (PDF)
 					</a>
@@ -189,11 +189,11 @@ function VolunteerPage({ name }: { name: string }) {
 					)}
 				</div>
 				{dossier.deployability.reasons.length === 0 ? (
-					<p className="text-[13px] text-slate-body">
+					<p className="text-[13px] text-muted">
 						Nothing is standing in the way as at {formatDate(dossier.deployability.as_of)}.
 					</p>
 				) : (
-					<ul className="list-disc space-y-1 pl-5 text-[13px] text-slate-body">
+					<ul className="list-disc space-y-1 pl-5 text-[13px] text-muted">
 						{dossier.deployability.reasons.map((reason) => (
 							<li key={reason}>{reason}</li>
 						))}
@@ -227,9 +227,9 @@ function VolunteerPage({ name }: { name: string }) {
 										{row.certification_type_name}
 									</span>
 								</Cell>
-								<Cell className="text-slate-body">{formatDate(row.completion_date)}</Cell>
-								<Cell className="text-slate-body">{formatDate(row.expiry_date)}</Cell>
-								<Cell className="text-slate-body">{row.reference_number || "—"}</Cell>
+								<Cell className="text-muted">{formatDate(row.completion_date)}</Cell>
+								<Cell className="text-muted">{formatDate(row.expiry_date)}</Cell>
+								<Cell className="text-muted">{row.reference_number || "—"}</Cell>
 								<Cell>
 									{row.lapsed ? (
 										<Pill tone="page">
@@ -260,11 +260,11 @@ function VolunteerPage({ name }: { name: string }) {
 										{row.deployment}
 									</span>
 								</Cell>
-								<Cell className="text-slate-body">{row.tor_name || "—"}</Cell>
+								<Cell className="text-muted">{row.tor_name || "—"}</Cell>
 								{/* The roster row's own dates, so somebody who left early
 								    reads as having left rather than as never having been there. */}
-								<Cell className="text-slate-body">{formatDate(row.joined_on)}</Cell>
-								<Cell className="text-slate-body">{formatDate(row.left_on)}</Cell>
+								<Cell className="text-muted">{formatDate(row.joined_on)}</Cell>
+								<Cell className="text-muted">{formatDate(row.left_on)}</Cell>
 								<Cell>
 									<StateBadge state={row.status ?? undefined} />
 								</Cell>
@@ -293,10 +293,10 @@ function VolunteerPage({ name }: { name: string }) {
 					<Table head={["Date", "Category", "Where", "Hours"]}>
 						{dossier.time.recent.map((row) => (
 							<Row key={row.name}>
-								<Cell className="text-slate-body">{formatDate(row.activity_date)}</Cell>
-								<Cell className="text-slate-body">{row.category_label || "—"}</Cell>
-								<Cell className="text-slate-body">{geoPath(row.geo_path)}</Cell>
-								<Cell className="text-slate-body">{formatHours(row.hours)}</Cell>
+								<Cell className="text-muted">{formatDate(row.activity_date)}</Cell>
+								<Cell className="text-muted">{row.category_label || "—"}</Cell>
+								<Cell className="text-muted">{geoPath(row.geo_path)}</Cell>
+								<Cell className="text-muted">{formatHours(row.hours)}</Cell>
 							</Row>
 						))}
 					</Table>
@@ -311,7 +311,7 @@ function VolunteerPage({ name }: { name: string }) {
 			{dossier.application.declared && (
 				<Card>
 					<SectionTitle>Declared when they applied</SectionTitle>
-					<p className="mb-4 text-[13px] text-slate-body">
+					<p className="mb-4 text-[13px] text-muted">
 						What this person said about themselves on{" "}
 						{formatDate(dossier.application.applied_on) || "the day they applied"}. This is not
 						what they can currently do, which is above.
@@ -465,13 +465,13 @@ function MemberPage({ name }: { name: string }) {
 					<Table head={["Decided", "Decision", "Stage", "By", "Membership"]}>
 						{dossier.history.map((row, index) => (
 							<Row key={`${row.membership}-${index}`}>
-								<Cell className="text-slate-body">{formatDate(row.decided_on)}</Cell>
+								<Cell className="text-muted">{formatDate(row.decided_on)}</Cell>
 								<Cell>
 									<StateBadge state={row.decision ?? undefined} />
 								</Cell>
 								{/* Display only. Nothing here compares a stage label. */}
-								<Cell className="text-slate-body">{row.stage_label || "—"}</Cell>
-								<Cell className="text-slate-body">{row.approver || "—"}</Cell>
+								<Cell className="text-muted">{row.stage_label || "—"}</Cell>
+								<Cell className="text-muted">{row.approver || "—"}</Cell>
 								<Cell className="font-mono text-[11px] text-slate-faint">
 									{row.membership}
 								</Cell>
@@ -502,7 +502,7 @@ function BackToRegister({ kind }: { kind: "volunteer" | "member" }) {
 	return (
 		<Link
 			to={kind === "volunteer" ? "/admin/registry/volunteers" : "/admin/registry/members"}
-			className="mb-4 inline-block text-[12px] font-semibold text-navy hover:underline"
+			className="mb-4 inline-block text-[12px] font-semibold text-ink hover:underline"
 		>
 			{kind === "volunteer" ? "← Back to volunteers" : "← Back to members"}
 		</Link>
@@ -547,14 +547,14 @@ function Decisions({ rows }: { rows: DecisionRow[] }) {
 			<Table head={["Decided", "Decision", "Stage", "By", "Reason"]}>
 				{rows.map((row, index) => (
 					<Row key={index}>
-						<Cell className="text-slate-body">{formatDate(row.decided_on)}</Cell>
+						<Cell className="text-muted">{formatDate(row.decided_on)}</Cell>
 						<Cell>
 							<StateBadge state={row.decision ?? undefined} />
 						</Cell>
 						{/* Display only, snapshotted by the engine. Never compared. */}
-						<Cell className="text-slate-body">{row.stage_label || "—"}</Cell>
-						<Cell className="text-slate-body">{row.approver || "—"}</Cell>
-						<Cell className="text-slate-body">{row.reason || "—"}</Cell>
+						<Cell className="text-muted">{row.stage_label || "—"}</Cell>
+						<Cell className="text-muted">{row.approver || "—"}</Cell>
+						<Cell className="text-muted">{row.reason || "—"}</Cell>
 					</Row>
 				))}
 			</Table>
@@ -693,9 +693,9 @@ function VolunteerActions({
 			</div>
 
 			{act && (
-				<div className="mt-5 border-t border-hairline pt-5">
+				<div className="mt-5 border-t border-card-line pt-5">
 					{"note" in act && act.note && (
-						<p className="mb-3 text-[13px] text-slate-body">{act.note}</p>
+						<p className="mb-3 text-[13px] text-muted">{act.note}</p>
 					)}
 
 					{"dated" in act && act.dated && (
@@ -707,7 +707,7 @@ function VolunteerActions({
 								type="date"
 								value={onDate}
 								onChange={(event) => setOnDate(event.target.value)}
-								className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+								className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
 							/>
 						</label>
 					)}
@@ -720,7 +720,7 @@ function VolunteerActions({
 							value={reason}
 							onChange={(event) => setReason(event.target.value)}
 							rows={3}
-							className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+							className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
 						/>
 					</label>
 
@@ -797,10 +797,10 @@ function MembershipCard({
 	};
 
 	return (
-		<div className="rounded-card border border-hairline p-4">
+		<div className="rounded-xl border border-card-line p-4">
 			<div className="mb-3 flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<p className="font-display text-[15px] font-bold text-ink">
+					<p className="text-[15px] font-bold text-ink">
 						{row.membership_type_name}
 					</p>
 					<p className="mt-0.5 font-mono text-[11px] text-slate-faint">{row.name}</p>
@@ -825,10 +825,10 @@ function MembershipCard({
 			    exactly this reason: there is a certificate, this caller may have
 			    it, and the type has a template to render it from. */}
 			{row.certificate.available && row.certificate.may_print && row.certificate.configured && (
-				<div className="mt-4 border-t border-hairline pt-4">
+				<div className="mt-4 border-t border-card-line pt-4">
 					<a
 						href={certificateUrl(row.name)}
-						className="inline-flex items-center justify-center rounded-card border border-hairline-strong bg-white px-5 py-2.5 font-display text-[13px] font-bold text-slate-strong transition hover:border-navy hover:text-navy"
+						className="inline-flex items-center justify-center rounded-xl border border-card-line bg-white px-5 py-2.5 text-[13px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
 					>
 						Certificate (PDF)
 					</a>
@@ -836,7 +836,7 @@ function MembershipCard({
 			)}
 
 			{canAct && (
-				<div className="mt-4 flex flex-wrap gap-2 border-t border-hairline pt-4">
+				<div className="mt-4 flex flex-wrap gap-2 border-t border-card-line pt-4">
 					{row.membership_status !== "Cancelled" && (
 						<Button
 							variant="quiet"
@@ -870,7 +870,7 @@ function MembershipCard({
 							value={reason}
 							onChange={(event) => setReason(event.target.value)}
 							rows={3}
-							className="w-full rounded-card border border-hairline-strong px-3 py-2 text-[14px]"
+							className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
 						/>
 					</label>
 					<div className="mt-3 flex gap-2">

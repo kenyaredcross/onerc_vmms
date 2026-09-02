@@ -11,3 +11,4 @@ VMMS Task
 VMMS Branch
 VMMS Registration
 VMMS Events
+VMMS HR

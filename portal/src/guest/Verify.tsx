@@ -76,7 +76,7 @@ export default function Verify() {
 			{error && !isLoading && (
 				<Card>
 					<p className="text-[14px] font-semibold text-ink">This card could not be checked.</p>
-					<p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-body">
+					<p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
 						Something went wrong reaching the society. That is not the same as the card being
 						invalid. Try again in a moment.
 					</p>
@@ -86,7 +86,7 @@ export default function Verify() {
 			{result && !result.found && (
 				<Card>
 					<Verdict current={false} word="Not recognised" />
-					<p className="mt-3 text-[12.5px] leading-relaxed text-slate-body">
+					<p className="mt-3 text-[12.5px] leading-relaxed text-muted">
 						This society has no card with that code.
 					</p>
 				</Card>
@@ -99,11 +99,11 @@ export default function Verify() {
 						word={result.is_current ? "Current" : "Not current"}
 					/>
 
-					<div className="mt-5 border-t border-hairline pt-5">
+					<div className="mt-5 border-t border-card-line pt-5">
 						<p className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 							{result.kind}
 						</p>
-						<p className="mt-1 font-display text-[22px] font-extrabold leading-tight tracking-tight text-ink">
+						<p className="mt-1 text-[22px] font-semibold leading-tight tracking-tight text-ink">
 							{result.holder_name}
 						</p>
 
@@ -129,7 +129,7 @@ export default function Verify() {
 					<p className="mt-3 text-center">
 						<a
 							href="/portal/verify"
-							className="text-[12px] font-semibold text-navy hover:underline"
+							className="text-[12px] font-semibold text-ink hover:underline"
 						>
 							Check another card
 						</a>
@@ -160,10 +160,10 @@ function TokenEntry() {
 
 	return (
 		<Card>
-			<h1 className="font-display text-[19px] font-extrabold tracking-tight text-ink">
+			<h1 className="text-[19px] font-semibold tracking-tight text-ink">
 				Check a card
 			</h1>
-			<p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-body">
+			<p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
 				Scan the code on the card, or type the number printed beneath it.
 			</p>
 
@@ -187,7 +187,7 @@ function TokenEntry() {
 						autoCapitalize="off"
 						autoCorrect="off"
 						spellCheck={false}
-						className="w-full rounded-card border border-hairline-strong px-3 py-2.5 font-mono text-[14px]"
+						className="w-full rounded-xl border border-card-line px-3 py-2.5 font-mono text-[14px]"
 					/>
 				</label>
 
@@ -204,7 +204,7 @@ function Verdict({ current, word }: { current: boolean; word: string }) {
 	return (
 		<div
 			className={cx(
-				"flex items-center gap-3 rounded-card px-4 py-3.5",
+				"flex items-center gap-3 rounded-xl px-4 py-3.5",
 				current ? "bg-emerald-50" : "bg-surface",
 			)}
 		>
@@ -217,7 +217,7 @@ function Verdict({ current, word }: { current: boolean; word: string }) {
 			>
 				{current ? "✓" : "!"}
 			</span>
-			<span className="font-display text-[17px] font-extrabold tracking-tight text-ink">{word}</span>
+			<span className="text-[17px] font-semibold tracking-tight text-ink">{word}</span>
 		</div>
 	);
 }

@@ -52,7 +52,7 @@ function Pencil({ label, onClick }: { label: string; onClick: () => void }) {
 			}}
 			title={`Edit: ${label}`}
 			aria-label={`Edit: ${label}`}
-			className="absolute -right-2 -top-2 z-20 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-signal text-white shadow-pop transition hover:bg-signal-dark"
+			className="absolute -right-2 -top-2 z-20 grid h-6 w-6 cursor-pointer place-items-center rounded-full bg-blue text-white shadow-pop transition hover:bg-blue-press"
 		>
 			<svg viewBox="0 0 24 24" width="12" height="12" fill="none" aria-hidden="true">
 				<path
@@ -152,12 +152,12 @@ function BlockEditor({
 		}
 	};
 
-	const field = "w-full rounded-card border border-hairline-strong px-3 py-2 text-[13px] outline-none focus:border-navy";
+	const field = "w-full rounded-xl border border-card-line px-3 py-2 text-[13px] outline-none focus:border-blue";
 	const labelCls = "mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-faint";
 
 	return (
 		<div
-			className="fixed inset-0 z-50 grid place-items-center bg-navy/40 p-4"
+			className="fixed inset-0 z-50 grid place-items-center bg-rail/40 p-4"
 			role="presentation"
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget) onClose();
@@ -167,10 +167,10 @@ function BlockEditor({
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
-				className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-panel bg-white p-6 shadow-pop"
+				className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-pop"
 			>
 				<div className="mb-1 flex items-start justify-between gap-4">
-					<h2 id={titleId} className="font-display text-lg font-extrabold text-ink">
+					<h2 id={titleId} className="text-lg font-semibold text-ink">
 						{block.label || "Edit content"}
 					</h2>
 					<button
@@ -185,7 +185,7 @@ function BlockEditor({
 				<p className="mb-5 font-mono text-[10px] text-slate-faint">{block.key}</p>
 
 				{failure && (
-					<p className="mb-4 rounded-card border border-signal/30 bg-signal/5 px-3 py-2 text-[12px] text-signal-dark">
+					<p className="mb-4 rounded-xl border border-blue/30 bg-blue/5 px-3 py-2 text-[12px] text-blue-press">
 						{failure}
 					</p>
 				)}
@@ -214,7 +214,7 @@ function BlockEditor({
 						<div>
 							<span className={labelCls}>Picture</span>
 							<div className="flex items-center gap-3">
-								<div className="h-16 w-24 flex-none overflow-hidden rounded-card border border-hairline bg-surface">
+								<div className="h-16 w-24 flex-none overflow-hidden rounded-xl border border-card-line bg-surface">
 									{image ? (
 										<img src={image} alt="" className="h-full w-full object-cover" />
 									) : (
@@ -227,20 +227,20 @@ function BlockEditor({
 									<input
 										type="file"
 										accept="image/*"
-										className="block w-full text-[12px] file:mr-3 file:rounded-card file:border-0 file:bg-navy file:px-3 file:py-1.5 file:text-[12px] file:font-bold file:text-white"
+										className="block w-full text-[12px] file:mr-3 file:rounded-xl file:border-0 file:bg-rail file:px-3 file:py-1.5 file:text-[12px] file:font-bold file:text-white"
 										onChange={(event) => {
 											const file = event.target.files?.[0];
 											if (file) void pickFile(file);
 										}}
 									/>
 									{uploading && (
-										<p className="mt-1 text-[11px] text-slate-body">Uploading… {progress}%</p>
+										<p className="mt-1 text-[11px] text-muted">Uploading… {progress}%</p>
 									)}
 									{image && !uploading && (
 										<button
 											type="button"
 											onClick={() => setImage("")}
-											className="mt-1 text-[11px] font-semibold text-signal hover:underline"
+											className="mt-1 text-[11px] font-semibold text-blue hover:underline"
 										>
 											Remove picture
 										</button>
@@ -304,7 +304,7 @@ function BlockEditor({
 					<button
 						type="button"
 						onClick={onClose}
-						className="rounded-card px-4 py-2 text-[13px] font-bold text-slate-strong hover:bg-surface"
+						className="rounded-xl px-4 py-2 text-[13px] font-bold text-slate-strong hover:bg-surface"
 					>
 						Cancel
 					</button>
@@ -312,7 +312,7 @@ function BlockEditor({
 						type="button"
 						onClick={submit}
 						disabled={busy || uploading}
-						className="rounded-card bg-navy px-5 py-2 text-[13px] font-bold text-white transition hover:bg-navy/90 disabled:opacity-50"
+						className="rounded-xl bg-rail px-5 py-2 text-[13px] font-bold text-white transition hover:bg-rail/90 disabled:opacity-50"
 					>
 						{busy ? "Saving…" : "Save"}
 					</button>
@@ -529,14 +529,14 @@ export function EditableImage({
 			) : (
 				<div
 					aria-hidden="true"
-					className="h-full w-full bg-gradient-to-br from-navy via-navy to-signal/70"
+					className="h-full w-full bg-gradient-to-br from-rail via-rail to-blue/70"
 				/>
 			)}
 
 			{showCredit && block?.image_credit && (
 				<span
 					className={cx(
-						"absolute bottom-2.5 rounded-[4px] bg-navy/50 px-2 py-[3px] text-[9.5px] leading-none text-white/75",
+						"absolute bottom-2.5 rounded-[4px] bg-rail/50 px-2 py-[3px] text-[9.5px] leading-none text-white/75",
 						creditSide === "left" ? "left-3" : "right-3",
 					)}
 				>

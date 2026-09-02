@@ -23,6 +23,14 @@ without the engine knowing volunteers exist. The logic is in
 `application.try_accept()`, an idempotent service anyone may call directly; the
 hook only calls it.
 
+**The society's own conditions on approving.** `validate_approval` is the one
+place this app refuses an approval, and it is here rather than in the approval
+engine for the reason the engine is generic: it governs Membership and
+Deployment Request too, and it may not know what an emergency contact or a
+guardian is. It fires only on the save that moves the application into Approved,
+so an application decided last year is never re-judged against this year's
+rules. The check itself is `application.assert_approvable()`.
+
 What is deliberately *not* here: any approval state change, any routing, any
 notion of who may decide. Those belong to `vmmsx/approvals`, and the API action
 that drives them is the generic `vmmsx/api/approvals.py`. There are no desk
@@ -33,6 +41,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from vmmsx.approvals import states
+from vmmsx.approvals.services import contract
 from vmmsx.registration.services import intake
 from vmmsx.volunteer.services import application as application_service
 
@@ -71,7 +81,9 @@ class VMMSVolunteerApplication(Document):
 		approval_decisions: DF.Table[VMMSApprovalDecision]
 		approval_stage: DF.Data | None
 		approval_stage_entered_on: DF.Datetime | None
-		approval_state: DF.Literal["Draft", "Submitted", "In Review", "Approved", "Rejected", "Withdrawn", "Expired"]
+		approval_state: DF.Literal[
+			"Draft", "Submitted", "In Review", "Approved", "Rejected", "Withdrawn", "Expired"
+		]
 		availability: DF.TableMultiSelect[VMMSAvailabilitySelector]
 		geo_node: DF.Link
 		languages: DF.TableMultiSelect[VMMSLanguageSelector]
@@ -108,11 +120,63 @@ class VMMSVolunteerApplication(Document):
 		application_service.default_serving_branch(self)
 		self.validate_anchor()
 		application_service.assert_applicant(self)
+		self.derive_is_minor()
+		self.stamp_guardian_verification()
+		self.validate_approval()
 
 		# Whatever path this save came down, no identity is stored here. The
 		# registration path has already emptied these; this is the guarantee
 		# that does not depend on it having run.
 		intake.clear_intake(self)
+
+	def derive_is_minor(self):
+		"""Recompute the minor flag from the date of birth and the society's age.
+
+		Read-only on the form and re-derived on every save, because it is a
+		question with an answer that changes on a birthday. Nothing decides
+		anything from this field — `assert_approvable` asks the service directly
+		— so a stale value could only ever mislead a form, never a rule.
+		"""
+		self.is_minor = 1 if application_service.is_minor(self) else 0
+
+	def stamp_guardian_verification(self):
+		"""Record who verified each guardian consent, and when.
+
+		**Driven from here because Frappe never validates a child row.**
+		`run_before_save_methods` calls `validate` on the document being saved
+		and on nothing else, so the same method on `VMMS Guardian Consent` would
+		be dead code wearing the shape of a guarantee. The rule itself stays on
+		that class, next to the fields it is about; this is the call that makes
+		it run.
+		"""
+		for row in self.guardian_consents or []:
+			row.stamp_verification()
+
+	def validate_approval(self):
+		"""The society's own conditions, checked on the save that approves.
+
+		**Here rather than in the approval engine**, which governs Membership and
+		Deployment Request as well and may not know what a guardian is. The
+		engine records the decision and moves the state; this refuses the save
+		that would carry it, so the whole decision rolls back with a message the
+		approver can act on.
+
+		**Only on the transition**, not on every save of an approved
+		application. An application approved last year under rules that have
+		since changed must stay approved — a coordinator adding a note to it in
+		March is not a fresh decision, and re-running the gate would make it one
+		and fail. So the previous state is read and the check runs only when this
+		save is the one that moves it.
+		"""
+		before = self.get_doc_before_save()
+
+		if contract.state(self) != states.APPROVED:
+			return
+
+		if before and contract.state(before) == states.APPROVED:
+			return
+
+		application_service.assert_approvable(self)
 
 	def validate_anchor(self):
 		"""ACC-02 — placed, at creation, in the app's own words."""

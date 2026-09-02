@@ -275,15 +275,33 @@ class TestSwitchingModeIsConfigurationAlone(RequestTestCase):
 		self.assertIsNone(routed.deployment)
 		self.assertEqual(self.approval_state(fixtures.REQUEST_DOCTYPE, routed.name), states.IN_REVIEW)
 
-	def test_a_routed_terms_with_no_workflow_refuses_loudly(self):
-		"""Loudly, rather than deploying unapproved. The failure has to be visible."""
+	def test_a_routed_terms_with_no_workflow_is_handled_directly_and_says_so(self):
+		"""**This used to refuse, and the change is deliberate.**
+
+		The old behaviour was "loudly, rather than deploying unapproved": a routed
+		terms of reference on a site with no `VMMS Approval Workflow` for deployment
+		requests threw at whoever raised the request. That put a piece of
+		configuration nobody had done in front of work nobody had been told to
+		stop, and there was no way for a coordinator to tell an unfinished setup
+		from a rule.
+
+		Approval now applies where there is an approval cycle to apply and not
+		before. What replaces the refusal is not silence: the record says
+		`approval_unconfigured`, so "nobody approved this" is on the document
+		rather than inferred from the absence of a decision, and no `Approved`
+		state is written onto anything. `test_approval_configuration.py` is the
+		suite for the whole rule, including the half that matters most — that a
+		society which *has* configured a workflow still gets its approvals,
+		unchanged.
+		"""
 		terms = fixtures.make_terms_requiring(approval_mode="routed")
 		request = fixtures.make_request(terms.name, self.society_a["post"])
 
-		with self.assertRaises(frappe.ValidationError):
-			request_service.submit(request)
+		result = request_service.submit(request)
 
-		self.assertIsNone(self.reload_request(request.name).deployment)
+		self.assertTrue(result["is_fulfilled"])
+		self.assertTrue(result["approval_unconfigured"])
+		self.assertEqual(self.approval_state(fixtures.REQUEST_DOCTYPE, request.name), states.DRAFT)
 
 	def test_a_mode_nobody_defined_is_refused_at_the_terms(self):
 		with self.assertRaises(frappe.ValidationError):

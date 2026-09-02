@@ -115,6 +115,17 @@ PENDING_CRITERIA = (
 		),
 	},
 	{
+		"criterion": "how much they are already carrying",
+		"status": "advisory",
+		"why": (
+			"Answered: every volunteer on the page comes back with how many open assignments"
+			" they hold — placed, asked or accepted — across every deployment, including ones"
+			" outside the searcher's own area. It ranks rather than excludes, because how much"
+			" is too much is a judgement about a person and a week that no number in this app"
+			" can make. `max_workload` makes it a filter for a caller who wants one."
+		),
+	},
+	{
 		"criterion": "already deployed elsewhere",
 		"status": "advisory",
 		"why": (
@@ -130,17 +141,19 @@ PENDING_CRITERIA = (
 
 
 def candidates(
-	terms_of_reference: str,
+	terms_of_reference: str | None,
 	geo_node: str,
 	as_of=None,
 	limit: int | None = None,
 	offset: int = 0,
 	search: str | None = None,
 	skills: list | None = None,
+	languages: list | None = None,
 	start_date=None,
 	end_date=None,
 	only_available: bool = False,
 	exclude_conflicts: bool = False,
+	max_workload: int | None = None,
 ) -> dict:
 	"""Volunteers who fit this need, within the searcher's own area.
 
@@ -163,10 +176,21 @@ def candidates(
 	`exclude_conflicts` turn each into a real filter for the caller who wants
 	one, and the screen draws them as two toggles rather than deciding.
 
-	`search` (a name or a docname) and `skills` (a list of `VMMS Skill` keys)
-	narrow the page fetched *before* anything is assessed, through
+	`max_workload` is the third of the same kind: every candidate comes back with
+	how many open assignments they already hold, and giving a number drops the
+	people carrying more than that. Advisory by default like the other two,
+	because how much is too much depends on the person, the week and the work,
+	and no number in this app knows any of those.
+
+	`search` (a name or a docname), `skills` (a list of `VMMS Skill` keys) and
+	`languages` narrow the page fetched *before* anything is assessed, through
 	`capabilities.search()` — the queryable surface the volunteer Registry
 	already stands on. `offset` pages through the same filtered, scoped result.
+
+	**`terms_of_reference` may be `None`**, and then no certification question is
+	asked at all. A bulk task batch wants to know who is available in a branch
+	without naming a mission document, and inventing a requirement for it would be
+	this app deciding what work needs.
 
 	`limit` bounds the page fetched and defaults to `MATCH_PAGE`. It is not
 	merely a display truncation any more: it is how many volunteers this call
@@ -179,7 +203,16 @@ def candidates(
 	from vmmsx.volunteer.services import capabilities
 
 	as_of = getdate(as_of or today())
-	required = terms_service.requirements(terms_of_reference)
+	# **No terms of reference means no certification questions**, not an error.
+	# A bulk task batch asks who is available in a branch without naming a
+	# mission document, and the honest answer to "what must they hold" is
+	# nothing — everything else this function does still applies, including
+	# deployability, availability, workload and the geo scope.
+	required = (
+		terms_service.requirements(terms_of_reference)
+		if terms_of_reference
+		else {"mandatory": [], "desirable": []}
+	)
 	page_size = cint(limit) or MATCH_PAGE
 	page_offset = cint(offset)
 
@@ -189,11 +222,14 @@ def candidates(
 		names = capabilities.search(
 			geo_node=geo_node,
 			skills=skills,
+			languages=languages,
 			search=search,
 			limit=page_size,
 			offset=page_offset,
 		)
-		considered_total = capabilities.count(geo_node=geo_node, skills=skills, search=search)
+		considered_total = capabilities.count(
+			geo_node=geo_node, skills=skills, languages=languages, search=search
+		)
 	except frappe.PermissionError:
 		# `frappe.get_list`, unlike `frappe.get_all`, throws for a caller who
 		# holds no ordinary read permission on VMMS Volunteer at all — a role
@@ -218,6 +254,7 @@ def candidates(
 	# why an old caller that never heard of them pays for neither.
 	free = _bulk_availability(names, start_date, end_date)
 	clashes = _bulk_conflicts(names, start_date, end_date)
+	workload = _bulk_workload(names)
 
 	matched = [
 		assessment
@@ -229,6 +266,7 @@ def candidates(
 				as_of,
 				availability=free.get(name),
 				clash=clashes.get(name),
+				workload=workload.get(name, 0),
 			)
 			for name in names
 			if name in volunteers
@@ -240,6 +278,7 @@ def candidates(
 		# register that has not answered look like one with nobody free.
 		and not (only_available and assessment["availability"]["is_unavailable"])
 		and not (exclude_conflicts and assessment["clash"]["is_clashing"])
+		and not (max_workload is not None and assessment["workload"] > cint(max_workload))
 	]
 
 	matched.sort(key=_rank)
@@ -437,6 +476,42 @@ def _bulk_conflicts(names: list[str], start_date, end_date) -> dict:
 	return clashes
 
 
+def _bulk_workload(names: list[str]) -> dict[str, int]:
+	"""How many open assignments each of these volunteers already holds.
+
+	One grouped query for the whole page, for the same reason every other read
+	here is bulk: a count per volunteer is what makes a candidate screen slow at
+	the size a national society runs at.
+
+	**`get_all`, not `get_list`, on the same argument `_bulk_conflicts` makes.**
+	Somebody's workload matters most when the rest of it is in a county this
+	searcher cannot see, and a scoped read would report the person with four
+	deployments in the next district as carrying nothing. What comes back is a
+	number, never a list of work outside the caller's area.
+
+	Open, not everything: placed, asked or accepted. A deployment somebody
+	finished last year is not something they are carrying.
+	"""
+	if not names:
+		return {}
+
+	from frappe.query_builder.functions import Count
+
+	from vmmsx.deployment.services import assignment
+
+	table = frappe.qb.DocType(assignment.ASSIGNMENT_DOCTYPE)
+
+	rows = (
+		frappe.qb.from_(table)
+		.select(table.volunteer, Count(table.name).as_("total"))
+		.where(table.volunteer.isin(names) & table.status.isin(assignment.OPEN_STATUSES))
+		.groupby(table.volunteer)
+		.run(as_dict=True)
+	)
+
+	return {row["volunteer"]: row["total"] for row in rows}
+
+
 # --- assessing one volunteer, from rows already read -----------------------
 
 
@@ -447,6 +522,7 @@ def _assess(
 	as_of,
 	availability: dict | None = None,
 	clash: list[dict] | None = None,
+	workload: int = 0,
 ) -> dict:
 	"""Everything this service can say about one volunteer against one need.
 
@@ -501,6 +577,10 @@ def _assess(
 			"is_clashing": bool(clash),
 			"deployments": clash or [],
 		},
+		# How much this person is already carrying, everywhere. A number rather
+		# than a verdict: it ranks, and it filters only where `max_workload` was
+		# given.
+		"workload": workload,
 		# The one derived verdict, and the only field callers should branch on.
 		"is_candidate": deployability["deployable"] and not missing,
 	}
@@ -531,6 +611,11 @@ def _rank(assessment: dict) -> tuple:
 	rather than at the bottom with the people who said no. Ties break on the
 	docname so the same search twice returns the same order rather than quietly
 	reshuffling.
+
+	Workload sits *after* the desirable certifications and not before them: it is
+	a tie-break for two people who fit equally well, which is what spreading the
+	work fairly actually means, rather than a reason to send somebody less
+	qualified.
 	"""
 	free = assessment["availability"]
 	rank_of_availability = 0 if free["is_available"] else 2 if free["is_unavailable"] else 1
@@ -539,5 +624,6 @@ def _rank(assessment: dict) -> tuple:
 		rank_of_availability,
 		1 if assessment["clash"]["is_clashing"] else 0,
 		-len(assessment["desirable_certifications_held"]),
+		assessment.get("workload", 0),
 		assessment["volunteer"],
 	)

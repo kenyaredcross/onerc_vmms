@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
@@ -9,9 +9,9 @@ import { API, errorMessage } from "../lib/api";
 // spends the width of the column saying the one thing that is true of all of
 // them. See the helper's own docstring.
 import { branchPath, formatDate } from "../lib/format";
-import { MultiCombo } from "../ui/form";
 import { GeoSelects } from "../ui/GeoSelects";
 import { Icon } from "../ui/icons";
+import { PersonCard, PersonSummaryBody, type SummaryFact } from "../ui/PersonCard";
 import {
 	Avatar,
 	Card,
@@ -22,12 +22,20 @@ import {
 	Pager,
 	Pill,
 	Row,
+	Skeleton,
 	Spinner,
 	StateBadge,
 	Table,
 	cx,
 } from "../ui/primitives";
-import type { ApplicationOptions, GeoNode, PricedType } from "../portal/types";
+import type {
+	GeoNode,
+	MemberDossier,
+	MemberRegisterSummary,
+	PricedType,
+	VolunteerDossier,
+	VolunteerRegisterSummary,
+} from "../portal/types";
 
 interface MemberRow {
 	membership: string;
@@ -59,6 +67,7 @@ interface VolunteerRow {
 	/** See `MemberRow.photo`. Built by `api/volunteer.py::_match_row`. */
 	photo: string | null;
 	status: string;
+	joined_on: string | null;
 	geo_node: string | null;
 	geo_path: string | null;
 	deployable: boolean;
@@ -68,40 +77,53 @@ interface VolunteerRow {
 const PAGE = 25;
 
 /**
- * Who this coordinator is responsible for — two registers, two routed pages.
+ * The two active registers — who this coordinator is actually responsible for.
+ *
+ * **These are registers of *active* people, and that is the whole change.** They
+ * used to be every record in either doctype with a standing filter on top, which
+ * made the commonest question — who is on the books here — the one you had to
+ * set a control to ask. Prospective, Suspended and Exited volunteers, and
+ * memberships that are draft, awaiting payment, awaiting approval, expired or
+ * cancelled, are not gone: each is a state with its own screen and its own
+ * workflow, and none of them belongs in a list a coordinator staffs from.
+ *
+ * The volunteer register asks `find_volunteers` for `status="Active"` and the
+ * member register asks `find_members` for `current_only=1`. Both are arguments
+ * the server enforces, not a filter drawn over a wider read.
  *
  * **Nothing on either page filters by branch, and nothing needs to.** Both
  * endpoints end in `frappe.get_list`, which runs core's permission query
  * condition, so the caller's geo scope is the floor the query stands on rather
  * than something this screen applies on top. A coordinator sees their own
- * branches because of who they are, not because of a parameter the browser
- * sent, and there is consequently no filter here that could be tampered with to
- * widen the result.
+ * branches because of who they are, not because of a parameter the browser sent,
+ * and there is consequently no control here that could be tampered with to widen
+ * the result. An empty register for somebody with no scope is the correct
+ * render, not a failure state.
  *
- * An empty registry for somebody with no scope is therefore the correct render,
- * not a failure state.
+ * **Every control narrows and none widens**, which is the same property from the
+ * other side: the branch picker names a node *within* the caller's scope, and
+ * naming one outside it returns nothing rather than reaching it.
  *
- * **Every control below narrows and none of them widens**, which is the same
- * property stated from the other side: the branch picker names a node *within*
- * the caller's scope, and naming one outside it returns nothing rather than
- * reaching it. That is enforced server-side in `capabilities.search` and
- * `register.search`; this screen could not widen the result if it tried to.
+ * **Paging is the server's**, and so are the summary figures above the table.
+ * Each page is its own scoped read; the tiles come from their own aggregate
+ * endpoint rather than from `total`, because a page's length is a page's length
+ * however it is labelled.
  *
- * **Paging is the server's.** Each page is its own scoped read and `total`
- * comes back with it, so the pager is honest about registers larger than one
- * screen rather than silently capping at whatever the first read returned.
- *
- * **Members and Volunteers used to be one screen with a toggle between them.**
- * They are two routed pages now, each its own sidebar entry under People &
- * Insight, because a coordinator who only ever checks the volunteer roster
- * should be able to link or bookmark that and skip the membership list every
- * time it loads. Splitting the route cost nothing either register's own filter
- * state didn't already have on its own — the two never shared any.
+ * **The skills, languages and availability filters are gone from here.** They
+ * are still on the doctype and still drive deployment matching, which is where
+ * that question belongs — "who can do this job" is asked while staffing a
+ * deployment, against a terms of reference that says what is needed. Asking it
+ * in a register meant three identical unlabelled comboboxes above the list
+ * everybody actually came for.
  */
 export function MembersRegistry() {
 	return (
 		<>
-			<PageHeading title={<EditableText k="admin.registry.members.heading" fallback="Members" />} />
+			<PageHeading
+				title={<EditableText k="admin.registry.members.heading" fallback="Active members" />}
+				lead="People with a currently active membership inside your geographic scope."
+				trail={[{ label: "People", to: "/admin/people" }, { label: "Active members" }]}
+			/>
 			<Members />
 		</>
 	);
@@ -111,238 +133,182 @@ export function VolunteersRegistry() {
 	return (
 		<>
 			<PageHeading
-				title={<EditableText k="admin.registry.volunteers.heading" fallback="Volunteers" />}
+				title={<EditableText k="admin.registry.volunteers.heading" fallback="Active volunteers" />}
+				lead="People currently active as volunteers inside your geographic scope."
+				trail={[{ label: "People", to: "/admin/people" }, { label: "Active volunteers" }]}
 			/>
 			<Volunteers />
 		</>
 	);
 }
 
+/**
+ * The search term, kept in the URL.
+ *
+ * So the People overview's "find a person" box can hand this screen a question
+ * as a link, and so a coordinator who found somebody can send the address to a
+ * colleague. `replace` on every keystroke, because a search box that pushed a
+ * history entry per character would make the back button a text-rewinder.
+ */
+function useQueryTerm(): [string, (value: string) => void] {
+	const [params, setParams] = useSearchParams();
+	const term = params.get("q") ?? "";
+
+	const set = useCallback(
+		(value: string) => {
+			const next = new URLSearchParams(params);
+
+			if (value) next.set("q", value);
+			else next.delete("q");
+
+			setParams(next, { replace: true });
+		},
+		[params, setParams],
+	);
+
+	return [term, set];
+}
+
 /* --------------------------------------------------------------- volunteers */
 
 function Volunteers() {
-	const [search, setSearch] = useState("");
-	const [skills, setSkills] = useState<string[]>([]);
-	const [languages, setLanguages] = useState<string[]>([]);
-	const [availability, setAvailability] = useState<string[]>([]);
-	const [status, setStatus] = useState("");
+	const [search, setSearch] = useQueryTerm();
 	const [chain, setChain] = useState<GeoNode[]>([]);
 	const [page, setPage] = useState(0);
-
-	// The society's own vocabularies, drawn from the same endpoint the join
-	// wizard uses. Nothing here writes down what a skill is.
-	const options = useFrappeGetCall<{ message: ApplicationOptions }>(
-		API.applicationOptions,
-		undefined,
-		"admin:application_options",
-	);
 
 	const geoNode = chain.length > 0 ? chain[chain.length - 1].name : undefined;
 	const branchLabel = branchOf(chain);
 
-	/** Any change to the criteria puts the reader back on the first page.
+	/**
+	 * Any change to the criteria puts the reader back on the first page.
 	 *
-	 * Somebody on page three who narrows a filter to four results must not be
-	 * left staring at an empty page three — the bug every hand-rolled pager
-	 * eventually has. `usePaged` guards it for client-side lists; paging on the
-	 * server means guarding it here.
+	 * Somebody on page three who narrows to four results must not be left
+	 * staring at an empty page three — the bug every hand-rolled pager
+	 * eventually has. Paging on the server means guarding it here.
 	 */
-	const narrow = <T,>(set: (value: T) => void) => (value: T) => {
-		set(value);
-		setPage(0);
-	};
+	const narrow =
+		<T,>(set: (value: T) => void) =>
+		(value: T) => {
+			set(value);
+			setPage(0);
+		};
+
+	// The register's own figures, over the whole scoped register rather than
+	// over this page of it. Its own endpoint for exactly that reason.
+	const summary = useFrappeGetCall<{ message: VolunteerRegisterSummary }>(
+		API.volunteerRegisterSummary,
+		undefined,
+		"registry:volunteers:summary",
+	);
 
 	const { data, error, isLoading } = useFrappeGetCall<{
 		message: { count: number; total: number; volunteers: VolunteerRow[] };
 	}>(
 		API.findVolunteers,
 		{
+			// Active, always. The register is of active volunteers, and the
+			// server is what enforces that rather than a control somebody could
+			// clear.
+			status: "Active",
 			limit: PAGE,
 			offset: page * PAGE,
 			search: search || undefined,
-			skills: skills.length ? skills : undefined,
-			languages: languages.length ? languages : undefined,
-			availability: availability.length ? availability : undefined,
-			status: status || undefined,
 			geo_node: geoNode,
 		},
-		`admin:find_volunteers:${page}:${search}:${status}:${geoNode ?? ""}:${skills.join()}:${languages.join()}:${availability.join()}`,
+		`admin:find_volunteers:${page}:${search}:${geoNode ?? ""}`,
 	);
 
-	const rows = data?.message.volunteers ?? [];
-	const total = data?.message.total ?? 0;
+	const rows = data?.message?.volunteers ?? [];
+	const total = data?.message?.total ?? 0;
+	const figures = summary.data?.message;
 
 	return (
 		<>
-			<FilterBar
-				search={
-					<SearchInput
-						value={search}
-						onChange={narrow(setSearch)}
-						placeholder="Search by name or record number"
-					/>
-				}
-				inline={
-					<SelectFilter
-						label="Standing"
-						value={status}
-						onChange={narrow(setStatus)}
-						any="Any standing"
-						options={["Prospective", "Active", "Suspended", "Exited"]}
-					/>
-				}
-				extra={
-					skills.length +
-					languages.length +
-					availability.length +
-					(chain.length > 1 ? 1 : 0)
-				}
-				chips={[
-					...(branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []),
-					...chipsFor(skills, options.data?.message.skills, (key) =>
-						narrow(setSkills)(skills.filter((s) => s !== key)),
-					),
-					...chipsFor(languages, options.data?.message.languages, (key) =>
-						narrow(setLanguages)(languages.filter((s) => s !== key)),
-					),
-					...chipsFor(availability, options.data?.message.availability, (key) =>
-						narrow(setAvailability)(availability.filter((s) => s !== key)),
-					),
+			<SummaryStrip
+				loading={summary.isLoading}
+				capped={figures?.capped}
+				tiles={[
+					{ label: "Active volunteers", value: figures?.active, hint: "In your assigned scope" },
+					{
+						label: "Currently deployed",
+						// `null` where this reader may not see deployments at all.
+						// The tile draws a dash, and the hint says why rather than
+						// claiming nothing is running.
+						value: figures?.deployed ?? null,
+						hint:
+							figures && figures.deployments === null
+								? "Deployments are not in your permissions"
+								: `Across ${figures?.deployments ?? 0} active deployment${figures?.deployments === 1 ? "" : "s"}`,
+					},
+					{
+						label: "Joined this month",
+						value: figures?.joined_month,
+						hint: "Approved and activated",
+					},
+					{
+						label: "Branches represented",
+						// `null` past the read ceiling; the tile says so rather than
+						// showing a number from a truncated read.
+						value: figures?.branches ?? null,
+						hint: "Distinct serving branches",
+					},
 				]}
+			/>
+
+			<RegisterToolbar
+				search={search}
+				onSearch={narrow(setSearch)}
+				placeholder="Search by name or volunteer number"
+				chips={branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []}
 				onClearAll={() => {
 					setSearch("");
-					setStatus("");
 					setChain([]);
-					setSkills([]);
-					setLanguages([]);
-					setAvailability([]);
 					setPage(0);
 				}}
 			>
-				<Labelled
-					label="Branch"
-					hint="Their serving branch, and everything under it."
-				>
-					{/* One select per rung of the society's own ladder. This screen does
-					    not know how deep the hierarchy is or what a rung is called. */}
+				<Labelled label="Serving branch" hint="Their branch, and everything under it.">
+					{/* One select per rung of the society's own ladder. This screen
+					    does not know how deep the hierarchy is or what a rung is
+					    called. */}
 					<GeoSelects chain={chain} onChain={narrow(setChain)} idPrefix="registry-vol" />
 				</Labelled>
+			</RegisterToolbar>
 
-				{/* Each one labelled and told what it searches. These were three
-				    identical unlabelled search boxes in a row, which is a control
-				    you have to click to find out what it is. */}
-				<div className="grid gap-5 sm:grid-cols-3">
-					<Labelled label="Skills" hint="Any of the ones you pick.">
-						<MultiCombo
-							label="Skills"
-							placeholder="Search skills…"
-							options={options.data?.message.skills ?? []}
-							selected={skills}
-							onToggle={(key) =>
-								narrow(setSkills)(
-									skills.includes(key) ? skills.filter((s) => s !== key) : [...skills, key],
-								)
-							}
-						/>
-					</Labelled>
-					<Labelled label="Languages" hint="Any of the ones you pick.">
-						<MultiCombo
-							label="Languages"
-							placeholder="Search languages…"
-							options={options.data?.message.languages ?? []}
-							selected={languages}
-							onToggle={(key) =>
-								narrow(setLanguages)(
-									languages.includes(key)
-										? languages.filter((s) => s !== key)
-										: [...languages, key],
-								)
-							}
-						/>
-					</Labelled>
-					<Labelled label="Available" hint="Any of the slots you pick.">
-						<MultiCombo
-							label="Availability"
-							placeholder="Search times…"
-							options={options.data?.message.availability ?? []}
-							selected={availability}
-							onToggle={(key) =>
-								narrow(setAvailability)(
-									availability.includes(key)
-										? availability.filter((s) => s !== key)
-										: [...availability, key],
-								)
-							}
-						/>
-					</Labelled>
-				</div>
-
-				{/* Any-of within a vocabulary and all-of across them, which is what a
-				    coordinator staffing something means. Said on the page because it
-				    is not guessable from three controls that look alike. */}
-				<p className="text-[12px] leading-relaxed text-slate-faint">
-					A volunteer matches if they hold any of the skills asked for, <b>and</b> any of
-					the languages, <b>and</b> any of the slots.
-				</p>
-			</FilterBar>
-
-			{isLoading && <Spinner label="Loading the registry…" />}
+			{isLoading && <Spinner label="Loading the register…" />}
 			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
 
 			{!isLoading && !error && (
 				<>
 					<div className="mb-4 flex flex-wrap gap-2">
-						<Pill tone="page">{total} volunteers</Pill>
+						<Pill tone="page">{total} active volunteers match</Pill>
 					</div>
 
 					{rows.length === 0 ? (
-						<Empty title="No volunteers match">
+						<Empty title="No active volunteers match">
 							You see the branches your Geo Assignments cover. If this is empty, either
-							nothing here matches what you asked for, there are no volunteers in your
-							scope, or no scope role has been configured yet.
+							nothing here matches what you asked for, there are no active volunteers in
+							your scope, or no scope role has been configured yet.
 						</Empty>
 					) : (
 						<>
-							<Table head={["Name", "Serving branch", "Deployable", "Status"]}>
+							<Table head={["Volunteer", "Volunteer number", "Serving branch", "Joined", ""]}>
 								{rows.map((row) => (
 									<Row key={row.volunteer}>
 										<Cell>
-											{/* The face, then the name, then the record number —
-											    the order somebody scanning a register actually
-											    reads in. A coordinator looking for a person they
-											    know finds them by recognising them long before
-											    they finish reading a column of similar names,
-											    and this column is the only one on the page that
-											    could offer that. */}
+											<VolunteerName row={row} />
+										</Cell>
+										<Cell className="tabular font-mono text-[11.5px] text-slate-faint">
+											{row.volunteer}
+										</Cell>
+										<Cell className="text-muted">{branchPath(row.geo_path)}</Cell>
+										<Cell className="text-muted">{formatDate(row.joined_on)}</Cell>
+										<Cell className="text-right">
 											<Link
-												to={`/admin/registry/volunteer/${encodeURIComponent(row.volunteer)}`}
-												className="group flex items-center gap-3"
+												to={recordOf("volunteer", row.volunteer)}
+												className="text-[12.5px] font-bold text-ink hover:underline"
 											>
-												<Avatar name={row.full_name} photo={row.photo} size={34} />
-												<span className="min-w-0">
-													<span className="block truncate font-semibold text-ink group-hover:text-navy group-hover:underline">
-														{row.full_name}
-													</span>
-													<span className="tabular mt-0.5 block font-mono text-[11px] text-slate-faint">
-														{row.volunteer}
-													</span>
-												</span>
+												Open
 											</Link>
-										</Cell>
-										<Cell className="text-slate-body">{branchPath(row.geo_path)}</Cell>
-										<Cell>
-											{row.deployable ? (
-												<span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-													Ready
-												</span>
-											) : (
-												<span className="rounded-full border border-hairline-strong bg-white px-2.5 py-1 text-[11px] font-bold text-slate-body">
-													Blocked
-												</span>
-											)}
-										</Cell>
-										<Cell>
-											<StateBadge state={row.status} />
 										</Cell>
 									</Row>
 								))}
@@ -363,12 +329,90 @@ function Volunteers() {
 	);
 }
 
+/**
+ * A volunteer's name, opening onto the summary card.
+ *
+ * **The dossier is fetched on first open and never on load.** A register of two
+ * hundred rows must not be two hundred dossier reads to fill four cards; the
+ * SWR key is the volunteer's docname, so the second hover over the same person
+ * is free and a hover over somebody new is one call.
+ */
+function VolunteerName({ row }: { row: VolunteerRow }) {
+	return (
+		<PersonCard
+			label={
+				<span className="flex items-center gap-3">
+					{/* The face, then the name, then the record number — the order
+					    somebody scanning a register actually reads in. A coordinator
+					    looking for a person they know finds them by recognising them
+					    long before they finish reading a column of similar names. */}
+					<Avatar name={row.full_name} photo={row.photo} size={34} />
+					<span className="min-w-0">
+						<span className="block truncate font-semibold text-ink">{row.full_name}</span>
+						<span className="mt-0.5 block text-[11px] text-slate-faint">{row.status}</span>
+					</span>
+				</span>
+			}
+		>
+			{() => <VolunteerSummary row={row} />}
+		</PersonCard>
+	);
+}
+
+function VolunteerSummary({ row }: { row: VolunteerRow }) {
+	const { data, error, isLoading } = useFrappeGetCall<{ message: VolunteerDossier }>(
+		API.volunteerDossier,
+		{ name: row.volunteer },
+		`registry:volunteer:card:${row.volunteer}`,
+	);
+
+	const dossier = data?.message;
+	const person = dossier?.identity;
+
+	const completed = useMemo(
+		// Counted from the roster the server already derived, not from a status
+		// comparison here: `is_settled` is the deployment module's own answer to
+		// whether somebody's part in a deployment is over.
+		() => (dossier?.deployments ?? []).filter((entry) => entry.is_settled).length,
+		[dossier],
+	);
+
+	const facts: SummaryFact[] = [
+		{ label: "Volunteer no.", value: row.volunteer },
+		{ label: "Phone", value: person?.phone ?? null },
+		{ label: "Joined", value: formatDate(row.joined_on) },
+		{
+			label: "Service hours",
+			value: dossier ? `${dossier.time.total_hours} verified` : null,
+		},
+		{ label: "Deployments", value: dossier ? `${completed} completed` : null },
+	];
+
+	return (
+		<PersonSummaryBody
+			name={row.full_name}
+			photo={row.photo}
+			place={branchPath(row.geo_path) || null}
+			status={<StateBadge state={row.status} />}
+			facts={facts}
+			phone={person?.phone}
+			email={person?.email}
+			loading={isLoading}
+			error={
+				error
+					? "The rest of this person's summary could not be read. Open their record to see it."
+					: undefined
+			}
+			open={{ to: recordOf("volunteer", row.volunteer), label: "Open full record" }}
+		/>
+	);
+}
+
 /* ------------------------------------------------------------------ members */
 
 function Members() {
-	const [status, setStatus] = useState("");
+	const [search, setSearch] = useQueryTerm();
 	const [membershipType, setMembershipType] = useState("");
-	const [currentOnly, setCurrentOnly] = useState(false);
 	const [chain, setChain] = useState<GeoNode[]>([]);
 	const [page, setPage] = useState(0);
 
@@ -378,13 +422,21 @@ function Members() {
 		"admin:membership_types",
 	);
 
+	const summary = useFrappeGetCall<{ message: MemberRegisterSummary }>(
+		API.memberRegisterSummary,
+		undefined,
+		"registry:members:summary",
+	);
+
 	const geoNode = chain.length > 0 ? chain[chain.length - 1].name : undefined;
 	const branchLabel = branchOf(chain);
 
-	const narrow = <T,>(set: (value: T) => void) => (value: T) => {
-		set(value);
-		setPage(0);
-	};
+	const narrow =
+		<T,>(set: (value: T) => void) =>
+		(value: T) => {
+			set(value);
+			setPage(0);
+		};
 
 	const { data, error, isLoading } = useFrappeGetCall<{
 		message: {
@@ -397,71 +449,72 @@ function Members() {
 	}>(
 		API.findMembers,
 		{
+			// Current today, always — the derived status rather than the stored
+			// one, so a membership whose validity ran out last night is not listed
+			// as active until the nightly sweep notices. Applications, awaiting
+			// payment, awaiting approval, expired and cancelled memberships stay in
+			// their own workflows.
+			current_only: 1,
 			limit: PAGE,
 			offset: page * PAGE,
-			status: status || undefined,
+			search: search || undefined,
 			membership_type: membershipType || undefined,
-			current_only: currentOnly,
 			geo_node: geoNode,
 		},
-		`admin:find_members:${page}:${status}:${membershipType}:${currentOnly}:${geoNode ?? ""}`,
+		`admin:find_members:${page}:${search}:${membershipType}:${geoNode ?? ""}`,
 	);
 
 	const message = data?.message;
 	const rows = message?.rows ?? [];
 	const total = message?.total ?? 0;
+	const figures = summary.data?.message;
 
 	return (
 		<>
-			<FilterBar
+			<SummaryStrip
+				loading={summary.isLoading}
+				capped={figures?.capped}
+				tiles={[
+					{ label: "Active memberships", value: figures?.active, hint: "Current as at today" },
+					{
+						// "Term", not "Annual": a society names its own membership
+						// types, and the split is read off `is_lifetime` rather than
+						// off a name one society happens to use.
+						label: "Term memberships",
+						value: figures?.term,
+						hint: "Renewable, with an expiry",
+					},
+					{ label: "Life memberships", value: figures?.lifetime, hint: "No expiry" },
+					{
+						label: "Renewals approaching",
+						value: figures?.renewing,
+						hint: figures
+							? `Falling due within ${figures.renewal_window_days} days`
+							: "Falling due soon",
+					},
+				]}
+			/>
+
+			<RegisterToolbar
+				search={search}
+				onSearch={narrow(setSearch)}
+				placeholder="Search by name or membership number"
 				inline={
-					<>
-						<SelectFilter
-							label="Type"
-							value={membershipType}
-							onChange={narrow(setMembershipType)}
-							any="Any type"
-							options={(types.data?.message.types ?? []).map((row) => ({
-								value: row.membership_type,
-								label: row.membership_type_name,
-							}))}
-						/>
-						<SelectFilter
-							label="Recorded status"
-							value={status}
-							onChange={narrow(setStatus)}
-							any="Any status"
-							options={[
-								"Draft",
-								"Awaiting Payment",
-								"Awaiting Approval",
-								"Active",
-								"Expired",
-								"Cancelled",
-							]}
-						/>
-						{/* Recorded status is what the database holds; current is
-						    derived as at today. They answer different questions, so
-						    both are offered — and this one is a toggle rather than a
-						    tick-box in a corner, because it is the filter a
-						    membership office reaches for most. */}
-						<Toggle
-							label="Current today"
-							on={currentOnly}
-							onChange={narrow(setCurrentOnly)}
-						/>
-					</>
+					<SelectFilter
+						label="Membership type"
+						value={membershipType}
+						onChange={narrow(setMembershipType)}
+						any="All membership types"
+						options={(types.data?.message?.types ?? []).map((row) => ({
+							value: row.membership_type,
+							label: row.membership_type_name,
+						}))}
+					/>
 				}
-				extra={chain.length > 1 ? 1 : 0}
-				chips={
-					branchLabel
-						? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }]
-						: []
-				}
+				chips={branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []}
 				onClearAll={() => {
-					setStatus("");
+					setSearch("");
 					setMembershipType("");
-					setCurrentOnly(false);
 					setChain([]);
 					setPage(0);
 				}}
@@ -469,56 +522,51 @@ function Members() {
 				<Labelled label="Branch" hint="Where the membership is held, and everything under it.">
 					<GeoSelects chain={chain} onChain={narrow(setChain)} idPrefix="registry-mem" />
 				</Labelled>
-			</FilterBar>
+			</RegisterToolbar>
 
-			{isLoading && <Spinner label="Loading the registry…" />}
+			{isLoading && <Spinner label="Loading the register…" />}
 			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
 
 			{!isLoading && !error && (
 				<>
 					<div className="mb-4 flex flex-wrap gap-2">
-						<Pill tone="page">{total} memberships</Pill>
+						<Pill tone="page">{total} active memberships match</Pill>
 						<Pill tone="page">{message?.member_count ?? 0} people</Pill>
-						<Pill tone="page">as of {formatDate(message?.as_of ?? null)}</Pill>
+						<Pill tone="page">as at {formatDate(message?.as_of ?? null)}</Pill>
 					</div>
 
 					{rows.length === 0 ? (
-						<Empty title="No memberships match">
+						<Empty title="No active memberships match">
 							You see the branches your Geo Assignments cover. If this is empty, either
-							nothing here matches what you asked for, there are no memberships in your
-							scope, or no scope role has been configured yet.
+							nothing here matches what you asked for, there are no current memberships in
+							your scope, or no scope role has been configured yet.
 						</Empty>
 					) : (
 						<>
-							<Table head={["Name", "Type", "Branch", "Valid to", "Status"]}>
+							<Table head={["Member", "Membership number", "Type", "Branch", "Valid until", ""]}>
 								{rows.map((row) => (
 									<Row key={row.membership}>
 										<Cell>
-											{/* The dossier is the *member's*, not the membership's:
-											    it covers every branch this person holds a membership
-											    at, so the link names the person. The face is here
-											    for the same reason it is on the volunteer register
-											    — see the note there. */}
-											<Link
-												to={`/admin/registry/member/${encodeURIComponent(row.member)}`}
-												className="group flex items-center gap-3"
-											>
-												<Avatar name={row.full_name} photo={row.photo} size={34} />
-												<span className="min-w-0">
-													<span className="block truncate font-semibold text-ink group-hover:text-navy group-hover:underline">
-														{row.full_name}
-													</span>
-													<span className="tabular mt-0.5 block font-mono text-[11px] text-slate-faint">
-														{row.membership}
-													</span>
-												</span>
-											</Link>
+											<MemberName row={row} />
+										</Cell>
+										<Cell className="tabular font-mono text-[11.5px] text-slate-faint">
+											{row.membership}
 										</Cell>
 										<Cell>{row.membership_type_name}</Cell>
-										<Cell className="text-slate-body">{branchPath(row.geo_path)}</Cell>
-										<Cell className="text-slate-body">{formatDate(row.valid_to)}</Cell>
-										<Cell>
-											<StateBadge state={row.effective_status} />
+										<Cell className="text-muted">{branchPath(row.geo_path)}</Cell>
+										<Cell className="text-muted">
+											{/* A life membership has no expiry, and an empty cell
+											    would read as a missing date rather than as the
+											    absence of one. */}
+											{row.valid_to ? formatDate(row.valid_to) : "No expiry"}
+										</Cell>
+										<Cell className="text-right">
+											<Link
+												to={recordOf("member", row.member)}
+												className="text-[12.5px] font-bold text-ink hover:underline"
+											>
+												Open
+											</Link>
 										</Cell>
 									</Row>
 								))}
@@ -539,64 +587,201 @@ function Members() {
 	);
 }
 
-/* ----------------------------------------------------------------- filters */
+function MemberName({ row }: { row: MemberRow }) {
+	return (
+		<PersonCard
+			label={
+				<span className="flex items-center gap-3">
+					<Avatar name={row.full_name} photo={row.photo} size={34} />
+					<span className="min-w-0">
+						<span className="block truncate font-semibold text-ink">{row.full_name}</span>
+						<span className="mt-0.5 block text-[11px] text-slate-faint">
+							{row.membership_type_name}
+						</span>
+					</span>
+				</span>
+			}
+		>
+			{() => <MemberSummary row={row} />}
+		</PersonCard>
+	);
+}
 
 /**
- * The filter bar both registers use.
+ * The member card's body.
+ *
+ * **The dossier is the *member's*, not the membership's** — it covers every
+ * branch this person holds one at — which is why the card is keyed on
+ * `row.member` and the link goes to the person. The membership facts on the
+ * card are this row's, because this row is the membership the reader is
+ * looking at.
+ */
+function MemberSummary({ row }: { row: MemberRow }) {
+	const { data, error, isLoading } = useFrappeGetCall<{ message: MemberDossier }>(
+		API.memberDossier,
+		{ name: row.member },
+		`registry:member:card:${row.member}`,
+	);
+
+	const person = data?.message?.identity;
+
+	const facts: SummaryFact[] = [
+		{ label: "Membership no.", value: row.membership },
+		{ label: "Phone", value: person?.phone ?? null },
+		{ label: "Membership", value: row.membership_type_name },
+		{ label: "Member since", value: formatDate(row.valid_from) },
+		{ label: "Valid until", value: row.valid_to ? formatDate(row.valid_to) : "No expiry" },
+	];
+
+	return (
+		<PersonSummaryBody
+			name={row.full_name}
+			photo={row.photo}
+			place={branchPath(row.geo_path) || null}
+			status={<StateBadge state={row.effective_status} />}
+			facts={facts}
+			phone={person?.phone}
+			email={person?.email}
+			loading={isLoading}
+			error={
+				error
+					? "The rest of this person's summary could not be read. Open their record to see it."
+					: undefined
+			}
+			open={{ to: recordOf("member", row.member), label: "Open full record" }}
+		/>
+	);
+}
+
+/* ------------------------------------------------------------------ shared */
+
+/**
+ * Where one person's full record lives.
+ *
+ * The kind is a path segment because a docname cannot say which register it
+ * belongs to, and probing both endpoints to find out would ask the server a
+ * question the link already knew.
+ */
+function recordOf(kind: "volunteer" | "member", name: string): string {
+	return `/admin/registry/${kind}/${encodeURIComponent(name)}`;
+}
+
+interface SummaryTile {
+	label: string;
+	/** `undefined` while loading, `null` where the server could not say. */
+	value: number | null | undefined;
+	hint: string;
+}
+
+/**
+ * The register's own figures, above the register.
+ *
+ * **Every one is a scoped server aggregate, and none of them is this page's
+ * length.** That distinction is the reason these have their own endpoint: a
+ * pager's `total` describes the current filter, and a headline that silently
+ * changed when somebody typed in the search box would be believed and wrong.
+ */
+function SummaryStrip({
+	tiles,
+	loading,
+	capped,
+}: {
+	tiles: SummaryTile[];
+	loading: boolean;
+	capped?: boolean;
+}) {
+	return (
+		<div className="mb-5">
+			<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+				{tiles.map((tile) => (
+					<div key={tile.label} className="rounded-xl border border-card-line bg-white p-4">
+						<div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
+							{tile.label}
+						</div>
+						{loading ? (
+							<Skeleton className="mt-2 h-7 w-16" />
+						) : (
+							<div className="tabular mt-1.5 text-[24px] font-semibold leading-none text-ink">
+								{tile.value === null || tile.value === undefined
+									? "—"
+									: tile.value.toLocaleString()}
+							</div>
+						)}
+						<p className="mt-1.5 text-[11px] text-muted">{tile.hint}</p>
+					</div>
+				))}
+			</div>
+
+			{capped && (
+				<p className="mt-2 text-[11px] leading-relaxed text-muted">
+					Your scope holds more records than one request can total exactly, so these figures are
+					a floor rather than a count. The table below is complete and paged.
+				</p>
+			)}
+		</div>
+	);
+}
+
+/**
+ * The one row of controls a register needs, and a disclosure for the rest.
  *
  * **What was wrong with the old one is worth stating, because it is the common
- * way this goes wrong.** Every control a screen could filter by was laid out at
- * equal weight in one open panel: a search box, two dropdowns, a cascading
- * branch picker and three identical unlabelled search fields. Three problems
- * followed. The panel was the tallest thing on the page, so the register it
- * filtered started below the fold. Nothing said which of the three search
- * fields was which, so you had to click one to find out. And with everything
+ * way this goes wrong.** Every control the screen could filter by was laid out
+ * at equal weight in one open panel: a search box, two dropdowns, a cascading
+ * branch picker and three identical unlabelled combo fields. The panel was the
+ * tallest thing on the page, so the register it filtered started below the fold;
+ * nothing said which of the three combo fields was which; and with everything
  * always visible there was nowhere for the *answer* — what is currently
- * narrowing this list — to be shown, so the only way to know was to read all
- * seven controls.
+ * narrowing this list — to be shown.
  *
  * This is the ordinary arrangement instead, and it is ordinary on purpose:
  *
- *     [ search…                    ] [ dropdown ] [ dropdown ]  [ Filters (2) ]
- *     Arusha · Arusha City ×   Nursing ×   Swahili ×        Clear all
- *
- * One row of the two or three controls people use constantly; everything else
- * behind a disclosure that says how many filters are hiding in it; and a line
- * of chips underneath that is the standing answer to "what am I looking at",
- * each of which removes itself.
+ *     [ search…                          ] [ dropdown ]      [ Filters (1) ]
+ *     Arusha · Arusha City ×                              Clear all
  *
  * **The chips are the part that matters most.** A filter you cannot see is a
- * filter you forget you set, and "why is this list empty" is almost always a
- * skill somebody ticked ten minutes ago.
+ * filter you forget you set, and "why is this list empty" is almost always
+ * something somebody ticked ten minutes ago.
  */
-function FilterBar({
+function RegisterToolbar({
 	search,
+	onSearch,
+	placeholder,
 	inline,
-	extra,
 	chips,
 	onClearAll,
 	children,
 }: {
-	/** The search field, when the register behind this has one. */
-	search?: ReactNode;
-	/** The one or two controls that stay visible. */
+	search: string;
+	onSearch: (value: string) => void;
+	placeholder: string;
 	inline?: ReactNode;
-	/** How many filters are set inside the disclosure, for its badge. */
-	extra: number;
 	chips: Array<{ key: string; label: string; clear: () => void }>;
 	onClearAll: () => void;
-	/** Everything behind the disclosure. */
 	children: ReactNode;
 }) {
-	// Opens when there is something in it, so somebody arriving on a page that
-	// already carries filters is not shown a collapsed box hiding the reason
-	// their list is short. After that it is theirs to open and close.
-	const [open, setOpen] = useState(extra > 0);
+	// Opens when something is already in it, so somebody arriving on a page that
+	// carries filters is not shown a collapsed box hiding the reason their list
+	// is short. After that it is theirs to open and close.
+	const [open, setOpen] = useState(chips.length > 0);
 
 	return (
 		<Card className="mb-5">
 			<div className="flex flex-wrap items-center gap-2.5">
-				{search && <div className="min-w-[220px] flex-1">{search}</div>}
+				<div className="relative min-w-[220px] flex-1">
+					<span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-faint">
+						<Icon.search size={15} />
+					</span>
+					<input
+						type="search"
+						value={search}
+						onChange={(event) => onSearch(event.target.value)}
+						placeholder={placeholder}
+						aria-label={placeholder}
+						className="w-full rounded-full border border-card-line bg-white py-2.5 pl-11 pr-4 text-[13.5px] outline-none transition placeholder:text-slate-faint focus:border-blue"
+					/>
+				</div>
+
 				{inline}
 
 				<button
@@ -604,38 +789,26 @@ function FilterBar({
 					onClick={() => setOpen((was) => !was)}
 					aria-expanded={open}
 					className={cx(
-						"inline-flex items-center gap-2 rounded-full border px-4 py-2.5 font-display text-[12.5px] font-bold transition",
-						open || extra > 0
-							? "border-navy bg-navy/[.06] text-navy"
-							: "border-hairline-strong bg-white text-slate-strong hover:border-navy hover:text-navy",
+						"inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-[12.5px] font-bold transition",
+						open || chips.length > 0
+							? "border-blue bg-blue-soft text-blue-press"
+							: "border-card-line bg-white text-slate-strong hover:border-blue hover:text-ink",
 					)}
 				>
 					<Icon.filter size={15} />
 					Filters
-					{extra > 0 && (
-						<span className="tabular rounded-full bg-navy px-1.5 py-0.5 text-[10px] leading-none text-white">
-							{extra}
+					{chips.length > 0 && (
+						<span className="tabular rounded-full bg-rail px-1.5 py-0.5 text-[10px] leading-none text-white">
+							{chips.length}
 						</span>
 					)}
-					<svg
-						viewBox="0 0 24 24"
-						width="13"
-						height="13"
-						fill="none"
-						aria-hidden="true"
-						className={cx("transition-transform", open && "rotate-180")}
-					>
-						<path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-					</svg>
 				</button>
 			</div>
 
-			{open && (
-				<div className="mt-5 space-y-5 border-t border-hairline pt-5">{children}</div>
-			)}
+			{open && <div className="mt-5 space-y-5 border-t border-card-line pt-5">{children}</div>}
 
 			{chips.length > 0 && (
-				<div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-hairline pt-4">
+				<div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-card-line pt-4">
 					<span className="mr-1 text-[11px] font-bold uppercase tracking-wide text-slate-faint">
 						Showing
 					</span>
@@ -644,12 +817,12 @@ function FilterBar({
 							key={chip.key}
 							type="button"
 							onClick={chip.clear}
-							className="group inline-flex items-center gap-1.5 rounded-full border border-navy/25 bg-navy/[0.06] py-1 pl-3 pr-2 text-[12px] font-semibold text-navy transition hover:border-navy/50 hover:bg-navy/10"
+							className="group inline-flex items-center gap-1.5 rounded-full border border-blue/25 bg-blue-soft py-1 pl-3 pr-2 text-[12px] font-semibold text-blue-press transition hover:border-blue/50"
 						>
 							{chip.label}
 							<span
 								aria-hidden="true"
-								className="grid h-3.5 w-3.5 place-items-center rounded-full bg-navy/15 transition group-hover:bg-navy group-hover:text-white"
+								className="grid h-3.5 w-3.5 place-items-center rounded-full bg-rail/15 transition group-hover:bg-rail group-hover:text-white"
 							>
 								<Icon.cross size={9} />
 							</span>
@@ -659,7 +832,7 @@ function FilterBar({
 					<button
 						type="button"
 						onClick={onClearAll}
-						className="ml-1 text-[12px] font-semibold text-slate-faint underline underline-offset-2 transition hover:text-signal-dark"
+						className="ml-1 text-[12px] font-semibold text-slate-faint underline underline-offset-2 transition hover:text-blue-press"
 					>
 						Clear all
 					</button>
@@ -669,39 +842,12 @@ function FilterBar({
 	);
 }
 
-/** The search field, with the magnifier that says what it is without a label. */
-function SearchInput({
-	value,
-	onChange,
-	placeholder,
-}: {
-	value: string;
-	onChange: (value: string) => void;
-	placeholder: string;
-}) {
-	return (
-		<div className="relative">
-			<span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-faint">
-				<Icon.search size={15} />
-			</span>
-			<input
-				type="search"
-				value={value}
-				onChange={(event) => onChange(event.target.value)}
-				placeholder={placeholder}
-				className="w-full rounded-full border border-hairline-strong bg-white py-2.5 pl-11 pr-4 text-[13.5px] outline-none transition placeholder:text-slate-faint focus:border-navy"
-			/>
-		</div>
-	);
-}
-
 /**
  * A dropdown that names itself when nothing is chosen.
  *
- * The "Any" option carries the filter's own word — "Any standing", not "Any" —
- * so a bar of two unset dropdowns still reads as two questions rather than as
- * two identical boxes saying Any. When something *is* chosen the value is the
- * label, which is the state a filter bar spends most of its life in.
+ * The "any" option carries the filter's own word — "All membership types", not
+ * "All" — so an unset dropdown still reads as a question rather than as a box
+ * saying All.
  */
 function SelectFilter({
 	label,
@@ -714,7 +860,7 @@ function SelectFilter({
 	value: string;
 	onChange: (value: string) => void;
 	any: string;
-	options: Array<string | { value: string; label: string | null }>;
+	options: Array<{ value: string; label: string | null }>;
 }) {
 	return (
 		<label className="relative">
@@ -725,21 +871,16 @@ function SelectFilter({
 				className={cx(
 					"appearance-none rounded-full border bg-white py-2.5 pl-4 pr-9 text-[13.5px] outline-none transition",
 					value
-						? "border-navy bg-navy/[.06] font-semibold text-navy"
-						: "border-hairline-strong text-slate-strong hover:border-navy",
+						? "border-blue bg-blue-soft font-semibold text-blue-press"
+						: "border-card-line text-slate-strong hover:border-blue",
 				)}
 			>
 				<option value="">{any}</option>
-				{options.map((option) => {
-					const key = typeof option === "string" ? option : option.value;
-					const text = typeof option === "string" ? option : (option.label ?? option.value);
-
-					return (
-						<option key={key} value={key}>
-							{text}
-						</option>
-					);
-				})}
+				{options.map((option) => (
+					<option key={option.value} value={option.value}>
+						{option.label ?? option.value}
+					</option>
+				))}
 			</select>
 			<svg
 				viewBox="0 0 24 24"
@@ -752,34 +893,6 @@ function SelectFilter({
 				<path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
 			</svg>
 		</label>
-	);
-}
-
-/** A yes/no filter, as a pill that is plainly on or off. */
-function Toggle({
-	label,
-	on,
-	onChange,
-}: {
-	label: string;
-	on: boolean;
-	onChange: (on: boolean) => void;
-}) {
-	return (
-		<button
-			type="button"
-			aria-pressed={on}
-			onClick={() => onChange(!on)}
-			className={cx(
-				"inline-flex items-center gap-2 rounded-full border px-4 py-2.5 font-display text-[12.5px] font-bold transition",
-				on
-					? "border-navy bg-navy text-white"
-					: "border-hairline-strong bg-white text-slate-strong hover:border-navy hover:text-navy",
-			)}
-		>
-			{on && <Icon.check size={13} />}
-			{label}
-		</button>
 	);
 }
 
@@ -812,19 +925,4 @@ function Labelled({
  */
 function branchOf(chain: GeoNode[]): string {
 	return (chain.length > 1 ? chain.slice(1) : chain).map((node) => node.label).join(" · ");
-}
-
-/** Chosen vocabulary keys as removable chips, labelled from the vocabulary. */
-function chipsFor(
-	selected: string[],
-	options: Array<{ key: string; label: string }> | undefined,
-	remove: (key: string) => void,
-): Array<{ key: string; label: string; clear: () => void }> {
-	return selected.map((key) => ({
-		key,
-		// The key is the fallback rather than nothing: a chip with no words is a
-		// filter somebody cannot identify well enough to decide whether to drop.
-		label: options?.find((option) => option.key === key)?.label ?? key,
-		clear: () => remove(key),
-	}));
 }

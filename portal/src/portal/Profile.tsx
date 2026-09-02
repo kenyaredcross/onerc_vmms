@@ -119,11 +119,11 @@ export default function Profile() {
 						held && (
 							<Link
 								to="/membership"
-								className="inline-flex items-center gap-1.5 rounded-full border border-navy/20 bg-navy/[.05] px-3 py-1 text-[11.5px] font-bold text-navy transition hover:border-navy hover:bg-navy/10"
+								className="inline-flex items-center gap-1.5 rounded-full border border-blue/20 bg-rail/[.05] px-3 py-1 text-[11.5px] font-bold text-ink transition hover:border-blue hover:bg-rail/10"
 							>
 								Also a member
 								{held.membership_type_name && (
-									<span className="font-semibold text-navy/70">
+									<span className="font-semibold text-ink/70">
 										· {held.membership_type_name}
 									</span>
 								)}
@@ -199,7 +199,7 @@ export function HolderCard({ kind }: { kind: "volunteer" | "member" }) {
 			<div className="mb-4 flex items-center justify-between gap-3">
 				<SectionTitle>Your card</SectionTitle>
 				<a
-					className="text-[12px] font-semibold text-navy underline underline-offset-2"
+					className="text-[12px] font-semibold text-ink underline underline-offset-2"
 					href={`/api/method/vmmsx.api.cards.download_my_card?kind=${kind}`}
 				>
 					Download PDF
@@ -250,7 +250,7 @@ function IdentityCard({
 				/>
 			) : (
 				<>
-					<dl className="mt-6 space-y-4 border-t border-hairline pt-5">
+					<dl className="mt-6 space-y-4 border-t border-card-line pt-5">
 						<Line label="Email" value={profile.email} locked />
 						<Line label="Phone" value={profile.phone} />
 						<Line label="Gender" value={profile.gender} />
@@ -258,7 +258,7 @@ function IdentityCard({
 						<Line label="Preferred language" value={profile.preferred_language} />
 					</dl>
 
-					<div className="mt-5 border-t border-hairline pt-4">
+					<div className="mt-5 border-t border-card-line pt-4">
 						{person ? (
 							<>
 								<Button variant="quiet" onClick={() => setEditing(true)}>
@@ -362,7 +362,7 @@ function PhotoControl({ current, onSaved }: { current: string | null; onSaved: (
 	return (
 		<div className="mt-2">
 			<div className="flex flex-wrap items-center gap-3">
-				<label className="inline-flex cursor-pointer items-center text-[12px] font-semibold text-navy hover:underline">
+				<label className="inline-flex cursor-pointer items-center text-[12px] font-semibold text-ink hover:underline">
 					{busy ? "Saving…" : current ? "Replace photo" : "Add a photo"}
 					<input
 						type="file"
@@ -385,7 +385,7 @@ function PhotoControl({ current, onSaved }: { current: string | null; onSaved: (
 					<button
 						type="button"
 						onClick={() => void remove()}
-						className="text-[12px] font-semibold text-slate-faint hover:text-navy hover:underline"
+						className="text-[12px] font-semibold text-slate-faint hover:text-ink hover:underline"
 					>
 						Remove
 					</button>
@@ -472,7 +472,7 @@ function IdentityForm({
 	const named = Boolean(firstName.trim() && lastName.trim());
 
 	return (
-		<div className="mt-6 space-y-4 border-t border-hairline pt-5">
+		<div className="mt-6 space-y-4 border-t border-card-line pt-5">
 			{failure && <ErrorNote>{failure}</ErrorNote>}
 
 			<Field label="First name" required htmlFor="profile-first">
@@ -613,8 +613,8 @@ function CertificationsCard({
 							<span
 								className={
 									row.lapsed
-										? "grid h-9 w-9 flex-none place-items-center rounded-control bg-signal/[.08] text-signal-dark"
-										: "grid h-9 w-9 flex-none place-items-center rounded-control bg-tint-teal-soft text-tint-teal"
+										? "grid h-9 w-9 flex-none place-items-center rounded-lg bg-blue/[.08] text-blue-press"
+										: "grid h-9 w-9 flex-none place-items-center rounded-lg bg-tint-teal-soft text-tint-teal"
 								}
 								aria-hidden="true"
 							>
@@ -632,7 +632,7 @@ function CertificationsCard({
 							<>
 								{row.blocks_deployment && <Pill tone="page">Required</Pill>}
 								{row.lapsed ? (
-									<span className="inline-flex items-center gap-1.5 rounded-full border border-signal/40 bg-signal/[.06] px-2.5 py-1 text-[11px] font-bold text-signal-dark">
+									<span className="inline-flex items-center gap-1.5 rounded-full border border-blue/40 bg-blue/[.06] px-2.5 py-1 text-[11px] font-bold text-blue-press">
 										<span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
 										Lapsed
 									</span>

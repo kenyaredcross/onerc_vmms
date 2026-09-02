@@ -66,7 +66,7 @@ export function PageHeading({
 					    redesign's medium weight rather than the previous system's
 					    extrabold. Rendered as an h2 so the document has exactly one
 					    h1 (the shell's) and the outline stays honest. */}
-					<h2 className="font-display text-[26px] font-medium leading-[1.15] tracking-tight text-ink sm:text-[29px]">
+					<h2 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-ink sm:text-[28px]">
 						{title}
 					</h2>
 
@@ -97,7 +97,7 @@ export function PageHeading({
 								{trail.map((crumb, index) => (
 									<li key={index} className="flex items-center gap-2">
 										{index > 0 && (
-											<span aria-hidden="true" className="text-hairline-strong">
+											<span aria-hidden="true" className="text-card-line">
 												/
 											</span>
 										)}
@@ -135,9 +135,11 @@ export function PageHeading({
 /**
  * A panel of content.
  *
- * **No border.** It is told apart from the ground by tone and a very soft
- * shadow, which is what lets a 16px radius read as a radius instead of as a
- * box with filed corners. `pad` exists for the two cases that must not have
+ * **A 1px cool hairline and the faintest lift** — `.p-card`, the same panel the
+ * volunteer portal draws. It used to be borderless with a wide soft shadow, on
+ * a grey ground; on the portal's near-white canvas that read as a smudge rather
+ * than as an edge, so the hairline does the separating now and the shadow only
+ * stops it looking printed. `pad` exists for the two cases that must not have
  * the default inset: a card whose first child is a table (the rule has to
  * reach both edges) and a card whose first child is a photograph.
  */
@@ -156,9 +158,9 @@ export function Card({
 	return (
 		<div
 			className={cx(
-				"card",
-				pad && "p-5 sm:p-6",
-				hover && "transition duration-200 hover:shadow-lift",
+				"p-card",
+				pad && "p-5",
+				hover && "transition duration-200 hover:border-blue-line",
 				className,
 			)}
 		>
@@ -201,7 +203,7 @@ export function SectionLink({ to, children }: { to: string; children: ReactNode 
 	return (
 		<Link
 			to={to}
-			className="chev whitespace-nowrap text-[12px] font-bold text-navy transition hover:text-signal"
+			className="whitespace-nowrap text-[12px] font-semibold text-blue transition hover:text-blue-hover"
 		>
 			{children}
 		</Link>
@@ -217,21 +219,25 @@ export function SectionLink({ to, children }: { to: string; children: ReactNode 
  */
 export function SectionTitle({ children }: { children: ReactNode }) {
 	return (
-		<h3 className="mb-3 font-display text-[14px] font-bold tracking-tight text-ink">{children}</h3>
+		<h3 className="mb-3 text-[13.5px] font-semibold tracking-[-0.01em] text-ink">{children}</h3>
 	);
 }
 
 /** A hairline between parts of a card. */
 export function Divide({ className }: { className?: string }) {
-	return <div className={cx("h-px bg-hairline", className)} aria-hidden="true" />;
+	return <div className={cx("h-px bg-card-line", className)} aria-hidden="true" />;
 }
 
 /* ------------------------------------------------------------------ atoms */
 
 const TONES = {
-	navy: "bg-authority text-white",
-	signal: "bg-blue text-white",
-	quiet: "border border-hairline-strong bg-white text-slate-strong",
+	navy: "bg-rail text-white",
+	// A wash rather than a fill. Every caller in the console uses this for a
+	// *count* beside a heading — "12 overdue", "3 still running" — and a page
+	// of solid blue chips reads as a page of buttons. The soft pair says the
+	// same thing at the weight a count deserves.
+	signal: "bg-blue-soft text-blue-press",
+	quiet: "border border-card-line bg-white text-slate-strong",
 	// `page` used to be the near-white page ground. That ground is the shell
 	// grey now, which is too dark to sit a chip on inside a white panel, so this
 	// takes the inset surface instead — the same one every other in-panel
@@ -267,37 +273,46 @@ export function Pill({
  * and are never compared, here or anywhere else, which is the rule
  * `tests/test_no_stage_branching.py` enforces on the Python side.
  *
- * **Outlined, with a dot, rather than filled.** A page of filled badges is a
- * page of coloured blocks with the actual record in between them, and on a
- * register screen there is one on every row. The outline carries the same
- * colour at a fraction of the weight, and the dot means the state survives
- * being read by somebody who cannot tell the two greens apart.
+ * **A soft fill with a dot, and no outline.** It was an outlined pill; on the
+ * portal's near-white canvas an outline plus a fill plus a dot was three
+ * signals for one fact, and a register screen carries one of these on every
+ * row. The tint alone separates it from the panel, and the dot means the state
+ * survives being read by somebody who cannot tell the two greens apart — which
+ * is the part that was actually doing the work.
  */
+const NEUTRAL = "bg-surface text-slate-strong";
+
 const STATE_TONES: Record<string, string> = {
-	Approved: "border-success-line text-success bg-success-soft",
-	Active: "border-blue-line text-blue bg-blue-soft",
-	Rejected: "border-danger-line text-danger bg-danger-soft",
-	Expired: "border-warning-line text-warning bg-warning-soft",
-	Withdrawn: "border-hairline-strong text-slate-body bg-surface",
-	Draft: "border-hairline-strong text-slate-body bg-surface",
-	Planned: "border-hairline-strong text-slate-body bg-surface",
-	Cancelled: "border-hairline-strong text-slate-body bg-surface",
-	Completed: "border-success-line text-success bg-success-soft",
-	Pending: "border-warning-line text-warning bg-warning-soft",
-	Accepted: "border-hairline-strong text-slate-body bg-surface",
-	Assigned: "border-blue-line text-blue bg-blue-soft",
-	Declined: "border-hairline-strong text-slate-body bg-surface",
+	Approved: "bg-success-soft text-success",
+	Active: "bg-success-soft text-success",
+	Rejected: "bg-danger-soft text-danger",
+	Expired: "bg-warning-soft text-warning",
+	Withdrawn: NEUTRAL,
+	Draft: "bg-warning-soft text-warning",
+	Planned: NEUTRAL,
+	Cancelled: NEUTRAL,
+	Completed: "bg-success-soft text-success",
+	Pending: "bg-warning-soft text-warning",
+	Accepted: "bg-success-soft text-success",
+	Assigned: "bg-blue-soft text-blue-press",
+	Declined: NEUTRAL,
+	Submitted: "bg-blue-soft text-blue-press",
+	"In Review": "bg-blue-soft text-blue-press",
+	Shortlisted: "bg-warning-soft text-warning",
+	Hold: NEUTRAL,
+	Closed: NEUTRAL,
+	Open: "bg-blue-soft text-blue-press",
 };
 
 export function StateBadge({ state }: { state?: string | null }) {
 	if (!state) return null;
 
-	const tone = STATE_TONES[state] ?? "border-hairline-strong text-slate-body bg-surface";
+	const tone = STATE_TONES[state] ?? NEUTRAL;
 
 	return (
 		<span
 			className={cx(
-				"inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium",
+				"inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold",
 				tone,
 			)}
 		>
@@ -357,11 +372,11 @@ export function Avatar({
 
 	const tones = {
 		navy: "bg-navy/[.07] text-navy",
-		signal: "bg-signal/[.10] text-signal-dark",
+		signal: "bg-blue/[.10] text-blue-press",
 		page: "bg-surface text-slate-body",
 	} as const;
 
-	const ringed = ring ? "ring-1 ring-hairline-strong ring-offset-2 ring-offset-white" : "";
+	const ringed = ring ? "ring-1 ring-card-line ring-offset-2 ring-offset-white" : "";
 
 	if (photo) {
 		return (
@@ -381,7 +396,7 @@ export function Avatar({
 			aria-hidden="true"
 			style={{ width: size, height: size, fontSize: Math.round(size * 0.36) }}
 			className={cx(
-				"grid flex-none place-items-center rounded-full font-display font-bold",
+				"grid flex-none place-items-center rounded-full font-semibold",
 				tones[tone],
 				ringed,
 			)}
@@ -447,7 +462,7 @@ export function StatTile({
 			<div className="flex items-start justify-between gap-3">
 				<div className="min-w-0">
 					<div className="truncate text-[11.5px] font-normal text-muted">{label}</div>
-					<div className="tabular mt-2 font-display text-[30px] font-medium leading-none tracking-tight text-ink">
+					<div className="tabular mt-2 text-[28px] font-semibold leading-none tracking-[-0.025em] text-ink">
 						{value}
 					</div>
 				</div>
@@ -475,7 +490,7 @@ export function StatTile({
 		return (
 			<Link
 				to={to}
-				className="card block h-full p-5 transition duration-200 hover:shadow-lift focus-visible:shadow-lift"
+				className="p-card block h-full p-5 transition duration-200 hover:border-blue-line focus-visible:border-blue-line"
 			>
 				{body}
 			</Link>
@@ -506,7 +521,7 @@ export function StatGrid({ children, className }: { children: ReactNode; classNa
 export function Stat({ value, label }: { value: ReactNode; label: ReactNode }) {
 	return (
 		<div>
-			<div className="tabular font-display text-[26px] font-medium leading-none tracking-tight text-ink">
+			<div className="tabular text-[24px] font-semibold leading-none tracking-[-0.025em] text-ink">
 				{value}
 			</div>
 			<div className="mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-faint">
@@ -652,7 +667,7 @@ export function Ring({
 				/>
 			</svg>
 
-			<div className="tabular absolute inset-0 grid place-items-center font-display text-[12px] font-extrabold text-ink">
+			<div className="tabular absolute inset-0 grid place-items-center text-[12px] font-bold text-ink">
 				{children ?? `${Math.round(pct * 100)}%`}
 			</div>
 		</div>
@@ -665,15 +680,15 @@ const BUTTONS = {
 	/** The one thing this screen is for. Blue, and only ever one per view. */
 	primary: "bg-blue text-white hover:bg-blue-hover active:bg-blue-press",
 	/** The authority charcoal — a strong second action, or a dark-surface action. */
-	navy: "bg-authority text-white hover:bg-authority-soft",
+	navy: "bg-rail text-white hover:bg-rail/90",
 	/**
 	 * A wash of the accent with the accent as the text. Louder than an outline
 	 * and quieter than a fill, which is the register a "second thing you might
 	 * do" wants.
 	 */
-	soft: "bg-blue-soft text-blue hover:bg-blue-line/50",
+	soft: "bg-blue-soft text-blue-press hover:bg-blue-line/50",
 	quiet:
-		"border border-hairline-strong bg-white text-slate-strong hover:border-slate-faint hover:text-ink",
+		"border border-rail-line bg-white text-slate-strong hover:border-slate-faint hover:text-ink",
 	ghost: "text-blue hover:bg-blue-soft",
 	/**
 	 * Destructive, and never carried by colour alone.
@@ -685,11 +700,14 @@ const BUTTONS = {
 	 * be destroyed — "Delete draft", not "Delete".
 	 */
 	danger:
-		"border border-danger-line bg-danger-soft text-danger hover:border-danger hover:bg-danger/[.09]",
+		"border border-danger-line bg-white text-danger hover:bg-danger-soft",
 } as const;
 
+// 8px, not a pill, and the app's own face rather than the display one. Both
+// changed when the console moved into the portal's language: `rounded-full` was
+// the old system's most characteristic move and it is not this one's.
 const BUTTON_BASE =
-	"inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-display text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-inherit";
+	"inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-inherit";
 
 interface ButtonProps {
 	variant?: keyof typeof BUTTONS;
@@ -810,7 +828,7 @@ export function IconButton({
 			onClick={onClick}
 			disabled={disabled}
 			className={cx(
-				"grid h-9 w-9 flex-none place-items-center rounded-full text-slate-faint transition hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40",
+				"grid h-8 w-8 flex-none place-items-center rounded-lg text-slate-faint transition hover:bg-canvas hover:text-ink disabled:cursor-not-allowed disabled:opacity-40",
 				className,
 			)}
 		>
@@ -846,7 +864,7 @@ export function Spinner({ label = "Loading…", page = false }: { label?: string
 		>
 			<span
 				className={cx(
-					"animate-spin rounded-full border-hairline-strong border-t-navy",
+					"animate-spin rounded-full border-rail-line border-t-blue",
 					page ? "h-8 w-8 border-[3px]" : "h-4 w-4 border-2",
 				)}
 			/>
@@ -875,7 +893,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function ErrorNote({ children }: { children: ReactNode }) {
 	return (
-		<div className="flex items-start gap-3 rounded-card border border-signal/25 bg-signal/[.05] px-4 py-3.5 text-[13px] leading-relaxed text-signal-dark">
+		<div className="flex items-start gap-3 rounded-xl border border-danger-line bg-danger-soft px-4 py-3 text-[13px] leading-relaxed text-danger">
 			<svg
 				viewBox="0 0 24 24"
 				width="17"
@@ -924,7 +942,7 @@ export function Empty({
 			className={cx(
 				"text-center",
 				framed
-					? "rounded-card border border-dashed border-hairline-strong bg-surface/40 px-6 py-10"
+					? "rounded-xl border border-dashed border-card-line bg-surface/40 px-6 py-10"
 					: "px-2 py-6",
 			)}
 		>
@@ -938,7 +956,7 @@ export function Empty({
 					{icon({ size: 19 })}
 				</div>
 			)}
-			<p className="font-display text-[14.5px] font-bold text-ink">{title}</p>
+			<p className="text-[13.5px] font-semibold text-ink">{title}</p>
 			{children && (
 				<p className="mx-auto mt-2 max-w-md text-[12.5px] leading-relaxed text-slate-body">
 					{children}
@@ -974,7 +992,7 @@ export function NotBuilt({
 	children?: ReactNode;
 }) {
 	return (
-		<div className="rounded-panel border border-dashed border-hairline-strong bg-white px-8 py-14 text-center">
+		<div className="rounded-xl border border-dashed border-card-line bg-white px-8 py-12 text-center">
 			<div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-surface">
 				<svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true">
 					<path
@@ -985,7 +1003,7 @@ export function NotBuilt({
 					/>
 				</svg>
 			</div>
-			<p className="font-display text-[17px] font-extrabold text-ink">{what} is not here yet</p>
+			<p className="text-[15px] font-semibold text-ink">{what} is not here yet</p>
 			<p className="mx-auto mt-2 max-w-lg text-[13px] leading-relaxed text-slate-body">{needs}</p>
 			{children && <div className="mt-5">{children}</div>}
 		</div>
@@ -1038,7 +1056,7 @@ export function ListRow({
 				{lead}
 
 				<div className="min-w-0 flex-1">
-					<div className="truncate font-display text-[13.5px] font-bold text-ink">{title}</div>
+					<div className="truncate text-[13px] font-semibold text-ink">{title}</div>
 					{meta && <div className="mt-0.5 truncate text-[11.5px] text-slate-body">{meta}</div>}
 				</div>
 
@@ -1121,11 +1139,11 @@ export function Pager({
 	if (pageCount <= 1) return null;
 
 	const step =
-		"grid h-9 w-9 place-items-center rounded-full border border-hairline-strong bg-white text-slate-body transition hover:border-navy hover:text-navy disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-hairline-strong disabled:hover:text-slate-body";
+		"grid h-8 w-8 place-items-center rounded-lg border border-rail-line bg-white text-muted transition hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-rail-line disabled:hover:text-muted";
 
 	return (
 		<nav
-			className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6"
+			className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t p-divide pt-5"
 			aria-label="Pagination"
 		>
 			<p className="text-[12px] text-slate-faint" aria-live="polite">
@@ -1152,10 +1170,10 @@ export function Pager({
 						onClick={() => onPage(index)}
 						aria-current={index === page ? "page" : undefined}
 						className={cx(
-							"h-9 min-w-9 rounded-full px-3 font-display text-[12.5px] font-bold transition",
+							"h-8 min-w-8 rounded-lg px-2.5 text-[12.5px] font-semibold transition",
 							index === page
 								? "bg-navy text-white"
-								: "border border-hairline-strong bg-white text-slate-body hover:border-navy hover:text-navy",
+								: "border border-rail-line bg-white text-muted hover:border-blue hover:text-blue",
 						)}
 					>
 						{index + 1}
@@ -1257,17 +1275,17 @@ export function Table({
 	caption?: string;
 }) {
 	return (
-		<div className={cx("card overflow-x-auto", sticky && "max-h-[70vh] overflow-y-auto")}>
+		<div className={cx("p-card overflow-x-auto", sticky && "max-h-[70vh] overflow-y-auto")}>
 			<table className="w-full border-collapse text-left" style={{ minWidth }}>
 				{caption && <caption className="sr-only">{caption}</caption>}
 				<thead className={cx(sticky && "sticky top-0 z-10")}>
-					<tr className={cx("border-b border-hairline", sticky && "bg-white")}>
+					<tr className={cx("border-b p-divide bg-canvas", sticky && "bg-white")}>
 						{head.map((cell, index) => (
 							<th
 								key={index}
 								scope="col"
 								className={cx(
-									"whitespace-nowrap px-5 py-3.5 text-[11px] font-medium text-muted",
+									"whitespace-nowrap px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-rail-label",
 									align[index] === "right" && "text-right",
 									align[index] === "center" && "text-center",
 								)}
@@ -1285,7 +1303,7 @@ export function Table({
 
 export function Row({ children }: { children: ReactNode }) {
 	return (
-		<tr className="border-b border-hairline-soft transition last:border-0 hover:bg-surface/60">
+		<tr className="border-b border-card-line transition last:border-0 hover:bg-canvas">
 			{children}
 		</tr>
 	);
@@ -1344,7 +1362,7 @@ export function Tabs({
 				// Scrolls rather than wraps: a second row of tabs reads as a second
 				// bar, and on a phone six tabs would take a third of the screen
 				// before any of the record showed.
-				"-mx-1 flex gap-1 overflow-x-auto rounded-card bg-surface p-1",
+				"-mx-1 flex gap-1 overflow-x-auto rounded-xl bg-surface p-1",
 				className,
 			)}
 		>
@@ -1359,10 +1377,10 @@ export function Tabs({
 						aria-selected={selected}
 						onClick={() => onSelect(tab.key)}
 						className={cx(
-							"flex flex-none items-center gap-2 rounded-card px-4 py-2 font-display text-[12.5px] font-bold transition",
+							"flex flex-none items-center gap-2 rounded-lg px-3.5 py-1.5 text-[12.5px] font-semibold transition",
 							selected
-								? "bg-white text-ink shadow-sm"
-								: "text-slate-body hover:bg-white/60 hover:text-ink",
+								? "bg-white text-ink shadow-[0_1px_2px_rgba(30,50,73,0.06)]"
+								: "text-muted hover:text-ink",
 						)}
 					>
 						{tab.label}
@@ -1370,7 +1388,7 @@ export function Tabs({
 							<span
 								className={cx(
 									"tabular rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none",
-									selected ? "bg-navy/[.08] text-navy" : "bg-white text-slate-faint",
+									selected ? "bg-blue-soft text-blue-press" : "bg-white text-slate-faint",
 								)}
 							>
 								{tab.count}
@@ -1475,7 +1493,7 @@ export function ActionMenu({
 				<div
 					role="menu"
 					className={cx(
-						"absolute z-30 mt-2 w-[268px] overflow-hidden rounded-card border border-hairline bg-white p-1.5 shadow-lg",
+						"absolute z-30 mt-1.5 w-[268px] overflow-hidden rounded-xl border border-card-line bg-white p-1.5 shadow-pop",
 						align === "right" ? "right-0" : "left-0",
 					)}
 				>
@@ -1490,9 +1508,9 @@ export function ActionMenu({
 								onAction(action.key);
 							}}
 							className={cx(
-								"flex w-full items-start gap-2.5 rounded-card px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-40",
+								"flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40",
 								action.tone === "danger"
-									? "text-signal-dark hover:bg-signal/[.07]"
+									? "text-blue-press hover:bg-blue-soft"
 									: "text-ink hover:bg-surface",
 							)}
 						>
@@ -1589,9 +1607,9 @@ export function ConfirmDialog({
 			<div
 				role="dialog"
 				aria-modal="true"
-				className="relative w-full max-w-[440px] rounded-card border border-hairline bg-white p-6 shadow-xl"
+				className="relative w-full max-w-[440px] rounded-xl border border-card-line bg-white p-6 shadow-pop"
 			>
-				<h2 className="font-display text-[17px] font-extrabold tracking-tight text-ink">
+				<h2 className="text-[16px] font-semibold tracking-[-0.01em] text-ink">
 					{title}
 				</h2>
 

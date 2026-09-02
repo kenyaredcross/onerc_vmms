@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-09-01 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "phone_number",
+  "opted_out_on",
+  "column_break_opt_out",
+  "source",
+  "notes"
+ ],
+ "fields": [
+  {
+   "default": "WA-OUT-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "WA-OUT-.#####",
+   "reqd": 1
+  },
+  {
+   "description": "With its country code, as the person wrote to us from.",
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "opted_out_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Asked On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_opt_out",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Staff",
+   "description": "Reply means they wrote STOP themselves. Staff means somebody here recorded it for them.",
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "How",
+   "options": "Reply\nStaff\nImport"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "links": [],
+ "modified": "2026-09-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Notification",
+ "name": "VMMS WhatsApp Opt Out",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

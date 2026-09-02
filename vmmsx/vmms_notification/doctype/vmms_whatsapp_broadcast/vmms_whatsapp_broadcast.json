@@ -1,0 +1,210 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-09-01 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "message_section",
+  "naming_series",
+  "title",
+  "geo_node",
+  "audience",
+  "column_break_message",
+  "status",
+  "scheduled_at",
+  "body_section",
+  "message",
+  "recipients_section",
+  "recipients",
+  "totals_section",
+  "addressed",
+  "total_recipients",
+  "column_break_totals",
+  "total_sent",
+  "total_failed",
+  "total_skipped",
+  "sent_on",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "WA-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "WA-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "message_section",
+   "fieldtype": "Section Break",
+   "label": "Broadcast"
+  },
+  {
+   "description": "What this broadcast is called here. It is not sent to anybody.",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "description": "Which part of the society is speaking. The broadcast reaches this branch and everyone beneath it.",
+   "fieldname": "geo_node",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "From",
+   "options": "Geo Node",
+   "reqd": 1
+  },
+  {
+   "default": "everyone",
+   "description": "Who beneath that branch it was addressed to.",
+   "fieldname": "audience",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Audience",
+   "options": "everyone\nvolunteers\nmembers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_message",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "description": "Set by the sending itself. Approving a broadcast is submitting it.",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nScheduled\nSending\nSent\nPartly Sent\nFailed\nCancelled",
+   "read_only": 1
+  },
+  {
+   "description": "Held until this time once it is approved. Approving it after the time has passed sends it straight away.",
+   "fieldname": "scheduled_at",
+   "fieldtype": "Datetime",
+   "label": "Not Before"
+  },
+  {
+   "fieldname": "body_section",
+   "fieldtype": "Section Break",
+   "label": "What it says"
+  },
+  {
+   "description": "The message, as each person will read it. The opt-out line from settings is added underneath.",
+   "fieldname": "message",
+   "fieldtype": "Text",
+   "label": "Message",
+   "reqd": 1
+  },
+  {
+   "description": "Everybody this was addressed to, resolved when it was filed. This is the list being approved.",
+   "fieldname": "recipients_section",
+   "fieldtype": "Section Break",
+   "label": "Who it goes to"
+  },
+  {
+   "fieldname": "recipients",
+   "fieldtype": "Table",
+   "label": "Recipients",
+   "options": "VMMS WhatsApp Recipient",
+   "read_only": 1
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "default": "0",
+   "description": "How many people the audience holds, whether or not they have a number.",
+   "fieldname": "addressed",
+   "fieldtype": "Int",
+   "label": "Addressed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_recipients",
+   "fieldtype": "Int",
+   "label": "Reachable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_sent",
+   "fieldtype": "Int",
+   "label": "Sent",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_failed",
+   "fieldtype": "Int",
+   "label": "Failed",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Asked not to receive these after the broadcast was approved.",
+   "fieldname": "total_skipped",
+   "fieldtype": "Int",
+   "label": "Skipped",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_on",
+   "fieldtype": "Datetime",
+   "label": "Finished",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "VMMS WhatsApp Broadcast",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-09-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Notification",
+ "name": "VMMS WhatsApp Broadcast",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

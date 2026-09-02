@@ -116,16 +116,18 @@ class VMMSDeploymentAssignment(Document):
 
 		from vmmsx.notifications.services import direct
 
+		# No early return on a missing login: an invitation is exactly the kind of
+		# thing a young volunteer's parent is entitled to hear about, and
+		# `direct.tell` copies them off `about` whether or not there is an account
+		# to raise a notification against.
 		login = direct.login_of(self.volunteer)
 
-		if not login:
-			return
-
 		direct.tell(
-			[login],
+			[login] if login else [],
 			_("You have been asked to join a deployment starting {0}").format(
 				frappe.format_value(self.start_date, {"fieldtype": "Date"})
 			),
 			self.doctype,
 			self.name,
+			about=self.volunteer,
 		)

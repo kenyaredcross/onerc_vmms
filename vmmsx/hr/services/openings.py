@@ -285,7 +285,13 @@ def _as_card(row: dict) -> dict:
 		"location": row.get("location") or "",
 		"places": row.get("vacancies") or 0,
 		"posted_on": str(posted)[:10] if posted else "",
-		"closes_on": str(closes) if closes else "",
+		# Both cut to the date, and `closes_on` deliberately so. HRMS declares it
+		# a Date, but `setup/job_opening_fields.py` widens it to a Datetime — the
+		# society's closing time is a real fact — and the whole of that time was
+		# reaching the board as `2026-09-10 00:00:00`. A closing *date* is what a
+		# card says, and the browser's own date parser is not reliable on a
+		# space-separated datetime.
+		"closes_on": str(closes)[:10] if closes else "",
 		"closing_soon": bool(closes and (getdate(closes) - getdate(today())).days <= 7),
 		"href": page,
 		"apply_href": apply_url(row.get("name"), row.get("job_application_route")),
