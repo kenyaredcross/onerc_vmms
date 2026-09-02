@@ -165,9 +165,14 @@
 
 			<section class="for-login">
 				<div class="login-content page-card">
+					<div class="auth-switch">
+						<span>{{ words.get("login.signin.prompt") or _("New to the society?") }}</span>
+						<a href="#signup">{{ words.get("login.signin.action") or _("Create an account") }} &rarr;</a>
+					</div>
 					{{ heading(
 						words.get("login.signin.eyebrow") or _("Sign in"),
-						words.get("login.signin.title") or _("Welcome back")
+						words.get("login.signin.title") or _("Welcome back"),
+						words.get("login.signin.body") or _("Use your registered email address to continue.")
 					) }}
 					<form class="form-signin form-login" role="form" novalidate>
 						{{ credentials_body() }}
@@ -186,7 +191,8 @@
 				<div class="login-content page-card">
 					{{ heading(
 						words.get("login.signin.eyebrow") or _("Sign in"),
-						words.get("login.signin.title") or _("Welcome back")
+						words.get("login.signin.title") or _("Welcome back"),
+						words.get("login.signin.body") or _("Use your registered email address to continue.")
 					) }}
 					<form class="form-signin form-login" role="form" novalidate>
 						{{ credentials_body() }}
@@ -208,6 +214,10 @@
 				<div class="login-content page-card">
 					{%- if not disable_signup %}
 					<div class="signup-start">
+						<div class="auth-switch">
+							<span>{{ words.get("login.signup.prompt") or _("Already have an account?") }}</span>
+							<a href="#login">{{ words.get("login.signup.action") or _("Sign in") }} &rarr;</a>
+						</div>
 						{{ heading(
 							words.get("login.signup.eyebrow") or _("Get started"),
 							words.get("login.signup.title") or _("Create your account"),

@@ -34,6 +34,7 @@
 	</a>
 
 	<div class="auth-brand-words">
+		<p class="auth-brand-kicker">{{ words.get("login.panel.kicker") or _("Welcome") }}</p>
 		<p class="auth-brand-headline">
 			{{ words.get("login.panel.headline") or _("One account for membership, volunteering and training.") }}
 		</p>
@@ -43,5 +44,10 @@
 		{%- if panel_image_credit %}
 		<p class="auth-brand-credit">{{ panel_image_credit }}</p>
 		{%- endif %}
+	</div>
+
+	<div class="auth-trust">
+		<span aria-hidden="true">&#10003;</span>
+		<p>{{ words.get("login.panel.trust") or _("Your information is protected and handled responsibly.") }}</p>
 	</div>
 </aside>

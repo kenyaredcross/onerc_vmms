@@ -568,6 +568,13 @@ def _login():
 		),
 		_block("login.signin.eyebrow", "Sign in, eyebrow", s, 100, "Sign in"),
 		_block("login.signin.title", "Sign in, heading", s, 110, "Welcome back"),
+		_block(
+			"login.signin.body",
+			"Sign in, paragraph",
+			s,
+			115,
+			"Use your registered email address to continue.",
+		),
 		_block("login.signin.prompt", "Sign in, footer question", s, 120, "New to the society?"),
 		_block(
 			"login.signin.action",

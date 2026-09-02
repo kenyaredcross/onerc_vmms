@@ -83,36 +83,36 @@ function Header() {
 	const { isGuest, user } = useSession();
 
 	return (
-		<header className="sticky top-0 z-30 border-b border-card-line bg-white/90 backdrop-blur-xl">
-			<div className="mx-auto flex h-[68px] max-w-shell items-center gap-2 px-4 sm:gap-5 sm:px-6">
+		<header className="absolute inset-x-0 top-0 z-30 border-b border-white/20 text-white">
+			<div className="mx-auto flex h-[88px] max-w-[1320px] items-center gap-2 px-4 sm:gap-8 sm:px-6">
 				<Link to="/" className="flex min-w-0 items-center">
-					<BrandLockup />
+					<BrandLockup tone="dark" />
 				</Link>
 
 				<nav
 					aria-label="Main"
-					className="hidden items-center gap-0.5 rounded-full bg-surface p-1 lg:flex"
+					className="ml-auto hidden items-center gap-8 lg:flex"
 				>
 					{[1, 2, 3, 4, 5].map((index) => (
 						<EditableLink
 							key={index}
 							k={`landing.nav.item${index}`}
-							className="relative rounded-full px-3.5 py-2 text-[12.5px] font-semibold text-slate-strong transition hover:bg-white hover:text-ink"
+							className="relative py-2 text-[14px] font-semibold text-white/90 transition hover:text-white"
 						/>
 					))}
 				</nav>
 
-				<div className="ml-auto flex flex-none items-center gap-2">
+				<div className="ml-auto flex flex-none items-center gap-6">
 					{isGuest ? (
 						<>
 							<EditableLink
 								k="chrome.action.signin"
 								fallback="Sign in"
-								className="relative whitespace-nowrap rounded-full px-2 py-2 text-[12.5px] font-bold text-slate-strong transition hover:bg-surface hover:text-ink sm:px-3"
+								className="relative whitespace-nowrap py-2 text-[14px] font-semibold text-white transition hover:text-white/75"
 							/>
 							<Link
 								to="/join"
-								className="whitespace-nowrap rounded-full bg-blue px-3.5 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-blue-hover sm:px-5"
+								className="inline-flex min-h-[42px] items-center whitespace-nowrap bg-white px-5 text-[14px] font-bold text-rail transition hover:bg-white/90"
 							>
 								<EditableText k="chrome.action.join" fallback="Join us" />
 							</Link>
@@ -141,36 +141,42 @@ function Header() {
 
 function Hero() {
 	return (
-		<section className="relative overflow-hidden border-b border-card-line bg-white">
-			<div
-				aria-hidden="true"
-				className="pointer-events-none absolute -left-32 top-16 h-72 w-72 rounded-full bg-blue-soft blur-3xl"
+		<section className="relative flex min-h-[810px] items-center overflow-hidden bg-rail text-white">
+			<EditableImage
+				k="landing.hero.image"
+				className="h-full w-full"
+				imgClassName="h-full w-full object-cover"
+				objectPosition="center 45%"
+				showCredit
+				eager
+				fill
 			/>
-			<div className="relative mx-auto grid max-w-shell items-center gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:min-h-[690px] lg:grid-cols-[minmax(0,.88fr)_minmax(480px,1.12fr)] lg:gap-16 lg:py-16">
-				<div className="max-w-[610px]">
+			<div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(1,30,65,.98)_0%,rgba(1,30,65,.88)_38%,rgba(1,30,65,.25)_76%,rgba(1,30,65,.18)_100%),linear-gradient(0deg,rgba(1,20,46,.35),transparent_50%)]" />
+			<div className="relative z-10 mx-auto w-full max-w-[1200px] px-4 pt-[82px] sm:px-6">
+				<div className="max-w-[800px]">
 					<div className="mb-5 flex items-center gap-3">
-						<span aria-hidden="true" className="h-2 w-2 rounded-full bg-blue" />
+						<span aria-hidden="true" className="h-0.5 w-7 bg-aqua" />
 						<EditableText
 							k="landing.hero.eyebrow"
 							as="div"
-							className="relative text-[11px] font-semibold uppercase tracking-eyebrow text-slate-strong"
+							className="relative text-[12px] font-bold uppercase tracking-[.16em] text-white/70"
 						/>
 					</div>
 					<EditableText
 						k="landing.hero.headline"
 						as="h1"
-						className="relative max-w-[11ch] text-[44px] font-semibold leading-[.98] tracking-[-.045em] text-ink sm:text-[60px] lg:text-[70px]"
+					className="relative max-w-[9ch] font-display text-[52px] font-bold leading-[.97] tracking-[-.05em] text-white sm:text-[72px] lg:text-[94px]"
 					/>
 					<EditableText
 						k="landing.hero.body"
 						as="p"
-						className="relative mt-6 max-w-[560px] text-pretty text-[15px] leading-[1.75] text-muted sm:text-[17px]"
+					className="relative mt-7 max-w-[575px] text-pretty text-[17px] leading-[1.65] text-white/80 sm:text-[19px]"
 					/>
 					<div className="mt-8 flex flex-wrap items-center gap-3">
 						<HeroPrimary />
 						<Link
 							to="/join?path=member"
-							className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-card-line bg-white px-5 py-3.5 text-[13.5px] font-bold text-ink transition hover:border-blue-line hover:bg-blue-soft"
+							className="inline-flex min-h-[52px] items-center gap-2 whitespace-nowrap border border-white/65 px-6 text-[14px] font-bold text-white transition hover:bg-white/10"
 						>
 							<EditableText k="landing.hero.cta_secondary" fallback="Explore membership" />
 							<Icon.arrow size={15} />
@@ -178,30 +184,6 @@ function Hero() {
 					</div>
 				</div>
 
-				<div className="relative mx-auto w-full max-w-[650px] lg:ml-auto">
-					<div
-						aria-hidden="true"
-						className="absolute -bottom-4 -right-4 h-[92%] w-[92%] rounded-2xl bg-blue-soft sm:-bottom-6 sm:-right-6"
-					/>
-					<EditableImage
-						k="landing.hero.image"
-						className="relative h-[350px] overflow-hidden rounded-2xl shadow-shell sm:h-[520px] lg:h-[590px]"
-						imgClassName="transition duration-700"
-						objectPosition="center 24%"
-						showCredit
-						eager
-					/>
-					<div className="absolute -bottom-3 left-4 flex items-center gap-3 rounded-xl border border-card-line bg-white px-4 py-3 shadow-[0_2px_10px_rgba(30,50,73,0.07)] sm:bottom-7 sm:left-[-24px] sm:px-5">
-						<span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-blue-soft text-blue">
-							<Icon.pin size={17} />
-						</span>
-						<EditableLink
-							k="landing.nav.item4"
-							chevron
-							className="relative whitespace-nowrap text-[12.5px] font-bold text-ink hover:text-blue"
-						/>
-					</div>
-				</div>
 			</div>
 		</section>
 	);
@@ -218,7 +200,7 @@ function HeroPrimary() {
 	return (
 		<Link
 			to="/join?path=volunteer"
-			className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-blue px-6 py-3.5 text-[13.5px] font-bold text-white transition hover:bg-blue-hover"
+			className="inline-flex min-h-[52px] items-center gap-7 whitespace-nowrap bg-white px-6 text-[14px] font-bold text-rail transition hover:-translate-y-0.5"
 		>
 			<EditableText k="landing.hero.cta_primary" fallback="Become a volunteer" />
 			<Icon.arrow size={15} />
