@@ -540,7 +540,11 @@ def _write_profile(
 			document.update(changes)
 
 			if identification_supplied:
-				document.identifications = _identification_rows(document, documents)
+				# `set`, not assignment. Assigning a list of plain dicts to a
+				# Table field leaves them as dicts, and the next save reaches
+				# `is_new()` on something that has no such method — `set` is what
+				# builds each row into a child Document first.
+				document.set("identifications", _identification_rows(document, documents))
 
 			document.save()
 
@@ -1512,8 +1516,11 @@ def register_as_volunteer(
 	home_geo_node: str | None = None,
 	country_of_residence: str | None = None,
 	residence_address: str | None = None,
+	disability_status: str | None = None,
+	disability_needs: str | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
+	identifications: list | None = None,
 	skills: list | None = None,
 	languages: list | None = None,
 	availability: list | None = None,
@@ -1599,9 +1606,12 @@ def register_as_volunteer(
 			"home_geo_node": home_geo_node,
 			"country_of_residence": country_of_residence,
 			"residence_address": residence_address,
+			DISABILITY_FIELD: disability_status,
+			DISABILITY_NEEDS_FIELD: disability_needs,
 		},
 		id_type=id_type,
 		id_number=id_number,
+		identifications=identifications,
 	)
 
 	application = _register(
@@ -1644,6 +1654,7 @@ def register_as_member(
 	gender: str | None = None,
 	date_of_birth: str | None = None,
 	profile_photo: str | None = None,
+	payment_method: str | None = None,
 	answers: dict | None = None,
 ) -> dict:
 	"""Register the caller as a member, and put the membership into motion.
@@ -1673,6 +1684,9 @@ def register_as_member(
 			"doctype": MEMBERSHIP_DOCTYPE,
 			"membership_type": membership_type,
 			"geo_node": geo_node,
+			# Checked against what the society offers before it is stored, and
+			# checked again by `payment.request` before any money is asked for.
+			PAYMENT_METHOD_FIELD: _offered_method(payment_method),
 			**_intake_fields(first_name, last_name, phone, gender, date_of_birth),
 		},
 		answers=answers,

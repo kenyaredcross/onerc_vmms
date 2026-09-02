@@ -214,6 +214,15 @@ class VMMSMembership(Document):
 		# membership that is not yet approved simply stays where it is.
 		self.save(ignore_permissions=True)
 
+		# After the save, so the receipt describes a record that is actually
+		# written — and after activation has been re-evaluated, so a membership
+		# that went live in the same breath has already had its welcome letter
+		# from `_report`. The two are different messages about different facts:
+		# one says the money arrived, the other says the membership is active,
+		# and a person who pays for a routed membership gets only the first until
+		# somebody approves them. Never raises; see `membership.report_payment`.
+		membership_service.report_payment(self, amount=amount, receipt=receipt)
+
 	def on_payment_receipt(self, receipt=None, transaction_id=None):
 		"""Optional enrichment — a gateway receipt that arrived late.
 

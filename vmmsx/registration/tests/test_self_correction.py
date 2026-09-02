@@ -181,6 +181,10 @@ class TestCorrectingYourOwnProfile(RegistrationTestCase):
 				id_number="A-1234567",
 				date_of_birth=fixtures.DEFAULT_DATE_OF_BIRTH,
 				profile_photo="/files/portrait.png",
+				# Required to submit, and this test is about the portrait. See
+				# `fixtures.submit_volunteer_form` for why every suite that is
+				# about something else answers it.
+				disability_status="Prefer not to say",
 				declarations_accepted=fixtures.required_declarations(),
 			)
 

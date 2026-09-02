@@ -303,6 +303,76 @@ def notify(doc, previous: str | None, current: str | None, subject: dict) -> str
 		return None
 
 
+def announce_payment(doc, subject: dict, amount=None, receipt=None) -> bool:
+	"""Tell somebody their fee reached us. Returns whether anything was sent.
+
+	**A receipt, and not an activation.** The four messages above are keyed to
+	approval states and none of them fires when money arrives: a fee confirmed
+	on a membership that still needs an approver moved nothing, so the person who
+	had just paid heard nothing at all until somebody got round to reviewing
+	them. This is the message that was missing, and it says plainly that there is
+	still an approval to come rather than implying the membership is now live.
+
+	**Sent once, because the caller is called once.** `record_confirmation` is
+	idempotent and returns False for a repeat, and the membership only reaches
+	here when it returned True — so a gateway that retries or an administrator
+	who presses confirm twice produces one letter.
+
+	**Never raises**, for the reason `notify` gives at length: an email about a
+	payment must not be able to roll back the payment.
+	"""
+	try:
+		recipient = (subject.get("email") or "").strip()
+
+		if not recipient:
+			return False
+
+		rendered = get_email_template(
+			lifecycle_emails.PAYMENT_RECEIVED,
+			{
+				**_context(doc, subject),
+				# Formatted by the caller, which is the only place that knows the
+				# currency. A bare number here would be a figure with no unit on
+				# a document somebody keeps as proof of what they paid.
+				"amount": subject.get("amount") or "",
+				"receipt": subject.get("receipt") or receipt or "",
+			},
+		)
+
+		frappe.sendmail(
+			recipients=[recipient],
+			cc=_copies(subject, recipient),
+			subject=rendered["subject"],
+			message=rendered["message"],
+			now=False,
+			reference_doctype=doc.doctype,
+			reference_name=doc.name,
+		)
+
+		_sms_payment(subject, doc)
+
+		return True
+	except Exception:
+		frappe.log_error(
+			title="vmmsx: could not send a payment receipt",
+			message=frappe.get_traceback(),
+		)
+
+		return False
+
+
+def _sms_payment(subject: dict, doc) -> bool:
+	"""The one-line version, for the phone. Same rules as `_text`."""
+	from vmmsx.notifications.services import sms
+
+	return sms.tell(
+		subject.get("phone"),
+		_("We have received your {0} fee. Reference {1}. Your branch will confirm the rest by email.").format(
+			subject.get("kind") or "", doc.name
+		),
+	)
+
+
 def _text(doc, previous: str | None, current: str | None, subject: dict) -> bool:
 	"""Send the short version to the person's phone, if there is one to send.
 

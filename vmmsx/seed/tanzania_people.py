@@ -608,6 +608,11 @@ def _apply(person: dict, node: str) -> str:
 		home_geo_node=node,
 		id_type=_id_type(),
 		id_number=_id_number(person),
+		# Answered, because `assert_ready` requires an answer of every applicant
+		# and a seeded society whose applications could not be submitted would be
+		# a demo of a broken product. "Prefer not to say" is the answer that
+		# invents nothing about a person who does not exist.
+		disability_status="Prefer not to say",
 		skills=[key for key in person["skills"] if frappe.db.exists("VMMS Skill", key)],
 		languages=[],
 		availability=[],

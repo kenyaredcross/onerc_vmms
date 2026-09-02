@@ -45,7 +45,7 @@ back to decide anything. This satellite is the truth (core's Design 2).
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, cint, getdate, today
+from frappe.utils import add_days, cint, flt, getdate, today
 
 from vmmsx.approvals.services import contract
 from vmmsx.member.services import approval, payment, proof
@@ -178,8 +178,7 @@ def submit(membership) -> dict:
 	# A proof-sourced membership was already paid for, outside this system —
 	# there is nothing for a gateway to collect, so it never asks for one, even
 	# when its type charges a fee.
-	if not is_proof(membership):
-		payment.request(membership, membership_type)
+	requested = None if is_proof(membership) else payment.request(membership, membership_type)
 
 	_set_pending_status(membership, membership_type)
 
@@ -192,14 +191,44 @@ def submit(membership) -> dict:
 	activated = try_activate(membership)
 
 	if activated:
-		return activated
+		return _with_payment(activated, requested)
 
 	# Not active yet, but the person is now known to the society as a
 	# prospective member. Reported to core's index so their profile shows the
 	# application rather than nothing at all until somebody approves it.
 	_sync_member(membership)
 
-	return status(membership)
+	return _with_payment(status(membership), requested)
+
+
+def _with_payment(answer: dict, requested: dict | None) -> dict:
+	"""Carry the gateway's own first words back to whoever submitted this.
+
+	**The one thing only the gateway can say.** A person who has just sent a
+	membership application needs to know what happens next, and what happens next
+	depends entirely on which driver was asked: mobile money puts a prompt on
+	their phone within seconds, a bank transfer needs an account number and a
+	reference, a counter needs an office and opening hours. None of that is
+	vmmsx's to write — `initiate_payment` returns the driver's own `message` and
+	this hands it on unread.
+
+	Absent when there was nothing to collect, when a transaction was already
+	outstanding, or on a proof of an existing membership. A screen with no
+	message says nothing rather than inventing one.
+	"""
+	if not requested:
+		return answer
+
+	return {
+		**answer,
+		"payment": {
+			"transaction": requested.get("transaction_id"),
+			"status": requested.get("status"),
+			# The driver's own sentence. Never parsed, never matched against,
+			# never translated — it is the gateway speaking to the payer.
+			"message": requested.get("message") or "",
+		},
+	}
 
 
 def _set_pending_status(membership, membership_type) -> None:
@@ -592,6 +621,66 @@ def _resettle_pending_status(membership) -> None:
 		membership.db_set(
 			"membership_status", membership.membership_status, update_modified=False
 		)
+
+
+def report_payment(membership, amount=None, receipt=None) -> bool:
+	"""Send the receipt for a fee that has just been confirmed.
+
+	**The letter that was missing.** Every other message about a membership is
+	keyed to an approval state, and a confirmed payment moves none: a membership
+	that still needs an approver stayed exactly where it was, so somebody who had
+	just paid heard nothing until a coordinator got round to them. This says the
+	money arrived, gives them the reference to quote, and says plainly that the
+	approval is still to come.
+
+	The subject is built the way `_report` builds its own — same person, same
+	guardian copy rule — with the amount formatted here because this is the only
+	place that knows the currency.
+
+	Never raises. `lifecycle.announce_payment` swallows its own failures; this
+	guards the reads above it, because a member record that will not load must
+	not roll back the payment that was just confirmed.
+	"""
+	try:
+		from vmmsx.member.services import identity
+		from vmmsx.notifications.services import lifecycle
+		from vmmsx.registration.services import guardian
+
+		member = frappe.get_doc(MEMBER_DOCTYPE, membership.member) if membership.member else None
+
+		if not member:
+			return False
+
+		person = identity.read(member)
+		charge = payment.fee(type_of(membership))
+
+		return lifecycle.announce_payment(
+			membership,
+			{
+				"email": person.get("email"),
+				"phone": person.get("phone"),
+				"name": identity.display_name(member),
+				"kind": _("membership"),
+				"geo_path": _geo_path(membership),
+				"portal_path": "/portal/membership",
+				# Formatted with the society's own currency rather than handed
+				# over as a bare number: this letter is somebody's proof of what
+				# they paid, and a figure with no unit on it proves nothing.
+				"amount": frappe.utils.fmt_money(
+					flt(amount) if amount is not None else charge["amount"],
+					currency=charge["currency"],
+				),
+				"receipt": receipt or membership.get("payment_receipt") or "",
+				"cc": guardian.emails_for(member.red_profile),
+			},
+		)
+	except Exception:
+		frappe.log_error(
+			title="vmmsx: could not report a confirmed membership payment",
+			message=frappe.get_traceback(),
+		)
+
+		return False
 
 
 def _report(membership, previous: str | None) -> None:

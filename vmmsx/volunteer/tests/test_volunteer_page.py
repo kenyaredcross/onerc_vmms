@@ -70,11 +70,29 @@ EXPECTED_READABLE = (
 	"residency_type",
 	"country_of_residence",
 	"residence_address",
+	"vmms_disability_status",
 )
 
 # The four the page pass added, kept separately so the tests below can say which
 # half of the surface they are about.
 NEWLY_SURFACED = ("gender", "date_of_birth", "preferred_language", "profile_photo")
+
+# The eighteenth, and the one that has to be argued for rather than listed.
+#
+# **It is not core's withheld `disability`.** Core keeps that name off the spine
+# for a gated extension it has not built, and `_WITHHELD` still refuses it out
+# loud — `test_asking_for_a_withheld_field_is_refused` below is unchanged and
+# still passes. `vmms_disability_status` is a different field with a different
+# owner: it is vmmsx's own Custom Field, installed by
+# `patches/install_disability_fields.py`, and it holds an *answer* to a question
+# the applicant was asked on the registration form and could decline.
+#
+# It is readable because the branch that has to arrange somebody's first shift
+# is the one who needs to know whether to ask about adjustments. The free-text
+# `vmms_disability_needs` beside it is deliberately **not** here: that is what a
+# person chose to write about themselves, and a general reader has no use for
+# it — it is read on the record itself, by whoever may open it.
+DISCLOSED_WITH_CONSENT = "vmms_disability_status"
 
 # The twelfth, added by the coordinator's view. Home Area is where a person
 # *lives*, it is core's field on Red Profile, and the alternative to reading it
@@ -127,6 +145,20 @@ class TestTheReadableSurfaceIsExactlyWhatWasDecided(VolunteerPageTestCase):
 		"""Stated separately so the widening is legible in the suite, not just the diff."""
 		for fieldname in NEWLY_SURFACED:
 			self.assertIn(fieldname, identity._READABLE)
+
+	def test_the_disability_answer_is_readable_and_the_free_text_is_not(self):
+		"""Two different things, and only one of them is a general reader's.
+
+		The answer says whether to ask about adjustments; the description is what
+		somebody wrote about themselves. See `DISCLOSED_WITH_CONSENT`.
+		"""
+		self.assertIn(DISCLOSED_WITH_CONSENT, identity._READABLE)
+		self.assertNotIn("vmms_disability_needs", identity._READABLE)
+
+	def test_cores_withheld_disability_field_is_still_refused(self):
+		"""Widening ours did not open core's. They are different names."""
+		self.assertIn("disability", identity._WITHHELD)
+		self.assertNotIn("disability", identity._READABLE)
 
 	def test_the_sensitive_set_is_not_readable(self):
 		for fieldname in GATED_SENSITIVE:

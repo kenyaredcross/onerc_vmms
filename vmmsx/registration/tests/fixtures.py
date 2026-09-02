@@ -218,6 +218,12 @@ def make_profile(first_name: str, last_name: str, **kwargs) -> str:
 
 	Pass `date_of_birth=None` for the applicant that requirement is meant to
 	refuse.
+
+	**It also carries a disability answer**, for the same reason and by the same
+	rule: `assert_ready` now requires one of every volunteer applicant, and
+	"Prefer not to say" is an answer. A fixture without it would be modelling a
+	form nobody can submit. Pass `vmms_disability_status=None` for the applicant
+	that requirement is meant to refuse.
 	"""
 	slug = f"{first_name}.{last_name}".lower()
 	values = {
@@ -226,6 +232,7 @@ def make_profile(first_name: str, last_name: str, **kwargs) -> str:
 		"last_name": last_name,
 		"email": kwargs.pop("email", f"{slug}.{frappe.generate_hash(length=6)}{USER_DOMAIN}"),
 		"date_of_birth": DEFAULT_DATE_OF_BIRTH,
+		"vmms_disability_status": "Prefer not to say",
 	}
 	values.update(kwargs)
 
@@ -548,6 +555,13 @@ def submit_volunteer_form(geo_node: str, **values):
 		"home_geo_node": geo_node,
 		"id_type": make_identification_type(),
 		"id_number": f"{TEST_PREFIX}-{frappe.generate_hash(length=8)}",
+		# Answered, because `assert_ready` now requires an answer of every
+		# volunteer applicant — and "Prefer not to say" is one. Defaulted in for
+		# the reason the declarations and the emergency contact are: a real
+		# browser sends it, and every suite that is about something else would
+		# otherwise be asserting against a registration no applicant could make.
+		# The suite that is about *this* requirement overrides it.
+		"disability_status": "Prefer not to say",
 		"prior_experience": "School first aid club",
 		"declarations_accepted": required_declarations(),
 		"emergency_contacts": emergency_contact(),

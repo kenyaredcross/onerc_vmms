@@ -227,6 +227,12 @@ def make_profile(first_name: str = "Wanjiru", last_name: str = "Kamau", **kwargs
 
 	Pass `date_of_birth=None` to build somebody core knows nothing about — which
 	is what a test *about* that requirement wants.
+
+	**It also carries a disability answer**, for the same reason and by the same
+	rule: `assert_ready` now requires one of every volunteer applicant, and
+	"Prefer not to say" is an answer. A fixture without it would be modelling a
+	form nobody can submit. Pass `vmms_disability_status=None` for the applicant
+	that requirement is meant to refuse.
 	"""
 	slug = f"{first_name}.{last_name}".lower()
 	values = {
@@ -235,6 +241,7 @@ def make_profile(first_name: str = "Wanjiru", last_name: str = "Kamau", **kwargs
 		"last_name": last_name,
 		"email": kwargs.pop("email", f"{slug}.{frappe.generate_hash(length=6)}{USER_DOMAIN}"),
 		"date_of_birth": DEFAULT_DATE_OF_BIRTH,
+		"vmms_disability_status": "Prefer not to say",
 	}
 	values.update(kwargs)
 

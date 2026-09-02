@@ -564,6 +564,22 @@ export interface Opportunity {
 }
 
 /** `api/member.py::membership_type_pricing`. */
+/**
+ * One way a society will take a membership fee — `api/member.py::payment_methods`.
+ *
+ * `gateway` is the payments app's own record name and is what travels back with
+ * the registration; everything else is what the applicant reads. No credential,
+ * shortcode or callback URL is in this shape and none ever will be: the DTO is
+ * built field by field on the server for exactly that reason.
+ */
+export interface PaymentMethod {
+	gateway: string;
+	label: string;
+	description: string;
+	/** What the society wants an applicant told before they choose this. */
+	instructions: string;
+}
+
 export interface PricedType {
 	known: boolean;
 	membership_type: string;

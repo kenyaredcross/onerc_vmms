@@ -661,3 +661,186 @@ describe("who to call, and who says a minor may volunteer", () => {
 		expect(posted[posted.length - 1].payload.guardian_consents).toEqual([]);
 	});
 });
+
+/**
+ * More than one of the things a person actually has more than one of.
+ *
+ * `Red Profile` has always held a *table* of identifications and `VMMS
+ * Emergency Contact` has always been a table, but this form asked for exactly
+ * one of each — so a society that marks two document types required could not
+ * be satisfied by the form that asks, and a household with two numbers worth
+ * holding lost one of them at the door.
+ */
+describe("more than one of a thing", () => {
+	beforeEach(() => {
+		reads.set(API.myProfile, IDENTIFIED);
+		reads.set(API.applicationOptions, {
+			...OPTIONS,
+			id_types: [
+				...OPTIONS.id_types,
+				{
+					key: "passport",
+					label: "Passport",
+					description: null,
+					is_required: false,
+					requires_attachment: false,
+					minimum_age: null,
+				},
+			],
+		});
+	});
+
+	it("sends every identification, not only the first", async () => {
+		await walkTo("Identification");
+
+		fireEvent.click(screen.getByRole("button", { name: "Add another document" }));
+
+		fireEvent.change(screen.getByLabelText("Another ID type"), {
+			target: { value: "passport" },
+		});
+		// A regex, not the exact string: `Field` renders the required marker
+		// inside the label, so the first row's accessible name carries a
+		// trailing asterisk and the second's does not.
+		const numbers = screen.getAllByLabelText(/^ID number/);
+		fireEvent.change(numbers[1], { target: { value: "TZ-PASS-99" } });
+
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		expect(posted[posted.length - 1].payload.identifications).toEqual([
+			{ id_type: "national-id", id_number: "TZ-12345678" },
+			{ id_type: "passport", id_number: "TZ-PASS-99" },
+		]);
+	});
+
+	it("does not offer a kind of document that is already listed", async () => {
+		await walkTo("Identification");
+
+		fireEvent.click(screen.getByRole("button", { name: "Add another document" }));
+
+		const second = screen.getByLabelText("Another ID type") as HTMLSelectElement;
+		const offered = Array.from(second.options).map((option) => option.value);
+
+		expect(offered).toContain("passport");
+		expect(offered).not.toContain("national-id");
+	});
+
+	it("sends every emergency contact somebody filled in", async () => {
+		await walkTo("If something happens");
+
+		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText("Phone number"), {
+			target: { value: "+255700000002" },
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "Add another contact" }));
+
+		fireEvent.change(screen.getAllByLabelText("Their name")[1], { target: { value: "Juma" } });
+		fireEvent.change(screen.getAllByLabelText("Phone number")[1], {
+			target: { value: "+255700000003" },
+		});
+
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		const contacts = posted[posted.length - 1].payload.emergency_contacts as Array<
+			Record<string, unknown>
+		>;
+
+		expect(contacts.map((row) => row.contact_name)).toEqual(["Grace", "Juma"]);
+	});
+
+	it("drops a spare blank contact rather than storing a nameless one", async () => {
+		await walkTo("If something happens");
+
+		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText("Phone number"), {
+			target: { value: "+255700000002" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Add another contact" }));
+
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		expect(
+			(posted[posted.length - 1].payload.emergency_contacts as unknown[]).length,
+		).toBe(1);
+	});
+});
+
+/**
+ * The disability question, which is required to be *answered* and not to be
+ * answered a particular way.
+ *
+ * "Prefer not to say" satisfies it. That is the whole design: a society running
+ * an inclusive programme has to know what adjustments to offer, and the way to
+ * ask without coercing anybody is to make answering required and disclosure
+ * optional.
+ */
+describe("the disability question", () => {
+	beforeEach(() => {
+		reads.set(API.myProfile, { ...PROFILE, disability_status: null });
+	});
+
+	it("will not leave the first step until it has an answer", async () => {
+		open();
+		await onTheIdentityStep();
+
+		await goOn();
+
+		// Still here: the step did not advance.
+		expect(screen.getByRole("heading", { name: "About you" })).toBeTruthy();
+
+		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
+			target: { value: "Prefer not to say" },
+		});
+
+		await goOn();
+
+		expect(screen.queryByRole("heading", { name: "About you" })).toBeNull();
+	});
+
+	it("asks what would help only when somebody has said there is something", async () => {
+		open();
+		await onTheIdentityStep();
+
+		expect(screen.queryByLabelText("Anything that would help")).toBeNull();
+
+		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
+			target: { value: "Yes" },
+		});
+
+		expect(screen.getByLabelText("Anything that would help")).toBeTruthy();
+	});
+
+	it("sends the answer to the profile, not to the application", async () => {
+		reads.set(API.myProfile, { ...IDENTIFIED, disability_status: null });
+
+		open();
+		await onTheIdentityStep();
+
+		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
+			target: { value: "Yes" },
+		});
+		fireEvent.change(screen.getByLabelText("Anything that would help"), {
+			target: { value: "A seat at briefings" },
+		});
+
+		// Nothing is written until there is enough answered to be a draft, which
+		// is a name *and a branch* — so this walks past the placement step rather
+		// than asserting on the step that asked the question.
+		await goOn();
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		expect(posted[posted.length - 1].payload.disability_status).toBe("Yes");
+		expect(posted[posted.length - 1].payload.disability_needs).toBe("A seat at briefings");
+	});
+
+	it("is not asked of a member, who is never sent anywhere", async () => {
+		mount(<Join />, { route: "/join?path=member&type=annual" });
+		await onTheIdentityStep();
+
+		expect(screen.queryByLabelText(/^Do you have a disability\?/)).toBeNull();
+	});
+});

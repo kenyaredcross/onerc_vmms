@@ -26,8 +26,11 @@ class TestVolunteerDrafts(RegistrationTestCase):
 			"id_type": fixtures.make_identification_type(),
 			"id_number": f"{fixtures.TEST_PREFIX}-{frappe.generate_hash(length=8)}",
 			# What a browser now sends. Defaulted here because these suites are
-			# about drafting and resuming rather than about the two requirements,
-			# and a draft nobody could submit would not be testing resume.
+			# about drafting and resuming rather than about the requirements
+			# themselves, and a draft nobody could submit would not be testing
+			# resume. "Prefer not to say" is an answer, which is the whole point
+			# of the disability question having three of them.
+			"disability_status": "Prefer not to say",
 			"declarations_accepted": fixtures.required_declarations(),
 			"emergency_contacts": fixtures.emergency_contact(),
 		}

@@ -42,6 +42,7 @@ RECEIVED = "VMMS Application Received"
 APPROVED = "VMMS Application Approved"
 REJECTED = "VMMS Application Not Accepted"
 MORE_INFO = "VMMS Application Needs More Information"
+PAYMENT_RECEIVED = "VMMS Payment Received"
 
 # The greeting and sign-off every one of these messages shares.
 #
@@ -162,6 +163,41 @@ TEMPLATES = (
 			"Sent once, when an application is declined. `reason` is the decision's own reason and"
 			" is always present, because the engine refuses a rejection without one. Context:"
 			" holder_name, kind, record_id, reason, geo_path, portal_url, society_name."
+		),
+	},
+	{
+		"name": PAYMENT_RECEIVED,
+		"subject": "We have your payment",
+		"body": _wrap(
+			"""<p>
+	Your {{ kind }} fee has reached us. Thank you.
+</p>"""
+			+ _REFERENCE
+			+ """{% if amount %}
+<p><strong>Amount received:</strong> {{ amount }}</p>
+{% endif %}
+{% if receipt %}
+<p><strong>Receipt:</strong> {{ receipt }}</p>
+{% endif %}
+<p>
+	Keep this message. It is your record that the fee was paid, and the reference
+	above is what {{ geo_path or "your branch" }} will ask for if you ever need to
+	query it.
+</p>
+<p>
+	Your {{ kind }} still has to be approved by {{ geo_path or "your branch" }}
+	before it becomes active. We will write to you again as soon as that has
+	happened — there is nothing further for you to do.
+</p>
+{% if portal_url %}
+<p><a href="{{ portal_url }}">Check the progress of your {{ kind }}</a></p>
+{% endif %}"""
+		),
+		"description": (
+			"Sent once, when a fee is confirmed by whichever gateway collected it — including an"
+			" administrator confirming a bank transfer by hand. It is a receipt, not an"
+			" activation: a membership still waiting on an approver says so. Context:"
+			" holder_name, kind, record_id, amount, receipt, geo_path, portal_url, society_name."
 		),
 	},
 	{

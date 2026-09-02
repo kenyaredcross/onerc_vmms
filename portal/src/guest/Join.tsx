@@ -37,12 +37,23 @@ import type {
 	GuardianConsent,
 	IdentityOptions,
 	OpenRegistration,
+	PaymentMethod,
 	PricedType,
 	RedProfile,
 	SocietyQuestion,
 } from "../portal/types";
 
 type Path = "volunteer" | "member";
+
+/**
+ * What the payments app said when the fee was requested — `membership.submit`'s
+ * `payment` key, present only when a fee was actually asked for.
+ *
+ * `message` is the *driver's* own sentence and this app neither writes it nor
+ * reads inside it: an M-Pesa prompt, a bank account and a reference, an office
+ * to call at. Rendered verbatim.
+ */
+type PaymentAsked = { transaction: string | null; status: string | null; message: string };
 
 /** The applicant-owned fields served back when a saved/returned draft resumes. */
 type DraftRegistration = OpenRegistration & {
@@ -51,6 +62,7 @@ type DraftRegistration = OpenRegistration & {
 	answers: Record<string, string>;
 	membership_type?: string;
 	membership_status?: string;
+	payment_method?: string;
 	skills?: string[];
 	languages?: string[];
 	availability?: string[];
@@ -83,6 +95,7 @@ type StepId =
 	| "path"
 	| "identity"
 	| "plan"
+	| "payment"
 	| "placement"
 	| "identification"
 	| "declaration"
@@ -354,6 +367,22 @@ function JoinBody() {
 	const [planPreselected, setPlanPreselected] = useState(() => Boolean(params.get("type")));
 
 	/**
+	 * How this applicant wants to pay.
+	 *
+	 * A gateway name from `api/member.py::payment_methods` — the society's own
+	 * list, which is what it ticked in its settings intersected with what the
+	 * payments app currently has active. It travels with the registration and is
+	 * re-checked on the server before any money is asked for, because a draft can
+	 * sit for a fortnight and a society can stop taking M-Pesa in that time.
+	 *
+	 * Empty is a real state and not a failure: a free membership asks nothing, a
+	 * society with no gateways configured offers nothing, and both mean the fee —
+	 * if there is one — goes through whatever the payments app has active, which
+	 * is what happened before anybody was asked.
+	 */
+	const [paymentMethod, setPaymentMethod] = useState("");
+
+	/**
 	 * Whether this person has a disability, and what would help.
 	 *
 	 * On the Red Profile like the name and the date of birth, and asked of a
@@ -429,6 +458,9 @@ function JoinBody() {
 	const [busyAction, setBusyAction] = useState<"save" | "submit" | null>(null);
 	const [failure, setFailure] = useState<string | null>(null);
 	const [done, setDone] = useState(false);
+	// What the gateway said when the fee was requested, if one was. Held so the
+	// success screen can repeat it; nothing in this file reads inside it.
+	const [payment, setPayment] = useState<PaymentAsked | null>(null);
 	const [saved, setSaved] = useState<string | null>(null);
 
 	// What core already knows, so the identity step prefills rather than asking a
@@ -478,6 +510,7 @@ function JoinBody() {
 		if (!remembered || restoredDraft === remembered.name) return;
 
 		setMembershipType((current) => remembered.membership_type ?? current);
+		setPaymentMethod((current) => remembered.payment_method ?? current);
 		setSkills(remembered.skills ?? []);
 		setLanguages(remembered.languages ?? []);
 		setAvailability(remembered.availability ?? []);
@@ -548,7 +581,13 @@ function JoinBody() {
 		isGuest ? null : `join:geo_levels:${path}`,
 	);
 
-	const types = useFrappeGetCall<{ message: { types: PricedType[]; questions: SocietyQuestion[] } }>(
+	const types = useFrappeGetCall<{
+		message: {
+			types: PricedType[];
+			questions: SocietyQuestion[];
+			payment_methods: PaymentMethod[];
+		};
+	}>(
 		API.membershipTypes,
 		undefined,
 		isGuest || path !== "member" ? null : "join:membership_types",
@@ -558,6 +597,7 @@ function JoinBody() {
 	const genders = identityOptions.data?.message?.genders ?? [];
 	const priced = types.data?.message?.types ?? [];
 	const memberQuestions = types.data?.message?.questions;
+	const paymentMethods = types.data?.message?.payment_methods ?? [];
 	const chosenType = priced.find((row) => row.membership_type === membershipType) ?? null;
 
 	/**
@@ -726,9 +766,21 @@ function JoinBody() {
 		return ageOn(dateOfBirth) < minorAge;
 	}, [minorAge, dateOfBirth]);
 
+	/**
+	 * Is there a fee to collect, and a choice to make about how?
+	 *
+	 * Both halves, and both are needed. A free membership has nothing to pay, so
+	 * asking how would be a form collecting an answer nobody will use. A society
+	 * with one way of paying has nothing to choose between, so the step would be
+	 * a screen with a single option on it — the server falls back to that
+	 * society's own first method anyway, which is the same answer without the
+	 * page.
+	 */
+	const asksHowToPay = Boolean(chosenType && !chosenType.free && paymentMethods.length > 1);
+
 	const steps = useMemo(
-		() => stepsFor(path, declared, questions, declarations, planPreselected),
-		[path, declared, questions, declarations, planPreselected],
+		() => stepsFor(path, declared, questions, declarations, planPreselected, asksHowToPay),
+		[path, declared, questions, declarations, planPreselected, asksHowToPay],
 	);
 
 	// A tick that was never touched still has to be sent, because not sending it
@@ -766,6 +818,7 @@ function JoinBody() {
 					(path !== "volunteer" || (dateOfBirth && citizenship && disability)),
 			);
 		if (id === "plan") return Boolean(membershipType);
+		if (id === "payment") return Boolean(paymentMethod);
 		if (id === "placement") return Boolean(node);
 		// One complete document at least, nothing half-filled, and no kind listed
 		// twice — which is exactly what the server will accept.
@@ -954,6 +1007,10 @@ function JoinBody() {
 						...identity,
 						membership_type: membershipType,
 						geo_node: node?.name,
+						// Always sent, including empty — the server reads `null` as
+						// "leave the draft alone" and "" as a choice not yet made,
+						// and a form that omitted it could never clear one.
+						payment_method: paymentMethod,
 						answers,
 					};
 
@@ -1038,7 +1095,11 @@ function JoinBody() {
 
 		try {
 			await enqueue(persistDraft);
-			await call.post(API.submitMyRegistration, { path });
+			const answer = await call.post<{ message?: { payment?: PaymentAsked } }>(
+				API.submitMyRegistration,
+				{ path },
+			);
+			setPayment(answer?.message?.payment ?? null);
 			setDone(true);
 		} catch (submitError) {
 			setFailure(errorMessage(submitError, "Your registration was not accepted."));
@@ -1129,7 +1190,7 @@ function JoinBody() {
 
 				{!sessionLoading && !isGuest && done && (
 					<div className="mx-auto max-w-2xl">
-						<Success path={path} />
+						<Success path={path} payment={payment} />
 					</div>
 				)}
 
@@ -1291,6 +1352,15 @@ function JoinBody() {
 											/>
 										)}
 
+										{step.id === "payment" && (
+											<PaymentStep
+												methods={paymentMethods}
+												selected={paymentMethod}
+												onSelect={setPaymentMethod}
+												type={chosenType}
+											/>
+										)}
+
 										{step.id === "placement" && (
 											<PlacementStep
 												path={path}
@@ -1379,6 +1449,10 @@ function JoinBody() {
 												type={chosenType}
 												citizenship={citizenship}
 												disability={disability}
+												paymentLabel={
+													paymentMethods.find((row) => row.gateway === paymentMethod)?.label ??
+													null
+												}
 												identifications={usableIdentifications.map((row) => ({
 													label:
 														options?.id_types.find((entry) => entry.key === row.id_type)
@@ -1553,6 +1627,7 @@ function stepsFor(
 	questions: SocietyQuestion[],
 	declarations: Declaration[],
 	planChosen: boolean = false,
+	asksHowToPay: boolean = false,
 ): StepDef[] {
 	const shared: Record<"path" | "identity" | "questions" | "consents" | "confirm", StepDef> = {
 		path: {
@@ -1629,6 +1704,15 @@ function stepsFor(
 						needs: "Choose a membership type",
 					},
 					{
+						id: "payment",
+						rail: "How you'll pay",
+						eyebrow: "",
+						title: "How would you like to pay?",
+						blurb:
+							"Nothing is taken now. We ask for the fee once your application has been sent.",
+						needs: "Choose how you would like to pay",
+					},
+					{
 						id: "placement",
 						rail: "Your branch",
 						eyebrow: "",
@@ -1699,6 +1783,10 @@ function stepsFor(
 		// one it was answered in, is not a confirmation — it is a form doubting
 		// somebody. What they picked is still on the last step to check.
 		.filter((entry) => entry.id !== "plan" || !planChosen)
+		// Nothing to pay, or nothing to choose between. See `asksHowToPay`: a
+		// step offering one option is a screen that only slows somebody down,
+		// and a free membership has no question here at all.
+		.filter((entry) => entry.id !== "payment" || asksHowToPay)
 		// A society that asks nothing extra gets no step for it, rather than an
 		// empty page between the last answer and Submit.
 		.filter((entry) => entry.id !== "questions" || questions.length > 0)
@@ -2450,6 +2538,66 @@ function CitizenshipQuestion({
 					</Field>
 				</div>
 			)}
+		</div>
+	);
+}
+
+/**
+ * How the applicant would like to pay, out of what the society takes.
+ *
+ * **The list is the society's, and this file holds none of it.** Every option
+ * comes from `api/member.py::payment_methods`, which is what a society ticked in
+ * its settings intersected with what `onerc_payments` currently has active. So
+ * there is no "M-Pesa" in here, no bank transfer, and no branch on which one is
+ * configured: a society that adds a card processor next year gets a third option
+ * on this screen with no deploy.
+ *
+ * **Nothing is charged here and the screen says so.** Choosing is a statement of
+ * intent that travels with the registration; the fee is requested when the
+ * application is submitted, and what happens then belongs to the gateway — a
+ * prompt on a phone for mobile money, an account number and a reference for a
+ * transfer. Putting a card form on this page would be this app collecting
+ * payment details, which is exactly what the payments seam exists to prevent.
+ *
+ * **What the society wants said is said.** `instructions` is a field on the
+ * society's own settings row, so a branch that needs to tell people which office
+ * to pay at writes it there rather than asking for a deploy.
+ */
+function PaymentStep({
+	methods,
+	selected,
+	onSelect,
+	type,
+}: {
+	methods: PaymentMethod[];
+	selected: string;
+	onSelect: (gateway: string) => void;
+	type: PricedType | null;
+}) {
+	return (
+		<div className="max-w-xl space-y-4">
+			{type && !type.free && (
+				<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
+					This membership costs{" "}
+					<strong className="font-semibold text-ink">
+						{formatMoney(type.amount, type.currency)}
+					</strong>
+					. We will ask for it once your application has been sent — nothing is taken now.
+				</p>
+			)}
+
+			<div className="space-y-3" role="radiogroup" aria-label="How would you like to pay?">
+				{methods.map((method) => (
+					<ChoiceCard
+						key={method.gateway}
+						selected={selected === method.gateway}
+						onSelect={() => onSelect(method.gateway)}
+						icon={<Icon.card size={20} />}
+						title={method.label}
+						body={method.instructions || method.description || ""}
+					/>
+				))}
+			</div>
 		</div>
 	);
 }
@@ -3290,6 +3438,7 @@ function ConfirmStep({
 	type,
 	citizenship,
 	disability,
+	paymentLabel,
 	identifications,
 	declared,
 	experience,
@@ -3314,6 +3463,12 @@ function ConfirmStep({
 	citizenship: string;
 	/** The disability answer, or an empty string on the member path. */
 	disability: string;
+	/**
+	 * How they said they will pay, already resolved to the society's own word
+	 * for it — never the gateway's record name, which is an identifier nobody
+	 * outside the payments app has any reason to read.
+	 */
+	paymentLabel: string | null;
 	/** Already resolved to the society's own words, and already filtered. */
 	identifications: Array<{ label: string; number: string }>;
 	declared: Record<"skills" | "languages" | "availability" | "motivations", string[]>;
@@ -3368,6 +3523,17 @@ function ConfirmStep({
 								: null
 						}
 					/>
+				</Review>
+			)}
+
+			{/* Its own card, so Edit goes to the step that asked. Drawn only where
+			    there was a choice to make: a free membership and a society with
+			    one way of paying both get no payment step, and a card under a
+			    question nobody was asked is a form apologising for itself. */}
+			{path === "member" && paymentLabel && (
+				<Review title="How you'll pay" onEdit={editor("payment")}>
+					<Line label="Paying by" value={paymentLabel} />
+					<Line label="When" value="After you send this application" />
 				</Review>
 			)}
 
@@ -3847,7 +4013,7 @@ function AlreadyApplied({
 	);
 }
 
-function Success({ path }: { path: Path }) {
+function Success({ path, payment }: { path: Path; payment: PaymentAsked | null }) {
 	return (
 		<Card className="p-7 sm:p-9">
 			<div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-emerald-50">
@@ -3871,6 +4037,27 @@ function Success({ path }: { path: Path }) {
 				Your {path === "volunteer" ? "application" : "membership"} has gone to the branch you chose,
 				and somebody there will review it.
 			</p>
+
+			{/* What the gateway itself said, unedited. Mobile money has already put
+			    a prompt on the phone by the time this renders; a bank transfer
+			    needs an account number and a reference. Neither sentence is
+			    written in this app — see `membership._with_payment` — because only
+			    the driver that was asked knows what it just did. */}
+			{payment?.message && (
+				<div className="mt-6 max-w-lg rounded-xl border border-card-line bg-surface px-4 py-3.5">
+					<p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-faint">
+						Paying your fee
+					</p>
+					<p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed text-ink">
+						{payment.message}
+					</p>
+					{payment.transaction && (
+						<p className="mt-2 font-mono text-[11.5px] text-slate-faint">
+							Reference {payment.transaction}
+						</p>
+					)}
+				</div>
+			)}
 
 			{/* To the dashboard, not to `/`. Under this app's basename `/` is the
 			    public landing page: somebody who had just registered was sent to a
