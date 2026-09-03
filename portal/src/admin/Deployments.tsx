@@ -1868,12 +1868,32 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 				by placing them or by asking.
 			</p>
 
-			{options.length === 0 ? (
-				<p className="mt-4 text-[12.5px] text-slate-faint">
-					No submitted terms of reference yet. Write one under Terms of Reference and submit it
-					first: a deployment is run against a mission, and a draft is not one anybody can be asked
-					to agree to.
-				</p>
+			{available.isLoading ? (
+				<div className="mt-4">
+					<Spinner label="Loading terms of reference…" />
+				</div>
+			) : options.length === 0 ? (
+				// The dead end this used to be. A coordinator who arrives here has
+				// already decided to raise a deployment; telling them the
+				// prerequisite is missing without handing them the way to it makes
+				// the screen look broken rather than sequenced. The button is the
+				// whole difference between a rule and an instruction.
+				<div className="mt-4 rounded-lg border border-dashed border-card-line px-4 py-6 text-center">
+					<p className="text-[13px] font-semibold text-ink">
+						No submitted terms of reference yet
+					</p>
+					<p className="mx-auto mt-1.5 max-w-[52ch] text-[12.5px] leading-relaxed text-muted">
+						A deployment is run against a mission, and a draft is not one anybody can be asked to
+						agree to. Write the terms first and submit them; this form fills itself in from
+						whichever one you choose.
+					</p>
+					<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+						<ButtonLink to="/admin/deployments/terms?new=1">Write terms of reference</ButtonLink>
+						<ButtonLink to="/admin/deployments/terms" variant="quiet">
+							See all terms
+						</ButtonLink>
+					</div>
+				</div>
 			) : (
 				<>
 					<div className="mt-4 grid gap-4 sm:grid-cols-2">

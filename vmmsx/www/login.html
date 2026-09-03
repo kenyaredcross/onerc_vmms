@@ -53,6 +53,36 @@
     replacing it. -#}
 {% block head_include %}{% include "templates/includes/auth/styles.html" %}{% endblock %}
 
+{#- The social providers, on their own, because sign-in is no longer the only
+    panel that offers them.
+
+    **"Continue with Google" is a sign-up as much as a sign-in.** The round trip
+    is identical either way: the provider vouches for an address, and
+    `frappe.utils.oauth.login_oauth_user` creates the account if the Social
+    Login Key allows sign-ups and reuses it if it already exists. Offering it
+    only under "Sign in" told somebody creating an account that the fast way in
+    was not for them, and sent them to their inbox for a password link instead —
+    for an address Google had already proved they own.
+
+    Whichever panel it is pressed from, the destination stamped into the OAuth
+    state is the same one: see `_point_social_logins_at_the_portal` in login.py,
+    which leaves an explicit `redirect-to` alone so the wizard somebody came
+    from is where they come back to. -#}
+{% macro provider_buttons() %}
+{% if social_login %}
+<div class="social-logins">
+	<div class="social-login-buttons">
+		{% for provider in provider_logins %}
+		<a href="{{ provider.auth_url }}" class="es-button btn-login-option btn-{{ provider.name }}">
+			{% if provider.icon %}{{ provider.icon }}{% endif %}
+			{{ _("Continue with {0}").format(provider.provider_name) }}
+		</a>
+		{% endfor %}
+	</div>
+</div>
+{% endif %}
+{% endmacro %}
+
 {#- The password form, which appears twice on a site with social logins because
     Frappe's own page does the same: `#login` shows the providers with it, and
     `#email` is the panel somebody reaches by choosing to type a password
@@ -123,20 +153,10 @@
 	</a>
 	{% endif %}
 
-	{% if social_login %}
-	<div class="social-logins">
-		<div class="social-login-buttons">
-			{% for provider in provider_logins %}
-			<a href="{{ provider.auth_url }}" class="es-button btn-login-option btn-{{ provider.name }}">
-				{% if provider.icon %}{{ provider.icon }}{% endif %}
-				{{ _("Continue with {0}").format(provider.provider_name) }}
-			</a>
-			{% endfor %}
-		</div>
-	</div>
-	{% endif %}
+	{{ provider_buttons() }}
 </div>
 {% endmacro %}
+
 
 {% macro heading(eyebrow, title, body="") %}
 {% include "templates/includes/auth/journey.html" %}
@@ -256,6 +276,13 @@
 								<button class="es-button btn-primary btn-signup" data-variant="solid" type="submit" disabled>
 									{{ _("Create Account") }}
 								</button>
+
+								{#- Drawn only when there is in fact a second way to
+								    start an account, exactly as on the sign-in panel. -#}
+								{% if social_login %}
+								<div class="auth-or">{{ _("or") }}</div>
+								{% endif %}
+								{{ provider_buttons() }}
 							</div>
 						</form>
 						<p class="sign-up-message">

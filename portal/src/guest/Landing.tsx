@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useHref } from "react-router-dom";
 import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { ContentProvider, useContent } from "../content/ContentProvider";
@@ -10,7 +10,7 @@ import { dateTile, formatClock } from "../lib/format";
 import { BrandLockup } from "../ui/brand";
 import { Icon } from "../ui/icons";
 import { ErrorNote, Spinner } from "../ui/primitives";
-import { useSession } from "../lib/session";
+import { signupUrl, useSession } from "../lib/session";
 import type { EventCard } from "../portal/types";
 
 /**
@@ -31,6 +31,64 @@ import type { EventCard } from "../portal/types";
  * uploading an image with a convenient empty third. The same structure stacks
  * without horizontal movement from a small phone through desktop.
  */
+/**
+ * Every "join" control on this page, and the one decision they all now make.
+ *
+ * **A guest is sent to the sign-up page, not to the wizard.** They used to land
+ * on `/join`, which — having no session to work with — could only draw a
+ * "Sign in to continue" card and offer the same two links again. That card was
+ * a bridge between two pages that both said the same thing, and the second one
+ * is the one that can actually do something. So the bridge is gone: the header's
+ * "Join us", the hero's two paths, the membership band and the closing call to
+ * action all open the same auth page the header's "Sign in" opens. Which panel
+ * it shows is the only difference between them.
+ *
+ * **The intent survives the round trip.** `signupUrl` writes the destination
+ * into `redirect-to`, which Frappe stashes against the new account and the
+ * verification link honours — so somebody who pressed "Become a volunteer"
+ * comes back to the volunteer path rather than to the front page, having
+ * forgotten why they were sent away. `useHref` is what makes that
+ * address correct: the router is mounted under a basename (`/home`), and a bare
+ * `/join?path=volunteer` would be a site path this app does not answer.
+ *
+ * **Somebody already signed in keeps the direct route.** They have the session
+ * the wizard wanted; sending them through a sign-in page to get it would be the
+ * bridge again, pointing the other way.
+ */
+function JoinLink({
+	to,
+	className,
+	children,
+}: {
+	to: string;
+	className?: string;
+	children: ReactNode;
+}) {
+	const { isGuest, isLoading } = useSession();
+	// Unconditional, as every hook must be: the basename-qualified address is
+	// cheap and only one of the two branches below reads it.
+	const href = useHref(to);
+
+	// While the session is still unknown, the client route is the safe render:
+	// `/join` resolves for both audiences, and only the guest's extra hop is
+	// deferred until we know they are one.
+	if (isLoading || !isGuest) {
+		return (
+			<Link to={to} className={className}>
+				{children}
+			</Link>
+		);
+	}
+
+	// A real navigation, not a route: the auth page is Frappe's and is not part
+	// of this bundle.
+	return (
+		<a href={signupUrl(href)} className={className}>
+			{children}
+		</a>
+	);
+}
+
 export default function Landing() {
 	// Two surfaces in one request: the page's own slots and the shared chrome
 	// that the header and footer draw from.
@@ -110,12 +168,12 @@ function Header() {
 								fallback="Sign in"
 								className="relative whitespace-nowrap py-2 text-[14px] font-semibold text-white transition hover:text-white/75"
 							/>
-							<Link
+							<JoinLink
 								to="/join"
 								className="inline-flex min-h-[42px] items-center whitespace-nowrap bg-white px-5 text-[14px] font-bold text-rail transition hover:bg-white/90"
 							>
 								<EditableText k="chrome.action.join" fallback="Join us" />
-							</Link>
+							</JoinLink>
 						</>
 					) : (
 						// Signed in, so neither control in the design applies: there
@@ -174,13 +232,13 @@ function Hero() {
 					/>
 					<div className="mt-8 flex flex-wrap items-center gap-3">
 						<HeroPrimary />
-						<Link
+						<JoinLink
 							to="/join?path=member"
 							className="inline-flex min-h-[52px] items-center gap-2 whitespace-nowrap border border-white/65 px-6 text-[14px] font-bold text-white transition hover:bg-white/10"
 						>
 							<EditableText k="landing.hero.cta_secondary" fallback="Explore membership" />
 							<Icon.arrow size={15} />
-						</Link>
+						</JoinLink>
 					</div>
 				</div>
 
@@ -198,13 +256,13 @@ function Hero() {
  */
 function HeroPrimary() {
 	return (
-		<Link
+		<JoinLink
 			to="/join?path=volunteer"
 			className="inline-flex min-h-[52px] items-center gap-7 whitespace-nowrap bg-white px-6 text-[14px] font-bold text-rail transition hover:-translate-y-0.5"
 		>
 			<EditableText k="landing.hero.cta_primary" fallback="Become a volunteer" />
 			<Icon.arrow size={15} />
-		</Link>
+		</JoinLink>
 	);
 }
 
@@ -304,12 +362,12 @@ function FeatureGrid() {
 					objectPosition="center 55%"
 					actions={
 						<>
-							<Link
+							<JoinLink
 								to="/join?path=member"
 								className="rounded-full bg-blue px-5 py-3 text-[13px] font-bold text-white transition hover:bg-blue-hover"
 							>
 								<EditableText k="landing.band2.cta_primary" />
-							</Link>
+							</JoinLink>
 							<EditableLink
 								k="landing.band2.cta_secondary"
 								chevron
@@ -432,7 +490,7 @@ function StatStrip() {
 	const shown: Array<{ key: string; live?: string; labelKey: string }> = [];
 
 	if (volunteers || editing) {
-		shown.push({ key: "stat1", live: volunteers || "—", labelKey: "landing.stat1.label" });
+		shown.push({ key: "stat1", live: volunteers || "Not available", labelKey: "landing.stat1.label" });
 	}
 
 	for (const index of [2, 3, 4]) {
@@ -564,9 +622,9 @@ function EventsTeaser() {
 					{(isGuest || editing) && (
 						<p className="mt-7 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[12.5px] leading-relaxed text-muted">
 							<EditableText k="landing.events.more" as="span" className="relative" />
-							<Link to="/join?path=volunteer" className="chev font-bold text-blue hover:underline">
+							<JoinLink to="/join?path=volunteer" className="chev font-bold text-blue hover:underline">
 								<EditableText k="landing.events.join" fallback="Become a volunteer" />
-							</Link>
+							</JoinLink>
 						</p>
 					)}
 				</div>
@@ -700,13 +758,13 @@ function ClosingPanel() {
 							className="relative mt-4 max-w-[570px] text-[14px] leading-[1.75] text-white/65 sm:text-[15px]"
 						/>
 					</div>
-					<Link
+					<JoinLink
 						to="/join"
 						className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-blue px-6 py-3.5 text-[14px] font-bold text-white transition hover:bg-blue-hover"
 					>
 						<EditableText k="landing.cta.button" fallback="Join us today" />
 						<Icon.arrow size={16} />
-					</Link>
+					</JoinLink>
 				</div>
 
 				<ul className="relative mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-white/10 pt-6">

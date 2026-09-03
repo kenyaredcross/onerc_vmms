@@ -773,6 +773,47 @@ export function Button({
 	);
 }
 
+/**
+ * Is this destination a route this app draws, and if so what does the router
+ * call it?
+ *
+ * **This used to ask the opposite question, and every console button was
+ * broken by the answer.** The old rule routed `/portal`-prefixed paths through
+ * react-router and turned *everything else* into a raw `<a href>` — so
+ * `/admin/deployments/new` left the SPA entirely. The router is mounted with a
+ * basename (`/home`, or `/portal` under the older name), and a bare anchor
+ * carries none of it: the browser asked the site for `/admin/deployments/new`,
+ * which no `website_route_rules` entry claims, and Frappe answered with its own
+ * "Page not found". The button looked like it went nowhere because it went
+ * somewhere the app does not live.
+ *
+ * So the rule is inverted, and the exceptions are named rather than assumed.
+ * An in-app path is the ordinary case; a site-level one has to be listed.
+ *
+ * Returns `null` when the destination belongs to the site rather than to this
+ * app — the framework's own pages, file and API responses, another installed
+ * app, or anything with a scheme.
+ */
+const SITE_PATHS = ["/api/", "/app/", "/assets/", "/files/", "/private/", "/login", "/desk/"];
+
+export function appRoute(to: string): string | null {
+	// A scheme, a protocol-relative URL, a fragment, `mailto:`/`tel:` — none of
+	// these are paths this router can match.
+	if (!to.startsWith("/") || to.startsWith("//")) return null;
+
+	if (SITE_PATHS.some((prefix) => to === prefix.replace(/\/$/, "") || to.startsWith(prefix))) {
+		return null;
+	}
+
+	// `/portal`-prefixed strings are the app's older internal convention, from
+	// before the router grew a basename. Strip it: the basename puts it back.
+	if (to === "/portal" || to.startsWith("/portal/")) {
+		return to.replace(/^\/portal/, "") || "/";
+	}
+
+	return to;
+}
+
 export function ButtonLink({
 	to,
 	variant = "primary",
@@ -789,14 +830,16 @@ export function ButtonLink({
 	// An external or site-level destination is a real navigation; a route inside
 	// the SPA is not. Getting this wrong means a full page reload on every
 	// internal link, or a route the router cannot match on every external one.
-	return to.startsWith("/portal") ? (
-		<Link to={to.replace(/^\/portal/, "") || "/"} className={cls}>
-			{children}
-		</Link>
-	) : (
+	const route = appRoute(to);
+
+	return route === null ? (
 		<a href={to} className={cls}>
 			{children}
 		</a>
+	) : (
+		<Link to={route} className={cls}>
+			{children}
+		</Link>
 	);
 }
 

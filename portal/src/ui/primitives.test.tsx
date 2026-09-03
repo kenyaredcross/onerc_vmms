@@ -1,8 +1,8 @@
-import { screen } from "@testing-library/react";
+import { createEvent, fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { mount } from "../test/harness";
-import { Button, StateBadge, Table, Row, Cell } from "./primitives";
+import { Button, ButtonLink, StateBadge, Table, Row, Cell, appRoute } from "./primitives";
 
 /**
  * The accessibility floor, held by test rather than by review.
@@ -107,5 +107,69 @@ describe("registers are real tables", () => {
 		);
 
 		expect(screen.getAllByRole("columnheader")[1].className).toContain("text-right");
+	});
+});
+
+/**
+ * The rule that decides whether a button navigates or routes.
+ *
+ * Held by test because getting it wrong is invisible in review and loud in use:
+ * an in-app path rendered as a bare anchor drops the router's basename, and the
+ * site answers the resulting address with its own "Page not found".
+ */
+describe("a button link stays inside the app unless the address leaves it", () => {
+	it("routes an ordinary console path", () => {
+		expect(appRoute("/admin/deployments/new")).toBe("/admin/deployments/new");
+		expect(appRoute("/admin/deployments/terms?new=1")).toBe("/admin/deployments/terms?new=1");
+		expect(appRoute("/dashboard")).toBe("/dashboard");
+	});
+
+	it("strips the app's older /portal prefix rather than navigating to it", () => {
+		expect(appRoute("/portal/profile")).toBe("/profile");
+		expect(appRoute("/portal")).toBe("/");
+	});
+
+	it("hands the site back its own addresses", () => {
+		// A file response, the desk, another app, and the framework's login.
+		expect(appRoute("/api/method/vmmsx.api.deployment.download_terms?name=T-1")).toBeNull();
+		expect(appRoute("/app/event/EV-1")).toBeNull();
+		expect(appRoute("/login")).toBeNull();
+		expect(appRoute("/files/a.pdf")).toBeNull();
+	});
+
+	it("hands back anything with a scheme or no leading slash", () => {
+		expect(appRoute("https://example.org")).toBeNull();
+		expect(appRoute("//example.org")).toBeNull();
+		expect(appRoute("mailto:someone@example.org")).toBeNull();
+	});
+
+	/**
+	 * Both render an `<a>`, so the href proves nothing — the broken version
+	 * produced exactly the same one. What separates them is the click: a router
+	 * link cancels the browser's navigation and handles it in the app, and a
+	 * plain anchor lets it through. Letting it through is the whole bug, because
+	 * the address the browser then asks for carries no basename.
+	 */
+	const clickIsHandledInApp = (name: string) => {
+		const link = screen.getByRole("link", { name });
+		const click = createEvent.click(link, { button: 0, bubbles: true, cancelable: true });
+
+		fireEvent(link, click);
+
+		return click.defaultPrevented;
+	};
+
+	it("routes an in-app destination rather than reloading the site", () => {
+		mount(<ButtonLink to="/admin/deployments/new">Create deployment</ButtonLink>, {
+			route: "/admin/deployments",
+		});
+
+		expect(clickIsHandledInApp("Create deployment")).toBe(true);
+	});
+
+	it("still lets a site-level destination navigate for real", () => {
+		mount(<ButtonLink to="/api/method/vmmsx.api.deployment.download_terms">Print as PDF</ButtonLink>);
+
+		expect(clickIsHandledInApp("Print as PDF")).toBe(false);
 	});
 });
