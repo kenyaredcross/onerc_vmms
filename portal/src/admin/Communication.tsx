@@ -81,6 +81,11 @@ export default function Communication() {
 	const [smsPhoneNumbers, setSmsPhoneNumbers] = useState("");
 	const [uploadingCsv, setUploadingCsv] = useState(false);
 	const [urgency, setUrgency] = useState("routine");
+	// Four fields the record has always had and this composer never offered.
+	const [summary, setSummary] = useState("");
+	const [expiresOn, setExpiresOn] = useState("");
+	const [linkLabel, setLinkLabel] = useState("");
+	const [linkHref, setLinkHref] = useState("");
 	const [announcementType, setAnnouncementType] = useState("");
 
 	const [confirming, setConfirming] = useState(false);
@@ -135,6 +140,13 @@ export default function Communication() {
 				channels,
 				urgency,
 				announcement_type: announcementType || undefined,
+				summary: summary.trim() || undefined,
+				expires_on: expiresOn || undefined,
+				// The address is what draws the link and the label only names it —
+				// the portal falls back to "Open" — so the two are sent
+				// independently rather than gated on each other.
+				link_label: linkLabel.trim() || undefined,
+				link_href: linkHref.trim() || undefined,
 				sms_message: smsMessage.trim() || undefined,
 				sms_template: smsTemplate || undefined,
 				sms_scheduled_at: delivery === "scheduled" ? scheduledAt : undefined,
@@ -155,6 +167,10 @@ export default function Communication() {
 			// them rebuild the picker each time is how a branch stops using this.
 			setTitle("");
 			setBody("");
+			setSummary("");
+			setExpiresOn("");
+			setLinkLabel("");
+			setLinkHref("");
 			setSmsMessage("");
 			setWaMessage("");
 			setSmsTemplate("");
@@ -450,6 +466,81 @@ export default function Communication() {
 									</span>
 								</label>
 							)}
+
+							{/* The four fields the announcement record has always carried
+							    and this composer never asked for. `send()` takes every
+							    one of them and `announce.publish` reads them: the summary
+							    is what a list row shows, the expiry is what takes it back
+							    down, and the pair at the bottom is where it points. An
+							    announcement written here had no summary, never expired
+							    and could not link anywhere. */}
+							<label className="block sm:col-span-2">
+								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
+									One-line summary
+								</span>
+								<input
+									value={summary}
+									onChange={(event) => setSummary(event.target.value)}
+									placeholder="What this is about, in a line"
+									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+								/>
+								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+									Optional. Shown in people's lists above the message itself.
+								</span>
+							</label>
+
+							<label className="block">
+								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
+									Take it down on
+								</span>
+								<input
+									type="date"
+									value={expiresOn}
+									min={new Date().toISOString().slice(0, 10)}
+									onChange={(event) => setExpiresOn(event.target.value)}
+									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+								/>
+								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+									Optional. It stops being shown after this day; nothing is deleted.
+								</span>
+							</label>
+
+							<label className="block">
+								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
+									Button text
+								</span>
+								<input
+									value={linkLabel}
+									onChange={(event) => setLinkLabel(event.target.value)}
+									placeholder="Read the notice"
+									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+								/>
+								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+									Optional. Names the link below; without it the button reads "Open".
+								</span>
+							</label>
+
+							<label className="block sm:col-span-2">
+								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
+									Where it points
+								</span>
+								{/* Not `type="url"`. `vmmsx/links.py` accepts a
+								    site-relative path, http, https, mailto and tel, and
+								    the browser's url validation refuses three of those
+								    five — so it would block "/notices/flooding", which
+								    is the address a branch is most likely to use. The
+								    server is the one that checks. */}
+								<input
+									value={linkHref}
+									onChange={(event) => setLinkHref(event.target.value)}
+									placeholder="https://…  or  /notices/flooding"
+									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+								/>
+								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+									Optional. A page on your own site, another address, or an email or phone
+									link. Without button text it reads "Open".
+								</span>
+							</label>
 						</div>}
 					</ComposerSection>
 

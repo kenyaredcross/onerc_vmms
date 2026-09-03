@@ -129,6 +129,7 @@ const OPTIONS: ApplicationOptions = {
 	],
 	countries: ["Tanzania", "Kenya"],
 	residency_types: ["Local", "Abroad"],
+	citizenship_statuses: ["Citizen", "Non-citizen", "Refugee", "Migrant", "Other"],
 	default_country_of_citizenship: "Tanzania",
 	// Empty by default, so the suites about the older road walk exactly the road
 	// they always walked. The consent tests below supply their own.
@@ -193,7 +194,28 @@ beforeEach(() => {
 
 	reads.set(API.myProfile, PROFILE);
 	reads.set(API.myOpenRegistrations, { volunteer: null, member: null });
-	reads.set(API.identityOptions, { genders: ["Female", "Male"] });
+	reads.set(API.identityOptions, {
+		genders: ["Female", "Male"],
+		// Core's `Disability` register, two rows deep enough to tell a filtered
+		// pick from a lucky first hit. `description` is the disability's type,
+		// which is what the picker shows underneath each row.
+		disabilities: [
+			{ key: "Deafness", label: "Deafness", description: "Hearing" },
+			{ key: "Low vision", label: "Low vision", description: "Vision" },
+		],
+		// The four registers the background step draws. The two name-only ones
+		// come back as bare strings because the doctypes behind them have no
+		// fields — the docname is the value.
+		professions: ["Professional", "Student"],
+		licence_types: ["Nursing"],
+		education_levels: [
+			{ key: "secondary", label: "Secondary", description: null },
+			{ key: "diploma", label: "Diploma", description: null },
+		],
+		driving_licence_classes: [
+			{ key: "light_vehicle", label: "Light vehicle", description: "Cars and small vans." },
+		],
+	});
 	reads.set(API.applicationOptions, OPTIONS);
 	reads.set(API.volunteerGeoLevels, { levels: ["branch"], unconstrained: false });
 	reads.set(API.geoLadder, { levels: LEVELS });
@@ -543,21 +565,29 @@ describe("who to call, and who says a minor may volunteer", () => {
 	it("asks for somebody to call, and lets the step be walked past", async () => {
 		await walkTo("If something happens");
 
-		expect(screen.getByLabelText("Their name")).toBeTruthy();
+		expect(screen.getByLabelText(/^Their name/)).toBeTruthy();
 		// A condition of approval, not of submission: the branch can chase it.
 		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
 	});
 
-	it("refuses a contact with a name and no number", async () => {
+	it("refuses a contact that is missing any of the three the record insists on", async () => {
 		await walkTo("If something happens");
 
-		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Mercy" } });
+		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Mercy" } });
 
 		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
 
-		fireEvent.change(screen.getByLabelText("Phone number"), {
+		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000001" },
 		});
+
+		// A name and a number are not a contact. `VMMS Emergency Contact` marks
+		// the relationship mandatory too, and a row without it is refused by the
+		// framework on the next autosave — so the step holds here rather than
+		// letting somebody meet that refusal.
+		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+
+		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Sister" } });
 
 		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
 	});
@@ -602,18 +632,18 @@ describe("who to call, and who says a minor may volunteer", () => {
 
 		await walkTo("If something happens");
 
-		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Grace Otieno" } });
-		fireEvent.change(screen.getByLabelText("How you know them"), { target: { value: "Mother" } });
-		fireEvent.change(screen.getByLabelText("Phone number"), {
+		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Grace Otieno" } });
+		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000002" },
 		});
 
 		fireEvent.click(screen.getByRole("button", { name: "Same as the person above" }));
 
 		expect(
-			(screen.getByLabelText("Parent or guardian's name") as HTMLInputElement).value,
+			(screen.getByLabelText(/^Parent or guardian's name/) as HTMLInputElement).value,
 		).toBe("Grace Otieno");
-		expect((screen.getByLabelText("How they are related to you") as HTMLInputElement).value).toBe(
+		expect((screen.getByLabelText(/^How they are related to you/) as HTMLInputElement).value).toBe(
 			"Mother",
 		);
 
@@ -633,8 +663,9 @@ describe("who to call, and who says a minor may volunteer", () => {
 
 		await walkTo("If something happens");
 
-		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Grace" } });
-		fireEvent.change(screen.getByLabelText("Phone number"), {
+		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000002" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: "Same as the person above" }));
@@ -728,15 +759,19 @@ describe("more than one of a thing", () => {
 	it("sends every emergency contact somebody filled in", async () => {
 		await walkTo("If something happens");
 
-		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Grace" } });
-		fireEvent.change(screen.getByLabelText("Phone number"), {
+		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000002" },
 		});
 
 		fireEvent.click(screen.getByRole("button", { name: "Add another contact" }));
 
-		fireEvent.change(screen.getAllByLabelText("Their name")[1], { target: { value: "Juma" } });
-		fireEvent.change(screen.getAllByLabelText("Phone number")[1], {
+		fireEvent.change(screen.getAllByLabelText(/^Their name/)[1], { target: { value: "Juma" } });
+		fireEvent.change(screen.getAllByLabelText(/^How you know them/)[1], {
+			target: { value: "Brother" },
+		});
+		fireEvent.change(screen.getAllByLabelText(/^Phone number/)[1], {
 			target: { value: "+255700000003" },
 		});
 
@@ -753,8 +788,9 @@ describe("more than one of a thing", () => {
 	it("drops a spare blank contact rather than storing a nameless one", async () => {
 		await walkTo("If something happens");
 
-		fireEvent.change(screen.getByLabelText("Their name"), { target: { value: "Grace" } });
-		fireEvent.change(screen.getByLabelText("Phone number"), {
+		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000002" },
 		});
 		fireEvent.click(screen.getByRole("button", { name: "Add another contact" }));
@@ -842,5 +878,259 @@ describe("the disability question", () => {
 		await onTheIdentityStep();
 
 		expect(screen.queryByLabelText(/^Do you have a disability\?/)).toBeNull();
+	});
+});
+
+/**
+ * Naming which one, from the society's own register.
+ *
+ * The question above stays the required one and stays the only thing that can
+ * hold "Prefer not to say". This is the optional second disclosure underneath
+ * it, and every test here is about that asymmetry: it appears only on "Yes",
+ * nothing forces an answer, and changing the answer above takes it back.
+ */
+/**
+ * The optional step: what somebody has already done.
+ *
+ * Seven person facts that used to be one free-text box. The thing every test
+ * here is really guarding is that the step stayed *optional*: it sits between
+ * two required steps, it has six tables on it, and the easy mistake would be for
+ * one of them to start gating the wizard.
+ */
+describe("what you have already done", () => {
+	beforeEach(() => {
+		reads.set(API.myProfile, IDENTIFIED);
+	});
+
+	const onTheStep = () => walkTo("What you have already done");
+
+	it("is drawn for a volunteer, between what they can do and who to call", async () => {
+		await onTheStep();
+
+		expect(screen.getByRole("heading", { name: "What you have already done" })).toBeTruthy();
+	});
+
+	it("is not drawn for a member, who is taking out a subscription", async () => {
+		mount(<Join />, { route: "/join?path=member&type=annual" });
+		await onTheIdentityStep();
+
+		// Walked to the end rather than a fixed number of presses: the last step
+		// says Submit, not Continue, and pressing past it would be a registration.
+		while (screen.queryByRole("button", { name: "Continue" })) {
+			expect(screen.queryByRole("heading", { name: "What you have already done" })).toBeNull();
+			await goOn();
+		}
+	});
+
+	it("lets somebody straight past it without filling in anything", async () => {
+		await onTheStep();
+		await goOn();
+
+		// Gone, on the first press, with six empty tables behind it.
+		expect(screen.queryByRole("heading", { name: "What you have already done" })).toBeNull();
+	});
+
+	it("will not stack a second blank row on an empty one", async () => {
+		await onTheStep();
+
+		const add = screen.getByRole("button", { name: "Add somewhere you studied" });
+		fireEvent.click(add);
+
+		// One row drawn, and the button that drew it now refuses until it says
+		// something — otherwise a mis-click leaves blanks the server drops.
+		expect(screen.getByLabelText(/^School or institution/)).toBeTruthy();
+		expect((add as HTMLButtonElement).disabled).toBe(true);
+
+		fireEvent.change(screen.getByLabelText(/^School or institution/), {
+			target: { value: "Kibera Secondary" },
+		});
+
+		expect((add as HTMLButtonElement).disabled).toBe(false);
+	});
+
+	it("sends what was filled in, and nothing that was not", async () => {
+		await onTheStep();
+
+		fireEvent.click(screen.getByRole("button", { name: "Add somewhere you studied" }));
+		fireEvent.change(screen.getByLabelText(/^School or institution/), {
+			target: { value: "Kibera Secondary" },
+		});
+		fireEvent.change(screen.getByLabelText(/^Qualification/), {
+			target: { value: "KCSE" },
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "Add a referee" }));
+		fireEvent.change(screen.getByLabelText(/^Their name/), {
+			target: { value: "Grace Wanjiru" },
+		});
+
+		await goOn();
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+
+		const background = posted[posted.length - 1].payload.background as Record<string, unknown[]>;
+
+		expect(background.education).toEqual([
+			expect.objectContaining({ institution: "Kibera Secondary", qualification: "KCSE" }),
+		]);
+		expect(background.references).toEqual([
+			expect.objectContaining({ reference_name: "Grace Wanjiru" }),
+		]);
+		// Present and empty, not absent. The server reads an absent key as "leave
+		// that table alone", so a form that omitted the untouched ones could never
+		// empty them.
+		expect(background.training).toEqual([]);
+		expect(background.licences).toEqual([]);
+	});
+
+	it("opens with what the profile already holds", async () => {
+		reads.set(API.myProfile, {
+			...IDENTIFIED,
+			profession: "Student",
+			education: [
+				{
+					institution: "Kenyatta University",
+					level: "undergraduate",
+					qualification: "BSc Nursing",
+					started_in: 2016,
+					finished_in: 2020,
+					is_ongoing: false,
+					attachment: null,
+				},
+			],
+		});
+
+		await onTheStep();
+
+		expect((screen.getByLabelText(/^School or institution/) as HTMLInputElement).value).toBe(
+			"Kenyatta University",
+		);
+		expect((screen.getByLabelText(/^Profession/) as HTMLSelectElement).value).toBe("Student");
+	});
+
+	/**
+	 * The two contradictions the step resolves rather than stores. Somebody who
+	 * says they are still studying cannot also have finished in 2020, and the
+	 * answer they just pressed is the one they mean.
+	 */
+	it("clears the finish year when somebody says they are still studying", async () => {
+		await onTheStep();
+
+		fireEvent.click(screen.getByRole("button", { name: "Add somewhere you studied" }));
+		fireEvent.change(screen.getByLabelText(/^School or institution/), {
+			target: { value: "Kenyatta University" },
+		});
+		fireEvent.change(screen.getByLabelText(/^Finished/), { target: { value: "2020" } });
+		fireEvent.click(screen.getByLabelText("I am still studying here"));
+
+		expect((screen.getByLabelText(/^Finished/) as HTMLInputElement).value).toBe("");
+		expect((screen.getByLabelText(/^Finished/) as HTMLInputElement).disabled).toBe(true);
+	});
+});
+
+describe("which disability, from the register", () => {
+	const NAMED = /^Which ones, if you would like to say/;
+
+	beforeEach(() => {
+		reads.set(API.myProfile, { ...IDENTIFIED, disability_status: null });
+	});
+
+	/** The picker itself. By role, because the control carries both a visible
+	    label and an `aria-label` and a text query matches each of them. */
+	const picker = () => screen.getByRole("combobox", { name: NAMED });
+
+	/** Open the picker and tick one row by its label. */
+	const nameOne = (label: string) => {
+		fireEvent.focus(picker());
+		fireEvent.click(screen.getByRole("option", { name: new RegExp(label) }));
+	};
+
+	const disclose = () =>
+		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
+			target: { value: "Yes" },
+		});
+
+	it("is drawn only once somebody has said there is something", async () => {
+		open();
+		await onTheIdentityStep();
+
+		expect(screen.queryByRole("combobox", { name: NAMED })).toBeNull();
+
+		disclose();
+
+		expect(picker()).toBeTruthy();
+	});
+
+	it("does not hold the step up, because naming one was never required", async () => {
+		open();
+		await onTheIdentityStep();
+
+		disclose();
+		await goOn();
+
+		// Past it, with nothing named. Answering the question was the rule; this
+		// is the disclosure the rule deliberately does not demand.
+		expect(screen.queryByRole("heading", { name: "About you" })).toBeNull();
+	});
+
+	it("sends the register's keys to the profile, beside the answer itself", async () => {
+		open();
+		await onTheIdentityStep();
+
+		disclose();
+		nameOne("Deafness");
+
+		await goOn();
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+
+		const payload = posted[posted.length - 1].payload;
+		expect(payload.disability_status).toBe("Yes");
+		expect(payload.disabilities).toEqual(["Deafness"]);
+	});
+
+	/**
+	 * The one that would otherwise rot on the record. Somebody names two, thinks
+	 * better of the whole question and answers "No" — the picker is not drawn at
+	 * that point, so there is no screen on which they could take the two back.
+	 * The form has to do it for them, and it has to *send* the emptying rather
+	 * than omitting the field, which the server would read as "leave it alone".
+	 */
+	it("takes back what was named when the answer stops being yes", async () => {
+		open();
+		await onTheIdentityStep();
+
+		disclose();
+		nameOne("Deafness");
+
+		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
+			target: { value: "No" },
+		});
+
+		await goOn();
+		await goOn();
+
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+
+		const payload = posted[posted.length - 1].payload;
+		expect(payload.disability_status).toBe("No");
+		expect(payload.disabilities).toEqual([]);
+	});
+
+	it("opens with what the profile already holds", async () => {
+		reads.set(API.myProfile, {
+			...IDENTIFIED,
+			disability_status: "Yes",
+			disabilities: ["Low vision"],
+		});
+
+		open();
+		await onTheIdentityStep();
+
+		// Drawn without anybody answering anything, and already ticked.
+		fireEvent.focus(picker());
+		expect(
+			screen.getByRole("option", { name: /Low vision/ }).getAttribute("aria-selected"),
+		).toBe("true");
 	});
 });

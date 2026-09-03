@@ -7,6 +7,7 @@ import { API, errorMessage, myCertificateUrl } from "../lib/api";
 import { branchPath, formatDate, formatMoney } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { HolderCard } from "./Profile";
+import { ProofOfMembership } from "./ProofOfMembership";
 import {
 	Button,
 	Card,
@@ -18,7 +19,7 @@ import {
 	cx,
 } from "./ui/kit";
 import { Modal, useToast } from "./ui/overlays";
-import type { MembershipRow, PricedType } from "./types";
+import type { Declaration, MembershipRow, PricedType, RedProfile } from "./types";
 
 /**
  * Every membership this person holds, and every one they could hold.
@@ -50,13 +51,21 @@ export default function Membership() {
 		"portal:my_memberships",
 	);
 
-	const types = useFrappeGetCall<{ message: { types: PricedType[] } }>(
-		API.membershipTypes,
-		undefined,
-		"portal:membership_types",
-	);
+	const types = useFrappeGetCall<{
+		message: { types: PricedType[]; declarations: Declaration[] };
+	}>(API.membershipTypes, undefined, "portal:membership_types");
 
+	// Read only once somebody opens the proof form: the page's ordinary job is
+	// listing memberships, and the identity block is the one thing on it that
+	// needs the person's own record.
 	const [detail, setDetail] = useState<PricedType | null>(null);
+	const [proving, setProving] = useState<PricedType | null>(null);
+
+	const profile = useFrappeGetCall<{ message: RedProfile }>(
+		API.myProfile,
+		undefined,
+		proving ? "portal:my_profile" : null,
+	);
 
 	const rows = data?.message ?? [];
 	const priced = types.data?.message?.types ?? [];
@@ -148,6 +157,14 @@ export default function Membership() {
 								// would open a wizard that can only say the application is
 								// already in.
 								onJoin={pending.length > 0 ? undefined : () => join(plan.membership_type)}
+								// The same condition, for the same reason — and never for a
+								// plan somebody already holds here, where there is nothing
+								// left to prove.
+								onProve={
+									pending.length > 0 || holdsType.has(plan.membership_type)
+										? undefined
+										: () => setProving(plan)
+								}
 								onDetails={() => setDetail(plan)}
 							/>
 						))}
@@ -268,6 +285,33 @@ export default function Membership() {
 			>
 				{detail && <PlanDetail plan={detail} />}
 			</Modal>
+
+			{/* Wide, because it is a form rather than a summary: a date, a second
+			    date, four fields and an upload do not read in a column. */}
+			<Modal
+				open={Boolean(proving)}
+				onClose={() => setProving(null)}
+				size="lg"
+				title="Already a member?"
+				description={
+					proving
+						? `Ask your branch to recognise your ${proving.membership_type_name}`
+						: undefined
+				}
+			>
+				{proving && (
+					<ProofOfMembership
+						plan={proving}
+						profile={profile.data?.message ?? null}
+						declarations={types.data?.message?.declarations ?? []}
+						onCancel={() => setProving(null)}
+						onDone={() => {
+							setProving(null);
+							void mutate();
+						}}
+					/>
+				)}
+			</Modal>
 		</>
 	);
 }
@@ -306,11 +350,19 @@ function PlanCard({
 	plan,
 	held,
 	onJoin,
+	onProve,
 	onDetails,
 }: {
 	plan: PricedType;
 	held: boolean;
 	onJoin?: () => void;
+	/**
+	 * Claiming this plan rather than joining it. Deliberately the quiet action
+	 * of the two: a new applicant outnumbers somebody proving an old card many
+	 * times over, and giving the two equal weight would make everybody stop and
+	 * read a question only a few of them are being asked.
+	 */
+	onProve?: () => void;
 	onDetails: () => void;
 }) {
 	const { amount, period } = price(plan);
@@ -403,6 +455,18 @@ function PlanCard({
 					</span>
 				)}
 			</div>
+
+			{onProve && (
+				<div className="mx-5 mb-5 -mt-1 text-center">
+					<button
+						type="button"
+						onClick={onProve}
+						className="text-[11px] font-semibold text-slate-body underline-offset-2 hover:text-blue hover:underline"
+					>
+						Already a member of this plan?
+					</button>
+				</div>
+			)}
 		</article>
 	);
 }

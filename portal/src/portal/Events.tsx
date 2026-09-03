@@ -777,6 +777,20 @@ function Hero({
  * the fold on a narrow screen; the text beside it now wraps rather than
  * truncating, because a venue somebody cannot read is not a venue.
  */
+/**
+ * Has the moment the society set for registrations already passed?
+ *
+ * Answered in the browser because it is a statement about *now* and a card
+ * rendered at nine is still on the screen at ten. Nothing is decided by it —
+ * booking is Buzz's and Buzz enforces its own closing time — so the worst a
+ * clock a few minutes out can do is word one line early or late.
+ */
+function registrationClosed(row: EventCard): boolean {
+	if (!row.registrations_close_at) return false;
+
+	return new Date(row.registrations_close_at.replace(" ", "T")) < new Date();
+}
+
 function Card({
 	row,
 	going,
@@ -827,6 +841,17 @@ function Card({
 						{row.category}
 					</span>
 				)}
+
+				{/* Only "Free", never a price. Whether a society is charging is the
+				    first thing somebody wants to know and it is published on Buzz's
+				    own page; what it costs is a ticket type, which is Buzz's and is
+				    not re-implemented here. Bottom-left, so it does not collide with
+				    the category chip opposite. */}
+				{row.free && (
+					<span className="absolute bottom-2.5 right-2.5 rounded-full bg-success-soft px-2 py-0.5 text-[9.5px] font-bold text-success">
+						Free
+					</span>
+				)}
 			</div>
 
 			<div className="flex flex-1 flex-col p-4">
@@ -861,6 +886,26 @@ function Card({
 							<dd className="min-w-0 break-words">{row.venue || row.medium}</dd>
 						</div>
 					)}
+					{/* Only where the society has said, and worded by which side of
+					    the moment we are on. "Closes 4 March" is a prompt; "Closed 4
+					    March" is the reason the button below does nothing for you —
+					    and a card that showed neither sent somebody to a page they
+					    could no longer book. */}
+					{row.registrations_close_at && (
+						<div className="flex items-start gap-1.5">
+							<Icon.clock size={13} className="mt-0.5 flex-none text-slate-faint" />
+							<dd
+								className={cx(
+									"min-w-0",
+									registrationClosed(row) && "font-semibold text-danger",
+								)}
+							>
+								{registrationClosed(row) ? "Registration closed " : "Register by "}
+								{formatDate(row.registrations_close_at.slice(0, 10))}
+							</dd>
+						</div>
+					)}
+
 					{/* Drawn only once somebody is going. "Nobody yet" on every card in
 					    a listing of a season's events is a grid of discouragement, and
 					    it is what an event published this morning honestly says. */}
@@ -1028,6 +1073,30 @@ export function Event() {
 							{row.host && (
 								<Fact icon={<Icon.people size={16} />} label="Hosted by">
 									{row.host}
+								</Fact>
+							)}
+
+							{/* The two facts a card has no room for and a detail page
+							    owes somebody before they set off: whether the society
+							    is charging, and by when they have to have registered.
+							    Neither is a ticket — see `_as_card`. */}
+							{row.registrations_close_at && (
+								<Fact icon={<Icon.clock size={16} />} label="Registration">
+									{registrationClosed(row) ? (
+										<span className="font-semibold text-danger">
+											Closed {formatDate(row.registrations_close_at.slice(0, 10))}
+										</span>
+									) : (
+										<>
+											Open until {formatDate(row.registrations_close_at.slice(0, 10))}
+										</>
+									)}
+								</Fact>
+							)}
+
+							{row.free && (
+								<Fact icon={<Icon.card size={16} />} label="Cost">
+									Free to attend
 								</Fact>
 							)}
 

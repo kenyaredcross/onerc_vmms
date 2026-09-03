@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kenya Red Cross Society volunteer password recovery email confirmation concept.">
+  <title>Check your email — Kenya Red Cross Volunteer Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <main class="auth-shell">
+    <aside class="brand-panel" style="--panel-image: url('../vmmsx/public/images/seed_kenya/community-session.jpg')">
+      <a class="brand" href="index.html" aria-label="Return to Kenya Red Cross guest page">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-copy"><strong>Kenya Red Cross</strong><small>Volunteer portal</small></span>
+      </a>
+      <div class="panel-message">
+        <p class="panel-kicker">Recovery link requested</p>
+        <h2>Your next step<br>is in your <em>inbox.</em></h2>
+        <p>Open the secure link in the email to choose a new password and recover access to your account.</p>
+      </div>
+      <div class="trust-note"><span class="shield" aria-hidden="true">✓</span><span>Kenya Red Cross will never ask you to send your password by email.</span></div>
+    </aside>
+
+    <section class="form-panel">
+      <div class="form-top"><span>Entered the wrong email?</span><a href="forgot-password.html">Try again →</a></div>
+      <div class="form-wrap">
+        <div class="email-illustration" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/><path d="m16 16 2 2 4-5"/></svg></div>
+        <div class="form-heading">
+          <p class="step">Reset link sent</p>
+          <h1>Check your email</h1>
+          <p>If an account matches that address, password-reset instructions are on their way.</p>
+        </div>
+        <div class="auth-form">
+          <a class="submit-button" href="reset-password.html" style="text-decoration:none">Preview reset-password step <span aria-hidden="true">→</span></a>
+          <button class="email-link-button" type="button" disabled aria-describedby="resend-cooldown">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Resend available in 00:45
+          </button>
+          <div class="cooldown" id="resend-cooldown" role="status" aria-live="polite">
+            <div class="cooldown-head"><span>Please wait before requesting another link</span><strong>45 seconds</strong></div>
+            <div class="cooldown-track" aria-hidden="true"><span></span></div>
+          </div>
+          <p class="method-note">The preview button represents opening the secure link from the recovery email.</p>
+        </div>
+        <p class="form-foot">Remembered your password? <a href="sign-in.html">Return to sign in</a></p>
+      </div>
+      <footer class="page-foot"><span>© 2026 Kenya Red Cross Society</span><a href="#">Privacy</a><a href="#">Help</a></footer>
+    </section>
+  </main>
+</body>
+</html>

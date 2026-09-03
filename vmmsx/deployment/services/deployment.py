@@ -49,6 +49,8 @@ import frappe
 from frappe import _
 from frappe.utils import get_datetime, getdate, now_datetime, today
 
+from vmmsx.deployment.services import change
+
 DEPLOYMENT_DOCTYPE = "VMMS Deployment"
 
 STATUS_PLANNED = "Planned"
@@ -366,6 +368,55 @@ PLACE_FIELDS = (
 	"check_in_deadline",
 	"expected_return",
 )
+
+
+# What a coordinator may correct on a deployment that already exists, beyond the
+# place. Deliberately narrow, and deliberately not the whole document:
+#
+# - `terms_of_reference` and `geo_node` are not here. Both were checked against
+#   each other at creation — `terms.assert_within_scope` — and changing either
+#   afterwards is a different deployment under a different mission, not an edit.
+# - `status` is not here. `set_status` is its own act with its own reason, and a
+#   select buried in a form is how a deployment gets cancelled by accident.
+# - The two `Date` fields are not here. They are derived in `validate` from the
+#   planned period, and a caller that could set them could make them disagree
+#   with the datetimes they come from.
+EDITABLE_FIELDS = (
+	"coordinator",
+	"volunteers_required",
+	"email_template",
+	"notes",
+	"planned_start",
+	"planned_end",
+	"actual_start",
+	"actual_end",
+)
+
+
+def update(deployment, values: dict):
+	"""Correct a deployment that already exists, and record why where it matters.
+
+	**Through the document's own `save`, which is the whole point.** A deployment
+	moving its meeting point is not a private edit: `change.on_validate` compares
+	the material fields against what was stored, insists on a reason where one is
+	owed, records the change and announces it to everybody already on the roster.
+	A writer that reached past `save` would skip all of it, and the first anybody
+	on the deployment would hear of the new meeting point is when they arrived at
+	the old one.
+
+	`change_reason` is written before the comparison runs, because that is what
+	`change.assert_reason` reads — a coordinator supplies it in the same save as
+	the change it explains, rather than in a second one after being refused.
+	"""
+	writable = PLACE_FIELDS + EDITABLE_FIELDS + (change.REASON_FIELD,)
+
+	for field, value in values.items():
+		if field in writable:
+			deployment.set(field, value)
+
+	deployment.save()
+
+	return deployment
 
 
 def is_open(deployment) -> bool:

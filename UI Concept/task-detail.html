@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Task — Kenya Red Cross</title><link rel="stylesheet" href="portal.css"></head>
+<body><div class="portal-shell">
+  <aside class="sidebar"><a class="portal-brand" href="portal-home.html"><span class="brand-mark"></span><span class="brand-copy"><strong>Kenya Red Cross</strong><small>Volunteer &amp; member portal</small></span></a><nav class="side-nav"><a href="portal-home.html">⌂ Home</a><a href="calendar.html">□ Calendar</a><a class="active" href="tasks.html">✓ Tasks</a><a href="deployments.html">▣ Deployments</a><a href="training.html">△ Training</a></nav></aside>
+  <main class="portal-main"><header class="topbar"><button class="menu-toggle" aria-label="Open navigation">☰</button><div class="breadcrumb">Portal / Tasks / <strong id="task-breadcrumb">TSK-00081</strong></div><span class="shell-spacer"></span><a href="notifications.html">Notifications</a><span class="avatar">AM</span></header>
+    <div class="content task-record-page">
+      <a class="back-link" href="tasks.html">← Back to tasks</a>
+      <header class="task-record-header"><div><div class="task-record-kicker"><span class="task-status-label assigned" id="record-status">Assigned</span><span id="record-reference">TSK-00081</span></div><h1 id="record-title">Confirm deployment availability</h1><p id="record-context">Tana River Flood Response — Wave 3</p></div><div class="task-record-actions"><button class="task-record-secondary task-message-action" id="record-message">Message coordinator</button><button class="task-record-secondary" id="record-secondary">Decline task</button><button class="task-record-primary" id="record-primary">Accept task</button></div></header>
+      <nav class="record-tabs task-record-tabs"><a href="#overview">Overview</a><a href="#checklist">Checklist &amp; evidence</a><a href="#thread">Messages &amp; updates <b id="record-message-count">0</b></a><a href="#outcome">Outcome</a></nav>
+      <div class="task-record-layout">
+        <div class="record-panels task-record-panels">
+          <section class="record-panel" id="overview">
+            <article><h2>Description</h2><p id="record-description"></p></article>
+            <article><h2>Schedule and expectations</h2><dl class="task-record-details"><dt>Planned start</dt><dd id="record-start"></dd><dt>Planned end</dt><dd id="record-end"></dd><dt>Due</dt><dd id="record-due"></dd><dt>Answer by</dt><dd id="record-response"></dd><dt>Expected hours</dt><dd id="record-expected"></dd><dt>Actual hours</dt><dd id="record-actual"></dd></dl></article>
+            <article><h2>Where the work is</h2><dl class="task-record-details"><dt>Work location</dt><dd id="record-work-name"></dd><dt>Address</dt><dd id="record-work-address"></dd><dt>Meeting point</dt><dd id="record-meeting"></dd><dt>Travel instructions</dt><dd id="record-travel"></dd><dt>Local contact</dt><dd id="record-contact"></dd></dl></article>
+            <article><h2>Dependencies</h2><div class="task-dependency-state" id="record-dependency"><span>✓</span><div><strong>No blocking dependencies</strong><p>You can begin this task after accepting it.</p></div></div></article>
+          </section>
+          <section class="record-panel" id="checklist">
+            <article><div class="task-section-heading"><h2>Checklist</h2><span id="record-checklist-count">0 of 2 required items</span></div><div id="record-checklist"></div></article>
+            <article><div class="task-section-heading"><h2>Briefing files</h2><span>Provided by the coordinator</span></div><div id="record-files"></div></article>
+            <article><h2>Final evidence</h2><p>Submit overall evidence and completion notes when offering the work for coordinator sign-off.</p><label class="task-evidence-upload"><input type="file"><span><strong>Upload final evidence</strong><small>File upload becomes available after the task is accepted.</small></span></label></article>
+          </section>
+          <section class="record-panel" id="thread">
+            <article class="task-conversation-card">
+              <header class="task-conversation-head"><span class="task-conversation-avatar" id="record-coordinator-initials">AN</span><div><small>Task conversation</small><h2 id="record-coordinator-name">Amina Noor</h2><p>Assignment coordinator · Messages are saved in this task’s Updates record.</p></div><span class="task-question-state" id="record-question-state" hidden>Waiting for reply</span></header>
+              <div class="task-open-question" id="record-open-question" hidden><strong>Clarification requested</strong><span>The coordinator has been notified. You can continue this conversation below.</span></div>
+              <div class="task-chat" id="record-thread" aria-live="polite"></div>
+              <div class="task-chat-compose">
+                <label for="record-chat-note">Message</label>
+                <textarea class="task-thread-compose" id="record-chat-note" placeholder="Write your clarification for the coordinator"></textarea>
+                <div class="task-compose-tools"><label class="task-chat-attachment"><input id="record-chat-proof" type="file" accept="image/*"><span>Attach image</span></label><button class="task-update-button task-send-question" id="record-send-question">Send clarification</button></div>
+                <p>Sending a clarification creates a <strong>question</strong> update and marks this task as waiting for an answer.</p>
+              </div>
+            </article>
+            <article class="task-progress-card"><div><h2>Report progress</h2><p>Progress is separate from clarification and does not submit or complete the task.</p></div><label class="task-percent"><span>Your progress estimate</span><input id="record-progress" type="range" min="0" max="100"><output id="record-progress-output">0%</output></label><textarea class="task-thread-compose" id="record-progress-note" placeholder="Tell the coordinator how the work is going"></textarea><div class="task-update-actions"><button class="task-update-button" id="record-report-progress">Report progress</button></div></article>
+          </section>
+          <section class="record-panel" id="outcome">
+            <article><h2>Completion and outcome</h2><dl class="task-record-details"><dt>Submitted on</dt><dd id="record-submitted"></dd><dt>Closed on</dt><dd id="record-closed"></dd><dt>Completion notes</dt><dd id="record-completion"></dd><dt>Outcome</dt><dd id="record-outcome"></dd><dt>Times returned</dt><dd id="record-rework"></dd><dt>Last return reason</dt><dd id="record-return"></dd></dl></article>
+          </section>
+        </div>
+        <aside class="task-record-aside">
+          <section class="workspace-card"><h2>Task details</h2><dl><dt>Status</dt><dd><span class="task-status-label assigned" id="aside-status">Assigned</span></dd><dt>Priority</dt><dd id="record-priority"></dd><dt>Task type</dt><dd id="record-type"></dd><dt>Assigned on</dt><dd id="record-assigned"></dd><dt>Assignment author</dt><dd><button class="task-author-link" id="record-author-link">Amina Noor</button></dd><dt>Geo node</dt><dd id="record-geo"></dd><dt>Progress</dt><dd><strong id="aside-progress">0%</strong></dd></dl></section>
+          <section class="workspace-card"><h2>Related records</h2><a class="task-related-record" id="record-deployment" href="deployment-request.html"><span>Deployment</span><strong>Tana River Flood Response — Wave 3</strong><i>Open →</i></a><a class="task-related-record" id="record-project" href="#"><span>Project</span><strong>2026 Flood Preparedness and Response</strong><i>Open →</i></a></section>
+          <section class="notice"><strong>About task completion</strong><br>Submitting means you say the work is ready. The task becomes completed only after a coordinator signs it off.</section>
+        </aside>
+      </div>
+    </div>
+  </main>
+</div><div class="task-toast" id="record-toast" role="status"></div><script src="portal.js"></script><script src="task-detail.js"></script></body></html>

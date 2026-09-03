@@ -1353,7 +1353,27 @@ def tor_methodologies() -> dict:
 		order_by="certification_type_name asc",
 	)
 
-	return {"methodologies": rows, "certification_types": certifications}
+	# The two Link vocabularies the resource grid needs, and the Select behind
+	# its funding column. A resource line names a unit and a currency on the
+	# doctype and the editor drew both as free text, so "litres", "Litres" and
+	# "L" were three units and a costed mission could not be totalled across
+	# branches.
+	units = frappe.get_all("UOM", filters={"enabled": 1}, pluck="name", order_by="name asc")
+	currencies = frappe.get_all("Currency", filters={"enabled": 1}, pluck="name", order_by="name asc")
+
+	funding = frappe.get_meta("VMMS TOR Resource").get_field("funding_status")
+
+	return {
+		"methodologies": rows,
+		"certification_types": certifications,
+		"units": units,
+		"currencies": currencies,
+		"funding_statuses": [
+			option.strip() for option in (funding.options or "").split("\n") if option.strip()
+		]
+		if funding
+		else [],
+	}
 
 
 @frappe.whitelist()
@@ -1622,6 +1642,30 @@ def create_deployment(
 	)
 
 	return deployment_service.deployment_dto(doc)
+
+
+@frappe.whitelist()
+def update_deployment(name: str, **values) -> dict:
+	"""Correct a deployment that already exists.
+
+	**The half of the deployment record that had no door.** `create_deployment`
+	has always accepted the site, the meeting point, the travel notes and the
+	local contact through `**place`, and a coordinator who learned any of them a
+	week later had nowhere to put them: the console's form only ran at creation
+	and there was no update endpoint at all. Everything `change.py` does — the
+	material-change comparison, the reason it insists on, the announcement to
+	everybody already invited — existed for an edit path that could not be
+	reached.
+
+	Write permission, which brings core's geo scoping with it: a deployment is
+	the branch's record, not a personal one. The narrow field list lives in
+	`deployment.EDITABLE_FIELDS`, which says at length what is deliberately
+	absent from it and why.
+	"""
+	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
+	deployment.check_permission("write")
+
+	return deployment_service.deployment_dto(deployment_service.update(deployment, values))
 
 
 # --- where it is, and how people get there ---------------------------------

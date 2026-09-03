@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kenya Red Cross Society volunteer portal account creation concept.">
+  <title>Create account — Kenya Red Cross Volunteer Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <a class="skip-link" href="#auth-form">Skip to account creation</a>
+  <main class="auth-shell">
+    <aside class="brand-panel" style="--panel-image: url('../vmmsx/public/images/seed_kenya/firstaid-sagana.jpg')">
+      <a class="brand" href="index.html" aria-label="Return to Kenya Red Cross guest page">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-copy"><strong>Kenya Red Cross</strong><small>Volunteer portal</small></span>
+      </a>
+      <div class="panel-message">
+        <p class="panel-kicker">Become a volunteer</p>
+        <h2>Your time can<br>change a <em>life.</em></h2>
+        <p>Create your account to discover opportunities, complete your volunteer registration, and serve your community.</p>
+      </div>
+      <div class="trust-note"><span class="shield" aria-hidden="true">✓</span><span>Registration is free. We will guide you through every step.</span></div>
+    </aside>
+
+    <section class="form-panel">
+      <div class="form-top"><span>Already have an account?</span><a href="sign-in.html">Sign in →</a></div>
+      <div class="form-wrap">
+        <div class="form-heading">
+          <p class="step">Step 1 of your journey</p>
+          <h1>Create your account</h1>
+          <p>Enter your name and email. We will send you a secure link to set your password.</p>
+        </div>
+
+        <button class="google-button" type="button">
+          <svg class="google-icon" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.875 2.684-6.613Z"/><path fill="#34A853" d="M9 18c2.43 0 4.468-.806 5.956-2.182l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.714H.956v2.333A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.963 10.705A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.705V4.962H.956A9 9 0 0 0 0 9c0 1.452.347 2.827.956 4.038l3.007-2.333Z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.507.454 3.44 1.346l2.581-2.58C13.464.892 11.426 0 9 0A9 9 0 0 0 .956 4.962l3.007 2.333C4.672 5.166 6.656 3.58 9 3.58Z"/></svg>
+          Sign up with Google
+        </button>
+        <div class="divider">or use your email</div>
+
+        <form class="auth-form" id="auth-form" action="signup-check-email.html" method="get">
+          <div class="field"><label for="full-name">Full name</label><input id="full-name" name="full_name" type="text" autocomplete="name" placeholder="Your full name" required></div>
+          <div class="field"><label for="signup-email">Email address</label><input id="signup-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required></div>
+          <label class="check-row"><input type="checkbox" name="terms" required><span>I agree to the <a href="#">Terms of Use</a> and acknowledge the <a href="#">Privacy Notice</a>.</span></label>
+          <button class="submit-button" type="submit">Create account <span aria-hidden="true">→</span></button>
+          <p class="method-note">You will create your password from the secure link sent to your email.</p>
+        </form>
+        <p class="form-foot">Already registered? <a href="sign-in.html">Sign in</a></p>
+      </div>
+      <footer class="page-foot"><span>© 2026 Kenya Red Cross Society</span><a href="#">Privacy</a><a href="#">Help</a></footer>
+    </section>
+  </main>
+</body>
+</html>

@@ -125,3 +125,19 @@ vmmsx.patches.link_faq_in_navigation
 # patch's own docstring for why the choice is the society's and the applicant's
 # rather than a single setting in another app.
 vmmsx.patches.install_membership_payment_methods
+# *Which* disability, on top of whether. Points a Table MultiSelect on core's
+# Red Profile at core's own Disability register — which shipped with no reader
+# in this app — grants All read on it, and seeds the Washington Group domains as
+# a starting vocabulary. The Select installed above stays the required question
+# and stays the only thing that can hold "Prefer not to say".
+vmmsx.patches.install_disability_vocabulary
+# What somebody has already done — profession, education, training, experience,
+# licences, driving licence and references — as seven fields on core's Red
+# Profile, with the two registers they need seeded. All optional; no completion
+# rule moved. See the patch's own docstring for why they sit on the spine.
+vmmsx.patches.install_background_fields
+# Five questions a society may want and this product must not assume — blood
+# group, health notes, insurance cover, internet access, dependants. Seeded
+# **inactive** into the form builder as worked examples, so nobody is asked one
+# until an administrator switches it on.
+vmmsx.patches.seed_optional_questions

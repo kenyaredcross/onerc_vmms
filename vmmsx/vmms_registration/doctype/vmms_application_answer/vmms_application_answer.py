@@ -1,7 +1,7 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""VMMS Application Answer — what one applicant said to one society question.
+"""VMMS Application Answer — what one applicant said to one organization-specific question.
 
 A child table on the registration itself, so an application carries its own
 answers the way it carries its own decisions. The approver reads them off the

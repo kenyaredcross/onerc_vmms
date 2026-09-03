@@ -156,6 +156,20 @@ def geo_node_levels() -> dict:
 	return {"levels": levels, "unconstrained": not levels}
 
 
+def _select_options(field) -> list[str]:
+	"""A Select field's own options, as a list.
+
+	A Select's options are newline separated and a leading or trailing blank line
+	is ordinary in one, so the empties are dropped rather than rendered as a
+	nameless choice. Absent field, empty list: a site mid-migrate has no options
+	to offer and that is not an error.
+	"""
+	if not field:
+		return []
+
+	return [option.strip() for option in (field.options or "").split("\n") if option.strip()]
+
+
 @frappe.whitelist()
 def application_options() -> dict:
 	"""Every vocabulary a volunteer registration form has to draw, in one call.
@@ -180,7 +194,9 @@ def application_options() -> dict:
 	`All`: a vocabulary is what a form may offer, and it says nothing about any
 	person.
 	"""
-	residency = frappe.get_meta("Red Profile").get_field("residency_type")
+	profile = frappe.get_meta("Red Profile")
+	residency = profile.get_field("residency_type")
+	citizenship = profile.get_field("citizenship_status")
 
 	return {
 		"skills": _vocabulary("VMMS Skill", "skill_name"),
@@ -192,11 +208,13 @@ def application_options() -> dict:
 		# A Select's options are newline separated and a leading or trailing
 		# blank line is ordinary in one, so the empties are dropped rather than
 		# rendered as a nameless third choice.
-		"residency_types": [
-			option.strip() for option in (residency.options or "").split("\n") if option.strip()
-		]
-		if residency
-		else [],
+		"residency_types": _select_options(residency),
+		# What kind of standing a person has in the country they are applying in.
+		# The form asks it as "are you a citizen of X?", which answers this field
+		# for everybody who says yes and leaves the four other words to whoever
+		# says no — and they are the field's own words, read off the Select, so the
+		# form can never offer a standing the profile would refuse to store.
+		"citizenship_statuses": _select_options(citizenship),
 		"default_country_of_citizenship": _default_citizenship(),
 		# The society's own questions, if it has written any. Same call the
 		# membership options endpoint makes, so both wizards draw an added
@@ -606,6 +624,79 @@ def reinstate_volunteer(name: str, reason: str | None = None) -> dict:
 	reinstated with no approved application is Prospective rather than Active.
 	"""
 	return volunteer_service.reinstate(_writable(VOLUNTEER_DOCTYPE, name), reason)
+
+
+@frappe.whitelist()
+def set_volunteer_notes(name: str, notes: str | None = None) -> dict:
+	"""The branch's own note about this volunteer.
+
+	**A coordinator's field, which is why it goes through `_writable`.**
+	`VMMS Volunteer.notes` has been on the doctype since it was written and no
+	DTO carried it, so a note made at the desk could not be read back on the
+	register and nobody working from the console could make one. It is the
+	register's margin: why somebody is placed where they are, what a branch
+	agreed with them, what to remember before deploying them again.
+
+	Not the holder's own field. `_writable` refuses the person the record is
+	about, exactly as it does for suspension — a note a coordinator makes about
+	somebody is not a note that person may rewrite.
+
+	Blank clears it, deliberately: a note that is no longer true should be
+	removable, and the alternative is a field that can only ever grow.
+	"""
+	volunteer = _writable(VOLUNTEER_DOCTYPE, name)
+	volunteer.notes = (notes or "").strip()
+	volunteer.save()
+
+	return {"volunteer": volunteer.name, "notes": volunteer.notes}
+
+
+@frappe.whitelist()
+def set_volunteer_capabilities(
+	name: str,
+	skills: list | None = None,
+	languages: list | None = None,
+	availability: list | None = None,
+) -> dict:
+	"""Record what a volunteer can do now, as the branch knows it.
+
+	**The volunteer's own copy, not the application's claim.** That distinction
+	is `volunteer/services/capabilities.py`'s whole reason for existing: what
+	somebody said when they applied is a claim made once, and what they can do
+	now is a fact a branch maintains. The record has always had the second and
+	nothing but acceptance ever wrote it — so a volunteer who qualified as a
+	first-aider in March had no way to have it recorded, and every search that
+	filters on skills went on missing them.
+
+	Each list replaces its table wholesale, and `None` leaves it alone: a screen
+	saving one control must not empty the other two. Same shape the registration
+	endpoints take, through the same `selector_rows`.
+
+	`_writable`, not `_readable`. Editing what somebody is recorded as being
+	able to do is a coordinator's act; a volunteer keeps their own availability
+	through `set_my_availability`, which is the possessive door and checks
+	ownership instead.
+	"""
+	from vmmsx.volunteer.services import capabilities
+
+	volunteer = _writable(VOLUNTEER_DOCTYPE, name)
+
+	for field, link_field, supplied in (
+		("skills", "skill", skills),
+		("languages", "language", languages),
+		("availability", "availability_slot", availability),
+	):
+		if supplied is None:
+			continue
+
+		if isinstance(supplied, str):
+			supplied = frappe.parse_json(supplied or "[]")
+
+		volunteer.set(field, selector_rows(supplied, link_field))
+
+	volunteer.save()
+
+	return capabilities.current(volunteer)
 
 
 @frappe.whitelist()

@@ -80,6 +80,14 @@ _CARD_FIELDS = [
 	"time_zone_label",
 	"banner_image",
 	"card_image",
+	# Three facts about the event itself, all of them already on Buzz's own
+	# public page. None is a ticket, a price or a seat — see `_as_card`, which
+	# says what each is for and why reading them is not a step across the
+	# booking boundary this seam exists to hold.
+	"free_event",
+	"registrations_close_at",
+	"external_registration_page",
+	"registration_url",
 	geo.GEO_NODE_FIELD,
 ]
 
@@ -192,6 +200,10 @@ def detail(event: str) -> dict | None:
 			"banner_image",
 			"card_image",
 			"host",
+			"free_event",
+			"registrations_close_at",
+			"external_registration_page",
+			"registration_url",
 			geo.GEO_NODE_FIELD,
 		],
 		as_dict=True,
@@ -491,6 +503,36 @@ def _as_card(row: dict) -> dict:
 		# nothing else. Either may be empty, and the card draws a placeholder.
 		"image": row.get("card_image") or row.get("banner_image") or "",
 		"geo_node": row.get(geo.GEO_NODE_FIELD) or "",
-		"href": event_url(row.get("route")),
+		# **Where the call to action actually goes.** Buzz's own event page,
+		# unless the society said registration happens somewhere else — an
+		# `external_registration_page` with a `registration_url` behind it is a
+		# society telling Buzz "not here", and a card that ignored it sent
+		# everybody to a page with no way to book on it.
+		#
+		# Still a full navigation away, which is the whole of what this boundary
+		# asks: nothing about tickets, prices or seats is re-implemented here,
+		# and the link is honoured rather than second-guessed.
+		"href": _registration_url(row) or event_url(row.get("route")),
+		# Whether the society is charging for this one. A published fact and the
+		# first thing a volunteer wants to know; not a price, and not a ticket.
+		"free": bool(row.get("free_event")),
+		# When it stops being possible to register, or empty where the society
+		# has not said. A card that shows an event nobody can book any more,
+		# with no indication of it, is a card that wastes somebody's afternoon.
+		"registrations_close_at": str(row.get("registrations_close_at") or ""),
 		"multi_day": bool(start and end and getdate(end) != getdate(start)),
 	}
+
+
+def _registration_url(row: dict) -> str:
+	"""The society's own registration page for this event, where it set one.
+
+	Both halves, because either alone is a half-configured event: the tickbox
+	without an address is a society that meant to point somewhere and did not,
+	and an address without the tickbox is one that changed its mind. Empty in
+	both cases, and the caller falls back to Buzz's page.
+	"""
+	if not row.get("external_registration_page"):
+		return ""
+
+	return str(row.get("registration_url") or "").strip()

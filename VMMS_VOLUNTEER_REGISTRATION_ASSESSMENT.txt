@@ -1,0 +1,194 @@
+VMMS VOLUNTEER REGISTRATION ASSESSMENT
+=====================================
+
+Overall assessment
+------------------
+
+The current volunteer registration process is sufficient for a solid MVP and
+basic production use. It is stronger than the supplied reference app in several
+important areas.
+
+Current process coverage
+------------------------
+
+* Account-based self-registration
+* Personal identity
+* Date of birth
+* Country of citizenship
+* Residence and home area
+* Identification type and number
+* Serving branch
+* Skills, languages, availability and motivation
+* Prior experience
+* Profile photograph
+* Configurable society-specific questions
+* Configurable required attachments
+* Draft saving and resumption
+* Server-side validation
+* Duplicate/open-registration protection
+* Approval workflow
+* Automatic creation of the volunteer record after approval
+
+The server checks citizenship, identification, date of birth, residency and
+required society questions before submission. The browser also saves drafts as
+the applicant moves between steps.
+
+The process has a proper lifecycle:
+
+    Draft -> Submitted -> Review -> Approved/Rejected -> Volunteer record
+
+This is not merely a form; it is a controlled registration workflow.
+
+
+What is still missing
+=====================
+
+The remaining gaps are mostly governance and safeguarding rather than basic
+registration functionality.
+
+1. Explicit consent and declarations
+------------------------------------
+
+Add required declarations for:
+
+* Code of conduct
+* Safeguarding commitment
+* Data protection/privacy consent
+* Permission to contact the applicant
+* Accuracy of submitted information
+* Consent to background checks where applicable
+
+The configurable-question mechanism can support these, but they are important
+enough to be standard, visible and versioned.
+
+2. Emergency contact and next of kin
+------------------------------------
+
+Collect:
+
+* Name
+* Relationship
+* Phone number
+* Alternative phone number
+* Permission to contact in an emergency
+
+This is especially important before deployment.
+
+3. References and screening
+---------------------------
+
+Depending on jurisdiction and volunteer role, support:
+
+* Referee name and contact
+* Reference status
+* Screening/background-check status
+* Verification date
+* Reviewer notes
+* Reason for any restriction
+
+These should be private reviewer fields, not ordinary applicant answers.
+
+4. Identity document attachment
+-------------------------------
+
+The current process requires an ID type and number, but not a copy of the
+document. If policy requires evidence, configure or add a required attachment
+for an accepted document such as:
+
+* National ID
+* Passport
+* Residence permit
+* Other approved identification
+
+The existing attachment-question mechanism is suitable for this, but the policy
+should specify which document types are accepted.
+
+5. Age and safeguarding rules
+-----------------------------
+
+Date of birth is already mandatory. The next step is enforcing rules such as:
+
+* Minimum volunteer age
+* Guardian consent for minors
+* Restrictions on deployment involving minors
+* Additional checks for vulnerable-person work
+* Role-specific eligibility
+
+At present, date of birth is collected, but the surrounding safeguarding
+decision is not fully represented in the registration process.
+
+6. Communication verification
+-----------------------------
+
+The login proves account access, but separately track:
+
+* Email verified
+* Phone verified
+* Preferred communication channel
+* Consent to SMS/WhatsApp/email
+* Contactability status
+
+This prevents an approved volunteer from being operationally unreachable.
+
+7. Applicant-facing status and correction process
+-------------------------------------------------
+
+The workflow supports returned applications, but the applicant experience should
+clearly show:
+
+* Current status
+* Who needs to act
+* Missing information
+* Reviewer correction request
+* Deadline, if any
+* Resubmission history
+
+"Under review" and "returned for correction" have different meanings and should
+be presented differently.
+
+8. Registration audit and versioning
+------------------------------------
+
+Record:
+
+* Form/question version used
+* Consent text version accepted
+* Submission timestamp
+* IP/device information where legally appropriate
+* Reviewer decisions and reasons
+* Changes made after return
+* Which attachments were present at submission
+
+This becomes important when requirements change over time.
+
+
+Sufficiency rating
+==================
+
+MVP                              Sufficient
+Basic operational deployment    Nearly sufficient
+National/regulatory programme   Needs further controls
+
+
+Recommended immediate additions
+===============================
+
+1. Standard consent and safeguarding declarations
+2. Emergency contact/next-of-kin details
+3. Configurable identity-document requirements
+4. Screening and reference tracking
+5. Clear correction and applicant-status messaging
+
+
+Final recommendation
+====================
+
+Keep the current architecture. It already has the right separation between:
+
+* Applicant profile
+* Registration application
+* Approval process
+* Final volunteer record
+
+The next improvements should add safeguards, verification, auditability and
+operational readiness rather than replace the registration flow.

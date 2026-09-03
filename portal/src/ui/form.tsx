@@ -1,5 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useFrappeFileUpload } from "frappe-react-sdk";
 
+import { errorMessage } from "../lib/api";
 import { cx } from "./primitives";
 
 /**
@@ -59,16 +61,19 @@ export function Field({
 	hint,
 	required,
 	htmlFor,
+	className,
 	children,
 }: {
 	label: ReactNode;
 	hint?: ReactNode;
 	required?: boolean;
 	htmlFor?: string;
+	/** For a field that spans its grid — `sm:col-span-2` on a two-column step. */
+	className?: string;
 	children: ReactNode;
 }) {
 	return (
-		<div>
+		<div className={className}>
 			{/* Sentence case at reading size, not a tracked-out micro-caption.
 			    A 10px uppercase label is a caption for a figure; this is the
 			    question somebody is being asked, and it should be as easy to read
@@ -131,23 +136,36 @@ export function TextInput({
 	placeholder,
 	type = "text",
 	inputMode,
+	min,
 	max,
+	step,
 }: {
 	id?: string;
 	value: string;
 	onChange: (value: string) => void;
 	disabled?: boolean;
 	placeholder?: string;
-	type?: "text" | "tel" | "date";
+	/**
+	 * The control's type, which is how a field's own kind reaches the browser.
+	 * `email` and `number` are here because the record has fields of those
+	 * kinds: a guardian's address is an `Email` and a society's numeric question
+	 * is an `Int`, and typing them as text meant a phone keyboard nobody got and
+	 * a validation nobody ran until the save refused it.
+	 */
+	type?: "text" | "tel" | "date" | "email" | "number";
 	inputMode?: "text" | "tel" | "numeric";
+	min?: string | number;
 	max?: string;
+	step?: string | number;
 }) {
 	return (
 		<input
 			id={id}
 			type={type}
 			inputMode={inputMode}
+			min={min}
 			max={max}
+			step={step}
 			className={CONTROL}
 			value={value}
 			disabled={disabled}
@@ -769,5 +787,86 @@ export function Tick({ className, size = 12 }: { className?: string; size?: numb
 		>
 			<path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
 		</svg>
+	);
+}
+
+/**
+ * A file the applicant attaches, uploaded before the record it belongs to exists.
+ *
+ * It has to be: somebody picks their chief's letter, a copy of their national
+ * card or their parent's signed form several steps before anything is filed. So
+ * the file is created private and unattached, and the server anchors it at the
+ * moment of insert — `questions.anchor_files()` for an answer,
+ * `evidence.secure()` for an identity document's copy and for a guardian's
+ * consent — which is what makes it readable by the approver and by nobody else.
+ * Until then it belongs to the person who uploaded it, which is the right state
+ * for a document not yet given to anybody.
+ *
+ * The framework's own uploader, the same one the content editor uses, rather
+ * than a second one written here.
+ */
+export function PrivateUpload({
+	id,
+	value,
+	onChange,
+	choose = "Choose file",
+	replace = "Replace file",
+}: {
+	id: string;
+	value: string;
+	onChange: (value: string) => void;
+	/** What the button says. Named for the thing, so two on one screen differ. */
+	choose?: string;
+	replace?: string;
+}) {
+	const { upload, loading } = useFrappeFileUpload();
+	const [failure, setFailure] = useState<string | null>(null);
+
+	const pick = async (file: File | undefined) => {
+		if (!file) return;
+		setFailure(null);
+
+		try {
+			const uploaded = await upload(file, {
+				// Private, and it stays private. A letter naming somebody's chief is
+				// not a public asset, and the permission that governs it becomes the
+				// application's own once the registration anchors it.
+				isPrivate: true,
+			});
+			onChange(uploaded.file_url);
+		} catch (uploadError) {
+			setFailure(errorMessage(uploadError, "That file could not be uploaded."));
+		}
+	};
+
+	return (
+		<div>
+			<div className="flex items-center gap-3">
+				<label
+					htmlFor={id}
+					className="cursor-pointer rounded-lg border border-card-line bg-canvas px-3 py-2 text-[12px] font-semibold text-ink hover:border-brand"
+				>
+					{loading ? "Uploading…" : value ? replace : choose}
+				</label>
+				<input
+					id={id}
+					type="file"
+					className="sr-only"
+					disabled={loading}
+					onChange={(event) => pick(event.target.files?.[0])}
+				/>
+
+				{value && !loading && (
+					<span className="inline-flex items-center gap-1.5 text-[12px] text-slate-faint">
+						<Tick className="text-brand" />
+						Attached
+					</span>
+				)}
+			</div>
+
+			{failure && (
+				<p className="mt-2 text-[11.5px] leading-relaxed text-danger">{failure}</p>
+			)}
+		</div>
 	);
 }

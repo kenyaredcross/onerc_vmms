@@ -4,6 +4,7 @@ import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react
 
 import { API, cardUrl, certificateUrl, errorMessage } from "../lib/api";
 import { formatDate, formatHours, formatMoney, geoPath } from "../lib/format";
+import { MultiCombo } from "../ui/form";
 import { PersonHero, RegisterLinks } from "../ui/PersonHero";
 import {
 	Button,
@@ -20,7 +21,9 @@ import {
 	cx,
 } from "../ui/primitives";
 import type {
+	ApplicationOptions,
 	DecisionRow,
+	DossierBackground,
 	MemberDossier,
 	SelectorRow,
 	VolunteerDossier,
@@ -84,6 +87,261 @@ export default function Person() {
 	return <ErrorNote>There is no register of that kind.</ErrorNote>;
 }
 
+/* ------------------------------------------------------------ shared panels */
+
+/**
+ * The branch's own note about a person, on either register.
+ *
+ * `VMMS Volunteer.notes` and `VMMS Member.notes` have been on their doctypes
+ * since they were written, carried by no DTO and writable from no screen — so a
+ * note made at the desk was invisible here and a coordinator working from the
+ * console could not make one at all. It is the register's margin: why somebody
+ * is placed where they are, what a branch agreed with them, what to remember
+ * before deploying them again.
+ *
+ * **Drawn read-only for the person it is about.** `can_act` is the server's own
+ * answer and the holder gets `false` — the same split `_writable` enforces, so
+ * this panel cannot offer an edit the save would refuse.
+ */
+function RegisterNotes({
+	notes,
+	canAct,
+	endpoint,
+	name,
+	onChanged,
+}: {
+	notes: string | null;
+	canAct: boolean;
+	endpoint: string;
+	name: string;
+	onChanged: () => void;
+}) {
+	const { call } = useContext(FrappeContext) as FrappeConfig;
+
+	const [open, setOpen] = useState(false);
+	const [draft, setDraft] = useState(notes ?? "");
+	const [busy, setBusy] = useState(false);
+	const [failure, setFailure] = useState<string | null>(null);
+
+	// Nothing recorded and nothing anybody here may record: the panel would be
+	// an empty box explaining a feature this reader does not have.
+	if (!canAct && !notes) return null;
+
+	const save = async () => {
+		setBusy(true);
+		setFailure(null);
+
+		try {
+			await call.post(endpoint, { name, notes: draft.trim() });
+			setOpen(false);
+			onChanged();
+		} catch (problem) {
+			setFailure(errorMessage(problem, "That note was not saved."));
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<Card className="mb-5">
+			<div className="flex flex-wrap items-start justify-between gap-2">
+				<SectionTitle>Branch notes</SectionTitle>
+				{canAct && !open && (
+					<button
+						type="button"
+						onClick={() => {
+							setDraft(notes ?? "");
+							setOpen(true);
+						}}
+						className="text-[12px] font-semibold text-ink hover:underline"
+					>
+						{notes ? "Edit" : "Add a note"}
+					</button>
+				)}
+			</div>
+
+			{open ? (
+				<div className="mt-3">
+					<textarea
+						value={draft}
+						rows={5}
+						onChange={(event) => setDraft(event.target.value)}
+						placeholder="Why they are placed where they are, what was agreed, what to remember."
+						className="w-full resize-y rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+					/>
+					<p className="mt-1.5 text-[11.5px] leading-relaxed text-muted">
+						Seen by coordinators, not by the person it is about. Clearing it removes it.
+					</p>
+
+					{failure && (
+						<div className="mt-3">
+							<ErrorNote>{failure}</ErrorNote>
+						</div>
+					)}
+
+					<div className="mt-3 flex flex-wrap gap-2">
+						<Button onClick={() => void save()} disabled={busy}>
+							{busy ? "Saving…" : "Save note"}
+						</Button>
+						<Button variant="navy" onClick={() => setOpen(false)}>
+							Cancel
+						</Button>
+					</div>
+				</div>
+			) : notes ? (
+				<p className="mt-2 whitespace-pre-line text-[13px] leading-relaxed text-muted">{notes}</p>
+			) : (
+				<p className="mt-2 text-[13px] text-slate-faint">Nothing recorded.</p>
+			)}
+		</Card>
+	);
+}
+
+/**
+ * What a volunteer can do now, and correcting it.
+ *
+ * **The volunteer's own record, not the claim on their application.** That
+ * distinction is `volunteer/services/capabilities.py`'s whole reason for
+ * existing — what somebody said when they applied is a claim made once, what
+ * they can do now is a fact the branch maintains — and until this panel the
+ * second could only ever be written by the acceptance that created the record.
+ * A volunteer who qualified as a first-aider in March had no way to have it
+ * recorded, and every candidate search that filters on skills went on missing
+ * them.
+ */
+function Capabilities({
+	volunteer,
+	capabilities,
+	canAct,
+	onChanged,
+}: {
+	volunteer: string;
+	capabilities: VolunteerDossier["capabilities"];
+	canAct: boolean;
+	onChanged: () => void;
+}) {
+	const { call } = useContext(FrappeContext) as FrappeConfig;
+
+	const [open, setOpen] = useState(false);
+	const [skills, setSkills] = useState<string[]>([]);
+	const [languages, setLanguages] = useState<string[]>([]);
+	const [availability, setAvailability] = useState<string[]>([]);
+	const [busy, setBusy] = useState(false);
+	const [failure, setFailure] = useState<string | null>(null);
+
+	// The society's own vocabularies, and the same call the registration wizard
+	// draws its pickers from — so a coordinator and an applicant are choosing
+	// from one list rather than two that could drift apart.
+	const options = useFrappeGetCall<{ message: ApplicationOptions }>(
+		API.applicationOptions,
+		undefined,
+		open ? "admin:person:vocabularies" : null,
+	);
+
+	const begin = () => {
+		setSkills(capabilities.skills.map((row) => row.key));
+		setLanguages(capabilities.languages.map((row) => row.key));
+		setAvailability(capabilities.availability.map((row) => row.key));
+		setOpen(true);
+	};
+
+	const save = async () => {
+		setBusy(true);
+		setFailure(null);
+
+		try {
+			await call.post(API.setVolunteerCapabilities, {
+				name: volunteer,
+				skills,
+				languages,
+				availability,
+			});
+			setOpen(false);
+			onChanged();
+		} catch (problem) {
+			setFailure(errorMessage(problem, "That was not saved."));
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<Card className="mb-5">
+			<div className="flex flex-wrap items-start justify-between gap-2">
+				<SectionTitle>What they can do now</SectionTitle>
+				{canAct && !open && (
+					<button
+						type="button"
+						onClick={begin}
+						className="text-[12px] font-semibold text-ink hover:underline"
+					>
+						Edit
+					</button>
+				)}
+			</div>
+
+			{open ? (
+				<div className="mt-4 space-y-4">
+					{options.isLoading ? (
+						<Spinner label="Loading the society's lists…" />
+					) : (
+						<>
+							<MultiCombo
+								label="Skills"
+								selected={skills}
+								onToggle={(key) => setSkills(toggled(skills, key))}
+								options={options.data?.message?.skills ?? []}
+								placeholder="Search and add a skill"
+								empty="No skills are configured on this site yet."
+							/>
+							<MultiCombo
+								label="Languages"
+								selected={languages}
+								onToggle={(key) => setLanguages(toggled(languages, key))}
+								options={options.data?.message?.languages ?? []}
+								placeholder="Search and add a language"
+								empty="No languages are configured on this site yet."
+							/>
+							<MultiCombo
+								label="Availability"
+								selected={availability}
+								onToggle={(key) => setAvailability(toggled(availability, key))}
+								options={options.data?.message?.availability ?? []}
+								placeholder="Search and add a slot"
+								empty="No availability slots are configured on this site yet."
+							/>
+						</>
+					)}
+
+					{failure && <ErrorNote>{failure}</ErrorNote>}
+
+					<div className="flex flex-wrap gap-2">
+						<Button onClick={() => void save()} disabled={busy}>
+							{busy ? "Saving…" : "Save"}
+						</Button>
+						<Button variant="navy" onClick={() => setOpen(false)}>
+							Cancel
+						</Button>
+					</div>
+				</div>
+			) : (
+				<Definitions
+					rows={[
+						["Skills", labels(capabilities.skills)],
+						["Languages", labels(capabilities.languages)],
+						["Availability", labels(capabilities.availability)],
+					]}
+				/>
+			)}
+		</Card>
+	);
+}
+
+/** Add or remove one key from a selection. */
+function toggled(values: string[], key: string): string[] {
+	return values.includes(key) ? values.filter((value) => value !== key) : [...values, key];
+}
+
 /* ------------------------------------------------------------- the volunteer */
 
 function VolunteerPage({ name }: { name: string }) {
@@ -108,6 +366,7 @@ function VolunteerPage({ name }: { name: string }) {
 	}
 
 	const person = dossier.identity;
+	const onChanged = () => void mutate();
 
 	return (
 		<>
@@ -174,10 +433,13 @@ function VolunteerPage({ name }: { name: string }) {
 						// confusion ACC-02 invites.
 						["Serving branch", geoPath(person.geo_path)],
 						["Home area", geoPath(person.home_geo_path)],
+						["Profession", person.profession],
 						["Exited", formatDate(person.exited_on)],
 					]}
 				/>
 			</Card>
+
+			<BackgroundCard background={person.background} />
 
 			<Card className="mb-5">
 				<SectionTitle>May they be deployed</SectionTitle>
@@ -201,16 +463,20 @@ function VolunteerPage({ name }: { name: string }) {
 				)}
 			</Card>
 
-			<Card className="mb-5">
-				<SectionTitle>What they can do now</SectionTitle>
-				<Definitions
-					rows={[
-						["Skills", labels(dossier.capabilities.skills)],
-						["Languages", labels(dossier.capabilities.languages)],
-						["Availability", labels(dossier.capabilities.availability)],
-					]}
-				/>
-			</Card>
+			<Capabilities
+				volunteer={dossier.volunteer}
+				capabilities={dossier.capabilities}
+				canAct={dossier.can_act}
+				onChanged={onChanged}
+			/>
+
+			<RegisterNotes
+				notes={person.notes ?? null}
+				canAct={dossier.can_act}
+				endpoint={API.setVolunteerNotes}
+				name={dossier.volunteer}
+				onChanged={onChanged}
+			/>
 
 			<Card className="mb-5">
 				<SectionTitle>Certifications held</SectionTitle>
@@ -434,6 +700,14 @@ function MemberPage({ name }: { name: string }) {
 				</p>
 			</Card>
 
+			<RegisterNotes
+				notes={dossier.notes}
+				canAct={dossier.can_act}
+				endpoint={API.setMemberNotes}
+				name={dossier.member}
+				onChanged={() => void mutate()}
+			/>
+
 			<Card className="mb-5">
 				<SectionTitle>Memberships held</SectionTitle>
 				{dossier.memberships.length === 0 ? (
@@ -563,6 +837,123 @@ function Decisions({ rows }: { rows: DecisionRow[] }) {
 }
 
 /** Label/value pairs. A row whose value is empty says so rather than being dropped. */
+/**
+ * What this person said they have already done.
+ *
+ * **Everything on this card is a claim, and the card says so.** It is what an
+ * applicant typed about themselves during registration; nobody has verified any
+ * of it. A branch that needs a qualification to be true issues a
+ * `VMMS Certification`, which is a decision somebody makes and appears further
+ * down this page under its own heading.
+ *
+ * **Drawn only when there is something on it.** Every one of these tables is
+ * optional for the person filling it in, so five empty tables and a "Not
+ * recorded" would report an omission that was never a gap — unlike "Who they
+ * are" above, where a missing date of birth genuinely is a finding.
+ *
+ * **No attachments, and that is not an oversight.** The certificates and licence
+ * scans behind these rows are private files anchored to the Red Profile, so the
+ * link would resolve to a refusal for most people reading this page. They are
+ * opened on the desk, on the profile itself. See `identity._BACKGROUND`.
+ */
+function BackgroundCard({ background }: { background?: DossierBackground }) {
+	if (!background) return null;
+
+	const sections: Array<{ title: string; head: string[]; rows: string[][] }> = [
+		{
+			title: "Education",
+			head: ["Institution", "Qualification", "Level", "Years"],
+			rows: background.education.map((row) => [
+				row.institution,
+				row.qualification,
+				row.level,
+				[row.started_in, row.is_ongoing ? "now" : row.finished_in].filter(Boolean).join("–"),
+			]),
+		},
+		{
+			title: "Training and courses",
+			head: ["Course", "Run by", "Completed"],
+			rows: background.training.map((row) => [
+				row.course_name,
+				row.institution,
+				formatDate(row.completed_on),
+			]),
+		},
+		{
+			title: "Experience",
+			head: ["Organization", "Role", "From", "To"],
+			rows: background.work_experience.map((row) => [
+				row.organization,
+				row.role,
+				formatDate(row.started_on),
+				row.is_current ? "Still there" : formatDate(row.ended_on),
+			]),
+		},
+		{
+			title: "Licences",
+			head: ["Licence", "Issued by", "Number", "Valid until"],
+			rows: background.licences.map((row) => [
+				row.license_name,
+				row.institution,
+				row.registration_no,
+				row.does_not_expire ? "Does not expire" : formatDate(row.valid_to),
+			]),
+		},
+		{
+			title: "Driving",
+			head: ["Class", "Number", "Valid until"],
+			rows: background.driving_licences.map((row) => [
+				row.licence_class,
+				row.licence_number,
+				formatDate(row.valid_to),
+			]),
+		},
+		{
+			title: "Referees",
+			head: ["Name", "How they know them", "Phone", "Email"],
+			rows: background.references.map((row) => [
+				row.reference_name,
+				row.relationship || row.position,
+				row.phone,
+				row.email,
+			]),
+		},
+	].filter((section) => section.rows.length > 0);
+
+	if (sections.length === 0) return null;
+
+	return (
+		<Card className="mb-5">
+			<SectionTitle>What they say they have done</SectionTitle>
+			<p className="mb-4 text-[12.5px] leading-relaxed text-muted">
+				Told to us by this person when they registered. None of it has been checked — what the
+				Society has verified is under Certifications held.
+			</p>
+
+			<div className="space-y-6">
+				{sections.map((section) => (
+					<div key={section.title}>
+						<p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-faint">
+							{section.title}
+						</p>
+						<Table head={section.head}>
+							{section.rows.map((cells, index) => (
+								<Row key={index}>
+									{cells.map((cell, at) => (
+										<Cell key={at} className={cell ? undefined : "text-muted"}>
+											{cell || "—"}
+										</Cell>
+									))}
+								</Row>
+							))}
+						</Table>
+					</div>
+				))}
+			</div>
+		</Card>
+	);
+}
+
 function Definitions({ rows }: { rows: Array<[string, string | null | undefined]> }) {
 	return (
 		<dl className="grid gap-4 sm:grid-cols-2">

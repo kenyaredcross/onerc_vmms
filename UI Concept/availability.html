@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Weekly availability — Kenya Red Cross</title><link rel="stylesheet" href="portal.css"><link rel="stylesheet" href="availability.css"></head>
+<body><div class="portal-shell">
+  <aside class="sidebar"><a class="portal-brand" href="portal-home.html"><span class="brand-mark"></span><span class="brand-copy"><strong>Kenya Red Cross</strong><small>Volunteer &amp; member portal</small></span></a><nav class="side-nav"><a href="portal-home.html">⌂ Home</a><a href="calendar.html">□ Calendar</a><a href="tasks.html">✓ Tasks</a><a href="deployments.html">▣ Deployments</a></nav><p class="nav-label">My record</p><nav class="side-nav"><a href="profile.html">○ My profile</a><a class="active" href="availability.html">◷ Availability</a><a href="membership.html">▤ Membership</a><a href="hours.html">◷ My hours</a></nav></aside>
+  <main class="portal-main"><header class="topbar"><button class="menu-toggle" aria-label="Open navigation">☰</button><strong>Availability</strong><span class="shell-spacer"></span><a href="notifications.html">Notifications</a><span class="avatar">AM</span></header><div class="content availability-page">
+    <header class="compact-head availability-title"><span>Your volunteer record</span><h1>Weekly availability</h1><p>Keep a regular pattern of when your branch can contact you about opportunities. You can change it whenever your routine changes.</p></header>
+    <section class="availability-summary workspace-card" aria-labelledby="current-pattern-heading"><header><div><span>Current pattern</span><h2 id="current-pattern-heading">Available across 6 days</h2><p id="availability-updated">Last updated 28 August 2026</p></div><button class="navy-button" id="edit-availability" type="button">Edit weekly availability</button></header><div class="availability-summary-days" id="availability-summary-days" aria-live="polite"></div><div class="holiday-summary"><span aria-hidden="true">◇</span><div><strong>Public holidays</strong><p id="holiday-summary-text">You are available to be contacted on public holidays.</p></div></div></section>
+  </div></main>
+</div>
+<div class="availability-modal" id="availability-modal" hidden><div class="availability-dialog" role="dialog" aria-modal="true" aria-labelledby="availability-dialog-title" aria-describedby="availability-dialog-help">
+  <header class="availability-dialog-head"><div><span>Regular weekly pattern</span><h2 id="availability-dialog-title">Set your weekly availability</h2></div><button class="availability-close" type="button" aria-label="Close availability dialog">×</button></header>
+  <div class="availability-dialog-body"><p class="availability-help" id="availability-dialog-help">Select every shift you are usually available for. This does not commit you to a deployment—your branch will still contact you first.</p>
+    <div class="availability-state" id="availability-loading" role="status"><span class="availability-spinner"></span><strong>Loading your availability…</strong></div>
+    <div class="availability-state availability-error" id="availability-error" role="alert" hidden><span>!</span><div><strong>We could not load your availability</strong><p>Please check your connection and try again.</p></div><button type="button" id="retry-availability">Try again</button></div>
+    <div id="availability-form" hidden><div class="availability-toolbar"><div><strong id="selection-count">0 shifts selected</strong><span>Selections are saved as your ongoing pattern.</span></div><div><button type="button" class="text-action" id="select-all">Select all</button><button type="button" class="text-action" id="clear-all">Clear all</button></div></div>
+      <div class="availability-grid-wrap"><table class="availability-grid"><thead><tr><th scope="col">Day</th><th scope="col"><strong>Morning</strong><span>8:00 AM–12:00 PM</span></th><th scope="col"><strong>Afternoon</strong><span>12:00 PM–4:00 PM</span></th><th scope="col"><strong>Evening</strong><span>4:00 PM–8:00 PM</span></th></tr></thead><tbody id="availability-grid-body"></tbody></table></div>
+      <div class="availability-mobile" id="availability-mobile"></div>
+      <label class="holiday-option"><input type="checkbox" id="available-holidays"><span class="availability-check"></span><span><strong>Available on public holidays</strong><small>Your branch may contact you when a shift falls on a public holiday.</small></span></label>
+    </div>
+    <div class="availability-state availability-empty" id="availability-empty" hidden><span>◷</span><strong>No shifts have been configured</strong><p>Your branch needs to configure Shift Type records before you can set a weekly pattern.</p></div>
+  </div>
+  <footer class="availability-dialog-actions"><span class="save-state" id="save-state" role="status" aria-live="polite"></span><button type="button" class="cancel-action" id="close-availability">Close</button><button type="button" class="navy-button" id="save-availability">Save availability</button></footer>
+</div></div>
+<div class="portal-toast" id="availability-toast" role="status" aria-live="polite"></div><script src="portal.js"></script><script src="availability.js"></script></body>
+</html>

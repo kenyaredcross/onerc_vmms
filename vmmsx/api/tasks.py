@@ -43,6 +43,47 @@ PAGE = 100
 
 
 @frappe.whitelist()
+def task_options() -> dict:
+	"""Every list the assign form draws a control from, in one call.
+
+	The same shape `api/volunteer.py::application_options` and the recruitment
+	console's `options` take, and for the same reason: four selects each fetching
+	their own vocabulary is four chances for a form to render half-populated.
+
+	`priorities` and the task's own kinds come from the record; `escalate_to` is
+	a `User` and is deliberately **not** a whole-directory read — the escalation
+	target is somebody in the society's staff, and the picker searches rather
+	than enumerating. That is why it is absent here and asked for by name.
+
+	Read permission on the task, which is the floor for a screen that is about to
+	create one. Nothing here is scoped, because a vocabulary says nothing about
+	any person or any place.
+	"""
+	frappe.has_permission(TASK_DOCTYPE, ptype="read", throw=True)
+
+	priority = frappe.get_meta(TASK_DOCTYPE).get_field("priority")
+
+	return {
+		"priorities": [
+			option.strip() for option in (priority.options or "").split("\n") if option.strip()
+		]
+		if priority
+		else [],
+		"task_types": frappe.get_all(
+			"VMMS Task Type",
+			filters={"is_active": 1},
+			fields=["name", "task_type_name"],
+			order_by="task_type_name asc",
+		),
+		# ERPNext's, and absent on a site without it — the same graceful absence
+		# the recruitment options keep.
+		"projects": frappe.get_all("Project", fields=["name", "project_name"], order_by="name asc")
+		if frappe.db.exists("DocType", "Project")
+		else [],
+	}
+
+
+@frappe.whitelist()
 def assign_task(
 	volunteer: str,
 	subject: str,

@@ -69,10 +69,17 @@ PIPELINE = (
 MAX_ROWS = 100
 
 #: The fields the console's opening form owns. Anything else on `Job Opening` —
-#: the autograding block, the notification templates, the salary range — is
-#: HRMS's own and is edited on the desk. Named as a tuple rather than accepting
-#: whatever the client sends, so this endpoint cannot become a way to write an
-#: arbitrary field on somebody else's doctype.
+#: HRMS's salary range, its own notification plumbing — is edited on the desk.
+#: Named as a tuple rather than accepting whatever the client sends, so this
+#: endpoint cannot become a way to write an arbitrary field on somebody else's
+#: doctype.
+#:
+#: **The screening block is here now, and it is vmmsx's own.** `enable_
+#: autograding` and its neighbours are Custom Fields this app installs — see
+#: `setup/job_opening_fields.py`, ported field for field from `onerc_vmms` — so
+#: a coordinator writing an opening in the console was setting up half of one
+#: and going to the desk for the half that decides who gets shortlisted. They
+#: are ordinary scalars on the same document and they belong on the same form.
 WRITABLE = (
 	"job_title",
 	"designation",
@@ -87,11 +94,70 @@ WRITABLE = (
 	"vacancies",
 	"employment_type",
 	opening_fields.PURPOSE_FIELD,
+	# vmmsx's own description of the post, beyond HRMS's four link fields.
+	"opportunity_type",
+	"profession",
+	"job_location",
 	"vmms_geo_node",
 	"vmms_project",
 	"vmms_deployment",
 	"vmms_available_from",
 	"vmms_available_to",
+	# --- what the opening screens for, and how hard ---------------------------
+	"enable_autograding",
+	"minimum_pass_score",
+	"disqualify_if_requirement_not_met",
+	"minimum_qualification_level",
+	"allow_equivalent_experience",
+	"required_gpa__grade",
+	"preferred_field_of_study",
+	"minimum_years_of_experience",
+	"experience_area",
+	"disqualify_if_below_minimum",
+	# --- what happens to the people it turns down -----------------------------
+	"enable_automatic_rejection_notifications",
+	"send_rejection_email_immediately",
+	"rejection_email_template",
+	"notify_unshortlisted_applicants_after",
+	"shortlisted_rejection_notification_date",
+)
+
+#: Numeric fields, so a blank box clears the number rather than storing "".
+NUMERIC = (
+	"minimum_pass_score",
+	"minimum_years_of_experience",
+)
+
+#: Whole-number fields, same rule.
+#:
+#: `duration` is deliberately not among them and not in `WRITABLE`. It is
+#: `read_only` on the doctype and documented as derived from `posted_on` and
+#: `closes_on` — see `setup/job_opening_fields.py` — so a form control on it
+#: would invite a coordinator to contradict a field nothing fills. `read_only`
+#: is a form hint and the column stays writable, which is exactly why the
+#: allow-list has to leave it out rather than rely on the flag.
+INTEGER = (
+	"vacancies",
+	"notify_unshortlisted_applicants_after",
+)
+
+#: Tickboxes, which arrive from a browser as booleans.
+CHECKS = (
+	"publish",
+	"enable_autograding",
+	"disqualify_if_requirement_not_met",
+	"allow_equivalent_experience",
+	"disqualify_if_below_minimum",
+	"enable_automatic_rejection_notifications",
+	"send_rejection_email_immediately",
+)
+
+#: Dates.
+DATES = (
+	"closes_on",
+	"vmms_available_from",
+	"vmms_available_to",
+	"shortlisted_rejection_notification_date",
 )
 
 #: The two child tables the console edits, and the field on each row that
@@ -102,6 +168,27 @@ MULTISELECT = {
 	"vmms_desired_skills": "skill",
 	"vmms_desired_languages": "language",
 }
+
+#: The child tables the console edits as rows rather than as chips, and the
+#: columns of each that a coordinator fills in.
+#:
+#: Both are vmmsx's own doctypes, which is why they are here and
+#: `required_skills`, `required_certification` and `required_licences` are not:
+#: those three point at HRMS's `Designation Skill`, LMS's `Certification` and a
+#: person-shaped `Personnel Licence` whose row marks an institution, a
+#: qualification and a validity date mandatory. A requirement on an opening has
+#: none of those, so a console form for it could only produce rows a coordinator
+#: had to invent values for. They stay on the desk.
+ROW_TABLES = {
+	# What a candidate should hold, ranked rather than required — the same shape
+	# a terms of reference uses for the same question.
+	"vmms_desired_certifications": ("certification_type", "is_mandatory", "requirement_notes"),
+	# What an applicant has to upload before the form will take their answer.
+	"required_attachments": ("type", "document_name"),
+}
+
+#: The tickbox on a row, so it is stored as a flag rather than as `true`.
+ROW_CHECKS = ("is_mandatory",)
 
 
 def _absent() -> bool:
@@ -223,13 +310,32 @@ def detail(name: str) -> dict:
 		"url": board.opening_url(doc.get("route")),
 		"apply_url": board.apply_url(doc.name, doc.get("job_application_route")),
 		"purpose": doc.get(opening_fields.PURPOSE_FIELD),
-		"closes_on": str(doc.closes_on) if doc.get("closes_on") else None,
-		"vmms_available_from": str(doc.get("vmms_available_from") or "") or None,
-		"vmms_available_to": str(doc.get("vmms_available_to") or "") or None,
+		# Every date as a `YYYY-MM-DD` string, because a browser puts one straight
+		# into a date input and a `datetime.date` reaching JSON is a shape it has
+		# to unpick. Sliced rather than merely stringified: `closes_on` is a
+		# *Datetime* — see `job_opening_fields.PROPERTIES` — and its
+		# "2026-09-02 00:00:00" renders as an empty date input, so amending any
+		# other field on an opening silently cleared its closing date.
+		**{field: (str(doc.get(field))[:10] if doc.get(field) else None) for field in DATES},
+		# Every tickbox as a boolean, for the same reason: a `checked` prop takes
+		# one, and 0/1 through JSON is a value a form has to keep coercing.
+		**{field: bool(doc.get(field)) for field in CHECKS},
 		"is_published": bool(doc.get("publish")),
 		**{
 			table: [row.get(value_field) for row in doc.get(table) or []]
 			for table, value_field in MULTISELECT.items()
+		},
+		**{
+			table: [
+				{
+					column: (
+						bool(row.get(column)) if column in ROW_CHECKS else row.get(column)
+					)
+					for column in columns
+				}
+				for row in doc.get(table) or []
+			]
+			for table, columns in ROW_TABLES.items()
 		},
 		# The screening questions as HRMS holds them — read-only here. They are
 		# edited on the desk, and an application already decided against them
@@ -283,6 +389,33 @@ def save(payload: dict, name: str | None = None) -> dict:
 		for value in payload[table] or []:
 			if value:
 				doc.append(table, {value_field: value})
+
+	for table, columns in ROW_TABLES.items():
+		if table not in payload:
+			continue
+
+		doc.set(table, [])
+		for row in payload[table] or []:
+			if not isinstance(row, dict):
+				continue
+
+			# The first column is what makes the row a row. A grid line somebody
+			# tabbed through and left is dropped rather than saved empty, which
+			# is the same bargain every other row editor in this app strikes.
+			if not str(row.get(columns[0]) or "").strip():
+				continue
+
+			doc.append(
+				table,
+				{
+					column: (
+						(1 if cint(row.get(column)) else 0)
+						if column in ROW_CHECKS
+						else row.get(column)
+					)
+					for column in columns
+				},
+			)
 
 	doc.save()
 
@@ -525,7 +658,34 @@ def options() -> dict:
 		"skills": _vocabulary("VMMS Skill"),
 		"languages": _vocabulary("Language", field="language_name"),
 		"projects": _vocabulary("Project", field="project_name"),
+		# vmmsx's own vocabularies for the fields it installs on the opening.
+		"professions": _vocabulary("Profession"),
+		"locations": _vocabulary("Location"),
+		"certification_types": _vocabulary(
+			"VMMS Certification Type", field="certification_type_name"
+		),
+		"document_types": _vocabulary("Supporting Document Type"),
+		"email_templates": _vocabulary("Email Template"),
+		# The two Selects vmmsx installs, read off the fields themselves so a
+		# society that edits either edits the form with it.
+		"opening_types": _select_options("opportunity_type"),
+		"qualification_levels": _select_options("minimum_qualification_level"),
 	}
+
+
+def _select_options(fieldname: str) -> list[str]:
+	"""A Select field's own words, or nothing before its patch has run.
+
+	These are Custom Fields, so a site between syncing this module and running
+	`patches/install_job_opening_fields.py` has the doctype and not the field —
+	the same graceful absence `_vocabulary` keeps, for the same reason.
+	"""
+	field = frappe.get_meta(OPENING_DOCTYPE).get_field(fieldname)
+
+	if not field:
+		return []
+
+	return [option.strip() for option in (field.options or "").split("\n") if option.strip()]
 
 
 def _vocabulary(doctype: str, field: str | None = None) -> list[dict]:
@@ -634,12 +794,19 @@ def _is_closing(closes_on) -> bool:
 
 
 def _clean(field: str, value):
-	"""One field's value, as the doctype wants it."""
-	if field in ("publish",):
+	"""One field's value, as the doctype wants it.
+
+	Blank clears rather than storing an empty string: a `Float` holding "" is a
+	column the desk cannot read back, and a coordinator emptying a pass score is
+	saying there is no pass score rather than saying it is nothing.
+	"""
+	if field in CHECKS:
 		return 1 if cint(value) else 0
-	if field in ("vacancies",):
+	if field in INTEGER:
 		return cint(value) or None
-	if field in ("closes_on", "vmms_available_from", "vmms_available_to"):
+	if field in NUMERIC:
+		return flt(value) if str(value or "").strip() else None
+	if field in DATES:
 		return getdate(value) if value else None
 
 	return value

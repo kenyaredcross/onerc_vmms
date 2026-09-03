@@ -1,0 +1,309 @@
+VMMS DEPLOYMENT, PROJECT AND TOR IMPROVEMENT PROPOSAL
+=====================================================
+
+Scope
+-----
+
+This proposal is based on the current vmmsx app and the supplied VMMS1
+reference metadata. It recommends strengthening the existing domain model
+rather than copying every ERPNext field.
+
+The connected operational chain should be:
+
+    Project -> Terms of Reference -> Deployment -> Assignment -> Task/Reporting
+
+The current app already has the right domain separation. The main opportunity
+is to strengthen relationships, validation, document control and operational
+history.
+
+
+1. PROJECTS
+==========
+
+The current VMMS Project is a useful lightweight programme record, but it is
+too thin for serious planning, funding and reporting.
+
+Recommended additions
+---------------------
+
+* Project code/key with enforced uniqueness
+* Project type/category
+* Owning company or society
+* Department or responsible unit
+* Project manager/owner
+* Priority
+* Donor/funding information
+* Budget and currency
+* Planned versus actual start/end dates
+* Project status history
+* Progress percentage and progress method
+* Project-level risks, assumptions and notes
+* Links to deployments, TORs, tasks, expenses and reports
+
+Why
+---
+
+* A project should explain the larger programme behind individual missions.
+* Donor and management reporting need a stable project identity and budget.
+* Progress should be measurable without manually inspecting every deployment.
+* Ownership and accountability are currently implicit rather than explicit.
+
+Do not duplicate all ERPNext Project costing fields immediately. If accounting,
+timesheets and expenses are required, the better design is to link VMMS Project
+to an ERPNext Project and use ERPNext for financial totals.
+
+
+2. TERMS OF REFERENCE
+=====================
+
+The current TOR has a strong structure and more capability than the reference,
+especially certifications, geographic scope, approval mode and amendments.
+
+A. Make TOR types explicit
+--------------------------
+
+Add a mode such as:
+
+* Template/standing duty
+* Planned mission
+* Emergency/rapid response
+
+Why: A standing TOR should not require dates and a full itinerary, while a
+planned mission probably should. One universal set of required fields will
+either block legitimate emergency work or allow incomplete planned missions.
+
+B. Introduce submission profiles
+--------------------------------
+
+Define completeness rules by TOR type. A planned mission could require:
+
+* Mission background
+* At least one objective
+* At least one expected output
+* At least one stakeholder
+* At least one itinerary row
+* Required resources or an explicit "no resources" declaration
+* Start and end dates
+
+Why: The reference marks many fields as required, but the current app
+intentionally supports flexible TORs. Submission profiles preserve flexibility
+while ensuring an approved TOR is usable.
+
+C. Strengthen resource modelling
+---------------------------------
+
+Change resources conceptually from free text into controlled records:
+
+* Resource
+* Donor
+* Project/funding line
+* Quantity
+* Unit linked to UOM
+* Unit cost
+* Currency
+* Total cost
+* Needed-on date
+* Funding status
+
+Why: Current resource rows are good for narrative planning but weak for costing,
+procurement and donor accountability. Free-text donor and unit values produce
+inconsistent reports.
+
+D. Add document control
+------------------------
+
+Add:
+
+* TOR version number
+* Effective date
+* Approval date
+* Approved-by information
+* Published/final attachment or generated PDF
+* Revision summary
+* Ability to see which deployment used which approved version
+
+Why: A deployment should operate against an immutable approved instruction set.
+Editing a TOR after deployment should not silently change the instructions that
+governed historical work.
+
+E. Add operational readiness
+----------------------------
+
+Include explicit fields for:
+
+* Safety/security considerations
+* Required equipment
+* Contact/emergency information
+* Communications plan
+* Safeguarding considerations
+* Briefing requirements
+* Insurance or allowance requirements
+
+Why: These are often more operationally important than another descriptive notes
+field, especially for volunteer deployments.
+
+
+3. DEPLOYMENT
+=============
+
+The current split between VMMS Deployment Request, VMMS Deployment and VMMS
+Deployment Assignment is better than the reference's single request record.
+Retain that separation.
+
+A. Separate planning from execution more clearly
+------------------------------------------------
+
+A deployment should have:
+
+* Planned status
+* Approved status
+* Active status
+* Suspended status
+* Completed status
+* Cancelled status
+* Closed-out status
+
+Why: Completed should mean the field operation ended; closed out should mean
+reports, attendance, expenses and lessons learned are complete.
+
+B. Add a real physical location
+-------------------------------
+
+Keep Geo Node for organisational scope, but add:
+
+* Deployment location/site
+* Address or coordinates
+* Meeting point
+* Travel notes
+* Local contact
+* Access constraints
+
+Why: A branch or region is not necessarily the place where volunteers report.
+The reference's location field highlights this distinction.
+
+C. Strengthen deployment dates and times
+----------------------------------------
+
+Use planned and actual:
+
+* Start datetime
+* End datetime
+* Briefing datetime
+* Check-in deadline
+* Check-out/return time
+
+Why: Date-only fields are insufficient for shift work, transport coordination,
+event support and emergency response.
+
+D. Add deployment-level requirements
+------------------------------------
+
+Allow a deployment to inherit requirements from the TOR but override them for
+the specific operation:
+
+* Number of volunteers required
+* Roles needed
+* Skills/certifications required
+* Gender/age or other eligibility rules where lawful
+* Equipment needed
+* Transport/accommodation needs
+* Language requirements
+
+Why: The TOR describes the general mission; the deployment describes what this
+particular operation needs.
+
+E. Improve assignment history
+-----------------------------
+
+The assignment model is already strong. Add or formalise:
+
+* Employee/User snapshots where needed for historical reporting
+* Assignment role description
+* Invitation expiry
+* Acceptance timestamp
+* Decline reason
+* Replacement/transfer reason
+* Attendance/check-in state
+* Briefing completed
+* Safety acknowledgement
+* Expense/allowance eligibility
+* Supervisor/leader relationship
+
+Why: An assignment is not just "volunteer accepted." It is the auditable record
+of who was asked, what they agreed to, what role they held and whether they
+actually participated.
+
+F. Add deployment close-out
+---------------------------
+
+Require or track:
+
+* Final participant attendance
+* Completed tasks
+* Incident/safeguarding reports
+* Volunteer hours
+* Expense claims
+* Outputs delivered
+* Lessons learned
+* Coordinator approval
+* Final report attachment
+
+Why: Without close-out, the system can show that people were assigned but cannot
+reliably show what happened.
+
+
+4. VOLUNTEER OPPORTUNITIES
+==========================
+
+The current app has an opportunities board based on HRMS Job Opening, but that
+DocType represents employment recruitment. A VMMS-owned volunteer opportunity
+layer should lead to:
+
+* Event attendance
+* Deployment assignment
+* Task assignment
+* Recurring service role
+
+It should include:
+
+* Opportunity title and description
+* Linked project/TOR/deployment/event
+* Required skills and certifications
+* Number of vacancies
+* Location and dates
+* Public/private visibility
+* Expression-of-interest workflow
+* Review, selection and rejection
+* Volunteer withdrawal
+* Conversion to assignment
+
+Why: A volunteer should be able to express interest before a coordinator creates
+an assignment. This makes the portal's opportunities feature operational rather
+than merely descriptive.
+
+
+5. RECOMMENDED IMPLEMENTATION ORDER
+====================================
+
+1. Add deployment location, richer datetime fields and assignment response
+   history.
+2. Add TOR versioning and immutable approved snapshots.
+3. Add TOR completeness profiles by type.
+4. Improve project ownership, funding and progress tracking.
+5. Add deployment close-out and reporting.
+6. Build a VMMS Volunteer Opportunity and Interest workflow.
+7. Integrate project finances with ERPNext only where accounting is actually
+   required.
+
+
+DESIGN PRINCIPLE
+================
+
+Keep VMMS responsible for volunteer operations and decisions. Use ERPNext,
+HRMS and Buzz as integrations where those systems already own accounting,
+employment, calendar or communications functionality.
+
+The reference app is not categorically more complete; it is more ERP-centric.
+The current app is more complete as a volunteer-management system, but it stops
+short where volunteer operations meet accounting, project costing, formal
+document control and opportunity applications.

@@ -15,11 +15,20 @@ import { BrandLockup } from "../ui/brand";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import { PlanCards } from "../ui/PlanCards";
 import {
+	BackgroundFields,
+	backgroundFrom,
+	backgroundLines,
+	backgroundPayload,
+	emptyBackground,
+	type BackgroundValues,
+} from "../ui/Background";
+import {
 	ChoiceCard,
 	Combo,
 	Field,
 	FieldSet,
 	MultiCombo,
+	PrivateUpload,
 	Segmented,
 	SelectInput,
 	TextArea,
@@ -35,12 +44,14 @@ import type {
 	EmergencyContact,
 	GeoNode,
 	GuardianConsent,
+	IdentificationTypeRow,
 	IdentityOptions,
 	OpenRegistration,
 	PaymentMethod,
 	PricedType,
 	RedProfile,
 	SocietyQuestion,
+	VocabularyRow,
 } from "../portal/types";
 
 type Path = "volunteer" | "member";
@@ -94,6 +105,7 @@ type DraftRegistration = OpenRegistration & {
 type StepId =
 	| "path"
 	| "identity"
+	| "background"
 	| "plan"
 	| "payment"
 	| "placement"
@@ -135,6 +147,24 @@ const ABROAD = "Abroad";
  */
 const DISABILITY_ANSWERS = ["No", "Yes", "Prefer not to say"];
 
+/**
+ * The one of those three that opens the rest of the question — named rather
+ * than compared against a literal in four places, because it is also what
+ * `install_disability_vocabulary.py` puts in the field's `depends_on`.
+ */
+const DISABILITY_DISCLOSED = "Yes";
+
+/**
+ * The one citizenship standing the yes/no question answers on its own, spelled
+ * as `Red Profile.citizenship_status` spells it.
+ *
+ * The rest of the list is not here: it is served on `application_options
+ * .citizenship_statuses`, read off the Select itself, so a society that adds a
+ * sixth standing gets it on this form with no deploy. Only the word "Citizen"
+ * is named locally, because it is the one the question itself decides.
+ */
+const CITIZEN = "Citizen";
+
 /* --------------------------------------------------------- identification */
 
 /**
@@ -142,14 +172,42 @@ const DISABILITY_ANSWERS = ["No", "Yes", "Prefer not to say"];
  *
  * Deliberately narrower than the row `Red Profile` stores: `is_primary` is not
  * here because position says it — the first document somebody lists is their
- * main one — and `attachment` is not here because this form does not collect
- * files. A scan a branch attached on the desk survives a correction made here;
- * see `registration._identification_rows`.
+ * main one.
+ *
+ * `attachment` is here because a society can insist on a copy —
+ * `Identification Type.requires_attachment`, served on every row of
+ * `options.id_types` — and until this form collected one, an applicant at such
+ * a society was refused at submission and told to upload the file to a profile
+ * no screen would let them edit. Blank means "nothing to say about the copy",
+ * and a scan a branch attached on the desk survives that; see
+ * `registration._identification_rows`.
  */
-type Identification = { id_type: string; id_number: string };
+type Identification = { id_type: string; id_number: string; attachment: string };
 
 function blankIdentification(): Identification {
-	return { id_type: "", id_number: "" };
+	return { id_type: "", id_number: "", attachment: "" };
+}
+
+/**
+ * One document as it goes on the wire.
+ *
+ * A blank attachment is left out rather than sent as an empty string, because
+ * the two mean different things to `_identification_rows`: nothing said keeps
+ * whatever copy the profile already holds, and a value replaces it. A form that
+ * always sent the key would be a form that could never leave a scan alone.
+ */
+function sentIdentification(row: Identification): Record<string, string> {
+	return row.attachment
+		? { id_type: row.id_type, id_number: row.id_number, attachment: row.attachment }
+		: { id_type: row.id_type, id_number: row.id_number };
+}
+
+/** Two or more names, joined the way somebody would say them out loud. */
+function listed(names: string[]): string {
+	if (names.length <= 1) return names[0] ?? "";
+	if (names.length === 2) return `${names[0]} and ${names[1]}`;
+
+	return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 /** Enough of a document to be worth sending: a kind, and the number on it. */
@@ -181,6 +239,52 @@ function repeatedIdentification(rows: Identification[]): boolean {
 	const kinds = rows.filter(identificationIsUsable).map((row) => row.id_type);
 
 	return new Set(kinds).size !== kinds.length;
+}
+
+/**
+ * The documents this society insists on that the applicant has not listed.
+ *
+ * The same three rules `application._assert_identity_documents` applies, asked
+ * on the step rather than at submission: a society that has ticked nothing
+ * requires nothing, a required document below its own minimum age is not
+ * insisted on, and everything else has to be produced. Returned as labels
+ * because the only thing this is for is telling somebody which document to add.
+ *
+ * `age` is `null` while the date of birth is still blank, and a minimum-age
+ * exemption cannot be granted to an age nobody has given — so every required
+ * document is asked for until somebody says how old they are, which is the
+ * direction that cannot let an applicant past a rule.
+ */
+function missingRequiredDocuments(
+	rows: Identification[],
+	types: IdentificationTypeRow[],
+	age: number | null,
+): string[] {
+	const held = new Set(rows.filter(identificationIsUsable).map((row) => row.id_type));
+
+	return types
+		.filter((type) => type.is_required)
+		.filter((type) => !(type.minimum_age && age !== null && age < type.minimum_age))
+		.filter((type) => !held.has(type.key))
+		.map((type) => type.label);
+}
+
+/**
+ * The documents listed whose copy this society asks for and which have none.
+ *
+ * Asked of what the applicant actually listed rather than of the required set:
+ * a society can want a copy of a document it does not insist everybody holds,
+ * and somebody who has produced that document owes the copy that goes with it.
+ */
+function missingDocumentCopies(
+	rows: Identification[],
+	types: IdentificationTypeRow[],
+): string[] {
+	const asked = new Map(types.filter((type) => type.requires_attachment).map((type) => [type.key, type.label]));
+
+	return rows
+		.filter((row) => identificationIsUsable(row) && asked.has(row.id_type) && !row.attachment)
+		.map((row) => asked.get(row.id_type) as string);
 }
 
 /* ------------------------------------------------- emergency and guardian */
@@ -231,9 +335,22 @@ function ageOn(dateOfBirth: string): number {
 	return now.getFullYear() - born.getFullYear() - (hadBirthday ? 0 : 1);
 }
 
-/** Enough of a contact to be worth storing: somebody to call, and a number. */
+/**
+ * Enough of a contact to be worth storing: somebody to call, how you know them,
+ * and a number.
+ *
+ * **All three, because the record insists on all three.** `VMMS Emergency
+ * Contact` marks `relationship` mandatory alongside the name and the phone, so a
+ * row carrying two of them was accepted by this form, sent on the next autosave
+ * and refused by the framework with "Row #1: Relationship" — a stack-trace
+ * sentence in the middle of somebody's registration. The step marks the field
+ * required and `contactIsCoherent` holds the Next button until it is answered,
+ * which is the same rule stated where somebody can act on it.
+ */
 function contactIsUsable(contact: EmergencyContact): boolean {
-	return Boolean(contact.contact_name.trim() && contact.primary_phone.trim());
+	return Boolean(
+		contact.contact_name.trim() && contact.relationship.trim() && contact.primary_phone.trim(),
+	);
 }
 
 /**
@@ -250,8 +367,11 @@ function contactIsCoherent(contact: EmergencyContact): boolean {
 	return !touched || contactIsUsable(contact);
 }
 
+/** The same three, for the same reason: `relationship` is mandatory on the row. */
 function guardianIsUsable(guardian: GuardianConsent): boolean {
-	return Boolean(guardian.guardian_name.trim() && guardian.phone.trim());
+	return Boolean(
+		guardian.guardian_name.trim() && guardian.relationship.trim() && guardian.phone.trim(),
+	);
 }
 
 function guardianIsCoherent(guardian: GuardianConsent): boolean {
@@ -398,8 +518,53 @@ function JoinBody() {
 	const [disability, setDisability] = useState("");
 	const [disabilityNeeds, setDisabilityNeeds] = useState("");
 
+	/**
+	 * Which disabilities, for somebody who answered "Yes" and wants to say.
+	 *
+	 * Keys from core's `Disability` register, served on `identity_options`
+	 * alongside the genders — a society's own configuration, so nothing here
+	 * names one. Optional whatever was answered, on the same rule as the free
+	 * text above: naming one is a second disclosure, and the form asks for it
+	 * without insisting on it.
+	 */
+	const [disabilities, setDisabilities] = useState<string[]>([]);
+
+	/**
+	 * What this person has already done — the background step, volunteers only.
+	 *
+	 * Seven pieces of person-owned history that used to be one free-text box
+	 * called "prior experience". They live on the Red Profile rather than on the
+	 * application (see `patches/install_background_fields.py`), which is why they
+	 * are prefilled from `my_profile` like the name and the date of birth: a
+	 * returning applicant should not retype a qualification the society already
+	 * holds.
+	 *
+	 * **Not one of them is required and no step gates on any of them.** A
+	 * volunteer application is not a job application. The step exists so somebody
+	 * who has a nursing licence can say so, not to make anybody who has not feel
+	 * they have failed a form.
+	 *
+	 * Each opens as an empty array rather than a blank row: an empty table draws
+	 * an invitation to add one, which is honest about the block being optional in
+	 * a way that a pre-drawn set of empty fields is not.
+	 */
+	const [background, setBackground] = useState<BackgroundValues>(emptyBackground);
+
 	// --- nationality, which the identity step asks
 	const [citizenship, setCitizenship] = useState("");
+
+	/**
+	 * What standing this person has where they are applying — `Red Profile
+	 * .citizenship_status`, the field's own word for it.
+	 *
+	 * The wizard has always asked "are you a citizen of X?" and thrown the answer
+	 * away, storing only the country. That left the standing blank on every
+	 * self-registered person, while a branch running a programme for refugees or
+	 * for migrant workers has the field on the profile and nothing in it. Yes
+	 * answers this by itself; No is the case where the four other words matter,
+	 * and they come from the Select rather than from here.
+	 */
+	const [citizenshipStatus, setCitizenshipStatus] = useState("");
 	// The yes/no half of the citizenship question, which the country alone cannot
 	// carry: "not a citizen, and has not said of where yet" and "has not been
 	// asked" are both an empty country, and only one of them should be drawing a
@@ -540,8 +705,12 @@ function JoinBody() {
 		setDateOfBirth(known.date_of_birth ?? "");
 		setPhoto(known.profile_photo ?? "");
 		setCitizenship(known.country_of_citizenship ?? "");
+		setCitizenshipStatus(known.citizenship_status ?? "");
 		setDisability(known.disability_status ?? "");
 		setDisabilityNeeds(known.disability_needs ?? "");
+		setDisabilities(known.disabilities ?? []);
+
+		setBackground(backgroundFrom(known));
 
 		// Everything core already holds, primary first — `my_profile` orders it —
 		// rather than only the main one. A returning applicant who produced two
@@ -552,6 +721,10 @@ function JoinBody() {
 				? known.identifications.map((row) => ({
 						id_type: row.id_type,
 						id_number: row.id_number,
+						// The copy already on file comes back too, so a returning
+						// applicant sees "Attached" rather than an empty box that
+						// invites them to upload the same scan a second time.
+						attachment: row.attachment ?? "",
 					}))
 				: [blankIdentification()],
 		);
@@ -585,6 +758,7 @@ function JoinBody() {
 		message: {
 			types: PricedType[];
 			questions: SocietyQuestion[];
+			declarations: Declaration[];
 			payment_methods: PaymentMethod[];
 		};
 	}>(
@@ -597,6 +771,11 @@ function JoinBody() {
 	const genders = identityOptions.data?.message?.genders ?? [];
 	const priced = types.data?.message?.types ?? [];
 	const memberQuestions = types.data?.message?.questions;
+	// A membership can carry declarations of its own — `VMMS Membership` has the
+	// table and `member.membership_types` serves the wording — and this wizard
+	// drew them for a volunteer and for nobody else. A society's data protection
+	// notice was shown to one half of the people who had to agree to it.
+	const memberDeclarations = types.data?.message?.declarations;
 	const paymentMethods = types.data?.message?.payment_methods ?? [];
 	const chosenType = priced.find((row) => row.membership_type === membershipType) ?? null;
 
@@ -642,6 +821,31 @@ function JoinBody() {
 	const answerCitizenship = (yes: boolean) => {
 		setIsCitizen(yes);
 		setCitizenship(yes ? (options?.default_country_of_citizenship ?? "") : "");
+		// Yes is the whole answer. No only rules that one word out, so the
+		// standing is cleared and asked rather than guessed at: somebody living
+		// here as a refugee and somebody here as a migrant worker are different
+		// answers, and neither can be derived from a country.
+		setCitizenshipStatus(yes ? CITIZEN : "");
+	};
+
+	/**
+	 * Answering the disability question, and what it does to what was named.
+	 *
+	 * Any answer but "Yes" empties the list. Somebody who ticked two rows and
+	 * then changed the answer to "No" has withdrawn them, and a list left behind
+	 * under a "No" is a contradiction the profile would keep — the picker is not
+	 * even drawn at that point, so nobody would ever see it to clear it. The
+	 * empty list reaches the server as `[]` rather than being omitted, which is
+	 * what makes it a clearing rather than a silence.
+	 *
+	 * The free text beside it is deliberately *not* cleared here: it is one box
+	 * about what would help, a person may have written something that still
+	 * applies, and this form does not delete somebody's sentence for them.
+	 */
+	const answerDisability = (answer: string) => {
+		setDisability(answer);
+
+		if (answer !== DISABILITY_DISCLOSED) setDisabilities([]);
 	};
 
 	const allowedLevels =
@@ -744,8 +948,8 @@ function JoinBody() {
 	// has no declarations of its own yet, and empty on a site whose settings have
 	// never been saved — in both cases the step is simply not drawn.
 	const declarations = useMemo(
-		() => (path === "volunteer" ? (options?.declarations ?? []) : []),
-		[path, options?.declarations],
+		() => (path === "member" ? memberDeclarations : options?.declarations) ?? [],
+		[path, memberDeclarations, options?.declarations],
 	);
 
 	/**
@@ -760,11 +964,22 @@ function JoinBody() {
 	 * age of majority, and nothing about guardians is ever shown.
 	 */
 	const minorAge = options?.minor_age ?? null;
-	const isMinor = useMemo(() => {
-		if (!minorAge || !dateOfBirth) return false;
 
-		return ageOn(dateOfBirth) < minorAge;
-	}, [minorAge, dateOfBirth]);
+	/**
+	 * Whole years old, or null while the date of birth is still blank.
+	 *
+	 * Read by the identification step as well as by the guardian block: a
+	 * society can say a national card is not issued until sixteen, and a
+	 * fourteen-year-old must not be asked for one. Null means nobody has said
+	 * how old they are, and no exemption is granted on an age nobody gave.
+	 */
+	const age = useMemo(() => (dateOfBirth ? ageOn(dateOfBirth) : null), [dateOfBirth]);
+
+	const isMinor = useMemo(() => {
+		if (!minorAge || age === null) return false;
+
+		return age < minorAge;
+	}, [minorAge, age]);
 
 	/**
 	 * Is there a fee to collect, and a choice to make about how?
@@ -817,16 +1032,27 @@ function JoinBody() {
 					// screen, is what the society actually needs.
 					(path !== "volunteer" || (dateOfBirth && citizenship && disability)),
 			);
+		// Nothing on this step is required, so there is nothing to be waiting for.
+		// Stated rather than left to the fall-through at the bottom, because the
+		// fall-through is what an *unknown* step id gets and this one is known and
+		// deliberately unconditional.
+		if (id === "background") return true;
 		if (id === "plan") return Boolean(membershipType);
 		if (id === "payment") return Boolean(paymentMethod);
 		if (id === "placement") return Boolean(node);
-		// One complete document at least, nothing half-filled, and no kind listed
-		// twice — which is exactly what the server will accept.
+		// One complete document at least, nothing half-filled, no kind listed
+		// twice, every document this society insists on, and a copy of each one
+		// it asks for a copy of — which is exactly what the server will accept.
+		// The last two are `application._assert_identity_documents`, asked here
+		// so the button says so rather than the submission failing with a
+		// sentence about a profile the applicant cannot edit.
 		if (id === "identification")
 			return (
 				identifications.some(identificationIsUsable) &&
 				identifications.every(identificationIsCoherent) &&
-				!repeatedIdentification(identifications)
+				!repeatedIdentification(identifications) &&
+				missingRequiredDocuments(identifications, options?.id_types ?? [], age).length === 0 &&
+				missingDocumentCopies(identifications, options?.id_types ?? []).length === 0
 			);
 
 		// An emergency contact is a condition of *approval*, not of submission —
@@ -972,12 +1198,24 @@ function JoinBody() {
 						...identity,
 						geo_node: node?.name,
 						country_of_citizenship: citizenship,
+						citizenship_status: citizenshipStatus,
 						disability_status: disability,
 						// Sent as an empty string rather than omitted when it is
 						// blank, so clearing a description somebody no longer wants
 						// on file actually clears it. `None` means "leave alone" on
 						// the server; "" means "cleared".
 						disability_needs: disabilityNeeds,
+						// The whole set, always sent — including empty. `null` means
+						// "leave the table alone" on the server, so a form that
+						// omitted this could never record somebody withdrawing what
+						// they had named.
+						disabilities,
+						profession: background.profession,
+						// Only the rows somebody actually filled in. Each key present
+						// replaces that one table and a key left out leaves it alone,
+						// so all six are always sent: a table that vanished from the
+						// payload when somebody emptied it could never be emptied.
+						background: backgroundPayload(background),
 						// Not collected on any screen — derived, or left alone. See
 						// `residence`.
 						...residence,
@@ -985,7 +1223,7 @@ function JoinBody() {
 						// dropped rather than sent: the server refuses a document
 						// with a type and no number, and a spare row at the bottom
 						// of a form is a browser artefact rather than an answer.
-						identifications: identifications.filter(identificationIsUsable),
+						identifications: identifications.filter(identificationIsUsable).map(sentIdentification),
 						skills,
 						languages,
 						availability,
@@ -1012,6 +1250,7 @@ function JoinBody() {
 						// and a form that omitted it could never clear one.
 						payment_method: paymentMethod,
 						answers,
+						declarations_accepted: accepted,
 					};
 
 		await call.post<{ message: DraftRegistration }>(endpoint, payload);
@@ -1321,6 +1560,8 @@ function JoinBody() {
 												options={options}
 												citizenship={citizenship}
 												onCitizenship={setCitizenship}
+												citizenshipStatus={citizenshipStatus}
+												onCitizenshipStatus={setCitizenshipStatus}
 												isCitizen={isCitizen}
 												onIsCitizen={answerCitizenship}
 												firstName={firstName}
@@ -1336,9 +1577,12 @@ function JoinBody() {
 												onDateOfBirth={setDateOfBirth}
 												onPhoto={setPhoto}
 												disability={disability}
-												onDisability={setDisability}
+												onDisability={answerDisability}
 												disabilityNeeds={disabilityNeeds}
 												onDisabilityNeeds={setDisabilityNeeds}
+												disabilities={disabilities}
+												onDisabilities={setDisabilities}
+												disabilityOptions={identityOptions.data?.message?.disabilities ?? []}
 											/>
 										)}
 
@@ -1376,6 +1620,7 @@ function JoinBody() {
 												loading={applicationOptions.isLoading}
 												rows={identifications}
 												onRows={setIdentifications}
+												age={age}
 											/>
 										)}
 
@@ -1396,6 +1641,16 @@ function JoinBody() {
 											/>
 										)}
 
+										{step.id === "background" && (
+											<BackgroundFields
+												options={identityOptions.data?.message}
+												value={background}
+												onChange={(patch) =>
+													setBackground((held) => ({ ...held, ...patch }))
+												}
+											/>
+										)}
+
 										{step.id === "emergency" && (
 											<EmergencyStep
 												contacts={contacts}
@@ -1404,6 +1659,7 @@ function JoinBody() {
 												minorAge={minorAge}
 												guardian={guardian}
 												onGuardian={setGuardian}
+												verificationMethods={options?.guardian_verification_methods ?? []}
 											/>
 										)}
 
@@ -1449,6 +1705,14 @@ function JoinBody() {
 												type={chosenType}
 												citizenship={citizenship}
 												disability={disability}
+												disabilityNames={labelsFor(
+													identityOptions.data?.message?.disabilities,
+													disabilities,
+												)}
+												background={{
+													profession: background.profession || null,
+													rows: backgroundLines(identityOptions.data?.message, background),
+												}}
 												paymentLabel={
 													paymentMethods.find((row) => row.gateway === paymentMethod)?.label ??
 													null
@@ -1659,8 +1923,8 @@ function stepsFor(
 			id: "questions",
 			rail: "Their questions",
 			eyebrow: "",
-			title: "What your society asks",
-			blurb: "Questions this society asks every applicant, set by its own branches.",
+			title: "What this organization asks",
+			blurb: "Questions this organization asks every applicant, set by its own branches.",
 			needs: "Answer everything marked required",
 		},
 		/**
@@ -1721,6 +1985,11 @@ function stepsFor(
 						needs: "Choose a branch",
 					},
 					shared.questions,
+					// A membership can carry declarations too, and the filter below
+					// takes the step away again for a society that has written none
+					// — which is every society that has not, so nothing changes for
+					// them. See `memberDeclarations`.
+					shared.consents,
 					shared.confirm,
 				]
 			: [
@@ -1748,6 +2017,18 @@ function stepsFor(
 						eyebrow: "",
 						title: "About your volunteering",
 						blurb: "What you can do and when. This is what your branch matches you against.",
+						needs: "",
+					},
+					{
+						id: "background",
+						rail: "What you've done",
+						eyebrow: "",
+						title: "What you have already done",
+						blurb:
+							"Study, training, work, licences, and anyone who would speak for you. Every part of this is optional — fill in what you have and skip the rest.",
+						// No `needs`, and there is nothing to put in one. The rail's
+						// amber note names what a step is waiting for, and this step
+						// waits for nothing: `complete("background")` is always true.
 						needs: "",
 					},
 					{
@@ -2188,6 +2469,8 @@ function IdentityStep({
 	photo,
 	citizenship,
 	onCitizenship,
+	citizenshipStatus,
+	onCitizenshipStatus,
 	isCitizen,
 	onIsCitizen,
 	onFirstName,
@@ -2200,6 +2483,9 @@ function IdentityStep({
 	onDisability,
 	disabilityNeeds,
 	onDisabilityNeeds,
+	disabilities,
+	onDisabilities,
+	disabilityOptions,
 }: {
 	profile: RedProfile | null;
 	genders: string[];
@@ -2213,6 +2499,8 @@ function IdentityStep({
 	photo: string;
 	citizenship: string;
 	onCitizenship: (v: string) => void;
+	citizenshipStatus: string;
+	onCitizenshipStatus: (v: string) => void;
 	isCitizen: boolean;
 	onIsCitizen: (yes: boolean) => void;
 	onFirstName: (v: string) => void;
@@ -2225,6 +2513,9 @@ function IdentityStep({
 	onDisability: (v: string) => void;
 	disabilityNeeds: string;
 	onDisabilityNeeds: (v: string) => void;
+	disabilities: string[];
+	onDisabilities: (v: string[]) => void;
+	disabilityOptions: VocabularyRow[];
 }) {
 	return (
 		<div className="space-y-5">
@@ -2298,9 +2589,12 @@ function IdentityStep({
 				<FieldSet title="Nationality">
 					<CitizenshipQuestion
 						countries={options.countries}
+						statuses={options.citizenship_statuses ?? []}
 						home={options.default_country_of_citizenship}
 						value={citizenship}
 						onChange={onCitizenship}
+						status={citizenshipStatus}
+						onStatus={onCitizenshipStatus}
 						isCitizen={isCitizen}
 						onIsCitizen={onIsCitizen}
 					/>
@@ -2329,7 +2623,7 @@ function IdentityStep({
 						{/* Drawn only on "Yes". A description box under "No" is a form
 						    asking a question it has already been answered, and under
 						    "Prefer not to say" it is a form arguing with somebody. */}
-						{disability === "Yes" && (
+						{disability === DISABILITY_DISCLOSED && (
 							<Field
 								label="Anything that would help"
 								htmlFor="join-disability-needs"
@@ -2344,6 +2638,40 @@ function IdentityStep({
 							</Field>
 						)}
 					</div>
+
+					{/* The society's own register, on the same condition and drawn
+					    with the same control the skills and languages pickers use —
+					    it is a configured vocabulary of unknown length, which is the
+					    argument `MultiCombo` was chosen for there.
+
+					    Full width and below the pair above, rather than a third cell
+					    in the grid: this is a list somebody scans, and half a column
+					    beside a text box would make the longest question on the step
+					    the narrowest control on it.
+
+					    Not required, and it says so. Somebody has already disclosed
+					    by answering the question above; naming it is a second
+					    disclosure, and a form that made this one mandatory would have
+					    turned the first into a trap. */}
+					{disability === DISABILITY_DISCLOSED && (
+						<div className="mt-5">
+							<MultiCombo
+								id="join-disabilities"
+								label="Which ones, if you would like to say"
+								options={disabilityOptions}
+								selected={disabilities}
+								onToggle={(key) =>
+									onDisabilities(
+										disabilities.includes(key)
+											? disabilities.filter((entry) => entry !== key)
+											: [...disabilities, key],
+									)
+								}
+								placeholder="Type to search…"
+								empty="This society has not configured a list to choose from."
+							/>
+						</div>
+					)}
 				</FieldSet>
 			)}
 
@@ -2496,25 +2824,52 @@ function PlacementStep({
  */
 function CitizenshipQuestion({
 	countries,
+	statuses,
 	home,
 	value,
 	onChange,
+	status,
+	onStatus,
 	isCitizen,
 	onIsCitizen,
 }: {
 	countries: string[];
+	/** The standings this society's profile field offers, its own words. */
+	statuses: string[];
 	home: string | null;
 	value: string;
 	onChange: (value: string) => void;
+	status: string;
+	onStatus: (value: string) => void;
 	isCitizen: boolean;
 	onIsCitizen: (yes: boolean) => void;
 }) {
+	// Everything but "Citizen", which the yes/no question has already answered.
+	// Offering it again under "No" would be a form contradicting itself.
+	const otherStatuses = statuses.filter((entry) => entry !== CITIZEN);
+
 	if (!home) {
 		return (
-			<div className="max-w-sm">
+			<div className="grid max-w-xl gap-5 sm:grid-cols-2">
 				<Field label="Country of citizenship" required htmlFor="join-citizenship">
 					<Combo id="join-citizenship" value={value} onChange={onChange} options={countries} />
 				</Field>
+
+				{statuses.length > 0 && (
+					<Field
+						label="Your standing here"
+						htmlFor="join-citizenship-status"
+						hint="So your branch knows what it may ask of you."
+					>
+						<SelectInput
+							id="join-citizenship-status"
+							value={status}
+							onChange={onStatus}
+							options={statuses}
+							placeholder="Choose an answer"
+						/>
+					</Field>
+				)}
 			</div>
 		);
 	}
@@ -2532,10 +2887,29 @@ function CitizenshipQuestion({
 			/>
 
 			{!isCitizen && (
-				<div className="rise-in mt-5 max-w-sm">
+				<div className="rise-in mt-5 grid max-w-xl gap-5 sm:grid-cols-2">
 					<Field label="Country of citizenship" required htmlFor="join-citizenship">
 						<Combo id="join-citizenship" value={value} onChange={onChange} options={countries} />
 					</Field>
+
+					{/* Drawn only where the society's own field offers something to
+					    choose. A site whose Select has been emptied gets the country
+					    question and no second one. */}
+					{otherStatuses.length > 0 && (
+						<Field
+							label="Your standing here"
+							htmlFor="join-citizenship-status"
+							hint="So your branch knows what it may ask of you."
+						>
+							<SelectInput
+								id="join-citizenship-status"
+								value={status}
+								onChange={onStatus}
+								options={otherStatuses}
+								placeholder="Choose an answer"
+							/>
+						</Field>
+					)}
 				</div>
 			)}
 		</div>
@@ -2627,11 +3001,14 @@ function IdentificationStep({
 	loading,
 	rows,
 	onRows,
+	age,
 }: {
 	options?: ApplicationOptions;
 	loading: boolean;
 	rows: Identification[];
 	onRows: (next: Identification[]) => void;
+	/** Whole years old, or null while the date of birth is still blank. */
+	age: number | null;
 }) {
 	if (loading || !options) return <Spinner label="Loading…" />;
 
@@ -2655,6 +3032,27 @@ function IdentificationStep({
 	// remove it from under the person who chose it.
 	const taken = new Set(rows.map((row) => row.id_type).filter(Boolean));
 
+	// What this society asks of each kind, so a row can say so beside itself
+	// rather than at submission. The same rows `missingRequiredDocuments` and
+	// `missingDocumentCopies` read, which is why the step's gate and the
+	// sentences on it can never disagree.
+	const rules = new Map(options.id_types.map((type) => [type.key, type]));
+	const outstanding = missingRequiredDocuments(rows, options.id_types, age);
+
+	// A required kind is labelled as required in every picker, so somebody
+	// choosing between three documents can see which one their branch insists on
+	// before they pick the wrong one.
+	const offered = (row: Identification) =>
+		options.id_types
+			.filter((type) => type.key === row.id_type || !taken.has(type.key))
+			.map((type) => ({
+				...type,
+				label:
+					type.is_required && !(type.minimum_age && age !== null && age < type.minimum_age)
+						? `${type.label} (required)`
+						: type.label,
+			}));
+
 	return (
 		<div className="max-w-xl space-y-4">
 			{rows.map((row, index) => (
@@ -2674,9 +3072,7 @@ function IdentificationStep({
 							id={`join-id-type-${index}`}
 							value={row.id_type}
 							onChange={(value) => set(index, "id_type", value)}
-							options={options.id_types.filter(
-								(entry) => entry.key === row.id_type || !taken.has(entry.key),
-							)}
+							options={offered(row)}
 						/>
 					</Field>
 
@@ -2691,6 +3087,27 @@ function IdentificationStep({
 							onChange={(value) => set(index, "id_number", value)}
 						/>
 					</Field>
+
+					{/* Only for a kind whose copy this society actually asks for.
+					    A file box under every document would be a form asking for
+					    scans nobody wants and storing them forever. */}
+					{rules.get(row.id_type)?.requires_attachment && (
+						<Field
+							label="A copy of it"
+							required
+							htmlFor={`join-id-file-${index}`}
+							hint="A photograph or scan is fine. Only your branch can open it."
+							className="sm:col-span-2"
+						>
+							<PrivateUpload
+								id={`join-id-file-${index}`}
+								value={row.attachment}
+								onChange={(value) => set(index, "attachment", value)}
+								choose="Choose a copy"
+								replace="Replace the copy"
+							/>
+						</Field>
+					)}
 
 					{rows.length > 1 && (
 						<div className="sm:col-span-2">
@@ -2719,9 +3136,18 @@ function IdentificationStep({
 				</Button>
 			)}
 
-			<p className="text-[11.5px] leading-relaxed text-slate-faint">
-				One is enough for most people. Add more if your branch has asked for them.
-			</p>
+			{outstanding.length > 0 ? (
+				// Named rather than counted. "One more document" leaves somebody
+				// guessing which; the society's own word for it does not.
+				<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
+					Your branch asks every volunteer for {listed(outstanding)}. Add{" "}
+					{outstanding.length === 1 ? "it" : "them"} here before you go on.
+				</p>
+			) : (
+				<p className="text-[11.5px] leading-relaxed text-slate-faint">
+					One is enough for most people. Add more if your branch has asked for them.
+				</p>
+			)}
 		</div>
 	);
 }
@@ -2857,90 +3283,26 @@ function QuestionField({
 				<TextInput id={id} value={value} onChange={onChange} type="date" />
 			)}
 
+			{/* A number, typed as one. `questions._value` coerces with `cint`, so
+			    an `Int` question answered "about six" was stored as 0 and nobody
+			    was told — the control refuses it instead. */}
 			{question.field_type === "Int" && (
-				<TextInput id={id} value={value} onChange={onChange} inputMode="numeric" />
+				<TextInput
+					id={id}
+					value={value}
+					onChange={onChange}
+					type="number"
+					inputMode="numeric"
+					step={1}
+				/>
 			)}
 
 			{question.field_type === "Data" && <TextInput id={id} value={value} onChange={onChange} />}
 
 			{question.field_type === "Attach" && (
-				<AnswerUpload id={id} value={value} onChange={onChange} />
+				<PrivateUpload id={id} value={value} onChange={onChange} />
 			)}
 		</Field>
-	);
-}
-
-/**
- * The file half of a question, uploaded before the application exists.
- *
- * It has to be: somebody picks their chief's letter several steps before
- * anything is filed. So the file is created private and unattached, and
- * `questions.anchor_files()` ties it to the application at the moment of
- * insert — which is what makes it readable by the approver and by nobody else.
- * Until then it belongs to the person who uploaded it, which is the right state
- * for a document not yet submitted to anybody.
- *
- * The framework's own uploader, the same one the content editor uses, rather
- * than a second one written here.
- */
-function AnswerUpload({
-	id,
-	value,
-	onChange,
-}: {
-	id: string;
-	value: string;
-	onChange: (value: string) => void;
-}) {
-	const { upload, loading } = useFrappeFileUpload();
-	const [failure, setFailure] = useState<string | null>(null);
-
-	const pick = async (file: File | undefined) => {
-		if (!file) return;
-		setFailure(null);
-
-		try {
-			const uploaded = await upload(file, {
-				// Private, and it stays private. A letter naming somebody's chief is
-				// not a public asset, and the permission that governs it becomes the
-				// application's own once the registration anchors it.
-				isPrivate: true,
-			});
-			onChange(uploaded.file_url);
-		} catch (uploadError) {
-			setFailure(errorMessage(uploadError, "That file could not be uploaded."));
-		}
-	};
-
-	return (
-		<div>
-			<div className="flex items-center gap-3">
-				<label
-					htmlFor={id}
-					className="cursor-pointer rounded-lg border border-card-line bg-canvas px-3 py-2 text-[12px] font-semibold text-ink hover:border-brand"
-				>
-					{loading ? "Uploading…" : value ? "Replace file" : "Choose file"}
-				</label>
-				<input
-					id={id}
-					type="file"
-					className="sr-only"
-					disabled={loading}
-					onChange={(event) => pick(event.target.files?.[0])}
-				/>
-
-				{value && !loading && (
-					<span className="inline-flex items-center gap-1.5 text-[12px] text-slate-faint">
-						<Tick className="text-brand" />
-						Attached
-					</span>
-				)}
-			</div>
-
-			{failure && (
-				<p className="mt-2 text-[11.5px] leading-relaxed text-danger">{failure}</p>
-			)}
-		</div>
 	);
 }
 
@@ -3073,6 +3435,7 @@ function EmergencyStep({
 	minorAge,
 	guardian,
 	onGuardian,
+	verificationMethods,
 }: {
 	contacts: EmergencyContact[];
 	onContacts: (next: EmergencyContact[]) => void;
@@ -3080,6 +3443,8 @@ function EmergencyStep({
 	minorAge: number | null;
 	guardian: GuardianConsent;
 	onGuardian: (next: GuardianConsent) => void;
+	/** `application_options.guardian_verification_methods` — the society's list. */
+	verificationMethods: VocabularyRow[];
 }) {
 	const first = contacts[0] ?? blankContact();
 
@@ -3114,7 +3479,7 @@ function EmergencyStep({
 								</p>
 							)}
 
-							<Field label="Their name" htmlFor={`ec-name-${index}`}>
+							<Field label="Their name" required htmlFor={`ec-name-${index}`}>
 								<TextInput
 									id={`ec-name-${index}`}
 									value={contact.contact_name}
@@ -3123,7 +3488,7 @@ function EmergencyStep({
 								/>
 							</Field>
 
-							<Field label="How you know them" htmlFor={`ec-rel-${index}`}>
+							<Field label="How you know them" required htmlFor={`ec-rel-${index}`}>
 								<TextInput
 									id={`ec-rel-${index}`}
 									value={contact.relationship}
@@ -3132,7 +3497,7 @@ function EmergencyStep({
 								/>
 							</Field>
 
-							<Field label="Phone number" htmlFor={`ec-phone-${index}`}>
+							<Field label="Phone number" required htmlFor={`ec-phone-${index}`}>
 								<TextInput
 									id={`ec-phone-${index}`}
 									type="tel"
@@ -3238,7 +3603,7 @@ function EmergencyStep({
 					    unusable with a screen reader, and this block sits directly
 					    under the block it would have collided with. */}
 					<div className="grid gap-5 sm:grid-cols-2">
-						<Field label="Parent or guardian's name" htmlFor="gc-name">
+						<Field label="Parent or guardian's name" required htmlFor="gc-name">
 							<TextInput
 								id="gc-name"
 								value={guardian.guardian_name}
@@ -3247,7 +3612,7 @@ function EmergencyStep({
 							/>
 						</Field>
 
-						<Field label="How they are related to you" htmlFor="gc-rel">
+						<Field label="How they are related to you" required htmlFor="gc-rel">
 							<TextInput
 								id="gc-rel"
 								value={guardian.relationship}
@@ -3256,7 +3621,7 @@ function EmergencyStep({
 							/>
 						</Field>
 
-						<Field label="A number for them" htmlFor="gc-phone">
+						<Field label="A number for them" required htmlFor="gc-phone">
 							<TextInput
 								id="gc-phone"
 								type="tel"
@@ -3269,6 +3634,7 @@ function EmergencyStep({
 						<Field label="Email address" htmlFor="gc-email" hint="If they have one.">
 							<TextInput
 								id="gc-email"
+								type="email"
 								value={guardian.email ?? ""}
 								onChange={(value) => setGuardian("email", value)}
 								placeholder="Optional"
@@ -3298,15 +3664,57 @@ function EmergencyStep({
 							</label>
 						</div>
 
+						{/* The three below only make sense once somebody has said the
+						    guardian agreed. Asking how a consent was given before
+						    there is a consent is a form asking about nothing. */}
 						{Boolean(guardian.consent_given) && (
-							<Field label="When they agreed" htmlFor="gc-date">
-								<TextInput
-									id="gc-date"
-									type="date"
-									value={guardian.consent_date ?? ""}
-									onChange={(value) => setGuardian("consent_date", value)}
-								/>
-							</Field>
+							<>
+								<Field label="When they agreed" htmlFor="gc-date">
+									<TextInput
+										id="gc-date"
+										type="date"
+										value={guardian.consent_date ?? ""}
+										onChange={(value) => setGuardian("consent_date", value)}
+									/>
+								</Field>
+
+								{/* The society's own list, not a list written here — a
+								    branch that accepts a thumbprint on a paper form adds
+								    a `VMMS Guardian Verification Method` and this grows
+								    an option. Served on `application_options` since the
+								    feature was built and drawn by nobody until now, so a
+								    reviewer had to guess how the consent had been given. */}
+								{verificationMethods.length > 0 && (
+									<Field
+										label="How they gave it"
+										htmlFor="gc-method"
+										hint="However your branch accepts it. They will confirm this with them."
+									>
+										<VocabularySelect
+											id="gc-method"
+											value={guardian.verification_method ?? ""}
+											onChange={(value) => setGuardian("verification_method", value)}
+											options={verificationMethods}
+											placeholder="Choose how"
+										/>
+									</Field>
+								)}
+
+								<Field
+									label="A copy of it, if you have one"
+									htmlFor="gc-evidence"
+									hint="A signed form, or a photograph of one. Only your branch can open it."
+									className="sm:col-span-2"
+								>
+									<PrivateUpload
+										id="gc-evidence"
+										value={guardian.consent_evidence ?? ""}
+										onChange={(value) => setGuardian("consent_evidence", value)}
+										choose="Choose a file"
+										replace="Replace the file"
+									/>
+								</Field>
+							</>
 						)}
 					</div>
 				</FieldSet>
@@ -3438,6 +3846,8 @@ function ConfirmStep({
 	type,
 	citizenship,
 	disability,
+	disabilityNames,
+	background,
 	paymentLabel,
 	identifications,
 	declared,
@@ -3463,6 +3873,17 @@ function ConfirmStep({
 	citizenship: string;
 	/** The disability answer, or an empty string on the member path. */
 	disability: string;
+	/** What they named beneath it, already in the society's own words. */
+	disabilityNames: string[];
+	/**
+	 * The background step, already flattened to lines this panel can print.
+	 *
+	 * Flattened by the caller rather than here, because turning six tables of
+	 * different shapes into readable sentences needs the vocabularies — an
+	 * education level is a key, and "diploma" is not what anybody wants to read
+	 * back on a confirmation screen.
+	 */
+	background: { profession: string | null; rows: Array<{ label: string; value: string }> };
 	/**
 	 * How they said they will pay, already resolved to the society's own word
 	 * for it — never the gateway's record name, which is an identifier nobody
@@ -3499,6 +3920,7 @@ function ConfirmStep({
 				// own any more, so it belongs on the card for the step that asks it.
 				citizenship={path === "volunteer" ? citizenship : null}
 				disability={path === "volunteer" ? disability || null : null}
+				disabilityNames={path === "volunteer" ? disabilityNames : []}
 				onEdit={editor("identity")}
 			/>
 
@@ -3567,6 +3989,19 @@ function ConfirmStep({
 						<Chips label="Motivation" values={declared.motivations} />
 						<Block label="Anything done before" value={experience} />
 					</Review>
+
+					{/* Drawn only when there is something in it. Every part of the
+					    background step is optional, and a review panel reading
+					    "Not given" six times would tell somebody they had skipped
+					    something they were explicitly invited to skip. */}
+					{background.rows.length > 0 && (
+						<Review title="What you have already done" onEdit={editor("background")}>
+							<Line label="Profession" value={background.profession} />
+							{background.rows.map((row, index) => (
+								<Line key={index} label={row.label} value={row.value} />
+							))}
+						</Review>
+					)}
 
 					<Review title="If something happens" onEdit={editor("emergency")}>
 						{contacts.length === 0 ? (
@@ -3830,6 +4265,7 @@ function PersonCard({
 	photo,
 	citizenship,
 	disability,
+	disabilityNames,
 	onEdit,
 }: {
 	name: string;
@@ -3844,6 +4280,20 @@ function PersonCard({
 	    what somebody wrote about themselves belongs on the record their branch
 	    reads, not on a summary card. */
 	disability: string | null;
+	/**
+	 * What they named, in the society's own words rather than as register keys.
+	 *
+	 * Shown where the free text is not, and the distinction is the whole of why:
+	 * these are answers picked from a list this screen can put back in front of
+	 * somebody to check, which is what this step is for. A sentence somebody
+	 * wrote about themselves is not a checkbox they might have mis-clicked.
+	 *
+	 * Empty draws nothing at all — the row is absent rather than reading "None
+	 * chosen", because naming one was never required and a summary that reported
+	 * the omission would be scolding somebody for an answer they were told was
+	 * optional.
+	 */
+	disabilityNames: string[];
 	/** Absent when this registration never drew the step. See `Review`. */
 	onEdit?: () => void;
 }) {
@@ -3907,6 +4357,7 @@ function PersonCard({
 				<Line label="Date of birth" value={dateOfBirth ? formatDate(dateOfBirth) : null} />
 				{citizenship && <Line label="Nationality" value={citizenship} />}
 				{disability && <Line label="Disability" value={disability} />}
+				{disabilityNames.length > 0 && <Chips label="Named" values={disabilityNames} />}
 			</dl>
 		</section>
 	);

@@ -71,6 +71,14 @@ EXPECTED_READABLE = (
 	"country_of_residence",
 	"residence_address",
 	"vmms_disability_status",
+	# The eighteenth, and it came with the background block. What kind of work
+	# somebody does, from the society's own `Profession` register — a scalar and
+	# a vocabulary key, which is why it is here rather than in
+	# `identity.background()` with the six child tables beside it. Surfaced on
+	# the same argument as Home Area: a coordinator staffing a health post wants
+	# to know who is a nurse, and the alternative was a copy on the volunteer
+	# record that goes stale.
+	"vmms_profession",
 )
 
 # The four the page pass added, kept separately so the tests below can say which

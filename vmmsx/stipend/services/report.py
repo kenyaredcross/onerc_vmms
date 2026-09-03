@@ -86,6 +86,29 @@ def add_volunteer(doc, identifier: str, activity: str | None = None, notes: str 
 	return True
 
 
+def set_narrative(doc, narrative: str) -> bool:
+	"""Rewrite what the report says. Returns whether anything changed.
+
+	**Write-once was never the intention.** `create_report` took a narrative and
+	nothing else ever touched it, so a supervisor who started a report on Monday
+	and learned what the branch actually did on Friday had no way to say so —
+	the field is mandatory, it is the substance of the document, and the only
+	door to it was the moment the record came into being.
+
+	Frozen once submitted, by the same guard and for the same reason as the
+	volunteer list: the substance is somebody else's to decide until it comes
+	back.
+	"""
+	_assert_draft(doc)
+
+	if (doc.narrative or "") == (narrative or ""):
+		return False
+
+	doc.narrative = narrative
+
+	return True
+
+
 def remove_volunteer(doc, volunteer: str) -> bool:
 	"""Take a volunteer off the report. Idempotent.
 
@@ -156,6 +179,11 @@ def status(doc) -> dict:
 		"geo_path": adapter.get_full_path(doc.geo_node) if doc.geo_node else None,
 		"period_from": doc.period_from,
 		"period_to": doc.period_to,
+		# The substance of the document, and it was not in this shape at all —
+		# so a report's narrative could be written once at creation and never
+		# read back, on a field the doctype marks mandatory. It is a Text Editor
+		# field written by a supervisor on the desk or through `set_narrative`.
+		"narrative": doc.narrative,
 		"volunteer_count": len(volunteers_of(doc)),
 		"volunteers": [
 			{

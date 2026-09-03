@@ -13,14 +13,20 @@ import type {
 	TermsCertificationRequirement,
 	TermsDocument,
 	TermsItineraryRow,
-	TermsMethodology,
+	TermsVocabularies,
 	TermsOfReference,
 	TermsObjective,
 	TermsOutput,
 	TermsResource,
 	TermsStakeholder,
 } from "../portal/types";
-import { MissionEditor, MissionView, RowEditor } from "./Mission";
+import {
+	MissionEditor,
+	MissionView,
+	RowEditor,
+	blankResource,
+	resourceColumns,
+} from "./Mission";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import {
 	Button,
@@ -1060,6 +1066,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 	const [approach, setApproach] = useState<TermsApproach[]>([]);
 	const [itinerary, setItinerary] = useState<TermsItineraryRow[]>([]);
 	const [resources, setResources] = useState<TermsResource[]>([]);
+	const [hasNoResources, setHasNoResources] = useState(false);
 	const [requirements, setRequirements] = useState<TermsCertificationRequirement[]>([]);
 	const [chain, setChain] = useState<GeoNode[]>([]);
 	const [busy, setBusy] = useState(false);
@@ -1073,12 +1080,11 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 		{ mine: 1 },
 		"admin:projects:for-terms",
 	);
-	const vocabularies = useFrappeGetCall<{
-		message: {
-			methodologies: TermsMethodology[];
-			certification_types: Array<{ name: string; certification_type_name: string }>;
-		};
-	}>(API.torMethodologies, undefined, "admin:tor:vocabularies");
+	const vocabularies = useFrappeGetCall<{ message: TermsVocabularies }>(
+		API.torMethodologies,
+		undefined,
+		"admin:tor:vocabularies",
+	);
 
 	const methodOptions = useMemo(
 		() =>
@@ -1096,6 +1102,10 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 			})),
 		[vocabularies.data],
 	);
+
+	const vocabulary = vocabularies.data?.message;
+	const defaultCurrency =
+		resources.find((row) => row.currency)?.currency ?? vocabulary?.currencies?.[0] ?? "";
 
 	const options = (projects.data?.message?.projects ?? []).filter((row) => row.is_open);
 	const node = selectedNode(chain);
@@ -1118,6 +1128,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				expected_end_date: endsOn || undefined,
 				default_duration_days: duration ? Number(duration) : undefined,
 				approval_mode: approvalMode,
+				has_no_resources: hasNoResources,
 				notes: notes.trim() || undefined,
 				stakeholders,
 				objectives,
@@ -1355,30 +1366,34 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					]}
 				/>
 
+				{/* The same nine columns the amend editor draws, from one
+				    definition — see `resourceColumns`. Two grids for one child
+				    table is two places for a column to go missing, which is
+				    exactly what had happened to three of them. */}
 				<RowEditor<TermsResource>
 					title="Resources"
-					lead="What is needed, when, in what quantity, at what unit cost, and from whom."
+					lead="What is needed, when, in what quantity, at what cost, whose money it is, and from whom."
 					addLabel="Add a resource"
 					empty="No resources listed yet."
 					rows={resources}
 					onChange={setResources}
-					blank={() => ({
-						resource: "",
-						needed_on: "",
-						quantity: null,
-						unit: "",
-						unit_cost: null,
-						donor: "",
-					})}
-					columns={[
-						{ key: "resource", label: "Resource", span: 3 },
-						{ key: "needed_on", label: "Needed on", kind: "date", span: 2 },
-						{ key: "quantity", label: "Quantity", kind: "number", span: 2 },
-						{ key: "unit", label: "Unit", span: 2 },
-						{ key: "unit_cost", label: "Unit cost", kind: "number", span: 3 },
-						{ key: "donor", label: "Donor", span: 4 },
-					]}
+					blank={() => ({ ...blankResource(), currency: defaultCurrency })}
+					columns={resourceColumns(vocabulary)}
 				/>
+
+				<Labelled
+					label="Nothing needed"
+					hint="A mission cannot be submitted with an empty resource list unless this says so."
+				>
+					<span className="flex min-h-[38px] items-center gap-2 rounded-xl border border-card-line bg-white px-3 py-2 text-[13px] text-muted">
+						<input
+							type="checkbox"
+							checked={hasNoResources}
+							onChange={(event) => setHasNoResources(event.target.checked)}
+						/>
+						This mission needs no resources
+					</span>
+				</Labelled>
 
 				<RowEditor<TermsCertificationRequirement>
 					title="Required certifications"

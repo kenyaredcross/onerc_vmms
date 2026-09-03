@@ -47,7 +47,7 @@ PROVISION_EMPLOYEE_FIELD = "vmms_volunteer_provision_employee"
 EMPLOYEE_COMPANY_FIELD = "vmms_volunteer_employee_company"
 
 # Which role a volunteer's own login is given when they are accepted, so that
-# they can see their own record. A fifth society question, and the same shape as
+# they can see their own record. A fifth organization-specific question, and the same shape as
 # the four above: a Custom Field vmmsx owns, installed by
 # `patches/install_self_service_roles.py`, empty by default. Empty means nothing
 # is granted, never that everybody is.

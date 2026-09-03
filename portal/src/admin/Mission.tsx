@@ -7,7 +7,7 @@ import type {
 	TermsApproach,
 	TermsCertificationRequirement,
 	TermsItineraryRow,
-	TermsMethodology,
+	TermsVocabularies,
 	TermsMission,
 	TermsResource,
 	TermsStakeholder,
@@ -59,6 +59,12 @@ export type Column<Row> = {
 	span?: number;
 	options?: Array<{ value: string; label: string }>;
 	placeholder?: string;
+	/**
+	 * The word beside a `check`, where "Required" is not what the tick means.
+	 * The column's own label sits above the control, so the two together have to
+	 * read as one sentence rather than as the same word twice.
+	 */
+	checkedLabel?: string;
 };
 
 /**
@@ -155,6 +161,71 @@ export function RowEditor<Row extends object>({
 	);
 }
 
+/** A blank resource line, with every column the row actually has. */
+export function blankResource(): TermsResource {
+	return {
+		resource: "",
+		description: "",
+		needed_on: "",
+		quantity: null,
+		unit: "",
+		currency: "",
+		unit_cost: null,
+		funding_status: "",
+		donor: "",
+	};
+}
+
+/**
+ * The resource grid's columns, drawn from the society's own vocabularies.
+ *
+ * Written once and used by both terms editors — the one that creates a mission
+ * and the one that amends it — because a resource line entered on one screen and
+ * corrected on the other must be the same nine columns. It was six on both, and
+ * the three it left out were the ones that make a costed mission add up: what
+ * the line is for, which currency it is priced in, and whether the money is
+ * actually there.
+ *
+ * `unit` and `currency` are pickers rather than text boxes because the doctype
+ * links them to `UOM` and `Currency`. Typed by hand they became "litres",
+ * "Litres" and "L" — three units on one register.
+ *
+ * `total_cost` is deliberately absent. It is derived on the parent's validate
+ * from quantity × unit cost, and an editable box for it would be a number that
+ * could disagree with the two it comes from.
+ */
+export function resourceColumns(vocabulary?: TermsVocabularies): Array<Column<TermsResource>> {
+	return [
+		{ key: "resource", label: "Resource", span: 4, placeholder: "Fuel" },
+		{ key: "needed_on", label: "Needed on", kind: "date", span: 2 },
+		{ key: "quantity", label: "Qty", kind: "number", span: 2 },
+		{
+			key: "unit",
+			label: "Unit",
+			kind: "select",
+			span: 2,
+			options: (vocabulary?.units ?? []).map((value) => ({ value, label: value })),
+		},
+		{ key: "unit_cost", label: "Unit cost", kind: "number", span: 2 },
+		{
+			key: "currency",
+			label: "Currency",
+			kind: "select",
+			span: 2,
+			options: (vocabulary?.currencies ?? []).map((value) => ({ value, label: value })),
+		},
+		{
+			key: "funding_status",
+			label: "Funding",
+			kind: "select",
+			span: 3,
+			options: (vocabulary?.funding_statuses ?? []).map((value) => ({ value, label: value })),
+		},
+		{ key: "donor", label: "Donor or source", span: 3 },
+		{ key: "description", label: "What it is for", kind: "area", span: 4 },
+	];
+}
+
 // Tailwind's class scanner needs whole class names in the source, so the spans
 // are a lookup rather than a template string.
 const SPANS: Record<number, string> = {
@@ -163,6 +234,7 @@ const SPANS: Record<number, string> = {
 	4: "col-span-6 sm:col-span-4",
 	5: "col-span-12 sm:col-span-5",
 	6: "col-span-12 sm:col-span-6",
+	7: "col-span-12 sm:col-span-7",
 	8: "col-span-12 sm:col-span-8",
 	12: "col-span-12",
 };
@@ -186,7 +258,7 @@ function Input<Row>({
 					checked={Boolean(value)}
 					onChange={(event) => onChange(event.target.checked)}
 				/>
-				Required
+				{column.checkedLabel ?? "Required"}
 			</span>
 		);
 	}
@@ -316,17 +388,9 @@ export function MissionEditor({
 	const [approach, setApproach] = useState<TermsApproach[]>(terms.approach_methods);
 	const [itinerary, setItinerary] = useState<TermsItineraryRow[]>(terms.itinerary);
 	const [resources, setResources] = useState<TermsResource[]>(terms.resources);
+	const [hasNoResources, setHasNoResources] = useState(terms.has_no_resources);
 
-	const vocabularies = useFrappeGetCall<{
-		message: {
-			methodologies: TermsMethodology[];
-			certification_types: Array<{
-				name: string;
-				certification_type_name: string;
-				description: string | null;
-			}>;
-		};
-	}>(
+	const vocabularies = useFrappeGetCall<{ message: TermsVocabularies }>(
 		API.torMethodologies,
 		undefined,
 		"admin:tor:vocabularies",
@@ -368,6 +432,14 @@ export function MissionEditor({
 		[vocabularies.data],
 	);
 
+	const vocabulary = vocabularies.data?.message;
+
+	// A new resource line opens in the currency the mission is already costed in,
+	// or the first one the site enables. Somebody adding a second line of fuel
+	// should not have to answer "which money" again.
+	const defaultCurrency =
+		resources.find((row) => row.currency)?.currency ?? vocabulary?.currencies?.[0] ?? "";
+
 	const projectOptions = (projects.data?.message?.projects ?? []).filter(
 		(row) => row.is_open || row.name === terms.project,
 	);
@@ -397,7 +469,7 @@ export function MissionEditor({
 		}
 
 		if (which === "plan") {
-			return { itinerary, resources };
+			return { itinerary, resources, has_no_resources: hasNoResources };
 		}
 
 		return {
@@ -668,28 +740,34 @@ export function MissionEditor({
 						<div>
 							<RowEditor<TermsResource>
 								title="Resources"
-								lead="What the mission needs and what it is expected to cost."
+								lead="What the mission needs, what it is expected to cost, and whose money is behind it."
 								addLabel="Add a resource"
 								empty="Nothing listed yet."
 								rows={resources}
 								onChange={setResources}
-								blank={() => ({
-									resource: "",
-									needed_on: "",
-									quantity: null,
-									unit: "",
-									unit_cost: null,
-									donor: "",
-								})}
-								columns={[
-									{ key: "resource", label: "Resource", span: 4, placeholder: "Fuel" },
-									{ key: "needed_on", label: "Needed on", kind: "date", span: 2 },
-									{ key: "quantity", label: "Qty", kind: "number", span: 2 },
-									{ key: "unit", label: "Unit", span: 2, placeholder: "litres" },
-									{ key: "unit_cost", label: "Unit cost", kind: "number", span: 2 },
-									{ key: "donor", label: "Donor", span: 4 },
-								]}
+								blank={() => ({ ...blankResource(), currency: defaultCurrency })}
+								columns={resourceColumns(vocabulary)}
 							/>
+
+							{/* The society's own answer to an empty resources table.
+							    Without it, `terms.assert_submittable` refuses a mission
+							    that genuinely needs nothing — and a coordinator had no
+							    way to say so from this screen. */}
+							<div className="mt-4">
+								<Labelled
+									label="Nothing needed"
+									hint="Tick this to submit a mission with nothing listed above."
+								>
+									<span className="flex min-h-[38px] items-center gap-2 rounded-xl border border-card-line bg-white px-3 py-2 text-[13px] text-muted">
+										<input
+											type="checkbox"
+											checked={hasNoResources}
+											onChange={(event) => setHasNoResources(event.target.checked)}
+										/>
+										This mission needs no resources
+									</span>
+								</Labelled>
+							</div>
 
 							<p className="mt-2 text-[11.5px] text-slate-faint">
 								Nothing here totals across a project or reconciles against what was actually

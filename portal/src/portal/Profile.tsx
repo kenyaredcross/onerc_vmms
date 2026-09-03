@@ -5,6 +5,14 @@ import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
 import { formatDate, geoPath } from "../lib/format";
+import {
+	BackgroundFields,
+	backgroundFrom,
+	backgroundLines,
+	backgroundPayload,
+	emptyBackground,
+	type BackgroundValues,
+} from "../ui/Background";
 import { Field, SelectInput, TextInput, VocabularySelect } from "../ui/form";
 import { Icon } from "../ui/icons";
 import { PersonHero } from "../ui/PersonHero";
@@ -154,6 +162,10 @@ export default function Profile() {
 					<div className="space-y-6 lg:col-span-2">
 						<HolderCard kind="volunteer" />
 						<PlacementCard profile={profile} />
+						<BackgroundCard
+							person={person.data?.message ?? null}
+							onSaved={() => void person.mutate()}
+						/>
 						<CertificationsCard rows={certs} loading={training.isLoading} />
 					</div>
 				</div>
@@ -583,6 +595,140 @@ function Block({ label, value }: { label: string; value: string | null }) {
 			<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">{label}</dt>
 			<dd className="mt-1.5 text-[13.5px] text-ink">{value || "—"}</dd>
 		</div>
+	);
+}
+
+/**
+ * What this person has already done, on the screen where they can correct it.
+ *
+ * **The gap this closes.** All seven of these are asked once, during
+ * registration, and until now there was no second door: somebody who qualified
+ * as a nurse in March had to ask a branch to add it, because the only screen
+ * that had ever drawn the fields was a wizard they had already finished. They
+ * are person-owned facts on core's Red Profile and `update_my_profile` has
+ * always been willing to take them — what was missing was somewhere to say so.
+ *
+ * **The same component the registration draws.** `BackgroundFields` is shared
+ * rather than reimplemented, so the two screens cannot drift: a field added to
+ * education next year appears in both, and the "still studying clears the finish
+ * year" rule is written once.
+ *
+ * **Read first, edit on request**, like the identity card above it. A profile
+ * page is somewhere people mostly *look*, and six repeating-row editors drawn
+ * open on arrival would make a page about who you are look like a form you had
+ * left unfinished.
+ */
+function BackgroundCard({
+	person,
+	onSaved,
+}: {
+	person: RedProfile | null;
+	onSaved: () => void;
+}) {
+	const { call } = useContext(FrappeContext) as FrappeConfig;
+
+	const [editing, setEditing] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [failure, setFailure] = useState<string | null>(null);
+	const [draft, setDraft] = useState<BackgroundValues>(emptyBackground);
+
+	const identity = useFrappeGetCall<{ message: IdentityOptions }>(
+		API.identityOptions,
+		undefined,
+		"profile:identity_options",
+	);
+	const options = identity.data?.message;
+
+	// What the server holds, which is also what Cancel goes back to. Derived on
+	// every render rather than kept in state: the card is re-rendered with a
+	// fresh `person` after each save, and a copy in state would be the version
+	// that stopped updating.
+	const held = backgroundFrom(person);
+	const lines = backgroundLines(options, held);
+
+	const start = () => {
+		setDraft(held);
+		setFailure(null);
+		setEditing(true);
+	};
+
+	const save = async () => {
+		setBusy(true);
+		setFailure(null);
+
+		try {
+			await call.post(API.updateMyProfile, {
+				profession: draft.profession,
+				background: backgroundPayload(draft),
+			});
+			setEditing(false);
+			onSaved();
+		} catch (saveError) {
+			setFailure(errorMessage(saveError, "That change was not accepted."));
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<Card>
+			<SectionTitle>What you have already done</SectionTitle>
+
+			{!person ? (
+				<p className="mt-4 text-[12.5px] leading-relaxed text-slate-faint">
+					This appears once the Society holds a person record for you.
+				</p>
+			) : editing ? (
+				<div className="mt-5 border-t border-card-line pt-5">
+					{failure && <ErrorNote>{failure}</ErrorNote>}
+
+					<BackgroundFields
+						options={options}
+						lead="None of this is required. Fill in what you have and leave the rest."
+						value={draft}
+						onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))}
+					/>
+
+					<div className="flex items-center gap-2.5 pt-6">
+						<Button variant="navy" onClick={save} disabled={busy}>
+							{busy ? "Saving…" : "Save"}
+						</Button>
+						<Button variant="ghost" onClick={() => setEditing(false)} disabled={busy}>
+							Cancel
+						</Button>
+					</div>
+				</div>
+			) : (
+				<>
+					{lines.length === 0 && !held.profession ? (
+						// Not an `Empty`, which reads as something having gone wrong.
+						// Nobody was ever obliged to fill this in, so the absence is
+						// an invitation rather than a gap.
+						<p className="mt-4 text-[12.5px] leading-relaxed text-slate-faint">
+							You have not told us about any study, training, work or licences yet. Adding them
+							helps your branch know what you could be asked to do.
+						</p>
+					) : (
+						<dl className="mt-5 space-y-4 border-t border-card-line pt-5">
+							<Line label="Profession" value={held.profession} />
+							{lines.map((row, index) => (
+								<Line key={index} label={row.label} value={row.value} />
+							))}
+						</dl>
+					)}
+
+					<div className="mt-5 border-t border-card-line pt-4">
+						<Button variant="quiet" onClick={start}>
+							{lines.length === 0 && !held.profession ? "Add these details" : "Update these details"}
+						</Button>
+						<p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-faint">
+							These belong to your person record. Nobody has checked any of it — a branch
+							verifies what it needs to before asking you to do something that depends on it.
+						</p>
+					</div>
+				</>
+			)}
+		</Card>
 	);
 }
 

@@ -210,6 +210,22 @@ def add_volunteer_to_report(
 
 
 @frappe.whitelist()
+def set_report_narrative(name: str, narrative: str) -> dict:
+	"""Rewrite what a draft report says.
+
+	Write permission on the report, which brings core's scoping with it. The
+	draft check is the service's, so this door and the desk answer the same way.
+	"""
+	report = _readable(REPORT_DOCTYPE, name)
+	report.check_permission("write")
+
+	if report_service.set_narrative(report, narrative):
+		report.save()
+
+	return report_service.status(report)
+
+
+@frappe.whitelist()
 def remove_volunteer_from_report(name: str, volunteer: str) -> dict:
 	"""Take a volunteer off a report. Idempotent."""
 	report = _readable(REPORT_DOCTYPE, name)

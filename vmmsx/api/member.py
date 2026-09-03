@@ -660,6 +660,44 @@ def _requires_approver(membership_type) -> bool:
 	return approval.requires_approver(membership_type)
 
 
+@frappe.whitelist()
+def set_member_notes(name: str, notes: str | None = None) -> dict:
+	"""The branch's own note about this member.
+
+	The twin of `api/volunteer.py::set_volunteer_notes`, and it draws the same
+	line: `VMMS Member.notes` has been on the doctype since it was written, no
+	DTO carried it, and no screen could write one — so a note made at the desk
+	was invisible on the register and a coordinator working from the console
+	could not make one at all.
+
+	**`_writable_member`, not `_readable_member`.** The read helper admits the
+	person the record is about, which is right for reading their own standing
+	and wrong here: a note a coordinator makes about somebody is not a note that
+	person may rewrite.
+
+	Blank clears it, deliberately.
+	"""
+	member = _writable_member(name)
+	member.notes = (notes or "").strip()
+	member.save()
+
+	return {"member": member.name, "notes": member.notes}
+
+
+def _writable_member(name: str):
+	"""Load a member record the caller may **act on**, as a coordinator.
+
+	The ordinary permission layer and nothing else — no holder bypass. The
+	distinction is the one `api/volunteer.py::_writable` sets out at length: a
+	person is entitled to see their own record and is not entitled to write the
+	branch's notes about themselves.
+	"""
+	doc = frappe.get_doc(MEMBER_DOCTYPE, name)
+	doc.check_permission("write")
+
+	return doc
+
+
 def _readable_member(name: str):
 	"""Load a member record the caller is allowed to see. Two ways to be allowed.
 

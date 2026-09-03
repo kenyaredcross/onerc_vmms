@@ -7,6 +7,7 @@ import { formatDate } from "../lib/format";
 import { TaskState, Thread } from "../portal/Tasks";
 import type { GeoNode, TaskDetail, TaskSummary } from "../portal/types";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
+import { RowEditor } from "./Mission";
 import {
 	Button,
 	Card,
@@ -323,6 +324,37 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 	const [busy, setBusy] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
 
+	// Everything past the five fields this form used to send. `task.ASSIGNABLE`
+	// has taken all of it since the doctype was written — the kind of work, when
+	// it runs, how long it should take, where it happens, who to ring on the day
+	// and when to chase — and the console asked for none of it, so a coordinator
+	// assigned a task here and finished setting it up on the desk.
+	const [more, setMore] = useState(false);
+	const [priority, setPriority] = useState("Normal");
+	const [taskType, setTaskType] = useState("");
+	const [project, setProject] = useState("");
+	const [dueAt, setDueAt] = useState("");
+	const [plannedStart, setPlannedStart] = useState("");
+	const [plannedEnd, setPlannedEnd] = useState("");
+	const [responseDeadline, setResponseDeadline] = useState("");
+	const [expectedHours, setExpectedHours] = useState("");
+	const [remindEvery, setRemindEvery] = useState("");
+	const [workName, setWorkName] = useState("");
+	const [workAddress, setWorkAddress] = useState("");
+	const [meetingName, setMeetingName] = useState("");
+	const [meetingAddress, setMeetingAddress] = useState("");
+	const [travel, setTravel] = useState("");
+	const [contactName, setContactName] = useState("");
+	const [contactPhone, setContactPhone] = useState("");
+	const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+
+	const options = useFrappeGetCall<{ message: TaskOptions }>(
+		API.taskOptions,
+		undefined,
+		"admin:task:options",
+	);
+	const choices = options.data?.message;
+
 	const node = selectedNode(chain);
 	const ready = volunteer.trim() && subject.trim() && description.trim();
 
@@ -337,12 +369,52 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 				description: description.trim(),
 				geo_node: node?.name ?? undefined,
 				due_on: dueOn || undefined,
+				// Everything below is filtered against `task.ASSIGNABLE` on the
+				// server, so a blank is dropped rather than written as "".
+				priority,
+				task_type: taskType || undefined,
+				project: project || undefined,
+				due_at: dueAt || undefined,
+				planned_start: plannedStart || undefined,
+				planned_end: plannedEnd || undefined,
+				response_deadline: responseDeadline || undefined,
+				expected_hours: expectedHours || undefined,
+				reminder_every_days: remindEvery || undefined,
+				work_name: workName.trim() || undefined,
+				work_address: workAddress.trim() || undefined,
+				meeting_name: meetingName.trim() || undefined,
+				meeting_address: meetingAddress.trim() || undefined,
+				travel_instructions: travel.trim() || undefined,
+				local_contact_name: contactName.trim() || undefined,
+				local_contact_phone: contactPhone.trim() || undefined,
+				// Dropped rather than sent empty: the service normalises the
+				// table column by column and a row with no item is a grid line
+				// somebody tabbed through.
+				checklist: checklist.filter((row) => row.item.trim()),
 			});
 			setVolunteer("");
 			setSubject("");
 			setDescription("");
 			setDueOn("");
 			setChain([]);
+			setMore(false);
+			setPriority("Normal");
+			setTaskType("");
+			setProject("");
+			setDueAt("");
+			setPlannedStart("");
+			setPlannedEnd("");
+			setResponseDeadline("");
+			setExpectedHours("");
+			setRemindEvery("");
+			setWorkName("");
+			setWorkAddress("");
+			setMeetingName("");
+			setMeetingAddress("");
+			setTravel("");
+			setContactName("");
+			setContactPhone("");
+			setChecklist([]);
 			onAssigned();
 		} catch (assignError) {
 			setFailure(errorMessage(assignError, "That task was not created."));
@@ -400,6 +472,208 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 				</p>
 			</div>
 
+			{/* Folded away, because most tasks are a person, a subject and a
+			    brief. Everything a coordinator setting up field work actually
+			    needs is behind one click rather than on a different screen. */}
+			<div className="mt-4 border-t border-card-line pt-4">
+				<button
+					type="button"
+					onClick={() => setMore((was) => !was)}
+					className="text-[12px] font-semibold text-ink hover:underline"
+				>
+					{more ? "− Fewer details" : "+ Kind, timing, place and checklist"}
+				</button>
+			</div>
+
+			{more && (
+				<div className="mt-4 space-y-5">
+					<div className="grid gap-4 sm:grid-cols-3">
+						<Labelled label="Priority">
+							<select
+								className={INPUT}
+								value={priority}
+								onChange={(event) => setPriority(event.target.value)}
+							>
+								{(choices?.priorities ?? ["Low", "Normal", "High", "Urgent"]).map(
+									(option) => (
+										<option key={option} value={option}>
+											{option}
+										</option>
+									),
+								)}
+							</select>
+						</Labelled>
+
+						<Labelled label="Kind of task" hint="From the society's own list.">
+							<select
+								className={INPUT}
+								value={taskType}
+								onChange={(event) => setTaskType(event.target.value)}
+							>
+								<option value="">Not set</option>
+								{(choices?.task_types ?? []).map((row) => (
+									<option key={row.name} value={row.name}>
+										{row.task_type_name}
+									</option>
+								))}
+							</select>
+						</Labelled>
+
+						<Labelled label="Project" hint="If this work belongs to one.">
+							<select
+								className={INPUT}
+								value={project}
+								onChange={(event) => setProject(event.target.value)}
+							>
+								<option value="">Not set</option>
+								{(choices?.projects ?? []).map((row) => (
+									<option key={row.name} value={row.name}>
+										{row.project_name || row.name}
+									</option>
+								))}
+							</select>
+						</Labelled>
+					</div>
+
+					<div>
+						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+							When
+						</p>
+						<div className="grid gap-4 sm:grid-cols-3">
+							<Labelled label="Due" hint="To the hour, where the day is not enough.">
+								<input
+									type="datetime-local"
+									className={INPUT}
+									value={dueAt}
+									onChange={(event) => setDueAt(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Answer by" hint="When you need them to accept or decline.">
+								<input
+									type="datetime-local"
+									className={INPUT}
+									value={responseDeadline}
+									onChange={(event) => setResponseDeadline(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Expected hours" hint="What it should take them.">
+								<input
+									type="number"
+									min="0"
+									step="0.5"
+									className={INPUT}
+									value={expectedHours}
+									onChange={(event) => setExpectedHours(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Planned start">
+								<input
+									type="datetime-local"
+									className={INPUT}
+									value={plannedStart}
+									onChange={(event) => setPlannedStart(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Planned end">
+								<input
+									type="datetime-local"
+									className={INPUT}
+									value={plannedEnd}
+									onChange={(event) => setPlannedEnd(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled
+								label="Remind every (days)"
+								hint="Leave empty and nobody is chased automatically."
+							>
+								<input
+									type="number"
+									min="1"
+									className={INPUT}
+									value={remindEvery}
+									onChange={(event) => setRemindEvery(event.target.value)}
+								/>
+							</Labelled>
+						</div>
+					</div>
+
+					<div>
+						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+							Where the work is
+						</p>
+						<div className="grid gap-4 sm:grid-cols-2">
+							<Labelled label="Work location">
+								<input
+									className={INPUT}
+									value={workName}
+									onChange={(event) => setWorkName(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Address or description">
+								<textarea
+									className={cx(INPUT, "min-h-[56px] resize-y")}
+									value={workAddress}
+									onChange={(event) => setWorkAddress(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Meeting point">
+								<input
+									className={INPUT}
+									value={meetingName}
+									onChange={(event) => setMeetingName(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Address or description">
+								<textarea
+									className={cx(INPUT, "min-h-[56px] resize-y")}
+									value={meetingAddress}
+									onChange={(event) => setMeetingAddress(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Getting there" hint="Directions, transport, what to bring.">
+								<textarea
+									className={cx(INPUT, "min-h-[56px] resize-y")}
+									value={travel}
+									onChange={(event) => setTravel(event.target.value)}
+								/>
+							</Labelled>
+							<div className="grid gap-4">
+								<Labelled label="Local contact">
+									<input
+										className={INPUT}
+										value={contactName}
+										onChange={(event) => setContactName(event.target.value)}
+									/>
+								</Labelled>
+								<Labelled label="Their phone number">
+									<input
+										type="tel"
+										className={INPUT}
+										value={contactPhone}
+										onChange={(event) => setContactPhone(event.target.value)}
+									/>
+								</Labelled>
+							</div>
+						</div>
+					</div>
+
+					<RowEditor<ChecklistItem>
+						title="Checklist"
+						lead="What the volunteer ticks off. Required items have to be done before they can submit."
+						addLabel="Add an item"
+						empty="No checklist."
+						rows={checklist}
+						onChange={setChecklist}
+						blank={() => ({ item: "", is_required: true, notes: "" })}
+						columns={[
+							{ key: "item", label: "Item", span: 5 },
+							{ key: "is_required", label: "Has to be done", kind: "check", span: 3 },
+							{ key: "notes", label: "Notes", span: 4 },
+						]}
+					/>
+				</div>
+			)}
+
 			{failure && (
 				<div className="mt-4">
 					<ErrorNote>{failure}</ErrorNote>
@@ -413,6 +687,16 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 			</div>
 		</Card>
 	);
+}
+
+/** One checklist line, as this form holds it — `VMMS Task Checklist Item`. */
+type ChecklistItem = { item: string; is_required: boolean; notes: string };
+
+/** `api/tasks.py::task_options`. */
+interface TaskOptions {
+	priorities: string[];
+	task_types: Array<{ name: string; task_type_name: string }>;
+	projects: Array<{ name: string; project_name: string | null }>;
 }
 
 const INPUT =

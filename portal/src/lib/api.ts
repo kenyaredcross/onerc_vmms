@@ -60,6 +60,12 @@ export const API = {
 	submitMyRegistration: "vmmsx.api.registration.submit_my_registration",
 	registerAsVolunteer: "vmmsx.api.registration.register_as_volunteer",
 	registerAsMember: "vmmsx.api.registration.register_as_member",
+	// The third door, for somebody who already belongs and is asking the society
+	// to recognise it. Every fact it takes lands in a *claimed* field that
+	// decides nothing until a reviewer has read the evidence — see the endpoint,
+	// which is why this is a separate door rather than an argument to the one
+	// above it.
+	registerExistingMembership: "vmmsx.api.registration.register_existing_membership",
 
 	// vmmsx/api/volunteer.py
 	applicationOptions: "vmmsx.api.volunteer.application_options",
@@ -114,6 +120,11 @@ export const API = {
 	suspendVolunteer: "vmmsx.api.volunteer.suspend_volunteer",
 	reinstateVolunteer: "vmmsx.api.volunteer.reinstate_volunteer",
 	recordVolunteerExit: "vmmsx.api.volunteer.record_volunteer_exit",
+	// The register's margin — the branch's own note about a person — and what
+	// the branch currently knows they can do. Both are coordinator's fields:
+	// the holder may read their own record and not write either of these.
+	setVolunteerNotes: "vmmsx.api.volunteer.set_volunteer_notes",
+	setVolunteerCapabilities: "vmmsx.api.volunteer.set_volunteer_capabilities",
 
 	// vmmsx/api/member.py
 	myMemberships: "vmmsx.api.member.my_memberships",
@@ -127,6 +138,7 @@ export const API = {
 	// type's name — a society names its own types.
 	memberRegisterSummary: "vmmsx.api.member.register_summary",
 	memberDossier: "vmmsx.api.member.get_dossier",
+	setMemberNotes: "vmmsx.api.member.set_member_notes",
 	// The membership half of a review, and the counterpart of
 	// `applicationDecision` above. Its absence is why a membership reached the
 	// queue as a docname with two buttons under it: there was no endpoint that
@@ -296,6 +308,16 @@ export const API = {
 	deploymentOptions: "vmmsx.api.deployment.deployment_options",
 	operationsDocuments: "vmmsx.api.deployment.operations_documents",
 	createDeployment: "vmmsx.api.deployment.create_deployment",
+	// Correcting one afterwards. Every material change goes through the
+	// document's own save, so `change.py` compares, insists on a reason and
+	// tells everybody already on the roster — see `deployment.update`.
+	updateDeployment: "vmmsx.api.deployment.update_deployment",
+	// Ending one. Both fields are optional and nothing blocks the move.
+	closeOutDeployment: "vmmsx.api.deployment.close_out_deployment",
+	// The two pins. `locate` asks the geocoder and never fails a save; `pin` is
+	// the correction by hand that a geocoder cannot make.
+	locateDeployment: "vmmsx.api.deployment.locate_deployment",
+	placeDeploymentPin: "vmmsx.api.deployment.place_deployment_pin",
 
 	// vmmsx/api/tasks.py — two doors into one doctype, checked differently.
 	// Everything under `my` is the volunteer's and is checked by ownership: the
@@ -319,6 +341,10 @@ export const API = {
 	branchTasks: "vmmsx.api.tasks.branch_tasks",
 	getTask: "vmmsx.api.tasks.get_task",
 	assignTask: "vmmsx.api.tasks.assign_task",
+	// The vocabularies the assign form draws from — priorities, the society's
+	// own kinds of task, and its projects. One call, like every other options
+	// endpoint in this app.
+	taskOptions: "vmmsx.api.tasks.task_options",
 	answerTaskQuestion: "vmmsx.api.tasks.answer_question",
 	requestTaskProgress: "vmmsx.api.tasks.request_progress",
 	signOffTask: "vmmsx.api.tasks.sign_off",
@@ -340,6 +366,9 @@ export const API = {
 	getPaymentForm: "vmmsx.api.stipend.get_payment_form",
 	addVolunteerToReport: "vmmsx.api.stipend.add_volunteer_to_report",
 	removeVolunteerFromReport: "vmmsx.api.stipend.remove_volunteer_from_report",
+	// The substance of the report. Editable while it is a draft; frozen by the
+	// same guard as the volunteer list once it has been submitted.
+	setReportNarrative: "vmmsx.api.stipend.set_report_narrative",
 	recordAttendance: "vmmsx.api.stipend.record_attendance",
 	findStipendVolunteers: "vmmsx.api.stipend.find_volunteers",
 	submitStipendForApproval: "vmmsx.api.stipend.submit_for_approval",

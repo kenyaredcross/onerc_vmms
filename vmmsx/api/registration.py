@@ -66,6 +66,78 @@ REGISTRATION_PATHS = (
 DISABILITY_FIELD = "vmms_disability_status"
 DISABILITY_NEEDS_FIELD = "vmms_disability_needs"
 
+# The third of them, and the only one that is a table. Which disabilities a
+# person has said they have, from core's own `Disability` register — see
+# `patches/install_disability_vocabulary.py` for why the Select above stays the
+# question and this stays optional beside it. Guarded on the meta everywhere the
+# other two are, for the same reason: it is a Custom Field, and a site between
+# sync and migrate does not have it.
+DISABILITIES_FIELD = "vmms_disabilities"
+
+# The child doctype behind that field, named here because every read of the
+# table filters on it and core's `Disability` is what it links to.
+SELECTOR_DOCTYPE = "VMMS Disability Selector"
+DISABILITY_DOCTYPE = "Disability"
+
+# What somebody has already done, installed on the same spine by
+# `patches/install_background_fields.py`. One scalar and six tables.
+#
+# **Every one of them optional, and no completion rule reads any of them.** A
+# volunteer application is not a job application: the whole block can be left
+# empty and the registration is as valid as one that fills it in.
+PROFESSION_FIELD = "vmms_profession"
+
+# The six tables, keyed by the name a caller sends and the browser reads back.
+# Each entry is the profile field it writes, the child fields a caller may set,
+# and which of those hold a file URL rather than a value.
+#
+# **An allow-list per table rather than one shared list**, for the reason
+# `rows_from` gives: a field added to one of these doctypes next year is refused
+# by default here, and would have been accepted by a list of things to strip.
+BACKGROUND_TABLES = {
+	"education": (
+		"vmms_education",
+		("institution", "level", "qualification", "started_in", "finished_in", "is_ongoing", "attachment"),
+		("attachment",),
+	),
+	"training": (
+		"vmms_training",
+		("course_name", "institution", "started_on", "completed_on", "remarks", "attachment"),
+		("attachment",),
+	),
+	"work_experience": (
+		"vmms_work_experience",
+		("organization", "role", "started_on", "ended_on", "is_current", "summary"),
+		(),
+	),
+	"licences": (
+		"vmms_licences",
+		(
+			"license_type",
+			"license_name",
+			"institution",
+			"qualification",
+			"registration_no",
+			"valid_from",
+			"valid_to",
+			"does_not_expire",
+			"description",
+			"attachment",
+		),
+		("attachment",),
+	),
+	"driving_licences": (
+		"vmms_driving_licences",
+		("licence_class", "licence_number", "valid_to", "attachment"),
+		("attachment",),
+	),
+	"references": (
+		"vmms_references",
+		("reference_name", "position", "organization", "email", "phone", "relationship", "notes"),
+		(),
+	),
+}
+
 # What a person may correct about themselves, and the closed list `update_my_
 # profile` writes. `email` and `user` are absent and must stay absent: they are
 # the binding between a login and a person, and somebody who could rewrite
@@ -90,6 +162,11 @@ SELF_EDITABLE_FIELDS = (
 	# records why it sits on core's spine rather than on the volunteer record.
 	DISABILITY_FIELD,
 	DISABILITY_NEEDS_FIELD,
+	# What kind of work somebody does. A person fact like the rest of this list
+	# and correctable by them for the same reason. The six background *tables*
+	# beside it are not here — a table is not a scalar and `_write_profile`
+	# handles them the way it handles identity documents.
+	PROFESSION_FIELD,
 	# A photograph is a fact about the person, like the six above it, and it goes
 	# on the card they carry. What a *branch* decided — serving branch, status,
 	# certifications — is not here and must not be, which is the whole of what
@@ -114,17 +191,31 @@ UPLOAD_PREFIXES = evidence.UPLOAD_PREFIXES
 # caller — the first document somebody lists is their main one, and a form that
 # let a caller set the flag could produce a profile with two primaries or none.
 #
-# `attachment` is deliberately absent. A copy of a document is not something the
-# registration form collects: the file would be uploaded before the application
-# exists, unattached and readable only by whoever uploaded it, and there would
-# be nothing to anchor it to on the way in. Existing attachments already on a
-# profile survive a rewrite — see `_identification_rows` — so a branch that
-# attached a scan on the desk does not lose it because somebody corrected the
-# number beside it.
+# `attachment` is here because a society can insist on one. `Identification
+# Type.vmms_requires_attachment` makes a copy of the document a condition of
+# submission — `application._assert_identity_documents` refuses without it — and
+# for as long as this list held only the pair, the only way to satisfy that rule
+# was a clerk attaching the scan on the desk. An applicant who could not upload
+# was told to add a file to a profile no screen would let them edit.
+#
+# The file is uploaded before the application exists, which is the same position
+# a society's own `Attach` question is in, and it takes the same answer:
+# `evidence.secure()` anchors it to the Red Profile and makes it private on the
+# way in. Until then it belongs to the person who uploaded it, which is the
+# right owner for a document not yet given to anybody.
+#
+# An attachment already on a profile still survives a rewrite that does not
+# mention one — see `_identification_rows` — so a branch that scanned somebody's
+# card does not lose it because they corrected the number beside it.
 IDENTIFICATION_FIELDS = (
 	"id_type",
 	"id_number",
+	"attachment",
 )
+
+# The one field in that list holding a file URL rather than a value, checked
+# against this site's own upload paths before it is stored.
+IDENTIFICATION_FILE_FIELDS = ("attachment",)
 
 # What an applicant may say about an emergency contact. A closed list, because
 # these arrive as loose dicts from a browser and `document.update()` on a child
@@ -243,6 +334,7 @@ def _profile_dto(profile: str) -> dict:
 		"citizenship_status": person.citizenship_status,
 		"residency_type": person.residency_type,
 		**_disability(profile),
+		**_background(profile),
 		# Served because `update_my_profile` already accepts it: a form that can
 		# set a photograph and cannot read back the one already on file would show
 		# an empty control to somebody who has had a portrait on their card for a
@@ -274,8 +366,10 @@ def _disability(profile: str) -> dict:
 	that raised there would be a registration nobody could open. Absent reads as
 	unanswered, which is the honest answer.
 	"""
-	if not frappe.get_meta(PROFILE_DOCTYPE).has_field(DISABILITY_FIELD):
-		return {"disability_status": None, "disability_needs": None}
+	meta = frappe.get_meta(PROFILE_DOCTYPE)
+
+	if not meta.has_field(DISABILITY_FIELD):
+		return {"disability_status": None, "disability_needs": None, "disabilities": []}
 
 	row = frappe.db.get_value(
 		PROFILE_DOCTYPE, profile, [DISABILITY_FIELD, DISABILITY_NEEDS_FIELD], as_dict=True
@@ -284,7 +378,78 @@ def _disability(profile: str) -> dict:
 	return {
 		"disability_status": (row or {}).get(DISABILITY_FIELD),
 		"disability_needs": (row or {}).get(DISABILITY_NEEDS_FIELD),
+		# Guarded separately from the two above it. The table arrived a patch
+		# later than they did, so a site can genuinely have the Select and not
+		# the table, and a read of a child table whose parent field does not
+		# exist yet returns rows nobody can account for.
+		"disabilities": _disabilities(profile) if meta.has_field(DISABILITIES_FIELD) else [],
 	}
+
+
+def _disabilities(profile: str) -> list[str]:
+	"""The disabilities named on one profile, as the keys the register stores.
+
+	Keys and not labels, because `Disability` autonames from `disability_name`
+	and the docname is what a Link field holds, what the form sends back, and
+	what `identity_options` offers. A society renaming a row renames the record,
+	so a profile that chose it keeps pointing at it.
+	"""
+	rows = frappe.get_all(
+		SELECTOR_DOCTYPE,
+		filters={
+			"parenttype": PROFILE_DOCTYPE,
+			"parent": profile,
+			"parentfield": DISABILITIES_FIELD,
+		},
+		fields=["disability"],
+		order_by="idx asc",
+	)
+
+	return [row["disability"] for row in rows if row["disability"]]
+
+
+def _background(profile: str) -> dict:
+	"""What this person has already done, or empties on a site mid-migrate.
+
+	Guarded on the meta for the reason `_disability` is: these are Custom Fields,
+	a site that has synced this module and not yet run
+	`install_background_fields` does not have them, and a read of a column that
+	is not there raises — on the endpoint that draws the registration form, which
+	would be a wizard nobody could open.
+
+	Empty and absent read the same here, deliberately. Nothing in this block is
+	required and nothing counts it, so there is no reader that needs to tell "has
+	not been asked" from "has nothing to say" — which is exactly the distinction
+	the disability Select exists to preserve and this block has no use for.
+	"""
+	meta = frappe.get_meta(PROFILE_DOCTYPE)
+
+	if not meta.has_field(PROFESSION_FIELD):
+		return {"profession": None, **{key: [] for key in BACKGROUND_TABLES}}
+
+	background = {"profession": frappe.db.get_value(PROFILE_DOCTYPE, profile, PROFESSION_FIELD)}
+
+	for key, (field, allowed, _files) in BACKGROUND_TABLES.items():
+		background[key] = _background_rows_held(profile, field, allowed) if meta.has_field(field) else []
+
+	return background
+
+
+def _background_rows_held(profile: str, field: str, allowed: tuple[str, ...]) -> list[dict]:
+	"""One background table, read back in the shape a caller sends it.
+
+	The same allow-list on the way out as on the way in, so the browser round
+	trips exactly what it may set and a field it has no business seeing cannot
+	arrive on a form that would then send it back.
+	"""
+	child = frappe.get_meta(PROFILE_DOCTYPE).get_field(field).options
+
+	return frappe.get_all(
+		child,
+		filters={"parenttype": PROFILE_DOCTYPE, "parent": profile, "parentfield": field},
+		fields=list(allowed),
+		order_by="idx asc",
+	)
 
 
 @frappe.whitelist()
@@ -319,8 +484,105 @@ def identity_options() -> dict:
 	Not hardcoded in the frontend for the reason nothing else is: a society
 	configures its own Gender rows, and a list typed into a browser bundle would
 	be a second answer that drifts from the one the Link field enforces.
+
+	`disabilities` is here on the same argument and for the same field owner: it
+	is core's `Disability` register, both registration paths hold the field it
+	fills, and neither of them owns it. Empty on a site whose register has not
+	been seeded or whose vocabulary patch has not run — which the form draws as
+	"nothing configured" rather than as an error, because a society that has
+	retired every row has said something and should be believed.
 	"""
-	return {"genders": [row["name"] for row in frappe.get_all("Gender", order_by="name asc")]}
+	return {
+		"genders": [row["name"] for row in frappe.get_all("Gender", order_by="name asc")],
+		"disabilities": _disability_vocabulary(),
+		# The four the background block draws. Name-only registers come back as
+		# plain lists; the two with a label and a description come back in the
+		# `{key, label, description}` shape every picker in the portal takes.
+		"professions": _names("Profession"),
+		"licence_types": _names("Personnel License Type"),
+		"education_levels": _configured("VMMS Education Level", "level_name", order="sequence asc"),
+		"driving_licence_classes": _configured("VMMS Driving Licence Class", "class_name"),
+	}
+
+
+def _names(doctype: str) -> list[str]:
+	"""A name-only register, as a plain list.
+
+	`Profession` and `Personnel License Type` have no fields at all — the docname
+	*is* the value, which is how they were built for recruitment and how a
+	society already edits them. Both grant `All` read in their own source, so
+	there is nothing to elevate past.
+	"""
+	if not frappe.db.table_exists(doctype):
+		return []
+
+	return [row["name"] for row in frappe.get_all(doctype, order_by="name asc")]
+
+
+def _configured(doctype: str, label_field: str, *, order: str | None = None) -> list[dict]:
+	"""An active-only vmmsx register, in the shape the portal's pickers take.
+
+	Not called `_register`: this file already has one of those and it *creates a
+	registration*, which is the opposite kind of noun. Shadowing it made every
+	registration in the app raise the moment the options endpoint was read.
+
+	The twin of `api/volunteer.py::_vocabulary` and deliberately not a call to
+	it: that one hardcodes an alphabetical sort on the label, and an education
+	level sorted alphabetically puts "Undergraduate degree" above "Vocational"
+	and "Diploma" above "Primary". These registers carry their own order and it
+	is the only thing `sequence` is for.
+	"""
+	if not frappe.db.table_exists(doctype):
+		return []
+
+	rows = frappe.get_all(
+		doctype,
+		filters={"is_active": 1},
+		fields=["name", label_field, "description"],
+		order_by=order or f"{label_field} asc",
+	)
+
+	return [
+		{"key": row["name"], "label": row[label_field] or row["name"], "description": row["description"]}
+		for row in rows
+	]
+
+
+def _disability_vocabulary() -> list[dict]:
+	"""Core's `Disability` register as `{key, label, description}` rows.
+
+	The same shape `api/volunteer.py::_vocabulary` returns, so a form draws this
+	picker with the control it already draws skills and languages with. It is not
+	that function because this register is core's rather than this product's: it
+	has no `is_active` to filter on and no `description` to read, and its type is
+	what a reader wants in the third slot — "Deafness" under "Hearing" tells
+	somebody scanning a long list which part of it they are in.
+
+	Elevated, and only here. Core ships both registers as System Manager only and
+	`patches/install_disability_vocabulary.py` grants `All` read, but a site that
+	has synced this module and not yet migrated has the endpoint without the
+	grant — and an applicant who could not draw the control would be asked a
+	question with no answers. A vocabulary says nothing about any person, which
+	is the whole of why this is safe to read past a permission.
+	"""
+	if not frappe.db.table_exists(DISABILITY_DOCTYPE):
+		return []
+
+	rows = frappe.get_all(
+		DISABILITY_DOCTYPE,
+		fields=["name", "disability_name", "disability_type"],
+		order_by="disability_type asc, disability_name asc",
+		ignore_permissions=True,
+	)
+
+	return [
+		{
+			"key": row["name"],
+			"label": row["disability_name"] or row["name"],
+			"description": row["disability_type"],
+		}
+		for row in rows
+	]
 
 
 @frappe.whitelist()
@@ -384,6 +646,9 @@ def update_my_profile(
 	residence_address: str | None = None,
 	disability_status: str | None = None,
 	disability_needs: str | None = None,
+	disabilities: list | None = None,
+	profession: str | None = None,
+	background: dict | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
 	identifications: list | None = None,
@@ -449,6 +714,7 @@ def update_my_profile(
 		"residence_address": residence_address,
 		DISABILITY_FIELD: disability_status,
 		DISABILITY_NEEDS_FIELD: disability_needs,
+		PROFESSION_FIELD: profession,
 	}
 
 	_write_profile(
@@ -457,6 +723,8 @@ def update_my_profile(
 		id_type=id_type,
 		id_number=id_number,
 		identifications=identifications,
+		disabilities=disabilities,
+		background=background,
 	)
 
 	return _profile_dto(profile)
@@ -469,6 +737,8 @@ def _write_profile(
 	id_type: str | None = None,
 	id_number: str | None = None,
 	identifications: list | None = None,
+	disabilities: list | None = None,
+	background: dict | None = None,
 ) -> None:
 	"""Write person-owned registration facts to one already-resolved profile.
 
@@ -482,6 +752,18 @@ def _write_profile(
 	The two are never combined. A caller that sends the list has said what the
 	whole set is, and a scalar arriving beside it would be a second opinion about
 	the same table.
+
+	**`background` is six more tables and one dict**, and it extends the same rule
+	a level down: `None` leaves all six alone, and a key that is present replaces
+	that one table while a key that is absent leaves it untouched. A browser
+	asking about education sends `{"education": [...]}` and cannot empty
+	somebody's references by omission.
+
+	**`disabilities` is the second table and follows the same three-answer rule**
+	— `None` leaves it alone, `[]` empties it, a list replaces it. It is written
+	beside the Select rather than derived from it: clearing the list is not
+	answering "No", and answering "No" is the caller's to send in
+	`vmms_disability_status`. What this will not do is invent one from the other.
 	"""
 
 	meta = frappe.get_meta(PROFILE_DOCTYPE)
@@ -525,7 +807,29 @@ def _write_profile(
 	documents = _identifications_supplied(identifications, id_type, id_number)
 	identification_supplied = documents is not None
 
-	if changes or identification_supplied:
+	# The same meta guard the scalars above get, and it has to be here as well as
+	# there: `changes` filtered itself, and a table written straight onto the
+	# document would raise on a site that has not run the vocabulary patch.
+	disabilities_supplied = disabilities is not None and meta.has_field(DISABILITIES_FIELD)
+
+	# A JSON body arrives parsed; a form-encoded one arrives as a string. Both
+	# are ordinary ways to call a whitelisted method, so neither is an error —
+	# the same rule `rows_from` applies one level down.
+	if isinstance(background, str):
+		background = frappe.parse_json(background)
+
+	if not isinstance(background, dict):
+		background = {}
+
+	# Filtered to the tables this caller actually spoke about *and* this site
+	# actually has — the same two guards, for the same two reasons.
+	tables = {
+		key: rows_from(rows, BACKGROUND_TABLES[key][1], BACKGROUND_TABLES[key][2])
+		for key, rows in background.items()
+		if key in BACKGROUND_TABLES and rows is not None and meta.has_field(BACKGROUND_TABLES[key][0])
+	}
+
+	if changes or identification_supplied or disabilities_supplied or tables:
 		# Elevated, and narrowly. A volunteer or member holds no write permission
 		# on Red Profile and should not — it is core's spine and it carries every
 		# person the society knows. What is written here is one row, resolved from
@@ -546,9 +850,77 @@ def _write_profile(
 				# builds each row into a child Document first.
 				document.set("identifications", _identification_rows(document, documents))
 
+			if disabilities_supplied:
+				document.set(DISABILITIES_FIELD, _disability_rows(disabilities))
+
+			for key, rows in tables.items():
+				field, _allowed, files = BACKGROUND_TABLES[key]
+				document.set(field, _background_rows(document, rows, files))
+
 			document.save()
 
 		frappe.clear_document_cache(PROFILE_DOCTYPE, profile)
+
+
+def _disability_rows(supplied) -> list[dict]:
+	"""The rows a `Table MultiSelect` of `Disability` stores, from plain keys.
+
+	Filtered against the register rather than stored as sent. These arrive from
+	a browser and land in a Link column: a key that names no row would either be
+	refused by core's own link validation — turning a registration into an error
+	about a vocabulary the applicant never chose from — or, on a site where that
+	row is later deleted, sit there pointing at nothing. Silently dropping an
+	unknown key is the same choice `_offered_method` makes below and for the same
+	reason: the applicant has not been asked to account for the society's
+	configuration.
+
+	Duplicates collapse. Somebody saying "Deafness" twice has said it once.
+	"""
+	if isinstance(supplied, str):
+		supplied = frappe.parse_json(supplied)
+
+	keys = []
+
+	for value in supplied or []:
+		key = str(value or "").strip()
+
+		if key and key not in keys:
+			keys.append(key)
+
+	if not keys:
+		return []
+
+	known = {
+		row["name"]
+		for row in frappe.get_all(
+			DISABILITY_DOCTYPE, filters={"name": ("in", keys)}, fields=["name"], ignore_permissions=True
+		)
+	}
+
+	return [{"disability": key} for key in keys if key in known]
+
+
+def _background_rows(document, rows: list[dict], files: tuple[str, ...]) -> list[dict]:
+	"""One background table's rows, with every attachment on them made private.
+
+	`evidence.secure` anchors the file to this profile and takes it off the
+	public path — a scanned certificate is somebody's document, and a file left
+	on `/files/` is readable by anybody who guesses the URL. The profile already
+	exists whenever this runs (it is resolved before `_write_profile` is called),
+	so unlike `secure_row_files` there is nothing to wait for.
+
+	`rows_from` has already dropped the empty rows and refused any file that was
+	not uploaded to this site, so what arrives here is a real answer.
+	"""
+	if not files:
+		return rows
+
+	for row in rows:
+		for field in files:
+			if row.get(field):
+				row[field] = evidence.secure(document, row[field]) or row[field]
+
+	return rows
 
 
 def _offered_method(payment_method: str | None) -> str | None:
@@ -588,7 +960,9 @@ def _identifications_supplied(
 	add a document nobody listed.
 	"""
 	if identifications is not None:
-		return _checked_identifications(rows_from(identifications, IDENTIFICATION_FIELDS))
+		return _checked_identifications(
+			rows_from(identifications, IDENTIFICATION_FIELDS, IDENTIFICATION_FILE_FIELDS)
+		)
 
 	if id_type is None and id_number is None:
 		return None
@@ -644,7 +1018,16 @@ def _checked_identifications(rows: list[dict]) -> list[dict]:
 			)
 
 		seen.add(kind)
-		cleaned.append({"id_type": kind, "id_number": number})
+		cleaned.append(
+			{
+				"id_type": kind,
+				"id_number": number,
+				# Carried rather than dropped, and left as None where the caller
+				# sent nothing: `_identification_rows` reads None as "say nothing
+				# about the copy" and keeps whatever the profile already held.
+				"attachment": str(row.get("attachment") or "").strip() or None,
+			}
+		)
 
 	return cleaned
 
@@ -655,35 +1038,52 @@ def _identification_label(id_type: str) -> str:
 
 
 def _identification_rows(document, supplied: list[dict]) -> list[dict]:
-	"""The table this profile should now hold, keeping what the applicant cannot send.
+	"""The table this profile should now hold, keeping what the applicant did not send.
 
 	**An attachment is not the applicant's to lose.** A branch that scanned
-	somebody's national card attached it on the desk, and the registration form
-	neither shows nor collects files — see `IDENTIFICATION_FIELDS`. Replacing the
-	table wholesale would therefore delete the scan every time somebody corrected
-	the number printed beside it. So a document that comes back unchanged keeps
-	the file that was already against it, matched on the pair that identifies it.
+	somebody's national card attached it on the desk, and a person correcting the
+	number printed beside it is not asking for the scan to be deleted. So a
+	document whose row arrives with nothing to say about its copy keeps the file
+	already against it, matched on the *type*, which is what identifies a row —
+	matching on the number as well made the promise in this paragraph false for
+	the only edit anybody actually makes.
+
+	**And it is now theirs to supply.** A society that ticked "Requires an
+	Attachment" makes the copy a condition of submission, so the form asks for one
+	and a row may arrive carrying it. A supplied file wins over the held one —
+	that is somebody replacing a copy, deliberately — and it is anchored to this
+	profile and made private on the way in, which is what makes it readable by the
+	people who may read the profile and by nobody else.
 
 	**The first row is the primary one.** Ordering is the applicant's statement
 	of which document is their main one, and it is the only statement they make
 	about it: the flag itself is not in the allow-list, so a caller cannot send a
 	table with two primaries in it.
 	"""
-	held = {
-		(row.id_type, (row.id_number or "").strip()): row.attachment
-		for row in document.get("identifications") or []
-		if row.id_type
-	}
+	# Keyed by type alone, which is the identity of a row: a person has one
+	# national card, and `_checked_identifications` refuses a set that says
+	# otherwise. It was keyed by the type *and* the number, which meant the one
+	# case this is here to protect — somebody correcting the number printed on a
+	# document a branch had already scanned — changed the key and dropped the
+	# scan, silently, every time.
+	held = {row.id_type: row.attachment for row in document.get("identifications") or [] if row.id_type}
 
-	return [
-		{
-			"id_type": row["id_type"],
-			"id_number": row["id_number"],
-			"attachment": held.get((row["id_type"], row["id_number"])),
-			"is_primary": 1 if index == 0 else 0,
-		}
-		for index, row in enumerate(supplied)
-	]
+	rows = []
+
+	for index, row in enumerate(supplied):
+		supplied_file = row.get("attachment")
+		attachment = evidence.secure(document, supplied_file) if supplied_file else held.get(row["id_type"])
+
+		rows.append(
+			{
+				"id_type": row["id_type"],
+				"id_number": row["id_number"],
+				"attachment": attachment,
+				"is_primary": 1 if index == 0 else 0,
+			}
+		)
+
+	return rows
 
 
 # --- registering yourself -------------------------------------------------
@@ -1287,12 +1687,16 @@ def my_registration(path: str) -> dict | None:
 def save_my_volunteer_draft(
 	geo_node: str,
 	country_of_citizenship: str | None = None,
+	citizenship_status: str | None = None,
 	residency_type: str | None = None,
 	home_geo_node: str | None = None,
 	country_of_residence: str | None = None,
 	residence_address: str | None = None,
 	disability_status: str | None = None,
 	disability_needs: str | None = None,
+	disabilities: list | None = None,
+	profession: str | None = None,
+	background: dict | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
 	identifications: list | None = None,
@@ -1356,16 +1760,20 @@ def save_my_volunteer_draft(
 			"date_of_birth": date_of_birth,
 			"profile_photo": profile_photo,
 			"country_of_citizenship": country_of_citizenship,
+			"citizenship_status": citizenship_status,
 			"residency_type": residency_type,
 			"home_geo_node": home_geo_node,
 			"country_of_residence": country_of_residence,
 			"residence_address": residence_address,
 			DISABILITY_FIELD: disability_status,
 			DISABILITY_NEEDS_FIELD: disability_needs,
+			PROFESSION_FIELD: profession,
 		},
 		id_type=id_type,
 		id_number=id_number,
 		identifications=identifications,
+		disabilities=disabilities,
+		background=background,
 	)
 
 	values = {
@@ -1407,6 +1815,7 @@ def save_my_member_draft(
 	profile_photo: str | None = None,
 	payment_method: str | None = None,
 	answers: dict | None = None,
+	declarations_accepted: list | dict | None = None,
 ) -> dict:
 	"""Create or replace the caller's membership draft without starting payment or review.
 
@@ -1465,7 +1874,7 @@ def save_my_member_draft(
 				frappe.ValidationError,
 				title=_("Membership Type Locked"),
 			)
-		document = _save_existing_draft(document, values, answers)
+		document = _save_existing_draft(document, values, answers, declarations_accepted)
 	else:
 		document = _register(
 			{
@@ -1476,6 +1885,7 @@ def save_my_member_draft(
 				**_intake_fields(first_name, last_name, phone, gender, date_of_birth),
 			},
 			answers=answers,
+			accepted=declarations_accepted,
 			draft_only=True,
 		)
 
@@ -1512,12 +1922,16 @@ def submit_my_registration(path: str) -> dict:
 def register_as_volunteer(
 	geo_node: str,
 	country_of_citizenship: str | None = None,
+	citizenship_status: str | None = None,
 	residency_type: str = "Local",
 	home_geo_node: str | None = None,
 	country_of_residence: str | None = None,
 	residence_address: str | None = None,
 	disability_status: str | None = None,
 	disability_needs: str | None = None,
+	disabilities: list | None = None,
+	profession: str | None = None,
+	background: dict | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
 	identifications: list | None = None,
@@ -1602,16 +2016,20 @@ def register_as_volunteer(
 		profile,
 		{
 			"country_of_citizenship": country_of_citizenship or society.default_citizenship_country(),
+			"citizenship_status": citizenship_status,
 			"residency_type": residency_type,
 			"home_geo_node": home_geo_node,
 			"country_of_residence": country_of_residence,
 			"residence_address": residence_address,
 			DISABILITY_FIELD: disability_status,
 			DISABILITY_NEEDS_FIELD: disability_needs,
+			PROFESSION_FIELD: profession,
 		},
 		id_type=id_type,
 		id_number=id_number,
 		identifications=identifications,
+		disabilities=disabilities,
+		background=background,
 	)
 
 	application = _register(
@@ -1656,6 +2074,7 @@ def register_as_member(
 	profile_photo: str | None = None,
 	payment_method: str | None = None,
 	answers: dict | None = None,
+	declarations_accepted: list | dict | None = None,
 ) -> dict:
 	"""Register the caller as a member, and put the membership into motion.
 
@@ -1666,6 +2085,14 @@ def register_as_member(
 
 	`profile_photo` lands on the Red Profile rather than on the membership, for
 	the reason `_adopt_photo` sets out.
+
+	`declarations_accepted` is the keys of the declarations the applicant ticked,
+	exactly as on the volunteer door. `VMMS Membership` has carried a
+	`declarations` table since the feature was built and
+	`member.membership_types` has served the wording for it, but no door took the
+	answer — so a society that wrote a membership declaration had it shown and
+	never recorded. What is stored is the wording as it stood at this moment; see
+	`registration/services/declarations.py`.
 
 	`membership_source` and `proof_attachment` are deliberately absent. They are
 	how a *clerk* enrols somebody who paid before this system existed, and an
@@ -1690,6 +2117,7 @@ def register_as_member(
 			**_intake_fields(first_name, last_name, phone, gender, date_of_birth),
 		},
 		answers=answers,
+		accepted=declarations_accepted,
 	)
 
 	_adopt_photo(profile_photo)
@@ -1824,11 +2252,7 @@ def _claim_from(supplied: dict) -> dict:
 	"""The applicant's claim, filtered to the fields a claim is allowed to have."""
 	from vmmsx.member.services import proof
 
-	return {
-		field: supplied[field]
-		for field in proof.CLAIM_FIELDS
-		if supplied.get(field) not in (None, "")
-	}
+	return {field: supplied[field] for field in proof.CLAIM_FIELDS if supplied.get(field) not in (None, "")}
 
 
 def _secure_proof(document) -> None:

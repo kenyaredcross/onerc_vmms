@@ -215,10 +215,10 @@
   {
    "fieldname": "questions_section",
    "fieldtype": "Section Break",
-   "label": "Society Questions"
+   "label": "Organization Specific Questions"
   },
   {
-   "description": "Answers to the extra questions this society asks, with the wording used at the time.",
+   "description": "Answers to the extra questions this organization asks, with the wording used at the time.",
    "fieldname": "custom_answers",
    "fieldtype": "Table",
    "label": "Answers",

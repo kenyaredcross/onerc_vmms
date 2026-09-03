@@ -393,9 +393,19 @@ def profile_dto(volunteer, as_of=None) -> dict:
 		"preferred_language": person.get("preferred_language"),
 		"profile_photo": person.get("profile_photo"),
 		"identifications": identity.identifications(volunteer),
+		# What kind of work they do, and what they have already done. Read live
+		# off Red Profile like the rest of the identity above it, and stored
+		# nowhere — see `identity.background` for what is left out of it and why.
+		"profession": person.get("vmms_profession"),
+		"background": identity.background(volunteer.red_profile),
 		"status": volunteer.status,
 		"joined_on": volunteer.joined_on,
 		"exited_on": volunteer.exited_on,
+		# The coordinator's own note about this person. On the doctype since it
+		# was written and in no DTO until now, so a branch that recorded
+		# something on the desk could not read it back on the register — and
+		# nobody working from the console could write one at all.
+		"notes": volunteer.notes,
 		**capabilities.placement(volunteer),
 		# Derived on every read, never stored. See certification.py.
 		"deployability": certification.deployability(volunteer, as_of=as_of),

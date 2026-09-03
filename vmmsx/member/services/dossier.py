@@ -114,6 +114,11 @@ def build(member, as_of=None) -> dict:
 		"standing": standing(member, memberships, as_of),
 		"memberships": memberships,
 		"history": history(memberships),
+		# The coordinator's own note about this person — `VMMS Member.notes`, on
+		# the doctype since it was written and in no DTO until now. A branch
+		# that recorded something on the desk could not read it back here, and
+		# nobody working from the console could write one at all.
+		"notes": member.notes,
 	}
 
 

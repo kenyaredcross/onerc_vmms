@@ -98,6 +98,15 @@ _READABLE = (
 	# somebody chose to write about themselves, it is read on the record by
 	# whoever may open it, and a general reader has no use for it.
 	"vmms_disability_status",
+	# What kind of work this person does — vmmsx's own Custom Field, installed by
+	# `patches/install_background_fields.py`. A scalar and a vocabulary key,
+	# surfaced for the reason `home_geo_node` is: a coordinator deciding who to
+	# ask about a health post wants to know who is a nurse, and the alternative
+	# was copying it onto the volunteer record, where it would be a second answer
+	# that goes stale. The six *tables* beside it are not here — an allow-list of
+	# scalars is the wrong instrument for a child table, and `background()` below
+	# is where those are read and where what is left out of them is argued.
+	"vmms_profession",
 )
 
 # The sensitive set, named so that keeping it out is a decision this file states
@@ -141,12 +150,82 @@ def read(volunteer, fields: tuple[str, ...] = _READABLE) -> dict:
 	# for a column that is not there raises, and a volunteer page that will not
 	# render because a migration is half done is worse than one missing a field.
 	meta = frappe.get_meta(PROFILE_DOCTYPE)
-	allowed = tuple(
-		field for field in requested if field in _READABLE and meta.has_field(field)
-	)
+	allowed = tuple(field for field in requested if field in _READABLE and meta.has_field(field))
 	values = frappe.db.get_value(PROFILE_DOCTYPE, volunteer.red_profile, allowed, as_dict=True)
 
 	return dict(values or {})
+
+
+# The six background tables, and what a coordinator's screen is given of each.
+#
+# **Attachments are in none of them, deliberately.** Every one of these tables
+# can carry a scanned certificate, and `registration._background_rows` makes each
+# file private and anchors it to the Red Profile — so the people who can open one
+# are the people who can read that profile, which a branch coordinator working
+# from the console generally cannot. Handing out a URL that resolves to a refusal
+# would be a link that looks like evidence and is not. A verifier opens the
+# profile on the desk, which is where the files are.
+#
+# **Everything else is here, referees included.** A referee's phone number looks
+# like the sensitive item to withhold, and withholding it would make the referee
+# useless: the row exists precisely so that somebody deciding on an application
+# can ring them. What governs this is who may read the dossier at all, which is
+# the scope role — not a second filter inside it that quietly empties the field.
+_BACKGROUND = {
+	"education": ("institution", "level", "qualification", "started_in", "finished_in", "is_ongoing"),
+	"training": ("course_name", "institution", "started_on", "completed_on", "remarks"),
+	"work_experience": ("organization", "role", "started_on", "ended_on", "is_current", "summary"),
+	"licences": (
+		"license_type",
+		"license_name",
+		"institution",
+		"registration_no",
+		"valid_from",
+		"valid_to",
+		"does_not_expire",
+	),
+	"driving_licences": ("licence_class", "licence_number", "valid_to"),
+	"references": ("reference_name", "position", "organization", "email", "phone", "relationship", "notes"),
+}
+
+
+def background(profile: str) -> dict:
+	"""What this person said they have already done, read live off their profile.
+
+	Six child tables on core's Red Profile — see
+	`patches/install_background_fields.py` for why they live there. Read on every
+	call and stored nowhere, exactly like the scalars in `_READABLE` above: a
+	volunteer who corrects a qualification on their own profile page corrects it
+	on every coordinator's screen the moment they save it.
+
+	**Guarded on the meta, table by table.** These are Custom Fields, and a site
+	that has synced this module without running the patch has the doctype and not
+	the fields. A coordinator's screen that raised there would be a register
+	nobody could open, over a block that is optional for everybody on it.
+
+	**Nothing here has been checked by anybody.** It is what an applicant typed
+	about themselves. The dossier carries it so a branch can decide what to
+	verify, not as a statement that anything was verified — which is why a
+	`VMMS Certification` is a separate record somebody has to issue.
+	"""
+	meta = frappe.get_meta(PROFILE_DOCTYPE)
+	held = {}
+
+	for key, fields in _BACKGROUND.items():
+		field = f"vmms_{key}"
+
+		if not meta.has_field(field):
+			held[key] = []
+			continue
+
+		held[key] = frappe.get_all(
+			meta.get_field(field).options,
+			filters={"parenttype": PROFILE_DOCTYPE, "parent": profile, "parentfield": field},
+			fields=list(fields),
+			order_by="idx asc",
+		)
+
+	return held
 
 
 def identifications(volunteer) -> list[dict]:
@@ -163,14 +242,18 @@ def identifications(volunteer) -> list[dict]:
 	)
 
 	id_types = [row.id_type for row in rows if row.id_type]
-	labels = dict(
-		frappe.get_all(
-			"Identification Type",
-			filters={"name": ("in", id_types)},
-			fields=["name", "identification_type_name"],
-			as_list=True,
+	labels = (
+		dict(
+			frappe.get_all(
+				"Identification Type",
+				filters={"name": ("in", id_types)},
+				fields=["name", "identification_type_name"],
+				as_list=True,
+			)
 		)
-	) if id_types else {}
+		if id_types
+		else {}
+	)
 
 	return [
 		{

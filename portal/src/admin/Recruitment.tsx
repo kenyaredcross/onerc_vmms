@@ -6,6 +6,7 @@ import { API, errorMessage } from "../lib/api";
 import { branchPath, formatDate } from "../lib/format";
 import { MultiCombo } from "../ui/form";
 import { Icon } from "../ui/icons";
+import { RowEditor } from "./Mission";
 import {
 	Avatar,
 	BackLink,
@@ -149,6 +150,33 @@ interface OpeningDetail {
 	vmms_available_to: string | null;
 	vmms_desired_skills: string[];
 	vmms_desired_languages: string[];
+	vmms_desired_certifications: DesiredCertification[];
+
+	// --- how the post is described, beyond HRMS's four link fields ------------
+	opportunity_type: string | null;
+	profession: string | null;
+	job_location: string | null;
+
+	// --- what it screens for, and how hard -----------------------------------
+	enable_autograding: boolean;
+	minimum_pass_score: number | null;
+	disqualify_if_requirement_not_met: boolean;
+	minimum_qualification_level: string | null;
+	allow_equivalent_experience: boolean;
+	required_gpa__grade: string | null;
+	preferred_field_of_study: string | null;
+	minimum_years_of_experience: number | null;
+	experience_area: string | null;
+	disqualify_if_below_minimum: boolean;
+	required_attachments: RequiredAttachment[];
+
+	// --- what happens to the people it turns down ----------------------------
+	enable_automatic_rejection_notifications: boolean;
+	send_rejection_email_immediately: boolean;
+	rejection_email_template: string | null;
+	notify_unshortlisted_applicants_after: number | null;
+	shortlisted_rejection_notification_date: string | null;
+
 	is_published: boolean;
 	url: string | null;
 	apply_url: string;
@@ -160,6 +188,19 @@ interface OpeningDetail {
 	}>;
 	pipeline: Pipeline;
 	can_write: boolean;
+}
+
+/** One certification a candidate should hold — `VMMS Deployment Requirement`. */
+interface DesiredCertification {
+	certification_type: string;
+	is_mandatory: boolean;
+	requirement_notes: string | null;
+}
+
+/** One document an applicant has to upload — `Required Attachments`. */
+interface RequiredAttachment {
+	type: string;
+	document_name: string | null;
 }
 
 interface Options {
@@ -174,6 +215,13 @@ interface Options {
 	skills?: { value: string; label: string }[];
 	languages?: { value: string; label: string }[];
 	projects?: { value: string; label: string }[];
+	professions?: { value: string; label: string }[];
+	locations?: { value: string; label: string }[];
+	certification_types?: { value: string; label: string }[];
+	document_types?: { value: string; label: string }[];
+	email_templates?: { value: string; label: string }[];
+	opening_types?: string[];
+	qualification_levels?: string[];
 }
 
 interface ApplicantDetail extends ApplicantRow {
@@ -193,6 +241,11 @@ interface ApplicantDetail extends ApplicantRow {
 	task: string | null;
 	statuses: string[];
 	can_write: boolean;
+}
+
+/** A number from the record as a form value: zero is a number, null is blank. */
+function numeric(value: number | null): string {
+	return value === null || value === undefined ? "" : String(value);
 }
 
 /**
@@ -439,9 +492,35 @@ export function OpeningForm() {
 		vmms_available_to: "",
 		publish: false,
 		status: "Open",
+
+		// The rest of what vmmsx puts on an opening. Every one of these was a
+		// Custom Field this app installs and this form never drew, so a
+		// coordinator wrote half an opening here and finished it on the desk.
+		opportunity_type: "",
+		profession: "",
+		job_location: "",
+
+		enable_autograding: false,
+		minimum_pass_score: "",
+		disqualify_if_requirement_not_met: false,
+		minimum_qualification_level: "",
+		allow_equivalent_experience: false,
+		required_gpa__grade: "",
+		preferred_field_of_study: "",
+		minimum_years_of_experience: "",
+		experience_area: "",
+		disqualify_if_below_minimum: false,
+
+		enable_automatic_rejection_notifications: false,
+		send_rejection_email_immediately: false,
+		rejection_email_template: "",
+		notify_unshortlisted_applicants_after: "",
+		shortlisted_rejection_notification_date: "",
 	});
 	const [skills, setSkills] = useState<string[]>([]);
 	const [languages, setLanguages] = useState<string[]>([]);
+	const [certifications, setCertifications] = useState<DesiredCertification[]>([]);
+	const [attachments, setAttachments] = useState<RequiredAttachment[]>([]);
 	const [failed, setFailed] = useState<string | null>(null);
 
 	// Fill the form once the record arrives. Keyed on the docname rather than on
@@ -466,9 +545,36 @@ export function OpeningForm() {
 			vmms_available_to: loaded.vmms_available_to ?? "",
 			publish: loaded.is_published,
 			status: loaded.status ?? "Open",
+
+			opportunity_type: loaded.opportunity_type ?? "",
+			profession: loaded.profession ?? "",
+			job_location: loaded.job_location ?? "",
+
+			enable_autograding: loaded.enable_autograding,
+			minimum_pass_score: numeric(loaded.minimum_pass_score),
+			disqualify_if_requirement_not_met: loaded.disqualify_if_requirement_not_met,
+			minimum_qualification_level: loaded.minimum_qualification_level ?? "",
+			allow_equivalent_experience: loaded.allow_equivalent_experience,
+			required_gpa__grade: loaded.required_gpa__grade ?? "",
+			preferred_field_of_study: loaded.preferred_field_of_study ?? "",
+			minimum_years_of_experience: numeric(loaded.minimum_years_of_experience),
+			experience_area: loaded.experience_area ?? "",
+			disqualify_if_below_minimum: loaded.disqualify_if_below_minimum,
+
+			enable_automatic_rejection_notifications:
+				loaded.enable_automatic_rejection_notifications,
+			send_rejection_email_immediately: loaded.send_rejection_email_immediately,
+			rejection_email_template: loaded.rejection_email_template ?? "",
+			notify_unshortlisted_applicants_after: numeric(
+				loaded.notify_unshortlisted_applicants_after,
+			),
+			shortlisted_rejection_notification_date:
+				loaded.shortlisted_rejection_notification_date ?? "",
 		});
 		setSkills(loaded.vmms_desired_skills ?? []);
 		setLanguages(loaded.vmms_desired_languages ?? []);
+		setCertifications(loaded.vmms_desired_certifications ?? []);
+		setAttachments(loaded.required_attachments ?? []);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [loaded?.name]);
 
@@ -497,8 +603,16 @@ export function OpeningForm() {
 					closes_on: form.closes_on || null,
 					vmms_available_from: form.vmms_available_from || null,
 					vmms_available_to: form.vmms_available_to || null,
+					minimum_pass_score: form.minimum_pass_score || null,
+					minimum_years_of_experience: form.minimum_years_of_experience || null,
+					notify_unshortlisted_applicants_after:
+						form.notify_unshortlisted_applicants_after || null,
+					shortlisted_rejection_notification_date:
+						form.shortlisted_rejection_notification_date || null,
 					vmms_desired_skills: skills,
 					vmms_desired_languages: languages,
+					vmms_desired_certifications: certifications,
+					required_attachments: attachments,
 				},
 			});
 
@@ -580,13 +694,60 @@ export function OpeningForm() {
 								/>
 							</Field>
 
-							<Field label="Where">
+							<Field
+								label="Where"
+								hint="Written as it should read on the advertisement."
+							>
 								<TextInput
 									value={form.location}
 									onChange={set("location") as (value: string) => void}
 									placeholder="Kilombero District"
 								/>
 							</Field>
+
+							{/* The society's own register of places, which is a different
+							    question from the line above: one is what the posting
+							    says, the other is the record it is filed against. See
+							    `setup/job_opening_fields.py`, which explains why both
+							    exist and why only one of them is a link. */}
+							<Field label="Recorded location" hint="From the society's own list of places.">
+								<Select
+									value={form.job_location}
+									onChange={set("job_location") as (value: string) => void}
+									placeholder="Not set"
+									options={choices?.locations ?? []}
+								/>
+							</Field>
+
+							<Field label="Profession" hint="What kind of work this is.">
+								<Select
+									value={form.profession}
+									onChange={set("profession") as (value: string) => void}
+									placeholder="Not set"
+									options={choices?.professions ?? []}
+								/>
+							</Field>
+
+							{/* Only where the society has configured the Select. A site
+							    that has not run the patch gets no control rather than
+							    an empty one. */}
+							{(choices?.opening_types ?? []).length > 0 && (
+								<Field
+									label="Open to"
+									hint="Whether people outside the society may apply."
+								>
+									<Select
+										value={form.opportunity_type}
+										onChange={set("opportunity_type") as (value: string) => void}
+										placeholder="Not set"
+										options={(choices?.opening_types ?? []).map((value) => ({
+											value,
+											label: value,
+										}))}
+									/>
+								</Field>
+							)}
+
 
 							<Field label="Places" hint="How many people are being taken on.">
 								<TextInput
@@ -639,6 +800,245 @@ export function OpeningForm() {
 								}))}
 								placeholder="Search and add a language"
 								empty="No languages are configured on this site yet."
+							/>
+
+							{/* The third desired attribute, and the only one of the
+							    three with a "must hold" flag on each row: a first-aid
+							    certificate can genuinely be a bar where a language is
+							    a preference. Same shape a terms of reference uses for
+							    the same question. */}
+							<RowEditor<DesiredCertification>
+								title="Desired certifications"
+								lead="Mandatory rows are a condition of the post; the rest rank a candidate higher."
+								addLabel="Add a certification"
+								empty="No certifications asked for."
+								rows={certifications}
+								onChange={setCertifications}
+								blank={() => ({
+									certification_type: "",
+									is_mandatory: true,
+									requirement_notes: "",
+								})}
+								columns={[
+									{
+										key: "certification_type",
+										label: "Certification",
+										kind: "select",
+										span: 5,
+										options: choices?.certification_types ?? [],
+									},
+									{
+										key: "is_mandatory",
+										label: "Must hold it",
+										kind: "check",
+										checkedLabel: "Mandatory",
+										span: 3,
+									},
+									{ key: "requirement_notes", label: "Notes", span: 4 },
+								]}
+							/>
+						</div>
+					</FormSection>
+
+					<FormSection
+						title="Screening"
+						hint="How an application is scored, and what disqualifies one outright. Every rule here is optional; a post with none is decided by a person reading it."
+					>
+						<div className="space-y-5">
+							<Check
+								checked={form.enable_autograding}
+								onChange={set("enable_autograding") as (value: boolean) => void}
+								label="Score applications automatically"
+								hint="Applications are graded against the screening questions as they arrive."
+							/>
+
+							<FieldGrid>
+								<Field
+									label="Pass score"
+									hint="Below this an application is not shortlisted."
+								>
+									<TextInput
+										type="number"
+										min={0}
+										value={form.minimum_pass_score}
+										onChange={set("minimum_pass_score") as (value: string) => void}
+										disabled={!form.enable_autograding}
+									/>
+								</Field>
+
+								<Field label="Minimum education">
+									<Select
+										value={form.minimum_qualification_level}
+										onChange={
+											set("minimum_qualification_level") as (value: string) => void
+										}
+										placeholder="No minimum"
+										options={(choices?.qualification_levels ?? []).map((value) => ({
+											value,
+											label: value,
+										}))}
+									/>
+								</Field>
+
+								<Field label="Required grade or GPA" hint="As the society words it.">
+									<TextInput
+										value={form.required_gpa__grade}
+										onChange={set("required_gpa__grade") as (value: string) => void}
+										placeholder="Second class upper, 3.0…"
+									/>
+								</Field>
+
+								<Field label="Preferred field of study">
+									<TextInput
+										value={form.preferred_field_of_study}
+										onChange={set("preferred_field_of_study") as (value: string) => void}
+										placeholder="Public health"
+									/>
+								</Field>
+
+								<Field label="Minimum years of experience">
+									<TextInput
+										type="number"
+										min={0}
+										value={form.minimum_years_of_experience}
+										onChange={
+											set("minimum_years_of_experience") as (value: string) => void
+										}
+									/>
+								</Field>
+
+								<Field label="In what" hint="The area that experience has to be in.">
+									<TextInput
+										value={form.experience_area}
+										onChange={set("experience_area") as (value: string) => void}
+										placeholder="Community outreach"
+									/>
+								</Field>
+							</FieldGrid>
+
+							<div className="space-y-3 border-t p-divide pt-4">
+								<Check
+									checked={form.allow_equivalent_experience}
+									onChange={
+										set("allow_equivalent_experience") as (value: boolean) => void
+									}
+									label="Accept equivalent experience instead of the qualification"
+									hint="Somebody who has done the work but does not hold the certificate is still considered."
+								/>
+								<Check
+									checked={form.disqualify_if_below_minimum}
+									onChange={
+										set("disqualify_if_below_minimum") as (value: boolean) => void
+									}
+									label="Turn down anybody below the minimums"
+									hint="Otherwise they are ranked lower and a person still reads them."
+								/>
+								<Check
+									checked={form.disqualify_if_requirement_not_met}
+									onChange={
+										set("disqualify_if_requirement_not_met") as (value: boolean) => void
+									}
+									label="Turn down anybody missing a required certification or document"
+								/>
+							</div>
+
+							<RowEditor<RequiredAttachment>
+								title="Required attachments"
+								lead="Documents somebody has to upload before the application form will take their answer."
+								addLabel="Add a document"
+								empty="Nothing has to be attached."
+								rows={attachments}
+								onChange={setAttachments}
+								blank={() => ({ type: "", document_name: "" })}
+								columns={[
+									{
+										key: "type",
+										label: "Kind of document",
+										kind: "select",
+										span: 5,
+										options: choices?.document_types ?? [],
+									},
+									{
+										key: "document_name",
+										label: "What to call it on the form",
+										span: 7,
+									},
+								]}
+							/>
+						</div>
+					</FormSection>
+
+					<FormSection
+						title="Turning people down"
+						hint="What an unsuccessful applicant hears, and when. Nothing is sent unless this is switched on."
+					>
+						<div className="space-y-5">
+							<Check
+								checked={form.enable_automatic_rejection_notifications}
+								onChange={
+									set("enable_automatic_rejection_notifications") as (
+										value: boolean,
+									) => void
+								}
+								label="Tell unsuccessful applicants automatically"
+								hint="Off by default. With it off, somebody at the branch writes to them."
+							/>
+
+							<FieldGrid>
+								<Field label="Email template" className="sm:col-span-2">
+									<Select
+										value={form.rejection_email_template}
+										onChange={
+											set("rejection_email_template") as (value: string) => void
+										}
+										placeholder="Not set"
+										options={choices?.email_templates ?? []}
+										disabled={!form.enable_automatic_rejection_notifications}
+									/>
+								</Field>
+
+								<Field
+									label="Wait this many days"
+									hint="Before writing to somebody who was never shortlisted."
+								>
+									<TextInput
+										type="number"
+										min={0}
+										value={form.notify_unshortlisted_applicants_after}
+										onChange={
+											set("notify_unshortlisted_applicants_after") as (
+												value: string,
+											) => void
+										}
+										disabled={!form.enable_automatic_rejection_notifications}
+									/>
+								</Field>
+
+								<Field
+									label="Write to shortlisted candidates on"
+									hint="A single date, so everybody interviewed hears on the same day."
+								>
+									<TextInput
+										type="date"
+										value={form.shortlisted_rejection_notification_date}
+										onChange={
+											set("shortlisted_rejection_notification_date") as (
+												value: string,
+											) => void
+										}
+										disabled={!form.enable_automatic_rejection_notifications}
+									/>
+								</Field>
+							</FieldGrid>
+
+							<Check
+								checked={form.send_rejection_email_immediately}
+								onChange={
+									set("send_rejection_email_immediately") as (value: boolean) => void
+								}
+								label="Send as soon as the decision is made"
+								hint="Rather than waiting for the dates above."
+								disabled={!form.enable_automatic_rejection_notifications}
 							/>
 						</div>
 					</FormSection>

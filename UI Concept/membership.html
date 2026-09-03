@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Manage memberships — Kenya Red Cross</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+<div class="portal-shell">
+  <aside class="sidebar">
+    <a class="portal-brand" href="portal-home.html"><span class="brand-mark"></span><span class="brand-copy"><strong>Kenya Red Cross</strong><small>Volunteer &amp; member portal</small></span></a>
+    <nav class="side-nav"><a href="portal-home.html">⌂ Home</a><a href="calendar.html">□ Calendar</a><a href="tasks.html">✓ Tasks</a><a href="deployments.html">▣ Deployments</a><a href="training.html">△ Training</a></nav>
+    <p class="nav-label">My record</p>
+    <nav class="side-nav"><a href="profile.html">○ My profile</a><a class="active" href="membership.html">▤ Memberships <span class="badge">2</span></a><a href="hours.html">◷ Service hours</a></nav>
+  </aside>
+
+  <main class="portal-main">
+    <header class="topbar">
+      <button class="menu-toggle" aria-label="Open navigation">☰</button>
+      <strong>Memberships</strong>
+      <span class="shell-spacer"></span>
+      <a href="notifications.html">Notifications</a>
+      <details class="membership-account-menu">
+        <summary><span class="avatar">AM</span></summary>
+        <nav><a href="profile.html"><span>○</span><strong>My profile</strong></a><a href="membership.html"><span>▤</span><strong>My memberships</strong><b>2</b></a><a href="notifications.html"><span>◇</span><strong>Notifications</strong></a><a href="sign-in.html"><span>↪</span><strong>Sign out</strong></a></nav>
+      </details>
+    </header>
+
+    <div class="content membership-page">
+      <header class="membership-page-title">
+        <span>Member account</span>
+        <h1>Manage your memberships</h1>
+        <p>Choose the membership that fits you, then manage every branch membership from one account.</p>
+      </header>
+
+      <section class="membership-options" id="membership-options">
+        <header class="membership-options-title"><span>Membership options</span><h2 id="membership-options-heading">Select a plan to become a member</h2><p>Review the benefits and eligibility guidance, then join through the branch that serves you.</p></header>
+        <div class="membership-plan-grid">
+          <article class="membership-plan-card" data-membership-plan="youth-school">
+            <span class="membership-plan-band" aria-hidden="true"></span>
+            <header><h3>Youth In School</h3></header>
+            <div class="membership-plan-price"><strong>KES 100</strong><span>/ year</span><p>Annual youth membership for students.</p></div>
+            <div class="membership-plan-benefits"><strong>What is included</strong><ul><li>Youth membership certificate</li><li>Invites to special events</li><li>Participate in branch activities</li></ul></div>
+            <p class="membership-plan-eligibility">Eligibility guidance <strong>Ages below 18 years</strong></p>
+            <div class="membership-plan-actions"><button type="button" data-plan-details>View details</button><button type="button" data-plan-join>Join</button></div>
+          </article>
+
+          <article class="membership-plan-card" data-membership-plan="youth-out-school">
+            <span class="membership-plan-band" aria-hidden="true"></span>
+            <header><h3>Youth Out Of School</h3></header>
+            <div class="membership-plan-price"><strong>KES 500</strong><span>/ year</span><p>Annual youth membership for young adults.</p></div>
+            <div class="membership-plan-benefits"><strong>What is included</strong><ul><li>Youth membership certificate</li><li>Invites to special events</li><li>Participate in branch activities</li><li>Listed in the branch register</li></ul></div>
+            <p class="membership-plan-eligibility">Eligibility guidance <strong>Ages 18–30 years</strong></p>
+            <div class="membership-plan-actions"><button type="button" data-plan-details>View details</button><button type="button" data-plan-join>Join</button></div>
+          </article>
+
+          <article class="membership-plan-card featured" data-membership-plan="ordinary">
+            <span class="membership-plan-band" aria-hidden="true"></span>
+            <header><h3>Ordinary Member</h3><span class="plan-ribbon">You hold this</span></header>
+            <div class="membership-plan-price"><strong>KES 1,000</strong><span>/ year</span><p>Runs for 365 days, then renews.</p></div>
+            <div class="membership-plan-benefits"><strong>What is included</strong><ul><li>Ordinary membership certificate</li><li>Invites to special events</li><li>Participate in branch activities</li><li>Listed in the branch register</li></ul></div>
+            <p class="membership-plan-eligibility">Eligibility guidance <strong>Ages 30 years and above</strong></p>
+            <div class="membership-plan-actions"><button type="button" data-plan-details>View details</button><button type="button" data-plan-join>Join</button></div>
+          </article>
+
+          <article class="membership-plan-card" data-membership-plan="life">
+            <span class="membership-plan-band" aria-hidden="true"></span>
+            <header><h3>Life Member</h3></header>
+            <div class="membership-plan-price"><strong>KES 5,000</strong><span>one-off</span><p>Lifetime membership with no renewals.</p></div>
+            <div class="membership-plan-benefits"><strong>What is included</strong><ul><li>Life membership certificate</li><li>Invites to Life Members Day</li><li>Participate in branch activities</li><li>Listed in the branch register</li><li>Vote or vie for governance positions</li></ul></div>
+            <p class="membership-plan-eligibility">Duration <strong>Lifetime membership</strong></p>
+            <div class="membership-plan-actions"><button type="button" data-plan-details>View details</button><button type="button" data-plan-join>Join</button></div>
+          </article>
+        </div>
+        <p class="membership-branch-note"><strong>Joining another branch?</strong> A new branch application creates another membership record. Your existing memberships remain unchanged.</p>
+      </section>
+
+      <section class="membership-records" id="paid-memberships">
+        <header class="membership-section-head membership-records-head">
+          <div><span>Your account</span><h2>Your memberships</h2><p id="membership-summary">2 active memberships and 1 awaiting payment across 3 branches</p></div>
+          <div class="membership-record-totals"><strong id="paid-membership-count">2 active</strong><span>3 records</span></div>
+        </header>
+
+        <div class="live-membership-list" id="paid-membership-grid">
+          <article class="live-membership-card" data-membership-record="MSHIP-00142">
+            <header class="live-membership-head">
+              <span class="live-membership-icon" aria-hidden="true">▤</span>
+              <div><span class="live-membership-title"><strong>Ordinary membership</strong><span class="membership-state active">Active</span></span><p>Nairobi Branch</p></div>
+              <a href="membership-certificate.html?membership=MSHIP-00142" data-membership-action="certificate">▣ View &amp; print certificate</a>
+            </header>
+            <dl class="live-membership-facts"><div><dt>Valid from</dt><dd>1 Jan 2026</dd></div><div><dt>Valid to</dt><dd>31 Dec 2026</dd></div><div><dt>Fee</dt><dd>KES 1,000</dd></div><div><dt>Membership ID</dt><dd>MSHIP-00142</dd></div></dl>
+            <div class="live-membership-progress"><span class="done"><i></i>Payment</span><span class="done"><i></i>Approval not required</span><span>Receipt RCPT-QJI4K8T2H</span></div>
+          </article>
+
+          <article class="live-membership-card" data-membership-record="MSHIP-00211">
+            <header class="live-membership-head">
+              <span class="live-membership-icon" aria-hidden="true">▤</span>
+              <div><span class="live-membership-title"><strong>Ordinary membership</strong><span class="membership-state active">Active</span></span><p>Kiambu Branch</p></div>
+              <a href="membership-certificate.html?membership=MSHIP-00211" data-membership-action="certificate">▣ View &amp; print certificate</a>
+            </header>
+            <dl class="live-membership-facts"><div><dt>Valid from</dt><dd>18 Mar 2026</dd></div><div><dt>Valid to</dt><dd>17 Mar 2027</dd></div><div><dt>Fee</dt><dd>KES 1,000</dd></div><div><dt>Membership ID</dt><dd>MSHIP-00211</dd></div></dl>
+            <div class="live-membership-progress"><span class="done"><i></i>Payment</span><span class="done"><i></i>Approval not required</span><span>Receipt RCPT-SLM8K1P4R</span></div>
+          </article>
+
+          <div class="membership-pending-label"><span>Not active yet</span><p>Applications still waiting for payment or branch approval.</p></div>
+          <article class="live-membership-card pending" data-membership-record="MSHIP-00304">
+            <header class="live-membership-head">
+              <span class="live-membership-icon" aria-hidden="true">▤</span>
+              <div><span class="live-membership-title"><strong>Ordinary membership</strong><span class="membership-state awaiting">Awaiting payment</span></span><p>Mombasa Branch</p></div>
+              <a class="continue-payment" href="membership-registration.html#step-4">Continue payment</a>
+            </header>
+            <dl class="live-membership-facts"><div><dt>Valid from</dt><dd>Not active</dd></div><div><dt>Valid to</dt><dd>Not active</dd></div><div><dt>Fee</dt><dd>KES 1,000</dd></div><div><dt>Membership ID</dt><dd>MSHIP-00304</dd></div></dl>
+            <div class="live-membership-progress"><span><i></i>Payment pending</span><span class="done"><i></i>Approval not required</span></div>
+          </article>
+        </div>
+
+        <div class="membership-empty-state" id="membership-empty" hidden><span>▤</span><h3>No memberships yet</h3><p>Choose a membership type and branch above. Each application will appear here as a separate record.</p><a href="#membership-options">Choose a membership</a></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="membership-join-modal" id="membershipJoinModal" hidden>
+  <button class="membership-modal-backdrop" type="button" data-membership-close aria-label="Close membership dialog"></button>
+  <section class="membership-modal-card" role="dialog" aria-modal="true" aria-labelledby="membershipModalTitle">
+    <header class="membership-modal-head">
+      <div><span id="membershipModalKicker">Membership application</span><h2 id="membershipModalTitle">Join as a member</h2></div>
+      <button type="button" data-membership-close aria-label="Close">×</button>
+    </header>
+
+    <div class="membership-plan-detail" data-membership-view="details" hidden>
+      <div class="membership-detail-price"><strong data-modal-price></strong><span data-modal-period></span></div>
+      <p data-modal-description></p>
+      <div><strong>What is included</strong><ul data-modal-benefits></ul></div>
+      <p class="membership-detail-eligibility"><span>Eligibility guidance</span><strong data-modal-eligibility></strong></p>
+      <button class="membership-modal-primary" type="button" data-detail-join>Join this membership</button>
+    </div>
+
+    <form class="membership-join-form" id="membershipJoinForm" data-membership-view="join">
+      <input type="hidden" id="selectedMembershipPlan">
+      <div class="membership-selected-plan"><span class="membership-selected-icon">▤</span><div><small>Selected membership</small><strong data-selected-plan></strong><span><b data-selected-price></b> <i data-selected-period></i></span></div><button type="button" data-change-plan>Change</button></div>
+
+      <div class="membership-profile-source"><span class="avatar">AM</span><div><small>Using your portal profile</small><strong>Amina Mwangi</strong><p>amina.mwangi@example.org · +254 712 345 678</p></div><a href="profile.html">Review profile</a></div>
+
+      <label class="existing-member-toggle"><input type="checkbox" id="existingMemberToggle"><span><strong>I already hold this membership</strong><small>I paid before this portal existed and can provide proof.</small></span></label>
+
+      <label class="membership-modal-field"><span>Branch / County <b>*</b></span><select id="membershipBranch" required><option value="">Select the branch to register with</option><option>Nairobi Branch</option><option>Kiambu Branch</option><option>Mombasa Branch</option><option>Kisumu Branch</option></select></label>
+
+      <div class="membership-payment-flow" id="membershipPaymentFlow">
+        <label class="membership-modal-field"><span>Payment phone number <b>*</b></span><input id="membershipPaymentPhone" type="tel" value="+254 712 345 678" required><small>The payment request will be sent to this number.</small></label>
+        <div class="membership-payment-summary"><span>Amount due</span><strong data-payment-total></strong></div>
+      </div>
+
+      <div class="membership-proof-flow" id="membershipProofFlow" hidden>
+        <div class="membership-proof-note"><strong>No payment will be requested.</strong><p>Your branch will verify the evidence and dates before activating this membership.</p></div>
+        <label class="membership-modal-field"><span>Proof of membership <b>*</b></span><span class="membership-proof-upload"><input id="membershipProofFile" type="file" accept=".jpg,.jpeg,.png,.pdf"><i>⇧</i><strong>Click to upload</strong><small data-proof-file-name>JPG, JPEG, PNG or PDF</small></span></label>
+        <div class="membership-proof-grid">
+          <label class="membership-modal-field"><span>Original joining date <b>*</b></span><input id="membershipClaimedStart" type="date"></label>
+          <label class="membership-modal-field"><span>Claimed expiry date</span><input id="membershipClaimedExpiry" type="date"></label>
+          <label class="membership-modal-field"><span>Membership number</span><input id="membershipNumber" type="text" placeholder="As shown on your proof"></label>
+          <label class="membership-modal-field"><span>Receipt / reference number</span><input id="membershipReference" type="text" placeholder="Optional"></label>
+        </div>
+        <label class="membership-proof-declaration"><input id="membershipProofDeclaration" type="checkbox"><span>I confirm that this is a membership I already hold and the information supplied is accurate.</span></label>
+      </div>
+
+      <p class="membership-form-error" id="membershipFormError" hidden></p>
+      <footer class="membership-modal-actions"><button type="button" data-membership-close>Cancel</button><button class="membership-modal-primary" id="membershipSubmit" type="submit">Continue to payment</button></footer>
+    </form>
+
+    <div class="membership-modal-success" data-membership-view="success" hidden><span>✓</span><h3 id="membershipSuccessTitle">Request received</h3><p id="membershipSuccessMessage"></p><button class="membership-modal-primary" type="button" data-membership-close>Back to memberships</button></div>
+  </section>
+</div>
+<script src="portal.js"></script>
+<script src="membership.js"></script>
+</body>
+</html>

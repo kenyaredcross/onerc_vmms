@@ -15,6 +15,7 @@ nothing must be exactly as unconstrained as it was before this existed.
 
 import frappe
 
+from vmmsx.api import registration
 from vmmsx.registration.tests import fixtures
 from vmmsx.registration.tests.base import RegistrationTestCase
 
@@ -27,6 +28,25 @@ ATTACHMENT_FIELD = "vmms_requires_attachment"
 MINIMUM_AGE_FIELD = "vmms_minimum_age"
 
 BIRTH_CERTIFICATE = f"{fixtures.TEST_PREFIX}-birth-certificate"
+
+
+def _public_upload(name: str, content: bytes = b"a scanned document") -> str:
+	"""A file the browser chose to upload publicly — the state under test.
+
+	The same fixture `test_private_evidence` uses, and for the same reason: the
+	portal uploads through the file API where the *browser* names the privacy,
+	so public is the case the server has to correct rather than trust.
+	"""
+	document = frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": f"{frappe.generate_hash(length=6)}-{name}",
+			"content": content,
+			"is_private": 0,
+		}
+	).insert(ignore_permissions=True)
+
+	return document.file_url
 
 
 def _rule(key: str, **values) -> str:
@@ -141,6 +161,85 @@ class TestADocumentThatNeedsACopy(RegistrationTestCase):
 			)
 
 		self.assertIn("copy", str(refusal.exception).lower())
+
+	def test_the_applicant_can_produce_the_copy_themselves(self):
+		"""The other half of the refusal above, and it had no door for a year.
+
+		`IDENTIFICATION_FIELDS` excluded `attachment`, so the only way to satisfy
+		a society that ticked this was a clerk attaching the scan on the desk —
+		and the refusal told the applicant to upload it to a profile no screen
+		would let them edit.
+		"""
+		user = fixtures.website_account("brings.the.copy")
+		uploaded = _public_upload("birth-certificate.txt")
+
+		with fixtures.acting_as(user):
+			application = fixtures.submit_volunteer_form(
+				self.branch(),
+				identifications=[
+					{
+						"id_type": BIRTH_CERTIFICATE,
+						"id_number": f"{fixtures.TEST_PREFIX}-BC-0003",
+						"attachment": uploaded,
+					}
+				],
+			)
+
+		row = frappe.get_doc("Red Profile", application.red_profile).identifications[0]
+
+		self.assertTrue(row.attachment, "the copy was not stored against the document")
+
+		# Private, and anchored to the profile — which is what makes it readable
+		# by the people who may read the person and by nobody else. The URL moves
+		# when the file is made private, so the stored one is the new one.
+		stored = frappe.db.get_value(
+			"File",
+			{"file_url": row.attachment},
+			["is_private", "attached_to_doctype", "attached_to_name"],
+			as_dict=True,
+		)
+
+		self.assertTrue(stored.is_private, "an identity document was left on the open web")
+		self.assertEqual(stored.attached_to_doctype, "Red Profile")
+		self.assertEqual(stored.attached_to_name, application.red_profile)
+
+	def test_correcting_the_number_does_not_delete_the_copy(self):
+		"""A row that says nothing about its copy keeps the one already on file.
+
+		The rule `_identification_rows` has always kept, now that a row can also
+		*carry* a copy: saying nothing and saying "none" have to stay different,
+		or every correction would wipe a branch's scan.
+		"""
+		user = fixtures.website_account("corrects.the.number")
+		uploaded = _public_upload("first-scan.txt")
+
+		with fixtures.acting_as(user):
+			application = fixtures.submit_volunteer_form(
+				self.branch(),
+				identifications=[
+					{
+						"id_type": BIRTH_CERTIFICATE,
+						"id_number": f"{fixtures.TEST_PREFIX}-BC-0004",
+						"attachment": uploaded,
+					}
+				],
+			)
+
+			held = frappe.get_doc("Red Profile", application.red_profile).identifications[0].attachment
+
+			registration.update_my_profile(
+				identifications=[
+					{
+						"id_type": BIRTH_CERTIFICATE,
+						"id_number": f"{fixtures.TEST_PREFIX}-BC-0004-corrected",
+					}
+				]
+			)
+
+		row = frappe.get_doc("Red Profile", application.red_profile).identifications[0]
+
+		self.assertEqual(row.id_number, f"{fixtures.TEST_PREFIX}-BC-0004-corrected")
+		self.assertEqual(row.attachment, held, "correcting the number dropped the scan")
 
 
 class TestAgeExemptsADocument(RegistrationTestCase):

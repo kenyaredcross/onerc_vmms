@@ -2041,6 +2041,10 @@ export function DeploymentDetail() {
 		`admin:deployment:feed:${name}`,
 	);
 
+	const deploymentOptions = useFrappeGetCall<{
+		message: { email_templates: Array<{ name: string; subject: string | null }> };
+	}>(API.deploymentOptions, undefined, "admin:deployment:options");
+
 	const [busy, setBusy] = useState<string | null>(null);
 	const [failure, setFailure] = useState<string | null>(null);
 	const [matching, setMatching] = useState(false);
@@ -2168,6 +2172,15 @@ export function DeploymentDetail() {
 					</div>
 				</Card>
 
+				<DeploymentDetailsEditor
+					deployment={deployment}
+					templates={deploymentOptions.data?.message?.email_templates ?? []}
+					onSaved={() => {
+						void mutate();
+						void feed.mutate();
+					}}
+				/>
+
 				<Roster deployment={deployment} busy={busy} onAct={act} onFind={() => setMatching((was) => !was)} finding={matching} />
 
 				{matching && (
@@ -2186,9 +2199,582 @@ export function DeploymentDetail() {
 					loading={feed.isLoading}
 					onPosted={() => void feed.mutate()}
 				/>
+
+				<CloseOut
+					deployment={deployment}
+					onClosed={() => {
+						void mutate();
+						void feed.mutate();
+					}}
+				/>
 			</div>
 		</>
 	);
+}
+
+/**
+ * The half of a deployment record that had no way in.
+ *
+ * `create_deployment` has always accepted the site, the meeting point, the
+ * travel notes and the local contact, and the setup form asked for none of them
+ * — reasonably, because a coordinator opening a deployment on Monday rarely
+ * knows where people are meeting on Friday. What was missing was anywhere to put
+ * them *afterwards*: there was no update endpoint at all, so eleven fields on
+ * the doctype, five moments in the schedule and both close-out fields were
+ * writable only from the desk.
+ *
+ * **A material change asks why, because the roster is told.** Moving the meeting
+ * point or the dates on a deployment people have already accepted is not a
+ * private edit: `change.py` compares what changed, insists on a reason and
+ * announces it to everybody already on it. This form asks for the reason in the
+ * same save rather than letting the server refuse and lose the edit, and it says
+ * plainly that people will be told.
+ *
+ * **Closed out is a document, not a form.** Once the paperwork is filed the
+ * fields are shown and not edited: what a mission learned is a record of what it
+ * learned, and a form still open over it invites a quiet rewrite months later.
+ */
+function DeploymentDetailsEditor({
+	deployment,
+	templates,
+	onSaved,
+}: {
+	deployment: DeploymentDetailDto;
+	templates: Array<{ name: string; subject: string | null }>;
+	onSaved: () => void;
+}) {
+	const { call } = useContext(FrappeContext) as FrappeConfig;
+
+	const [open, setOpen] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [failure, setFailure] = useState<string | null>(null);
+
+	const [form, setForm] = useState(() => detailsOf(deployment));
+	const [reason, setReason] = useState("");
+
+	// Reset whenever the record changes underneath — after a save, or after
+	// somebody else moved it. Keyed on the docname and the modified moment the
+	// DTO already carries through its status fields.
+	useEffect(() => {
+		setForm(detailsOf(deployment));
+		setReason("");
+	}, [deployment.name, open]);
+
+	const set = (key: keyof DeploymentDetails) => (value: string) =>
+		setForm((state) => ({ ...state, [key]: value }));
+
+	// The fields `change.MATERIAL_FIELDS` watches, asked here so the reason box
+	// appears while somebody is still typing rather than after a refusal.
+	const material = MATERIAL_FIELDS.filter(
+		(field) => (form[field] ?? "") !== (detailsOf(deployment)[field] ?? ""),
+	);
+	const needsReason = material.length > 0 && !reason.trim();
+
+	const save = async () => {
+		setBusy(true);
+		setFailure(null);
+
+		try {
+			await call.post(API.updateDeployment, {
+				name: deployment.name,
+				...form,
+				// Only ever sent with a change that owes one. A reason attached to
+				// nothing would overwrite the last real one on the record.
+				...(material.length > 0 ? { change_reason: reason.trim() } : {}),
+			});
+			setOpen(false);
+			onSaved();
+		} catch (problem) {
+			setFailure(errorMessage(problem, "That change was not saved."));
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	if (!open) {
+		return (
+			<Card>
+				<div className="flex flex-wrap items-start justify-between gap-3">
+					<div className="min-w-0">
+						<SectionTitle>Where and when</SectionTitle>
+						<p className="mt-1 text-[12px] text-muted">
+							The site, the meeting point, how people get there, and the hours of the day.
+						</p>
+					</div>
+					<Button variant="navy" onClick={() => setOpen(true)}>
+						Edit details
+					</Button>
+				</div>
+
+				<dl className="mt-4 grid gap-4 sm:grid-cols-2">
+					<PanelFact label="Deployment point" value={deployment.where.site.name} />
+					<PanelFact label="Address" value={deployment.where.site.address} />
+					<PanelFact label="Meeting point" value={deployment.where.meeting_point.name} />
+					<PanelFact label="Meeting address" value={deployment.where.meeting_point.address} />
+					<PanelFact label="Local contact" value={deployment.where.local_contact.name} />
+					<PanelFact label="On" value={deployment.where.local_contact.phone} />
+					<PanelFact label="Briefing" value={formatDate(deployment.briefing_on)} />
+					<PanelFact label="Check-in deadline" value={formatDate(deployment.check_in_deadline)} />
+					<PanelFact label="Expected return" value={formatDate(deployment.expected_return)} />
+					<PanelFact label="Actually started" value={formatDate(deployment.actual_start)} />
+					<PanelFact label="Actually ended" value={formatDate(deployment.actual_end)} />
+					<PanelFact label="Coordinator" value={deployment.coordinator_contact.full_name} />
+				</dl>
+
+				{deployment.where.travel_notes && (
+					<div className="mt-4">
+						<p className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-faint">
+							Getting there
+						</p>
+						<p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-muted">
+							{deployment.where.travel_notes}
+						</p>
+					</div>
+				)}
+
+				{deployment.change_reason && (
+					<p className="mt-4 rounded-xl bg-surface px-3.5 py-2.5 text-[12px] leading-relaxed text-muted">
+						<span className="font-semibold text-ink">Last change:</span>{" "}
+						{deployment.change_reason}
+					</p>
+				)}
+			</Card>
+		);
+	}
+
+	return (
+		<Card>
+			<SectionTitle>Where and when</SectionTitle>
+
+			<div className="mt-4 space-y-5">
+				<div>
+					<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+						The deployment point
+					</p>
+					<div className="grid gap-4 sm:grid-cols-2">
+						<Labelled label="What it is called">
+							<input
+								className={INPUT}
+								value={form.site_name}
+								onChange={(event) => set("site_name")(event.target.value)}
+								placeholder="Kilombero District Hospital"
+							/>
+						</Labelled>
+						<Labelled label="Address or description">
+							<textarea
+								className={cx(INPUT, "min-h-[60px] resize-y")}
+								value={form.site_address}
+								onChange={(event) => set("site_address")(event.target.value)}
+							/>
+						</Labelled>
+					</div>
+				</div>
+
+				<div>
+					<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+						Where people meet
+					</p>
+					<div className="grid gap-4 sm:grid-cols-2">
+						<Labelled label="Meeting point">
+							<input
+								className={INPUT}
+								value={form.meeting_point}
+								onChange={(event) => set("meeting_point")(event.target.value)}
+								placeholder="Branch office car park"
+							/>
+						</Labelled>
+						<Labelled label="Address or description">
+							<textarea
+								className={cx(INPUT, "min-h-[60px] resize-y")}
+								value={form.meeting_address}
+								onChange={(event) => set("meeting_address")(event.target.value)}
+							/>
+						</Labelled>
+					</div>
+				</div>
+
+				<div>
+					<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+						Getting there, and who to ring on the day
+					</p>
+					<div className="grid gap-4 sm:grid-cols-2">
+						<Labelled
+							label="Travel notes"
+							hint="How to reach it, what to bring, what the road is like."
+						>
+							<textarea
+								className={cx(INPUT, "min-h-[72px] resize-y")}
+								value={form.travel_notes}
+								onChange={(event) => set("travel_notes")(event.target.value)}
+							/>
+						</Labelled>
+						<div className="grid gap-4">
+							<Labelled label="Local contact">
+								<input
+									className={INPUT}
+									value={form.local_contact_name}
+									onChange={(event) => set("local_contact_name")(event.target.value)}
+								/>
+							</Labelled>
+							<Labelled label="Their phone number">
+								<input
+									type="tel"
+									className={INPUT}
+									value={form.local_contact_phone}
+									onChange={(event) => set("local_contact_phone")(event.target.value)}
+								/>
+							</Labelled>
+						</div>
+					</div>
+				</div>
+
+				<div>
+					<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+						The hours of the day
+					</p>
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						<Labelled label="Planned start" hint="The period to the hour.">
+							<input
+								type="datetime-local"
+								className={INPUT}
+								value={form.planned_start}
+								onChange={(event) => set("planned_start")(event.target.value)}
+							/>
+						</Labelled>
+						<Labelled label="Planned end">
+							<input
+								type="datetime-local"
+								className={INPUT}
+								value={form.planned_end}
+								onChange={(event) => set("planned_end")(event.target.value)}
+							/>
+						</Labelled>
+						<Labelled label="Briefing" hint="When people are briefed, if they are.">
+							<input
+								type="datetime-local"
+								className={INPUT}
+								value={form.briefing_on}
+								onChange={(event) => set("briefing_on")(event.target.value)}
+							/>
+						</Labelled>
+						<Labelled label="Check-in deadline" hint="By when everybody has to be there.">
+							<input
+								type="datetime-local"
+								className={INPUT}
+								value={form.check_in_deadline}
+								onChange={(event) => set("check_in_deadline")(event.target.value)}
+							/>
+						</Labelled>
+						<Labelled label="Expected return">
+							<input
+								type="datetime-local"
+								className={INPUT}
+								value={form.expected_return}
+								onChange={(event) => set("expected_return")(event.target.value)}
+							/>
+						</Labelled>
+						<div />
+						<Labelled label="Actually started" hint="Filled in as it happens, not in advance.">
+							<input
+								type="datetime-local"
+								className={INPUT}
+								value={form.actual_start}
+								onChange={(event) => set("actual_start")(event.target.value)}
+							/>
+						</Labelled>
+						<Labelled label="Actually ended">
+							<input
+								type="datetime-local"
+								className={INPUT}
+								value={form.actual_end}
+								onChange={(event) => set("actual_end")(event.target.value)}
+							/>
+						</Labelled>
+					</div>
+				</div>
+
+				<div>
+					<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+						Running it
+					</p>
+					<div className="grid gap-4 sm:grid-cols-3">
+						<Labelled label="Volunteers needed" hint="Empty means no limit.">
+							<input
+								type="number"
+								min="0"
+								className={INPUT}
+								value={form.volunteers_required}
+								onChange={(event) => set("volunteers_required")(event.target.value)}
+							/>
+						</Labelled>
+						<Labelled label="Email template" hint="Wording for invitations.">
+							<select
+								className={INPUT}
+								value={form.email_template}
+								onChange={(event) => set("email_template")(event.target.value)}
+							>
+								<option value="">Use the standard invitation</option>
+								{templates.map((template) => (
+									<option key={template.name} value={template.name}>
+										{template.name}
+									</option>
+								))}
+							</select>
+						</Labelled>
+						<Labelled label="Notes">
+							<textarea
+								className={cx(INPUT, "min-h-[60px] resize-y")}
+								value={form.notes}
+								onChange={(event) => set("notes")(event.target.value)}
+							/>
+						</Labelled>
+					</div>
+				</div>
+
+				{/* Only when something people were told about has moved. A reason
+				    box on every save would be a form asking why somebody corrected
+				    a spelling. */}
+				{material.length > 0 && (
+					<div className="rounded-xl border border-amber-line bg-amber-soft/40 px-3.5 py-3">
+						<Labelled
+							label="Why this changed"
+							hint="Everybody already on this deployment is told, in these words."
+						>
+							<textarea
+								className={cx(INPUT, "min-h-[60px] resize-y bg-white")}
+								value={reason}
+								onChange={(event) => setReason(event.target.value)}
+								placeholder="The meeting point moved because the car park is closed."
+							/>
+						</Labelled>
+					</div>
+				)}
+
+				{failure && <ErrorNote>{failure}</ErrorNote>}
+
+				<div className="flex flex-wrap gap-2">
+					<Button disabled={busy || needsReason} onClick={() => void save()}>
+						{busy ? "Saving…" : "Save details"}
+					</Button>
+					<Button variant="navy" onClick={() => setOpen(false)}>
+						Cancel
+					</Button>
+				</div>
+			</div>
+		</Card>
+	);
+}
+
+/**
+ * Ending a deployment, and what it leaves behind.
+ *
+ * `close_out_deployment` has been on the server the whole time and nothing
+ * called it, so `lessons_learned` and `mission_report` were writable only from
+ * the desk — which is to say a coordinator finished a mission in the console and
+ * filed its account somewhere else, or not at all.
+ *
+ * **Nothing blocks the close-out and this screen says so.** Not an unmarked
+ * roster, not an open task, not somebody who never filed their hours: the
+ * endpoint's own docstring is explicit that a close-out which can be refused is
+ * one that does not happen. Both fields are optional, always.
+ *
+ * **Only from Completed**, which is the transition table's one rule, so the card
+ * appears there and nowhere else — and afterwards it is a record rather than a
+ * form.
+ */
+function CloseOut({
+	deployment,
+	onClosed,
+}: {
+	deployment: DeploymentDetailDto;
+	onClosed: () => void;
+}) {
+	const { call } = useContext(FrappeContext) as FrappeConfig;
+
+	const [lessons, setLessons] = useState("");
+	const [report, setReport] = useState("");
+	const [busy, setBusy] = useState(false);
+	const [failure, setFailure] = useState<string | null>(null);
+
+	const closed = deployment.close_out;
+
+	if (deployment.is_closed_out) {
+		return (
+			<Card>
+				<SectionTitle>Closed out</SectionTitle>
+				<p className="mt-1 text-[12px] text-muted">
+					Filed {formatDate(closed.closed_out_on)}
+					{closed.closed_out_by ? ` by ${closed.closed_out_by}` : ""}.
+				</p>
+
+				{closed.lessons_learned && (
+					<div className="mt-3">
+						<p className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-faint">
+							What was learned
+						</p>
+						<p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-muted">
+							{closed.lessons_learned}
+						</p>
+					</div>
+				)}
+
+				{closed.mission_report && (
+					<p className="mt-3">
+						<a
+							href={closed.mission_report}
+							target="_blank"
+							rel="noreferrer"
+							className="text-[12.5px] font-semibold text-blue underline-offset-2 hover:underline"
+						>
+							Open the mission report
+						</a>
+					</p>
+				)}
+			</Card>
+		);
+	}
+
+	// The transition table's one rule, asked here so the card is absent rather
+	// than present and refusing.
+	if (deployment.status !== "Completed") return null;
+
+	const closeOut = async () => {
+		setBusy(true);
+		setFailure(null);
+
+		try {
+			await call.post(API.closeOutDeployment, {
+				name: deployment.name,
+				lessons: lessons.trim() || undefined,
+				report: report.trim() || undefined,
+			});
+			onClosed();
+		} catch (problem) {
+			setFailure(errorMessage(problem, "That deployment was not closed out."));
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<Card>
+			<SectionTitle>Close this out</SectionTitle>
+			<p className="mt-1 text-[12px] text-muted">
+				The work is finished. Closing it out files the mission and takes it off the open register.
+				Both fields below are optional — a thin file is better than an open deployment nobody is
+				running.
+			</p>
+
+			<div className="mt-4 space-y-4">
+				<Labelled
+					label="What was learned"
+					hint="What went well, what did not, what the next branch to run this should know."
+				>
+					<textarea
+						className={cx(INPUT, "min-h-[96px] resize-y")}
+						value={lessons}
+						onChange={(event) => setLessons(event.target.value)}
+					/>
+				</Labelled>
+
+				<Labelled
+					label="Mission report"
+					hint="A file already uploaded to this site. Paste its address."
+				>
+					<input
+						className={INPUT}
+						value={report}
+						onChange={(event) => setReport(event.target.value)}
+						placeholder="/private/files/…"
+					/>
+				</Labelled>
+
+				{failure && <ErrorNote>{failure}</ErrorNote>}
+
+				<Button disabled={busy} onClick={() => void closeOut()}>
+					{busy ? "Closing out…" : "Close out this deployment"}
+				</Button>
+			</div>
+		</Card>
+	);
+}
+
+/** The editable half of a deployment, as this form holds it. */
+type DeploymentDetails = {
+	site_name: string;
+	site_address: string;
+	meeting_point: string;
+	meeting_address: string;
+	travel_notes: string;
+	local_contact_name: string;
+	local_contact_phone: string;
+	planned_start: string;
+	planned_end: string;
+	briefing_on: string;
+	check_in_deadline: string;
+	expected_return: string;
+	actual_start: string;
+	actual_end: string;
+	volunteers_required: string;
+	email_template: string;
+	notes: string;
+};
+
+/**
+ * The fields `change.MATERIAL_FIELDS` watches — the ones people already on the
+ * deployment were told about, and so the ones a change to owes a reason.
+ *
+ * Named here as well as on the server because the server's copy refuses the save
+ * and this one asks the question before it. Two lists that must agree, and the
+ * cost of them disagreeing is a refusal a coordinator cannot act on.
+ */
+const MATERIAL_FIELDS: Array<keyof DeploymentDetails> = [
+	"planned_start",
+	"planned_end",
+	"briefing_on",
+	"check_in_deadline",
+	"expected_return",
+	"meeting_point",
+	"meeting_address",
+	"travel_notes",
+	"local_contact_name",
+	"local_contact_phone",
+];
+
+/** The record as form values: never null, and datetimes as the input wants them. */
+function detailsOf(deployment: DeploymentDetailDto): DeploymentDetails {
+	return {
+		site_name: deployment.where.site.name ?? "",
+		site_address: deployment.where.site.address ?? "",
+		meeting_point: deployment.where.meeting_point.name ?? "",
+		meeting_address: deployment.where.meeting_point.address ?? "",
+		travel_notes: deployment.where.travel_notes ?? "",
+		local_contact_name: deployment.where.local_contact.name ?? "",
+		local_contact_phone: deployment.where.local_contact.phone ?? "",
+		planned_start: forInput(deployment.planned_start),
+		planned_end: forInput(deployment.planned_end),
+		briefing_on: forInput(deployment.briefing_on),
+		check_in_deadline: forInput(deployment.check_in_deadline),
+		expected_return: forInput(deployment.expected_return),
+		actual_start: forInput(deployment.actual_start),
+		actual_end: forInput(deployment.actual_end),
+		volunteers_required: deployment.volunteers_required
+			? String(deployment.volunteers_required)
+			: "",
+		email_template: deployment.email_template ?? "",
+		notes: deployment.notes ?? "",
+	};
+}
+
+/**
+ * One stored datetime as a `datetime-local` input wants it.
+ *
+ * Frappe stores "2026-09-02 08:30:00" and the control wants
+ * "2026-09-02T08:30" — a space where it expects a T renders an empty box, and
+ * the next save would then clear a briefing time nobody touched.
+ */
+function forInput(value: string | null): string {
+	return value ? value.replace(" ", "T").slice(0, 16) : "";
 }
 
 /** How many of the places this deployment asked for are taken. */

@@ -22,6 +22,8 @@ export interface VolunteerProfile {
 	status: string;
 	joined_on: string | null;
 	exited_on: string | null;
+	/** The branch's own note about this person — `VMMS Volunteer.notes`. */
+	notes?: string | null;
 	geo_node: string | null;
 	geo_path: string | null;
 	home_geo_node: string | null;
@@ -39,6 +41,30 @@ export interface VolunteerProfile {
 	}>;
 	deployability?: Deployability;
 	verification?: Record<string, unknown>;
+	/**
+	 * What kind of work they do, and what they have already done.
+	 *
+	 * Read live off Red Profile by `volunteer.services.identity` and stored
+	 * nowhere, so a volunteer correcting a qualification on their own profile
+	 * page corrects it here the moment they save.
+	 *
+	 * **Attachments are absent from every row on purpose.** The scans are
+	 * private files anchored to the profile, readable by whoever may open the
+	 * profile on the desk — a link here would look like evidence and resolve to
+	 * a refusal. See `identity._BACKGROUND`.
+	 */
+	profession?: string | null;
+	background?: DossierBackground;
+}
+
+/** The six background tables as a coordinator's screen receives them. */
+export interface DossierBackground {
+	education: Array<Omit<EducationRow, "attachment">>;
+	training: Array<Omit<TrainingRow, "attachment">>;
+	work_experience: WorkExperienceRow[];
+	licences: Array<Omit<LicenceRow, "attachment">>;
+	driving_licences: Array<Omit<DrivingLicenceRow, "attachment">>;
+	references: ReferenceRow[];
 }
 
 export interface Deployability {
@@ -249,6 +275,90 @@ export interface RedProfile {
 	 */
 	disability_status: string | null;
 	disability_needs: string | null;
+	/**
+	 * Which disabilities they named, as the keys core's `Disability` register
+	 * stores. Empty means nothing further was said — never that the answer above
+	 * was "No", which only `disability_status` can tell you.
+	 */
+	disabilities: string[];
+	/**
+	 * What this person has already done — `patches/install_background_fields.py`.
+	 *
+	 * Every one of these is optional and nothing gates on any of them, so an
+	 * empty table is an ordinary state rather than an unfinished form. They come
+	 * back in exactly the shape they are sent, which is what lets the wizard
+	 * round trip a draft without a second set of types.
+	 */
+	profession: string | null;
+	education: EducationRow[];
+	training: TrainingRow[];
+	work_experience: WorkExperienceRow[];
+	licences: LicenceRow[];
+	driving_licences: DrivingLicenceRow[];
+	references: ReferenceRow[];
+}
+
+/** One thing somebody studied — `VMMS Education`. Years, not dates. */
+export interface EducationRow {
+	institution: string;
+	level: string;
+	qualification: string;
+	/** A year. `null` where somebody did not say, which is most of them. */
+	started_in: number | null;
+	finished_in: number | null;
+	is_ongoing: boolean;
+	attachment: string | null;
+}
+
+/** Training somebody says they have done — `VMMS Declared Training`. */
+export interface TrainingRow {
+	course_name: string;
+	institution: string;
+	started_on: string;
+	completed_on: string;
+	remarks: string;
+	attachment: string | null;
+}
+
+/** One post somebody has held, paid or unpaid — `VMMS Work Experience`. */
+export interface WorkExperienceRow {
+	organization: string;
+	role: string;
+	started_on: string;
+	ended_on: string;
+	is_current: boolean;
+	summary: string;
+}
+
+/** A licence or registration somebody holds — `Personnel Licence`. */
+export interface LicenceRow {
+	license_type: string;
+	license_name: string;
+	institution: string;
+	registration_no: string;
+	valid_from: string;
+	valid_to: string;
+	does_not_expire: boolean;
+	attachment: string | null;
+}
+
+/** One class on somebody's driving licence — `VMMS Driving Licence`. */
+export interface DrivingLicenceRow {
+	licence_class: string;
+	licence_number: string;
+	valid_to: string;
+	attachment: string | null;
+}
+
+/** Somebody who will speak for them — `VMMS Professional Reference`. */
+export interface ReferenceRow {
+	reference_name: string;
+	position: string;
+	organization: string;
+	email: string;
+	phone: string;
+	relationship: string;
+	notes: string;
 }
 
 /**
@@ -456,6 +566,12 @@ export interface ApplicationOptions {
 	id_types: IdentificationTypeRow[];
 	countries: string[];
 	residency_types: string[];
+	/**
+	 * `Red Profile.citizenship_status`'s own options — Citizen, Non-citizen,
+	 * Refugee, Migrant, Other on a stock site. Read off the Select by
+	 * `application_options`, so a society that edits the field edits the form.
+	 */
+	citizenship_statuses: string[];
 	default_country_of_citizenship: string | null;
 	declarations: Declaration[];
 	/**
@@ -493,6 +609,23 @@ export interface OpenRegistration {
 /** `api/registration.py::identity_options`. */
 export interface IdentityOptions {
 	genders: string[];
+	/**
+	 * Core's `Disability` register, in the shape every other picker on this form
+	 * takes. `description` carries the disability's type — "Hearing" under
+	 * "Deafness" — so a long list stays scannable.
+	 */
+	disabilities: VocabularyRow[];
+	/**
+	 * The four registers the background step draws.
+	 *
+	 * The two name-only ones come back as plain strings because that is what the
+	 * doctype stores — `Profession` and `Personnel License Type` have no fields
+	 * at all, the docname is the value.
+	 */
+	professions: string[];
+	licence_types: string[];
+	education_levels: VocabularyRow[];
+	driving_licence_classes: VocabularyRow[];
 }
 
 /** `api/geo.py::browse`. */
@@ -1116,10 +1249,15 @@ export interface TermsItineraryRow {
 
 export interface TermsResource {
 	resource: string | null;
+	/** What the line is for, where the resource's own name does not say it. */
+	description: string | null;
 	needed_on: string | null;
 	quantity: number | null;
 	unit: string | null;
+	currency: string | null;
 	unit_cost: number | null;
+	/** Planned, Committed, Received or Unfunded — the field's own words. */
+	funding_status: string | null;
 	donor: string | null;
 	/** Derived on the server from quantity × unit cost. Never sent back. */
 	total_cost?: number | null;
@@ -1159,6 +1297,28 @@ export interface TermsMethodology {
 }
 
 /**
+ * Everything `tor_methodologies` serves, which is every vocabulary the two
+ * terms editors draw a control from.
+ *
+ * The last three are what the resource grid needs. A resource line names a unit
+ * and a currency on the doctype and carries a funding status, and the editors
+ * drew the first as free text and the other two not at all — so "litres",
+ * "Litres" and "L" were three units, and a costed mission could not say whose
+ * money it was counting.
+ */
+export interface TermsVocabularies {
+	methodologies: TermsMethodology[];
+	certification_types: Array<{
+		name: string;
+		certification_type_name: string;
+		description?: string | null;
+	}>;
+	units: string[];
+	currencies: string[];
+	funding_statuses: string[];
+}
+
+/**
  * `api/deployment.py::get_terms` — the whole mission, the same terms rendered
  * through the society's own template, and the deployments run under them.
  * `document` is the identical markup the PDF is built from, which is what stops
@@ -1184,6 +1344,18 @@ export interface ProjectDossier {
 /** `deployment/services/deployment.py::deployment_dto` — one deployment in full. */
 export interface DeploymentDetail extends DeploymentSummary {
 	terms: TermsOfReference | null;
+	/** Both places, the travel notes and the local contact — `where_dto`. */
+	where: DeploymentWhere;
+	coordinator_contact: CoordinatorContact;
+	/** What was learned and what was filed, once somebody has closed it out. */
+	close_out: {
+		closed_out_on: string | null;
+		closed_out_by: string | null;
+		lessons_learned: string | null;
+		mission_report: string | null;
+	};
+	/** Why the last material change was made. Required when one is made. */
+	change_reason: string | null;
 	/** The whole assignment register, settled rows included — a coordinator
 	 * needs to see who declined as much as who accepted, or they will ask the
 	 * same person again next week. */
@@ -1320,6 +1492,12 @@ export interface StipendReport {
 	geo_path: string | null;
 	period_from: string | null;
 	period_to: string | null;
+	/**
+	 * What the branch actually did over the period, as HTML. Mandatory on the
+	 * record and the whole substance of it — see `report.status`, which did not
+	 * carry it at all until the console grew a way to write one.
+	 */
+	narrative: string | null;
 	volunteer_count: number;
 	volunteers: ReportVolunteerRow[];
 	approval: StipendApproval;
@@ -1561,6 +1739,8 @@ export interface MemberDossier {
 	standing: MemberStanding;
 	memberships: MembershipDossierRow[];
 	history: MemberHistoryRow[];
+	/** The branch's own note about this person — `VMMS Member.notes`. */
+	notes: string | null;
 	/** See `VolunteerDossier.can_act`. */
 	can_act: boolean;
 	/** `api/person.py::registers`. See `Registers` for what absent means. */
@@ -1769,7 +1949,16 @@ export interface EventCard {
 	time_zone: string;
 	image: string;
 	geo_node: string;
+	/**
+	 * Where the call to action goes: the society's own registration page where
+	 * it set one, otherwise Buzz's event page. Always a full navigation away —
+	 * booking is Buzz's, and this app does not re-implement it.
+	 */
 	href: string | null;
+	/** Whether the society is charging for this one. Not a price. */
+	free: boolean;
+	/** When registration closes, or empty where the society has not said. */
+	registrations_close_at: string;
 	multi_day: boolean;
 	/**
 	 * How many people have told the society they mean to be there.
