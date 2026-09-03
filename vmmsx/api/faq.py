@@ -49,7 +49,7 @@ def _available() -> bool:
 	reason the payments seam gives: an answer that can only be had by raising
 	cannot be asked at render time on a public page.
 	"""
-	return frappe.db.table_exists(f"tab{FAQ_DOCTYPE}")
+	return frappe.db.table_exists(FAQ_DOCTYPE)
 
 
 @frappe.whitelist(allow_guest=True)
