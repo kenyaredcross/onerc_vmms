@@ -335,7 +335,7 @@ function TaskRow({ row }: { row: TaskSummary }) {
 			</span>
 
 			<span className="hidden min-w-0 truncate text-[12px] text-ink lg:block">
-				{row.task_type || "—"}
+				{row.task_type || "Not available"}
 			</span>
 
 			<span
@@ -608,10 +608,10 @@ export function TaskRecord() {
 							columns={2}
 							items={[
 								{ label: "Status", value: <TaskStateBadge status={task.status} /> },
-								{ label: "Priority", value: task.priority || "—" },
-								{ label: "Task type", value: task.task_type || "—" },
+								{ label: "Priority", value: task.priority || "Not available" },
+								{ label: "Task type", value: task.task_type || "Not available" },
 								{ label: "Assigned on", value: formatDate(task.assigned_on) },
-								{ label: "Geo node", value: task.geo_node || "—" },
+								{ label: "Geo node", value: task.geo_node || "Not available" },
 								{
 									label: "Progress",
 									value: (
@@ -669,8 +669,7 @@ export function TaskRecord() {
 				}}
 			>
 				<p>
-					Your coordinator is told either way. Say why you cannot take it on — it helps them find
-					somebody else.
+					Provide a reason for declining so your coordinator can reassign the task.
 				</p>
 				<label className="mt-3 block">
 					<span className="mb-1.5 block text-[12px] font-semibold text-slate-strong">Reason</span>
@@ -734,11 +733,11 @@ function Overview({ task }: { task: TaskDetail }) {
 						{ label: "Answer by", value: formatDate(task.response_deadline) },
 						{
 							label: "Expected hours",
-							value: task.expected_hours ? formatHours(task.expected_hours) : "—",
+							value: task.expected_hours ? formatHours(task.expected_hours) : "Not available",
 						},
 						{
 							label: "Actual hours",
-							value: task.actual_hours ? formatHours(task.actual_hours) : "—",
+							value: task.actual_hours ? formatHours(task.actual_hours) : "Not available",
 						},
 					]}
 				/>
@@ -841,7 +840,7 @@ function Overview({ task }: { task: TaskDetail }) {
 }
 
 function placeLine(place: TaskPlace): string {
-	return [place.name, place.address].filter(Boolean).join(" — ") || "—";
+	return [place.name, place.address].filter(Boolean).join(", ") || "Not available";
 }
 
 /* --------------------------------------------------------------- checklist */
@@ -1266,8 +1265,7 @@ function Outcome({ task }: { task: TaskDetail }) {
 			{task.status === "submitted" && (
 				<div className="mb-4">
 					<Notice>
-						You have offered this as done. A coordinator signs it off before it is complete — you
-						will be notified either way.
+						This task is awaiting coordinator approval. You will be notified when it is reviewed.
 					</Notice>
 				</div>
 			)}
@@ -1277,10 +1275,10 @@ function Outcome({ task }: { task: TaskDetail }) {
 				items={[
 					{ label: "Submitted on", value: formatDate(task.submitted_on) },
 					{ label: "Closed on", value: formatDate(task.closed_on) },
-					{ label: "Completion notes", value: task.completion_notes || "—" },
-					{ label: "Outcome", value: task.outcome || "—" },
+					{ label: "Completion notes", value: task.completion_notes || "Not available" },
+					{ label: "Outcome", value: task.outcome || "Not available" },
 					{ label: "Times returned", value: String(task.rework_count) },
-					{ label: "Last return reason", value: task.return_reason || "—" },
+					{ label: "Last return reason", value: task.return_reason || "Not available" },
 					task.decline_reason ? { label: "Reason for declining", value: task.decline_reason } : null,
 					task.lessons_learned ? { label: "Lessons learned", value: task.lessons_learned } : null,
 				]}

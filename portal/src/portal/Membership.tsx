@@ -229,8 +229,8 @@ export default function Membership() {
 							/>
 						</h3>
 						<p className="mx-auto mt-2 max-w-[520px] text-[12.5px] leading-relaxed text-slate-body">
-							Choose a membership type and branch above. Each application appears here as its own
-							record — joining as a member is separate from volunteering, and you may do both.
+							Choose a membership type and branch above. Membership and volunteer registrations
+							are separate, and you may complete both.
 						</p>
 					</div>
 				) : (
@@ -582,7 +582,7 @@ function MembershipCard({ row, onChanged }: { row: MembershipRow; onChanged: () 
 						)}
 					</div>
 					<p className="mt-1.5 text-[12px] text-slate-body">
-						{branchPath(row.geo_path) || row.geo_node || "—"}
+						{branchPath(row.geo_path) || row.geo_node || "Not available"}
 					</p>
 				</div>
 

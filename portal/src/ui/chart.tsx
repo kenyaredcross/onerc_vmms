@@ -299,7 +299,7 @@ export function PairedColumnChart({
 						onMouseEnter={() => setHover(index)}
 						onFocus={() => setHover(index)}
 						onBlur={() => setHover(null)}
-						title={`${month.title ?? month.label} — ${labels.a} ${money(month.a)}, ${labels.b} ${money(month.b)}`}
+						title={`${month.title ?? month.label}: ${labels.a} ${money(month.a)}, ${labels.b} ${money(month.b)}`}
 					>
 						{mark(month.a, SERIES_IN, hover !== null && hover !== index)}
 						{mark(month.b, SERIES_OUT, hover !== null && hover !== index)}

@@ -178,7 +178,7 @@ describe("the task workflow", () => {
 		record();
 		fireEvent.click(screen.getByRole("tab", { name: /outcome/i }));
 
-		expect(screen.getByText(/you have offered this as done/i)).toBeTruthy();
+		expect(screen.getByText(/awaiting coordinator approval/i)).toBeTruthy();
 		expect(screen.queryByRole("button", { name: /submit for review/i })).toBeNull();
 	});
 

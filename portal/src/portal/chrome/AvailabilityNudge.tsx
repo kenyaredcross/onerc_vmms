@@ -42,7 +42,7 @@ export function AvailabilityNudge() {
 				onClose={() => setOpen(false)}
 				size="lg"
 				title="Your usual availability"
-				description="This is not a confirmed commitment — a coordinator still asks."
+				description="This is not a confirmed commitment. A coordinator will confirm availability."
 				footer={
 					<button
 						type="button"

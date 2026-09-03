@@ -165,20 +165,20 @@ export default function Dashboard() {
 						<div className="grid gap-3.5 sm:grid-cols-3">
 							<StatTile
 								label="Open tasks"
-								value={tasks.isLoading ? "—" : work.length}
+								value={tasks.isLoading ? "…" : work.length}
 								to="/tasks"
 								linkLabel="View tasks"
 							/>
 							<StatTile
 								label="Response needed"
-								value={invitations.isLoading ? "—" : waiting.length}
+								value={invitations.isLoading ? "…" : waiting.length}
 								to="/deployments"
 								linkLabel="Deployment requests"
 								urgent={waiting.length > 0}
 							/>
 							<StatTile
 								label="Verified service"
-								value={logs.isLoading ? "—" : `${formatHours(time?.total_hours ?? 0)}h`}
+								value={logs.isLoading ? "…" : `${formatHours(time?.total_hours ?? 0)}h`}
 								to="/hours"
 								linkLabel="View hours"
 							/>
@@ -608,7 +608,7 @@ function Focus({ request }: { request: DeploymentInvitation }) {
 		branchPath(request.geo_node) || request.geo_node || null,
 		request.start_date
 			? `${formatDate(request.start_date)}${
-					request.end_date ? ` – ${formatDate(request.end_date)}` : ""
+					request.end_date ? ` to ${formatDate(request.end_date)}` : ""
 				}`
 			: null,
 	].filter(Boolean);

@@ -110,7 +110,7 @@ export function FaqBody({ heading = true }: { heading?: boolean }) {
 			{!isLoading && !error && categories.length === 0 && (
 				<Empty title={search ? "Nothing matched that" : "No answers published yet"}>
 					{search
-						? "Try a different word, or ask your branch — they would rather be asked twice than not at all."
+						? "Try a different search term or contact your branch."
 						: "When the society publishes its answers, they appear here."}
 				</Empty>
 			)}

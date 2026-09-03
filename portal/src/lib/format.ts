@@ -9,10 +9,10 @@
 
 /** A date as a person reads it. Invalid or missing input renders as an em dash. */
 export function formatDate(value: string | null | undefined): string {
-	if (!value) return "—";
+	if (!value) return "Not available";
 
 	const date = new Date(value.length <= 10 ? `${value}T00:00:00` : value);
-	if (Number.isNaN(date.getTime())) return "—";
+	if (Number.isNaN(date.getTime())) return "Not available";
 
 	return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
@@ -90,7 +90,7 @@ export function formatMoney(
 	 */
 	cents = false,
 ): string {
-	if (amount === null || amount === undefined) return "—";
+	if (amount === null || amount === undefined) return "Not available";
 
 	if (currency) {
 		try {

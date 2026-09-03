@@ -140,7 +140,7 @@ function accessibleName(entry: CalEntry): string {
 		entry.meta,
 	]
 		.filter(Boolean)
-		.join(" — ");
+		.join(" · ");
 }
 
 export function CalendarGrid({

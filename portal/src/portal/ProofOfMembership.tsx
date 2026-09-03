@@ -156,7 +156,7 @@ export function ProofOfMembership({
 					<Held label="Membership" value={plan.membership_type_name} />
 					<Held
 						label="Runs for"
-						value={plan.is_lifetime ? "Lifetime" : plan.duration_days ? `${plan.duration_days} days` : "—"}
+						value={plan.is_lifetime ? "Lifetime" : plan.duration_days ? `${plan.duration_days} days` : "Not available"}
 					/>
 					<Held
 						label="Fee"
@@ -275,8 +275,8 @@ export function ProofOfMembership({
 			<section>
 				<h3 className="text-[13px] font-bold text-ink">The document itself</h3>
 				<p className="mt-1 text-[11.5px] leading-relaxed text-slate-body">
-					A receipt, a certificate, a membership card — a photograph of it is fine. Only your branch
-					can open it.
+					Upload a photograph of the receipt, certificate, or membership card. Only your branch
+					can access it.
 				</p>
 
 				<div className="mt-3">

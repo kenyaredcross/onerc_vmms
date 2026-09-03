@@ -310,7 +310,7 @@ function Detail({ entry }: { entry: CalEntry }) {
 	const dates =
 		entry.start === entry.end
 			? formatDate(entry.start)
-			: `${formatDate(entry.start)} – ${formatDate(entry.end)}`;
+			: `${formatDate(entry.start)} to ${formatDate(entry.end)}`;
 
 	return (
 		<div>

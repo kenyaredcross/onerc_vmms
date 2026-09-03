@@ -332,7 +332,7 @@ function Mission({ assignment }: { assignment: string }) {
 						{terms.itinerary.map((row, index) => (
 							<li key={index}>
 								<span className="font-semibold text-ink">
-									{row.activity_date ? formatDate(row.activity_date) : "—"}
+									{row.activity_date ? formatDate(row.activity_date) : "Not available"}
 								</span>
 								{row.activity_time ? ` ${row.activity_time.slice(0, 5)}` : ""} · {row.activity}
 								{row.person_responsible ? ` (${row.person_responsible})` : ""}
@@ -348,7 +348,7 @@ function Mission({ assignment }: { assignment: string }) {
 						{terms.stakeholders.map((row, index) => (
 							<li key={index}>
 								<span className="font-semibold text-ink">{row.designation}</span>
-								{row.full_name ? ` — ${row.full_name}` : ""}
+								{row.full_name ? `, ${row.full_name}` : ""}
 								{row.phone_number ? ` · ${row.phone_number}` : ""}
 							</li>
 						))}

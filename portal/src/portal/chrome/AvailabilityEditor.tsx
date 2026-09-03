@@ -104,8 +104,7 @@ export function AvailabilityEditor({
 	if (slots.length === 0) {
 		return (
 			<Empty framed={false} title="Your society has not set up its availability windows yet">
-				The windows you would tick — mornings, afternoons, evenings, whatever this society calls them —
-				are its own to name. Somebody at the branch sets them up, and this fills in once they have.
+				Availability options will appear after they are configured by your branch.
 			</Empty>
 		);
 	}
@@ -117,9 +116,8 @@ export function AvailabilityEditor({
 		<div className={compact ? "space-y-5" : "space-y-6"}>
 			<div>
 				<p className="text-[12.5px] leading-relaxed text-slate-strong">
-					Tick the windows you could usually be asked about. This is not a promise — a coordinator
-					still asks, and you still answer. Leaving it blank does not take you off anything; it means
-					nobody knows, and you are shown for deployments either way.
+					Select the times when you are usually available. A coordinator will confirm availability
+					for each assignment. Leaving this blank means your availability is unknown.
 				</p>
 
 				<div className="mt-4 overflow-x-auto">
@@ -139,7 +137,7 @@ export function AvailabilityEditor({
 										</span>
 										{slot.start_time && slot.end_time && (
 											<span className="block text-[10.5px] font-normal text-muted">
-												{slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
+											{slot.start_time.slice(0, 5)} to {slot.end_time.slice(0, 5)}
 											</span>
 										)}
 									</th>

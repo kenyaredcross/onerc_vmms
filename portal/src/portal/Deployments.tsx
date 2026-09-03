@@ -399,7 +399,7 @@ export function DeploymentRequest() {
 			await call.post(API.respondToAssignment, {
 				assignment,
 				accept: accept ? 1 : 0,
-				note: [accept ? null : reason, note].filter(Boolean).join(" — ") || undefined,
+				note: [accept ? null : reason, note].filter(Boolean).join(". ") || undefined,
 			});
 			toast(accept ? "You have accepted this deployment." : "Your answer has been sent.");
 			navigate("/deployments");
@@ -465,7 +465,7 @@ export function DeploymentRequest() {
 									branchPath(terms.geo_scope_path) ||
 									branchPath(deployment.geo_node) ||
 									deployment.geo_node ||
-									"—"
+									"Not available"
 								}
 							/>
 						</dl>
@@ -484,7 +484,7 @@ export function DeploymentRequest() {
 											label: "Reports to",
 											value: [coordinator.designation, coordinator.full_name]
 												.filter(Boolean)
-												.join(" — "),
+												.join(", "),
 										}
 									: null,
 								{
@@ -493,12 +493,12 @@ export function DeploymentRequest() {
 										branchPath(terms.geo_scope_path) ||
 										branchPath(deployment.geo_node) ||
 										deployment.geo_node ||
-										"—",
+										"Not available",
 								},
 								{
 									label: "Dates",
 									value: row.start_date
-										? (dateRange(row.start_date, row.end_date) ?? "—")
+										? (dateRange(row.start_date, row.end_date) ?? "Not available")
 										: "To be confirmed",
 								},
 							]}
@@ -875,7 +875,7 @@ export function DeploymentRecord() {
 										{terms.itinerary.map((entry, index) => (
 											<div key={index} className="flex flex-wrap gap-x-4 gap-y-1">
 												<dt className="w-[120px] flex-none text-[12px] font-semibold text-ink">
-													{entry.activity_date ? formatDate(entry.activity_date) : "—"}
+											{entry.activity_date ? formatDate(entry.activity_date) : "Not available"}
 												</dt>
 												<dd className="min-w-0 flex-1 text-[12.5px] text-slate-body">
 													{entry.activity}
@@ -971,7 +971,7 @@ export function DeploymentRecord() {
 									</span>
 									<span className="min-w-0 flex-1">
 										<strong className="block truncate text-[12.5px] font-semibold text-ink">
-											Terms of Reference — {terms.tor_name}
+											Terms of Reference: {terms.tor_name}
 										</strong>
 										<small className="block text-[11.5px] text-muted">{terms.tor_key}</small>
 									</span>
@@ -1053,7 +1053,7 @@ export function DeploymentRecord() {
 								{ label: "Dates", value: dateRange(start, end) ?? "Undated" },
 								{
 									label: "Location",
-									value: branchPath(row?.geo_path) || row?.geo_node || "—",
+									value: branchPath(row?.geo_path) || row?.geo_node || "Not available",
 								},
 								terms ? { label: "Terms of Reference", value: terms.tor_name } : null,
 								{
@@ -1150,7 +1150,7 @@ function MissionTerms({ terms }: { terms: TermsMission }) {
 						{terms.itinerary.map((row, i) => (
 							<li key={i}>
 								<span className="font-semibold text-ink">
-									{row.activity_date ? formatDate(row.activity_date) : "—"}
+									{row.activity_date ? formatDate(row.activity_date) : "Not available"}
 								</span>
 								{row.activity_time ? ` ${row.activity_time.slice(0, 5)}` : ""} · {row.activity}
 								{row.person_responsible ? ` (${row.person_responsible})` : ""}
@@ -1165,7 +1165,7 @@ function MissionTerms({ terms }: { terms: TermsMission }) {
 						{terms.stakeholders.map((row, i) => (
 							<li key={i}>
 								<span className="font-semibold text-ink">{row.designation}</span>
-								{row.full_name ? ` — ${row.full_name}` : ""}
+								{row.full_name ? `, ${row.full_name}` : ""}
 								{row.phone_number ? ` · ${row.phone_number}` : ""}
 							</li>
 						))}
@@ -1178,7 +1178,7 @@ function MissionTerms({ terms }: { terms: TermsMission }) {
 						{terms.resources.map((row, i) => (
 							<li key={i}>
 								{row.resource}
-								{row.quantity ? ` — ${row.quantity}${row.unit ? ` ${row.unit}` : ""}` : ""}
+								{row.quantity ? `: ${row.quantity}${row.unit ? ` ${row.unit}` : ""}` : ""}
 							</li>
 						))}
 					</ul>
@@ -1213,5 +1213,5 @@ function dayCount(from: string, to: string): number {
 function dateRange(from: string | null, to: string | null): string | null {
 	if (!from) return null;
 	if (!to || to === from) return formatDate(from);
-	return `${formatDate(from)} – ${formatDate(to)}`;
+	return `${formatDate(from)} to ${formatDate(to)}`;
 }

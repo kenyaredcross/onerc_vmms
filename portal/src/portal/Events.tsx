@@ -1248,7 +1248,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 		? `${row.start_time.slice(0, 5)}${row.end_time ? ` to ${row.end_time.slice(0, 5)}` : ""}`
 		: "";
 
-	const place = [row.venue, row.venue_address].filter(Boolean).join(" — ");
+	const place = [row.venue, row.venue_address].filter(Boolean).join(", ");
 
 	const calendar = () => {
 		const stamp = (date: string, clock: string) =>

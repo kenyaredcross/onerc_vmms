@@ -143,14 +143,14 @@ function Totals({ data, loading }: { data: MyTimeLogs | null; loading: boolean }
 			<div className={cx("grid gap-4 sm:grid-cols-2", kinds.length > 0 && "lg:col-span-2")}>
 				<StatTile
 					label="Hours logged"
-					value={loading ? "—" : hours(data?.total_hours ?? 0)}
+					value={loading ? "…" : hours(data?.total_hours ?? 0)}
 					hint="Across everything you have filed"
 					icon={Icon.clock}
 					tint="navy"
 				/>
 				<StatTile
 					label="Entries filed"
-					value={loading ? "—" : (data?.log_count ?? 0)}
+					value={loading ? "…" : (data?.log_count ?? 0)}
 					hint={
 						data?.recent[0]
 							? `Last on ${formatDate(data.recent[0].activity_date)}`

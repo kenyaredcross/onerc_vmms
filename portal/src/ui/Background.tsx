@@ -233,7 +233,7 @@ export function backgroundLines(
 
 	return [
 		...education.filter(rowIsUsable).map((row) => ({
-			label: "Studied",
+			label: "Education",
 			value: parts(
 				row.institution,
 				row.qualification,
@@ -241,11 +241,11 @@ export function backgroundLines(
 			),
 		})),
 		...training.filter(rowIsUsable).map((row) => ({
-			label: "Course",
+			label: "Training",
 			value: parts(row.course_name, row.institution),
 		})),
 		...experience.filter(rowIsUsable).map((row) => ({
-			label: "Experience",
+			label: "Work experience",
 			value: parts(row.role, row.organization),
 		})),
 		...licences.filter(rowIsUsable).map((row) => ({
@@ -253,14 +253,14 @@ export function backgroundLines(
 			value: parts(row.license_name, row.institution, row.registration_no),
 		})),
 		...drivingLicences.filter(rowIsUsable).map((row) => ({
-			label: "Driving",
+			label: "Driving licence",
 			value: parts(
 				row.licence_class ? labelOf(options?.driving_licence_classes, row.licence_class) : null,
 				row.licence_number,
 			),
 		})),
 		...references.filter(rowIsUsable).map((row) => ({
-			label: "Referee",
+			label: "Reference",
 			value: parts(row.reference_name, row.relationship || row.position),
 		})),
 	];
@@ -427,7 +427,7 @@ export const asYear = (value: string): number | null => {
  */
 export function BackgroundFields({
 	options,
-	lead = "Nothing on this screen is required. Fill in what you have and leave the rest.",
+	lead = "All fields in this section are optional.",
 	value,
 	onChange,
 }: {
@@ -473,34 +473,33 @@ export function BackgroundFields({
 
 	return (
 		<div className="space-y-9">
-			<FieldSet title="What you do" description={lead}>
+			<FieldSet title="Profession" description={lead}>
 				<div className="grid gap-5 sm:grid-cols-2">
 					<Field
 						label="Profession"
 						htmlFor="bg-profession"
-						hint="The nearest one. Your branch can be more specific later."
 					>
 						<VocabularySelect
 							id="bg-profession"
 							value={profession}
 							onChange={onProfession}
 							options={professions}
-							placeholder="Choose the closest"
+							placeholder="Select a profession"
 						/>
 					</Field>
 				</div>
 			</FieldSet>
 
 			<RowList
-				title="Where you studied"
-				description="School, college, university — whichever of them applies."
+				title="Education"
+				description="Add schools, colleges, or universities attended."
 				rows={education}
 				onRows={onEducation}
 				blank={blankEducation}
-				add="Add somewhere you studied"
+				add="Add education"
 				renderRow={(row, index, set, patch) => (
 					<>
-						<Field label="School or institution" required htmlFor={`ed-place-${index}`}>
+						<Field label="Institution" required htmlFor={`ed-place-${index}`}>
 							<TextInput
 								id={`ed-place-${index}`}
 								value={row.institution}
@@ -519,7 +518,7 @@ export function BackgroundFields({
 						</Field>
 
 						<Field
-							label="Qualification"
+							label="Qualification or certification"
 							htmlFor={`ed-qual-${index}`}
 							hint="As it is written on the certificate."
 						>
@@ -534,7 +533,7 @@ export function BackgroundFields({
 						    secondary school, and a date picker that insisted would be
 						    the control people abandon the form on. */}
 						<div className="grid grid-cols-2 gap-5">
-							<Field label="Started" htmlFor={`ed-from-${index}`}>
+							<Field label="Start year" htmlFor={`ed-from-${index}`}>
 								<TextInput
 									id={`ed-from-${index}`}
 									type="number"
@@ -545,7 +544,7 @@ export function BackgroundFields({
 								/>
 							</Field>
 
-							<Field label="Finished" htmlFor={`ed-to-${index}`}>
+							<Field label="End year" htmlFor={`ed-to-${index}`}>
 								<TextInput
 									id={`ed-to-${index}`}
 									type="number"
@@ -572,7 +571,7 @@ export function BackgroundFields({
 							/>
 						</div>
 
-						<Field label="Certificate" htmlFor={`ed-file-${index}`} hint="If you have a copy.">
+						<Field label="Certificate copy" htmlFor={`ed-file-${index}`}>
 							<PrivateUpload
 								id={`ed-file-${index}`}
 								value={row.attachment ?? ""}
@@ -586,7 +585,7 @@ export function BackgroundFields({
 
 			<RowList
 				title="Training and courses"
-				description="First aid, driving, safeguarding, anything you have been taught. We will not have checked any of it — a branch verifies what it needs to."
+				description="Add relevant training and completed courses."
 				rows={training}
 				onRows={onTraining}
 				blank={blankTraining}
@@ -601,7 +600,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="Run by" htmlFor={`tr-by-${index}`} hint="Who taught it.">
+						<Field label="Training provider" htmlFor={`tr-by-${index}`}>
 							<TextInput
 								id={`tr-by-${index}`}
 								value={row.institution}
@@ -627,7 +626,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="Anything to add" htmlFor={`tr-notes-${index}`}>
+						<Field label="Notes" htmlFor={`tr-notes-${index}`}>
 							<TextArea
 								id={`tr-notes-${index}`}
 								value={row.remarks}
@@ -636,7 +635,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="Certificate" htmlFor={`tr-file-${index}`} hint="If you have a copy.">
+						<Field label="Certificate copy" htmlFor={`tr-file-${index}`}>
 							<PrivateUpload
 								id={`tr-file-${index}`}
 								value={row.attachment ?? ""}
@@ -649,12 +648,12 @@ export function BackgroundFields({
 			/>
 
 			<RowList
-				title="What you have done"
-				description="Paid work or unpaid — volunteering counts, and for a great many people it is the part that matters most."
+				title="Work experience"
+				description="Add paid, unpaid, or volunteer work experience."
 				rows={experience}
 				onRows={onExperience}
 				blank={blankExperience}
-				add="Add something you have done"
+				add="Add work experience"
 				renderRow={(row, index, set, patch) => (
 					<>
 						<Field label="Organization" required htmlFor={`we-org-${index}`}>
@@ -665,12 +664,12 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="What you were" htmlFor={`we-role-${index}`}>
+						<Field label="Role or job title" htmlFor={`we-role-${index}`}>
 							<TextInput
 								id={`we-role-${index}`}
 								value={row.role}
 								onChange={(value) => set("role", value)}
-								placeholder="Your role there"
+								placeholder="Role or job title"
 							/>
 						</Field>
 
@@ -698,11 +697,11 @@ export function BackgroundFields({
 								id={`we-current-${index}`}
 								checked={row.is_current}
 								onChange={(on) => patch(on ? { is_current: true, ended_on: "" } : { is_current: false })}
-								label="I am still there"
+								label="I currently work here"
 							/>
 						</div>
 
-						<Field label="What you did" htmlFor={`we-what-${index}`}>
+						<Field label="Responsibilities" htmlFor={`we-what-${index}`}>
 							<TextArea
 								id={`we-what-${index}`}
 								value={row.summary}
@@ -716,24 +715,24 @@ export function BackgroundFields({
 
 			<RowList
 				title="Licences and registrations"
-				description="A nursing register, a professional body, a trade licence — anything you are formally registered to do."
+				description="Add professional licences, registrations, or certifications."
 				rows={licences}
 				onRows={onLicences}
 				blank={blankLicence}
 				add="Add a licence"
 				renderRow={(row, index, set, patch) => (
 					<>
-						<Field label="Kind" htmlFor={`lc-type-${index}`}>
+						<Field label="Licence type" htmlFor={`lc-type-${index}`}>
 							<VocabularySelect
 								id={`lc-type-${index}`}
 								value={row.license_type}
 								onChange={(value) => set("license_type", value)}
 								options={licenceTypes}
-								placeholder="Choose a kind"
+								placeholder="Select a type"
 							/>
 						</Field>
 
-						<Field label="What it is called" required htmlFor={`lc-name-${index}`}>
+						<Field label="Licence or registration name" required htmlFor={`lc-name-${index}`}>
 							<TextInput
 								id={`lc-name-${index}`}
 								value={row.license_name}
@@ -741,7 +740,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="Who issued it" htmlFor={`lc-issuer-${index}`}>
+						<Field label="Issuing authority" htmlFor={`lc-issuer-${index}`}>
 							<TextInput
 								id={`lc-issuer-${index}`}
 								value={row.institution}
@@ -783,11 +782,11 @@ export function BackgroundFields({
 								onChange={(on) =>
 									patch(on ? { does_not_expire: true, valid_to: "" } : { does_not_expire: false })
 								}
-								label="This one does not expire"
+								label="Does not expire"
 							/>
 						</div>
 
-						<Field label="A copy of it" htmlFor={`lc-file-${index}`} hint="If you have one.">
+						<Field label="Licence copy" htmlFor={`lc-file-${index}`}>
 							<PrivateUpload
 								id={`lc-file-${index}`}
 								value={row.attachment ?? ""}
@@ -800,8 +799,8 @@ export function BackgroundFields({
 			/>
 
 			<RowList
-				title="Driving licence"
-				description="One row per class. Holding a class here does not mean anybody will ask you to drive — that is a decision your branch makes."
+				title="Driving licences"
+				description="Add each driving licence class separately."
 				rows={drivingLicences}
 				onRows={onDrivingLicences}
 				blank={blankDrivingLicence}
@@ -835,7 +834,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="A copy of it" htmlFor={`dl-file-${index}`} hint="If you have one.">
+						<Field label="Licence copy" htmlFor={`dl-file-${index}`}>
 							<PrivateUpload
 								id={`dl-file-${index}`}
 								value={row.attachment ?? ""}
@@ -848,15 +847,15 @@ export function BackgroundFields({
 			/>
 
 			<RowList
-				title="Someone who would speak for you"
-				description="A referee, not an emergency contact — we ask for those separately, and we would not call a referee about an accident."
+				title="References"
+				description="Add professional references. Do not list emergency contacts here."
 				rows={references}
 				onRows={onReferences}
 				blank={blankReference}
 				add="Add a referee"
 				renderRow={(row, index, set) => (
 					<>
-						<Field label="Their name" required htmlFor={`rf-name-${index}`}>
+						<Field label="Name" required htmlFor={`rf-name-${index}`}>
 							<TextInput
 								id={`rf-name-${index}`}
 								value={row.reference_name}
@@ -864,7 +863,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="How they know you" htmlFor={`rf-rel-${index}`}>
+						<Field label="Relationship" htmlFor={`rf-rel-${index}`}>
 							<TextInput
 								id={`rf-rel-${index}`}
 								value={row.relationship}
@@ -873,7 +872,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="What they do" htmlFor={`rf-pos-${index}`}>
+						<Field label="Job title" htmlFor={`rf-pos-${index}`}>
 							<TextInput
 								id={`rf-pos-${index}`}
 								value={row.position}
@@ -881,7 +880,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="Where" htmlFor={`rf-org-${index}`}>
+						<Field label="Organization" htmlFor={`rf-org-${index}`}>
 							<TextInput
 								id={`rf-org-${index}`}
 								value={row.organization}
@@ -907,7 +906,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="Anything to add" htmlFor={`rf-notes-${index}`}>
+						<Field label="Notes" htmlFor={`rf-notes-${index}`}>
 							<TextArea
 								id={`rf-notes-${index}`}
 								value={row.notes}
@@ -921,4 +920,3 @@ export function BackgroundFields({
 		</div>
 	);
 }
-
