@@ -80,10 +80,10 @@ export function PersonHero({
 	const rows = (facts ?? []).filter((fact) => fact.value !== undefined && fact.value !== null && fact.value !== "");
 
 	return (
-		<Card className={cx("mb-5", className)}>
+		<Card className={cx("mb-5 overflow-hidden border-0 bg-rail text-white shadow-none", className)}>
 			<div
 				className={cx(
-					"grid gap-6",
+					"grid gap-6 p-5 sm:p-6",
 					// The facts panel takes slightly more room than the face, because
 					// it holds two columns of pairs and the face holds one name. Below
 					// `lg` they stack and the divider becomes a rule above, which is
@@ -95,12 +95,12 @@ export function PersonHero({
 					<Avatar name={name} photo={photo} size={84} ring />
 
 					<div className="min-w-0">
-						<h2 className="text-[21px] font-semibold leading-tight tracking-tight text-ink">
+						<h2 className="text-[22px] font-bold leading-tight tracking-tight text-white">
 							{name || docname || "Unnamed"}
 						</h2>
 
 						{subtitle && (
-							<p className="mt-1 text-[13px] leading-snug text-muted">{subtitle}</p>
+							<p className="mt-1 text-[13px] leading-snug text-white/65">{subtitle}</p>
 						)}
 
 						{(status || badges) && (
@@ -111,7 +111,7 @@ export function PersonHero({
 						)}
 
 						{docname && (
-							<p className="tabular mt-2 font-mono text-[11.5px] text-slate-faint">
+							<p className="tabular mt-2 font-mono text-[11.5px] text-white/55">
 								{docname}
 							</p>
 						)}
@@ -119,13 +119,13 @@ export function PersonHero({
 				</div>
 
 				{rows.length > 0 && (
-					<dl className="grid content-start gap-x-8 gap-y-3 border-t border-card-line pt-5 sm:grid-cols-2 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+					<dl className="grid content-start gap-x-8 gap-y-4 border-t border-white/15 pt-5 sm:grid-cols-2 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
 						{rows.map((fact) => (
 							<div key={fact.label} className="flex items-baseline gap-2">
-								<dt className="w-[96px] flex-none text-[11.5px] leading-snug text-slate-faint">
+								<dt className="w-[96px] flex-none text-[10px] font-semibold uppercase tracking-wide leading-snug text-white/45">
 									{fact.label}
 								</dt>
-								<dd className="min-w-0 break-words text-[13px] font-semibold leading-snug text-ink">
+								<dd className="min-w-0 break-words text-[13px] font-semibold leading-snug text-white">
 									{fact.value}
 								</dd>
 							</div>
@@ -135,7 +135,7 @@ export function PersonHero({
 			</div>
 
 			{actions && (
-				<div className="mt-5 flex flex-wrap gap-2 border-t border-card-line pt-5">{actions}</div>
+				<div className="flex flex-wrap gap-2 border-t border-white/15 bg-white/[.04] px-5 py-4 sm:px-6">{actions}</div>
 			)}
 		</Card>
 	);
@@ -175,14 +175,14 @@ export function RegisterLinks({ registers, except }: { registers?: Registers; ex
 				<Link
 					key={entry.kind}
 					to={`/admin/registry/${entry.kind}/${encodeURIComponent(entry.name)}`}
-					className="inline-flex items-center gap-1.5 rounded-full border border-blue/20 bg-rail/[.05] px-3 py-1 text-[11.5px] font-bold text-ink transition hover:border-blue hover:bg-rail/10"
+					className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11.5px] font-bold text-white transition hover:border-white/40 hover:bg-white/15"
 				>
 					Also a {entry.label.toLowerCase()}
 					{/* The other register's own status word, passed through. It is a
 					    different vocabulary from this page's and is never compared
 					    with it — see `api/person.py`. */}
 					{entry.status && (
-						<span className="font-semibold text-ink/70">· {entry.status}</span>
+						<span className="font-semibold text-white/65">· {entry.status}</span>
 					)}
 				</Link>
 			))}

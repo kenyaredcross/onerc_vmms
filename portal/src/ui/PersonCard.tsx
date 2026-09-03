@@ -187,7 +187,7 @@ export function PersonCard({
 					aria-label="Person summary"
 					style={{ width }}
 					className={cx(
-						"absolute z-40 rounded-xl border border-card-line bg-white p-4 text-left shadow-[0_18px_45px_rgba(16,32,51,0.16)]",
+						"absolute z-40 overflow-hidden rounded-2xl border border-card-line bg-white p-0 text-left shadow-[0_20px_50px_rgba(1,30,65,0.22)]",
 						place.above ? "bottom-full mb-1.5" : "top-full mt-1.5",
 						place.right ? "right-0" : "left-0",
 						cardClassName,
@@ -249,18 +249,18 @@ export function PersonSummaryBody({
 }) {
 	return (
 		<>
-			<div className="flex items-start gap-3">
+			<div className="flex items-start gap-3 bg-rail px-4 py-4 text-white">
 				<CardAvatar name={name} photo={photo} />
 
 				<div className="min-w-0 flex-1">
-					<div className="truncate text-[13.5px] font-semibold text-ink">{name}</div>
-					{place && <div className="mt-0.5 truncate text-[11.5px] text-muted">{place}</div>}
+					<div className="truncate text-[14px] font-bold text-white">{name}</div>
+					{place && <div className="mt-0.5 truncate text-[11.5px] text-white/60">{place}</div>}
 					{status && <div className="mt-1.5">{status}</div>}
 				</div>
 			</div>
 
 			{(phone || email) && (
-				<div className="mt-3 flex flex-wrap gap-1.5">
+				<div className="flex flex-wrap gap-1.5 border-b border-card-line px-4 py-3">
 					{phone && (
 						<CardAction href={`tel:${phone}`} label={`Call ${name}`}>
 							Call
@@ -275,9 +275,9 @@ export function PersonSummaryBody({
 			)}
 
 			{error ? (
-				<p className="mt-3 border-t border-card-line pt-3 text-[11.5px] text-muted">{error}</p>
+				<p className="px-4 py-3 text-[11.5px] text-muted">{error}</p>
 			) : (
-				<dl className="mt-3 space-y-1.5 border-t border-card-line pt-3">
+				<dl className="space-y-2 px-4 py-3">
 					{facts.map((fact) => (
 						<div key={fact.label} className="flex items-baseline justify-between gap-3">
 							<dt className="flex-none text-[11.5px] text-muted">{fact.label}</dt>
@@ -285,7 +285,7 @@ export function PersonSummaryBody({
 								{/* A dash, not a blank: see the note above on absent. While
 								    the read is still in flight it is an ellipsis instead, so
 								    "not known" and "not arrived yet" do not look alike. */}
-								{fact.value ?? (loading ? "…" : "—")}
+								{fact.value ?? (loading ? "…" : "Not available")}
 							</dd>
 						</div>
 					))}
@@ -294,7 +294,7 @@ export function PersonSummaryBody({
 
 			<a
 				href={open.to}
-				className="mt-3 block border-t border-card-line pt-3 text-[12px] font-semibold text-blue-press hover:underline"
+				className="block border-t border-card-line bg-surface px-4 py-3 text-[12px] font-bold text-blue-press hover:bg-blue-soft"
 			>
 				{open.label} →
 			</a>

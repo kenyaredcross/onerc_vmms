@@ -62,6 +62,9 @@ import type {
  * theirs does not — the pencil.
  */
 export default function Profile() {
+	const [tab, setTab] = useState<"overview" | "background" | "certifications" | "card">(
+		"overview",
+	);
 	const volunteer = useFrappeGetCall<{ message: VolunteerProfile | null }>(
 		API.myVolunteer,
 		undefined,
@@ -127,11 +130,11 @@ export default function Profile() {
 						held && (
 							<Link
 								to="/membership"
-								className="inline-flex items-center gap-1.5 rounded-full border border-blue/20 bg-rail/[.05] px-3 py-1 text-[11.5px] font-bold text-ink transition hover:border-blue hover:bg-rail/10"
+								className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11.5px] font-bold text-white transition hover:border-white/40 hover:bg-white/15"
 							>
 								Also a member
 								{held.membership_type_name && (
-									<span className="font-semibold text-ink/70">
+									<span className="font-semibold text-white/65">
 										· {held.membership_type_name}
 									</span>
 								)}
@@ -148,7 +151,34 @@ export default function Profile() {
 			)}
 
 			{profile && (
-				<div className="grid items-start gap-6 lg:grid-cols-3">
+				<>
+					<div className="mb-5 overflow-x-auto rounded-xl bg-surface p-1" role="tablist">
+						<div className="flex min-w-max gap-1">
+							{([
+								["overview", "Overview"],
+								["background", "Education & experience"],
+								["certifications", "Certifications"],
+								["card", "Volunteer card"],
+							] as const).map(([key, label]) => (
+								<button
+									key={key}
+									type="button"
+									role="tab"
+									aria-selected={tab === key}
+									onClick={() => setTab(key)}
+									className={`rounded-lg px-4 py-2.5 text-[12px] font-bold transition ${
+										tab === key
+											? "bg-white text-ink shadow-sm"
+											: "text-muted hover:bg-white/60 hover:text-ink"
+									}`}
+								>
+									{label}
+								</button>
+							))}
+						</div>
+					</div>
+
+					{tab === "overview" && <div className="grid items-start gap-6 lg:grid-cols-3">
 					<div className="lg:col-span-1">
 						<IdentityCard
 							profile={profile}
@@ -160,15 +190,17 @@ export default function Profile() {
 						/>
 					</div>
 					<div className="space-y-6 lg:col-span-2">
-						<HolderCard kind="volunteer" />
 						<PlacementCard profile={profile} />
-						<BackgroundCard
-							person={person.data?.message ?? null}
-							onSaved={() => void person.mutate()}
-						/>
-						<CertificationsCard rows={certs} loading={training.isLoading} />
 					</div>
-				</div>
+					</div>}
+
+					{tab === "background" && <BackgroundCard
+						person={person.data?.message ?? null}
+						onSaved={() => void person.mutate()}
+					/>}
+					{tab === "certifications" && <CertificationsCard rows={certs} loading={training.isLoading} />}
+					{tab === "card" && <HolderCard kind="volunteer" />}
+				</>
 			)}
 		</>
 	);
@@ -569,7 +601,7 @@ function Line({
 						<Icon.lock size={11} />
 					</span>
 				)}
-				<span className="min-w-0 truncate">{value || "—"}</span>
+				<span className="min-w-0 truncate">{value || "Not provided"}</span>
 			</dd>
 		</div>
 	);
@@ -593,7 +625,7 @@ function Block({ label, value }: { label: string; value: string | null }) {
 	return (
 		<div>
 			<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">{label}</dt>
-			<dd className="mt-1.5 text-[13.5px] text-ink">{value || "—"}</dd>
+			<dd className="mt-1.5 text-[13.5px] text-ink">{value || "Not provided"}</dd>
 		</div>
 	);
 }
@@ -672,7 +704,7 @@ function BackgroundCard({
 
 	return (
 		<Card>
-			<SectionTitle>What you have already done</SectionTitle>
+			<SectionTitle>Education and experience</SectionTitle>
 
 			{!person ? (
 				<p className="mt-4 text-[12.5px] leading-relaxed text-slate-faint">
@@ -684,7 +716,7 @@ function BackgroundCard({
 
 					<BackgroundFields
 						options={options}
-						lead="None of this is required. Fill in what you have and leave the rest."
+						lead="All fields in this section are optional."
 						value={draft}
 						onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))}
 					/>
@@ -705,8 +737,7 @@ function BackgroundCard({
 						// Nobody was ever obliged to fill this in, so the absence is
 						// an invitation rather than a gap.
 						<p className="mt-4 text-[12.5px] leading-relaxed text-slate-faint">
-							You have not told us about any study, training, work or licences yet. Adding them
-							helps your branch know what you could be asked to do.
+							No education, training, work experience, or licences have been added.
 						</p>
 					) : (
 						<dl className="mt-5 space-y-4 border-t border-card-line pt-5">
@@ -719,11 +750,10 @@ function BackgroundCard({
 
 					<div className="mt-5 border-t border-card-line pt-4">
 						<Button variant="quiet" onClick={start}>
-							{lines.length === 0 && !held.profession ? "Add these details" : "Update these details"}
+							{lines.length === 0 && !held.profession ? "Add details" : "Update details"}
 						</Button>
 						<p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-faint">
-							These belong to your person record. Nobody has checked any of it — a branch
-							verifies what it needs to before asking you to do something that depends on it.
+							Your branch will verify qualifications when required.
 						</p>
 					</div>
 				</>
