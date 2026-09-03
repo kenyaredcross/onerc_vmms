@@ -202,6 +202,110 @@ def _chosen_method(membership) -> str | None:
 	return methods.default()
 
 
+def confirm_in_person(membership, receipt: str | None = None) -> dict:
+	"""Record a fee that was handed over at a counter. The society's own act.
+
+	**This is not a second way to activate a membership.** It confirms the
+	*payment*, through the payments app, exactly as a gateway callback would;
+	activation is then re-derived by `membership.on_update` asking whether this
+	membership's configuration is satisfied — which is why a fee confirmed
+	before an approver has looked leaves the membership waiting for one. There
+	is deliberately no endpoint anywhere in this app that sets a membership
+	Active, and this is not it. See `api/member.py`, whose comment above
+	`cancel_membership` says the same thing from the other side.
+
+	**It goes through the payments app and records nothing itself.** Writing
+	`paid_on` here would be this module deciding money had changed hands, which
+	is precisely what MEM-01 forbids: the manual driver marks its transaction
+	Completed, writes its own Manual Payment detail row naming who confirmed it,
+	and calls back into `on_payment_confirmed`. So a fee taken in cash leaves
+	the same trail as one taken by phone, and `settlement()` reads both the same
+	way.
+
+	**Only the in-person gateway, and that is a boundary rather than a
+	shortfall.** A mobile money transaction resolves itself — a callback, or the
+	status poll behind it — and a person pressing confirm on one would be
+	asserting that a gateway they cannot see has taken money. The manual driver
+	exists precisely because somebody at a branch *did* see it. A transaction on
+	any other gateway is refused here and says why.
+
+	Idempotent from the caller's point of view: a fee already settled is
+	reported as settled rather than confirmed a second time, because the driver
+	itself refuses anything that is not still Pending.
+	"""
+	from vmmsx.member.services import membership as membership_service
+	from vmmsx.member.services import methods
+
+	membership_type = membership_service.type_of(membership)
+
+	if membership_service.is_proof(membership):
+		frappe.throw(
+			_(
+				"This membership was accepted on proof that the fee was already paid, so there"
+				" is no payment to record against it."
+			),
+			frappe.ValidationError,
+			title=_("Nothing To Record"),
+		)
+
+	if not is_payable(membership_type):
+		frappe.throw(
+			_("{0} costs nothing, so there is no fee to record.").format(
+				frappe.bold(membership_type.membership_type_name)
+			),
+			frappe.ValidationError,
+			title=_("Nothing To Record"),
+		)
+
+	if is_settled(membership, membership_type):
+		return {"confirmed": False, "reason": "already_settled", **settlement(membership, membership_type)}
+
+	assert_available(f"{membership.doctype} {membership.name}")
+
+	if not membership.payment_transaction:
+		frappe.throw(
+			_(
+				"No payment was ever requested for this membership, so there is nothing to"
+				" confirm. It has to be asked for before it can be recorded."
+			),
+			frappe.ValidationError,
+			title=_("No Payment Requested"),
+		)
+
+	gateway = frappe.db.get_value(
+		"OneRC Payment Transaction",
+		membership.payment_transaction,
+		"gateway",
+		# The same narrow read `_transaction_picture` makes, for the same
+		# reason: the caller has already been admitted to this membership, and
+		# the transaction is looked up by the reference the membership itself
+		# stores.
+	)
+
+	if gateway != methods.MANUAL:
+		frappe.throw(
+			_(
+				"This fee was requested through {0}, which confirms its own payments. Only a"
+				" payment taken in person is recorded by hand."
+			).format(frappe.bold(gateway or _("another gateway"))),
+			frappe.ValidationError,
+			title=_("Not Recorded By Hand"),
+		)
+
+	from onerc_payments.gateways.manual import confirm_payment
+
+	confirm_payment(membership.payment_transaction, (receipt or "").strip())
+
+	# Reloaded rather than trusted. `_notify_source_app` swallows whatever the
+	# source document's handler raises, so the driver reporting success is not
+	# by itself evidence that this membership recorded anything — and a screen
+	# saying "recorded" over a membership that still says Awaiting Payment is
+	# the one outcome worth spending a read to rule out.
+	membership.reload()
+
+	return {"confirmed": True, "reason": None, **settlement(membership, membership_type)}
+
+
 def record_confirmation(membership, amount=None, receipt=None, transaction_id=None) -> bool:
 	"""Record that the fee was paid. Returns whether anything changed.
 

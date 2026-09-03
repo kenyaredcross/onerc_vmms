@@ -711,6 +711,15 @@ export interface PaymentMethod {
 	description: string;
 	/** What the society wants an applicant told before they choose this. */
 	instructions: string;
+	/**
+	 * Whether paying this way means handing money to somebody at an office.
+	 *
+	 * The one method that can say *where*, so it is the one the form names the
+	 * chosen branch on. A flag rather than a gateway name because no screen
+	 * should carry a list of which gateways are counters and which are phones —
+	 * `member/services/methods.py` answers it once.
+	 */
+	in_person: boolean;
 }
 
 export interface PricedType {
@@ -1770,6 +1779,13 @@ export interface MembershipReview {
 	proof_attachment: string | null;
 	membership_source: string | null;
 	answers: SocietyAnswer[];
+	/**
+	 * Whether this reader may act on the membership — record its fee, cancel it
+	 * — as opposed to decide it. `api/member.py::get_review` reads through the
+	 * permission helper that admits the holder, so this is what keeps the
+	 * office's controls off a member's own view of their review.
+	 */
+	can_act: boolean;
 }
 
 /* -------------------------------------------------------- notifications */

@@ -780,6 +780,25 @@ function JoinBody() {
 	const chosenType = priced.find((row) => row.membership_type === membershipType) ?? null;
 
 	/**
+	 * Start on the society's first method, so the step opens answered.
+	 *
+	 * The order is the society's statement of what it would rather people used —
+	 * `methods.default()` reads the same first row on the server — and where
+	 * there is only one, preselecting is what turns a screen with a single
+	 * radio on it into a sentence telling somebody how they will pay.
+	 *
+	 * **Never overwrites an answer.** The functional form is load-bearing: a
+	 * resumed draft's remembered method arrives from its own effect and may land
+	 * either side of this one, and a default that clobbered it would quietly
+	 * change how somebody had already said they would pay.
+	 */
+	const defaultMethod = paymentMethods[0]?.gateway ?? "";
+
+	useEffect(() => {
+		if (defaultMethod) setPaymentMethod((current) => current || defaultMethod);
+	}, [defaultMethod]);
+
+	/**
 	 * A `type` that names nothing puts the step back.
 	 *
 	 * The docname arrives in a URL, and a URL can be stale, hand-typed, or point
@@ -904,6 +923,24 @@ function JoinBody() {
 	const node = selectedNode(servingChain, allowedLevels);
 
 	/**
+	 * How the review page names the way this person is going to pay.
+	 *
+	 * The society's label, with the chosen office appended where the method is
+	 * one paid at an office: "Pay at a branch office" answers the wrong half of
+	 * the question on a page whose whole job is letting somebody check what they
+	 * are about to send. Null where nothing is chosen or no fee is due, which is
+	 * what keeps the row off the review entirely.
+	 */
+	const paymentLabel = useMemo(() => {
+		const method = paymentMethods.find((row) => row.gateway === paymentMethod);
+
+		if (!method) return null;
+		if (!method.in_person || !node?.label) return method.label;
+
+		return `${method.label}, ${node.label}`;
+	}, [paymentMethods, paymentMethod, node]);
+
+	/**
 	 * Where this person lives, which this wizard no longer asks and still has to
 	 * send: `assert_ready` wants one complete residence shape before it will
 	 * accept a submission.
@@ -982,16 +1019,22 @@ function JoinBody() {
 	}, [minorAge, age]);
 
 	/**
-	 * Is there a fee to collect, and a choice to make about how?
+	 * Is there a fee to collect, and therefore something to say about paying it?
 	 *
-	 * Both halves, and both are needed. A free membership has nothing to pay, so
-	 * asking how would be a form collecting an answer nobody will use. A society
-	 * with one way of paying has nothing to choose between, so the step would be
-	 * a screen with a single option on it — the server falls back to that
-	 * society's own first method anyway, which is the same answer without the
-	 * page.
+	 * A free membership has nothing to pay, so the step would be a form
+	 * collecting an answer nobody will use. Anything else gets the step.
+	 *
+	 * **A single method still earns the page, which is a reversal.** It used to
+	 * take two or more, on the argument that one option is not a choice and the
+	 * server falls back to it anyway. True about the *choosing* and wrong about
+	 * the screen: the one method every society has is paying at a branch, and
+	 * the thing somebody needs to be told is not which method to pick but that
+	 * they will be paying in person and at which office. Hiding the step meant
+	 * the applicant most likely to walk into a building was the only one never
+	 * told to. It reads as a statement when there is one method and as a
+	 * question when there are several.
 	 */
-	const asksHowToPay = Boolean(chosenType && !chosenType.free && paymentMethods.length > 1);
+	const asksHowToPay = Boolean(chosenType && !chosenType.free && paymentMethods.length > 0);
 
 	const steps = useMemo(
 		() => stepsFor(path, declared, questions, declarations, planPreselected, asksHowToPay),
@@ -1602,12 +1645,12 @@ function JoinBody() {
 												selected={paymentMethod}
 												onSelect={setPaymentMethod}
 												type={chosenType}
+												branch={node?.label ?? null}
 											/>
 										)}
 
 										{step.id === "placement" && (
 											<PlacementStep
-												path={path}
 												chain={servingChain}
 												onChain={setServingChain}
 												allowedLevels={allowedLevels}
@@ -1713,10 +1756,7 @@ function JoinBody() {
 													profession: background.profession || null,
 													rows: backgroundLines(identityOptions.data?.message, background),
 												}}
-												paymentLabel={
-													paymentMethods.find((row) => row.gateway === paymentMethod)?.label ??
-													null
-												}
+												paymentLabel={paymentLabel}
 												identifications={usableIdentifications.map((row) => ({
 													label:
 														options?.id_types.find((entry) => entry.key === row.id_type)
@@ -1896,20 +1936,19 @@ function stepsFor(
 	const shared: Record<"path" | "identity" | "questions" | "consents" | "confirm", StepDef> = {
 		path: {
 			id: "path",
-			rail: "Your path",
+			rail: "Registration type",
 			eyebrow: "Registration",
-			title: "What are you here to do?",
-			blurb: "Both start the same way, and you can change your mind on the next step.",
+			title: "Registration type",
+			blurb: "Select how you would like to register.",
 			needs: "",
 		},
 		identity: {
 			id: "identity",
-			rail: "About you",
+			rail: "Personal details",
 			eyebrow: "",
-			title: "About you",
-			blurb:
-				"What your account already knows is filled in. Correct anything that has changed.",
-			needs: "A first and last name are needed",
+			title: "Personal details",
+			blurb: "Review and update your personal information.",
+			needs: "Enter your first and last name",
 		},
 		/**
 		 * The society's own step, and the only one whose *content* is not in this
@@ -1921,11 +1960,11 @@ function stepsFor(
 		 */
 		questions: {
 			id: "questions",
-			rail: "Their questions",
+			rail: "Additional questions",
 			eyebrow: "",
-			title: "What this organization asks",
-			blurb: "Questions this organization asks every applicant, set by its own branches.",
-			needs: "Answer everything marked required",
+			title: "Additional questions",
+			blurb: "Complete the questions below.",
+			needs: "Complete all required questions",
 		},
 		/**
 		 * What the applicant agrees to, drawn from `VMMS Declaration` and not
@@ -1938,18 +1977,18 @@ function stepsFor(
 		 */
 		consents: {
 			id: "consents",
-			rail: "What you agree to",
+			rail: "Declarations",
 			eyebrow: "",
-			title: "Before you send this",
-			blurb: "Read each one. What you accept is recorded against the version shown.",
-			needs: "Accept everything marked required",
+			title: "Declarations and consent",
+			blurb: "Review each declaration and accept all required items.",
+			needs: "Accept all required declarations",
 		},
 		confirm: {
 			id: "confirm",
 			rail: "Check and submit",
 			eyebrow: "Last step",
 			title: "Check and submit",
-			blurb: "Nothing is sent until you press submit. Anything here can still be changed.",
+			blurb: "Review your information before submitting.",
 			needs: "",
 		},
 	};
@@ -1961,28 +2000,28 @@ function stepsFor(
 					shared.identity,
 					{
 						id: "plan",
-						rail: "Your plan",
+						rail: "Membership type",
 						eyebrow: "",
-						title: "Choose your membership",
-						blurb: "What you pay and what it covers. You can change this before you submit.",
+						title: "Membership type",
+						blurb: "Select a membership type.",
 						needs: "Choose a membership type",
 					},
 					{
 						id: "payment",
-						rail: "How you'll pay",
+						rail: "Payment method",
 						eyebrow: "",
-						title: "How would you like to pay?",
+						title: "Payment method",
 						blurb:
-							"Nothing is taken now. We ask for the fee once your application has been sent.",
-						needs: "Choose how you would like to pay",
+							"Select a payment method. Payment is requested after submission.",
+						needs: "Select a payment method",
 					},
 					{
 						id: "placement",
-						rail: "Your branch",
+						rail: "Branch",
 						eyebrow: "",
-						title: "Which branch are you joining through?",
-						blurb: "The branch you choose holds your membership and reviews this application.",
-						needs: "Choose a branch",
+						title: "Branch",
+						blurb: "Select the branch that will manage your membership.",
+						needs: "Select a branch",
 					},
 					shared.questions,
 					// A membership can carry declarations too, and the filter below
@@ -1997,35 +2036,35 @@ function stepsFor(
 					shared.identity,
 					{
 						id: "placement",
-						rail: "Where you'd volunteer",
+						rail: "Volunteer location",
 						eyebrow: "",
-						title: "Where would you volunteer?",
-						blurb: "Where you serve decides who reviews this and who you hear from.",
-						needs: "Choose a branch or area",
+						title: "Volunteer location",
+						blurb: "Select the branch or area where you would like to volunteer.",
+						needs: "Select a branch or area",
 					},
 					{
 						id: "identification",
 						rail: "Identification",
 						eyebrow: "",
 						title: "Identification",
-						blurb: "One government identification, so your branch can confirm who you are.",
-						needs: "An ID type and number are needed",
+						blurb: "Provide your government identification details.",
+						needs: "Enter an ID type and number",
 					},
 					{
 						id: "declaration",
-						rail: "Your volunteering",
+						rail: "Volunteer details",
 						eyebrow: "",
-						title: "About your volunteering",
-						blurb: "What you can do and when. This is what your branch matches you against.",
+						title: "Volunteer details",
+						blurb: "Add your skills, languages, availability, and motivation.",
 						needs: "",
 					},
 					{
 						id: "background",
-						rail: "What you've done",
+						rail: "Education and experience",
 						eyebrow: "",
-						title: "What you have already done",
+						title: "Education and experience",
 						blurb:
-							"Study, training, work, licences, and anyone who would speak for you. Every part of this is optional — fill in what you have and skip the rest.",
+							"Add your education, training, work experience, licences, and references. All fields are optional.",
 						// No `needs`, and there is nothing to put in one. The rail's
 						// amber note names what a step is waiting for, and this step
 						// waits for nothing: `complete("background")` is always true.
@@ -2033,10 +2072,10 @@ function stepsFor(
 					},
 					{
 						id: "emergency",
-						rail: "In an emergency",
+						rail: "Emergency contact",
 						eyebrow: "",
-						title: "If something happens",
-						blurb: "Somebody we can reach while you are on duty. Only your branch sees this.",
+						title: "Emergency contact",
+						blurb: "Add a person to contact in an emergency. This information is visible only to your branch.",
 						needs: "",
 					},
 					shared.questions,
@@ -2164,7 +2203,7 @@ function Rail({
 						Your application
 					</p>
 					<h2 className="mt-1.5 font-display text-[17px] font-bold leading-tight text-white">
-						{steps.length} short steps
+						{steps.length} steps
 					</h2>
 					<span className="mt-2 block text-[10px] leading-[1.45] text-white/60">
 						Your draft is saved whenever you move to another step.
@@ -2275,7 +2314,7 @@ function Summary({
 							)}
 							title={value ?? undefined}
 						>
-							{value ?? "—"}
+							{value ?? "Not provided"}
 						</dd>
 					</div>
 				))}
@@ -2300,8 +2339,7 @@ function ChoosePathFirst({ onChoose }: { onChoose: (path: Path) => void }) {
 				How would you like to join?
 			</h1>
 			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
-				Choose a path first. We will keep your choice through account creation and bring you back
-				to the right registration.
+				Select a registration type.
 			</p>
 
 			<div
@@ -2314,14 +2352,14 @@ function ChoosePathFirst({ onChoose }: { onChoose: (path: Path) => void }) {
 					onSelect={() => onChoose("volunteer")}
 					icon={<Icon.people size={20} />}
 					title="Volunteer"
-					body="Give time and skills. Your branch verifies your record before you can take part in volunteer work."
+					body="Apply to volunteer through a branch."
 				/>
 				<ChoiceCard
 					selected={false}
 					onSelect={() => onChoose("member")}
 					icon={<Icon.card size={20} />}
 					title="Member"
-					body="Join the Society formally. Membership carries a place on the register and may carry a fee."
+					body="Apply for Society membership. A membership fee may apply."
 				/>
 			</div>
 		</Card>
@@ -2354,8 +2392,7 @@ function SignInFirst({ path }: { path: Path }) {
 				Sign in to continue
 			</h1>
 			<p className="mt-2.5 max-w-lg text-[13.5px] leading-relaxed text-muted">
-				You chose to register as {volunteering ? "a volunteer" : "a member"}. Sign in and you
-				will come straight back to this registration.
+				Sign in to continue your {volunteering ? "volunteer" : "membership"} registration.
 			</p>
 			{/* Said plainly, because it is the step people are surprised by. Creating
 			    an account does not sign anybody in: Frappe mails a link to set a
@@ -2364,8 +2401,7 @@ function SignInFirst({ path }: { path: Path }) {
 				    somebody to their inbox was the reason that felt like being thrown
 				    out. `signupUrl` is what makes the sentence below true. */}
 			<p className="mb-6 mt-3 max-w-lg text-[12.5px] leading-relaxed text-muted">
-				New here? Creating an account sends you an email to set your password. Open that link and
-				you will return to your {volunteering ? "volunteer" : "member"} registration.
+				New users will receive an email to set a password after creating an account.
 			</p>
 			<div className="flex flex-wrap gap-2.5">
 				<a
@@ -2398,14 +2434,14 @@ function PathStep({ path, onChange }: { path: Path; onChange: (p: Path) => void 
 				onSelect={() => onChange("volunteer")}
 				icon={<Icon.people size={20} />}
 				title="Volunteer"
-				body="Give time and skills. Your branch verifies your record, then you can be deployed and log the hours you give."
+				body="Apply to volunteer through a branch."
 			/>
 			<ChoiceCard
 				selected={path === "member"}
 				onSelect={() => onChange("member")}
 				icon={<Icon.card size={20} />}
 				title="Member"
-				body="Join the Society formally. Membership carries a certificate and a place on the register, and may carry a fee."
+				body="Apply for Society membership. A membership fee may apply."
 			/>
 		</div>
 	);
@@ -2528,7 +2564,7 @@ function IdentityStep({
 					<TextInput id="join-last" value={lastName} onChange={onLastName} />
 				</Field>
 
-				<Field label="Phone" htmlFor="join-phone" hint="The number we reach you on.">
+				<Field label="Phone number" htmlFor="join-phone">
 					<TextInput
 						id="join-phone"
 						type="tel"
@@ -2538,7 +2574,7 @@ function IdentityStep({
 					/>
 				</Field>
 
-				<Field label="Email" hint="The account you signed in with.">
+				<Field label="Email" hint="From your account">
 					{/* Never an input, on either path. The login is the identity: a
 					    form field here would let anybody claim anybody's record, and
 					    `update_my_profile` does not accept one for the same reason. */}
@@ -2566,7 +2602,7 @@ function IdentityStep({
 					htmlFor="join-dob"
 					hint={
 						path === "volunteer"
-							? "Needed for safeguarding, and to know what you can be asked to do."
+							? "Required for safeguarding and eligibility checks."
 							: undefined
 					}
 				>
@@ -2606,8 +2642,8 @@ function IdentityStep({
 			    anywhere, and a membership does not turn on it. */}
 			{path === "volunteer" && (
 				<FieldSet
-					title="Access and support"
-					description="So your branch knows what to arrange. Answering is required; saying more is not."
+					title="Disability and support requirements"
+					description="Provide any information needed to arrange appropriate support."
 				>
 					<div className="grid gap-5 sm:grid-cols-2">
 						<Field label="Do you have a disability?" required htmlFor="join-disability">
@@ -2625,9 +2661,9 @@ function IdentityStep({
 						    "Prefer not to say" it is a form arguing with somebody. */}
 						{disability === DISABILITY_DISCLOSED && (
 							<Field
-								label="Anything that would help"
+								label="Support requirements"
 								htmlFor="join-disability-needs"
-								hint="Access, equipment, the kind of task. Optional — leave it blank and your branch will ask."
+								hint="Optional"
 							>
 								<TextArea
 									id="join-disability-needs"
@@ -2657,7 +2693,7 @@ function IdentityStep({
 						<div className="mt-5">
 							<MultiCombo
 								id="join-disabilities"
-								label="Which ones, if you would like to say"
+								label="Disability type"
 								options={disabilityOptions}
 								selected={disabilities}
 								onToggle={(key) =>
@@ -2667,7 +2703,7 @@ function IdentityStep({
 											: [...disabilities, key],
 									)
 								}
-								placeholder="Type to search…"
+								placeholder="Search disability types"
 								empty="This society has not configured a list to choose from."
 							/>
 						</div>
@@ -2727,7 +2763,7 @@ function PhotoField({
 		<Field
 			label="Photograph"
 			htmlFor={id}
-			hint="Optional. It goes on your card and beside your name."
+			hint="Optional. Used on your profile and membership card."
 		>
 			<div className="flex flex-wrap items-center gap-4">
 				<div className="grid h-[72px] w-[72px] flex-none place-items-center overflow-hidden rounded-xl border border-card-line bg-surface text-slate-faint">
@@ -2779,18 +2815,16 @@ function PhotoField({
 }
 
 function PlacementStep({
-	path,
 	chain,
 	onChain,
 	allowedLevels,
 }: {
-	path: Path;
 	chain: GeoNode[];
 	onChain: (chain: GeoNode[]) => void;
 	allowedLevels?: string[];
 }) {
 	return (
-		<FieldSet title={path === "member" ? "Branch or area" : "Serving branch"}>
+		<FieldSet title="Branch or area">
 			<GeoSelects
 				chain={chain}
 				onChain={onChain}
@@ -2917,6 +2951,33 @@ function CitizenshipQuestion({
 }
 
 /**
+ * What a method's card says under its name.
+ *
+ * The society's own `instructions` win wherever it wrote any — that field is
+ * the whole reason a branch can say "ask for the cashier on the ground floor"
+ * without a deploy. Failing that, an in-person method gets a sentence naming
+ * the office the applicant chose, and everything else falls back to the
+ * gateway's description.
+ *
+ * **The description is not offered to the in-person method**, deliberately. On
+ * this bench it reads "Admin manually confirms payments. Use for bank
+ * transfers, cash, or testing" — a note from one engineer to another, sitting
+ * on the form where somebody is being asked for money. A composed sentence
+ * about a real office is better than an accurate one about the software.
+ */
+function methodBody(method: PaymentMethod, branch: string | null): string {
+	if (method.instructions) return method.instructions;
+
+	if (method.in_person) {
+		return branch
+			? `Pay at the ${branch} office. Your membership starts once the office has recorded it.`
+			: "Pay at the office you have chosen. Your membership starts once the office has recorded it.";
+	}
+
+	return method.description || "";
+}
+
+/**
  * How the applicant would like to pay, out of what the society takes.
  *
  * **The list is the society's, and this file holds none of it.** Every option
@@ -2936,17 +2997,28 @@ function CitizenshipQuestion({
  * **What the society wants said is said.** `instructions` is a field on the
  * society's own settings row, so a branch that needs to tell people which office
  * to pay at writes it there rather than asking for a deploy.
+ *
+ * **And where it has not said, the in-person method still names an office.**
+ * Paying at a counter is the only method that has a *place*, and the applicant
+ * chose that place two steps ago — telling them "somebody will confirm this by
+ * hand" instead, which is what the payments app's own description says, is
+ * describing the software to the person it is being run on. So the branch is
+ * written into the sentence. `in_person` comes from the server for that reason
+ * and is not a gateway name: this file still knows of no M-Pesa and no bank.
  */
 function PaymentStep({
 	methods,
 	selected,
 	onSelect,
 	type,
+	branch,
 }: {
 	methods: PaymentMethod[];
 	selected: string;
 	onSelect: (gateway: string) => void;
 	type: PricedType | null;
+	/** The office the applicant picked, or null while nothing is chosen. */
+	branch: string | null;
 }) {
 	return (
 		<div className="max-w-xl space-y-4">
@@ -2956,7 +3028,7 @@ function PaymentStep({
 					<strong className="font-semibold text-ink">
 						{formatMoney(type.amount, type.currency)}
 					</strong>
-					. We will ask for it once your application has been sent — nothing is taken now.
+					. Payment will be requested after your application is submitted.
 				</p>
 			)}
 
@@ -2968,7 +3040,7 @@ function PaymentStep({
 						onSelect={() => onSelect(method.gateway)}
 						icon={<Icon.card size={20} />}
 						title={method.label}
-						body={method.instructions || method.description || ""}
+						body={methodBody(method, branch)}
 					/>
 				))}
 			</div>
@@ -3093,10 +3165,10 @@ function IdentificationStep({
 					    scans nobody wants and storing them forever. */}
 					{rules.get(row.id_type)?.requires_attachment && (
 						<Field
-							label="A copy of it"
+							label="Identification copy"
 							required
 							htmlFor={`join-id-file-${index}`}
-							hint="A photograph or scan is fine. Only your branch can open it."
+							hint="Upload a photograph or scan. Only your branch can access it."
 							className="sm:col-span-2"
 						>
 							<PrivateUpload
@@ -3140,12 +3212,11 @@ function IdentificationStep({
 				// Named rather than counted. "One more document" leaves somebody
 				// guessing which; the society's own word for it does not.
 				<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-					Your branch asks every volunteer for {listed(outstanding)}. Add{" "}
-					{outstanding.length === 1 ? "it" : "them"} here before you go on.
+					Required: {listed(outstanding)}. Add {outstanding.length === 1 ? "it" : "them"} before continuing.
 				</p>
 			) : (
 				<p className="text-[11.5px] leading-relaxed text-slate-faint">
-					One is enough for most people. Add more if your branch has asked for them.
+					Add another document only if required by your branch.
 				</p>
 			)}
 		</div>
@@ -3347,61 +3418,61 @@ function DeclarationStep({
 			    only "how many rows Kenya happens to have". The descriptions a
 			    society wrote are not lost — `MultiCombo` renders them under each
 			    row — and the picks echo through the same `TokenTray` either way. */}
-			<FieldSet title="What you can do">
+			<FieldSet title="Skills">
 				<MultiCombo
 					id="join-skills"
 					label="Skills"
 					options={options.skills}
 					selected={skills}
 					onToggle={toggle(skills, onSkills)}
-					placeholder="Type a skill…"
+					placeholder="Search skills"
 					empty="This society has not configured any skills yet."
 				/>
 			</FieldSet>
 
-			<FieldSet title="Languages you speak">
+			<FieldSet title="Languages">
 				<MultiCombo
 					id="join-languages"
 					label="Languages"
 					options={options.languages}
 					selected={languages}
 					onToggle={toggle(languages, onLanguages)}
-					placeholder="Type a language…"
+					placeholder="Search languages"
 					empty="This site has no languages configured yet."
 				/>
 			</FieldSet>
 
-			<FieldSet title="When you are available">
+			<FieldSet title="Availability">
 				<MultiCombo
 					id="join-availability"
 					label="Availability"
 					options={options.availability}
 					selected={availability}
 					onToggle={toggle(availability, onAvailability)}
-					placeholder="Type a slot…"
+					placeholder="Search availability"
 					empty="This society has not configured any availability slots yet."
 				/>
 			</FieldSet>
 
-			<FieldSet title="Why you want to volunteer">
+			<FieldSet title="Motivation">
 				<MultiCombo
 					id="join-motivations"
 					label="Motivation"
 					options={options.motivations}
 					selected={motivations}
 					onToggle={toggle(motivations, onMotivations)}
-					placeholder="Type a reason…"
+					placeholder="Search motivations"
 					empty="This society has not configured any motivations yet."
 				/>
 			</FieldSet>
 
-			<FieldSet title="Anything you have done before">
-				<Field label="In your own words" htmlFor="join-experience">
+			<FieldSet title="Previous volunteer experience">
+				<Field label="Experience" htmlFor="join-experience">
 					<TextArea
 						id="join-experience"
 						value={experience}
 						onChange={onExperience}
-						placeholder="Previous volunteering, first aid training, work that might be useful…"
+						placeholder="Enter relevant volunteer experience"
 					/>
 				</Field>
 			</FieldSet>
@@ -3456,8 +3527,8 @@ function EmergencyStep({
 	return (
 		<div className="space-y-9">
 			<FieldSet
-				title="Someone we can call"
-				description="If something happens while you are volunteering, this is who we would contact. You can add more than one, and you can change them later."
+				title="Emergency contacts"
+				description="Add a person who may be contacted in an emergency."
 			>
 				<div className="space-y-6">
 					{contacts.map((contact, index) => (
@@ -3479,7 +3550,7 @@ function EmergencyStep({
 								</p>
 							)}
 
-							<Field label="Their name" required htmlFor={`ec-name-${index}`}>
+							<Field label="Full name" required htmlFor={`ec-name-${index}`}>
 								<TextInput
 									id={`ec-name-${index}`}
 									value={contact.contact_name}
@@ -3488,7 +3559,7 @@ function EmergencyStep({
 								/>
 							</Field>
 
-							<Field label="How you know them" required htmlFor={`ec-rel-${index}`}>
+							<Field label="Relationship" required htmlFor={`ec-rel-${index}`}>
 								<TextInput
 									id={`ec-rel-${index}`}
 									value={contact.relationship}
@@ -3503,14 +3574,14 @@ function EmergencyStep({
 									type="tel"
 									value={contact.primary_phone}
 									onChange={(value) => set(index, "primary_phone", value)}
-									placeholder="Their main number"
+									placeholder="Primary phone number"
 								/>
 							</Field>
 
 							<Field
-								label="Another number"
+								label="Alternative phone number"
 								htmlFor={`ec-alt-${index}`}
-								hint="If there is somewhere else we could try."
+								hint="Optional"
 							>
 								<TextInput
 									id={`ec-alt-${index}`}
@@ -3541,11 +3612,10 @@ function EmergencyStep({
 									/>
 									<span>
 										<span className="block text-[13px] font-semibold leading-snug text-ink">
-											We may contact this person in an emergency
+											Permission to contact in an emergency
 										</span>
 										<span className="mt-1 block text-[11.5px] leading-relaxed text-slate-faint">
-											Leave this unticked and we will keep the number on file without using
-											it.
+											Clear this checkbox if this person may not be contacted.
 										</span>
 									</span>
 								</label>
@@ -3577,8 +3647,8 @@ function EmergencyStep({
 
 			{isMinor && (
 				<FieldSet
-					title="A parent or guardian"
-					description={`Because you are under ${minorAge ?? 18}, we need a parent or guardian to agree to you volunteering with us. Someone from your branch will check this with them before your application is decided.`}
+					title="Parent or guardian consent"
+					description={`Applicants under ${minorAge ?? 18} require consent from a parent or guardian. The branch will verify this consent before approving the application.`}
 				>
 					<div className="mb-5">
 						<Button
@@ -3593,7 +3663,7 @@ function EmergencyStep({
 							}
 							disabled={!first.contact_name.trim()}
 						>
-							Same as the person above
+							Copy emergency contact details
 						</Button>
 					</div>
 
@@ -3612,7 +3682,7 @@ function EmergencyStep({
 							/>
 						</Field>
 
-						<Field label="How they are related to you" required htmlFor="gc-rel">
+						<Field label="Relationship to applicant" required htmlFor="gc-rel">
 							<TextInput
 								id="gc-rel"
 								value={guardian.relationship}
@@ -3621,17 +3691,17 @@ function EmergencyStep({
 							/>
 						</Field>
 
-						<Field label="A number for them" required htmlFor="gc-phone">
+						<Field label="Parent or guardian phone number" required htmlFor="gc-phone">
 							<TextInput
 								id="gc-phone"
 								type="tel"
 								value={guardian.phone}
 								onChange={(value) => setGuardian("phone", value)}
-								placeholder="A number we can reach them on"
+								placeholder="Phone number"
 							/>
 						</Field>
 
-						<Field label="Email address" htmlFor="gc-email" hint="If they have one.">
+						<Field label="Email address" htmlFor="gc-email" hint="Optional">
 							<TextInput
 								id="gc-email"
 								type="email"
@@ -3655,10 +3725,10 @@ function EmergencyStep({
 								/>
 								<span>
 									<span className="block text-[13px] font-semibold leading-snug text-ink">
-										They have agreed to me volunteering
+										Consent has been given
 									</span>
 									<span className="mt-1 block text-[11.5px] leading-relaxed text-slate-faint">
-										Someone from the branch will confirm this with them directly.
+										The branch will verify this consent directly.
 									</span>
 								</span>
 							</label>
@@ -3669,7 +3739,7 @@ function EmergencyStep({
 						    there is a consent is a form asking about nothing. */}
 						{Boolean(guardian.consent_given) && (
 							<>
-								<Field label="When they agreed" htmlFor="gc-date">
+								<Field label="Consent date" htmlFor="gc-date">
 									<TextInput
 										id="gc-date"
 										type="date"
@@ -3686,24 +3756,24 @@ function EmergencyStep({
 								    reviewer had to guess how the consent had been given. */}
 								{verificationMethods.length > 0 && (
 									<Field
-										label="How they gave it"
+										label="Consent method"
 										htmlFor="gc-method"
-										hint="However your branch accepts it. They will confirm this with them."
+										hint="Select the method used to provide consent."
 									>
 										<VocabularySelect
 											id="gc-method"
 											value={guardian.verification_method ?? ""}
 											onChange={(value) => setGuardian("verification_method", value)}
 											options={verificationMethods}
-											placeholder="Choose how"
+											placeholder="Select a method"
 										/>
 									</Field>
 								)}
 
 								<Field
-									label="A copy of it, if you have one"
+									label="Consent document"
 									htmlFor="gc-evidence"
-									hint="A signed form, or a photograph of one. Only your branch can open it."
+									hint="Optional. Upload a signed form or a photograph of one."
 									className="sm:col-span-2"
 								>
 									<PrivateUpload
@@ -3799,7 +3869,7 @@ function ConsentsStep({
 									<span aria-hidden="true">↗</span>
 								</a>
 								<p className="mt-2 text-[12px] leading-relaxed text-slate-faint">
-									This opens in a new tab, so you will not lose what you have filled in.
+									Opens in a new tab.
 								</p>
 							</div>
 						) : (
@@ -3821,7 +3891,7 @@ function ConsentsStep({
 								onChange={(event) => onToggle(declaration.name, event.target.checked)}
 							/>
 							<span className="text-[13px] font-semibold text-ink">
-								I have read this and I agree
+								I have read and agree to this declaration
 							</span>
 						</label>
 					</section>
@@ -3953,14 +4023,14 @@ function ConfirmStep({
 			    one way of paying both get no payment step, and a card under a
 			    question nobody was asked is a form apologising for itself. */}
 			{path === "member" && paymentLabel && (
-				<Review title="How you'll pay" onEdit={editor("payment")}>
-					<Line label="Paying by" value={paymentLabel} />
-					<Line label="When" value="After you send this application" />
+				<Review title="Payment method" onEdit={editor("payment")}>
+					<Line label="Method" value={paymentLabel} />
+					<Line label="Payment timing" value="After application submission" />
 				</Review>
 			)}
 
 			<Review
-				title={path === "member" ? "Your branch" : "Where you would serve"}
+				title={path === "member" ? "Branch" : "Volunteer location"}
 				onEdit={editor("placement")}
 			>
 				<Trail label="Placement" chain={chain} />
@@ -3982,12 +4052,12 @@ function ConfirmStep({
 						)}
 					</Review>
 
-					<Review title="Your volunteering" onEdit={editor("declaration")}>
+					<Review title="Volunteer details" onEdit={editor("declaration")}>
 						<Chips label="Skills" values={declared.skills} />
 						<Chips label="Languages" values={declared.languages} />
 						<Chips label="Availability" values={declared.availability} />
 						<Chips label="Motivation" values={declared.motivations} />
-						<Block label="Anything done before" value={experience} />
+						<Block label="Previous volunteer experience" value={experience} />
 					</Review>
 
 					{/* Drawn only when there is something in it. Every part of the
@@ -3995,7 +4065,7 @@ function ConfirmStep({
 					    "Not given" six times would tell somebody they had skipped
 					    something they were explicitly invited to skip. */}
 					{background.rows.length > 0 && (
-						<Review title="What you have already done" onEdit={editor("background")}>
+						<Review title="Education and experience" onEdit={editor("background")}>
 							<Line label="Profession" value={background.profession} />
 							{background.rows.map((row, index) => (
 								<Line key={index} label={row.label} value={row.value} />
@@ -4003,27 +4073,29 @@ function ConfirmStep({
 						</Review>
 					)}
 
-					<Review title="If something happens" onEdit={editor("emergency")}>
+					<Review title="Emergency contacts" onEdit={editor("emergency")}>
 						{contacts.length === 0 ? (
-							<Line label="We would call" value={null} />
+							<Line label="Contact" value={null} />
 						) : (
 							contacts.map((entry, index) => (
 								<Fragment key={index}>
 									<Line
-										label={contacts.length > 1 ? `We would call (${index + 1})` : "We would call"}
+										label={contacts.length > 1 ? `Contact ${index + 1}` : "Contact"}
 										value={entry.contact_name || null}
 									/>
-									<Line label="Who they are" value={entry.relationship || null} />
-									<Line label="On" value={entry.primary_phone || null} mono />
+									<Line label="Relationship" value={entry.relationship || null} />
+									<Line label="Phone number" value={entry.primary_phone || null} mono />
 									<Line
-										label="Another number"
+										label="Alternative phone number"
 										value={entry.alternative_phone || null}
 										mono
 									/>
 									{!entry.may_contact_in_emergency && (
 										<Block
 											label="Permission"
-											value={`You have asked us not to contact ${entry.contact_name || "this person"}. We will keep the number on file without using it.`}
+											value={`${
+												entry.contact_name || "This person"
+											} may not be contacted in an emergency.`}
 										/>
 									)}
 								</Fragment>
@@ -4033,19 +4105,19 @@ function ConfirmStep({
 
 					{isMinor && (
 						<Review
-							title="Your parent or guardian"
+							title="Parent or guardian consent"
 							onEdit={editor("emergency")}
 						>
 							<Line label="Name" value={guardian.guardian_name || null} />
-							<Line label="Who they are" value={guardian.relationship || null} />
+							<Line label="Relationship" value={guardian.relationship || null} />
 							<Line label="Phone" value={guardian.phone || null} mono />
 							<Line label="Email" value={guardian.email || null} />
 							<Block
-								label="Their agreement"
+								label="Consent status"
 								value={
 									guardian.consent_given
-										? `Recorded${guardian.consent_date ? ` on ${guardian.consent_date}` : ""}. Someone from your branch will confirm it with them before your application is decided.`
-										: "Not recorded yet. Your branch will follow this up before your application can be decided."
+										? `Recorded${guardian.consent_date ? ` on ${guardian.consent_date}` : ""}. Verification is pending.`
+										: "Not recorded. Consent is required before approval."
 								}
 							/>
 						</Review>
@@ -4057,7 +4129,7 @@ function ConfirmStep({
 			    Drawn from the answers rather than the question list, so a question
 			    left blank because it was optional takes no room here. */}
 			{societyAnswers.length > 0 && (
-				<Review title="What your society asked" onEdit={editor("questions")}>
+				<Review title="Additional questions" onEdit={editor("questions")}>
 					{societyAnswers.map((answer) => (
 						<Block key={answer.label} label={answer.label} value={answer.shown} />
 					))}
@@ -4069,19 +4141,20 @@ function ConfirmStep({
 			    would bury the rest of the review. The version is shown because it
 			    is what gets stored beside their acceptance. */}
 			{consents.length > 0 && (
-				<Review title="What you agreed to" onEdit={editor("consents")}>
+				<Review title="Declarations" onEdit={editor("consents")}>
 					{consents.map((consent) => (
 						<Line
 							key={consent.name}
 							label={consent.title}
-							value={consent.accepted ? `Agreed — version ${consent.version}` : null}
+							value={consent.accepted ? `Agreed, version ${consent.version}` : null}
 						/>
 					))}
 				</Review>
 			)}
 
 			<p className="text-[12px] leading-relaxed text-slate-faint">
-				Submitting sends this to your branch for review. You can follow it from your portal.
+				After submission, your branch will review the application. You can track its status in the
+				portal.
 			</p>
 		</div>
 	);
@@ -4481,12 +4554,11 @@ function Success({ path, payment }: { path: Path; payment: PaymentAsked | null }
 			</div>
 
 			<h1 className="text-[26px] font-semibold leading-tight tracking-tight text-ink">
-				That is with your branch now.
+				Registration submitted
 			</h1>
 
 			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
-				Your {path === "volunteer" ? "application" : "membership"} has gone to the branch you chose,
-				and somebody there will review it.
+				Your {path === "volunteer" ? "application" : "membership registration"} has been submitted to your branch for review.
 			</p>
 
 			{/* What the gateway itself said, unedited. Mobile money has already put

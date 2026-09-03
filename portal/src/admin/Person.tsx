@@ -6,6 +6,7 @@ import { API, cardUrl, certificateUrl, errorMessage } from "../lib/api";
 import { formatDate, formatHours, formatMoney, geoPath } from "../lib/format";
 import { MultiCombo } from "../ui/form";
 import { PersonHero, RegisterLinks } from "../ui/PersonHero";
+import { RecordPayment, owesAFee } from "./RecordPayment";
 import {
 	Button,
 	Card,
@@ -344,7 +345,45 @@ function toggled(values: string[], key: string): string[] {
 
 /* ------------------------------------------------------------- the volunteer */
 
+type VolunteerTab = "overview" | "background" | "service" | "verification" | "notes";
+type MemberTab = "overview" | "memberships" | "verification" | "notes";
+
+function DossierTabs<T extends string>({
+	value,
+	onChange,
+	items,
+}: {
+	value: T;
+	onChange: (value: T) => void;
+	items: readonly (readonly [T, string])[];
+}) {
+	return (
+		<div className="mb-5 overflow-x-auto rounded-xl bg-surface p-1" role="tablist">
+			<div className="flex min-w-max gap-1">
+				{items.map(([key, label]) => (
+					<button
+						key={key}
+						type="button"
+						role="tab"
+						aria-selected={value === key}
+						onClick={() => onChange(key)}
+						className={cx(
+							"rounded-lg px-4 py-2.5 text-[12px] font-bold transition",
+							value === key
+								? "bg-white text-ink shadow-sm"
+								: "text-muted hover:bg-white/60 hover:text-ink",
+						)}
+					>
+						{label}
+					</button>
+				))}
+			</div>
+		</div>
+	);
+}
+
 function VolunteerPage({ name }: { name: string }) {
+	const [tab, setTab] = useState<VolunteerTab>("overview");
 	const { data, error, isLoading, mutate } = useFrappeGetCall<{ message: VolunteerDossier }>(
 		API.volunteerDossier,
 		{ name },
@@ -415,13 +454,25 @@ function VolunteerPage({ name }: { name: string }) {
 				</Card>
 			)}
 
+			<DossierTabs
+				value={tab}
+				onChange={setTab}
+				items={[
+					["overview", "Overview"],
+					["background", "Background"],
+					["service", "Service & deployments"],
+					["verification", "Verification"],
+					["notes", "Notes & history"],
+				]}
+			/>
+
 			{/* What the header could not carry. The contact details, the joining
 			    date and the home area are above; these are the facts a
 			    volunteering office is asked for rather than the ones needed to
 			    reach somebody, and here they say "Not recorded" out loud when
 			    they are missing — which in a card is a finding rather than a
 			    blank. */}
-			<Card className="mb-5">
+			{tab === "overview" && <><Card className="mb-5">
 				<SectionTitle>Who they are</SectionTitle>
 				<Definitions
 					rows={[
@@ -439,9 +490,11 @@ function VolunteerPage({ name }: { name: string }) {
 				/>
 			</Card>
 
-			<BackgroundCard background={person.background} />
+			</>}
 
-			<Card className="mb-5">
+			{tab === "background" && <BackgroundCard background={person.background} />}
+
+			{tab === "overview" && <><Card className="mb-5">
 				<SectionTitle>May they be deployed</SectionTitle>
 				<div className="mb-3">
 					{dossier.deployability.deployable ? (
@@ -469,16 +522,17 @@ function VolunteerPage({ name }: { name: string }) {
 				canAct={dossier.can_act}
 				onChanged={onChanged}
 			/>
+			</>}
 
-			<RegisterNotes
+			{tab === "notes" && <RegisterNotes
 				notes={person.notes ?? null}
 				canAct={dossier.can_act}
 				endpoint={API.setVolunteerNotes}
 				name={dossier.volunteer}
 				onChanged={onChanged}
-			/>
+			/>}
 
-			<Card className="mb-5">
+			{tab === "service" && <><Card className="mb-5">
 				<SectionTitle>Certifications held</SectionTitle>
 				{dossier.certifications.length === 0 ? (
 					<Empty title="No certifications recorded">
@@ -567,9 +621,9 @@ function VolunteerPage({ name }: { name: string }) {
 						))}
 					</Table>
 				)}
-			</Card>
+			</Card></>}
 
-			<Card className="mb-5">
+			{tab === "verification" && <><Card className="mb-5">
 				<SectionTitle>How they were verified</SectionTitle>
 				<Verification verification={dossier.application} />
 			</Card>
@@ -592,7 +646,7 @@ function VolunteerPage({ name }: { name: string }) {
 						]}
 					/>
 				</Card>
-			)}
+			)}</>}
 		</>
 	);
 }
@@ -600,6 +654,7 @@ function VolunteerPage({ name }: { name: string }) {
 /* ---------------------------------------------------------------- the member */
 
 function MemberPage({ name }: { name: string }) {
+	const [tab, setTab] = useState<MemberTab>("overview");
 	const { data, error, isLoading, mutate } = useFrappeGetCall<{ message: MemberDossier }>(
 		API.memberDossier,
 		{ name },
@@ -652,8 +707,19 @@ function MemberPage({ name }: { name: string }) {
 				]}
 			/>
 
+			<DossierTabs
+				value={tab}
+				onChange={setTab}
+				items={[
+					["overview", "Overview"],
+					["memberships", "Memberships"],
+					["verification", "Verification"],
+					["notes", "Notes & history"],
+				]}
+			/>
+
 			{/* What the header could not carry — see the volunteer page's note. */}
-			<Card className="mb-5">
+			{tab === "overview" && <><Card className="mb-5">
 				<SectionTitle>Who they are</SectionTitle>
 				<Definitions
 					rows={[
@@ -698,17 +764,17 @@ function MemberPage({ name }: { name: string }) {
 					Standing is over every membership this person holds. The counts are over the ones
 					your scope lets you see.
 				</p>
-			</Card>
+			</Card></>}
 
-			<RegisterNotes
+			{tab === "notes" && <RegisterNotes
 				notes={dossier.notes}
 				canAct={dossier.can_act}
 				endpoint={API.setMemberNotes}
 				name={dossier.member}
 				onChanged={() => void mutate()}
-			/>
+			/>}
 
-			<Card className="mb-5">
+			{tab === "memberships" && <Card className="mb-5">
 				<SectionTitle>Memberships held</SectionTitle>
 				{dossier.memberships.length === 0 ? (
 					<Empty title="No memberships in your scope">
@@ -727,9 +793,9 @@ function MemberPage({ name }: { name: string }) {
 						))}
 					</div>
 				)}
-			</Card>
+			</Card>}
 
-			<Card>
+			{tab === "verification" && <Card>
 				<SectionTitle>How they were verified</SectionTitle>
 				{dossier.history.length === 0 ? (
 					<Empty title="No decisions recorded">
@@ -753,7 +819,7 @@ function MemberPage({ name }: { name: string }) {
 						))}
 					</Table>
 				)}
-			</Card>
+			</Card>}
 		</>
 	);
 }
@@ -1155,6 +1221,14 @@ function VolunteerActions({
  * There is no activate button, and the endpoint's docstring says why: activation
  * is a predicate re-evaluated from `on_update`, not a verb somebody performs. A
  * button forcing it would be a way around approval and payment both.
+ *
+ * **"Record the payment" is not that button, and the difference is the whole
+ * design.** It confirms the *fee*, through the payments app, exactly as a
+ * gateway callback would — so a membership on a type that routes to an approver
+ * moves from Awaiting Payment to Awaiting Approval and stops there, which is
+ * the correct answer and not a half-finished one. It is offered only where
+ * there is something to record: a fee was charged, a payment was asked for, and
+ * nobody has settled it yet.
  */
 function MembershipCard({
 	row,
@@ -1223,6 +1297,14 @@ function MembershipCard({
 					>
 						Certificate (PDF)
 					</a>
+				</div>
+			)}
+
+			{/* Above the two acts below rather than beside them: this is the one
+			    that moves a membership along, and cancel and expire both end it. */}
+			{owesAFee(row, canAct) && (
+				<div className="mt-4 border-t border-card-line pt-4">
+					<RecordPayment row={row} canAct={canAct} onRecorded={onActed} />
 				</div>
 			)}
 

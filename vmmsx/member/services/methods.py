@@ -16,12 +16,21 @@ society's to change.
 knows a payment exists. This module answers "what may be offered" and hands the
 answer to a form; `payment.request()` still owns asking for the money.
 
-**Manual is on by default, and that is a rule rather than an accident.** A
-society that has bought no gateway integration at all still takes money — at a
-branch counter, by bank transfer, in cash against a receipt — and the manual
-driver is how that gets recorded. So a society that has never opened this screen
-can still take a membership fee, which is the state every other setting in this
-product ships in: empty narrows nothing.
+**Manual is on by default, and it is the only thing that is.** A society that
+has bought no gateway integration at all still takes money — at a branch
+counter, by bank transfer, in cash against a receipt — and the manual driver is
+how that gets recorded. So a society that has never opened this screen can still
+take a membership fee.
+
+**Every other gateway is off until the society turns it on**, which is the one
+place this module departs from the "empty narrows nothing" rule the rest of the
+product follows. It has to. `is_active` on a gateway record means the payments
+app *has a driver for it*, not that this society has credentials for it — an
+M-Pesa row can sit active with no consumer key, no shortcode and no passkey,
+and offering it would put a button on the registration form that takes somebody
+to a gateway that cannot answer. Paying at a branch is the one method that
+needs no configuration to work, so it is the one an unconfigured society is
+offered. The rest appear as they are ticked.
 
 **An absent payments app is ordinary.** vmmsx does not declare `onerc_payments`
 in `required_apps` — a society running fee-free membership should not be made to
@@ -48,12 +57,19 @@ METHODS_FIELD = "vmms_payment_methods"
 #: gateway's name — adding a second card processor changes no line in this file.
 MANUAL = "Manual"
 
+#: What the manual method is called on the form somebody joining actually reads,
+#: used when seeding the society's row. A default and not a rule: the label is a
+#: field on that row, so a society that says it differently overwrites this once
+#: and keeps it. Deliberately does not name a branch — which office is the
+#: applicant's own answer, and the form that knows it composes that sentence.
+MANUAL_LABEL = "Pay at a branch office"
+
 
 def is_available() -> bool:
 	"""Is the payments app installed, with a gateway register to read?"""
 	from vmmsx.member.services import payment
 
-	return payment.is_available() and frappe.db.table_exists(f"tab{GATEWAY_DOCTYPE}")
+	return payment.is_available() and frappe.db.table_exists(GATEWAY_DOCTYPE)
 
 
 def offered() -> list[dict]:
@@ -64,10 +80,13 @@ def offered() -> list[dict]:
 	and neither is cached: a gateway switched off in the payments app stops being
 	offered here immediately, which is what somebody switching it off meant.
 
-	A society that has never opened the settings form gets whatever the payments
-	app offers, with the manual method among them. See the module docstring:
-	empty narrows nothing, and a society cannot be left unable to take a fee
-	because nobody filled in a form.
+	A society that has never opened the settings form gets the manual method and
+	nothing else. See the module docstring for why this one reader does not take
+	the "empty narrows nothing" default: an active gateway is a driver the
+	payments app holds, not one this society has credentials for, so shipping
+	every live gateway enabled would offer a way of paying that cannot complete.
+	Paying at a branch always can, and a society cannot be left unable to take a
+	fee because nobody filled in a form.
 	"""
 	if not is_available():
 		return []
@@ -80,7 +99,7 @@ def offered() -> list[dict]:
 	chosen = _configured()
 
 	if not chosen:
-		return list(live.values())
+		return [live[MANUAL]] if MANUAL in live else []
 
 	return [
 		{**live[row["gateway"]], "label": row["label"] or live[row["gateway"]]["label"], "instructions": row["instructions"]}
@@ -118,6 +137,12 @@ def sync() -> dict:
 	says. That is what makes this safe to run on every migrate, and it is why a
 	society that unticked a method keeps it unticked through the next deploy.
 
+	**A new row arrives ticked only if it is the manual one.** See the module
+	docstring: the payments app reporting a gateway active says a driver exists,
+	not that this society has been set up on it, so a card processor or a mobile
+	money gateway appears here as a row somebody can turn on rather than as a
+	button already on the registration form.
+
 	A row whose gateway has since disappeared from the payments app is **not**
 	deleted. It costs nothing — `offered()` intersects with what is live, so it
 	is not shown to anybody — and deleting it would throw away the society's
@@ -142,14 +167,19 @@ def sync() -> dict:
 			METHODS_FIELD,
 			{
 				"gateway": gateway["gateway"],
-				"label": gateway["label"],
-				# Everything the payments app has active is offered until a
-				# society says otherwise. The manual method is called out in the
-				# docstring because it is the one that must never arrive
-				# unticked — a society with no gateway integration still takes
-				# money — but the rule that ships everything enabled is the same
-				# "empty narrows nothing" rule the rest of this product follows.
-				"is_enabled": 1,
+				# The payments app's own label is written for whoever configures
+				# a gateway, not for whoever is being asked to pay — "Manual
+				# (Bank Transfer / Cash)" is a driver's name. The manual row is
+				# seeded with a sentence an applicant can act on instead; every
+				# other row keeps the payments app's label, because a society
+				# ticking one is about to read it and can say it better.
+				"label": MANUAL_LABEL if gateway["gateway"] == MANUAL else gateway["label"],
+				# Ticked for the method that needs no configuration to work, and
+				# off for the rest until the society has set that gateway up and
+				# says so. The alternative ships a registration form offering a
+				# way of paying that nobody has given this society credentials
+				# for.
+				"is_enabled": 1 if gateway["gateway"] == MANUAL else 0,
 			},
 		)
 		created += 1
@@ -201,6 +231,13 @@ def _live_gateways() -> list[dict]:
 			"label": row.label or row.name,
 			"description": row.description or "",
 			"instructions": "",
+			# Whether paying this way means handing money to somebody at an
+			# office. The one thing a form needs to know about a method beyond
+			# its name: an in-person method is the only one that can say *where*,
+			# and the branch the applicant just chose is the answer. A flag
+			# rather than the gateway's name, so no screen has to carry a list
+			# of which gateways are counters and which are phones.
+			"in_person": row.name == MANUAL,
 		}
 		for row in rows
 	]

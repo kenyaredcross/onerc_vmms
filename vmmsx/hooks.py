@@ -411,7 +411,8 @@ after_migrate = [
 	# reason above: a gateway added to the payments app after a site migrated
 	# would otherwise never appear on the society's settings form. Additive and
 	# non-destructive — a method a society unticked stays unticked — and a no-op
-	# on a site with no payments app.
+	# on a site with no payments app. Only the manual method arrives ticked; see
+	# `methods.sync`.
 	"vmmsx.member.services.methods.sync",
 	# The four things a volunteer applicant agrees to: how their information is
 	# used, permission to contact them, use of their personal details, and their

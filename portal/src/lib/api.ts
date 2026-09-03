@@ -149,6 +149,12 @@ export const API = {
 	// on anything still current, so the two are not interchangeable.
 	cancelMembership: "vmmsx.api.member.cancel_membership",
 	expireMembership: "vmmsx.api.member.expire_membership",
+	// Recording a fee somebody handed over at a counter. Confirms the *payment*
+	// and never the membership: whether it goes Active afterwards is re-derived
+	// from approval and payment together, so a routed type still waits for its
+	// approver. There is deliberately no endpoint in this app that activates a
+	// membership, and this is not one.
+	recordMembershipPayment: "vmmsx.api.member.record_membership_payment",
 
 	// vmmsx/api/person.py
 	//

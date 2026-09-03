@@ -241,6 +241,39 @@ def expire_membership(name: str) -> dict:
 
 
 @frappe.whitelist()
+def record_membership_payment(name: str, receipt: str | None = None) -> dict:
+	"""Record a membership fee that was handed over at a branch. Idempotent.
+
+	**The one door in this app through which a fee is settled by a person**, and
+	it exists because the alternative was worse than a button: a society taking
+	cash at a counter had a membership that could reach Awaiting Payment and
+	stop there for good, with nothing in the product able to move it. The
+	registration form now promises "your membership starts once the office has
+	recorded it"; this is the office recording it.
+
+	**It is not an activate button and must never become one.** All it confirms
+	is the payment, through the payments app's own manual driver; whether that
+	makes the membership Active is re-derived by `membership.on_update` from
+	approval *and* payment together, exactly as it is for a fee taken by phone.
+	A membership whose type routes to an approver stays where it is until that
+	approver has looked. See the comment above `cancel_membership`, which sets
+	out why no endpoint here forces activation.
+
+	`receipt` is the society's own reference for the money — a receipt book
+	number, a bank slip, a till reference. Optional, because a branch that
+	writes nothing down has still taken the money and refusing to record it
+	would leave the membership stuck for the sake of a field.
+
+	`_writable` and not `_readable`: this is a coordinator's act on the
+	society's register. The member cannot record their own fee as paid, which is
+	the whole reason the two helpers are separate functions.
+	"""
+	from vmmsx.member.services import payment
+
+	return payment.confirm_in_person(_writable(name), receipt)
+
+
+@frappe.whitelist()
 def get_membership(name: str) -> dict:
 	"""Where a membership stands. The status DTO, and who may move it.
 
@@ -277,7 +310,20 @@ def get_review(name: str, as_of: str | None = None) -> dict:
 	"""
 	from vmmsx.member.services import review
 
-	return review.decision_dto(_readable(name), as_of=as_of)
+	membership = _readable(name)
+
+	return {
+		**review.decision_dto(membership, as_of=as_of),
+		# Whether this reader may act on the membership itself, which is a
+		# different question from whether they may decide it and is answered
+		# here for the same reason `get_dossier` and `get_membership` answer it:
+		# a screen draws its controls from one read and must not have to ask a
+		# second question to know which. Named per-document, so it is the full
+		# check including core's geo scoping — and `_readable` admits the holder,
+		# so without this the member reading their own review would be offered a
+		# button that exists to be pressed by the office.
+		"can_act": _can_act(membership),
+	}
 
 
 @frappe.whitelist()
@@ -647,6 +693,11 @@ def payment_methods() -> dict:
 				"label": row["label"],
 				"description": row["description"],
 				"instructions": row["instructions"],
+				# Whether this one is paid at a counter. The form needs it to
+				# name the office the applicant has just chosen; see
+				# `methods._live_gateways`, which is the only place the question
+				# is answered.
+				"in_person": row["in_person"],
 			}
 			for row in methods.offered()
 		]

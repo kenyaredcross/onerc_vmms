@@ -239,11 +239,11 @@ function openAsGuest(route: string) {
 /**
  * Wait for the first screen to be drawn.
  *
- * By its heading, because "About you" is also the name of the rung in the rail
+ * By its heading, because "Personal details" is also the name of the rung in the rail
  * beside it — the same words twice on purpose, and only one of them is the page.
  */
 function onTheIdentityStep() {
-	return screen.findByRole("heading", { name: "About you" });
+	return screen.findByRole("heading", { name: "Personal details" });
 }
 
 /** Press Continue, and let the autosave it triggers settle. */
@@ -258,7 +258,7 @@ describe("the guest registration hand-off", () => {
 		openAsGuest("/join?path=volunteer");
 
 		expect(screen.getByText("Volunteer registration")).toBeTruthy();
-		expect(screen.getByText("You chose to register as a volunteer.", { exact: false })).toBeTruthy();
+		expect(screen.getByText("Sign in to continue your volunteer registration.")).toBeTruthy();
 		expect(screen.getByText("Account").closest("li")?.getAttribute("aria-current")).toBe("step");
 		expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe(
 			"/login?redirect-to=%2Fjoin%3Fpath%3Dvolunteer",
@@ -272,7 +272,7 @@ describe("the guest registration hand-off", () => {
 		openAsGuest("/join?path=member&type=annual");
 
 		expect(screen.getByText("Member registration")).toBeTruthy();
-		expect(screen.getByText("You chose to register as a member.", { exact: false })).toBeTruthy();
+		expect(screen.getByText("Sign in to continue your membership registration.")).toBeTruthy();
 		expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe(
 			"/login?redirect-to=%2Fjoin%3Fpath%3Dmember%26type%3Dannual",
 		);
@@ -295,7 +295,7 @@ describe("the road a volunteer walks", () => {
 	it("asks where they would volunteer, not where they would serve", async () => {
 		open();
 
-		expect(await screen.findByText("Where you'd volunteer")).toBeTruthy();
+		expect(await screen.findByText("Volunteer location")).toBeTruthy();
 		expect(screen.queryByText("Where you'd serve")).toBeNull();
 	});
 
@@ -313,7 +313,7 @@ describe("the road a volunteer walks", () => {
 		await onTheIdentityStep();
 		await goOn();
 
-		expect(await screen.findByRole("heading", { name: "Where would you volunteer?" })).toBeTruthy();
+		expect(await screen.findByRole("heading", { name: "Volunteer location" })).toBeTruthy();
 		expect(screen.queryByText(/narrows to what sits inside your answer/)).toBeNull();
 		expect(screen.queryByText(/reviewed by the people responsible/)).toBeNull();
 		expect(screen.queryByText("The branch or area you want to volunteer with.")).toBeNull();
@@ -490,7 +490,7 @@ describe("what a volunteer agrees to", () => {
 	it("gives each declaration its own box, its own words and its own version", async () => {
 		reads.set(API.applicationOptions, { ...OPTIONS, declarations: DECLARATIONS });
 
-		await walkTo("Before you send this");
+		await walkTo("Declarations and consent");
 
 		expect(screen.getByText("How we will use your information")).toBeTruthy();
 		expect(screen.getByText("Your declaration")).toBeTruthy();
@@ -499,7 +499,7 @@ describe("what a volunteer agrees to", () => {
 		).toBeTruthy();
 		expect(screen.getByText("Version 1")).toBeTruthy();
 		expect(screen.getByText("Version 3")).toBeTruthy();
-		expect(screen.getAllByRole("checkbox", { name: /I have read this and I agree/ })).toHaveLength(
+		expect(screen.getAllByRole("checkbox", { name: /I have read and agree to this declaration/ })).toHaveLength(
 			2,
 		);
 	});
@@ -507,9 +507,9 @@ describe("what a volunteer agrees to", () => {
 	it("will not go on until every required box is ticked", async () => {
 		reads.set(API.applicationOptions, { ...OPTIONS, declarations: DECLARATIONS });
 
-		await walkTo("Before you send this");
+		await walkTo("Declarations and consent");
 
-		const boxes = screen.getAllByRole("checkbox", { name: /I have read this and I agree/ });
+		const boxes = screen.getAllByRole("checkbox", { name: /I have read and agree to this declaration/ });
 
 		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
 
@@ -526,7 +526,7 @@ describe("what a volunteer agrees to", () => {
 		// reprinting words it does not have.
 		reads.set(API.applicationOptions, { ...OPTIONS, declarations: LINKED_DECLARATION });
 
-		await walkTo("Before you send this");
+		await walkTo("Declarations and consent");
 
 		const link = screen.getByRole("link", { name: /Read our privacy notice/ });
 
@@ -534,16 +534,16 @@ describe("what a volunteer agrees to", () => {
 		expect(link.getAttribute("target")).toBe("_blank");
 		expect(screen.getByText("Version 4")).toBeTruthy();
 		expect(
-			screen.getAllByRole("checkbox", { name: /I have read this and I agree/ }),
+			screen.getAllByRole("checkbox", { name: /I have read and agree to this declaration/ }),
 		).toHaveLength(1);
 	});
 
 	it("sends the keys of what was ticked, not the text of it", async () => {
 		reads.set(API.applicationOptions, { ...OPTIONS, declarations: DECLARATIONS });
 
-		await walkTo("Before you send this");
+		await walkTo("Declarations and consent");
 
-		for (const box of screen.getAllByRole("checkbox", { name: /I have read this and I agree/ })) {
+		for (const box of screen.getAllByRole("checkbox", { name: /I have read and agree to this declaration/ })) {
 			fireEvent.click(box);
 		}
 
@@ -563,17 +563,17 @@ describe("who to call, and who says a minor may volunteer", () => {
 	});
 
 	it("asks for somebody to call, and lets the step be walked past", async () => {
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		expect(screen.getByLabelText(/^Their name/)).toBeTruthy();
+		expect(screen.getByLabelText(/^Full name/)).toBeTruthy();
 		// A condition of approval, not of submission: the branch can chase it.
 		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
 	});
 
 	it("refuses a contact that is missing any of the three the record insists on", async () => {
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Mercy" } });
+		fireEvent.change(screen.getByLabelText(/^Full name/), { target: { value: "Mercy" } });
 
 		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
 
@@ -587,13 +587,13 @@ describe("who to call, and who says a minor may volunteer", () => {
 		// letting somebody meet that refusal.
 		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
 
-		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Sister" } });
+		fireEvent.change(screen.getByLabelText(/^Relationship(?! to applicant)/), { target: { value: "Sister" } });
 
 		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
 	});
 
 	it("sends nothing at all when the contact was left blank", async () => {
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 		await goOn();
 
 		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
@@ -603,47 +603,47 @@ describe("who to call, and who says a minor may volunteer", () => {
 	it("says nothing about a guardian for a society with no age of majority", async () => {
 		reads.set(API.myProfile, YOUNG);
 
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		expect(screen.queryByText("A parent or guardian")).toBeNull();
+		expect(screen.queryByText("Parent or guardian consent")).toBeNull();
 	});
 
 	it("asks for a guardian once the date of birth makes them a minor", async () => {
 		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
 		reads.set(API.myProfile, YOUNG);
 
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		expect(screen.getByText("A parent or guardian")).toBeTruthy();
-		expect(screen.getByText(/Because you are under 18/)).toBeTruthy();
+		expect(screen.getByText("Parent or guardian consent")).toBeTruthy();
+		expect(screen.getByText(/Applicants under 18 require consent/)).toBeTruthy();
 	});
 
 	it("does not ask an adult for one", async () => {
 		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
 
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		expect(screen.queryByText("A parent or guardian")).toBeNull();
+		expect(screen.queryByText("Parent or guardian consent")).toBeNull();
 	});
 
 	it("copies the emergency contact across without merging the two records", async () => {
 		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
 		reads.set(API.myProfile, YOUNG);
 
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Grace Otieno" } });
-		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText(/^Full name/), { target: { value: "Grace Otieno" } });
+		fireEvent.change(screen.getByLabelText(/^Relationship(?! to applicant)/), { target: { value: "Mother" } });
 		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000002" },
 		});
 
-		fireEvent.click(screen.getByRole("button", { name: "Same as the person above" }));
+		fireEvent.click(screen.getByRole("button", { name: "Copy emergency contact details" }));
 
 		expect(
 			(screen.getByLabelText(/^Parent or guardian's name/) as HTMLInputElement).value,
 		).toBe("Grace Otieno");
-		expect((screen.getByLabelText(/^How they are related to you/) as HTMLInputElement).value).toBe(
+		expect((screen.getByLabelText(/^Relationship to applicant/) as HTMLInputElement).value).toBe(
 			"Mother",
 		);
 
@@ -661,14 +661,14 @@ describe("who to call, and who says a minor may volunteer", () => {
 		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
 		reads.set(API.myProfile, YOUNG);
 
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Grace" } });
-		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText(/^Full name/), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText(/^Relationship(?! to applicant)/), { target: { value: "Mother" } });
 		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000002" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Same as the person above" }));
+		fireEvent.click(screen.getByRole("button", { name: "Copy emergency contact details" }));
 
 		await goOn();
 
@@ -685,7 +685,7 @@ describe("who to call, and who says a minor may volunteer", () => {
 	it("sends no guardian at all for an adult, whatever was typed", async () => {
 		reads.set(API.applicationOptions, { ...OPTIONS, minor_age: 18 });
 
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 		await goOn();
 
 		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
@@ -757,18 +757,18 @@ describe("more than one of a thing", () => {
 	});
 
 	it("sends every emergency contact somebody filled in", async () => {
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Grace" } });
-		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText(/^Full name/), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText(/^Relationship(?! to applicant)/), { target: { value: "Mother" } });
 		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000002" },
 		});
 
 		fireEvent.click(screen.getByRole("button", { name: "Add another contact" }));
 
-		fireEvent.change(screen.getAllByLabelText(/^Their name/)[1], { target: { value: "Juma" } });
-		fireEvent.change(screen.getAllByLabelText(/^How you know them/)[1], {
+		fireEvent.change(screen.getAllByLabelText(/^Full name/)[1], { target: { value: "Juma" } });
+		fireEvent.change(screen.getAllByLabelText(/^Relationship(?! to applicant)/)[1], {
 			target: { value: "Brother" },
 		});
 		fireEvent.change(screen.getAllByLabelText(/^Phone number/)[1], {
@@ -786,10 +786,10 @@ describe("more than one of a thing", () => {
 	});
 
 	it("drops a spare blank contact rather than storing a nameless one", async () => {
-		await walkTo("If something happens");
+		await walkTo("Emergency contact");
 
-		fireEvent.change(screen.getByLabelText(/^Their name/), { target: { value: "Grace" } });
-		fireEvent.change(screen.getByLabelText(/^How you know them/), { target: { value: "Mother" } });
+		fireEvent.change(screen.getByLabelText(/^Full name/), { target: { value: "Grace" } });
+		fireEvent.change(screen.getByLabelText(/^Relationship(?! to applicant)/), { target: { value: "Mother" } });
 		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000002" },
 		});
@@ -825,7 +825,7 @@ describe("the disability question", () => {
 		await goOn();
 
 		// Still here: the step did not advance.
-		expect(screen.getByRole("heading", { name: "About you" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
 
 		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
 			target: { value: "Prefer not to say" },
@@ -833,20 +833,20 @@ describe("the disability question", () => {
 
 		await goOn();
 
-		expect(screen.queryByRole("heading", { name: "About you" })).toBeNull();
+		expect(screen.queryByRole("heading", { name: "Personal details" })).toBeNull();
 	});
 
 	it("asks what would help only when somebody has said there is something", async () => {
 		open();
 		await onTheIdentityStep();
 
-		expect(screen.queryByLabelText("Anything that would help")).toBeNull();
+		expect(screen.queryByLabelText("Support requirements")).toBeNull();
 
 		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
 			target: { value: "Yes" },
 		});
 
-		expect(screen.getByLabelText("Anything that would help")).toBeTruthy();
+		expect(screen.getByLabelText("Support requirements")).toBeTruthy();
 	});
 
 	it("sends the answer to the profile, not to the application", async () => {
@@ -858,7 +858,7 @@ describe("the disability question", () => {
 		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
 			target: { value: "Yes" },
 		});
-		fireEvent.change(screen.getByLabelText("Anything that would help"), {
+		fireEvent.change(screen.getByLabelText("Support requirements"), {
 			target: { value: "A seat at briefings" },
 		});
 
@@ -902,12 +902,12 @@ describe("what you have already done", () => {
 		reads.set(API.myProfile, IDENTIFIED);
 	});
 
-	const onTheStep = () => walkTo("What you have already done");
+	const onTheStep = () => walkTo("Education and experience");
 
 	it("is drawn for a volunteer, between what they can do and who to call", async () => {
 		await onTheStep();
 
-		expect(screen.getByRole("heading", { name: "What you have already done" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Education and experience" })).toBeTruthy();
 	});
 
 	it("is not drawn for a member, who is taking out a subscription", async () => {
@@ -917,7 +917,7 @@ describe("what you have already done", () => {
 		// Walked to the end rather than a fixed number of presses: the last step
 		// says Submit, not Continue, and pressing past it would be a registration.
 		while (screen.queryByRole("button", { name: "Continue" })) {
-			expect(screen.queryByRole("heading", { name: "What you have already done" })).toBeNull();
+			expect(screen.queryByRole("heading", { name: "Education and experience" })).toBeNull();
 			await goOn();
 		}
 	});
@@ -927,21 +927,21 @@ describe("what you have already done", () => {
 		await goOn();
 
 		// Gone, on the first press, with six empty tables behind it.
-		expect(screen.queryByRole("heading", { name: "What you have already done" })).toBeNull();
+		expect(screen.queryByRole("heading", { name: "Education and experience" })).toBeNull();
 	});
 
 	it("will not stack a second blank row on an empty one", async () => {
 		await onTheStep();
 
-		const add = screen.getByRole("button", { name: "Add somewhere you studied" });
+		const add = screen.getByRole("button", { name: "Add education" });
 		fireEvent.click(add);
 
 		// One row drawn, and the button that drew it now refuses until it says
 		// something — otherwise a mis-click leaves blanks the server drops.
-		expect(screen.getByLabelText(/^School or institution/)).toBeTruthy();
+		expect(screen.getByLabelText(/^Institution/)).toBeTruthy();
 		expect((add as HTMLButtonElement).disabled).toBe(true);
 
-		fireEvent.change(screen.getByLabelText(/^School or institution/), {
+		fireEvent.change(screen.getByLabelText(/^Institution/), {
 			target: { value: "Kibera Secondary" },
 		});
 
@@ -951,16 +951,16 @@ describe("what you have already done", () => {
 	it("sends what was filled in, and nothing that was not", async () => {
 		await onTheStep();
 
-		fireEvent.click(screen.getByRole("button", { name: "Add somewhere you studied" }));
-		fireEvent.change(screen.getByLabelText(/^School or institution/), {
+		fireEvent.click(screen.getByRole("button", { name: "Add education" }));
+		fireEvent.change(screen.getByLabelText(/^Institution/), {
 			target: { value: "Kibera Secondary" },
 		});
-		fireEvent.change(screen.getByLabelText(/^Qualification/), {
+		fireEvent.change(screen.getByLabelText(/^Qualification or certification/), {
 			target: { value: "KCSE" },
 		});
 
 		fireEvent.click(screen.getByRole("button", { name: "Add a referee" }));
-		fireEvent.change(screen.getByLabelText(/^Their name/), {
+		fireEvent.change(screen.getByLabelText(/^Name/), {
 			target: { value: "Grace Wanjiru" },
 		});
 
@@ -1001,7 +1001,7 @@ describe("what you have already done", () => {
 
 		await onTheStep();
 
-		expect((screen.getByLabelText(/^School or institution/) as HTMLInputElement).value).toBe(
+		expect((screen.getByLabelText(/^Institution/) as HTMLInputElement).value).toBe(
 			"Kenyatta University",
 		);
 		expect((screen.getByLabelText(/^Profession/) as HTMLSelectElement).value).toBe("Student");
@@ -1015,20 +1015,20 @@ describe("what you have already done", () => {
 	it("clears the finish year when somebody says they are still studying", async () => {
 		await onTheStep();
 
-		fireEvent.click(screen.getByRole("button", { name: "Add somewhere you studied" }));
-		fireEvent.change(screen.getByLabelText(/^School or institution/), {
+		fireEvent.click(screen.getByRole("button", { name: "Add education" }));
+		fireEvent.change(screen.getByLabelText(/^Institution/), {
 			target: { value: "Kenyatta University" },
 		});
-		fireEvent.change(screen.getByLabelText(/^Finished/), { target: { value: "2020" } });
+		fireEvent.change(screen.getByLabelText(/^End year/), { target: { value: "2020" } });
 		fireEvent.click(screen.getByLabelText("I am still studying here"));
 
-		expect((screen.getByLabelText(/^Finished/) as HTMLInputElement).value).toBe("");
-		expect((screen.getByLabelText(/^Finished/) as HTMLInputElement).disabled).toBe(true);
+		expect((screen.getByLabelText(/^End year/) as HTMLInputElement).value).toBe("");
+		expect((screen.getByLabelText(/^End year/) as HTMLInputElement).disabled).toBe(true);
 	});
 });
 
 describe("which disability, from the register", () => {
-	const NAMED = /^Which ones, if you would like to say/;
+	const NAMED = /^Disability type/;
 
 	beforeEach(() => {
 		reads.set(API.myProfile, { ...IDENTIFIED, disability_status: null });
@@ -1069,7 +1069,7 @@ describe("which disability, from the register", () => {
 
 		// Past it, with nothing named. Answering the question was the rule; this
 		// is the disclosure the rule deliberately does not demand.
-		expect(screen.queryByRole("heading", { name: "About you" })).toBeNull();
+		expect(screen.queryByRole("heading", { name: "Personal details" })).toBeNull();
 	});
 
 	it("sends the register's keys to the profile, beside the answer itself", async () => {

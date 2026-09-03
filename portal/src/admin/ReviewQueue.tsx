@@ -7,6 +7,7 @@ import { API, errorMessage } from "../lib/api";
 import { branchPath, formatDate } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { PersonHero, RegisterLinks } from "../ui/PersonHero";
+import { RecordPayment, owesAFee } from "./RecordPayment";
 import {
 	ActionMenu,
 	Avatar,
@@ -540,7 +541,18 @@ function Review({
 
 			{active === "safeguarding" && record && <Safeguarding record={record} />}
 
-			{active === "membership" && review && <MembershipFacts review={review} />}
+			{active === "membership" && review && (
+				<MembershipFacts
+					review={review}
+					onRecorded={() => {
+						// Both, and neither is optional: the fee lands on the
+						// membership and the approval state moves with it, so a
+						// screen refetching one would show the other stale.
+						void membership.mutate();
+						void approval.mutate();
+					}}
+				/>
+			)}
 
 			{grouped.map(
 				(group) =>
@@ -631,7 +643,14 @@ function MembershipApplicant({ review }: { review: MembershipReview }) {
 }
 
 /** The membership itself: what was applied for, and how it was paid for. */
-function MembershipFacts({ review }: { review: MembershipReview }) {
+function MembershipFacts({
+	review,
+	onRecorded,
+}: {
+	review: MembershipReview;
+	/** Refetch: recording a fee moves the membership and the approval both. */
+	onRecorded: () => void;
+}) {
 	const row = review.membership;
 	const fee = row.fee;
 
@@ -665,6 +684,16 @@ function MembershipFacts({ review }: { review: MembershipReview }) {
 					<Field label="Transaction" value={row.payment_transaction} />
 					<Field label="Receipt" value={row.payment_receipt} />
 				</dl>
+
+				{/* The act that answers the "Not yet" directly above it. This is
+				    where a coordinator lands from the members queue, so a fee taken
+				    at the counter is recorded on the screen that reports it missing
+				    rather than on another one they would have to know about. */}
+				{owesAFee(row, review.can_act) && (
+					<div className="mt-5 border-t border-card-line pt-5">
+						<RecordPayment row={row} canAct={review.can_act} onRecorded={onRecorded} />
+					</div>
+				)}
 
 				{/* The single thing an approver of a proof-of-payment membership is
 				    actually here to look at, so it is a button rather than a field. */}
