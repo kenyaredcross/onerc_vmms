@@ -146,6 +146,193 @@ def _require_migrated() -> None:
 		)
 
 
+# --- running it from a browser, on a server with no shell -----------------
+#
+# Everything from here to the next rule exists for one situation: the site is
+# deployed, nobody has a terminal on the box, and the seed still has to be run.
+# All of it is a thin, guarded door onto the same step functions `main()` calls —
+# no seeding logic lives down here, because a second implementation of a 338-node
+# tree is a second thing to keep in step with the first.
+#
+# `scripts/kenya_prod_seed.browser.js` is the caller.
+
+#: Where the running job leaves its progress for the browser to read. A cache key
+#: rather than a doctype: this is a few lines of transient status about one run,
+#: it should not outlive a redis restart, and inventing a doctype to hold it
+#: would put a permanent table on every site for the sake of a progress bar.
+PROGRESS_KEY = "vmmsx:kenya_install:progress"
+
+#: Long enough that a finished run is still readable when somebody comes back to
+#: the tab, short enough that yesterday's run is not mistaken for today's.
+PROGRESS_TTL = 60 * 60 * 6
+
+JOB_ID = "vmmsx-kenya-install"
+
+
+@frappe.whitelist()
+def start(confirm: str | None = None) -> dict:
+	"""Queue a full install, for a browser console on a site with no shell.
+
+	**Why this is enqueued and not simply run.** The seed writes 338 Geo Nodes,
+	and every insert into a nested set rewrites `lft`/`rgt` bounds across the
+	tree; a full run takes tens of seconds on a quiet bench and longer on a
+	loaded server. Run inline it would be one HTTP request holding a worker open
+	past nginx's proxy timeout — and the interesting failure there is not the
+	error page, it is that the request carries on running after the browser has
+	given up, so somebody reloads and starts a second run on top of the first.
+	Enqueued, the browser gets a job id in milliseconds and reads `status()` for
+	the rest.
+
+	**`deduplicate` is the other half of that.** A fixed `job_id` means a second
+	press while the first run is still going is dropped by the queue rather than
+	racing it.
+
+	**Guarded three ways**, because this is a whitelisted endpoint that writes a
+	great deal:
+
+	* System Manager only, via `only_for`, which throws for anybody else.
+	* Administrator only. A site can have several System Managers and this is not
+	  an act any of them should be able to trigger by opening a console.
+	* `confirm` must be the site's own name, typed. That is the difference
+	  between running this and pasting something that runs it, and it is why the
+	  browser script asks for it rather than carrying it.
+
+	**Purge is deliberately unreachable from here.** `main(purge=True)` empties a
+	society off the site, and there is no confirmation string worth putting in
+	front of that over HTTP. A purge is a shell act, after a backup.
+	"""
+	frappe.only_for("System Manager")
+
+	if frappe.session.user != "Administrator":
+		frappe.throw(
+			"Only Administrator may run the Kenya seed. You hold System Manager, which is not"
+			" the same thing: this writes the society's whole configuration.",
+			frappe.PermissionError,
+		)
+
+	if confirm != frappe.local.site:
+		frappe.throw(
+			f"Pass the site's own name as `confirm` to run this. Expected {frappe.local.site!r}."
+			" A deliberate speed bump, not a password.",
+			frappe.ValidationError,
+		)
+
+	running = _progress()
+
+	if running and not running.get("finished"):
+		return {"queued": False, "reason": "a run is already in progress", "progress": running}
+
+	_set_progress(
+		{"step": 0, "of": QUEUED_STEPS + 1, "message": "queued", "finished": False, "failed": False}
+	)
+
+	frappe.enqueue(
+		"vmmsx.seed.kenya_install.run_queued",
+		queue="long",
+		timeout=3600,
+		job_id=JOB_ID,
+		deduplicate=True,
+		enqueue_after_commit=True,
+	)
+
+	return {"queued": True, "site": frappe.local.site, "job_id": JOB_ID}
+
+
+@frappe.whitelist()
+def status() -> dict:
+	"""What the queued run is doing, or what it did. Read-only, System Manager."""
+	frappe.only_for("System Manager")
+
+	return _progress() or {"message": "no run has been started on this site", "finished": False}
+
+
+@frappe.whitelist()
+def check() -> dict:
+	"""`readiness()` for a browser. Read-only, and safe to call at any time."""
+	frappe.only_for("System Manager")
+
+	rows = _readiness_rows()
+
+	return {"rows": rows, "failed": [row for row in rows if row["status"] != "ok"], "total": len(rows)}
+
+
+#: The steps `run_queued` works through. The landing page is not among them: it
+#: is `kenya.main`'s own last act, inside step one.
+QUEUED_STEPS = 4
+
+
+def run_queued() -> None:
+	"""The queued job. Never call this directly; `start()` is the door.
+
+	Each step commits as it goes, exactly as `main()` does, so a failure at step
+	four leaves steps one to three on the site rather than throwing away several
+	minutes of work. That is the right behaviour for a seed every step of which
+	is idempotent: fix whatever broke, run it again, and the completed steps
+	report `exists` throughout.
+	"""
+	steps = (
+		("the society, 47 counties, 290 sub-counties and the workflows", lambda: kenya.main(commit=True)),
+		(
+			"vocabularies, programmes, open needs, events and announcements",
+			lambda: kenya_operations.main(commit=True),
+		),
+		("the newsroom", lambda: kenya_stories.main(commit=True)),
+		("the opportunities board", lambda: kenya_jobs.main(commit=True)),
+	)
+
+	try:
+		_require_migrated()
+
+		for index, (label, step) in enumerate(steps, start=1):
+			_set_progress(
+				{
+					"step": index,
+					"of": QUEUED_STEPS + 1,
+					"message": label,
+					"finished": False,
+					"failed": False,
+				}
+			)
+			step()
+
+		rows = _readiness_rows()
+		failed = [row for row in rows if row["status"] != "ok"]
+
+		_set_progress(
+			{
+				"step": QUEUED_STEPS + 1,
+				"of": QUEUED_STEPS + 1,
+				"message": "done" if not failed else f"done, with {len(failed)} readiness check(s) failing",
+				"finished": True,
+				"failed": False,
+				"readiness": rows,
+				"counts": _counts(),
+			}
+		)
+	except Exception as error:
+		# The step that threw has already rolled itself back; this clears
+		# anything the failing step left half-written in the current transaction
+		# so the progress row below is the last word rather than a casualty.
+		frappe.db.rollback()
+		_set_progress(
+			{
+				"message": f"failed: {error}",
+				"finished": True,
+				"failed": True,
+				"traceback": frappe.get_traceback(),
+			}
+		)
+		raise
+
+
+def _set_progress(value: dict) -> None:
+	frappe.cache().set_value(PROGRESS_KEY, value, expires_in_sec=PROGRESS_TTL)
+
+
+def _progress() -> dict | None:
+	return frappe.cache().get_value(PROGRESS_KEY)
+
+
 # --- is this site actually testable? --------------------------------------
 
 
@@ -164,7 +351,15 @@ def readiness() -> list[dict]:
 	queue, a picker asking for a rung the server would refuse, a portal role sent
 	to `/app` — and each is cheaper to catch here than in front of a tester.
 	"""
-	checks = [
+	rows = _readiness_rows()
+	_print_readiness(rows)
+
+	return rows
+
+
+def _readiness_rows() -> list[dict]:
+	"""Every check, as rows, printing nothing. What `readiness()` and `check()` share."""
+	checks = (
 		_check_ladder(),
 		_check_tree(),
 		_check_anchor_levels(),
@@ -172,12 +367,9 @@ def readiness() -> list[dict]:
 		_check_roles_land_somewhere(),
 		_check_signup_is_open(),
 		_check_there_is_something_to_look_at(),
-	]
+	)
 
-	rows = [row for group in checks for row in group]
-	_print_readiness(rows)
-
-	return rows
+	return [row for group in checks for row in group]
 
 
 def _ok(key: str, detail: str) -> dict:
@@ -469,8 +661,10 @@ def _print_readiness(rows: list[dict]) -> None:
 # --- the report -----------------------------------------------------------
 
 
-def _summary(report: dict) -> None:
-	counts = {
+def _counts() -> dict:
+	"""What the site holds now, by surface. Shared by the printed summary and the
+	browser, which wants the same numbers without a terminal to print them to."""
+	return {
 		"Counties": frappe.db.count("Geo Node", {"geo_level": kenya.LEVELS[1]["key"]}),
 		"Sub-counties": frappe.db.count("Geo Node", {"geo_level": kenya.LEVELS[2]["key"]}),
 		"Membership plans": frappe.db.count("VMMS Membership Type"),
@@ -492,6 +686,9 @@ def _summary(report: dict) -> None:
 		"Memberships": frappe.db.count("VMMS Membership"),
 	}
 
+
+def _summary(report: dict) -> None:
+	counts = _counts()
 	failures = [row for row in report.get("readiness", []) if row["status"] != "ok"]
 
 	print("\n" + "=" * 62)
