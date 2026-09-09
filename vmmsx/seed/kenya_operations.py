@@ -61,7 +61,7 @@ from a request.
 """
 
 import frappe
-from frappe.utils import add_days, today
+from frappe.utils import add_days, strip_html, today
 
 from vmmsx.seed import kenya, mission
 
@@ -163,6 +163,36 @@ PROJECTS = (
 			" running through the last quarter of the year."
 		),
 	},
+	# The two below exist so that the work in this seed is genuinely spread across
+	# counties rather than only appearing to be. A terms of reference takes its
+	# geo scope from its programme, and `assert_within_scope` compares with
+	# `allow_ancestor=False` — so a need advertised in Kisumu has to belong to a
+	# programme that runs in Kisumu. Advertising one against a Nairobi programme
+	# does not make the society look national; it makes the record refuse to save.
+	{
+		"key": "coast-community-health-2026",
+		"name": "Coast Community Health Programme",
+		"where": ("county", "Mombasa"),
+		"status": "Active",
+		"start_in": -60,
+		"end_in": 90,
+		"summary": (
+			"Household health outreach across the coast: growth monitoring, immunisation"
+			" follow-up and net use, run by community health volunteers on a fortnightly round."
+		),
+	},
+	{
+		"key": "nyanza-blood-programme-2026",
+		"name": "Nyanza Blood Donation Programme",
+		"where": ("county", "Kisumu"),
+		"status": "Active",
+		"start_in": -30,
+		"end_in": 150,
+		"summary": (
+			"The standing blood donation partnership with the national blood transfusion service"
+			" across the lake counties, run as mobile drives most weekends."
+		),
+	},
 )
 
 # --- the work a society asks for ------------------------------------------
@@ -192,6 +222,7 @@ TERMS = (
 	{
 		"key": "blood-drive-support",
 		"name": "Blood Drive Support",
+		"project": "nyanza-blood-programme-2026",
 		"purpose": "Running the reception, refreshment and recovery areas at a mobile blood drive.",
 		"responsibilities": (
 			"Register donors and direct them through the drive.\n"
@@ -216,7 +247,7 @@ TERMS = (
 	{
 		"key": "community-health",
 		"name": "Community Health Outreach",
-		"project": "community-health-safety-2026",
+		"project": "coast-community-health-2026",
 		"purpose": (
 			"Household and school visits on a branch health campaign — hygiene, immunisation"
 			" awareness and referral."
@@ -314,7 +345,11 @@ REQUESTS = (
 	},
 	{
 		"terms": "shelter-support",
-		"where": ("county", "Kisumu"),
+		# Nairobi, because Mathare is in Nairobi. A need is filed where the work
+		# is, and it also has to sit within its terms of reference's programme —
+		# `assert_within_scope` compares with `allow_ancestor=False`, so "somewhere
+		# else in the country" is refused rather than merely odd.
+		"where": ("county", "Nairobi"),
 		"volunteers": 8,
 		"from_in": 2,
 		"until_in": 12,
@@ -973,10 +1008,18 @@ def _standing() -> str | None:
 	Every terms of reference belongs to a programme now, and the blood drive
 	rota, the event first aid post and the family links desk genuinely are one:
 	work the society runs continuously rather than a campaign with an end.
-	Anchored at the first county, which is where the rest of this seed's
+	Anchored at `PRIMARY_COUNTY`, which is where the rest of this seed's
 	county-level work sits.
+
+	**Named, not indexed, and that is the whole of a bug worth remembering.**
+	This read `kenya.county(0)` while the county table held two entries in
+	demo order, Nairobi first. The table now holds all 47 in official county-code
+	order, so index 0 became *Mombasa* — and the standing programme silently moved
+	to the coast, taking the blood drive and the first aid post with it. Nothing
+	failed at that point; it failed one step later, when a deployment request
+	filed in Nairobi was refused as outside terms that now applied in Mombasa.
 	"""
-	node = kenya.county(0)
+	node = kenya.primary_county()
 
 	if not node:
 		return None
@@ -1099,6 +1142,16 @@ def _requests() -> list[dict]:
 	terms of reference the first is true the moment the record exists. So the
 	deployment appears because the app decided it should, not because a seed
 	wrote one.
+
+	**One request that will not save must not cost the other six.** Every row here
+	is validated by the real controller, and `validate_anchor` refuses a need
+	filed outside its terms of reference's programme — correctly. Before this,
+	such a refusal came out of `insert()` as an unhandled exception that aborted
+	`main()` at step four, so a single bad county in this table threw away the
+	vocabularies, the events, the newsroom and the opportunities board with it.
+	Recorded and stepped over instead, the same way `tanzania_people.py` treats a
+	person who cannot be registered — and the report says which one and why, in
+	the message the product actually threw.
 	"""
 	rows = []
 
@@ -1137,8 +1190,24 @@ def _requests() -> list[dict]:
 				"is_published": int(spec["published"]),
 			}
 		)
-		request.insert(ignore_permissions=True)
-		request.reload()
+
+		try:
+			request.insert(ignore_permissions=True)
+			request.reload()
+		except Exception as error:
+			# Only this row is undone. `insert` had not committed, so the rollback
+			# costs nothing already earned in this step — and the next iteration
+			# starts clean rather than on a poisoned transaction.
+			frappe.db.rollback()
+			rows.append(
+				{
+					"key": spec["terms"],
+					"status": "failed",
+					"at": spec["where"][1] if spec["where"] else "nowhere",
+					"why": strip_html(str(error))[:160],
+				}
+			)
+			continue
 
 		rows.append(
 			{
