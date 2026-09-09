@@ -1388,17 +1388,11 @@ const ONGOING_COLUMNS: Array<{
 /**
  * Past deployments: a shelf of closed mission files.
  *
- * **Folders, and navy ones, because this register is not the others.** Every
- * live register in this console is a white surface on the canvas — that is what
- * "work in progress" looks like here. A mission that is over is a different kind
- * of object: nothing on it will change again, and what a coordinator does with
- * it is *retrieve* it rather than act on it. So the past register is drawn as
- * what it is, a row of closed folders in the rail's own navy, and the difference
- * is legible from across the room without reading a single status.
- *
- * The navy is `bg-rail` — the same #011E41 the left-hand navigation is — so this
- * introduces no new colour. White text on it clears AA with enormous headroom,
- * which is the same reason the rail can carry white text.
+ * **Folders, without turning the archive into a dark dashboard.** A past mission
+ * is retrieved rather than acted on, so the blue folder silhouette provides the
+ * distinction. The record itself stays on a generous white file card: reference,
+ * area, contents, state and filed date remain readable at a glance and the shelf
+ * keeps the light visual rhythm of the rest of the console.
  *
  * **A folder is still a link to the whole record.** Nothing is archived away
  * and nothing is read-only by virtue of being here: a closed mission file keeps
@@ -1481,7 +1475,7 @@ export function PastDeployments() {
 			)}
 
 			{rows.length > 0 && (
-				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+				<ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 					{rows.map((row) => (
 						<li key={row.name}>
 							<MissionFolder row={row} />
@@ -1496,9 +1490,10 @@ export function PastDeployments() {
 /**
  * One closed mission, as the folder it is.
  *
- * The tab is a real element rather than a background image, so it keeps its
- * shape at any width and inherits the same hover as the body. The whole card is
- * one link: a folder you have to aim at a corner of is a folder nobody opens.
+ * The icon's tab is a real element rather than a background image, so it keeps
+ * its shape at any width and can shift to the action colour on hover. The whole
+ * card is one link: a folder you have to aim at a corner of is a folder nobody
+ * opens.
  */
 function MissionFolder({ row }: { row: DeploymentSummary }) {
 	const filed = row.closed_out_on ?? row.actual_end ?? row.end_date;
@@ -1511,61 +1506,41 @@ function MissionFolder({ row }: { row: DeploymentSummary }) {
 	return (
 		<Link
 			to={`/admin/deployments/${encodeURIComponent(row.name)}`}
-			className="group block h-full pt-2.5 transition duration-200 hover:-translate-y-0.5"
+			className="group block h-full transition duration-200 hover:-translate-y-1"
 		>
-			<div className="relative h-full">
-				{/* The tab. Behind the body and rising above it, so the two read as
-				    one folded object rather than as a card with a flag on it. */}
-				<span
-					aria-hidden="true"
-					className="absolute -top-2.5 left-0 h-4 w-[42%] rounded-t-[7px] bg-rail transition-colors group-hover:bg-rail-soft"
-				/>
+			<div className="flex h-full min-h-[260px] flex-col rounded-[18px] border border-card-line bg-white px-6 py-6 shadow-[0_1px_2px_rgba(16,32,51,0.04)] transition duration-200 group-hover:border-blue-line group-hover:shadow-[0_16px_32px_rgba(16,32,51,0.10)]">
+				<span aria-hidden="true" className="relative mb-7 mt-2 block h-12 w-[68px] rounded-md bg-blue-press shadow-sm transition group-hover:bg-blue">
+					<span className="absolute -top-3 left-1 h-4 w-8 rounded-t-md bg-blue" />
+				</span>
 
-				<div className="relative flex h-full min-h-[186px] flex-col rounded-[11px] rounded-tl-none bg-rail px-4 pb-3.5 pt-4 shadow-[0_1px_2px_rgba(1,30,65,0.14)] transition duration-200 group-hover:bg-rail-soft group-hover:shadow-[0_14px_30px_rgba(1,30,65,0.22)]">
-					{/* The fold along the top of the body, which is what stops the
-					    tab and the body reading as two stacked rectangles. */}
-					<span
-						aria-hidden="true"
-						className="absolute inset-x-0 top-0 h-px rounded-t-[11px] bg-white/20"
-					/>
+				<p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-faint">
+					{year ? `${year} mission file` : "Mission file"}
+				</p>
+				<p className="tabular mt-1 truncate font-mono text-[10.5px] text-muted">{row.name}</p>
 
-					{/* White at 60% on #011E41 is about 5.4:1 — clear of AA for
-					    small text. The two faintest lines on this card were at 55%
-					    and 50%, which is where that stops being true. */}
-					<p className="text-[9.5px] font-bold uppercase tracking-[0.11em] text-white/60">
-						{year ? `${year} mission file` : "Mission file"}
-					</p>
-					<p className="tabular mt-1 truncate font-mono text-[10.5px] text-white/60">
-						{row.name}
-					</p>
+				<h3 className="mt-3 line-clamp-2 text-[16px] font-bold leading-snug text-ink">
+					{row.terms_of_reference || row.name}
+				</h3>
 
-					<h3 className="mt-2.5 line-clamp-2 text-[14px] font-bold leading-snug text-white">
-						{row.terms_of_reference || row.name}
-					</h3>
+				<p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-muted">
+					{geoPath(row.geo_path) || "No area recorded"}
+				</p>
 
-					<p className="mt-1.5 line-clamp-2 text-[11.5px] leading-relaxed text-white/70">
-						{geoPath(row.geo_path) || "No area recorded"}
-					</p>
+				<p className="mt-2 text-[12px] font-medium text-blue-press">
+					TOR · {assignments} {assignments === 1 ? "assignment" : "assignments"} · complete record
+				</p>
 
-					<p className="mt-2 text-[11.5px] text-white/75">
-						{assignments} {assignments === 1 ? "assignment" : "assignments"}
-						{row.terms_of_reference ? " · terms of reference" : ""}
-					</p>
-
-					<div className="mt-auto flex items-center justify-between gap-2 border-t border-white/15 pt-2.5">
-						<span className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-white/85">
-							{/* A dot as well as the words: a state is never a hue alone,
-							    and on this surface there is no hue to read anyway. */}
-							<span
-								aria-hidden="true"
-								className={cx("h-1.5 w-1.5 flex-none rounded-full", FILED_TONES[row.status] ?? "bg-white/50")}
-							/>
-							<span className="truncate">{row.status}</span>
-						</span>
-						<span className="tabular flex-none text-[11px] text-white/70">
-							{filed ? formatDate(filed) : "No date"}
-						</span>
-					</div>
+				<div className="mt-auto flex items-center justify-between gap-3 border-t border-card-line pt-4">
+					<span className="flex min-w-0 items-center gap-2 text-[11.5px] font-semibold text-slate-strong">
+						<span
+							aria-hidden="true"
+							className={cx("h-2 w-2 flex-none rounded-full", FILED_TONES[row.status] ?? "bg-slate-faint")}
+						/>
+						<span className="truncate">{row.status}</span>
+					</span>
+					<span className="tabular flex-none text-[11.5px] text-muted">
+						{filed ? formatDate(filed) : "No date"}
+					</span>
 				</div>
 			</div>
 		</Link>

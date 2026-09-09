@@ -761,6 +761,43 @@ describe("the terms of reference gallery", () => {
 			...over,
 		}) as TermsOfReference;
 
+	it("splits a new terms document into visible sections and reports completion", async () => {
+		reads.set(API.branchTerms, { count: 0, terms: [], states: [] });
+		reads.set(API.branchProjects, { projects: [] });
+		reads.set(API.torMethodologies, {
+			methodologies: [],
+			certification_types: [],
+			currencies: [],
+			units: [],
+			funding_statuses: [],
+		});
+
+		show(<TermsList />, "/admin/deployments/terms?new=1");
+
+		const progress = screen.getByRole("progressbar", { name: "Form completion" });
+		expect(progress.getAttribute("aria-valuenow")).toBe("0");
+		expect(screen.getAllByRole("tab")).toHaveLength(5);
+		expect(screen.getByRole("tab", { name: /Overview & scope/ }).getAttribute("aria-selected")).toBe("true");
+		expect(screen.getByRole("tab", { name: /Review & create/ })).toBeTruthy();
+
+		fireEvent.change(screen.getByLabelText(/What your society calls this piece of work/), {
+			target: { value: "Flood response" },
+		});
+		fireEvent.change(screen.getByLabelText(/What a deployment under these terms is for/), {
+			target: { value: "Reach isolated households" },
+		});
+		fireEvent.change(screen.getByLabelText(/What happened, what is needed/), {
+			target: { value: "Seasonal flooding has isolated three communities." },
+		});
+
+		expect(progress.getAttribute("aria-valuenow")).toBe("1");
+		await act(async () => {
+			fireEvent.click(screen.getByRole("tab", { name: /Roles & outcomes/ }));
+		});
+		expect(screen.getByRole("tab", { name: /Roles & outcomes/ }).getAttribute("aria-selected")).toBe("true");
+		expect(screen.getByText("Responsibilities")).toBeTruthy();
+	});
+
 	it("draws each terms of reference as a document, with the approved facts on it", () => {
 		reads.set(API.branchTerms, { count: 1, terms: [terms()], states: [] });
 

@@ -34,6 +34,7 @@ import {
 	Card,
 	Empty,
 	ErrorNote,
+	FormProgressTabs,
 	type Crumb,
 	PageHeading,
 	Pill,
@@ -43,7 +44,7 @@ import {
 	cx,
 } from "../ui/primitives";
 import { FolderCard } from "../ui/patterns";
-import { useSocietyBranding } from "../ui/brand";
+import { CrossMark, useSocietyBranding, type Branding } from "../ui/brand";
 
 /**
  * The paperwork a deployment stands on: a programme of work, and the terms of
@@ -682,10 +683,10 @@ export function TermsList() {
 				</div>
 			)}
 
-			{isLoading && <Spinner label="Loading terms of reference…" />}
-			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
+			{!creating && isLoading && <Spinner label="Loading terms of reference…" />}
+			{!creating && error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
 
-			{data && rows.length === 0 && (
+			{!creating && data && rows.length === 0 && (
 				<Empty title="No terms of reference here">
 					A terms of reference is the specification a deployment is run against: what the work is,
 					what a volunteer is expected to do, and what they must hold to do it. Write one, then
@@ -693,11 +694,11 @@ export function TermsList() {
 				</Empty>
 			)}
 
-			{rows.length > 0 && (
-				<ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			{!creating && rows.length > 0 && (
+				<ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 					{rows.map((row) => (
 						<li key={row.name}>
-							<TermsPaper row={row} society={branding?.name ?? null} />
+							<TermsPaper row={row} branding={branding ?? null} />
 						</li>
 					))}
 				</ul>
@@ -719,79 +720,93 @@ export function TermsList() {
  * society that has named itself sees its own name and one that has not sees the
  * neutral line rather than somebody else's.
  */
-function TermsPaper({ row, society }: { row: TermsOfReference; society: string | null }) {
+function TermsPaper({ row, branding }: { row: TermsOfReference; branding: Branding | null }) {
 	const stamp = stampFor(row);
 
 	return (
 		<Link
 			to={`/admin/deployments/terms/${encodeURIComponent(row.name)}`}
-			className="group relative flex aspect-[148/210] flex-col overflow-hidden rounded-[10px] border border-card-line bg-white px-4 pb-3 pt-4 shadow-[0_1px_2px_rgba(16,32,51,0.05)] transition hover:-translate-y-0.5 hover:border-blue hover:shadow-[0_12px_28px_rgba(16,32,51,0.12)]"
+			className="group relative flex aspect-[148/210] min-h-[420px] flex-col overflow-hidden rounded-[8px] border border-card-line bg-white px-5 pb-4 pt-5 shadow-[0_3px_10px_rgba(16,32,51,0.08)] transition duration-200 hover:-translate-y-1 hover:border-blue-line hover:shadow-[0_18px_34px_rgba(16,32,51,0.14)]"
 		>
 			{/* The folded corner. Decoration, and hidden from assistive technology
 			    because it says nothing a screen reader needs. */}
 			<span
 				aria-hidden="true"
-				className="absolute right-0 top-0 h-7 w-7 bg-gradient-to-bl from-surface to-card-line [clip-path:polygon(100%_0,0_0,100%_100%)]"
+				className="absolute right-0 top-0 h-12 w-12 border-b border-l border-card-line bg-surface [clip-path:polygon(100%_0,0_0,100%_100%)]"
 			/>
 
-			<header className="flex items-start gap-2 pr-6">
-				<span
-					aria-hidden="true"
-					className="grid h-6 w-6 flex-none place-items-center rounded bg-danger-soft text-[13px] font-bold leading-none text-danger"
-				>
-					✚
-				</span>
-				<span className="min-w-0">
-					<span className="block truncate text-[10.5px] font-bold leading-tight text-ink">
-						{society ?? "Terms of Reference"}
+			<header className="flex items-center gap-2.5 pr-10">
+				{branding?.logo ? (
+					<img src={branding.logo} alt="" className="h-9 w-9 flex-none object-contain" />
+				) : (
+					<span
+						aria-hidden="true"
+						className="grid h-9 w-9 flex-none place-items-center rounded-full bg-blue-soft text-blue"
+					>
+						<CrossMark size={18} />
 					</span>
-					<span className="block text-[9px] uppercase tracking-[0.09em] text-muted">
-						Operations
+				)}
+				<span className="min-w-0">
+					<span className="block truncate text-[11.5px] font-bold leading-tight text-ink">
+						{branding?.name ?? "Terms of Reference"}
+					</span>
+					<span className="block text-[9.5px] text-muted">
+						Operations Directorate
 					</span>
 				</span>
 			</header>
 
-			<span aria-hidden="true" className="my-2.5 block h-px bg-card-line" />
+			<span aria-hidden="true" className="mt-3 block h-[3px] w-1/3 bg-red" />
+			<span aria-hidden="true" className="mb-4 block h-[3px] w-full bg-rail" />
 
-			<p className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-muted">
+			<p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-red-ink">
 				Terms of Reference
 			</p>
-			<p className="tabular mt-0.5 truncate font-mono text-[9.5px] text-slate-faint">
+			<p className="tabular mt-1 truncate font-mono text-[10px] text-slate-faint">
 				{row.tor_key || row.name}
 			</p>
 
-			<h3 className="mt-2 line-clamp-3 text-[13px] font-bold leading-snug text-ink">
+			<h3 className="mt-4 max-w-[82%] line-clamp-3 text-[17px] font-bold leading-snug text-ink">
 				{row.tor_name}
 			</h3>
 
+			<em
+				className={cx(
+					"absolute right-5 top-[35%] z-10 -rotate-[7deg] rounded border-2 px-2.5 py-1 text-[10px] font-bold not-italic uppercase tracking-[0.09em] shadow-sm",
+					stamp.tone,
+				)}
+			>
+				{stamp.label}
+			</em>
+
 			{row.project_name && (
-				<p className="mt-1 line-clamp-1 text-[10.5px] font-semibold text-muted">
+				<p className="mt-1.5 line-clamp-1 text-[11.5px] font-semibold text-muted">
 					{row.project_name}
 				</p>
 			)}
 
-			<dl className="mt-2.5 min-h-0 flex-1 space-y-1.5 overflow-hidden">
+			<dl className="mt-5 min-h-0 flex-1 space-y-3 overflow-hidden border-t border-card-line pt-4">
 				{row.purpose && (
 					<div>
-						<dt className="text-[8.5px] font-bold uppercase tracking-[0.1em] text-muted">
+						<dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted">
 							Purpose
 						</dt>
-						<dd className="line-clamp-3 text-[10.5px] leading-snug text-slate-strong">
+						<dd className="mt-0.5 line-clamp-3 text-[11.5px] leading-relaxed text-slate-strong">
 							{row.purpose}
 						</dd>
 					</div>
 				)}
 				<div>
-					<dt className="text-[8.5px] font-bold uppercase tracking-[0.1em] text-muted">Area</dt>
-					<dd className="line-clamp-1 text-[10.5px] text-slate-strong">
+					<dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted">Area</dt>
+					<dd className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-strong">
 						{row.geo_scope_path ? geoPath(row.geo_scope_path) : "Applies anywhere"}
 					</dd>
 				</div>
 				<div>
-					<dt className="text-[8.5px] font-bold uppercase tracking-[0.1em] text-muted">
+					<dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted">
 						Expected period
 					</dt>
-					<dd className="text-[10.5px] text-slate-strong">
+					<dd className="mt-0.5 text-[11.5px] text-slate-strong">
 						{row.expected_start_date
 							? `${formatDate(row.expected_start_date)}${row.expected_end_date ? ` – ${formatDate(row.expected_end_date)}` : ""}`
 							: row.default_duration_days
@@ -801,16 +816,8 @@ function TermsPaper({ row, society }: { row: TermsOfReference; society: string |
 				</div>
 			</dl>
 
-			<footer className="mt-2 flex items-center justify-between gap-2 border-t border-card-line pt-2">
-				<span
-					className={cx(
-						"rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]",
-						stamp.tone,
-					)}
-				>
-					{stamp.label}
-				</span>
-				<span className="text-[10px] font-semibold text-blue-press group-hover:underline">
+			<footer className="mt-3 flex items-center justify-end border-t border-card-line pt-3">
+				<span className="text-[11px] font-semibold text-blue-press group-hover:underline">
 					{stamp.action} →
 				</span>
 			</footer>
@@ -832,32 +839,32 @@ function stampFor(row: TermsOfReference): { label: string; tone: string; action:
 	if (row.is_draft) {
 		return {
 			label: "Draft",
-			tone: "bg-warning-soft text-warning",
+			tone: "border-slate-faint bg-white text-slate-strong",
 			action: "Continue writing",
 		};
 	}
 
 	if (row.is_cancelled) {
-		return { label: "Cancelled", tone: "bg-surface text-muted", action: "Open document" };
+		return { label: "Cancelled", tone: "border-card-line bg-surface text-muted", action: "Open document" };
 	}
 
 	switch (row.approval_state) {
 		case "Approved":
-			return { label: "Approved", tone: "bg-success-soft text-success", action: "Open document" };
+			return { label: "Approved", tone: "border-success-line bg-success-soft text-success", action: "Open document" };
 		case "Submitted":
 		case "In Review":
 			return {
 				label: "In review",
-				tone: "bg-blue-soft text-blue-press",
+				tone: "border-warning-line bg-warning-soft text-warning",
 				action: "Review document",
 			};
 		case "Rejected":
-			return { label: "Rejected", tone: "bg-danger-soft text-danger", action: "Open document" };
+			return { label: "Rejected", tone: "border-danger-line bg-danger-soft text-danger", action: "Open document" };
 		case "Withdrawn":
 		case "Expired":
 			return {
 				label: row.approval_state,
-				tone: "bg-surface text-muted",
+				tone: "border-card-line bg-surface text-muted",
 				action: "Open document",
 			};
 		default:
@@ -866,7 +873,7 @@ function stampFor(row: TermsOfReference): { label: string; tone: string; action:
 			// ask for anybody to be.
 			return {
 				label: row.is_active ? "Submitted" : "Retired",
-				tone: "bg-surface text-slate-strong",
+				tone: "border-card-line bg-surface text-slate-strong",
 				action: "Open document",
 			};
 	}
@@ -900,6 +907,7 @@ export function TermsDetail() {
 	if (!data?.message) return null;
 
 	const { terms, document, deployments } = data.message;
+	const documentState = stampFor(terms).label;
 
 	const trail: Crumb[] = [
 		{ label: "Deployments", to: "/admin/deployments" },
@@ -938,9 +946,7 @@ export function TermsDetail() {
 						<div>
 							<div className="flex flex-wrap items-center gap-2">
 								<SectionTitle>Terms of reference</SectionTitle>
-								{terms.is_draft && <Pill tone="signal">Draft</Pill>}
-								{terms.is_submitted && <Pill tone="navy">Submitted</Pill>}
-								{terms.is_cancelled && <Pill tone="quiet">Cancelled</Pill>}
+								<StateBadge state={documentState} />
 								{terms.is_submitted && !terms.is_active && <Pill tone="quiet">Retired</Pill>}
 							</div>
 							<p className="mt-1 max-w-2xl text-[12px] text-slate-faint">
@@ -1046,8 +1052,19 @@ export function TermsDetail() {
 	);
 }
 
+const TERMS_FORM_STEPS = [
+	{ key: "overview", label: "Overview & scope" },
+	{ key: "roles", label: "Roles & outcomes" },
+	{ key: "plan", label: "People & plan" },
+	{ key: "resources", label: "Resources & eligibility" },
+	{ key: "review", label: "Review & create" },
+] as const;
+
+type TermsFormStep = (typeof TERMS_FORM_STEPS)[number]["key"];
+
 function TermsForm({ onCreated }: { onCreated: () => void }) {
 	const { call } = useContext(FrappeContext) as FrappeConfig;
+	const [activeStep, setActiveStep] = useState<TermsFormStep>("overview");
 
 	const [torName, setTorName] = useState("");
 	const [project, setProject] = useState("");
@@ -1110,6 +1127,31 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 	const options = (projects.data?.message?.projects ?? []).filter((row) => row.is_open);
 	const node = selectedNode(chain);
 	const ready = torName.trim();
+	const hasObjectives = objectives.some((row) => row.objective?.trim());
+	const hasOutputs = outputs.some((row) => row.output?.trim());
+	const hasPlan = itinerary.some((row) => row.activity?.trim());
+	const hasResources = hasNoResources || resources.some((row) => row.resource?.trim());
+	const overviewComplete = Boolean(torName.trim() && purpose.trim() && background.trim());
+	const rolesComplete = Boolean(
+		responsibilities.trim() && hasObjectives && hasOutputs,
+	);
+	const steps = TERMS_FORM_STEPS.map((step) => ({
+		...step,
+		complete:
+			step.key === "overview"
+				? overviewComplete
+				: step.key === "roles"
+					? rolesComplete
+					: step.key === "plan"
+						? hasPlan
+						: step.key === "resources"
+							? hasResources
+							: overviewComplete && rolesComplete && hasPlan && hasResources,
+	}));
+	const stepIndex = TERMS_FORM_STEPS.findIndex((step) => step.key === activeStep);
+	const openStep = (step: TermsFormStep) => {
+		setActiveStep(step);
+	};
 
 	const create = async () => {
 		setBusy(true);
@@ -1166,12 +1208,27 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 	};
 
 	return (
-		<Card>
-			<SectionTitle>Write a terms of reference</SectionTitle>
-			<p className="mt-1 text-[12.5px] text-muted">
-				What the work is and what a volunteer deployed to it is expected to do. Deployments point at
-				it, and it prints on your society's letterhead.
-			</p>
+		<Card pad={false}>
+			<div className="p-5">
+				<SectionTitle>Write a terms of reference</SectionTitle>
+				<p className="mt-1 text-[12.5px] text-muted">
+					What the work is and what a volunteer deployed to it is expected to do. Deployments point at
+					it, and it prints on your society's letterhead.
+				</p>
+			</div>
+
+			<FormProgressTabs steps={steps} active={activeStep} onChange={openStep} />
+
+			<div
+				id={`form-section-${activeStep}`}
+				role="tabpanel"
+				className="p-5"
+			>
+				<h3 className="mb-4 text-[16px] font-semibold text-ink">
+					{TERMS_FORM_STEPS[stepIndex].label}
+				</h3>
+
+			{activeStep === "overview" && <>
 
 			<div className="mt-4 grid gap-4 sm:grid-cols-2">
 				<Labelled label="Terms of reference" hint="What your society calls this piece of work.">
@@ -1262,7 +1319,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					/>
 				</Labelled>
 			</div>
+			</>}
 
+			{activeStep === "overview" && (
 			<div className="mt-4">
 				<Labelled label="Mission background" hint="What happened, what is needed, and what has been done already.">
 					<textarea
@@ -1272,8 +1331,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					/>
 				</Labelled>
 			</div>
+			)}
 
-			<div className="mt-4">
+			<div className={activeStep === "roles" ? "mt-4" : "hidden"}>
 				<Labelled
 					label="Responsibilities"
 					hint="What the volunteer is expected to do. One per line."
@@ -1286,7 +1346,8 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				</Labelled>
 			</div>
 
-			<div className="mt-6 space-y-6 border-t border-card-line pt-5">
+			<div className="space-y-6">
+				<div className={activeStep === "plan" ? "" : "hidden"}>
 				<RowEditor<TermsStakeholder>
 					title="Stakeholders"
 					lead="Who the mission deals with and how deployed volunteers can reach them."
@@ -1302,7 +1363,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 						{ key: "email", label: "Email", span: 3 },
 					]}
 				/>
+				</div>
 
+				<div className={activeStep === "roles" ? "" : "hidden"}>
 				<RowEditor<TermsObjective>
 					title="Objectives"
 					lead="What this mission sets out to achieve, in printed order."
@@ -1313,7 +1376,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					blank={() => ({ objective: "" })}
 					columns={[{ key: "objective", label: "Objective", kind: "area" }]}
 				/>
+				</div>
 
+				<div className={activeStep === "roles" ? "" : "hidden"}>
 				<RowEditor<TermsOutput>
 					title="Expected outputs"
 					lead="What will exist, or be true, after the mission."
@@ -1324,7 +1389,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					blank={() => ({ output: "" })}
 					columns={[{ key: "output", label: "Expected output", kind: "area" }]}
 				/>
+				</div>
 
+				<div className={activeStep === "plan" ? "" : "hidden"}>
 				<RowEditor<TermsApproach>
 					title="Approach methodology"
 					lead="How the work will be done, using your society's configured methodologies."
@@ -1344,7 +1411,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 						{ key: "notes", label: "Notes", kind: "area", span: 8 },
 					]}
 				/>
+				</div>
 
+				<div className={activeStep === "plan" ? "" : "hidden"}>
 				<RowEditor<TermsItineraryRow>
 					title="Itinerary"
 					lead="The dated plan for the mission."
@@ -1365,7 +1434,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 						{ key: "person_responsible", label: "Person responsible", span: 3 },
 					]}
 				/>
+				</div>
 
+				<div className={activeStep === "resources" ? "space-y-6" : "hidden"}>
 				{/* The same nine columns the amend editor draws, from one
 				    definition — see `resourceColumns`. Two grids for one child
 				    table is two places for a column to go missing, which is
@@ -1419,9 +1490,18 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 						{ key: "requirement_notes", label: "Notes", span: 4 },
 					]}
 				/>
+				</div>
 			</div>
 
-			<div className="mt-5">
+			{activeStep === "review" && <div className="space-y-5">
+				<div className="rounded-lg border border-card-line bg-surface/60 p-4">
+					<p className="text-[12px] font-semibold text-ink">Ready to create this draft?</p>
+					<p className="mt-1 text-[12px] leading-relaxed text-muted">
+						Review the section tabs above. Red dots mark core information that is still missing;
+						the draft can still be created now and completed before it is submitted for approval.
+					</p>
+				</div>
+			<div>
 				<Labelled label="Notes" hint="Anything about these terms that is not covered above.">
 					<textarea
 						className={cx(INPUT, "min-h-[84px] resize-y")}
@@ -1430,7 +1510,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					/>
 				</Labelled>
 			</div>
+			</div>}
 
+			{activeStep === "overview" && (
 			<div className="mt-4">
 				<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 					Where these terms may be used
@@ -1441,6 +1523,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					outside that branch and everything beneath it is refused.
 				</p>
 			</div>
+			)}
 
 			{failure && (
 				<div className="mt-4">
@@ -1448,10 +1531,27 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				</div>
 			)}
 
-			<div className="mt-5">
-				<Button disabled={busy || !ready} onClick={() => void create()}>
-					{busy ? "Writing…" : "Write terms of reference"}
+			<div className="mt-6 flex items-center justify-between gap-3 border-t border-card-line pt-4">
+				<Button
+					variant="quiet"
+					disabled={stepIndex === 0}
+					onClick={() => openStep(TERMS_FORM_STEPS[Math.max(0, stepIndex - 1)].key)}
+				>
+					← Back
 				</Button>
+				<p className="hidden text-[11.5px] text-slate-faint sm:block">
+					Section {stepIndex + 1} of {TERMS_FORM_STEPS.length}
+				</p>
+				{activeStep === "review" ? (
+					<Button disabled={busy || !ready} onClick={() => void create()}>
+						{busy ? "Writing…" : "Create draft terms"}
+					</Button>
+				) : (
+					<Button onClick={() => openStep(TERMS_FORM_STEPS[stepIndex + 1].key)}>
+						Continue →
+					</Button>
+				)}
+			</div>
 			</div>
 		</Card>
 	);
