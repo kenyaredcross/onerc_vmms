@@ -170,6 +170,102 @@ export function Card({
 }
 
 /**
+ * The section rail for a form that is too long to understand as one page.
+ *
+ * Every section stays visible even while only one section's fields are drawn.
+ * A tick means the section has its meaningful answers; the red dot means it
+ * still needs attention. `complete` is deliberately supplied by the form,
+ * because only the owner of those fields knows what "finished" means.
+ */
+export interface FormProgressStep<Key extends string = string> {
+	key: Key;
+	label: string;
+	complete: boolean;
+}
+
+export function FormProgressTabs<Key extends string>({
+	steps,
+	active,
+	onChange,
+	label = "Form completion",
+}: {
+	steps: Array<FormProgressStep<Key>>;
+	active: Key;
+	onChange: (key: Key) => void;
+	label?: string;
+}) {
+	const completed = steps.filter((step) => step.complete).length;
+	const remaining = steps.length - completed;
+	const percent = steps.length ? Math.round((completed / steps.length) * 100) : 0;
+
+	return (
+		<div className="border-b border-card-line bg-surface/55 px-5 pt-4">
+			<div className="flex items-end justify-between gap-4 text-[11.5px]">
+				<div>
+					<p className="font-bold text-slate-strong">{label}</p>
+					<p className="mt-0.5 text-slate-faint" aria-live="polite">
+						{remaining === 0
+							? "All sections have their core information"
+							: `${remaining} ${remaining === 1 ? "section" : "sections"} still need attention`}
+					</p>
+				</div>
+				<strong className="tabular text-blue-press">{percent}%</strong>
+			</div>
+
+			<div
+				className="mt-2 h-1 overflow-hidden rounded-full bg-card-line"
+				role="progressbar"
+				aria-label={label}
+				aria-valuemin={0}
+				aria-valuemax={steps.length}
+				aria-valuenow={completed}
+			>
+				<span
+					className="block h-full rounded-full bg-blue transition-[width] duration-300"
+					style={{ width: `${percent}%` }}
+				/>
+			</div>
+
+			<div className="mt-3 overflow-x-auto [scrollbar-width:thin]">
+				<div className="flex min-w-max" role="tablist" aria-label="Form sections">
+					{steps.map((step, index) => {
+						const selected = active === step.key;
+
+						return (
+							<button
+								key={step.key}
+								type="button"
+								role="tab"
+								aria-selected={selected}
+								aria-controls={`form-section-${step.key}`}
+								onClick={() => onChange(step.key)}
+								className={cx(
+									"flex items-center gap-2 border border-b-0 px-4 py-3 text-left text-[12.5px] font-semibold transition first:rounded-tl-lg last:rounded-tr-lg",
+									selected
+										? "border-card-line bg-white text-ink"
+										: "border-transparent text-muted hover:bg-white/65 hover:text-ink",
+								)}
+							>
+								<span>
+									{index + 1}. {step.label}
+								</span>
+								{step.complete ? (
+									<span className="text-[15px] leading-none text-success" aria-label="Complete">
+										✓
+									</span>
+								) : (
+									<span className="h-2 w-2 rounded-full bg-danger-dot" aria-label="Needs attention" />
+								)}
+							</button>
+						);
+					})}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+/**
  * The label above a card, outside it.
  *
  * This is the move that makes a dashboard scan in one pass. Nine cards each

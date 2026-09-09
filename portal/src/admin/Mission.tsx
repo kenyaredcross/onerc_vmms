@@ -15,7 +15,7 @@ import type {
 	ProjectSummary,
 } from "../portal/types";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
-import { Button, Card, ErrorNote, SectionTitle, cx } from "../ui/primitives";
+import { Button, Card, ErrorNote, FormProgressTabs, SectionTitle, cx } from "../ui/primitives";
 import { INPUT, Labelled } from "./Projects";
 
 /**
@@ -444,6 +444,18 @@ export function MissionEditor({
 		(row) => row.is_open || row.name === terms.project,
 	);
 	const geoNode = selectedNode(geoChain);
+	const progressSteps = TABS.map((entry) => ({
+		...entry,
+		complete:
+			entry.key === "mission"
+				? Boolean(torName.trim() && purpose.trim() && background.trim())
+				: entry.key === "aims"
+					? objectives.some((row) => row.objective?.trim()) && outputs.some((row) => row.output?.trim())
+					: entry.key === "plan"
+						? itinerary.some((row) => row.activity?.trim()) &&
+							(hasNoResources || resources.some((row) => row.resource?.trim()))
+						: Boolean(responsibilities.trim()),
+	}));
 
 	// Each tab sends only the fields it owns. A payload carrying every table on
 	// every save would make editing the itinerary a write to the objectives, and
@@ -503,25 +515,16 @@ export function MissionEditor({
 
 	return (
 		<Card>
-			<div className="flex flex-wrap items-center gap-1.5 border-b border-card-line pb-3">
-				{TABS.map((entry) => (
-					<button
-						key={entry.key}
-						type="button"
-						onClick={() => {
-							setTab(entry.key);
-							setSaved(false);
-						}}
-						className={cx(
-							"rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition",
-							tab === entry.key
-								? "bg-rail text-white"
-								: "text-muted hover:bg-surface hover:text-ink",
-						)}
-					>
-						{entry.label}
-					</button>
-				))}
+			<div className="-mx-5 -mt-5">
+				<FormProgressTabs
+					steps={progressSteps}
+					active={tab}
+					onChange={(next) => {
+						setTab(next);
+						setSaved(false);
+					}}
+					label="Draft completion"
+				/>
 			</div>
 
 			<div className="pt-4">
