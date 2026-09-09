@@ -396,7 +396,11 @@ def profile_dto(volunteer, as_of=None) -> dict:
 		# What kind of work they do, and what they have already done. Read live
 		# off Red Profile like the rest of the identity above it, and stored
 		# nowhere — see `identity.background` for what is left out of it and why.
-		"profession": person.get("vmms_profession"),
+		"profession": (
+			person.get("vmms_other_profession")
+			if person.get("vmms_profession") == "Other"
+			else person.get("vmms_profession")
+		),
 		"background": identity.background(volunteer.red_profile),
 		"status": volunteer.status,
 		"joined_on": volunteer.joined_on,

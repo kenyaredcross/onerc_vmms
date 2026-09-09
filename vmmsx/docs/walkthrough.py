@@ -26,6 +26,7 @@ from pathlib import Path
 from vmmsx.docs.writer import Writer
 from vmmsx.registration.services import workspaces
 from vmmsx.seed import kenya
+from vmmsx.seed import kenya_geography as geography
 
 APP_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = APP_ROOT / "docs" / "krcs-setup-and-registration-walkthrough.docx"
@@ -166,12 +167,18 @@ def _seed(w, site: str) -> None:
 			],
 			[
 				"Geo Levels",
-				"National (order 1, no parent), County (order 2), Branch (order 3, the lowest level)",
+				"National (order 1, no parent), County (order 2, the lowest level), Sub-County"
+				" (order 3). The deepest rung is deliberately not the lowest one: this society"
+				" records at the county, and the sub-counties are geography rather than"
+				" somewhere a record sits.",
 			],
 			[
 				"Geo Nodes",
-				f"{kenya.NATIONAL_NODE} as the root; {' and '.join(kenya.COUNTY_NODES)} beneath it;"
-				f" {' and '.join(kenya.BRANCH_NODES)} beneath {kenya.COUNTY_NODES[0]}",
+				f"{kenya.NATIONAL_NODE} as the root; all {len(kenya.COUNTY_NODES)} counties"
+				f" beneath it; {geography.total_sub_counties()} sub-counties beneath those."
+				f" {kenya.PRIMARY_COUNTY}'s own are"
+				f" {', '.join(kenya.SUB_COUNTY_NODES[:3])} and {len(kenya.SUB_COUNTY_NODES) - 3}"
+				" others.",
 			],
 			[
 				"Membership Types",
@@ -400,10 +407,12 @@ def _volunteer(w, site: str) -> None:
 			],
 			["Anything you have done before", "optional free text, read by nobody but the approver"],
 			[
-				"Branch or Area",
-				f"choose {kenya.BRANCH_NODES[0]}. This is the record's organisational anchor (Serving"
-				" Branch) and where the approval routes from — leave it blank and it defaults from"
-				" Home Area below, for somebody who lives locally.",
+				"County",
+				f"choose {kenya.PRIMARY_COUNTY}. This is the record's organisational anchor and"
+				" where the approval routes from — leave it blank and it defaults from Home Area"
+				" below, for somebody who lives locally. The picker will offer a Sub-County under"
+				" it; answering that rung is optional and does not change where the record is"
+				" filed, because the county is the only level this society records at.",
 			],
 			[
 				"Citizenship",
@@ -411,9 +420,11 @@ def _volunteer(w, site: str) -> None:
 			],
 			[
 				"Where do you live?",
-				f"Local (the default) shows Home Area — a cascading picker down the same tree as"
-				f" Branch or Area, so choose {kenya.BRANCH_NODES[0]} there too. Abroad shows a Country"
-				" of Residence and an address instead.",
+				"Local (the default) shows Home Area — a cascading picker down the same tree, and"
+				f" the one place a sub-county earns its keep: choose {kenya.PRIMARY_COUNTY} and then"
+				f" {kenya.SUB_COUNTY_NODES[0]}, because where somebody lives is a finer question"
+				" than which county holds their record. Abroad shows a Country of Residence and an"
+				" address instead.",
 			],
 			["First Name / Last Name", "the person's real name; these go onto their Red Profile"],
 			["Phone", "optional; it goes onto the profile too"],
@@ -441,9 +452,9 @@ def _volunteer(w, site: str) -> None:
 			"The application was linked to that profile, and the intake fields were blanked, so the"
 			" saved application carries no name and no phone of its own.",
 			"on_update put it into motion: the approval engine enforced the anchor rules, resolved"
-			f" who holds {kenya.ROLE_VOLUNTEER_APPROVER} nearest above {kenya.BRANCH_NODES[0]} —"
-			f" which is {kenya.APPROVER_USER}, at {kenya.COUNTY_NODES[0]} — and put the application"
-			" in their queue.",
+			f" who holds {kenya.ROLE_VOLUNTEER_APPROVER} at or above {kenya.PRIMARY_COUNTY} —"
+			f" which is {kenya.APPROVER_USER}, placed at {kenya.PRIMARY_COUNTY} itself, so the walk"
+			" ends where it starts — and put the application in their queue.",
 		]
 	)
 
@@ -638,7 +649,7 @@ def _member(w, site: str) -> None:
 
 	w.p(
 		f"Go to http://{site}{workspaces.MEMBERSHIP_FORM_ROUTE}. Fill in the personal fields, choose"
-		f" {kenya.BRANCH_NODES[0]} as the branch, and choose the {kenya.TYPE_ORDINARY} membership"
+		f" {kenya.PRIMARY_COUNTY} as the county, and choose the {kenya.TYPE_ORDINARY} membership"
 		" type. Submit."
 	)
 

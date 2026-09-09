@@ -7,9 +7,19 @@
 
 `kenya.py` seeds a society's **configuration** — its ladder, its roles, its
 membership types, the workflows that govern them. This seeds what that society
-would then be *doing*: needs advertised on the notice board, events in the
-diary, announcements sent from a branch, and volunteers with hours and
-certifications against their names.
+would then be *doing*: programmes, terms of reference, needs advertised on the
+notice board, events in the diary, and announcements sent from a county.
+
+**It no longer seeds people, and that is the point of the site it builds.** The
+demo volunteers, their memberships, their rosters, their hours and their
+certifications were all removed from this file: the site it now produces is one
+where every register and every queue starts empty, because it is stood up for
+acceptance testing and those records are what the testing is *about*. Seeding
+them would mean the registration and the decision on it had already happened
+offstage. `kenya.promote_coordinator` gives a coordinator who has signed up for
+their own account standing over a county; everything else is done by whoever is
+testing. The newsroom moved out too, to `kenya_stories.py`, and the
+opportunities board lives in `kenya_jobs.py`.
 
 The two are separate files because they answer different questions and keep
 different company. Configuration is what a society holds; an operation is what
@@ -22,7 +32,7 @@ enters its own.
 
 **It requires `kenya.py` to have run.** Everything here hangs off that society's
 geo nodes and roles, and they are read *by shape* through `kenya.county()` and
-`kenya.branch()` rather than by docname — the same way that seed recognises its
+`kenya.county_named()` rather than by docname — the same way that seed recognises its
 own nodes. Nothing here is seeded if the society is not there; the step reports
 a skip and the run continues.
 
@@ -54,145 +64,6 @@ import frappe
 from frappe.utils import add_days, today
 
 from vmmsx.seed import kenya, mission
-
-# --- the demo volunteers --------------------------------------------------
-#
-# A password is set on each of these, which `kenya.py` deliberately does not do
-# for its approver. The difference is what the account is for: that one is a
-# named person a society signs in as, and these exist only so that somebody can
-# open the portal and see it working. The value is a constant in this file
-# rather than something the report invents, so it is as public as the accounts.
-
-DEMO_PASSWORD = "krcs-demo-2026"
-
-VOLUNTEERS = (
-	{
-		"email": "amina@krcs.demo",
-		"first_name": "Amina",
-		"last_name": "Wanjiku",
-		"gender": "Female",
-		"phone": "+254712000101",
-		"date_of_birth": "1996-04-12",
-		"branch": 0,
-		"skills": ("first_aid", "driving"),
-		"availability": ("weekend_mornings", "weekday_evenings"),
-		# Also a member, and the membership is carried all the way to Active
-		# below. Somebody who volunteers *and* holds a membership is the case
-		# that shows the two satellites are independent: one Red Profile, two
-		# affiliations, neither derived from the other.
-		"membership": "approved",
-		# Both of what `flood-response` requires, so a coordinator matching
-		# against that terms of reference has somebody real to find.
-		"certifications": (
-			("first-aid", -200),
-			("psychological-first-aid", -430),
-			("water-safety", -150),
-		),
-		"logs": (
-			(-3, 6.0, "emergency_response", "Flood assessment with the branch team in Kibera."),
-			(-9, 4.5, "blood_drive", "Donor reception and refreshments at the Sarit drive."),
-			(-16, 8.0, "emergency_response", "Overnight shelter support after the Mathare fire."),
-			(-24, 3.0, "training", "Ran a first aid refresher for eight new volunteers."),
-			(-38, 5.5, "community_event", "Household visits on the cholera awareness round."),
-			(-52, 2.5, "operations_support", "Branch stock count and kit repacking."),
-		),
-	},
-	{
-		"email": "joseph@krcs.demo",
-		"first_name": "Joseph",
-		"last_name": "Kariuki",
-		"gender": "Male",
-		"phone": "+254712000102",
-		"date_of_birth": "1989-11-02",
-		"branch": 1,
-		"skills": ("driving", "logistics"),
-		"availability": ("weekday_mornings", "on_call"),
-		"membership": None,
-		# One lapsed certification on purpose: the deployability block on the
-		# volunteer's own page is derived, not stored, and it has nothing to say
-		# unless something has actually lapsed.
-		"certifications": (("emergency-driving", -180), ("first-aid", -900)),
-		"logs": (
-			(-5, 7.0, "emergency_response", "Drove the ambulance on the Thika Road response."),
-			(-12, 6.0, "emergency_response", "Relief distribution convoy to Kajiado."),
-			(-31, 4.0, "operations_support", "Vehicle checks and fuel reconciliation."),
-		),
-	},
-	{
-		"email": "grace@krcs.demo",
-		"first_name": "Grace",
-		"last_name": "Achieng",
-		"gender": "Female",
-		"phone": "+254712000103",
-		"date_of_birth": "2001-07-25",
-		"branch": 0,
-		"skills": ("first_aid", "counselling"),
-		"availability": ("weekend_mornings", "weekend_evenings"),
-		# Left sitting in the approver's queue on purpose, so the review side of
-		# the product has something real to open.
-		"membership": "pending",
-		"certifications": (("psychological-first-aid", -95),),
-		"logs": (
-			(-2, 3.5, "community_event", "School talk on road safety in South B."),
-			(-19, 5.0, "community_event", "Psychosocial support at the reception centre."),
-		),
-	},
-	{
-		"email": "peter@krcs.demo",
-		"first_name": "Peter",
-		"last_name": "Otieno",
-		"gender": "Male",
-		"phone": "+254712000104",
-		"date_of_birth": "1993-02-18",
-		"branch": 1,
-		"skills": ("first_aid", "driving"),
-		"availability": ("on_call", "weekend_mornings"),
-		"membership": None,
-		# Both of what `flood-response` requires as well, at the other branch:
-		# a candidate search for it should turn up two people, not one.
-		"certifications": (("first-aid", -100), ("water-safety", -100)),
-		"logs": (
-			(-6, 6.5, "emergency_response", "Boat patrol supporting the Nairobi West evacuation."),
-			(-21, 4.0, "operations_support", "Kit inspection ahead of the long rains."),
-		),
-	},
-	{
-		"email": "fatuma@krcs.demo",
-		"first_name": "Fatuma",
-		"last_name": "Hassan",
-		"gender": "Female",
-		"phone": "+254712000105",
-		"date_of_birth": "1998-09-30",
-		"branch": 0,
-		"skills": ("counselling", "first_aid"),
-		"availability": ("weekday_mornings", "public_holidays"),
-		"membership": "approved",
-		# `blood-drive-support`'s desirable certification, so ranking has
-		# something to prefer somebody for.
-		"certifications": (("blood-donor-care", -60),),
-		"logs": (
-			(-4, 5.0, "blood_drive", "Donor reception at the Nairobi Central drive."),
-			(-27, 3.0, "community_event", "Hygiene talk at a Nairobi Central primary school."),
-		),
-	},
-	{
-		"email": "daniel@krcs.demo",
-		"first_name": "Daniel",
-		"last_name": "Kiprop",
-		"gender": "Male",
-		"phone": "+254712000106",
-		"date_of_birth": "2000-01-14",
-		"branch": 1,
-		"skills": ("logistics", "it"),
-		"availability": ("weekday_evenings",),
-		"membership": None,
-		# Nobody's mandatory certification held yet, deliberately: a candidate
-		# search for anything that requires one should pass over him rather than
-		# every seeded volunteer qualifying for everything.
-		"certifications": (),
-		"logs": ((-8, 4.5, "operations_support", "Warehouse stock count at the Nairobi West store."),),
-	},
-)
 
 # --- what a society records as a qualification ----------------------------
 #
@@ -271,7 +142,7 @@ PROJECTS = (
 	{
 		"key": "nairobi-flood-response-2026",
 		"name": "Nairobi Flood Response 2026",
-		"where": ("county", 0),
+		"where": ("county", "Nairobi"),
 		"status": "Active",
 		"start_in": -14,
 		"end_in": 30,
@@ -283,7 +154,7 @@ PROJECTS = (
 	{
 		"key": "community-health-safety-2026",
 		"name": "Community Health & Safety Programme",
-		"where": ("branch", 0),
+		"where": ("county", "Nairobi"),
 		"status": "Planned",
 		"start_in": 7,
 		"end_in": 120,
@@ -398,7 +269,7 @@ TERMS = (
 REQUESTS = (
 	{
 		"terms": "flood-response",
-		"where": ("branch", 0),
+		"where": ("county", "Nairobi"),
 		"volunteers": 12,
 		"from_in": 4,
 		"until_in": 18,
@@ -407,7 +278,7 @@ REQUESTS = (
 	},
 	{
 		"terms": "blood-drive-support",
-		"where": ("branch", 1),
+		"where": ("county", "Kisumu"),
 		"volunteers": 6,
 		"from_in": 9,
 		"until_in": 10,
@@ -416,7 +287,7 @@ REQUESTS = (
 	},
 	{
 		"terms": "event-first-aid",
-		"where": ("branch", 0),
+		"where": ("county", "Nairobi"),
 		"volunteers": 4,
 		"from_in": 12,
 		"until_in": 12,
@@ -425,7 +296,7 @@ REQUESTS = (
 	},
 	{
 		"terms": "community-health",
-		"where": ("county", 1),
+		"where": ("county", "Mombasa"),
 		"volunteers": 20,
 		"from_in": 20,
 		"until_in": 25,
@@ -434,7 +305,7 @@ REQUESTS = (
 	},
 	{
 		"terms": "road-safety",
-		"where": ("county", 0),
+		"where": ("county", "Nairobi"),
 		"volunteers": 15,
 		"from_in": 30,
 		"until_in": 37,
@@ -443,7 +314,7 @@ REQUESTS = (
 	},
 	{
 		"terms": "shelter-support",
-		"where": ("branch", 1),
+		"where": ("county", "Kisumu"),
 		"volunteers": 8,
 		"from_in": 2,
 		"until_in": 12,
@@ -452,7 +323,7 @@ REQUESTS = (
 	},
 	{
 		"terms": "shelter-support",
-		"where": ("county", 0),
+		"where": ("county", "Nairobi"),
 		"volunteers": 30,
 		"from_in": 45,
 		"until_in": 75,
@@ -477,12 +348,23 @@ EVENT_CATEGORIES = (
 	("Community", "Open days, campaigns and public health activities."),
 	("Blood Donation", "Mobile and static blood donation drives."),
 	("Fundraising", "Events raising funds for the society's work."),
+	("Recruitment", "Open sessions for people thinking about volunteering."),
+	("Simulation", "Rehearsed responses, run against a scenario."),
 )
 
+# Buildings, not rungs. These are the names KRCS's own offices go by, which is
+# why several of them still say "Branch" while the geo ladder does not: a venue
+# is a place with an address, and renaming somebody's building to match a level
+# key would also break idempotence on every site already seeded.
 EVENT_VENUES = (
 	("KRCS Headquarters", "South C, Red Cross Road, Nairobi"),
 	("Nairobi Central Branch Hall", "Haile Selassie Avenue, Nairobi"),
 	("Mombasa Branch Office", "Moi Avenue, Mombasa"),
+	("Kisumu Branch Office", "Oginga Odinga Street, Kisumu"),
+	("Nakuru Branch Office", "Kenyatta Avenue, Nakuru"),
+	("Eldoret Branch Office", "Oloo Street, Eldoret"),
+	("Garissa Branch Office", "Kismayu Road, Garissa"),
+	("Lodwar Branch Office", "Kenyatta Street, Lodwar"),
 	("Online", "Delivered over video conference"),
 )
 
@@ -500,7 +382,7 @@ EVENTS = (
 		"end_in": 7,
 		"start_time": "08:30:00",
 		"end_time": "16:30:00",
-		"where": ("branch", 0),
+		"where": ("county", "Nairobi"),
 		"summary": "The standard two day certificate, assessed on the second afternoon. Open to volunteers and the public.",
 	},
 	{
@@ -512,7 +394,7 @@ EVENTS = (
 		"end_in": None,
 		"start_time": "09:00:00",
 		"end_time": "17:00:00",
-		"where": ("branch", 0),
+		"where": ("county", "Nairobi"),
 		"summary": "Walk-in donation with the national blood transfusion service. Bring identification.",
 	},
 	{
@@ -539,7 +421,7 @@ EVENTS = (
 		"end_in": None,
 		"start_time": "10:00:00",
 		"end_time": "16:00:00",
-		"where": ("county", 1),
+		"where": ("county", "Mombasa"),
 		"summary": "Meet the branch team, see the response vehicles, and find out what volunteering here involves.",
 	},
 	{
@@ -551,7 +433,7 @@ EVENTS = (
 		"end_in": None,
 		"start_time": "09:00:00",
 		"end_time": "13:00:00",
-		"where": ("branch", 0),
+		"where": ("county", "Nairobi"),
 		"summary": "Everything a newly accepted volunteer needs before their first deployment. Attendance is expected.",
 	},
 	{
@@ -563,8 +445,122 @@ EVENTS = (
 		"end_in": None,
 		"start_time": "06:30:00",
 		"end_time": "12:00:00",
-		"where": ("county", 0),
+		"where": ("county", "Nairobi"),
 		"summary": "Ten kilometres through South C, raising funds for the branch emergency response fund.",
+	},
+	{
+		"title": "Kisumu volunteer open evening",
+		"category": "Recruitment",
+		"venue": "Kisumu Branch Office",
+		"medium": "In Person",
+		"start_in": 9,
+		"end_in": None,
+		"start_time": "17:30:00",
+		"end_time": "19:30:00",
+		"where": ("county", "Kisumu"),
+		"summary": "Two hours, no commitment. What the county actually needs, what the training involves, and how to apply.",
+	},
+	{
+		"title": "Water and sanitation refresher for the long rains",
+		"category": "Training",
+		"venue": "Garissa Branch Office",
+		"medium": "In Person",
+		"start_in": 13,
+		"end_in": 14,
+		"start_time": "08:00:00",
+		"end_time": "16:00:00",
+		"where": ("county", "Garissa"),
+		"summary": "Two days for anybody holding the certificate, run ahead of the rains. Bring your certification number.",
+	},
+	{
+		"title": "Nakuru county show first aid duty briefing",
+		"category": "Training",
+		"venue": "Nakuru Branch Office",
+		"medium": "In Person",
+		"start_in": 18,
+		"end_in": None,
+		"start_time": "18:00:00",
+		"end_time": "20:00:00",
+		"where": ("county", "Nakuru"),
+		"summary": "Shift pattern, kit list and the pairing rule, for everybody rostered on the show.",
+	},
+	{
+		"title": "Mass casualty simulation: Eldoret",
+		"category": "Simulation",
+		"venue": "Eldoret Branch Office",
+		"medium": "In Person",
+		"start_in": 25,
+		"end_in": None,
+		"start_time": "07:00:00",
+		"end_time": "15:00:00",
+		"where": ("county", "Uasin Gishu"),
+		"summary": "A full-day rehearsed road traffic scenario with the county health team. Rostered volunteers only.",
+	},
+	{
+		"title": "Mobile blood drive: Lodwar",
+		"category": "Blood Donation",
+		"venue": "Lodwar Branch Office",
+		"medium": "In Person",
+		"start_in": 31,
+		"end_in": 32,
+		"start_time": "09:00:00",
+		"end_time": "16:00:00",
+		"where": ("county", "Turkana"),
+		"summary": "Two days with the national blood transfusion service. Screening desk first, then registration.",
+	},
+	{
+		"title": "Community health volunteer induction: Coast",
+		"category": "Training",
+		"venue": "Mombasa Branch Office",
+		"medium": "In Person",
+		"start_in": 37,
+		"end_in": 38,
+		"start_time": "09:00:00",
+		"end_time": "15:30:00",
+		"where": ("county", "Mombasa"),
+		"summary": "Household registers, growth monitoring and referral, for new community health volunteers across the coast counties.",
+	},
+	{
+		"title": "Safeguarding and code of conduct: annual session",
+		"category": "Training",
+		"venue": "Online",
+		"medium": "Online",
+		"start_in": 20,
+		"end_in": None,
+		"start_time": "10:00:00",
+		"end_time": "12:00:00",
+		# Unplaced on purpose, like the psychological first aid refresher above:
+		# an annual session every volunteer in the country has to sit is not a
+		# county's event, and BUZZ-01 made the geo field optional for exactly this.
+		"where": None,
+		"summary": "Two hours, required annually of every volunteer. Recorded, but attendance is taken live.",
+	},
+	# Two that have already happened. A diary whose earliest entry is next week
+	# is a diary installed last night, and the portal's past-events view has
+	# nothing to render without them.
+	{
+		"title": "First Aid at Work: two day certificate (March sitting)",
+		"category": "Training",
+		"venue": "KRCS Headquarters",
+		"medium": "In Person",
+		"start_in": -38,
+		"end_in": -37,
+		"start_time": "08:30:00",
+		"end_time": "16:30:00",
+		"where": ("county", "Nairobi"),
+		"summary": "The March sitting of the standard two day certificate. Twenty-two candidates, twenty passes.",
+	},
+	{
+		"title": "Kisumu lakeside clean-up and health campaign",
+		"category": "Community",
+		"venue": "Kisumu Branch Office",
+		"medium": "In Person",
+		"start_in": -61,
+		"end_in": None,
+		"start_time": "08:00:00",
+		"end_time": "13:00:00",
+		"where": ("county", "Kisumu"),
+		"summary": "A morning on the lakeshore with four schools, a clean-up and a hygiene talk. Around 300 people came.",
 	},
 )
 
@@ -582,7 +578,7 @@ ANNOUNCEMENTS = (
 		"type": "Operational",
 		"urgency": "urgent",
 		"audience": "volunteers",
-		"where": ("county", 0),
+		"where": ("county", "Nairobi"),
 		"summary": "Two wards reporting displacement. The branch needs flood-trained volunteers from Monday.",
 		"body": (
 			"The long rains have displaced households in two wards and the branch is standing up a"
@@ -601,7 +597,7 @@ ANNOUNCEMENTS = (
 		"type": "Training",
 		"urgency": "important",
 		"audience": "volunteers",
-		"where": ("county", 0),
+		"where": ("county", "Nairobi"),
 		"summary": "Check your training page. A lapsed first aid certificate stops you being deployed.",
 		"body": (
 			"A number of first aid certificates in this county expire before the end of the quarter.\n\n"
@@ -618,7 +614,7 @@ ANNOUNCEMENTS = (
 		"type": "Notice",
 		"urgency": "routine",
 		"audience": "everyone",
-		"where": ("branch", 0),
+		"where": ("county", "Nairobi"),
 		"summary": "The Nairobi Central office is closed to visitors on Friday while we count the store.",
 		"body": (
 			"The branch office will be closed to visitors this Friday while the annual stock take is"
@@ -639,7 +635,7 @@ def main(commit: bool = True) -> dict:
 	bench path needs the writes to persist, and a test running this for real
 	must not escape the transaction the runner rolls back.
 	"""
-	if not kenya.branch(0):
+	if not kenya.primary_county():
 		report = {"society": [{"key": "kenya.py", "status": "skipped: run vmmsx.seed.kenya.main first"}]}
 		_print(report)
 		return report
@@ -652,17 +648,10 @@ def main(commit: bool = True) -> dict:
 		"projects": _projects(),
 		"terms_of_reference": _terms(),
 		"deployment_requests": _requests(),
-		"volunteers": _volunteers(),
-		"rosters": _rosters(),
-		"certifications": _certifications(),
-		"time_logs": _time_logs(),
-		"memberships": _memberships(),
 		"event_setup": _event_setup(),
 		"events": _events(),
 		"announcement_types": _announcement_types(),
 		"announcements": _announcements(),
-		"article_taxonomy": _article_taxonomy(),
-		"articles": _articles(),
 	}
 
 	report["manual_steps"] = MANUAL_STEPS
@@ -676,8 +665,11 @@ def main(commit: bool = True) -> dict:
 
 
 MANUAL_STEPS = (
-	f"Every demo volunteer signs in with the password {DEMO_PASSWORD}. Change or disable these"
-	" accounts on anything that is not a demo bench.",
+	"No volunteer, member or coordinator is seeded here. Rosters, hours and certifications are"
+	" therefore empty, and the deployment requests below are open needs with nobody on them yet —"
+	" which is what a site looks like the day before acceptance testing starts. See"
+	" `kenya.promote_coordinator` for giving a coordinator who has signed up standing over their"
+	" county.",
 	"No image is seeded on any event or content block. The portal draws a placeholder with an"
 	" upload control on it; a seed inventing photography would put a stock photo on a society's"
 	" own page.",
@@ -704,11 +696,19 @@ def _reconcile_workflows() -> list[dict]:
 
 	So this reconciles, and only ever **widens**:
 
-	* the Kenyan county and branch levels are *added* to `allowed_anchor_levels`
-	  where they are missing. Nothing is removed, so the other society's records
-	  still anchor exactly where they did. An empty table already means "any
-	  active level" and is left alone rather than filled in, which would narrow
-	  it from everything to two.
+	* the Kenyan **county** level is *added* to `allowed_anchor_levels` where it
+	  is missing. Nothing is removed, so the other society's records still anchor
+	  exactly where they did. An empty table already means "any active level" and
+	  is left alone rather than filled in, which would narrow it from everything
+	  to one.
+
+	  **The county, and nothing below it.** This step used to widen by the county
+	  *and* the level under it, and doing that now would quietly undo the one rule
+	  this society asked for: `kenya._workflows()` writes exactly one anchor row,
+	  the county, and running this afterwards would append the sub-county level to
+	  Kenya's own workflows and make 290 sub-counties anchorable again. Widening
+	  by what Kenyan records actually need is the fix, and Kenyan records need the
+	  county.
 	* the Kenyan demo approver is granted whatever role each stage actually
 	  names, at the Kenyan county. Routing asks core "who holds this role at or
 	  above this node"; if nobody does, a correctly submitted application sits in
@@ -719,8 +719,8 @@ def _reconcile_workflows() -> list[dict]:
 	step reports `exists` throughout.
 	"""
 	rows = []
-	levels = [kenya.LEVELS[1]["key"], kenya.LEVELS[2]["key"]]
-	county = kenya.county(0)
+	levels = [kenya.LEVELS[1]["key"]]
+	county = kenya.primary_county()
 
 	for name in frappe.get_all("VMMS Approval Workflow", pluck="name"):
 		workflow = frappe.get_doc("VMMS Approval Workflow", name)
@@ -732,7 +732,7 @@ def _reconcile_workflows() -> list[dict]:
 
 
 def _widen_anchor_levels(workflow, levels: list[str]) -> list[dict]:
-	"""Add this society's levels to a workflow's anchor list. Never removes one."""
+	"""Add this society's anchor level to a workflow's list. Never removes one."""
 	if not workflow.allowed_anchor_levels:
 		# Empty means any active level, which already admits ours. Filling it in
 		# would turn "anywhere" into "these two" for everybody on the site.
@@ -786,7 +786,7 @@ def _place_approver(workflow, county: str | None) -> list[dict]:
 		if frappe.db.exists(
 			"Geo Assignment", {"user": kenya.APPROVER_USER, "role": role, "geo_node": county}
 		):
-			rows.append({"key": f"{role} at {kenya.COUNTY_NODES[0]}", "status": "exists"})
+			rows.append({"key": f"{role} at {kenya.PRIMARY_COUNTY}", "status": "exists"})
 			continue
 
 		frappe.get_doc(
@@ -799,7 +799,7 @@ def _place_approver(workflow, county: str | None) -> list[dict]:
 			}
 		).insert(ignore_permissions=True)
 
-		rows.append({"key": f"{role} at {kenya.COUNTY_NODES[0]}", "status": "created"})
+		rows.append({"key": f"{role} at {kenya.PRIMARY_COUNTY}", "status": "created"})
 
 	if rows:
 		frappe.clear_cache(user=kenya.APPROVER_USER)
@@ -906,7 +906,7 @@ def _project(key: str | None) -> str | None:
 	"""The seeded project matching this `PROJECTS` key, by its name.
 
 	Looked up by `project_name` rather than by docname, the same reason
-	`kenya.county()`/`kenya.branch()` resolve geo by shape: `Project` autonames
+	`kenya.county_named()` resolves geo by shape: `Project` autonames
 	itself opaquely, and a second bench numbers its projects differently.
 	`None` in, `None` out — and a terms of reference that names no programme of
 	its own is written under the society's standing-services one instead, which
@@ -1064,17 +1064,30 @@ def _terms() -> list[dict]:
 
 
 def _where(spec) -> str | None:
-	"""A ("county"|"branch", index) pair resolved to a Geo Node, or None.
+	"""A ("county", name) pair resolved to a Geo Node, or None for unplaced.
 
 	Read through `kenya.py`'s own lookups rather than by docname, because those
 	names are opaque (`GEO-.#####`) and a second bench numbers them differently.
+	Named rather than indexed since the county table grew to 47: an index into it
+	is a demo that moves to a different county the day somebody reorders a row.
+
+	**Everything this file places is placed at a county, never a sub-county**,
+	and that is a rule about consequences rather than about taste. This society
+	records at the county — see the note above `kenya.LEVELS` — so nothing is ever
+	anchored below one, and a record placed at a sub-county would have an empty
+	scope: `announce.publish` would address nobody, and a roster raised there
+	would find no volunteer in range. The sub-counties are geography for a person
+	to recognise, not somewhere the society's own records live.
 	"""
 	if not spec:
 		return None
 
-	kind, index = spec
+	kind, name = spec
 
-	return kenya.county(index) if kind == "county" else kenya.branch(index)
+	if kind != "county":
+		frappe.throw(f"{kind!r} is not a placement this seed knows. Every record here sits at a county.")
+
+	return kenya.county_named(name)
 
 
 def _requests() -> list[dict]:
@@ -1136,434 +1149,6 @@ def _requests() -> list[dict]:
 				"deployment": request.deployment or "none yet",
 			}
 		)
-
-	return rows
-
-
-# --- the people ------------------------------------------------------------
-
-
-def _volunteers() -> list[dict]:
-	"""A login, a Red Profile and a volunteer record for each demo person.
-
-	The volunteer is created through `volunteer_service.ensure`, the app's own
-	idempotent constructor, so nothing here knows how a volunteer record is put
-	together. `status` is then set to Active directly, which needs saying: the
-	honest path to Active is an application the approval engine accepted, and
-	`derive_status` reads exactly that. These three have no application, so they
-	would sit at Prospective forever and a Prospective volunteer is shown none of
-	the self-service surface. Setting it here is the seed standing in for an
-	acceptance that happened before the demo started.
-	"""
-	from vmmsx.volunteer.services import volunteer as volunteer_service
-
-	rows = []
-
-	for person in VOLUNTEERS:
-		node = kenya.branch(person["branch"])
-
-		if not node:
-			rows.append({"key": person["email"], "status": "skipped: no branch"})
-			continue
-
-		user_status = _user(person)
-		profile = _profile(person, node)
-		volunteer = volunteer_service.ensure(profile, node)
-
-		changed = False
-
-		if volunteer.status != "Active":
-			volunteer.status = "Active"
-			changed = True
-
-		if not volunteer.joined_on:
-			volunteer.joined_on = add_days(today(), -420)
-			changed = True
-
-		if not volunteer.skills:
-			volunteer.set("skills", [{"skill": key} for key in person["skills"] if _skill_exists(key)])
-			changed = True
-
-		if not volunteer.availability:
-			volunteer.set(
-				"availability",
-				[{"availability_slot": key} for key in person["availability"] if _slot_exists(key)],
-			)
-			changed = True
-
-		if changed:
-			volunteer.save(ignore_permissions=True)
-
-		# The two things acceptance would have done: tell core what this person
-		# is to the society, and hand them the self-service role.
-		volunteer_service.report(volunteer)
-		volunteer_service.grant_self_service(volunteer)
-
-		rows.append(
-			{
-				"key": person["email"],
-				"name": volunteer.name,
-				"status": user_status,
-				"branch": person["branch"],
-			}
-		)
-
-	return rows
-
-
-def _user(person: dict) -> str:
-	"""The login, with a password set on it. See the note beside `DEMO_PASSWORD`."""
-	from frappe.utils.password import update_password
-
-	if frappe.db.exists("User", person["email"]):
-		status = "exists"
-	else:
-		frappe.get_doc(
-			{
-				"doctype": "User",
-				"email": person["email"],
-				"first_name": person["first_name"],
-				"last_name": person["last_name"],
-				"send_welcome_email": 0,
-				# A volunteer holding the self-service role is shown a workspace,
-				# and Frappe derives `user_type` from desk access. The role grant
-				# below is what actually settles it; this is the starting point.
-				"user_type": "Website User",
-			}
-		).insert(ignore_permissions=True)
-		status = "created"
-
-	update_password(person["email"], DEMO_PASSWORD)
-
-	return status
-
-
-def _profile(person: dict, node: str) -> str:
-	"""The Red Profile, which is core's and is the only place identity lives.
-
-	Looked up by `user` first, because that is the unique column core guarantees
-	and the one `registration/services/intake.py` resolves through. A demo bench
-	that already ran a registration for this login must reuse that profile rather
-	than create a second one — "one Red Profile per login, ever" is the app's
-	rule and a seed is not exempt from it.
-	"""
-	existing = frappe.db.get_value("Red Profile", {"user": person["email"]}, "name")
-
-	if existing:
-		return existing
-
-	orphan = frappe.db.get_value("Red Profile", {"email": person["email"], "user": ("is", "not set")}, "name")
-
-	if orphan:
-		# Adopted, exactly as `intake.claim_profile` adopts a login-less profile
-		# with the same email rather than creating a rival one.
-		frappe.db.set_value("Red Profile", orphan, "user", person["email"])
-		return orphan
-
-	profile = frappe.get_doc(
-		{
-			"doctype": "Red Profile",
-			"first_name": person["first_name"],
-			"last_name": person["last_name"],
-			"email": person["email"],
-			"user": person["email"],
-			"phone": person["phone"],
-			"gender": person["gender"] if frappe.db.exists("Gender", person["gender"]) else None,
-			"date_of_birth": person["date_of_birth"],
-			"home_geo_node": node,
-		}
-	)
-	profile.insert(ignore_permissions=True)
-
-	return profile.name
-
-
-def _skill_exists(key: str) -> bool:
-	return bool(frappe.db.exists("VMMS Skill", key))
-
-
-def _slot_exists(key: str) -> bool:
-	return bool(frappe.db.exists("VMMS Availability Slot", key))
-
-
-def _volunteer_of(email: str) -> str | None:
-	profile = frappe.db.get_value("Red Profile", {"user": email}, "name")
-
-	return frappe.db.get_value("VMMS Volunteer", {"red_profile": profile}, "name") if profile else None
-
-
-def _certifications() -> list[dict]:
-	"""What each demo volunteer holds, dated relative to today.
-
-	`expiry_date` is derived from the type's own `validity_days` rather than
-	written here, so a lapse is a lapse because the configuration says so. One
-	of Joseph's is deliberately old enough to have expired, because the
-	deployability block on a volunteer's page is derived and has nothing to show
-	otherwise.
-	"""
-	rows = []
-
-	for person in VOLUNTEERS:
-		volunteer = _volunteer_of(person["email"])
-
-		if not volunteer:
-			continue
-
-		for kind, completed_in in person["certifications"]:
-			if not frappe.db.exists("VMMS Certification Type", kind):
-				continue
-
-			completion = add_days(today(), completed_in)
-
-			if frappe.db.exists(
-				"VMMS Certification",
-				{"volunteer": volunteer, "certification_type": kind, "completion_date": completion},
-			):
-				rows.append({"key": f"{person['first_name']} / {kind}", "status": "exists"})
-				continue
-
-			validity = frappe.db.get_value("VMMS Certification Type", kind, "validity_days")
-
-			frappe.get_doc(
-				{
-					"doctype": "VMMS Certification",
-					"volunteer": volunteer,
-					"certification_type": kind,
-					"completion_date": completion,
-					"expiry_date": add_days(completion, validity) if validity else None,
-				}
-			).insert(ignore_permissions=True)
-
-			rows.append({"key": f"{person['first_name']} / {kind}", "status": "created"})
-
-	return rows
-
-
-def _time_logs() -> list[dict]:
-	"""Hours already given, so the portal's own history has something in it.
-
-	All general logs. A deployment log names a deployment and is refused unless
-	that deployment's roster lists the volunteer, and tying seeded hours to
-	seeded rosters would make this the one part of the seed whose order matters.
-	"""
-	rows = []
-
-	for person in VOLUNTEERS:
-		volunteer = _volunteer_of(person["email"])
-		node = kenya.branch(person["branch"])
-
-		if not (volunteer and node):
-			continue
-
-		for days_ago, hours, category, notes in person["logs"]:
-			activity_date = add_days(today(), days_ago)
-
-			if frappe.db.exists(
-				"VMMS Time Log",
-				{"volunteer": volunteer, "activity_date": activity_date, "hours": hours},
-			):
-				rows.append({"key": f"{person['first_name']} {activity_date}", "status": "exists"})
-				continue
-
-			frappe.get_doc(
-				{
-					"doctype": "VMMS Time Log",
-					"volunteer": volunteer,
-					"geo_node": node,
-					"activity_date": activity_date,
-					"hours": hours,
-					"log_type": "general",
-					"log_category": category
-					if frappe.db.exists("VMMS Time Log Category", category)
-					else None,
-					"notes": notes,
-				}
-			).insert(ignore_permissions=True)
-
-			rows.append({"key": f"{person['first_name']} {activity_date}", "status": "created"})
-
-	return rows
-
-
-def _demo_membership_type() -> str | None:
-	"""An active type that routes for approval and charges nothing. By shape.
-
-	**Not `kenya.TYPE_LIFE` by name**, and the difference is not fussiness: a
-	demo bench is a site somebody has been editing, and the type that was seeded
-	free and lifetime may by now carry a fee. What this seed actually needs is
-	structural — routed, so an approver's decision is what settles it, and free,
-	so `payment.request` never asks a gateway this bench does not have. Asking
-	for those two properties finds whatever type has them, or nothing.
-	"""
-	found = frappe.get_all(
-		"VMMS Membership Type",
-		filters={"is_active": 1, "approval_mode": "routed", "fee_amount": 0},
-		pluck="name",
-		order_by="creation asc",
-		limit=1,
-	)
-
-	return found[0] if found else None
-
-
-def _memberships() -> list[dict]:
-	"""A membership for two of the demo volunteers, one settled and one waiting.
-
-	Everything goes through the app's own services. `membership.submit()` starts
-	the fee request and the approval; `engine.decide()` records the approver's
-	decision and moves the state; activation is then the predicate
-	`try_activate()` re-evaluating from `on_update`, exactly as it would if a
-	person had clicked Approve on the screen. **Nothing here writes
-	`membership_status` or `approval_state` directly** — a seed that set those by
-	hand would produce a record no code path could have produced, which is the
-	one thing demo data must not do.
-
-	The approval is recorded as `kenya.APPROVER_USER`, who holds the membership
-	approver role at the first county and is therefore genuinely among the people
-	this membership routes to. The engine's person-gate is not bypassed; it is
-	satisfied.
-	"""
-	from vmmsx.approvals.services import engine
-	from vmmsx.member.services import member as member_service
-	from vmmsx.member.services import membership as membership_service
-
-	rows = []
-	membership_type = _demo_membership_type()
-
-	if not membership_type:
-		return [
-			{
-				"key": "membership",
-				"status": "skipped: no active routed membership type with a zero fee on this site",
-			}
-		]
-
-	for person in VOLUNTEERS:
-		wanted = person.get("membership")
-
-		if not wanted:
-			continue
-
-		profile = frappe.db.get_value("Red Profile", {"user": person["email"]}, "name")
-		node = kenya.branch(person["branch"])
-
-		if not (profile and node):
-			rows.append({"key": person["email"], "status": "skipped: no profile or branch"})
-			continue
-
-		member = member_service.ensure(profile)
-
-		existing = frappe.db.exists(
-			"VMMS Membership", {"member": member.name, "membership_type": membership_type}
-		)
-
-		if existing:
-			membership = frappe.get_doc("VMMS Membership", existing)
-			rows.append(
-				{
-					"key": person["email"],
-					"name": membership.name,
-					"status": "exists",
-					"state": membership.membership_status,
-				}
-			)
-			continue
-
-		membership = frappe.get_doc(
-			{
-				"doctype": "VMMS Membership",
-				"member": member.name,
-				"membership_type": membership_type,
-				"geo_node": node,
-				"membership_source": "Gateway",
-			}
-		)
-		membership.insert(ignore_permissions=True)
-		membership_service.submit(membership)
-
-		if wanted == "approved":
-			_approve(engine, membership)
-
-		membership.reload()
-
-		rows.append(
-			{
-				"key": person["email"],
-				"name": membership.name,
-				"status": "created",
-				"state": membership.membership_status,
-				"approval": membership.approval_state,
-			}
-		)
-
-	return rows
-
-
-def _approve(engine, membership) -> None:
-	"""Record the county approver's decision, as that user, through the gate.
-
-	`frappe.set_user` rather than an `ignore_permissions` flag: the engine's
-	check is *who is acting*, not what permission they hold, and there is no
-	argument that overrides it. Restored in a `finally` so a refusal mid-way does
-	not leave the rest of the seed running as somebody else.
-	"""
-	if not frappe.db.exists("User", kenya.APPROVER_USER):
-		return
-
-	original = frappe.session.user
-
-	try:
-		frappe.set_user(kenya.APPROVER_USER)
-		membership.reload()
-		engine.decide(membership, "Approved", reason="Verified against the branch's records.")
-	finally:
-		frappe.set_user(original)
-
-
-def _rosters() -> list[dict]:
-	"""Put the demo volunteers on the two soonest deployments.
-
-	Only where a deployment actually exists — which is wherever a request was
-	settled and fulfilled, and that is the app's decision rather than this
-	seed's. A roster is what turns the opportunity card's "places filled" from a
-	zero into a number somebody can read against the request.
-	"""
-	rows = []
-
-	deployments = frappe.get_all(
-		"VMMS Deployment",
-		filters={"status": ("in", ("Planned", "Active"))},
-		fields=["name"],
-		order_by="start_date asc",
-		limit=2,
-	)
-
-	volunteers = [name for name in (_volunteer_of(person["email"]) for person in VOLUNTEERS) if name]
-
-	# The roster is a register of `VMMS Deployment Assignment` documents rather
-	# than a child table, so seeding one is a fan-out rather than a list of rows
-	# and a save. `assignment.deploy` is the same call the console's own bulk
-	# action makes, which is the point: a seeded society and a real one arrive at
-	# their rosters through one code path.
-	from vmmsx.deployment.services import assignment as assignment_service
-
-	for entry in deployments:
-		deployment = frappe.get_doc("VMMS Deployment", entry.name)
-
-		# `Assigned`, not `Pending`: these people are the seed's record of a
-		# deployment that happened, not questions waiting for an answer that will
-		# never come. It also keeps the seed silent — only a question notifies.
-		outcome = assignment_service.deploy(
-			deployment,
-			volunteers,
-			status=assignment_service.STATUS_ASSIGNED,
-		)
-
-		if not outcome["raised"]:
-			rows.append({"key": deployment.name, "status": "exists"})
-			continue
-
-		rows.append({"key": deployment.name, "status": "created", "added": outcome["raised"]})
 
 	return rows
 
@@ -1740,226 +1325,6 @@ def _announcements() -> list[dict]:
 				"delivered": fanned["delivered"],
 			}
 		)
-
-	return rows
-
-
-# --- stories ---------------------------------------------------------------
-#
-# `Article` is **core's** doctype, and the portal reads it through core's own
-# guest-readable API rather than through anything in this app. Seeded here for
-# the same reason the Buzz events are: a stories tab with nothing in it
-# demonstrates nothing, and the records belong to whichever app owns them.
-
-ARTICLE_TYPES = (
-	("News", "Something that happened, reported by the society."),
-	("Story", "A volunteer, a branch or a community, in their own words."),
-)
-
-ARTICLE_CATEGORIES = (
-	("Emergency Response", "Floods, fires, road accidents and the work that follows."),
-	("Volunteering", "The people who give their time, and what it is like."),
-	("Health", "Blood, first aid, community health and public awareness."),
-	("Branch Life", "What is happening across the society's branches."),
-)
-
-ARTICLES = (
-	{
-		"title": "Three days in Mathare: what a reception centre actually looks like",
-		"subtitle": "Forty households arrived in one night. Here is how the branch met them.",
-		"type": "Story",
-		"category": "Emergency Response",
-		"read_time": 6,
-		"featured": True,
-		"published_in": -4,
-		"summary": (
-			"When fire went through part of Mathare, the branch had a reception centre standing"
-			" within four hours. Three volunteers describe the first night, the registration"
-			" queue, and what they would do differently."
-		),
-		"body": (
-			"<p>The call came in at ten past eight. By midnight the hall had forty households in"
-			" it, and by the following evening it had ninety.</p>"
-			"<h2>The first four hours</h2>"
-			"<p>Setting up is not the hard part. Sleeping mats, a washing point and a feeding area"
-			" go in fast when there are enough hands, and there were. What takes the time is"
-			" registration, because registration is what everything else depends on: how much"
-			" food to cook, how many mats are still needed, who has not been accounted for.</p>"
-			"<h2>What we would do differently</h2>"
-			"<p>Two things. Put two people on registration from the start rather than one, and"
-			" agree who is talking to the county before anybody does.</p>"
-			"<blockquote>You are not there to fix somebody's week. You are there so that their"
-			" night is survivable.</blockquote>"
-			"<p>Everyone who worked the centre logged their hours against it, which is how the"
-			" branch knows the centre cost 340 volunteer hours across three days.</p>"
-		),
-	},
-	{
-		"title": "Why your first aid certificate has an expiry date",
-		"subtitle": "It is not administration. It is the difference between remembering and knowing.",
-		"type": "News",
-		"category": "Health",
-		"read_time": 4,
-		"featured": False,
-		"published_in": -11,
-		"summary": (
-			"A number of certificates in the county expire this quarter. What lapses, what it"
-			" stops you doing, and how to book the next sitting."
-		),
-		"body": (
-			"<p>A first aid certificate is valid for two years, and the society treats a lapsed"
-			" one as a lapsed one. That is deliberate.</p>"
-			"<h2>What a lapse actually stops</h2>"
-			"<p>Some certifications are held as a record and some are held as a requirement. A"
-			" lapsed requirement is the reason somebody cannot be sent on work that names it,"
-			" and the portal says so on your own training page rather than leaving you to find"
-			" out when a coordinator calls.</p>"
-			"<h2>Booking the next one</h2>"
-			"<p>The two day certificate runs at headquarters and is listed under events. Book it"
-			" before yours runs out rather than after.</p>"
-		),
-	},
-	{
-		"title": "Grace has given 200 hours this year. She is 24.",
-		"subtitle": "A conversation about turning up, burning out, and turning up again.",
-		"type": "Story",
-		"category": "Volunteering",
-		"read_time": 5,
-		"featured": False,
-		"published_in": -19,
-		"summary": (
-			"She joined for a line on a form and stayed for something else entirely. On"
-			" psychosocial support, school talks, and what nobody tells you about the first"
-			" deployment."
-		),
-		"body": (
-			"<p>She signed up because a friend was signing up.</p>"
-			"<h2>The first deployment</h2>"
-			"<p>Nobody tells you that the hardest part is not the work. It is the hour"
-			" afterwards, when there is nothing left to do and you are still there.</p>"
-			"<h2>On not burning out</h2>"
-			"<p>Log your hours honestly, including the ones you would rather not count. A branch"
-			" that can see somebody is at 200 hours can do something about it. A branch that"
-			" cannot see it will keep calling.</p>"
-		),
-	},
-	{
-		"title": "The blood drive moved 412 units in a weekend",
-		"subtitle": "What the branch learned about donor reception.",
-		"type": "News",
-		"category": "Health",
-		"read_time": 3,
-		"featured": False,
-		"published_in": -27,
-		"summary": (
-			"A two day mobile drive with the national blood service, and the small change in the"
-			" reception area that cut the queue in half."
-		),
-		"body": (
-			"<p>412 units over two days, against a target of 300.</p>"
-			"<h2>The change that mattered</h2>"
-			"<p>Screening and registration were run as one queue and it did not work. Splitting"
-			" them, with two volunteers on each, halved the wait and dropped the number of"
-			" people who left before donating to almost none.</p>"
-		),
-	},
-	{
-		"title": "Every branch is now on the same register",
-		"subtitle": "What that changes for a volunteer, and what it does not.",
-		"type": "News",
-		"category": "Branch Life",
-		"read_time": 4,
-		"featured": False,
-		"published_in": -40,
-		"summary": (
-			"One profile, whichever branch you serve through. What moves with you, what stays"
-			" with the branch, and why your certifications are now visible to whoever is"
-			" staffing a deployment."
-		),
-		"body": (
-			"<p>You have one profile with the society and you will only ever have one.</p>"
-			"<h2>What moves with you</h2>"
-			"<p>Your name, your contact details, your certifications and every hour you have"
-			" logged. Transferring between branches does not restart any of it.</p>"
-			"<h2>What stays with the branch</h2>"
-			"<p>Your placement, and the decisions a branch made about it. A transfer is a"
-			" decision somebody makes, not a field you edit.</p>"
-		),
-	},
-)
-
-
-def _article_taxonomy() -> list[dict]:
-	"""Core's article types and categories. Both autoname from their own label."""
-	rows = []
-
-	for doctype, entries, field in (
-		("Localisation Type", ARTICLE_TYPES, "type_name"),
-		("Localisation Category", ARTICLE_CATEGORIES, "category_name"),
-	):
-		if not frappe.db.exists("DocType", doctype):
-			rows.append({"key": doctype, "status": "skipped: doctype not installed"})
-			continue
-
-		for label, description in entries:
-			if frappe.db.exists(doctype, label):
-				rows.append({"key": label, "status": "exists"})
-				continue
-
-			frappe.get_doc(
-				{"doctype": doctype, field: label, "description": description, "is_active": 1}
-			).insert(ignore_permissions=True)
-
-			rows.append({"key": label, "status": "created"})
-
-	return rows
-
-
-def _articles() -> list[dict]:
-	"""Published stories, submitted, because that is what `get_articles` reads.
-
-	`Article` is submittable and core's list endpoint filters on
-	`docstatus = 1` as well as `status = "Published"`. A seed that only set the
-	status would produce records that look published on the desk and are invisible
-	in the portal, which is the most confusing possible half-state — so each one
-	is submitted here, deliberately and visibly.
-
-	The author is the demo approver, who is a real user on this site. No cover
-	image is attached: the portal draws a designed placeholder for an absent one,
-	and a seed inventing photography would put a stock photograph on a society's
-	own newsroom.
-	"""
-	if not frappe.db.exists("DocType", "Article"):
-		return [{"key": "Article", "status": "skipped: doctype not installed"}]
-
-	author = kenya.APPROVER_USER if frappe.db.exists("User", kenya.APPROVER_USER) else "Administrator"
-	rows = []
-
-	for spec in ARTICLES:
-		if frappe.db.exists("Article", {"title": spec["title"]}):
-			rows.append({"key": spec["title"][:44], "status": "exists"})
-			continue
-
-		article = frappe.get_doc(
-			{
-				"doctype": "Article",
-				"title": spec["title"],
-				"subtitle": spec["subtitle"],
-				"article_type": spec["type"],
-				"category": spec["category"],
-				"summary": spec["summary"],
-				"body": spec["body"],
-				"read_time": spec["read_time"],
-				"is_featured": int(spec["featured"]),
-				"author": author,
-				"status": "Published",
-				"published_on": add_days(today(), spec["published_in"]),
-			}
-		)
-		article.insert(ignore_permissions=True)
-		article.submit()
-
-		rows.append({"key": spec["title"][:44], "status": "created", "slug": article.slug})
 
 	return rows
 

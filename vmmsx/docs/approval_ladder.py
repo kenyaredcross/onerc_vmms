@@ -32,6 +32,7 @@ from pathlib import Path
 
 from vmmsx.docs.writer import Writer
 from vmmsx.seed import kenya
+from vmmsx.seed import kenya_geography as geography
 
 APP_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = APP_ROOT / "docs" / "multi-stage-approval-walkthrough.docx"
@@ -68,7 +69,7 @@ LADDER = (
 		"role": ROLE_BRANCH,
 		"user": "branch.coord@krcs.demo",
 		"person": "Peter Mwangi",
-		"node": kenya.BRANCH_NODES[0],
+		"node": kenya.SUB_COUNTY_NODES[0],
 		"level": kenya.LEVELS[2]["name"],
 		"stage": "Branch Review",
 		"sequence": 1,
@@ -79,7 +80,7 @@ LADDER = (
 		"role": ROLE_COUNTY,
 		"user": "county.coord@krcs.demo",
 		"person": "Esther Njeri",
-		"node": kenya.COUNTY_NODES[0],
+		"node": kenya.PRIMARY_COUNTY,
 		"level": kenya.LEVELS[1]["name"],
 		"stage": "County Endorsement",
 		"sequence": 2,
@@ -198,7 +199,7 @@ def _what(w) -> None:
 
 	w.caption(
 		"An application made at "
-		f"{kenya.BRANCH_NODES[0]} climbs all three. Nothing about the three is written in code:"
+		f"{kenya.SUB_COUNTY_NODES[0]} climbs all three. Nothing about the three is written in code:"
 		" they are rows in one configuration record."
 	)
 
@@ -211,8 +212,8 @@ def _what(w) -> None:
 			"A Frappe Role answers what. Holding "
 			f"{ROLE_COUNTY} is a set of permissions on doctypes: what you may read, write, create.",
 			"A Geo Assignment answers where. Holding that same role at "
-			f"{kenya.COUNTY_NODES[0]} grants authority over "
-			f"{kenya.COUNTY_NODES[0]} and everything beneath it, and nowhere else.",
+			f"{kenya.PRIMARY_COUNTY} grants authority over "
+			f"{kenya.PRIMARY_COUNTY} and everything beneath it, and nowhere else.",
 			"An approval stage names a role. The engine then asks core who holds that role"
 			" nearest above this application's Geo Node, and routes to those people by name.",
 		]
@@ -274,15 +275,17 @@ def _before(w, site: str) -> None:
 	w.p(
 		f"The seed is idempotent and reports created or exists for every record, so running it on a"
 		f" site that already has it changes nothing. It builds the hierarchy this guide uses:"
-		f" {kenya.NATIONAL_NODE} at the top, {' and '.join(kenya.COUNTY_NODES)} beneath it, and"
-		f" {' and '.join(kenya.BRANCH_NODES)} beneath {kenya.COUNTY_NODES[0]}."
+		f" {kenya.NATIONAL_NODE} at the top, all {len(kenya.COUNTY_NODES)} of Kenya's counties"
+		f" beneath it, and {geography.total_sub_counties()} sub-counties beneath those. This guide"
+		f" works down one branch of it: {kenya.NATIONAL_NODE}, then {kenya.PRIMARY_COUNTY}, then"
+		f" {kenya.SUB_COUNTY_NODES[0]}."
 	)
 
 	w.h2("Geo Node names are opaque, and you will need the real ones")
 
 	w.p(
 		"A Geo Node is named GEO-00022, not "
-		f"{kenya.BRANCH_NODES[0]}. That is deliberate — mutable data never goes in a primary key,"
+		f"{kenya.SUB_COUNTY_NODES[0]}. That is deliberate — mutable data never goes in a primary key,"
 		" because a society that renames a branch would otherwise break every record pointing at"
 		" it. The desk shows you the label; scripts need the docname. Get both:"
 	)
@@ -295,7 +298,7 @@ def _before(w, site: str) -> None:
 
 	w.note(
 		"On the site this guide was verified against, the three nodes came back as GEO-00022"
-		f" ({kenya.BRANCH_NODES[0]}), GEO-00020 ({kenya.COUNTY_NODES[0]}) and GEO-00019"
+		f" ({kenya.SUB_COUNTY_NODES[0]}), GEO-00020 ({kenya.PRIMARY_COUNTY}) and GEO-00019"
 		f" ({kenya.NATIONAL_NODE}). Yours will differ if anything else was seeded first. Read them"
 		" rather than copying these."
 	)
@@ -601,7 +604,17 @@ def _workflow(w, site: str) -> None:
 	w.p(
 		"The table under Anchor names the geo levels an application may be anchored at. Empty means"
 		" any active level. This guide uses one row:"
-		f" {kenya.LEVELS[2]['name']}, so applications must be made at a branch and not at a county."
+		f" {kenya.LEVELS[2]['name']}, so applications must be made at a sub-county and not at the"
+		" county above it."
+	)
+
+	w.note(
+		"That is this guide's own choice, and it is the opposite of what the Kenya seed configures."
+		f" The seed names the {kenya.LEVELS[1]['name']} and only the {kenya.LEVELS[1]['name']},"
+		" because that society decided approval happens there — see the note above LEVELS in"
+		" seed/kenya.py. This guide overwrites the row on purpose, because a three-rung ladder"
+		" needs an application that starts at the bottom of one, and rewriting a configuration"
+		" record is exactly what the guide is demonstrating."
 	)
 
 	w.p(
@@ -758,7 +771,7 @@ def _register(w, site: str) -> None:
 			f"Sign in as {APPLICANT_USER} and go to /portal/join.",
 			"Choose the volunteer path.",
 			f"Placement: one select per rung of the ladder. Choose {kenya.NATIONAL_NODE}, then"
-			f" {kenya.COUNTY_NODES[0]}, then {kenya.BRANCH_NODES[0]}. The wizard will not let you"
+			f" {kenya.PRIMARY_COUNTY}, then {kenya.SUB_COUNTY_NODES[0]}. The wizard will not let you"
 			" hand the server a level the workflow would refuse.",
 			"Identity: first name, last name, phone. The email is shown with a lock on it, because"
 			" it is the login and not a form value.",
@@ -813,7 +826,7 @@ def _register(w, site: str) -> None:
 		f'  "name": "{EXAMPLE_APPLICATION}",\n'
 		'  "red_profile": "RP-00126",\n'
 		'  "geo_node": "GEO-00022",\n'
-		f'  "geo_path": "{kenya.BRANCH_NODES[0]} \u2014 {kenya.COUNTY_NODES[0]} \u2014'
+		f'  "geo_path": "{kenya.SUB_COUNTY_NODES[0]} \u2014 {kenya.PRIMARY_COUNTY} \u2014'
 		f' {kenya.NATIONAL_NODE}",\n'
 		'  "applied_on": "2026-08-11",\n'
 		'  "approval_state": "In Review",\n'
@@ -899,7 +912,7 @@ def _approve(w, site: str) -> None:
 		f'    "name": "{EXAMPLE_APPLICATION}",\n'
 		'    "state": "In Review",\n'
 		'    "geo_node": "GEO-00022",\n'
-		f'    "geo_path": "{kenya.BRANCH_NODES[0]} \u2014 {kenya.COUNTY_NODES[0]} \u2014'
+		f'    "geo_path": "{kenya.SUB_COUNTY_NODES[0]} \u2014 {kenya.PRIMARY_COUNTY} \u2014'
 		f' {kenya.NATIONAL_NODE}",\n'
 		'    "stage": {\n'
 		'      "name": "b5lqp6h527",\n'
@@ -1047,7 +1060,7 @@ def _after(w, site: str) -> None:
 			" rung, each carrying the stage, the approver, the decision, the reason and the"
 			" timestamp.",
 			f"A VMMS Volunteer record exists ({EXAMPLE_VOLUNTEER} in the verified run), status"
-			f" Active, placed at {kenya.BRANCH_NODES[0]} — the branch they applied at.",
+			f" Active, placed at {kenya.SUB_COUNTY_NODES[0]} — the node they applied at.",
 			"What the applicant declared — skills, languages, availability, citizenship, residency —"
 			" was seeded onto that volunteer record. From here the two are separate: editing one"
 			" does not touch the other.",

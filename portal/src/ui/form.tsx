@@ -528,6 +528,7 @@ export function MultiCombo({
 	label,
 	placeholder = "Type to search…",
 	empty,
+	required = false,
 }: {
 	id?: string;
 	options: Array<{ key: string; label: string; description?: string | null }>;
@@ -536,6 +537,7 @@ export function MultiCombo({
 	label: string;
 	placeholder?: string;
 	empty?: ReactNode;
+	required?: boolean;
 }) {
 	const listId = useId();
 	const [open, setOpen] = useState(false);
@@ -562,9 +564,19 @@ export function MultiCombo({
 
 	if (options.length === 0) {
 		return (
-			<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] text-muted">
-				{empty ?? "This society has not configured any options here yet."}
-			</p>
+			<div>
+				<p className="mb-1.5 text-[12px] font-semibold text-slate-strong">
+					{label}
+					{required && (
+						<span className="ml-1 text-danger" aria-hidden="true">
+							*
+						</span>
+					)}
+				</p>
+				<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] text-muted">
+					{empty ?? "This society has not configured any options here yet."}
+				</p>
+			</div>
 		);
 	}
 
@@ -591,6 +603,11 @@ export function MultiCombo({
 				className="mb-1.5 block text-[12px] font-semibold text-slate-strong"
 			>
 				{label}
+				{required && (
+					<span className="ml-1 text-danger" aria-hidden="true">
+						*
+					</span>
+				)}
 			</label>
 
 			<div className="relative" ref={wrap}>
@@ -608,6 +625,7 @@ export function MultiCombo({
 					aria-controls={listId}
 					aria-autocomplete="list"
 					aria-label={label}
+					aria-required={required}
 					className={cx(CONTROL, "pl-9")}
 					value={query}
 					placeholder={placeholder}

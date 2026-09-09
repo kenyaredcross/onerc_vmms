@@ -16,6 +16,7 @@ import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import { PlanCards } from "../ui/PlanCards";
 import {
 	BackgroundFields,
+	backgroundIsCoherent,
 	backgroundFrom,
 	backgroundLines,
 	backgroundPayload,
@@ -29,7 +30,6 @@ import {
 	FieldSet,
 	MultiCombo,
 	PrivateUpload,
-	Segmented,
 	SelectInput,
 	TextArea,
 	TextInput,
@@ -76,7 +76,6 @@ type DraftRegistration = OpenRegistration & {
 	payment_method?: string;
 	skills?: string[];
 	languages?: string[];
-	availability?: string[];
 	motivation?: string[];
 	prior_experience?: string;
 	/** Keys of the declarations already accepted, ready to re-tick on resume. */
@@ -98,7 +97,7 @@ type DraftRegistration = OpenRegistration & {
 /**
  * **`declaration` is not the consent step**, and the two must not be confused.
  * It predates the consents and it is "About your volunteering" — the skills,
- * languages, availability and motivation somebody *declares* about themselves.
+ * languages and motivation somebody *declares* about themselves.
  * What the applicant legally agrees to is `consents`, and it is a separate id
  * for exactly that reason.
  */
@@ -434,7 +433,7 @@ export default function Join() {
 
 function JoinBody() {
 	const [params, setParams] = useSearchParams();
-	const { isGuest, isLoading: sessionLoading } = useSession();
+	const { user, isGuest, isLoading: sessionLoading } = useSession();
 	const { call } = useContext(FrappeContext) as FrappeConfig;
 
 	const requested = params.get("path");
@@ -459,8 +458,9 @@ function JoinBody() {
 	const [phone, setPhone] = useState("");
 	const [gender, setGender] = useState("");
 	const [dateOfBirth, setDateOfBirth] = useState("");
-	// A file URL from the framework's own uploader, never the file. Optional, and
-	// it is the one thing on the identity step nobody has to answer.
+	// A file URL from the framework's own uploader, never the file. Volunteer
+	// registration requires it on the identity step; the shared Red Profile
+	// schema deliberately remains optional.
 	const [photo, setPhoto] = useState("");
 
 	// --- placement. The *chain* is the state, not the node: the wizard owns what
@@ -573,7 +573,7 @@ function JoinBody() {
 	// an answer that disappeared on the way back from the next screen would be
 	// worse than the picker it replaced. Starts at yes, which is what the
 	// society's own default already assumes.
-	const [isCitizen, setIsCitizen] = useState(true);
+	const [isCitizen, setIsCitizen] = useState<boolean | null>(null);
 
 	// --- identification
 	//
@@ -604,7 +604,6 @@ function JoinBody() {
 	// --- the declaration
 	const [skills, setSkills] = useState<string[]>([]);
 	const [languages, setLanguages] = useState<string[]>([]);
-	const [availability, setAvailability] = useState<string[]>([]);
 	const [motivations, setMotivations] = useState<string[]>([]);
 	const [experience, setExperience] = useState("");
 
@@ -678,7 +677,6 @@ function JoinBody() {
 		setPaymentMethod((current) => remembered.payment_method ?? current);
 		setSkills(remembered.skills ?? []);
 		setLanguages(remembered.languages ?? []);
-		setAvailability(remembered.availability ?? []);
 		setMotivations(remembered.motivation ?? []);
 		setExperience(remembered.prior_experience ?? "");
 		setAnswers(remembered.answers ?? {});
@@ -822,11 +820,7 @@ function JoinBody() {
 
 		if (recorded && suggested) {
 			setIsCitizen(recorded === suggested);
-			return;
 		}
-
-		if (suggested && !citizenship) setCitizenship(suggested);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [options?.default_country_of_citizenship, existing.data]);
 
 	/**
@@ -1073,13 +1067,22 @@ function JoinBody() {
 					// dropped, and it is required of a volunteer for the same reason
 					// `assert_ready` requires it: a country of citizenship, not a
 					// screen, is what the society actually needs.
-					(path !== "volunteer" || (dateOfBirth && citizenship && disability)),
+					(path !== "volunteer" ||
+						(dateOfBirth &&
+							citizenship &&
+							isCitizen !== null &&
+							(isCitizen || citizenshipStatus) &&
+							disability &&
+							(disability !== DISABILITY_DISCLOSED || disabilities.length > 0) &&
+							photo)),
 			);
 		// Nothing on this step is required, so there is nothing to be waiting for.
 		// Stated rather than left to the fall-through at the bottom, because the
 		// fall-through is what an *unknown* step id gets and this one is known and
 		// deliberately unconditional.
-		if (id === "background") return true;
+		if (id === "background") return backgroundIsCoherent(background);
+		if (id === "declaration")
+			return Boolean(skills.length && languages.length && motivations.length);
 		if (id === "plan") return Boolean(membershipType);
 		if (id === "payment") return Boolean(paymentMethod);
 		if (id === "placement") return Boolean(node);
@@ -1254,6 +1257,7 @@ function JoinBody() {
 						// they had named.
 						disabilities,
 						profession: background.profession,
+						other_profession: background.other_profession,
 						// Only the rows somebody actually filled in. Each key present
 						// replaces that one table and a key left out leaves it alone,
 						// so all six are always sent: a table that vanished from the
@@ -1269,7 +1273,6 @@ function JoinBody() {
 						identifications: identifications.filter(identificationIsUsable).map(sentIdentification),
 						skills,
 						languages,
-						availability,
 						motivation: motivations,
 						prior_experience: experience,
 						answers,
@@ -1525,7 +1528,7 @@ function JoinBody() {
 									type={chosenType}
 									citizenship={citizenship}
 									idType={identificationSummary}
-									chips={skills.length + languages.length + availability.length + motivations.length}
+								chips={skills.length + languages.length + motivations.length}
 								/>
 							}
 						/>
@@ -1598,6 +1601,7 @@ function JoinBody() {
 										{step.id === "identity" && (
 											<IdentityStep
 												profile={profile}
+												accountEmail={user ?? ""}
 												genders={genders}
 												path={path}
 												options={options}
@@ -1675,8 +1679,6 @@ function JoinBody() {
 												onSkills={setSkills}
 												languages={languages}
 												onLanguages={setLanguages}
-												availability={availability}
-												onAvailability={setAvailability}
 												motivations={motivations}
 												onMotivations={setMotivations}
 												experience={experience}
@@ -1687,6 +1689,7 @@ function JoinBody() {
 										{step.id === "background" && (
 											<BackgroundFields
 												options={identityOptions.data?.message}
+												openEducationByDefault
 												value={background}
 												onChange={(patch) =>
 													setBackground((held) => ({ ...held, ...patch }))
@@ -1738,7 +1741,7 @@ function JoinBody() {
 												steps={steps}
 												onEdit={goTo}
 												name={`${firstName} ${lastName}`.trim()}
-												email={profile?.email ?? null}
+												email={profile?.email ?? user}
 												phone={phone}
 												gender={gender}
 												dateOfBirth={dateOfBirth}
@@ -1753,7 +1756,10 @@ function JoinBody() {
 													disabilities,
 												)}
 												background={{
-													profession: background.profession || null,
+													profession:
+														background.profession === "Other"
+															? background.other_profession || "Other"
+															: background.profession || null,
 													rows: backgroundLines(identityOptions.data?.message, background),
 												}}
 												paymentLabel={paymentLabel}
@@ -1766,8 +1772,7 @@ function JoinBody() {
 												declared={{
 													skills: labelsFor(options?.skills, skills),
 													languages: labelsFor(options?.languages, languages),
-													availability: labelsFor(options?.availability, availability),
-													motivations: labelsFor(options?.motivations, motivations),
+															motivations: labelsFor(options?.motivations, motivations),
 												}}
 												experience={experience}
 												societyAnswers={questions
@@ -2055,8 +2060,8 @@ function stepsFor(
 						rail: "Volunteer details",
 						eyebrow: "",
 						title: "Volunteer details",
-						blurb: "Add your skills, languages, availability, and motivation.",
-						needs: "",
+						blurb: "Add your skills, languages, and motivation.",
+						needs: "Choose at least one skill, language, and motivation",
 					},
 					{
 						id: "background",
@@ -2494,6 +2499,7 @@ function PathSwitch({ path, onChange }: { path: Path; onChange: (p: Path) => voi
  */
 function IdentityStep({
 	profile,
+	accountEmail,
 	genders,
 	path,
 	options,
@@ -2524,6 +2530,7 @@ function IdentityStep({
 	disabilityOptions,
 }: {
 	profile: RedProfile | null;
+	accountEmail: string;
 	genders: string[];
 	path: Path;
 	options?: ApplicationOptions;
@@ -2537,7 +2544,7 @@ function IdentityStep({
 	onCitizenship: (v: string) => void;
 	citizenshipStatus: string;
 	onCitizenshipStatus: (v: string) => void;
-	isCitizen: boolean;
+	isCitizen: boolean | null;
 	onIsCitizen: (yes: boolean) => void;
 	onFirstName: (v: string) => void;
 	onLastName: (v: string) => void;
@@ -2553,68 +2560,96 @@ function IdentityStep({
 	onDisabilities: (v: string[]) => void;
 	disabilityOptions: VocabularyRow[];
 }) {
+	const email = profile?.email || accountEmail;
+
 	return (
-		<div className="space-y-5">
-			<div className="grid gap-5 sm:grid-cols-2">
-				<Field label="First name" required htmlFor="join-first">
-					<TextInput id="join-first" value={firstName} onChange={onFirstName} />
-				</Field>
-
-				<Field label="Last name" required htmlFor="join-last">
-					<TextInput id="join-last" value={lastName} onChange={onLastName} />
-				</Field>
-
-				<Field label="Phone number" htmlFor="join-phone">
-					<TextInput
-						id="join-phone"
-						type="tel"
-						inputMode="tel"
-						value={phone}
-						onChange={onPhone}
-					/>
-				</Field>
-
-				<Field label="Email" hint="From your account">
-					{/* Never an input, on either path. The login is the identity: a
-					    form field here would let anybody claim anybody's record, and
-					    `update_my_profile` does not accept one for the same reason. */}
-					<div className="flex items-center gap-2 rounded-xl border border-card-line bg-surface px-3.5 py-2.5 text-[13.5px] text-muted">
-						<span className="flex-none text-slate-faint">
-							<Icon.lock size={14} />
-						</span>
-						<span className="min-w-0 truncate">{profile?.email ?? "Taken from your account"}</span>
+		<div className="space-y-7">
+			<section className="grid gap-6 border-b border-card-line pb-7 lg:grid-cols-[minmax(0,1fr)_210px]">
+				<header className="flex items-start justify-between gap-5 lg:col-span-2">
+					<div>
+						<p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-blue">
+							Your profile
+						</p>
+						<h2 className="mt-1 text-[18px] font-semibold leading-tight text-ink">
+							Name and contact
+						</h2>
 					</div>
-				</Field>
+					<span className="flex-none rounded-full bg-[#EDF6F8] px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#27546F]">
+						Shared profile
+					</span>
+				</header>
 
-				<Field label="Gender" htmlFor="join-gender">
-					<SelectInput
-						id="join-gender"
-						value={gender}
-						options={genders}
-						onChange={onGender}
-						placeholder="Prefer not to say"
-					/>
-				</Field>
+				<div className="grid min-w-0 gap-5 sm:grid-cols-2">
+					<Field label="First name" required htmlFor="join-first">
+						<TextInput id="join-first" value={firstName} onChange={onFirstName} />
+					</Field>
 
-				<Field
-					label="Date of birth"
+					<Field label="Last name" required htmlFor="join-last">
+						<TextInput id="join-last" value={lastName} onChange={onLastName} />
+					</Field>
+
+					<Field label="Phone number" htmlFor="join-phone">
+						<TextInput
+							id="join-phone"
+							type="tel"
+							inputMode="tel"
+							value={phone}
+							onChange={onPhone}
+						/>
+					</Field>
+
+					<Field
+						label="Email address"
+						hint="To change this, update your sign-in account."
+					>
+						{/* Never an input. The signed-in account is the identity, so it is
+						    available even before this person has a Red Profile. */}
+						<div className="flex items-center gap-2 rounded-lg border border-rail-line bg-surface px-3 py-2 text-[13px] text-muted">
+							<span className="flex-none text-slate-faint">
+								<Icon.lock size={14} />
+							</span>
+							<span className="min-w-0 truncate">{email}</span>
+						</div>
+					</Field>
+
+					<Field label="Gender" htmlFor="join-gender">
+						<SelectInput
+							id="join-gender"
+							value={gender}
+							options={genders}
+							onChange={onGender}
+							placeholder="Prefer not to say"
+						/>
+					</Field>
+
+					<Field
+						label="Date of birth"
+						required={path === "volunteer"}
+						htmlFor="join-dob"
+						hint={
+							path === "volunteer"
+								? "Used for eligibility and safeguarding."
+								: undefined
+						}
+					>
+						<TextInput
+							id="join-dob"
+							type="date"
+							max={new Date().toISOString().slice(0, 10)}
+							value={dateOfBirth}
+							onChange={onDateOfBirth}
+						/>
+					</Field>
+				</div>
+
+				<PhotoField
+					id="join-photo"
+					value={photo}
+					onChange={onPhoto}
 					required={path === "volunteer"}
-					htmlFor="join-dob"
-					hint={
-						path === "volunteer"
-							? "Required for safeguarding and eligibility checks."
-							: undefined
-					}
-				>
-					<TextInput
-						id="join-dob"
-						type="date"
-						max={new Date().toISOString().slice(0, 10)}
-						value={dateOfBirth}
-						onChange={onDateOfBirth}
-					/>
-				</Field>
-			</div>
+					name={`${firstName} ${lastName}`.trim()}
+				/>
+			</section>
 
 			{/* Only a volunteer is asked. A membership does not depend on it and
 			    `assert_ready` does not check it, so putting it on both paths would
@@ -2622,7 +2657,18 @@ function IdentityStep({
 			    the vocabularies are in, because the yes/no form of the question is
 			    unanswerable without the society's own country. */}
 			{path === "volunteer" && options && (
-				<FieldSet title="Nationality">
+				<section className="border-b border-card-line pb-7">
+					<header className="mb-5">
+						<p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-blue">
+							Nationality
+						</p>
+						<h2 className="mt-1 text-[18px] font-semibold leading-tight text-ink">
+							Citizenship
+						</h2>
+						<p className="mt-1.5 max-w-2xl text-[12.5px] leading-relaxed text-muted">
+							This helps the Society apply the right identification and safeguarding rules.
+						</p>
+					</header>
 					<CitizenshipQuestion
 						countries={options.countries}
 						statuses={options.citizenship_statuses ?? []}
@@ -2634,7 +2680,7 @@ function IdentityStep({
 						isCitizen={isCitizen}
 						onIsCitizen={onIsCitizen}
 					/>
-				</FieldSet>
+				</section>
 			)}
 
 			{/* Volunteers only, for the same reason nationality is: a society has
@@ -2645,7 +2691,7 @@ function IdentityStep({
 					title="Disability and support requirements"
 					description="Provide any information needed to arrange appropriate support."
 				>
-					<div className="grid gap-5 sm:grid-cols-2">
+					<div className="max-w-[470px]">
 						<Field label="Do you have a disability?" required htmlFor="join-disability">
 							<SelectInput
 								id="join-disability"
@@ -2655,45 +2701,16 @@ function IdentityStep({
 								placeholder="Choose an answer"
 							/>
 						</Field>
-
-						{/* Drawn only on "Yes". A description box under "No" is a form
-						    asking a question it has already been answered, and under
-						    "Prefer not to say" it is a form arguing with somebody. */}
-						{disability === DISABILITY_DISCLOSED && (
-							<Field
-								label="Support requirements"
-								htmlFor="join-disability-needs"
-								hint="Optional"
-							>
-								<TextArea
-									id="join-disability-needs"
-									value={disabilityNeeds}
-									onChange={onDisabilityNeeds}
-									rows={3}
-								/>
-							</Field>
-						)}
 					</div>
 
-					{/* The society's own register, on the same condition and drawn
-					    with the same control the skills and languages pickers use —
-					    it is a configured vocabulary of unknown length, which is the
-					    argument `MultiCombo` was chosen for there.
-
-					    Full width and below the pair above, rather than a third cell
-					    in the grid: this is a list somebody scans, and half a column
-					    beside a text box would make the longest question on the step
-					    the narrowest control on it.
-
-					    Not required, and it says so. Somebody has already disclosed
-					    by answering the question above; naming it is a second
-					    disclosure, and a form that made this one mandatory would have
-					    turned the first into a trap. */}
+					{/* A “Yes” needs at least one type. The free-text support request
+					    follows it, matching the order somebody answers the questions. */}
 					{disability === DISABILITY_DISCLOSED && (
-						<div className="mt-5">
+						<div className="rise-in mt-5 grid gap-5 rounded-xl border border-card-line bg-[#F7FAFC] p-5">
 							<MultiCombo
 								id="join-disabilities"
 								label="Disability type"
+								required
 								options={disabilityOptions}
 								selected={disabilities}
 								onToggle={(key) =>
@@ -2706,46 +2723,63 @@ function IdentityStep({
 								placeholder="Search disability types"
 								empty="This society has not configured a list to choose from."
 							/>
+
+							<Field
+								label="Support requirements"
+								htmlFor="join-disability-needs"
+								hint="Optional"
+							>
+								<TextArea
+									id="join-disability-needs"
+									value={disabilityNeeds}
+									onChange={onDisabilityNeeds}
+									rows={3}
+								/>
+							</Field>
 						</div>
 					)}
 				</FieldSet>
 			)}
-
-			<PhotoField id="join-photo" value={photo} onChange={onPhoto} />
 		</div>
 	);
 }
 
 /**
- * A photograph, which is optional and says so.
+ * The concept's dedicated profile-photograph card.
  *
- * **It goes on the Red Profile, not on either application.** A portrait is a
- * fact about the person in the same way a date of birth is, which is why
- * `SELF_EDITABLE_FIELDS` already carries `profile_photo` and why this control
- * posts through `update_my_profile` rather than travelling with a registration.
- * It is the picture that ends up on a membership card and beside this person's
- * name on every screen a coordinator reads.
+ * The volunteer journey requires an image before it lets somebody continue,
+ * while the shared Red Profile field remains optional. That distinction is
+ * deliberate: it is a rule of this registration screen, not a rule for every
+ * person record, import, member or historical profile in the system.
  *
  * **Public, unlike an answer's attachment.** `AnswerUpload` uploads privately
  * because a letter naming somebody's chief is evidence for one approver. A
  * portrait is shown on the person's own card to anybody who scans it, so a
  * private file would be a broken image everywhere it is drawn.
  *
- * **Nobody is blocked by it.** No registration checks it, the step's completion
- * rule does not mention it, and a failed upload leaves a message and an
- * otherwise working form. That is what "not mandatory" has to mean to be true.
  */
 function PhotoField({
 	id,
 	value,
 	onChange,
+	required,
+	name,
 }: {
 	id: string;
 	value: string;
 	onChange: (value: string) => void;
+	required: boolean;
+	name: string;
 }) {
 	const { upload, loading } = useFrappeFileUpload();
 	const [failure, setFailure] = useState<string | null>(null);
+	const initials =
+		name
+			.split(/\s+/)
+			.filter(Boolean)
+			.slice(0, 2)
+			.map((part) => part[0]?.toUpperCase() ?? "")
+			.join("") || <Icon.user size={24} />;
 
 	const pick = async (file: File | undefined) => {
 		if (!file) return;
@@ -2760,57 +2794,43 @@ function PhotoField({
 	};
 
 	return (
-		<Field
-			label="Photograph"
-			htmlFor={id}
-			hint="Optional. Used on your profile and membership card."
-		>
-			<div className="flex flex-wrap items-center gap-4">
-				<div className="grid h-[72px] w-[72px] flex-none place-items-center overflow-hidden rounded-xl border border-card-line bg-surface text-slate-faint">
-					{value ? (
-						<img src={value} alt="" className="h-full w-full object-cover" />
-					) : (
-						<Icon.user size={26} />
-					)}
-				</div>
-
-				<div>
-					<div className="flex items-center gap-2.5">
-						<label
-							htmlFor={id}
-							className="cursor-pointer rounded-xl border border-card-line bg-white px-3.5 py-2 text-[12.5px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
-						>
-							{loading ? "Uploading…" : value ? "Replace picture" : "Choose a picture"}
-						</label>
-						<input
-							id={id}
-							type="file"
-							accept="image/*"
-							className="sr-only"
-							disabled={loading}
-							onChange={(event) => pick(event.target.files?.[0])}
-						/>
-
-						{value && !loading && (
-							<button
-								type="button"
-								onClick={() => {
-									setFailure(null);
-									onChange("");
-								}}
-								className="text-[11.5px] font-semibold text-muted hover:text-danger hover:underline"
-							>
-								Remove
-							</button>
+		<div>
+			<label
+				htmlFor={id}
+				className="flex min-h-[184px] cursor-pointer flex-col items-center justify-center gap-3.5 rounded-[14px] border-[1.5px] border-dashed border-[#BAC8D5] bg-[#F7FAFC] p-5 text-center transition hover:border-blue hover:bg-[#F0F6FB] lg:h-full"
+			>
+				<span className="grid h-[72px] w-[72px] place-items-center overflow-hidden rounded-full border-4 border-white bg-gradient-to-br from-[#1C72B5] to-[#0A365F] text-[20px] font-extrabold text-white shadow-[0_4px_14px_rgba(7,31,61,0.18)]">
+					{value ? <img src={value} alt="" className="h-full w-full object-cover" /> : initials}
+				</span>
+				<span className="grid justify-items-center gap-1">
+					<strong className="text-[13px] text-ink">
+						Profile photograph
+						{required && (
+							<span className="ml-1 text-danger" aria-hidden="true">
+								*
+							</span>
 						)}
-					</div>
+					</strong>
+					<small className="text-[10px] text-muted">
+						{required ? "Required · shown on your volunteer card" : "Shown on your profile card"}
+					</small>
+					<span className="mt-1.5 rounded-lg border border-[#CAD5DF] bg-white px-3 py-1.5 text-[10px] font-extrabold text-blue">
+						{loading ? "Uploading…" : value ? "Replace picture" : "Choose picture"}
+					</span>
+				</span>
+			</label>
+			<input
+				id={id}
+				type="file"
+				accept="image/*"
+				className="sr-only"
+				disabled={loading}
+				aria-required={required}
+				onChange={(event) => pick(event.target.files?.[0])}
+			/>
 
-					{failure && (
-						<p className="mt-2 text-[11.5px] leading-relaxed text-danger">{failure}</p>
-					)}
-				</div>
-			</div>
-		</Field>
+			{failure && <p className="mt-2 text-[11.5px] leading-relaxed text-danger">{failure}</p>}
+		</div>
 	);
 }
 
@@ -2875,7 +2895,7 @@ function CitizenshipQuestion({
 	onChange: (value: string) => void;
 	status: string;
 	onStatus: (value: string) => void;
-	isCitizen: boolean;
+	isCitizen: boolean | null;
 	onIsCitizen: (yes: boolean) => void;
 }) {
 	// Everything but "Citizen", which the yes/no question has already answered.
@@ -2910,18 +2930,29 @@ function CitizenshipQuestion({
 
 	return (
 		<div>
-			<p className="mb-2.5 text-[13px] font-semibold text-slate-strong">
-				Are you a citizen of <span className="text-ink">{home}</span>?
-			</p>
-			<Segmented
-				label={`Are you a citizen of ${home}?`}
-				value={isCitizen ? "Yes" : "No"}
-				onChange={(answer) => onIsCitizen(answer === "Yes")}
-				options={["Yes", "No"]}
-			/>
+			<div className="max-w-[470px]">
+				<Field label={`Are you a citizen of ${home}?`} required htmlFor="join-is-citizen">
+					<SelectInput
+						id="join-is-citizen"
+						value={isCitizen === null ? "" : isCitizen ? "Yes" : "No"}
+						onChange={(answer) => onIsCitizen(answer === "Yes")}
+						options={["Yes", "No"]}
+						placeholder="Choose an answer"
+					/>
+				</Field>
+			</div>
 
-			{!isCitizen && (
-				<div className="rise-in mt-5 grid max-w-xl gap-5 sm:grid-cols-2">
+			{isCitizen === true && (
+				<p className="mt-3 flex w-fit items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-[11px] text-emerald-700">
+					<span aria-hidden="true" className="grid h-[18px] w-[18px] place-items-center rounded-full bg-emerald-600 text-[9px] font-extrabold text-white">
+						✓
+					</span>
+					{home} will be recorded as your country of citizenship.
+				</p>
+			)}
+
+			{isCitizen === false && (
+				<div className="rise-in mt-5 grid max-w-xl gap-5 rounded-xl border border-card-line bg-[#F7FAFC] p-5 sm:grid-cols-2">
 					<Field label="Country of citizenship" required htmlFor="join-citizenship">
 						<Combo id="join-citizenship" value={value} onChange={onChange} options={countries} />
 					</Field>
@@ -2931,9 +2962,9 @@ function CitizenshipQuestion({
 					    question and no second one. */}
 					{otherStatuses.length > 0 && (
 						<Field
-							label="Your standing here"
+							label={`Citizenship status in ${home}`}
+							required
 							htmlFor="join-citizenship-status"
-							hint="So your branch knows what it may ask of you."
 						>
 							<SelectInput
 								id="join-citizenship-status"
@@ -3384,8 +3415,6 @@ function DeclarationStep({
 	onSkills,
 	languages,
 	onLanguages,
-	availability,
-	onAvailability,
 	motivations,
 	onMotivations,
 	experience,
@@ -3397,8 +3426,6 @@ function DeclarationStep({
 	onSkills: (v: string[]) => void;
 	languages: string[];
 	onLanguages: (v: string[]) => void;
-	availability: string[];
-	onAvailability: (v: string[]) => void;
 	motivations: string[];
 	onMotivations: (v: string[]) => void;
 	experience: string;
@@ -3422,6 +3449,7 @@ function DeclarationStep({
 				<MultiCombo
 					id="join-skills"
 					label="Skills"
+					required
 					options={options.skills}
 					selected={skills}
 					onToggle={toggle(skills, onSkills)}
@@ -3434,6 +3462,7 @@ function DeclarationStep({
 				<MultiCombo
 					id="join-languages"
 					label="Languages"
+					required
 					options={options.languages}
 					selected={languages}
 					onToggle={toggle(languages, onLanguages)}
@@ -3442,22 +3471,11 @@ function DeclarationStep({
 				/>
 			</FieldSet>
 
-			<FieldSet title="Availability">
-				<MultiCombo
-					id="join-availability"
-					label="Availability"
-					options={options.availability}
-					selected={availability}
-					onToggle={toggle(availability, onAvailability)}
-					placeholder="Search availability"
-					empty="This society has not configured any availability slots yet."
-				/>
-			</FieldSet>
-
 			<FieldSet title="Motivation">
 				<MultiCombo
 					id="join-motivations"
 					label="Motivation"
+					required
 					options={options.motivations}
 					selected={motivations}
 					onToggle={toggle(motivations, onMotivations)}
@@ -3962,7 +3980,7 @@ function ConfirmStep({
 	paymentLabel: string | null;
 	/** Already resolved to the society's own words, and already filtered. */
 	identifications: Array<{ label: string; number: string }>;
-	declared: Record<"skills" | "languages" | "availability" | "motivations", string[]>;
+	declared: Record<"skills" | "languages" | "motivations", string[]>;
 	experience: string;
 	societyAnswers: Array<{ label: string; shown: string }>;
 	/** Only the ones that will actually be sent. */
@@ -4055,7 +4073,6 @@ function ConfirmStep({
 					<Review title="Volunteer details" onEdit={editor("declaration")}>
 						<Chips label="Skills" values={declared.skills} />
 						<Chips label="Languages" values={declared.languages} />
-						<Chips label="Availability" values={declared.availability} />
 						<Chips label="Motivation" values={declared.motivations} />
 						<Block label="Previous volunteer experience" value={experience} />
 					</Review>
@@ -4409,7 +4426,7 @@ function PersonCard({
 						<span className="flex-none text-slate-faint">
 							<Icon.lock size={12} />
 						</span>
-						<span className="truncate">{email ?? "Taken from your account"}</span>
+						<span className="truncate">{email ?? ""}</span>
 					</p>
 				</div>
 

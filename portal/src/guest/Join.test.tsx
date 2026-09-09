@@ -113,10 +113,10 @@ const LEVELS: GeoLevel[] = [{ key: "branch", name: "Branch", order: 1, is_lowest
 
 const OPTIONS: ApplicationOptions = {
 	questions: [],
-	skills: [],
-	languages: [],
-	availability: [],
-	motivations: [],
+	skills: [{ key: "first-aid", label: "First aid", description: null }],
+	languages: [{ key: "swahili", label: "Swahili", description: null }],
+	availability: [{ key: "weekends", label: "Weekends", description: null }],
+	motivations: [{ key: "community", label: "Serve my community", description: null }],
 	id_types: [
 		{
 			key: "national-id",
@@ -181,6 +181,9 @@ const PROFILE: Partial<RedProfile> = {
 	first_name: "Amina",
 	last_name: "Otieno",
 	date_of_birth: "1998-04-02",
+	profile_photo: "/files/amina-profile.jpg",
+	country_of_citizenship: "Tanzania",
+	citizenship_status: "Citizen",
 	// Answered, so every walk below gets off the first step. The requirement
 	// itself has its own suite — see "the disability question" — and this is a
 	// person who has already been asked rather than a way around the rule.
@@ -319,11 +322,11 @@ describe("the road a volunteer walks", () => {
 		expect(screen.queryByText("The branch or area you want to volunteer with.")).toBeNull();
 	});
 
-	it("has no step of its own for citizenship, and never asks where they live", async () => {
+	it("keeps citizenship in the personal-details step and never asks where they live", async () => {
 		open();
 
 		await onTheIdentityStep();
-		expect(screen.queryByText("Citizenship")).toBeNull();
+		expect(screen.getByRole("heading", { name: "Citizenship" })).toBeTruthy();
 		expect(screen.queryByText("Where you live")).toBeNull();
 		expect(screen.queryByText("Citizenship and where you live")).toBeNull();
 	});
@@ -335,11 +338,48 @@ describe("the road a volunteer walks", () => {
 		expect(screen.getByText(/are you a citizen of/i)).toBeTruthy();
 	});
 
+	it("starts citizenship unanswered and reveals the concept's conditional details", async () => {
+		reads.set(API.myProfile, {
+			...PROFILE,
+			country_of_citizenship: null,
+			citizenship_status: null,
+		});
+		open();
+		await onTheIdentityStep();
+
+		const citizen = screen.getByLabelText(/^Are you a citizen of/);
+		expect((citizen as HTMLSelectElement).value).toBe("");
+		expect(screen.queryByLabelText(/^Country of citizenship/)).toBeNull();
+
+		fireEvent.change(citizen, { target: { value: "No" } });
+		expect(screen.getByLabelText(/^Country of citizenship/)).toBeTruthy();
+		expect(screen.getByLabelText(/^Citizenship status in/)).toBeTruthy();
+	});
+
 	it("does not explain to somebody what their own profile is", async () => {
 		open();
 
 		await onTheIdentityStep();
 		expect(screen.queryByText(/These are the details the Society holds for you/)).toBeNull();
+	});
+
+	it("shows the signed-in email before a Red Profile exists", async () => {
+		reads.set(API.myProfile, null);
+		open();
+
+		await onTheIdentityStep();
+		expect(screen.getByText("amina@example.com")).toBeTruthy();
+		expect(screen.queryByText("Taken from your account")).toBeNull();
+	});
+
+	it("requires a profile photograph before a volunteer can continue", async () => {
+		reads.set(API.myProfile, { ...PROFILE, profile_photo: null });
+		open();
+
+		await onTheIdentityStep();
+		expect(screen.getByText("Required · shown on your volunteer card")).toBeTruthy();
+		await goOn();
+		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
 	});
 });
 
@@ -469,6 +509,17 @@ async function walkTo(heading: string) {
 
 	for (let press = 0; press < 8; press += 1) {
 		if (screen.queryByRole("heading", { name: heading })) return;
+
+		if (screen.queryByRole("heading", { name: "Volunteer details" })) {
+			for (const [picker, choice] of [
+				["Skills", "First aid"],
+				["Languages", "Swahili"],
+				["Motivation", "Serve my community"],
+			]) {
+				fireEvent.focus(screen.getByRole("combobox", { name: picker }));
+				fireEvent.click(screen.getByRole("option", { name: choice }));
+			}
+		}
 		await goOn();
 	}
 
@@ -846,7 +897,9 @@ describe("the disability question", () => {
 			target: { value: "Yes" },
 		});
 
-		expect(screen.getByLabelText("Support requirements")).toBeTruthy();
+		const type = screen.getByRole("combobox", { name: /^Disability type/ });
+		const support = screen.getByLabelText("Support requirements");
+		expect(type.compareDocumentPosition(support) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 	});
 
 	it("sends the answer to the profile, not to the application", async () => {
@@ -858,6 +911,8 @@ describe("the disability question", () => {
 		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
 			target: { value: "Yes" },
 		});
+		fireEvent.focus(screen.getByRole("combobox", { name: /^Disability type/ }));
+		fireEvent.click(screen.getByRole("option", { name: /Deafness/ }));
 		fireEvent.change(screen.getByLabelText("Support requirements"), {
 			target: { value: "A seat at briefings" },
 		});
@@ -881,14 +936,29 @@ describe("the disability question", () => {
 	});
 });
 
-/**
- * Naming which one, from the society's own register.
- *
- * The question above stays the required one and stays the only thing that can
- * hold "Prefer not to say". This is the optional second disclosure underneath
- * it, and every test here is about that asymmetry: it appears only on "Yes",
- * nothing forces an answer, and changing the answer above takes it back.
- */
+describe("the required volunteer details", () => {
+	it("requires skills, languages and motivation and does not ask availability", async () => {
+		reads.set(API.myProfile, IDENTIFIED);
+		await walkTo("Volunteer details");
+
+		expect(screen.queryByRole("combobox", { name: "Availability" })).toBeNull();
+		await goOn();
+		expect(screen.getByRole("heading", { name: "Volunteer details" })).toBeTruthy();
+
+		for (const [picker, choice] of [
+			["Skills", "First aid"],
+			["Languages", "Swahili"],
+			["Motivation", "Serve my community"],
+		]) {
+			fireEvent.focus(screen.getByRole("combobox", { name: picker }));
+			fireEvent.click(screen.getByRole("option", { name: choice }));
+		}
+
+		await goOn();
+		expect(screen.queryByRole("heading", { name: "Volunteer details" })).toBeNull();
+	});
+});
+
 /**
  * The optional step: what somebody has already done.
  *
@@ -930,13 +1000,12 @@ describe("what you have already done", () => {
 		expect(screen.queryByRole("heading", { name: "Education and experience" })).toBeNull();
 	});
 
-	it("will not stack a second blank row on an empty one", async () => {
+	it("opens one education row and will not stack another blank one", async () => {
 		await onTheStep();
 
-		const add = screen.getByRole("button", { name: "Add education" });
-		fireEvent.click(add);
+		const add = screen.getByRole("button", { name: "Add another education record" });
 
-		// One row drawn, and the button that drew it now refuses until it says
+		// One row is already drawn, and its add-another button refuses until it says
 		// something — otherwise a mis-click leaves blanks the server drops.
 		expect(screen.getByLabelText(/^Institution/)).toBeTruthy();
 		expect((add as HTMLButtonElement).disabled).toBe(true);
@@ -951,7 +1020,6 @@ describe("what you have already done", () => {
 	it("sends what was filled in, and nothing that was not", async () => {
 		await onTheStep();
 
-		fireEvent.click(screen.getByRole("button", { name: "Add education" }));
 		fireEvent.change(screen.getByLabelText(/^Institution/), {
 			target: { value: "Kibera Secondary" },
 		});
@@ -1007,6 +1075,24 @@ describe("what you have already done", () => {
 		expect((screen.getByLabelText(/^Profession/) as HTMLSelectElement).value).toBe("Student");
 	});
 
+	it("collects and saves a free-text profession when Other is selected", async () => {
+		await onTheStep();
+
+		fireEvent.change(screen.getByLabelText(/^Profession/), { target: { value: "Other" } });
+		expect(screen.getByLabelText(/^Other profession/)).toBeTruthy();
+
+		await goOn();
+		expect(screen.getByRole("heading", { name: "Education and experience" })).toBeTruthy();
+
+		fireEvent.change(screen.getByLabelText(/^Other profession/), {
+			target: { value: "Community mobiliser" },
+		});
+		await goOn();
+		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
+		expect(posted[posted.length - 1].payload.profession).toBe("Other");
+		expect(posted[posted.length - 1].payload.other_profession).toBe("Community mobiliser");
+	});
+
 	/**
 	 * The two contradictions the step resolves rather than stores. Somebody who
 	 * says they are still studying cannot also have finished in 2020, and the
@@ -1015,7 +1101,6 @@ describe("what you have already done", () => {
 	it("clears the finish year when somebody says they are still studying", async () => {
 		await onTheStep();
 
-		fireEvent.click(screen.getByRole("button", { name: "Add education" }));
 		fireEvent.change(screen.getByLabelText(/^Institution/), {
 			target: { value: "Kenyatta University" },
 		});
@@ -1060,15 +1145,17 @@ describe("which disability, from the register", () => {
 		expect(picker()).toBeTruthy();
 	});
 
-	it("does not hold the step up, because naming one was never required", async () => {
+	it("holds the step until at least one disability type is selected", async () => {
 		open();
 		await onTheIdentityStep();
 
 		disclose();
 		await goOn();
 
-		// Past it, with nothing named. Answering the question was the rule; this
-		// is the disclosure the rule deliberately does not demand.
+		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
+
+		nameOne("Deafness");
+		await goOn();
 		expect(screen.queryByRole("heading", { name: "Personal details" })).toBeNull();
 	});
 

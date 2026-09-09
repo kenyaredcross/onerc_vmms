@@ -1,229 +1,274 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Kenya Red Cross volunteer registration journey concept.">
-  <title>Volunteer registration — Kenya Red Cross Portal</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A complete, accessible Kenya Red Cross volunteer registration journey concept.">
+  <title>Step 1 of 9: Personal details — Kenya Red Cross volunteer registration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="registration.css">
+  <link rel="stylesheet" href="volunteer-registration.css">
 </head>
 <body>
-<div class="registration-page registration-shell">
-  <header class="registration-topbar"><a class="portal-brand" href="portal-home.html"><span class="brand-mark"></span><span class="brand-copy"><strong>Kenya Red Cross</strong><small>Volunteer portal</small></span></a><p>Volunteer registration</p><a class="exit-link" href="portal-home.html">Save &amp; exit</a></header>
+<div class="registration-page registration-shell volunteer-flow">
+  <header class="registration-topbar">
+    <a class="portal-brand" href="portal-home.html" aria-label="Kenya Red Cross volunteer portal home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-copy"><strong>Kenya Red Cross</strong><small>Volunteer portal</small></span>
+    </a>
+    <div class="journey-name"><span>Volunteer application</span><strong>Draft VAPP-2026-0152</strong></div>
+    <button class="top-save" type="button" data-save-exit>Save and exit</button>
+  </header>
+
   <div class="registration-wrap">
-    <aside class="step-rail">
-      <div class="rail-progress"><p>Your application</p><h2>8 short steps</h2><span>Your draft is saved whenever you move to another step.</span></div>
-      <nav class="step-nav" aria-label="Application progress">
-        <a class="step-link active" href="#step-1"><i>1</i>About you</a><a class="step-link" href="#step-2"><i>2</i>Location &amp; branch</a><a class="step-link" href="#step-3"><i>3</i>Identification</a><a class="step-link" href="#step-4"><i>4</i>Your volunteering</a><a class="step-link" href="#step-5"><i>5</i>Emergency details</a><a class="step-link" href="#step-6"><i>6</i>Society questions</a><a class="step-link" href="#step-7"><i>7</i>Declarations</a><a class="step-link" href="#step-8"><i>8</i>Review &amp; submit</a>
-      </nav><div class="rail-help">Need help completing this application? <a href="#">Contact your branch →</a></div>
+    <aside class="step-rail" aria-label="Application progress">
+      <div class="rail-progress">
+        <div class="rail-progress-copy"><p>Your application</p><span data-overall-progress>1 of 9</span></div>
+        <h2>Volunteer registration</h2>
+        <div class="rail-meter" aria-hidden="true"><span data-rail-meter></span></div>
+        <span>About 12 minutes. Optional history can be skipped and completed later.</span>
+      </div>
+      <nav class="step-nav">
+        <button class="step-link active" type="button" data-step-target="step-1"><i>1</i><span>Personal details<small>Identity and support</small></span></button>
+        <button class="step-link" type="button" data-step-target="step-2"><i>2</i><span>Volunteer location<small>Where you want to serve</small></span></button>
+        <button class="step-link" type="button" data-step-target="step-3"><i>3</i><span>Identification<small>Documents and copies</small></span></button>
+        <button class="step-link" type="button" data-step-target="step-4"><i>4</i><span>Volunteer details<small>Skills and availability</small></span></button>
+        <button class="step-link" type="button" data-step-target="step-5"><i>5</i><span>Education and experience<small>Optional records</small></span></button>
+        <button class="step-link" type="button" data-step-target="step-6"><i>6</i><span>Emergency contact<small>And guardian consent</small></span></button>
+        <button class="step-link" type="button" data-step-target="step-7"><i>7</i><span>Additional questions<small>Set by the Society</small></span></button>
+        <button class="step-link" type="button" data-step-target="step-8"><i>8</i><span>Declarations<small>Read and accept</small></span></button>
+        <button class="step-link" type="button" data-step-target="step-9"><i>9</i><span>Check and submit<small>Review every section</small></span></button>
+      </nav>
+      <div class="rail-help"><strong>Need help?</strong><span>Call <a href="tel:+254703037000">0703 037 000</a> or <a href="#">contact your branch</a>. Your saved answers will stay here.</span></div>
     </aside>
 
-    <main class="application-card"><form class="registration-form">
-      <section class="form-step" id="step-1">
-        <header class="step-header"><div class="step-meta"><span>Step 1 of 8</span><strong>12% complete · 7 steps left</strong></div><div class="progress-track"><span style="width:12.5%"></span></div><h1>About you</h1><p>Tell us who you are. Information already supplied by your account is retained and can be corrected here where appropriate.</p></header>
-        <div class="form-body">
-          <div class="form-section"><div class="form-section-head"><h2>Your name and photograph</h2><p>Your photograph is optional and may appear on your volunteer card.</p></div><div class="field-grid three"><div class="reg-field"><label>First name <b class="required">*</b></label><input value="Alex"></div><div class="reg-field"><label>Middle name</label><input placeholder="Optional"></div><div class="reg-field"><label>Last name <b class="required">*</b></label><input value="Mwangi"></div><div class="photo-upload wide"><span class="photo-preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span class="upload-copy"><strong>Profile photograph</strong><span>JPG or PNG. Optional.</span><button type="button">Choose a picture</button></span></div></div></div>
-          <div class="form-section"><div class="form-section-head"><h2>Contact and personal details</h2></div><div class="field-grid"><div class="reg-field"><label>Email address</label><div class="locked-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>alex@example.com</div><small>Taken from your signed-in account.</small></div><div class="reg-field"><label>Phone number</label><input type="tel" placeholder="+254 7XX XXX XXX"></div><div class="reg-field"><label>Gender</label><select><option value="" selected disabled>Select gender</option><option>Prefer not to say</option><option>Female</option><option>Male</option><option>Other</option></select></div><div class="reg-field"><label>Date of birth <b class="required">*</b></label><input type="date"></div><div class="reg-field"><label>Marital status</label><select><option value="" selected>Select if you wish</option><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option><option>Other</option></select></div><div class="reg-field"><label>Preferred language</label><select><option value="" selected>Select language</option><option>English</option><option>Kiswahili</option><option>Gĩkũyũ</option><option>Dholuo</option></select></div></div></div>
-          <div class="form-section citizenship-question"><div class="form-section-head"><h2>Citizenship</h2><p>Nothing is selected in advance. Kenya is recorded automatically when you answer Yes.</p></div><div class="reg-field citizenship-select"><label for="kenyan-citizen">Are you a citizen of Kenya? <b class="required">*</b></label><select id="kenyan-citizen" name="kenyan_citizen" required><option value="" selected disabled>Select an answer</option><option value="yes">Yes, I am a Kenyan citizen</option><option value="no">No, I am a citizen of another country</option></select><small>Select one answer to continue.</small></div><div class="noncitizen-fields"><div class="notice">Because you selected “No,” tell us which country you are a citizen of and your current status in Kenya.</div><div class="field-grid"><div class="reg-field"><label>Country of citizenship <b class="required">*</b></label><select><option value="">Select your country</option><option>Uganda</option><option>Tanzania</option><option>Rwanda</option><option>Somalia</option><option>Other country</option></select></div><div class="reg-field"><label>Citizenship status in Kenya</label><select><option value="">Select status</option><option>Non-citizen</option><option>Refugee</option><option>Migrant</option><option>Other</option></select></div></div></div></div>
-        </div><div class="form-actions"><span class="save-note">Draft saved just now</span><a class="button button-secondary" href="portal-home.html">Save &amp; exit</a><a class="button button-primary" href="#step-2">Continue →</a></div>
-      </section>
+    <main class="application-card">
+      <form class="registration-form" id="volunteer-application" novalidate>
+        <div class="step-stage" aria-live="polite">
+          <section class="form-step is-active" id="step-1" data-step-title="Personal details">
+            <header class="step-header">
+              <div class="step-meta"><span>Step 1 of 9</span><strong>Personal details</strong></div>
+              <div class="progress-track" aria-hidden="true"><span style="width:11.11%"></span></div>
+              <p class="eyebrow">Let’s start with you</p>
+              <h1>Personal details</h1>
+              <p>Review what we already know and tell us what support you may need. Your email comes from your signed-in account.</p>
+            </header>
+            <div class="form-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
 
-      <section class="form-step" id="step-2">
-        <header class="step-header"><div class="step-meta"><span>Step 2 of 8</span><strong>25% complete · 6 steps left</strong></div><div class="progress-track"><span style="width:25%"></span></div><h1>Location and serving branch</h1><p>Tell us where you live and choose the Kenya Red Cross branch or area where you would like to volunteer.</p></header>
-        <div class="form-body"><div class="form-section residency-question"><div class="form-section-head"><h2>Where you live</h2><p>Select a residency type before entering location details.</p></div><div class="reg-field residency-select"><label for="residency-type">Residency <b class="required">*</b></label><select id="residency-type" name="residency_type" required><option value="" selected disabled>Select residency</option><option value="local">Local — I live in Kenya</option><option value="abroad">Abroad — I live outside Kenya</option></select></div><div class="local-residency-fields"><div class="field-grid three"><div class="reg-field"><label>Home region <b class="required">*</b></label><select><option value="" selected disabled>Select region</option><option>Central</option><option>Coast</option><option>Eastern</option><option>Nairobi</option></select></div><div class="reg-field"><label>Home county <b class="required">*</b></label><select><option value="" selected disabled>Select county</option><option>Nairobi</option><option>Kiambu</option><option>Mombasa</option></select></div><div class="reg-field"><label>Home branch or area</label><select><option value="" selected disabled>Select area</option></select></div></div></div><div class="abroad-residency-fields"><div class="field-grid"><div class="reg-field"><label>Country of residence <b class="required">*</b></label><select><option value="" selected disabled>Select country</option><option>Uganda</option><option>Tanzania</option><option>Other</option></select></div><div class="reg-field"><label>Address abroad <b class="required">*</b></label><textarea placeholder="Your current address outside Kenya"></textarea></div></div></div></div><div class="form-section"><div class="form-section-head"><h2>Where you would serve</h2><p>This controls where your application is routed for review. It can differ from where you live.</p></div><div class="field-grid three"><div class="reg-field"><label>Serving region <b class="required">*</b></label><select><option value="" selected disabled>Select region</option></select></div><div class="reg-field"><label>Serving county <b class="required">*</b></label><select><option value="" selected disabled>Select county</option></select></div><div class="reg-field"><label>Serving branch <b class="required">*</b></label><select><option value="" selected disabled>Select branch</option></select></div></div></div></div>
-        <div class="form-actions"><span class="save-note">Draft saved when you continue</span><a class="button button-secondary" href="#step-1">← Back</a><a class="button button-primary" href="#step-3">Continue →</a></div>
-      </section>
+              <section class="form-section identity-layout">
+                <div class="form-section-head"><div><p class="section-kicker">Your profile</p><h2>Name and contact</h2></div><span class="privacy-chip">Shared profile</span></div>
+                <div class="profile-fields">
+                  <div class="field-grid">
+                    <label class="reg-field"><span>First name <b class="required">Required</b></span><input name="first_name" autocomplete="given-name" value="Alex" required></label>
+                    <label class="reg-field"><span>Last name <b class="required">Required</b></span><input name="last_name" autocomplete="family-name" value="Mwangi" required></label>
+                    <label class="reg-field"><span>Phone number <i>Optional</i></span><input name="phone" type="tel" autocomplete="tel" value="+254 712 345 678" placeholder="Include the country code"></label>
+                    <label class="reg-field"><span>Email address</span><span class="locked-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>alex.mwangi@example.com</span><small>To change this, update your sign-in account.</small></label>
+                    <label class="reg-field"><span>Gender <i>Optional</i></span><select name="gender"><option value="">Prefer not to say</option><option selected>Male</option><option>Female</option><option>Non-binary</option></select></label>
+                    <label class="reg-field"><span>Date of birth <b class="required">Required</b></span><input id="date-of-birth" name="date_of_birth" type="date" autocomplete="bday" value="2009-02-17" max="2026-09-08" required><small>Used for eligibility and safeguarding.</small></label>
+                  </div>
+                </div>
+                <label class="photo-control" for="profile-photo">
+                  <span class="photo-avatar" aria-hidden="true">AM</span>
+                  <span><strong>Profile photograph</strong><small>Optional · shown on your volunteer card</small><em>Choose picture</em></span>
+                  <input id="profile-photo" name="profile_photo" type="file" accept="image/*">
+                </label>
+              </section>
 
-      <section class="form-step" id="step-3">
-        <header class="step-header"><div class="step-meta"><span>Step 3 of 8</span><strong>38% complete · 5 steps left</strong></div><div class="progress-track"><span style="width:37.5%"></span></div><h1>Identification</h1><p>Add at least one identification document. The accepted types are configured by the Society.</p></header>
-        <div class="form-body"><div class="form-section"><div class="form-section-head"><h2>Your identification records</h2><p>Add one row for each document you want Kenya Red Cross to use for verification.</p></div><div id="identification-records"></div><button class="btn-add-row" type="button" data-add-record="identification"><span>＋</span> Add another identification document</button></div><div class="notice">Add at least one record. Only one document can be marked as primary; selecting a new primary document clears the previous selection.</div></div>
-        <div class="form-actions"><span class="save-note">Draft saved when you continue</span><a class="button button-secondary" href="#step-2">← Back</a><a class="button button-primary" href="#step-4">Continue →</a></div>
-      </section>
+              <section class="form-section citizenship-question">
+                <div class="form-section-head"><div><p class="section-kicker">Nationality</p><h2>Citizenship</h2><p>This helps the Society apply the right identification and safeguarding rules.</p></div></div>
+                <label class="reg-field field-narrow"><span>Are you a citizen of Kenya? <b class="required">Required</b></span><select name="is_citizen" required><option value="" selected>Choose an answer</option><option value="yes">Yes</option><option value="no">No</option></select><small>No answer is selected automatically.</small></label>
+                <p class="citizen-confirmation" data-citizen-confirmation hidden><span aria-hidden="true">✓</span>Kenya will be recorded as your country of citizenship.</p>
+                <div class="field-grid noncitizen-fields" data-citizen-details hidden>
+                  <label class="reg-field"><span>Country of citizenship <b class="required">Required</b></span><select name="country_of_citizenship" data-required-when-visible><option value="">Choose a country</option><option>Uganda</option><option>Tanzania</option><option>Rwanda</option><option>Somalia</option><option>South Sudan</option><option>Other</option></select></label>
+                  <label class="reg-field"><span>Citizenship status in Kenya <b class="required">Required</b></span><select name="citizenship_status" data-required-when-visible><option value="">Choose a status</option><option>Non-citizen</option><option>Refugee</option><option>Migrant</option><option>Asylum seeker</option><option>Stateless person</option></select></label>
+                </div>
+              </section>
 
-      <section class="form-step" id="step-4">
-        <header class="step-header"><div class="step-meta"><span>Step 4 of 8</span><strong>50% complete · 4 steps left</strong></div><div class="progress-track"><span style="width:50%"></span></div><h1>About your volunteering</h1><p>Choose all that apply. These answers help Kenya Red Cross match you with suitable opportunities.</p></header>
-        <div class="form-body"><div class="notice">These are multi-select fields. Choose every option that applies to you; the available options can change as Kenya Red Cross updates them.</div>
-          <div class="form-section"><div class="form-section-head"><h2>Skills</h2><p>What this applicant says they can do. Values come from VMMS Skill.</p></div><div class="frappe-table-multiselect" data-child-doctype="VMMS Skill Selector" data-link-doctype="VMMS Skill"><input name="skills" list="skill-options" autocomplete="off" placeholder="Search and add a skill"><span class="multi-add">＋</span></div><datalist id="skill-options"><option value="First Aid"><option value="Community Health"><option value="Communications"><option value="Data Collection"><option value="Driving"><option value="Logistics"></datalist></div>
-          <div class="form-section"><div class="form-section-head"><h2>Languages Spoken</h2><p>Languages this applicant speaks. Values come from the Language DocType.</p></div><div class="frappe-table-multiselect" data-child-doctype="VMMS Language Selector" data-link-doctype="Language"><input name="languages" list="language-options" autocomplete="off" placeholder="Search and add a language"><span class="multi-add">＋</span></div><datalist id="language-options"><option value="English"><option value="Kiswahili"><option value="Gĩkũyũ"><option value="Dholuo"><option value="Kikamba"><option value="Somali"></datalist></div>
-          <div class="form-section"><div class="form-section-head"><h2>Availability</h2><p>When this applicant says they can serve. Values come from VMMS Availability Slot.</p></div><div class="frappe-table-multiselect" data-child-doctype="VMMS Availability Selector" data-link-doctype="VMMS Availability Slot"><input name="availability" list="availability-options" autocomplete="off" placeholder="Search and add an availability slot"><span class="multi-add">＋</span></div><datalist id="availability-options"><option value="Weekday mornings"><option value="Weekday evenings"><option value="Weekend mornings"><option value="Weekend evenings"><option value="On-call"><option value="Public holidays"></datalist></div>
-          <div class="form-section"><div class="form-section-head"><h2>Motivation</h2><p>Why this applicant wants to volunteer. Values come from VMMS Motivation.</p></div><div class="frappe-table-multiselect" data-child-doctype="VMMS Motivation Selector" data-link-doctype="VMMS Motivation"><input name="motivation" list="motivation-options" autocomplete="off" placeholder="Search and add a motivation"><span class="multi-add">＋</span></div><datalist id="motivation-options"><option value="Serve my community"><option value="Learn new skills"><option value="Career development"><option value="Personal growth"><option value="Fundamental Principles"></datalist><div class="reg-field"><label>Prior Experience</label><textarea name="prior_experience" placeholder="Relevant experience you offer, in your own words…"></textarea><small>This is not treated as a qualification record.</small></div></div>
+              <section class="form-section">
+                <div class="form-section-head"><div><p class="section-kicker">Accessibility</p><h2>Disability and support requirements</h2><p>Only share what you are comfortable sharing. This helps us make reasonable arrangements.</p></div><span class="privacy-chip">Branch only</span></div>
+                <label class="reg-field field-narrow"><span>Do you have a disability? <b class="required">Required</b></span><select id="disability-status" name="disability_status" required><option value="">Choose an answer</option><option>No</option><option selected>Yes</option><option>Prefer not to say</option></select></label>
+                <div data-disability-details>
+                  <div class="multi-combo" data-disability-combo>
+                    <label for="disability-search">Disability type <i>Optional</i></label>
+                    <p>Search the Society’s configured list and choose any that apply. You can leave this unanswered after disclosing.</p>
+                    <div class="multi-combo-anchor">
+                      <span class="multi-combo-search" aria-hidden="true"></span>
+                      <input id="disability-search" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="disability-options" placeholder="Search disability types" autocomplete="off">
+                      <ul class="multi-combo-list" id="disability-options" role="listbox" aria-multiselectable="true" data-disability-options hidden></ul>
+                    </div>
+                    <ul class="multi-combo-tokens" aria-label="Disability types chosen" data-disability-tokens></ul>
+                    <div data-disability-values hidden></div>
+                  </div>
+                  <label class="reg-field"><span>Support requirements <i>Optional</i></span><textarea name="disability_needs" rows="3" placeholder="For example, step-free access or a sign-language interpreter">Step-free access for in-person training.</textarea></label>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="form-step" id="step-2" data-step-title="Volunteer location">
+            <header class="step-header"><div class="step-meta"><span>Step 2 of 9</span><strong>Volunteer location</strong></div><div class="progress-track" aria-hidden="true"><span style="width:22.22%"></span></div><p class="eyebrow">Where you want to help</p><h1>Choose your volunteer location</h1><p>This branch or area will receive and review your application. It does not have to be the branch nearest to your home.</p></header>
+            <div class="form-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
+              <section class="form-section">
+                <div class="form-section-head"><div><p class="section-kicker">Application routing</p><h2>Branch or area</h2><p>Choose from broadest to most specific. Later choices update from the selection above.</p></div></div>
+                <div class="location-path" aria-label="Selected volunteer location"><span>Kenya</span><i>›</i><span>Nairobi Region</span><i>›</i><strong>Nairobi Branch</strong></div>
+                <div class="field-grid three">
+                  <label class="reg-field"><span>Region <b class="required">Required</b></span><select name="serving_region" required><option>Nairobi Region</option><option>Central Region</option><option>Coast Region</option><option>Eastern Region</option></select></label>
+                  <label class="reg-field"><span>County <b class="required">Required</b></span><select name="serving_county" required><option>Nairobi County</option><option>Kiambu County</option><option>Kajiado County</option></select></label>
+                  <label class="reg-field"><span>Branch or area <b class="required">Required</b></span><select name="geo_node" required><option>Nairobi Branch</option><option>Lang’ata Sub-branch</option><option>Eastleigh Sub-branch</option></select></label>
+                </div>
+                <div class="context-note"><span aria-hidden="true">i</span><p><strong>Your application goes to Nairobi Branch.</strong> An authorised reviewer there will see the details you submit and contact you if anything needs clarification.</p></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="form-step" id="step-3" data-step-title="Identification">
+            <header class="step-header"><div class="step-meta"><span>Step 3 of 9</span><strong>Identification</strong></div><div class="progress-track" aria-hidden="true"><span style="width:33.33%"></span></div><p class="eyebrow">Identity check</p><h1>Add your identification</h1><p>Add each document once. The first document is treated as your primary ID, and the form asks for a copy only when that document type requires one.</p></header>
+            <div class="form-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
+              <section class="form-section record-section">
+                <div class="form-section-head"><div><p class="section-kicker">Required record</p><h2>Identification documents</h2><p>Nairobi Branch requires one identification document for this age group.</p></div><span class="record-count" data-count-for="identification">1 added</span></div>
+                <div class="record-list" data-record-list="identification"></div>
+                <button class="add-record-button" type="button" data-add-record="identification"><span aria-hidden="true">＋</span><span><strong>Add another document</strong><small>Passport, birth certificate, driving licence or another accepted ID</small></span></button>
+              </section>
+              <div class="context-note secure"><span aria-hidden="true">⌁</span><p><strong>Private document handling.</strong> Uploaded copies are visible only to you and authorised reviewers. The Society stores the document type and number with your shared profile.</p></div>
+            </div>
+          </section>
+
+          <section class="form-step" id="step-4" data-step-title="Volunteer details">
+            <header class="step-header"><div class="step-meta"><span>Step 4 of 9</span><strong>Volunteer details</strong></div><div class="progress-track" aria-hidden="true"><span style="width:44.44%"></span></div><p class="eyebrow">Help us find the right fit</p><h1>How would you like to volunteer?</h1><p>Choose every option that applies. These selections come from Society-managed lists and can be updated later from your profile.</p></header>
+            <div class="form-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
+              <section class="form-section"><div class="form-section-head"><div><p class="section-kicker">Matching profile</p><h2>Skills and interests</h2><p>These are repeatable selector child records, presented as searchable choices rather than database rows.</p></div></div>
+                <div class="selection-group">
+                  <fieldset class="token-field"><legend>Skills <i>Optional</i></legend><p>Choose the skills you are comfortable using while volunteering.</p><div class="token-grid"><label><input type="checkbox" name="skills" value="First Aid" checked><span>First Aid</span></label><label><input type="checkbox" name="skills" value="Community Health" checked><span>Community Health</span></label><label><input type="checkbox" name="skills" value="Communications"><span>Communications</span></label><label><input type="checkbox" name="skills" value="Data Collection"><span>Data Collection</span></label><label><input type="checkbox" name="skills" value="Driving"><span>Driving</span></label><label><input type="checkbox" name="skills" value="Logistics"><span>Logistics</span></label></div></fieldset>
+                  <fieldset class="token-field"><legend>Languages <i>Optional</i></legend><p>Choose every language you can use confidently.</p><div class="token-grid"><label><input type="checkbox" name="languages" value="English" checked><span>English</span></label><label><input type="checkbox" name="languages" value="Kiswahili" checked><span>Kiswahili</span></label><label><input type="checkbox" name="languages" value="Gikuyu"><span>Gĩkũyũ</span></label><label><input type="checkbox" name="languages" value="Dholuo"><span>Dholuo</span></label><label><input type="checkbox" name="languages" value="Somali"><span>Somali</span></label></div></fieldset>
+                  <fieldset class="token-field"><legend>Availability <i>Optional</i></legend><p>Choose your usual availability. You can change this when your schedule changes.</p><div class="token-grid"><label><input type="checkbox" name="availability" value="Weekday mornings"><span>Weekday mornings</span></label><label><input type="checkbox" name="availability" value="Weekday evenings"><span>Weekday evenings</span></label><label><input type="checkbox" name="availability" value="Weekend mornings" checked><span>Weekend mornings</span></label><label><input type="checkbox" name="availability" value="Weekend evenings"><span>Weekend evenings</span></label><label><input type="checkbox" name="availability" value="On-call"><span>Emergency call-outs</span></label><label><input type="checkbox" name="availability" value="Public holidays"><span>Public holidays</span></label></div></fieldset>
+                  <fieldset class="token-field"><legend>Motivation <i>Optional</i></legend><p>What brings you to volunteering?</p><div class="token-grid"><label><input type="checkbox" name="motivation" value="Serve my community" checked><span>Serve my community</span></label><label><input type="checkbox" name="motivation" value="Learn new skills"><span>Learn new skills</span></label><label><input type="checkbox" name="motivation" value="Career development"><span>Career development</span></label><label><input type="checkbox" name="motivation" value="Personal growth"><span>Personal growth</span></label></div></fieldset>
+                </div>
+              </section>
+              <section class="form-section"><div class="form-section-head"><div><p class="section-kicker">In your own words</p><h2>Previous volunteer experience</h2></div></div><label class="reg-field"><span>Relevant experience <i>Optional</i></span><textarea name="prior_experience" rows="5" placeholder="Tell us what you did, where, and what you learned">Supported weekend community health outreach and basic first-aid demonstrations at school events.</textarea></label></section>
+            </div>
+          </section>
+
+          <section class="form-step" id="step-5" data-step-title="Education and experience">
+            <header class="step-header"><div class="step-meta"><span>Step 5 of 9</span><strong>Optional section</strong></div><div class="progress-track" aria-hidden="true"><span style="width:55.56%"></span></div><p class="eyebrow">Your background</p><h1>Education and experience</h1><p>Add only what is relevant. Every category is optional; saved records stay collapsed so you can scan and edit them without navigating a dense table.</p></header>
+            <div class="form-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
+              <section class="form-section profession-section"><div class="form-section-head"><div><p class="section-kicker">Current work</p><h2>Profession</h2></div><span class="optional-chip">Optional</span></div><label class="reg-field field-narrow"><span>Profession</span><select name="profession"><option value="">Choose a profession</option><option selected>Community Health Worker</option><option>Teacher</option><option>Student</option><option>Driver</option><option>Engineer</option><option>Other</option></select></label></section>
+              <section class="background-hub" aria-label="Education and experience records">
+                <article class="record-category"><header><span class="category-icon" aria-hidden="true">ED</span><div><h2>Education</h2><p>Schools, colleges and universities</p></div><b data-count-for="education">1</b></header><div class="record-list compact-list" data-record-list="education"></div><button type="button" data-add-record="education">＋ Add education</button></article>
+                <article class="record-category"><header><span class="category-icon" aria-hidden="true">TR</span><div><h2>Training and courses</h2><p>Relevant courses and certificates</p></div><b data-count-for="training">0</b></header><div class="record-list compact-list" data-record-list="training"></div><button type="button" data-add-record="training">＋ Add a course</button></article>
+                <article class="record-category"><header><span class="category-icon" aria-hidden="true">WE</span><div><h2>Work experience</h2><p>Paid, unpaid or volunteer work</p></div><b data-count-for="work_experience">1</b></header><div class="record-list compact-list" data-record-list="work_experience"></div><button type="button" data-add-record="work_experience">＋ Add work experience</button></article>
+                <article class="record-category"><header><span class="category-icon" aria-hidden="true">PR</span><div><h2>Licences and registrations</h2><p>Professional licences or registrations</p></div><b data-count-for="licences">0</b></header><div class="record-list compact-list" data-record-list="licences"></div><button type="button" data-add-record="licences">＋ Add a licence</button></article>
+                <article class="record-category"><header><span class="category-icon" aria-hidden="true">DL</span><div><h2>Driving licences</h2><p>Add each driving class separately</p></div><b data-count-for="driving_licences">0</b></header><div class="record-list compact-list" data-record-list="driving_licences"></div><button type="button" data-add-record="driving_licences">＋ Add a class</button></article>
+                <article class="record-category"><header><span class="category-icon" aria-hidden="true">RF</span><div><h2>Professional references</h2><p>People who can speak about your work</p></div><b data-count-for="references">0</b></header><div class="record-list compact-list" data-record-list="references"></div><button type="button" data-add-record="references">＋ Add a referee</button></article>
+              </section>
+              <p class="skip-note"><span>✓</span><strong>Nothing here blocks your application.</strong> Select Continue if you have no education or experience records to add.</p>
+            </div>
+          </section>
+
+          <section class="form-step" id="step-6" data-step-title="Emergency contact">
+            <header class="step-header"><div class="step-meta"><span>Step 6 of 9</span><strong>Emergency contact</strong></div><div class="progress-track" aria-hidden="true"><span style="width:66.67%"></span></div><p class="eyebrow">Safety and safeguarding</p><h1>Who should we contact?</h1><p>Add at least one person we may call in an emergency. Because this example applicant is under 18, guardian consent is also shown.</p></header>
+            <div class="form-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
+              <section class="form-section record-section"><div class="form-section-head"><div><p class="section-kicker">Emergency contact</p><h2>People we may call</h2><p>Each contact is a separate child record with its own permission.</p></div><span class="record-count" data-count-for="emergency">1 added</span></div><div class="record-list" data-record-list="emergency"></div><button class="add-record-button" type="button" data-add-record="emergency"><span aria-hidden="true">＋</span><span><strong>Add another contact</strong><small>Useful if the first person cannot be reached</small></span></button></section>
+
+              <section class="form-section guardian-panel" data-guardian-panel>
+                <div class="form-section-head"><div><p class="section-kicker">Required for applicants under 18</p><h2>Parent or guardian consent</h2><p>The branch will verify this consent before approval. Reviewer verification fields are deliberately not available here.</p></div><span class="privacy-chip">Branch only</span></div>
+                <button class="copy-contact" type="button" data-copy-contact>Copy the first emergency contact</button>
+                <div class="field-grid">
+                  <label class="reg-field"><span>Parent or guardian’s name <b class="required">Required</b></span><input name="guardian_name" value="Mary Wanjiku" required></label>
+                  <label class="reg-field"><span>Relationship to applicant <b class="required">Required</b></span><input name="guardian_relationship" value="Mother" required></label>
+                  <label class="reg-field"><span>Phone number <b class="required">Required</b></span><input name="guardian_phone" type="tel" value="+254 722 108 455" required></label>
+                  <label class="reg-field"><span>Email address <i>Optional</i></span><input name="guardian_email" type="email" value="mary.wanjiku@example.com"></label>
+                </div>
+                <label class="permission-card"><input id="guardian-consent" name="consent_given" type="checkbox" checked required><span class="check-box">✓</span><span><strong>Consent has been given</strong><small>The branch will confirm this directly with the parent or guardian.</small></span></label>
+                <div class="field-grid" data-consent-details>
+                  <label class="reg-field"><span>Consent date <b class="required">Required</b></span><input name="consent_date" type="date" value="2026-09-02" data-required-when-visible></label>
+                  <label class="reg-field"><span>Consent method <b class="required">Required</b></span><select name="verification_method" data-required-when-visible><option>Signed form</option><option>In person</option><option>Telephone</option><option>Through a school or institution</option></select></label>
+                  <label class="reg-field wide"><span>Consent document <i>Optional</i></span><span class="file-drop"><input name="consent_evidence" type="file"><strong>Choose a signed form or photograph</strong><small>PDF, JPG or PNG · private to the branch</small></span></label>
+                </div>
+              </section>
+              <div class="adult-note" data-adult-note hidden><span>✓</span><p><strong>No guardian consent needed.</strong> The date of birth entered in Personal details makes this applicant 18 or older.</p></div>
+            </div>
+          </section>
+
+          <section class="form-step" id="step-7" data-step-title="Additional questions">
+            <header class="step-header"><div class="step-meta"><span>Step 7 of 9</span><strong>Society questions</strong></div><div class="progress-track" aria-hidden="true"><span style="width:77.78%"></span></div><p class="eyebrow">A few final details</p><h1>Additional questions</h1><p>These questions are configured by Kenya Red Cross. Groups, wording, help text, answer types and requirements can change without redesigning this screen.</p></header>
+            <div class="form-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
+              <section class="question-group"><header><span>01</span><div><h2>Volunteer readiness</h2><p>Tell the branch what you hope to contribute.</p></div></header><div class="field-grid">
+                <label class="reg-field wide"><span>Why would you like to volunteer with Kenya Red Cross? <b class="required">Required</b></span><textarea name="question_motivation" rows="5" required>I want to strengthen my community first-aid skills and support outreach activities in Nairobi.</textarea><small>A short answer in your own words is enough.</small></label>
+                <label class="reg-field"><span>Which area interests you most? <b class="required">Required</b></span><select name="question_area" required><option>Emergency response</option><option selected>Community health</option><option>Youth programmes</option><option>Blood donor services</option></select></label>
+                <label class="reg-field"><span>Earliest start date <i>Optional</i></span><input name="question_start" type="date" value="2026-09-21"></label>
+                <label class="reg-field"><span>Hours available per month <i>Optional</i></span><input name="question_hours" type="number" inputmode="numeric" min="0" step="1" value="12"></label>
+                <label class="reg-field"><span>Name to use on your badge <i>Optional</i></span><input name="question_badge" value="Alex"></label>
+              </div></section>
+              <section class="question-group"><header><span>02</span><div><h2>Supporting information</h2><p>Files uploaded here are stored as private application evidence.</p></div></header>
+                <label class="permission-card"><input name="question_induction" type="checkbox" checked><span class="check-box">✓</span><span><strong>I am willing to attend an induction session</strong><small>This records Yes or No as an answer; it is not a legal declaration.</small></span></label>
+                <label class="reg-field"><span>Supporting letter <i>Optional</i></span><span class="file-drop"><input name="question_attachment" type="file"><strong>Choose a supporting letter</strong><small>PDF, DOCX, JPG or PNG · maximum 10 MB</small></span></label>
+              </section>
+            </div>
+          </section>
+
+          <section class="form-step declarations-step" id="step-8" data-step-title="Declarations">
+            <header class="step-header"><div class="step-meta"><span>Step 8 of 9</span><strong>Declarations</strong></div><div class="progress-track" aria-hidden="true"><span style="width:88.89%"></span></div><p class="eyebrow">Before you submit</p><h1>Declarations and consent</h1><p>Read and accept every required declaration. The exact wording and version shown here will be stored with your application.</p></header>
+            <div class="form-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
+              <div class="consent-progress"><span><strong data-consent-count>4 of 4</strong> accepted</span><div aria-hidden="true"><i></i><i></i><i></i><i></i></div></div>
+              <div class="declaration-list">
+                <details class="declaration-record"><summary><span class="declaration-state">✓</span><span><small>Required · Version 3.1</small><strong>Data protection and application assessment</strong></span><i>⌄</i></summary><div><p>Kenya Red Cross may use the information in this application to assess eligibility, manage the volunteer relationship and meet safeguarding obligations.</p><label><input name="declaration_privacy" type="checkbox" checked required><span class="check-box">✓</span><span>I have read and agree to this declaration</span></label></div></details>
+                <details class="declaration-record"><summary><span class="declaration-state">✓</span><span><small>Required · Version 2.0</small><strong>Contact about volunteer activities</strong></span><i>⌄</i></summary><div><p>The Society may contact you about this application, induction, training, suitable tasks and important safety updates.</p><label><input name="declaration_contact" type="checkbox" checked required><span class="check-box">✓</span><span>I have read and agree to this declaration</span></label></div></details>
+                <details class="declaration-record"><summary><span class="declaration-state">✓</span><span><small>Required · Version 1.4</small><strong>Identification and opportunity matching</strong></span><i>⌄</i></summary><div><p>Your photograph, verified skills, languages and availability may be used for identification and to match you with appropriate opportunities.</p><label><input name="declaration_matching" type="checkbox" checked required><span class="check-box">✓</span><span>I have read and agree to this declaration</span></label></div></details>
+                <details class="declaration-record"><summary><span class="declaration-state">✓</span><span><small>Required · Version 4.2</small><strong>Accuracy of information</strong></span><i>⌄</i></summary><div><p>You confirm that the information and documents supplied are accurate, complete and your own.</p><label><input name="declaration_accuracy" type="checkbox" checked required><span class="check-box">✓</span><span>I have read and agree to this declaration</span></label></div></details>
+              </div>
+            </div>
+          </section>
+
+          <section class="form-step" id="step-9" data-step-title="Check and submit">
+            <header class="step-header review-header"><div class="step-meta"><span>Step 9 of 9</span><strong>Ready to submit</strong></div><div class="progress-track" aria-hidden="true"><span style="width:100%"></span></div><p class="eyebrow">Final check</p><h1>Check and submit</h1><p>Review your answers before sending this application to Nairobi Branch. Select a section to make changes.</p></header>
+            <div class="form-body review-body">
+              <div class="error-summary" role="alert" tabindex="-1" hidden><h2>Check this section</h2><ul></ul></div>
+              <div class="review-banner" data-review-banner><span aria-hidden="true" data-review-state-icon>✓</span><div><strong data-review-state-title>All required sections are complete</strong><p data-review-state-copy>Your draft was saved. Submitting starts the branch review and locks these answers until a reviewer returns the application for changes.</p></div></div>
+              <div class="review-sections">
+                <article><header><span><small>01</small><strong>Personal details</strong></span><button type="button" data-step-target="step-1">Change</button></header><dl><div><dt>Name</dt><dd>Alex Mwangi</dd></div><div><dt>Contact</dt><dd>+254 712 345 678 · alex.mwangi@example.com</dd></div><div><dt>Citizenship</dt><dd data-review-citizenship>Not answered</dd></div><div><dt>Accessibility</dt><dd data-review-disability>Wheelchair user · step-free access requested</dd></div></dl></article>
+                <article><header><span><small>02</small><strong>Volunteer location</strong></span><button type="button" data-step-target="step-2">Change</button></header><dl><div><dt>Selected branch</dt><dd>Nairobi Region · Nairobi County · Nairobi Branch</dd></div></dl></article>
+                <article><header><span><small>03</small><strong>Identification</strong></span><button type="button" data-step-target="step-3">Change</button></header><dl data-review-records="identification"></dl></article>
+                <article><header><span><small>04</small><strong>Volunteer details</strong></span><button type="button" data-step-target="step-4">Change</button></header><dl><div><dt>Skills</dt><dd>First Aid, Community Health</dd></div><div><dt>Languages</dt><dd>English, Kiswahili</dd></div><div><dt>Availability</dt><dd>Weekend mornings</dd></div><div><dt>Motivation</dt><dd>Serve my community</dd></div></dl></article>
+                <article><header><span><small>05</small><strong>Education and experience</strong></span><button type="button" data-step-target="step-5">Change</button></header><dl data-review-background></dl></article>
+                <article><header><span><small>06</small><strong>Emergency and guardian</strong></span><button type="button" data-step-target="step-6">Change</button></header><dl data-review-records="emergency"></dl></article>
+                <article><header><span><small>07</small><strong>Additional questions</strong></span><button type="button" data-step-target="step-7">Change</button></header><dl><div><dt>Readiness</dt><dd>5 answers provided</dd></div><div><dt>Supporting information</dt><dd>Induction accepted · no file attached</dd></div></dl></article>
+                <article><header><span><small>08</small><strong>Declarations</strong></span><button type="button" data-step-target="step-8">Change</button></header><dl><div><dt>Accepted</dt><dd>4 required declarations · current published versions</dd></div></dl></article>
+              </div>
+              <div class="submit-understanding"><strong>What happens next?</strong><ol><li>Nairobi Branch checks your application.</li><li>If something is unclear, they return only the relevant section for correction.</li><li>After approval, your volunteer number and opportunities appear in this portal.</li></ol></div>
+            </div>
+          </section>
         </div>
-        <div class="form-actions"><span class="save-note">Halfway there</span><a class="button button-secondary" href="#step-3">← Back</a><a class="button button-primary" href="#step-5">Continue →</a></div>
-      </section>
 
-      <section class="form-step" id="step-5">
-        <header class="step-header"><div class="step-meta"><span>Step 5 of 8</span><strong>62% complete · 3 steps left</strong></div><div class="progress-track"><span style="width:62.5%"></span></div><h1>Emergency and guardian details</h1><p>Add someone we may contact if something happens while you are volunteering. Guardian consent appears when the applicant is a minor.</p></header>
-        <div class="form-body"><div class="form-section"><div class="form-section-head"><h2>Emergency contact</h2><p>At least one permitted contact is needed before approval.</p></div><div class="field-grid"><div class="reg-field"><label>Contact name <b class="required">*</b></label><input placeholder="Full name"></div><div class="reg-field"><label>Relationship <b class="required">*</b></label><input placeholder="Parent, sibling, spouse, friend"></div><div class="reg-field"><label>Primary phone <b class="required">*</b></label><input type="tel" placeholder="Main number"></div><div class="reg-field"><label>Alternative phone</label><input type="tel" placeholder="Optional"></div><label class="permission-box wide"><input type="checkbox"><span><strong>Kenya Red Cross may contact this person in an emergency</strong><span>Select this explicitly to give permission to call this person.</span></span></label></div></div><div class="form-section"><div class="form-section-head"><h2>Parent or guardian consent</h2><p>Conditional: displayed when the date of birth makes the applicant a minor.</p></div><div class="field-grid"><div class="reg-field"><label>Guardian name <b class="required">*</b></label><input placeholder="Full name"></div><div class="reg-field"><label>Relationship <b class="required">*</b></label><input placeholder="Mother, father, guardian"></div><div class="reg-field"><label>Phone <b class="required">*</b></label><input type="tel"></div><div class="reg-field"><label>Email</label><input type="email" placeholder="Optional"></div><label class="permission-box wide"><input type="checkbox"><span><strong>The guardian has consented to me volunteering</strong><span>A branch reviewer will verify this before approval.</span></span></label><div class="reg-field"><label>Consent date</label><input type="date"></div><div class="reg-field"><label>Verification method</label><select><option value="" selected disabled>Select method</option><option>Signed form</option><option>In person</option><option>Telephone</option><option>Through a school or institution</option></select></div><div class="reg-field wide"><label>Consent evidence</label><input type="file"><small>Private signed form or other supporting evidence.</small></div></div></div><div class="notice">Reviewer-only fields—Verified, Verified By, and Verified On—are intentionally excluded from the applicant form.</div></div>
-        <div class="form-actions"><span class="save-note">3 steps remaining</span><a class="button button-secondary" href="#step-4">← Back</a><a class="button button-primary" href="#step-6">Continue →</a></div>
-      </section>
-
-      <section class="form-step" id="step-6">
-        <header class="step-header"><div class="step-meta"><span>Step 6 of 8</span><strong>75% complete · 2 steps left</strong></div><div class="progress-track"><span style="width:75%"></span></div><h1>What Kenya Red Cross asks</h1><p>This screen is generated from active VMMS Application Question records. Labels, answer types, requirements, choices, help text, groups, and attachments remain configurable.</p></header>
-        <div class="form-body"><div class="notice">Example configuration shown for the UI concept. If no active questions exist, this step is skipped automatically.</div><div class="form-section"><div class="form-section-head"><h2>Volunteer readiness</h2></div><div class="reg-field"><label>Why would you like to volunteer with Kenya Red Cross? <b class="required">*</b></label><textarea placeholder="Tell us briefly in your own words"></textarea><small>Small Text answer example</small></div><div class="reg-field"><label>Which area interests you most?</label><select><option>Select an option</option><option>Emergency response</option><option>Community health</option><option>Youth programmes</option><option>Blood donor services</option></select><small>Select answer example</small></div><label class="permission-box"><input type="checkbox"><span><strong>I am willing to attend an induction session</strong><span>Check answer example; “No” is still a recorded answer.</span></span></label><div class="field-grid"><div class="reg-field"><label>Earliest start date</label><input type="date"><small>Date answer example</small></div><div class="reg-field"><label>Hours available per month</label><input type="number" min="0"><small>Integer answer example</small></div></div><div class="reg-field"><label>Supporting letter</label><input type="file"><small>Private attachment answer example</small></div></div></div>
-        <div class="form-actions"><span class="save-note">2 steps remaining</span><a class="button button-secondary" href="#step-5">← Back</a><a class="button button-primary" href="#step-7">Continue →</a></div>
-      </section>
-
-      <section class="form-step declarations-step" id="step-7">
-        <header class="step-header"><div class="step-meta"><span>Step 7 of 8</span><strong>88% complete · 1 step left</strong></div><div class="progress-track"><span style="width:87.5%"></span></div><h1>Before you send this</h1><p>Read and accept each required declaration. The exact wording and version accepted are stored with the application.</p></header>
-        <div class="form-body"><div class="simple-consent-intro"><span>4 required</span><p>Please tick each box to confirm that you understand and agree.</p></div><div class="simple-declarations">
-          <label class="simple-declaration" for="dec-privacy"><input id="dec-privacy" type="checkbox"><span>I agree that Kenya Red Cross may use the information I provide to assess my application and manage my volunteer record. <a href="#">Learn how we protect your information</a>.</span></label>
-          <label class="simple-declaration" for="dec-contact"><input id="dec-contact" type="checkbox"><span>I agree that Kenya Red Cross may contact me about my application, training, volunteer tasks and important safety updates.</span></label>
-          <label class="simple-declaration" for="dec-personal"><input id="dec-personal" type="checkbox"><span>I agree that my photograph, skills and languages may be used for volunteer identification and matching me with suitable opportunities.</span></label>
-          <label class="simple-declaration" for="dec-accuracy"><input id="dec-accuracy" type="checkbox"><span>I confirm that the information and documents I have provided are accurate, complete and my own.</span></label>
-        </div><p class="simple-consent-foot">The exact wording and version accepted will be stored with your application.</p></div>
-        <div class="form-actions"><span class="save-note">Only review remains</span><a class="button button-secondary" href="#step-6">← Back</a><a class="button button-primary" href="#step-8">Review application →</a></div>
-      </section>
-
-      <section class="form-step" id="step-8">
-        <header class="step-header"><div class="step-meta"><span>Step 8 of 8</span><strong>100% complete · ready to submit</strong></div><div class="progress-track"><span style="width:100%"></span></div><h1>Check and submit</h1><p>Review every section before sending your application to the selected Kenya Red Cross branch.</p></header>
-        <div class="form-body"><div class="review-grid"><div class="review-row"><span><strong>About you</strong><p>Name, contact, photograph, personal details, citizenship</p></span><a href="#step-1">Edit</a></div><div class="review-row"><span><strong>Location and serving branch</strong><p>Residence and application-routing branch</p></span><a href="#step-2">Edit</a></div><div class="review-row"><span><strong>Identification</strong><p>Primary document and supporting attachment</p></span><a href="#step-3">Edit</a></div><div class="review-row"><span><strong>Your volunteering</strong><p>Skills, languages, availability, motivation, experience</p></span><a href="#step-4">Edit</a></div><div class="review-row"><span><strong>Emergency and guardian details</strong><p>Emergency contact and conditional guardian consent</p></span><a href="#step-5">Edit</a></div><div class="review-row"><span><strong>Society questions</strong><p>Every configured required answer completed</p></span><a href="#step-6">Edit</a></div><div class="review-row"><span><strong>Declarations</strong><p>Four required declarations accepted</p></span><a href="#step-7">Edit</a></div></div><div class="notice">After submission, workflow fields such as Applied On, Approval State, Approval Stage, reviewer decisions, and eventual Volunteer record are maintained automatically.</div></div>
-        <div class="form-actions"><span class="save-note">Your application is complete</span><a class="button button-secondary" href="#step-7">← Back</a><a class="button button-submit" href="volunteer-status.html">Submit application →</a></div>
-      </section>
-    </form></main>
+        <footer class="form-actions">
+          <div class="save-status" role="status" aria-live="polite"><i></i><span data-save-status>Draft saved just now</span></div>
+          <button class="button button-secondary save-button" type="button" data-save>Save draft</button>
+          <button class="button button-secondary back-button" type="button" data-back>← Back</button>
+          <button class="button button-primary continue-button" type="button" data-continue>Continue <span aria-hidden="true">→</span></button>
+        </footer>
+      </form>
+    </main>
   </div>
 </div>
-<script>
-(() => {
-  const recordState = { identification: 0, emergency: 0 };
 
-  function closeRecords(container) {
-    container.querySelectorAll('.activity-row').forEach(row => row.classList.remove('is-open'));
-  }
+<dialog class="record-dialog" id="record-dialog" aria-labelledby="record-dialog-title">
+  <form method="dialog" id="record-form">
+    <header><div><p data-dialog-kicker>Add record</p><h2 id="record-dialog-title">Add education</h2></div><button type="button" data-close-dialog aria-label="Close">×</button></header>
+    <div class="dialog-body"><p class="dialog-intro" data-dialog-intro></p><div class="dialog-error" role="alert" hidden>Please complete the required fields.</div><div class="dialog-fields" data-dialog-fields></div></div>
+    <footer><button class="button button-secondary" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Save record</button></footer>
+  </form>
+</dialog>
 
-  function recordMarkup(type, index) {
-    const identification = type === 'identification';
-    const label = identification ? 'Document' : 'Contact';
-    const body = identification ? `
-      <div class="field-grid">
-        <div class="reg-field"><label>ID type <b class="required">*</b></label><select class="record-title"><option value="">Select document type</option><option>National ID</option><option>Passport</option><option>Birth Certificate</option><option>Alien ID</option><option>Driving Licence</option></select></div>
-        <div class="reg-field"><label>ID number <b class="required">*</b></label><input class="record-detail" placeholder="Enter the document number"></div>
-        <div class="reg-field wide"><label>Document attachment</label><input type="file"><small>A scan or clear photograph, when required by the selected ID policy.</small></div>
-        <label class="permission-box wide"><input class="primary-identification" type="checkbox"><span><strong>Use this as my primary identification</strong><span>Only one record can be primary.</span></span></label>
-      </div>` : `
-      <div class="field-grid">
-        <div class="reg-field"><label>Contact name <b class="required">*</b></label><input class="record-title" placeholder="Full name"></div>
-        <div class="reg-field"><label>Relationship <b class="required">*</b></label><input class="record-detail" placeholder="Parent, sibling, spouse, friend"></div>
-        <div class="reg-field"><label>Primary phone <b class="required">*</b></label><input type="tel" placeholder="Main number"></div>
-        <div class="reg-field"><label>Alternative phone</label><input type="tel" placeholder="Optional"></div>
-        <label class="permission-box wide"><input type="checkbox"><span><strong>Kenya Red Cross may contact this person in an emergency</strong><span>Select this explicitly to give permission.</span></span></label>
-      </div>`;
-    return `<div class="activity-row is-open" data-record-type="${type}">
-      <div class="activity-row-header">
-        <div class="activity-row-left"><span class="activity-row-num">${label} ${index}</span><span class="activity-row-summary empty">No details entered yet</span></div>
-        <div class="activity-row-right"><button class="btn-remove-row" type="button" aria-label="Remove ${label.toLowerCase()}">×</button><span class="activity-chevron">⌄</span></div>
-      </div>
-      <div class="activity-row-body">${body}</div>
-    </div>`;
-  }
-
-  function addRecord(type) {
-    const container = document.getElementById(`${type}-records`);
-    if (!container) return;
-    closeRecords(container);
-    recordState[type] += 1;
-    container.insertAdjacentHTML('beforeend', recordMarkup(type, recordState[type]));
-    const row = container.lastElementChild;
-    const header = row.querySelector('.activity-row-header');
-    const remove = row.querySelector('.btn-remove-row');
-    const update = () => {
-      const title = row.querySelector('.record-title')?.value.trim();
-      const detail = row.querySelector('.record-detail')?.value.trim();
-      const summary = row.querySelector('.activity-row-summary');
-      summary.textContent = [title, detail].filter(Boolean).join(' · ') || 'No details entered yet';
-      summary.classList.toggle('empty', !title && !detail);
-    };
-    row.querySelectorAll('input, select').forEach(field => field.addEventListener('input', update));
-    header.addEventListener('click', () => {
-      const opening = !row.classList.contains('is-open'); closeRecords(container); row.classList.toggle('is-open', opening);
-    });
-    remove.addEventListener('click', event => { event.stopPropagation(); row.remove(); });
-    row.querySelector('.primary-identification')?.addEventListener('change', event => {
-      if (event.target.checked) container.querySelectorAll('.primary-identification').forEach(box => { if (box !== event.target) box.checked = false; });
-    });
-  }
-
-  function setupMultiSelect(box) {
-    const input = box.querySelector('input');
-    const list = document.getElementById(input.getAttribute('list'));
-    const allowed = list ? [...list.options].map(option => option.value) : [];
-    let selected = [];
-    let activeIdx = -1;
-    const picker = document.createElement('div');
-    picker.className = 'country-picker';
-    picker.innerHTML = '<div class="country-search-wrap"><span class="country-search-icon"></span></div><div class="country-dropdown"></div><div class="country-pills"></div>';
-    const searchWrap = picker.querySelector('.country-search-wrap');
-    input.removeAttribute('list');
-    searchWrap.appendChild(input);
-    box.replaceWith(picker);
-    const actualDropdown = picker.querySelector('.country-dropdown');
-    const pillsWrap = picker.querySelector('.country-pills');
-
-    function renderPills() {
-      pillsWrap.innerHTML = '';
-      selected.forEach(function(value) {
-        const pill = document.createElement('span');
-        pill.className = 'country-pill';
-        const text = document.createElement('span');
-        text.textContent = value;
-        const remove = document.createElement('button');
-        remove.type = 'button'; remove.setAttribute('aria-label', 'Remove ' + value); remove.textContent = '×';
-        remove.addEventListener('click', function() {
-          selected = selected.filter(item => item !== value);
-          renderPills(); renderOptions(input.value);
-        });
-        pill.append(text, remove); pillsWrap.appendChild(pill);
-      });
-    }
-
-    function renderOptions(query) {
-      const q = (query || '').toLowerCase().trim();
-      const matches = allowed.filter(value => value.toLowerCase().includes(q));
-      actualDropdown.innerHTML = ''; activeIdx = -1;
-      if (!matches.length) { actualDropdown.classList.remove('open'); return; }
-      matches.forEach(function(value) {
-        const option = document.createElement('div');
-        option.className = 'country-option' + (selected.includes(value) ? ' selected' : '');
-        option.textContent = value; option.dataset.value = value;
-        option.addEventListener('mousedown', function(event) { event.preventDefault(); selectValue(value); });
-        actualDropdown.appendChild(option);
-      });
-      actualDropdown.classList.add('open');
-    }
-
-    function selectValue(value) {
-      if (!selected.includes(value)) {
-        selected.push(value); renderPills();
-      }
-      input.value = ''; actualDropdown.classList.remove('open'); activeIdx = -1;
-    }
-
-    input.addEventListener('input', function() { renderOptions(input.value); });
-    input.addEventListener('focus', function() { renderOptions(input.value); });
-    input.addEventListener('keydown', function(event) {
-      const options = actualDropdown.querySelectorAll('.country-option:not(.selected)');
-      if (!options.length) return;
-      if (event.key === 'ArrowDown') { event.preventDefault(); activeIdx = Math.min(activeIdx + 1, options.length - 1); }
-      else if (event.key === 'ArrowUp') { event.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); }
-      else if (event.key === 'Enter' && activeIdx >= 0) { event.preventDefault(); selectValue(options[activeIdx].dataset.value); return; }
-      else if (event.key === 'Escape') { actualDropdown.classList.remove('open'); return; }
-      options.forEach((option, index) => option.classList.toggle('active', index === activeIdx));
-      if (activeIdx >= 0) options[activeIdx].scrollIntoView({ block:'nearest' });
-    });
-    searchWrap.addEventListener('click', function() { input.focus(); });
-    document.addEventListener('click', function(event) { if (!picker.contains(event.target)) actualDropdown.classList.remove('open'); });
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const emergencyHeading = [...document.querySelectorAll('.form-section-head h2')].find(h => h.textContent.trim() === 'Emergency contact');
-    if (emergencyHeading) {
-      const section = emergencyHeading.closest('.form-section');
-      section.innerHTML = '<div class="form-section-head"><h2>Emergency contacts</h2><p>Add at least one person. You can add another contact in case the first is unavailable.</p></div><div id="emergency-records"></div><button class="btn-add-row" type="button" data-add-record="emergency"><span>＋</span> Add another emergency contact</button>';
-    }
-    document.querySelectorAll('[data-add-record]').forEach(button => button.addEventListener('click', () => addRecord(button.dataset.addRecord)));
-    document.querySelectorAll('.frappe-table-multiselect').forEach(setupMultiSelect);
-    addRecord('identification'); addRecord('emergency');
-  });
-})();
-</script>
-</body></html>
+<div class="toast" role="status" aria-live="polite" data-toast hidden><span>✓</span><strong>Draft saved</strong></div>
+<script src="volunteer-registration.js"></script>
+</body>
+</html>

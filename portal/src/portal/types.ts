@@ -290,6 +290,8 @@ export interface RedProfile {
 	 * round trip a draft without a second set of types.
 	 */
 	profession: string | null;
+	/** Free-text profession supplied when the configured profession is “Other”. */
+	other_profession: string | null;
 	education: EducationRow[];
 	training: TrainingRow[];
 	work_experience: WorkExperienceRow[];

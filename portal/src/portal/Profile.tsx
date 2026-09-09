@@ -691,6 +691,7 @@ function BackgroundCard({
 		try {
 			await call.post(API.updateMyProfile, {
 				profession: draft.profession,
+				other_profession: draft.other_profession,
 				background: backgroundPayload(draft),
 			});
 			setEditing(false);
@@ -741,7 +742,10 @@ function BackgroundCard({
 						</p>
 					) : (
 						<dl className="mt-5 space-y-4 border-t border-card-line pt-5">
-							<Line label="Profession" value={held.profession} />
+							<Line
+								label="Profession"
+								value={held.profession === "Other" ? held.other_profession || "Other" : held.profession}
+							/>
 							{lines.map((row, index) => (
 								<Line key={index} label={row.label} value={row.value} />
 							))}

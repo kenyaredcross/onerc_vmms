@@ -72,14 +72,39 @@ function rungsOf(levels: GeoLevel[]): string[] {
 		.map(([, names]) => names.join(" / "));
 }
 
-/** The chosen node, or null while the chain does not yet satisfy `allowedLevels`. */
+/**
+ * The chosen node, or null while the chain does not yet satisfy `allowedLevels`.
+ *
+ * **The deepest node the society records at, not the deepest node answered.**
+ * These are the same thing whenever the permitted rung is the last one in the
+ * tree, and they stop being the same the moment a society keeps geography below
+ * the level it records at — Kenya's 47 counties with 290 sub-counties under
+ * them, where `allowed_anchor_levels` names the county and the sub-counties are
+ * there to be recognised rather than recorded at.
+ *
+ * On that tree, `browse` returns children for a county, so the picker draws a
+ * Sub-County rung — correctly; it is a real part of the tree. Reading only the
+ * last answer meant that answering that optional rung *un-chose* a perfectly
+ * valid county: the step's guard saw null, Continue went dead, and the note
+ * underneath said "keep going down to a County" to somebody who was already
+ * below one. The only way out was to blank a dropdown, which is not a thing
+ * anybody thinks to do.
+ *
+ * So the chain is searched from the bottom for the deepest rung that *is*
+ * permitted. A chain with no permitted rung in it still reads as nothing chosen,
+ * which is the half-walked case this has always been here to catch.
+ */
 export function selectedNode(chain: GeoNode[], allowedLevels?: string[]): GeoNode | null {
 	const deepest = chain.length > 0 ? chain[chain.length - 1] : null;
 
 	if (!deepest) return null;
 	if (!allowedLevels?.length) return deepest;
 
-	return allowedLevels.includes(deepest.level) ? deepest : null;
+	for (let index = chain.length - 1; index >= 0; index -= 1) {
+		if (allowedLevels.includes(chain[index].level)) return chain[index];
+	}
+
+	return null;
 }
 
 export function GeoSelects({

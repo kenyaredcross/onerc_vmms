@@ -33,6 +33,7 @@ from vmmsx.registration.tests.base import RegistrationTestCase
 EXTRA_TEST_RECORD_DEPENDENCIES = []
 
 PROFESSION_FIELD = "vmms_profession"
+OTHER_PROFESSION_FIELD = "vmms_other_profession"
 
 
 class TestTheBackgroundBlock(RegistrationTestCase):
@@ -122,6 +123,25 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 		self.assertEqual(self.held(profile, "training")[0]["course_name"], "First aid")
 		self.assertEqual(self.held(profile, "work_experience")[0]["role"], "Nurse")
 		self.assertEqual(self.held(profile, "references")[0]["reference_name"], "Grace Wanjiru")
+
+	def test_other_profession_keeps_the_applicants_own_words(self):
+		user, _ = self.register_as_volunteer(
+			"other.profession",
+			profession="Other",
+			other_profession="Community mobiliser",
+		)
+		profile = self.profile_of(user)
+
+		self.assertEqual(frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, PROFESSION_FIELD), "Other")
+		self.assertEqual(
+			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, OTHER_PROFESSION_FIELD),
+			"Community mobiliser",
+		)
+
+		with fixtures.acting_as(user):
+			mine = registration_api.my_profile()
+
+		self.assertEqual(mine["other_profession"], "Community mobiliser")
 
 	def test_the_profile_reads_back_the_whole_block(self):
 		user, _ = self.register_as_volunteer(

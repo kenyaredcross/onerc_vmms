@@ -36,6 +36,7 @@ import { Field, FieldSet, PrivateUpload, TextArea, TextInput, VocabularySelect }
 /** The seven fields, carried as one value so callers hold one piece of state. */
 export interface BackgroundValues {
 	profession: string;
+	other_profession: string;
 	education: EducationRow[];
 	training: TrainingRow[];
 	work_experience: WorkExperienceRow[];
@@ -47,6 +48,7 @@ export interface BackgroundValues {
 /** Nothing said yet, which is how every one of these starts. */
 export const emptyBackground = (): BackgroundValues => ({
 	profession: "",
+	other_profession: "",
 	education: [],
 	training: [],
 	work_experience: [],
@@ -63,11 +65,15 @@ export const emptyBackground = (): BackgroundValues => ({
  * it — in which case the honest answer is "nothing recorded", not a crash on
  * somebody's profile page.
  */
-type HeldBackground = Partial<Omit<BackgroundValues, "profession">> & { profession?: string | null };
+type HeldBackground = Partial<Omit<BackgroundValues, "profession" | "other_profession">> & {
+	profession?: string | null;
+	other_profession?: string | null;
+};
 
 export const backgroundFrom = (held: HeldBackground | null | undefined): BackgroundValues => ({
 	...emptyBackground(),
 	profession: held?.profession ?? "",
+	other_profession: held?.other_profession ?? "",
 	education: held?.education ?? [],
 	training: held?.training ?? [],
 	work_experience: held?.work_experience ?? [],
@@ -94,7 +100,14 @@ export const backgroundPayload = (values: BackgroundValues) => ({
 
 /** Whether any of it has been filled in, which is what decides if a panel is drawn. */
 export const hasBackground = (values: BackgroundValues): boolean =>
-	Boolean(values.profession) || backgroundLines(undefined, values).length > 0;
+	Boolean(values.profession || values.other_profession) || backgroundLines(undefined, values).length > 0;
+
+/** The register value that opens the applicant's own profession description. */
+export const OTHER_PROFESSION = "Other";
+
+/** A selected “Other” is only meaningful once the applicant says what it is. */
+export const backgroundIsCoherent = (values: BackgroundValues): boolean =>
+	values.profession !== OTHER_PROFESSION || Boolean(values.other_profession.trim());
 
 /* ------------------------------------------------- what they have already done */
 
@@ -430,6 +443,7 @@ export function BackgroundFields({
 	lead = "All fields in this section are optional.",
 	value,
 	onChange,
+	openEducationByDefault = false,
 }: {
 	options?: IdentityOptions;
 	/** The line under the first heading. Two screens, two ways of saying it. */
@@ -437,9 +451,12 @@ export function BackgroundFields({
 	value: BackgroundValues;
 	/** The keys that changed, so a caller holds one piece of state for all seven. */
 	onChange: (values: Partial<BackgroundValues>) => void;
+	/** Registration opens one education row; the profile editor keeps its compact empty state. */
+	openEducationByDefault?: boolean;
 }) {
 	const {
 		profession,
+		other_profession: otherProfession,
 		education,
 		training,
 		work_experience: experience,
@@ -448,7 +465,11 @@ export function BackgroundFields({
 		references,
 	} = value;
 
-	const onProfession = (next: string) => onChange({ profession: next });
+	const onProfession = (next: string) =>
+		onChange({
+			profession: next,
+			...(next === OTHER_PROFESSION ? {} : { other_profession: "" }),
+		});
 	const onEducation = (rows: EducationRow[]) => onChange({ education: rows });
 	const onTraining = (rows: TrainingRow[]) => onChange({ training: rows });
 	const onExperience = (rows: WorkExperienceRow[]) => onChange({ work_experience: rows });
@@ -466,7 +487,9 @@ export function BackgroundFields({
 	// separately — so a session that loaded this against a server predating these
 	// vocabularies gets an object without them. An empty picker is something
 	// somebody can still walk past; a crash is a form they cannot finish.
-	const professions = (options?.professions ?? []).map((name) => ({ key: name, label: name }));
+	const professions = Array.from(new Set([...(options?.professions ?? []), OTHER_PROFESSION])).map(
+		(name) => ({ key: name, label: name }),
+	);
 	const licenceTypes = (options?.licence_types ?? []).map((name) => ({ key: name, label: name }));
 	const educationLevels = options?.education_levels ?? [];
 	const drivingClasses = options?.driving_licence_classes ?? [];
@@ -487,16 +510,27 @@ export function BackgroundFields({
 							placeholder="Select a profession"
 						/>
 					</Field>
+
+					{profession === OTHER_PROFESSION && (
+						<Field label="Other profession" required htmlFor="bg-other-profession">
+							<TextInput
+								id="bg-other-profession"
+								value={otherProfession}
+								onChange={(next) => onChange({ other_profession: next })}
+								placeholder="Enter your profession"
+							/>
+						</Field>
+					)}
 				</div>
 			</FieldSet>
 
 			<RowList
 				title="Education"
 				description="Add schools, colleges, or universities attended."
-				rows={education}
+				rows={education.length || !openEducationByDefault ? education : [blankEducation()]}
 				onRows={onEducation}
 				blank={blankEducation}
-				add="Add education"
+				add="Add another education record"
 				renderRow={(row, index, set, patch) => (
 					<>
 						<Field label="Institution" required htmlFor={`ed-place-${index}`}>

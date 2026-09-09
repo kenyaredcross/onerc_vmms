@@ -47,7 +47,7 @@ COPY = (
 	("landing.hero.headline", "Show up for Kenya.", None, None, None),
 	(
 		"landing.hero.body",
-		"One profile for volunteering, training, deployments and membership, across all 47 county branches.",
+		"One profile for volunteering, training, deployments and membership, across all 47 counties.",
 		None,
 		None,
 		None,
@@ -110,7 +110,7 @@ COPY = (
 	(
 		"landing.band2.body",
 		"Pay by M-Pesa, download a certificate with QR verification, and carry your membership"
-		" across branches when you move.",
+		" from one county to the next when you move.",
 		None,
 		None,
 		None,
@@ -148,7 +148,7 @@ COPY = (
 	# --- closing ----------------------------------------------------------
 	(
 		"landing.cta.body",
-		"Register in five minutes. Your branch confirms your record, and Kenya gains one more"
+		"Register in five minutes. Your county confirms your record, and Kenya gains one more"
 		" person who shows up.",
 		None,
 		None,

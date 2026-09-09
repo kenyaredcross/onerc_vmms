@@ -107,6 +107,7 @@ _READABLE = (
 	# scalars is the wrong instrument for a child table, and `background()` below
 	# is where those are read and where what is left out of them is argued.
 	"vmms_profession",
+	"vmms_other_profession",
 )
 
 # The sensitive set, named so that keeping it out is a decision this file states

@@ -86,6 +86,7 @@ DISABILITY_DOCTYPE = "Disability"
 # volunteer application is not a job application: the whole block can be left
 # empty and the registration is as valid as one that fills it in.
 PROFESSION_FIELD = "vmms_profession"
+OTHER_PROFESSION_FIELD = "vmms_other_profession"
 
 # The six tables, keyed by the name a caller sends and the browser reads back.
 # Each entry is the profile field it writes, the child fields a caller may set,
@@ -167,6 +168,7 @@ SELF_EDITABLE_FIELDS = (
 	# beside it are not here — a table is not a scalar and `_write_profile`
 	# handles them the way it handles identity documents.
 	PROFESSION_FIELD,
+	OTHER_PROFESSION_FIELD,
 	# A photograph is a fact about the person, like the six above it, and it goes
 	# on the card they carry. What a *branch* decided — serving branch, status,
 	# certifications — is not here and must not be, which is the whole of what
@@ -425,9 +427,16 @@ def _background(profile: str) -> dict:
 	meta = frappe.get_meta(PROFILE_DOCTYPE)
 
 	if not meta.has_field(PROFESSION_FIELD):
-		return {"profession": None, **{key: [] for key in BACKGROUND_TABLES}}
+		return {"profession": None, "other_profession": None, **{key: [] for key in BACKGROUND_TABLES}}
 
-	background = {"profession": frappe.db.get_value(PROFILE_DOCTYPE, profile, PROFESSION_FIELD)}
+	fields = [PROFESSION_FIELD]
+	if meta.has_field(OTHER_PROFESSION_FIELD):
+		fields.append(OTHER_PROFESSION_FIELD)
+	values = frappe.db.get_value(PROFILE_DOCTYPE, profile, fields, as_dict=True)
+	background = {
+		"profession": values.get(PROFESSION_FIELD),
+		"other_profession": values.get(OTHER_PROFESSION_FIELD),
+	}
 
 	for key, (field, allowed, _files) in BACKGROUND_TABLES.items():
 		background[key] = _background_rows_held(profile, field, allowed) if meta.has_field(field) else []
@@ -648,6 +657,7 @@ def update_my_profile(
 	disability_needs: str | None = None,
 	disabilities: list | None = None,
 	profession: str | None = None,
+	other_profession: str | None = None,
 	background: dict | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
@@ -715,6 +725,7 @@ def update_my_profile(
 		DISABILITY_FIELD: disability_status,
 		DISABILITY_NEEDS_FIELD: disability_needs,
 		PROFESSION_FIELD: profession,
+		OTHER_PROFESSION_FIELD: other_profession,
 	}
 
 	_write_profile(
@@ -1696,6 +1707,7 @@ def save_my_volunteer_draft(
 	disability_needs: str | None = None,
 	disabilities: list | None = None,
 	profession: str | None = None,
+	other_profession: str | None = None,
 	background: dict | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
@@ -1768,6 +1780,7 @@ def save_my_volunteer_draft(
 			DISABILITY_FIELD: disability_status,
 			DISABILITY_NEEDS_FIELD: disability_needs,
 			PROFESSION_FIELD: profession,
+			OTHER_PROFESSION_FIELD: other_profession,
 		},
 		id_type=id_type,
 		id_number=id_number,
@@ -1931,6 +1944,7 @@ def register_as_volunteer(
 	disability_needs: str | None = None,
 	disabilities: list | None = None,
 	profession: str | None = None,
+	other_profession: str | None = None,
 	background: dict | None = None,
 	id_type: str | None = None,
 	id_number: str | None = None,
@@ -2024,6 +2038,7 @@ def register_as_volunteer(
 			DISABILITY_FIELD: disability_status,
 			DISABILITY_NEEDS_FIELD: disability_needs,
 			PROFESSION_FIELD: profession,
+			OTHER_PROFESSION_FIELD: other_profession,
 		},
 		id_type=id_type,
 		id_number=id_number,

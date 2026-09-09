@@ -136,6 +136,10 @@ vmmsx.patches.install_disability_vocabulary
 # Profile, with the two registers they need seeded. All optional; no completion
 # rule moved. See the patch's own docstring for why they sit on the spine.
 vmmsx.patches.install_background_fields
+# A real Other option in the shared Profession register and the applicant's
+# free-text description beside it on Red Profile. Registration requires the
+# description only when Other is selected; the shared profile remains optional.
+vmmsx.patches.install_other_profession
 # Five questions a society may want and this product must not assume — blood
 # group, health notes, insurance cover, internet access, dependants. Seeded
 # **inactive** into the form builder as worked examples, so nobody is asked one
