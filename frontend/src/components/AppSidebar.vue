@@ -26,6 +26,12 @@
 					class="mx-2 my-0.5 w-full"
 				/>
 			</div>
+
+			<SidebarLink
+				:link="faqLink"
+				:isCollapsed="sidebarStore.sidebarCollapsed"
+				class="mx-2 my-0.5"
+			/>
 		</div>
 		<div class="m-2 flex flex-col gap-1">
 			<div
@@ -119,4 +125,11 @@ const redirectToWebsite = () => {
 const apps = computed(() => {
 	return sideBarApps();
 });
+
+const faqLink = {
+	label: "FAQ",
+	icon: "MessageCircleQuestion",
+	to: "Faq",
+	activeFor: ["Faq"],
+};
 </script>

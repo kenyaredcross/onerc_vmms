@@ -127,6 +127,12 @@ const routes = [
 		path: "/checkout-summary",
 		component: () => import("@/pages/CheckoutSummary.vue"),
 	},
+	{
+		name: "Faq",
+		path: "/faq",
+		component: () => import("@/pages/Faq.vue"),
+		meta: { requiresAuth: false },
+	},
 ];
 
 let router = createRouter({

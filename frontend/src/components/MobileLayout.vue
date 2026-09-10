@@ -103,6 +103,11 @@ const addOtherLinks = () => {
 			...sideBarApps(),
 
 			{
+				name: "FAQ",
+				icon: "MessageCircleQuestion",
+				to: "Faq",
+			},
+			{
 				name: "Events",
 				icon: "CalendarDays",
 				to: "Events",
