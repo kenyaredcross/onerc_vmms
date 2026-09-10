@@ -66,7 +66,9 @@
 						>
 							{{ __(group.category) }}
 						</h3>
-						<div class="border rounded-2xl bg-white shadow-sm divide-y overflow-hidden">
+						<div
+							class="border rounded-2xl bg-white shadow-sm divide-y overflow-hidden"
+						>
 							<div v-for="faq in group.faqs" :key="faq.name">
 								<button
 									type="button"
@@ -113,56 +115,56 @@
 </template>
 
 <script setup>
-import { useHead } from "@vueuse/head"
-import { ErrorMessage, FormControl, createResource } from "frappe-ui"
-import { ChevronDown, Info, Search } from "lucide-vue-next"
-import { computed, ref } from "vue"
-import EmptyState from "../components/EmptyState.vue"
-import { sanitizeRichHtml } from "../utils/sanitizeHtml"
+import { useHead } from "@vueuse/head";
+import { ErrorMessage, FormControl, createResource } from "frappe-ui";
+import { ChevronDown, Info, Search } from "lucide-vue-next";
+import { computed, ref } from "vue";
+import EmptyState from "../components/EmptyState.vue";
+import { sanitizeRichHtml } from "../utils/sanitizeHtml";
 
-const search = ref("")
-const openIds = ref(new Set())
+const search = ref("");
+const openIds = ref(new Set());
 
 const helpContent = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.faq.get_help_content",
 	auto: true,
 	cache: ["helpContent"],
-})
+});
 
-const about = computed(() => helpContent.data?.about)
-const categories = computed(() => helpContent.data?.categories || [])
+const about = computed(() => helpContent.data?.about);
+const categories = computed(() => helpContent.data?.categories || []);
 
 const totalCount = computed(() =>
-	categories.value.reduce((count, group) => count + group.faqs.length, 0),
-)
+	categories.value.reduce((count, group) => count + group.faqs.length, 0)
+);
 
 const visibleCategories = computed(() => {
-	const term = search.value.trim().toLowerCase()
-	if (!term) return categories.value
+	const term = search.value.trim().toLowerCase();
+	if (!term) return categories.value;
 
 	return categories.value
 		.map((group) => ({
 			category: group.category,
 			faqs: group.faqs.filter((faq) =>
-				`${faq.question} ${stripTags(faq.answer)}`.toLowerCase().includes(term),
+				`${faq.question} ${stripTags(faq.answer)}`.toLowerCase().includes(term)
 			),
 		}))
-		.filter((group) => group.faqs.length)
-})
+		.filter((group) => group.faqs.length);
+});
 
 function stripTags(html) {
-	return (html || "").replace(/<[^>]*>/g, " ")
+	return (html || "").replace(/<[^>]*>/g, " ");
 }
 
 function isOpen(name) {
-	return openIds.value.has(name)
+	return openIds.value.has(name);
 }
 
 function toggle(name) {
 	// Reassign so the computed/template reacts - Set mutations alone are not tracked.
-	const next = new Set(openIds.value)
-	next.has(name) ? next.delete(name) : next.add(name)
-	openIds.value = next
+	const next = new Set(openIds.value);
+	next.has(name) ? next.delete(name) : next.add(name);
+	openIds.value = next;
 }
 
 useHead({
@@ -174,5 +176,5 @@ useHead({
 				"Answers to common questions about the Kenya Red Cross Volunteer and Member Management portal, including membership, volunteering, events and deployments.",
 		},
 	],
-})
+});
 </script>
