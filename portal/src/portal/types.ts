@@ -1216,7 +1216,7 @@ export interface TermsOfReference {
 export interface ProjectSummary {
 	name: string;
 	project_name: string;
-	/** Planned, Active, Completed or Cancelled. The service's own closed set. */
+	/** Open, On hold, Completed or Cancelled — ERPNext's own four, not ours. */
 	status: string;
 	is_open: boolean;
 	geo_node: string | null;

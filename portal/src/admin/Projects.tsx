@@ -361,6 +361,24 @@ function DeploymentRow({ row }: { row: DeploymentSummary }) {
 	);
 }
 
+/**
+ * ERPNext's own four, which is what `deployment/services/project.py::STATUSES`
+ * holds and what `assert_status` refuses anything outside of. A `Project` is
+ * ERPNext's doctype, not ours, so this vocabulary is not ours to invent — the
+ * retired `VMMS Project` had its own words for these, and carrying them over is
+ * what made every "Open a project" post fail on the server.
+ */
+const PROJECT_STATUSES = ["Open", "On hold", "Completed", "Cancelled"];
+
+/**
+ * Once a project is Completed or Cancelled it has ended, and that is the whole
+ * of what stops a move. **Not `is_open`**, which answers a different question —
+ * whether new terms of reference may be written under it — and which On hold
+ * deliberately answers no to. Gating the buttons on it stranded a paused
+ * programme with no way back, when restarting one is a single field.
+ */
+const TERMINAL_STATUSES = ["Completed", "Cancelled"];
+
 /** The four statuses, minus the one it already has. Terminal ones move nowhere. */
 function StatusRow({ project, onChanged }: { project: ProjectSummary; onChanged: () => void }) {
 	const { call } = useContext(FrappeContext) as FrappeConfig;
@@ -383,10 +401,9 @@ function StatusRow({ project, onChanged }: { project: ProjectSummary; onChanged:
 
 	return (
 		<div>
-			{project.is_open ? (
+			{!TERMINAL_STATUSES.includes(project.status) ? (
 				<div className="flex flex-wrap gap-2">
-					{["Planned", "Active", "Completed", "Cancelled"]
-						.filter((option) => option !== project.status)
+					{PROJECT_STATUSES.filter((option) => option !== project.status)
 						.map((option) => (
 							<Button
 								key={option}
@@ -421,7 +438,7 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 	const [name, setName] = useState("");
 	const [summary, setSummary] = useState("");
 	const [notes, setNotes] = useState("");
-	const [status, setStatus] = useState("Planned");
+	const [status, setStatus] = useState("Open");
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
 	const [chain, setChain] = useState<GeoNode[]>([]);
@@ -448,7 +465,7 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 			setName("");
 			setSummary("");
 			setNotes("");
-			setStatus("Planned");
+			setStatus("Open");
 			setStartDate("");
 			setEndDate("");
 			setChain([]);
@@ -475,7 +492,7 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 
 				<Labelled label="Status" hint="Where the project starts in its lifecycle.">
 					<select className={INPUT} value={status} onChange={(e) => setStatus(e.target.value)}>
-						{["Planned", "Active", "Completed", "Cancelled"].map((option) => (
+						{PROJECT_STATUSES.map((option) => (
 							<option key={option} value={option}>
 								{option}
 							</option>

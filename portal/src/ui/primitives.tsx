@@ -396,6 +396,7 @@ const STATE_TONES: Record<string, string> = {
 	"In Review": "bg-blue-soft text-blue-press",
 	Shortlisted: "bg-warning-soft text-warning",
 	Hold: NEUTRAL,
+	"On hold": NEUTRAL,
 	Closed: NEUTRAL,
 	Open: "bg-blue-soft text-blue-press",
 };
