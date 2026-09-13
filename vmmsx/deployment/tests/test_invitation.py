@@ -304,6 +304,44 @@ class TestInvitation(DeploymentTestCase):
 		self.assertIn("objectives", answer["terms"])
 		self.assertEqual(answer["terms"]["name"], self.terms.name)
 
+	def test_the_volunteer_may_print_the_terms_they_were_sent(self):
+		"""The screen and the printer have to agree about the same page.
+
+		`get_my_assignment` hands an invited volunteer every word of the terms on
+		ownership, and the PDF of that same document refused them on permission —
+		403, on the one document they were being asked to agree to. Asserted all
+		the way to the bytes: the door is what regressed, but a file response
+		that never arrives is the same refusal wearing a different status code.
+		"""
+		user = fixtures.make_user("printing-volunteer")
+		volunteer = fixtures.make_volunteer(fixtures.make_profile(email=user, user=user), self.branch).name
+
+		deployment = self.deployment()
+		invitation.invite(deployment, volunteer)
+
+		with fixtures.acting_as(user):
+			self.assertTrue(api._was_sent_these_terms(self.terms.name))
+
+			api.download_terms(self.terms.name)
+
+		self.assertEqual(frappe.local.response.type, "pdf")
+		self.assertTrue(frappe.local.response.filecontent)
+
+	def test_a_volunteer_nobody_asked_is_still_refused_the_terms(self):
+		"""Ownership admits the people the document was put in front of, and
+		nobody else: a volunteer holds no scope, so there is no second reason
+		this would pass for a stranger."""
+		user = fixtures.make_user("uninvited-printer")
+		fixtures.make_volunteer(fixtures.make_profile(email=user, user=user), self.branch)
+
+		self.deployment()
+
+		with fixtures.acting_as(user):
+			self.assertFalse(api._was_sent_these_terms(self.terms.name))
+
+			with self.assertRaises(frappe.PermissionError):
+				api.download_terms(self.terms.name)
+
 	# --- reading ----------------------------------------------------------
 
 	def test_waiting_and_answered_are_separate_lists(self):

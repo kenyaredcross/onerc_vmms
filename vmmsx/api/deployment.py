@@ -1601,11 +1601,25 @@ def get_terms(name: str) -> dict:
 def download_terms(name: str):
 	"""The terms of reference as a PDF, on the society's letterhead.
 
-	Same permission as reading it: a document somebody may open on the screen is
-	one they may put on paper, and a second answer here would be a second place
-	for the two to disagree.
+	Same rule as reading it on the screen: a document somebody may open is one
+	they may put on paper, and a second answer here would be a second place for
+	the two to disagree.
+
+	**Which is why permission alone was the wrong question.** A volunteer holds
+	no Geo Assignment, so `read` on the society's paperwork refuses them — and
+	that is correct for the register, but this is the document they were asked to
+	agree to. `get_my_assignment` already hands them every word of it, on
+	ownership rather than permission, so the printed copy refusing them was the
+	screen and the printer disagreeing about the same page. Both doors are open
+	here: the coordinator's permission, or the volunteer's own assignment.
 	"""
-	_readable(TERMS_DOCTYPE, name)
+	document = frappe.get_doc(TERMS_DOCTYPE, name)
+
+	if not document.has_permission("read") and not _was_sent_these_terms(name):
+		frappe.throw(
+			frappe._("These terms of reference are not yours to open."),
+			frappe.PermissionError,
+		)
 
 	frappe.local.response.filename = tor_document.pdf_filename(name)
 	frappe.local.response.filecontent = tor_document.pdf_for(name)
@@ -1758,6 +1772,38 @@ def _readable(doctype: str, name: str):
 	doc.check_permission("read")
 
 	return doc
+
+
+def _was_sent_these_terms(name: str) -> bool:
+	"""Do any of the caller's own assignments name this terms of reference?
+
+	**Ownership, not permission** — the same distinction `respond_to_assignment`
+	draws and for the same reason: a permission check refuses every volunteer,
+	an ownership check refuses everybody but the people the document was actually
+	put in front of.
+
+	Every status counts, invited included. Somebody deciding whether to accept is
+	precisely the person who needs the printed terms, and a rule that waited for
+	them to accept would hand them the document only once it was too late to read
+	it. Declined and withdrawn count too: what they were asked to agree to is
+	theirs to keep a copy of.
+
+	`db.exists`, which does not scope — this asks whether a fact is true, not
+	whether the caller may browse the assignment register.
+	"""
+	volunteer = _my_volunteer()
+
+	if not volunteer:
+		return False
+
+	from vmmsx.deployment.services import assignment as assignment_service
+
+	return bool(
+		frappe.db.exists(
+			assignment_service.ASSIGNMENT_DOCTYPE,
+			{"volunteer": volunteer, "terms_of_reference": name},
+		)
+	)
 
 
 def _in_scope(doctype: str, name: str) -> bool:
