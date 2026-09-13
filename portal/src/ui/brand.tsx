@@ -32,6 +32,8 @@ export function CrossMark({ size = 22, className }: { size?: number; className?:
 export interface Branding {
 	name: string;
 	short_name: string;
+	/** Where the society works. Drawn by nothing; quoted by page wording. */
+	country: string;
 	logo: string;
 	logo_dark: string;
 }

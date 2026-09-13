@@ -41,6 +41,7 @@ import frappe
 from frappe.utils import sha256_hash
 
 from vmmsx.content.services import blocks as block_service
+from vmmsx.content.services import tokens
 from vmmsx.registration.services.desk import PORTAL_HOME
 
 #: The content surface both pages read. Public, because its wording is on a page
@@ -162,4 +163,7 @@ def _content() -> tuple[dict, dict]:
 
 	words = {key: block["text"] for key, block in blocks.items() if block.get("text")}
 
-	return words, blocks.get("login.panel.image") or {}
+	# `{country}` and the rest, filled in on the way to the page. There is no
+	# pencil on this page, so this is the only pass the wording gets — see
+	# `content/services/tokens.py` for why nothing resolves into the stored text.
+	return tokens.resolve_words(words), blocks.get("login.panel.image") or {}

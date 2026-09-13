@@ -9,11 +9,15 @@ name; the frontend asks for a surface and draws whatever blocks it gets back.
 
 Two rules shape the wording below, and both matter more than it reading well:
 
-- **No country, currency, count or society name appears in it.** A national
-  society is not this app's to assume, so the defaults describe the *slot* in
-  ordinary words a society will replace. The worked Kenya example, with its own
-  copy and its own photography, is `vmmsx/seed/kenya.py`, and it is the only
-  place in this app that knows what a county is.
+- **No country, currency, count or society name is written into it.** A
+  national society is not this app's to assume. Where a sentence wants to name
+  one it carries a token — `{society}` or `{country}`, with the words after the
+  `|` shown until the settings form has been filled in — and the value is
+  substituted on the way to the screen by `content/services/tokens.py` and its
+  React twin. What is stored stays the token, so the sentence follows a society
+  that renames itself and the pencil still edits the token rather than a frozen
+  copy of today's name. Anything a token cannot supply is described in ordinary
+  words a society replaces.
 - **No image is shipped as a default.** An empty image slot draws a branded
   placeholder with an upload control on it, which is a better first run than a
   photograph of somewhere the society does not work.
@@ -57,6 +61,12 @@ RETIRED = (
 	"portal.calendar.note",
 	"portal.membership.plans.blurb",
 	"portal.events.attending.calendar_note",
+	# The last of that family, and the one on the front door: "Your record
+	# follows you between branches. Certificates, hours and deployments stay in
+	# one place." A person looking at a sign-in form has not asked what the
+	# product does and cannot act on the answer; the panel now greets them and
+	# stops.
+	"login.panel.body",
 )
 
 # Links this app shipped pointing at nothing, and where they should go instead.
@@ -102,6 +112,56 @@ RELABELLED = {
 	"portal.events.attend.claim": (
 		"Your branch has been told to expect you. This does not book a ticket or hold a place.",
 		"Your branch has been told to expect you. This does not hold a place.",
+	),
+	# The hero's headline, which named nothing because it could not: a society's
+	# country is on National Society Settings and a sentence in this file cannot
+	# know it. It can quote it now — see `content/services/tokens.py`.
+	"landing.hero.headline": (
+		"Show up for your community.",
+		"Show up for {country|your community}.",
+	),
+	# The rest of the page that was talking *about* a society it could not name.
+	# Same move as the headline above and the same rule: the token is what is
+	# stored, the value is what is read, and a society that has typed over the
+	# line keeps every word — `blocks.relabel` rewrites only a block still
+	# holding the exact sentence this app shipped.
+	#
+	# The copyright is the odd one. It shipped blank, so its "before" is the
+	# empty string: a society that typed its own name into the footer keeps it,
+	# and one that never did gets its name rather than nothing at all.
+	"landing.hero.eyebrow": ("THE NATIONAL SOCIETY", "{society|THE NATIONAL SOCIETY}"),
+	"landing.card2.body": (
+		"Join the Society formally. Voting rights, a verifiable certificate, and a Society that counts you.",
+		"Join {society|the Society} formally. Voting rights, a verifiable certificate, and a Society"
+		" that counts you.",
+	),
+	"landing.band2.body": (
+		"Pay however your society collects, download a certificate you can verify, and carry your"
+		" membership with you when you move branch.",
+		"Pay however {society|your society} collects, download a certificate you can verify, and"
+		" carry your membership with you when you move branch.",
+	),
+	"landing.cta.body": (
+		"Register in five minutes. Your branch confirms your record, and the Society gains one"
+		" more person who shows up.",
+		"Register in five minutes. Your branch confirms your record, and {society|the Society} gains"
+		" one more person who shows up.",
+	),
+	"landing.footer.copyright": ("", "© {society|The National Society}"),
+	"login.signin.prompt": ("New to the society?", "New to {society|the society}?"),
+	# The sign-in panel, which used to list what the product does at somebody
+	# who had come to type a password. It greets them instead, and the form's own
+	# heading gives up "Welcome back" so that there is only one greeting on the
+	# screen.
+	"login.panel.headline": (
+		"One account for membership, volunteering and training.",
+		"Good to have you back.",
+	),
+	"login.signin.title": ("Welcome back", "Sign in to your account"),
+	"login.signup.body": (
+		"We will email you a link to set a password. Registering as a volunteer or a member"
+		" comes afterwards.",
+		"We will email you a link to set a password.",
 	),
 	"admin.communication.lead": (
 		"Say something to the volunteers and members your branches cover. Choose who hears"
@@ -249,8 +309,25 @@ def _landing_hero():
 			200,
 			notes="A wide photograph, at least 1600px across. The overlay card sits on the left, so keep the left third uncluttered.",
 		),
-		_block("landing.hero.eyebrow", "Hero eyebrow", s, 210, "THE NATIONAL SOCIETY"),
-		_block("landing.hero.headline", "Hero headline", s, 220, "Show up for your community."),
+		_block(
+			"landing.hero.eyebrow",
+			"Hero eyebrow",
+			s,
+			210,
+			"{society|THE NATIONAL SOCIETY}",
+			notes="{society} is the society's own name from National Society Settings. The line is"
+			" drawn in capitals whatever case it is typed in.",
+		),
+		_block(
+			"landing.hero.headline",
+			"Hero headline",
+			s,
+			220,
+			"Show up for {country|your community}.",
+			notes="{country} is filled in from the country on National Society Settings, and"
+			" the words after the | are what is shown until one is set. {society} is the"
+			" society's own name. Type over the whole line to say something else.",
+		),
 		_block(
 			"landing.hero.body",
 			"Hero paragraph",
@@ -281,7 +358,8 @@ def _landing_cards():
 		),
 		(
 			"Become a member",
-			"Join the Society formally. Voting rights, a verifiable certificate, and a Society that counts you.",
+			"Join {society|the Society} formally. Voting rights, a verifiable certificate, and a"
+			" Society that counts you.",
 			"Compare plans",
 			"/portal/join?path=member",
 		),
@@ -371,8 +449,8 @@ def _landing_bands():
 			"Second photo band, paragraph",
 			s,
 			530,
-			"Pay however your society collects, download a certificate you can verify, and carry your"
-			" membership with you when you move branch.",
+			"Pay however {society|your society} collects, download a certificate you can verify, and"
+			" carry your membership with you when you move branch.",
 		),
 		_block(
 			"landing.band2.cta_primary",
@@ -492,8 +570,8 @@ def _landing_close():
 			"Closing panel, paragraph",
 			s,
 			810,
-			"Register in five minutes. Your branch confirms your record, and the Society gains one"
-			" more person who shows up.",
+			"Register in five minutes. Your branch confirms your record, and {society|the Society}"
+			" gains one more person who shows up.",
 		),
 		_block("landing.cta.button", "Closing panel, button", s, 820, "Join us today", "/portal/join"),
 	]
@@ -512,7 +590,15 @@ def _landing_footer():
 			900,
 			notes="The society's emergency number and hours. Leave empty to hide the line.",
 		),
-		_block("landing.footer.copyright", "Footer copyright", s, 910),
+		_block(
+			"landing.footer.copyright",
+			"Footer copyright",
+			s,
+			910,
+			"© {society|The National Society}",
+			notes="{society} is the name on National Society Settings. Type over the line to add a"
+			" year or a registration number.",
+		),
 	]
 	links = ("Volunteering", "Membership", "Events", "Branch directory", "Privacy", "Terms")
 	for i, text in enumerate(links, start=1):
@@ -551,23 +637,30 @@ def _login():
 			" laid under a dark wash with the wording over it, so a busy or bright image reads"
 			" poorly. Leave it empty for a plain panel.",
 		),
+		# Two headlines, because one panel serves two errands. The panel does not
+		# move when the form beside it does, so a single line had to be true for
+		# somebody signing in *and* somebody who has never been here — which is
+		# how it ended up describing the product instead of greeting anybody.
+		# `login.html` swaps these on the hash; the sign-in one is what shows if
+		# its script never runs.
 		_block(
 			"login.panel.headline",
 			"Sign-in panel headline",
 			s,
 			20,
-			"One account for membership, volunteering and training.",
+			"Good to have you back.",
 		),
 		_block(
-			"login.panel.body",
-			"Sign-in panel paragraph",
+			"login.panel.headline_signup",
+			"Create-account panel headline",
 			s,
-			30,
-			"Your record follows you between branches. Certificates, hours and deployments stay"
-			" in one place.",
+			25,
+			"Good to have you with us.",
+			notes="Shown on the same panel while somebody is creating an account, in place of"
+			" the sign-in headline above.",
 		),
 		_block("login.signin.eyebrow", "Sign in, eyebrow", s, 100, "Sign in"),
-		_block("login.signin.title", "Sign in, heading", s, 110, "Welcome back"),
+		_block("login.signin.title", "Sign in, heading", s, 110, "Sign in to your account"),
 		_block(
 			"login.signin.body",
 			"Sign in, paragraph",
@@ -575,7 +668,7 @@ def _login():
 			115,
 			"Use your registered email address to continue.",
 		),
-		_block("login.signin.prompt", "Sign in, footer question", s, 120, "New to the society?"),
+		_block("login.signin.prompt", "Sign in, footer question", s, 120, "New to {society|the society}?"),
 		_block(
 			"login.signin.action",
 			"Sign in, footer link",
@@ -592,8 +685,7 @@ def _login():
 			"Create account, paragraph",
 			s,
 			220,
-			"We will email you a link to set a password. Registering as a volunteer or a member"
-			" comes afterwards.",
+			"We will email you a link to set a password.",
 		),
 		_block("login.signup.prompt", "Create account, footer question", s, 230, "Already have one?"),
 		_block("login.signup.action", "Create account, footer link", s, 240, "Sign in"),

@@ -333,11 +333,11 @@ function BlockEditor({
  * or an editor for something that cannot be saved.
  */
 function useSlot(key: string) {
-	const { get, editing } = useContent();
+	const { get, resolve, editing } = useContent();
 	const [open, setOpen] = useState(false);
 	const block = get(key);
 
-	return { block, editing: editing && Boolean(block), open, setOpen };
+	return { block, resolve, editing: editing && Boolean(block), open, setOpen };
 }
 
 interface TextProps {
@@ -373,8 +373,10 @@ export function EditableText({
 	withHref = false,
 	render,
 }: TextProps) {
-	const { block, editing, open, setOpen } = useSlot(k);
-	const value = block?.text || fallback;
+	const { block, resolve, editing, open, setOpen } = useSlot(k);
+	// What the visitor reads. `block.text` — the token still in it — is what the
+	// dialog below edits, which is the whole rule in `tokens.ts`.
+	const value = resolve(block?.text || fallback);
 
 	if (!value && !editing) return <>{placeholder}</>;
 
@@ -418,8 +420,8 @@ export function EditableLink({
 	fallback?: string;
 	chevron?: boolean;
 }) {
-	const { block, editing, open, setOpen } = useSlot(k);
-	const value = block?.text || fallback;
+	const { block, resolve, editing, open, setOpen } = useSlot(k);
+	const value = resolve(block?.text || fallback);
 	const href = block?.href;
 
 	if (!value && !editing) return null;

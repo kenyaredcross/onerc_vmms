@@ -9,6 +9,8 @@ import {
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { API, errorMessage } from "../lib/api";
+import { useSocietyBranding } from "../ui/brand";
+import { resolveTokens } from "./tokens";
 
 /** One editable slot, exactly as `blocks.block_dto` builds it. */
 export interface Block {
@@ -32,6 +34,12 @@ interface SurfaceResponse {
 interface ContentValue {
 	/** The block for a key, or undefined when the site has never seeded one. */
 	get: (key: string) => Block | undefined;
+	/**
+	 * A block's text with `{country}` and friends filled in — what a visitor
+	 * reads, as against `block.text`, which is what the pencil edits. See
+	 * `tokens.ts`.
+	 */
+	resolve: (text: string) => string;
 	/** Whether this user may reword the page at all. Answered by the server. */
 	canEdit: boolean;
 	/** Whether the pencils are currently showing. */
@@ -84,6 +92,16 @@ export function ContentProvider({ surface, children }: { surface: string; childr
 
 	const get = useCallback((key: string) => blocks?.[key], [blocks]);
 
+	// One read of the society, shared with every lockup on the page: the SWR key
+	// is constant, so putting the tokens here rather than in each slot costs
+	// nothing and means one answer per page instead of seventy subscriptions.
+	const society = useSocietyBranding();
+	const resolve = useCallback(
+		(text: string) =>
+			resolveTokens(text, { country: society?.country, society: society?.name || society?.short_name }),
+		[society],
+	);
+
 	const save = useCallback(
 		async (key: string, patch: BlockPatch) => {
 			// The API names its fields as the doctype does; the DTO shortens them
@@ -119,6 +137,7 @@ export function ContentProvider({ surface, children }: { surface: string; childr
 	const value = useMemo<ContentValue>(
 		() => ({
 			get,
+			resolve,
 			canEdit,
 			// Edit mode cannot be on for somebody who may not edit, whatever the
 			// toggle's local state says. One expression rather than two places
@@ -129,7 +148,7 @@ export function ContentProvider({ surface, children }: { surface: string; childr
 			isLoading,
 			error: error ? errorMessage(error, "The page content could not be loaded.") : null,
 		}),
-		[get, canEdit, editing, save, isLoading, error],
+		[get, resolve, canEdit, editing, save, isLoading, error],
 	);
 
 	return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>;
@@ -159,6 +178,6 @@ export function useContent(): ContentValue {
  * attribute, an `alt`, a document title.
  */
 export function useText(key: string, fallback = ""): string {
-	const { get } = useContent();
-	return get(key)?.text || fallback;
+	const { get, resolve } = useContent();
+	return resolve(get(key)?.text || fallback);
 }

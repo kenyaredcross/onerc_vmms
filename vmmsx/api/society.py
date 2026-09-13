@@ -51,7 +51,7 @@ ACTIVE = "Active"
 
 @frappe.whitelist(allow_guest=True)
 def branding() -> dict:
-	"""The society's name and marks. Three fields, and nothing else.
+	"""The society's name, its country and its marks. Four fields, nothing else.
 
 	Every value may be empty, and empty is ordinary: a fresh site has never had
 	the settings form opened, and core's `settings()` loads a Single that was
@@ -66,6 +66,12 @@ def branding() -> dict:
 	return {
 		"name": society.get("name") or "",
 		"short_name": society.get("short_name") or "",
+		# Where the society works, and the one field here that is not a mark. It
+		# is served because the *wording* of a public page may quote it: a block
+		# saying "Show up for {country|your community}." is resolved in the
+		# browser against this — see `content/services/tokens.py`. Public on the
+		# same argument as the rest: a national society's country is in its name.
+		"country": society.get("country") or "",
 		"logo": society.get("logo") or "",
 		# Already falls back to `logo` in core. Named separately here because the
 		# sidebar is dark and the landing page is not, and the caller is the only

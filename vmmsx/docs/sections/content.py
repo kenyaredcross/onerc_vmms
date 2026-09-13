@@ -27,6 +27,7 @@ def render(w) -> None:
 	_what_it_is(w)
 	_the_doctypes(w)
 	_the_read_boundary(w)
+	_tokens(w)
 	_seed_versus_overwrite(w)
 	_who_may_edit(w)
 	_safety(w)
@@ -54,8 +55,9 @@ def _what_it_is(w) -> None:
 	)
 	w.p(
 		"So vmmsx/content/seeds/default_content.py ships society-neutral wording and no images at"
-		" all, and vmmsx/seed/kenya_content.py layers the Kenya copy and photography on top. That"
-		" package remains the only place in the app that knows what a county is."
+		" all. Where a shipped sentence wants to name the society or its country it carries a"
+		" token rather than a word, and the value is read from National Society Settings when the"
+		" page is drawn — see the table below."
 	)
 
 
@@ -112,6 +114,62 @@ def _the_read_boundary(w) -> None:
 	)
 
 
+def _tokens(w) -> None:
+	w.h2("The two facts a sentence may quote")
+
+	w.p(
+		"A block is words, and the rule above says none of those words may name a country or a"
+		" society. But some sentences want to. The shipped hero headline is the case in point:"
+		" Show up for your community is true everywhere and lands nowhere, and Show up for Kenya"
+		" is one society's copy sitting in every society's source."
+	)
+	w.p(
+		"So a block may quote a value instead of naming it, and the value is filled in when the"
+		" block is drawn rather than when it is saved."
+	)
+	w.table(
+		("Written in the block", "Reads on the page", "Where the value comes from"),
+		[
+			[
+				"{country}",
+				"Tanzania",
+				"National Society Settings, the same single every logo and society name in this"
+				" product is read from.",
+			],
+			[
+				"{society}",
+				"Tanzania Red Cross Society",
+				"The same single. The full name, not the abbreviation: a sentence that names a"
+				" society names it properly.",
+			],
+			[
+				"{country|your community}",
+				"your community, until a country is set",
+				"The words after the bar are what to say when there is no value, which is the"
+				" ordinary state of a site whose settings form nobody has opened yet. Without"
+				" one a fresh site's front page would read Show up for .",
+			],
+		],
+		(1.55, 1.85, 3.10),
+	)
+	w.p(
+		"Those two words are the whole vocabulary, and anything else between braces is left"
+		" exactly where it was typed. An editor writing {name} or {see the note} gets {name} or"
+		" {see the note} on the page — visible, and fixable by whoever wrote it. Substituting a"
+		" key the app does not know would delete somebody's words with nothing on the page to"
+		" show that it had happened."
+	)
+	w.p(
+		"What is stored is the token and what is drawn is the value, so the pencil edits"
+		" {country|your community} and the visitor reads Tanzania. Resolving into the stored"
+		" text instead would mean the first person to open the editor silently freezing that"
+		" day's country into the sentence, which is exactly the staleness this avoids. The rule"
+		" and the substitution are vmmsx/content/services/tokens.py, with the frontend's copy in"
+		" portal/src/content/tokens.ts, because React cannot call Python and resolving"
+		" server-side would hand the editor a sentence with no token left in it."
+	)
+
+
 def _seed_versus_overwrite(w) -> None:
 	w.h2("Why there are two seed functions")
 
@@ -130,13 +188,6 @@ def _seed_versus_overwrite(w) -> None:
 				" silently revert a society's rewritten home page and nobody would associate the"
 				" two events. New slots added in a later release still appear, because those are"
 				" the ones that are missing.",
-			],
-			[
-				"overwrite()",
-				"seed/kenya_content.py",
-				"Runs only when somebody executes the Kenya seed deliberately. They are asking to"
-				" see the Kenya page, and a page half in the product's neutral voice would be"
-				" nobody's idea of a worked example.",
 			],
 		],
 		(1.15, 1.95, 3.40),
@@ -408,8 +459,8 @@ def _what_is_tested(w) -> None:
 				"Seeding",
 				"3",
 				"seed() creates what is missing, and leaves an edited slot exactly as the society"
-				" left it even when the shipped default differs. overwrite() does what seed will"
-				" not, which is the Kenya seed's path.",
+				" left it even when the shipped default differs. Nothing in the product replaces"
+				" a block a society has written.",
 			],
 			[
 				"Writing",
