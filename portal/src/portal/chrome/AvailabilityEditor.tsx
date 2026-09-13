@@ -115,12 +115,20 @@ export function AvailabilityEditor({
 	return (
 		<div className={compact ? "space-y-5" : "space-y-6"}>
 			<div>
-				<p className="text-[12.5px] leading-relaxed text-slate-strong">
-					Select the times when you are usually available. A coordinator will confirm availability
-					for each assignment. Leaving this blank means your availability is unknown.
-				</p>
+				{/* The modal says this already — "This is not a confirmed commitment. A
+				    coordinator will confirm availability." is its description, directly
+				    above this grid — and saying it twice cost the dialog a paragraph of
+				    height it did not have. The page has no such header, so it keeps the
+				    sentence. */}
+				{!compact && (
+					<p className="mb-4 text-[12.5px] leading-relaxed text-slate-strong">
+						Select the times when you are usually available. A coordinator will confirm
+						availability for each assignment. Leaving this blank means your availability is
+						unknown.
+					</p>
+				)}
 
-				<div className="mt-4 overflow-x-auto">
+				<div className="overflow-x-auto">
 					<table className="w-full min-w-[32rem] border-separate border-spacing-0">
 						<thead>
 							<tr>

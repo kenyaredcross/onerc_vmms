@@ -7,6 +7,7 @@ import {
 	useState,
 	type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { Icon } from "../../ui/icons";
 import { Button, cx, type ButtonTone } from "./kit";
@@ -18,6 +19,16 @@ import { Button, cx, type ButtonTone } from "./kit";
  * All three trap the essentials — Escape closes, the backdrop closes, focus
  * moves in and the page behind stops scrolling — and all three collapse to
  * their end state under `prefers-reduced-motion`.
+ *
+ * **The modal and the drawer are rendered into `document.body`.** `position:
+ * fixed` only means "the viewport" while no ancestor has claimed the job of
+ * containing block, and a `filter`, `backdrop-filter`, `transform` or
+ * `contain` anywhere above claims it. Both shells blur their sticky header,
+ * and the availability control opens its dialog from inside that header: left
+ * in place, `inset-0` resolved to the 56px header strip and the dialog was
+ * centred on it, hanging half of itself above the top of the window. A portal
+ * puts the overlay outside every such ancestor, which also frees it from the
+ * header's stacking context.
  */
 
 /* ------------------------------------------------------------------- shared */
@@ -81,7 +92,7 @@ export function Modal({
 
 	if (!open) return null;
 
-	return (
+	return createPortal(
 		<div className="fixed inset-0 z-[60] grid place-items-center p-4">
 			<button
 				type="button"
@@ -124,7 +135,8 @@ export function Modal({
 					</div>
 				)}
 			</div>
-		</div>
+		</div>,
+		document.body,
 	);
 }
 
@@ -199,7 +211,7 @@ export function Drawer({
 
 	if (!open) return null;
 
-	return (
+	return createPortal(
 		<div className="fixed inset-0 z-[60] flex justify-end">
 			<button
 				type="button"
@@ -243,7 +255,8 @@ export function Drawer({
 					</div>
 				)}
 			</div>
-		</div>
+		</div>,
+		document.body,
 	);
 }
 
