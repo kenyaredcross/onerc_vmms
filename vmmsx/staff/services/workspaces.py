@@ -574,7 +574,7 @@ SETUP_STEPS = (
 	(
 		"National Society Settings",
 		"Update Settings",
-		"Name the roles this society uses to scope membership, volunteers, tasks, deployments and stipends.",
+		"Review the society identity, logo, locale and optional module-specific settings collected during setup.",
 	),
 	(
 		"Affiliation Type",

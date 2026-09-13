@@ -15,6 +15,12 @@ app_license = "mit"
 # being installed onto a site where those doctypes do not exist.
 required_apps = ["onerc_core"]
 
+# Add the society-specific questions to Frappe's real first-run wizard.  This
+# keeps one setup journey when vmmsx is installed alongside ERPNext instead of
+# sending an administrator through a second, app-shaped imitation afterwards.
+setup_wizard_requires = "assets/vmmsx/js/setup_wizard.js"
+setup_wizard_stages = "vmmsx.setup.wizard.get_setup_stages"
+
 # Two icons, not one, because vmmsx serves two different desks and nobody
 # should have to know a URL to reach either.
 #
@@ -343,6 +349,13 @@ after_migrate = [
 	# underneath their own extras, and a role a society still has to create in
 	# Desk before Geo Assignment works is exactly the gap this closes.
 	"vmmsx.setup.core_roles.install",
+	# Wire the app's shipped roles to the standard jobs they were created for.
+	# These are product defaults, not questions every national society needs to
+	# answer. Existing non-empty choices remain untouched.
+	"vmmsx.setup.default_roles.install",
+	# Brand images appear on public portal, login and email surfaces. Core's main
+	# logo already carries this metadata; keep all companion assets consistent.
+	"vmmsx.setup.brand_assets.install",
 	"vmmsx.registration.services.workspaces.install",
 	"vmmsx.registration.services.permissions.install",
 	# The other half of the same decision, and the reason it is a service rather

@@ -30,6 +30,19 @@ class TestTheInstallHookIsWired(IntegrationTestCase):
 		"""Commenting this out is how a fresh site silently gets nothing."""
 		self.assertIn("vmmsx.install.after_install", frappe.get_hooks("after_install") or [])
 
+	def test_first_run_wizard_is_declared(self):
+		"""A fresh site should collect society essentials before opening Desk."""
+		self.assertIn("vmmsx.setup.wizard.get_setup_stages", frappe.get_hooks("setup_wizard_stages") or [])
+		self.assertIn("assets/vmmsx/js/setup_wizard.js", frappe.get_hooks("setup_wizard_requires") or [])
+
+	def test_shipped_roles_are_wired_before_surfaces_are_built(self):
+		hooks = frappe.get_hooks("after_migrate") or []
+		self.assertLess(
+			hooks.index("vmmsx.setup.default_roles.install"),
+			hooks.index("vmmsx.registration.services.workspaces.install"),
+		)
+		self.assertIn("vmmsx.setup.brand_assets.install", hooks)
+
 	def test_every_post_model_sync_patch_can_be_called(self):
 		"""`after_install` calls each one by dotted path. A patch module without an
 		`execute` would fail one step of an install and be found by whoever
