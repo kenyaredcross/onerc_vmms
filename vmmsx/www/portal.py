@@ -17,4 +17,5 @@ def get_context(context):
 	# (the probe is a GET), but the page has to carry it before the first write.
 	context.csrf_token = frappe.sessions.get_csrf_token()
 	context.sitename = frappe.local.site
+	context.lang = frappe.local.lang or "en"
 	return context

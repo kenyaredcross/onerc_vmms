@@ -12,6 +12,7 @@ import { useFrappeFileUpload } from "frappe-react-sdk";
 
 import { errorMessage } from "../lib/api";
 import { useContent, type Block, type BlockPatch } from "./ContentProvider";
+import { useLanguage } from "../i18n/LanguageProvider";
 
 /** Which controls the dialog offers for a given slot. */
 type EditableField = "text" | "href" | "image" | "alt" | "credit";
@@ -374,9 +375,11 @@ export function EditableText({
 	render,
 }: TextProps) {
 	const { block, resolve, editing, open, setOpen } = useSlot(k);
+	const { t } = useLanguage();
 	// What the visitor reads. `block.text` — the token still in it — is what the
 	// dialog below edits, which is the whole rule in `tokens.ts`.
-	const value = resolve(block?.text || fallback);
+	const resolved = resolve(block?.text || fallback);
+	const value = /^(chrome|portal\.nav|admin\.nav)\./.test(k) ? t(resolved) : resolved;
 
 	if (!value && !editing) return <>{placeholder}</>;
 
@@ -421,7 +424,9 @@ export function EditableLink({
 	chevron?: boolean;
 }) {
 	const { block, resolve, editing, open, setOpen } = useSlot(k);
-	const value = resolve(block?.text || fallback);
+	const { t } = useLanguage();
+	const resolved = resolve(block?.text || fallback);
+	const value = /^(chrome|portal\.nav|admin\.nav)\./.test(k) ? t(resolved) : resolved;
 	const href = block?.href;
 
 	if (!value && !editing) return null;

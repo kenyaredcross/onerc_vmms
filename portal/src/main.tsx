@@ -6,6 +6,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { FrappeProvider } from "frappe-react-sdk";
 import App from "./App";
+import { LanguageProvider } from "./i18n/LanguageProvider";
 import "./index.css";
 
 declare global {
@@ -13,6 +14,7 @@ declare global {
     frappe?: {
       boot?: {
         sitename?: string;
+		lang?: string;
       };
     };
     csrf_token?: string;
@@ -58,9 +60,11 @@ if (!under(BASENAME)) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <FrappeProvider url={window.location.origin} siteName={getSiteName()}>
-      <BrowserRouter basename={BASENAME}>
-        <App />
-      </BrowserRouter>
+		<LanguageProvider>
+			<BrowserRouter basename={BASENAME}>
+				<App />
+			</BrowserRouter>
+		</LanguageProvider>
     </FrappeProvider>
   </React.StrictMode>,
 );

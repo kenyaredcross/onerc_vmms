@@ -321,7 +321,7 @@ function RouteFallback() {
 export default function App() {
 	return (
 		<Suspense fallback={<RouteFallback />}>
-			<Routes>
+				<Routes>
 				<Route path="/" element={<Landing />} />
 				<Route path="/join" element={<Join />} />
 				<Route path="/locations" element={<Locations />} />
@@ -467,7 +467,7 @@ export default function App() {
 				{/* Anything unmatched is a mistyped or retired link, not an error
 				    worth a page of its own. */}
 				<Route path="*" element={<Navigate to="/" replace />} />
-			</Routes>
+				</Routes>
 		</Suspense>
 	);
 }

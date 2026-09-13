@@ -12,6 +12,7 @@ import { Icon } from "../ui/icons";
 import { ErrorNote, Spinner } from "../ui/primitives";
 import { signupUrl, useSession } from "../lib/session";
 import type { EventCard } from "../portal/types";
+import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
 
 /**
  * The public landing page, and the site's front door.
@@ -149,7 +150,7 @@ function Header() {
 
 				<nav
 					aria-label="Main"
-					className="ml-auto hidden items-center gap-8 lg:flex"
+					className="ms-auto hidden items-center gap-8 lg:flex"
 				>
 					{[1, 2, 3, 4, 5].map((index) => (
 						<EditableLink
@@ -160,7 +161,8 @@ function Header() {
 					))}
 				</nav>
 
-				<div className="ml-auto flex flex-none items-center gap-6">
+				<div className="ms-auto flex flex-none items-center gap-6">
+					<LanguageSwitcher tone="dark" />
 					{isGuest ? (
 						<>
 							<EditableLink

@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { FrappeProvider } from "frappe-react-sdk";
 
 import { ContentProvider } from "../content/ContentProvider";
+import { LanguageProvider } from "../i18n/LanguageProvider";
 
 /**
  * Mount a component the way the app mounts it.
@@ -23,7 +24,9 @@ export function mount(ui: ReactNode, { route = "/" }: { route?: string } = {}) {
 	return render(
 		<MemoryRouter initialEntries={[route]}>
 			<FrappeProvider url="http://localhost">
-				<ContentProvider surface="test">{ui}</ContentProvider>
+				<LanguageProvider>
+					<ContentProvider surface="test">{ui}</ContentProvider>
+				</LanguageProvider>
 			</FrappeProvider>
 		</MemoryRouter>,
 	);

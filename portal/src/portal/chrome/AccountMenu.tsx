@@ -60,7 +60,7 @@ export function AccountMenu({
 			{open && (
 				<div
 					role="menu"
-					className="absolute right-0 top-full z-50 mt-2 w-[248px] overflow-hidden rounded-xl border border-card-line bg-white p-1.5 shadow-[0_16px_40px_rgba(20,32,46,0.16)]"
+					className="absolute end-0 top-full z-50 mt-2 w-[248px] overflow-hidden rounded-xl border border-card-line bg-white p-1.5 shadow-[0_16px_40px_rgba(20,32,46,0.16)]"
 				>
 					<div className="border-b border-card-line px-3 pb-2.5 pt-1.5">
 						<div className="truncate text-[13px] font-semibold text-ink">{display}</div>

@@ -10,6 +10,7 @@ import { API, errorMessage } from "../lib/api";
 import { BrandLockup } from "../ui/brand";
 import { Card, Empty, ErrorNote, PageHeading, SectionTitle, Spinner, cx } from "../ui/primitives";
 import type { BranchLocation } from "../portal/types";
+import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
 
 /**
  * Where the society can be found.
@@ -44,6 +45,7 @@ export default function Locations() {
 						<Link to="/">
 							<BrandLockup />
 						</Link>
+						<LanguageSwitcher />
 					</div>
 				</header>
 

@@ -478,3 +478,42 @@ html {
 		box-shadow: 0 0 0 3px rgba(180, 35, 44, 0.35);
 	}
 }
+
+/* Arabic is a mirrored application, not only right-aligned copy. Flex and grid
+   use the document's RTL inline direction automatically; these rules convert
+   the few deliberately physical presentation utilities that remain in shared
+   cards and tables. Numeric values keep their own bidi ordering through the
+   browser's Unicode algorithm. */
+html[dir="rtl"] body {
+	text-align: right;
+}
+
+html[dir="rtl"] .text-left {
+	text-align: right;
+}
+
+html[dir="rtl"] .text-right {
+	text-align: left;
+}
+
+html[dir="rtl"] .border-l {
+	border-left-width: 0;
+	border-right-width: 1px;
+}
+
+html[dir="rtl"] .border-l-2 {
+	border-left-width: 0;
+	border-right-width: 2px;
+}
+
+html[dir="rtl"] .list-disc,
+html[dir="rtl"] .list-decimal {
+	padding-left: 0;
+	padding-right: 1rem;
+}
+
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+	text-align: right;
+}

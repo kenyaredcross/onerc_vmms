@@ -38,6 +38,7 @@ import { EditToolbar } from "../content/EditToolbar";
 import { BrandLockup } from "../ui/brand";
 import { GuidedTour, useWorkspaceDensity } from "../ui/GuidedTour";
 import { Icon, companionIcon } from "../ui/icons";
+import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
 import { AccountMenu } from "./chrome/AccountMenu";
 import { AvailabilityControl } from "./chrome/AvailabilityControl";
 import { NotificationMenu } from "./chrome/NotificationMenu";
@@ -279,7 +280,7 @@ export function PortalShell({
 								aria-label="Open navigation"
 								aria-expanded={drawer}
 								data-tour="portal-nav-mobile"
-								className="-ml-1 grid h-8 w-8 flex-none place-items-center rounded-lg text-slate-strong transition hover:bg-rail-hover md:hidden"
+								className="-ms-1 grid h-8 w-8 flex-none place-items-center rounded-lg text-slate-strong transition hover:bg-rail-hover md:hidden"
 							>
 								<Icon.menu size={18} />
 							</button>
@@ -318,7 +319,8 @@ export function PortalShell({
 								)}
 							</nav>
 
-							<div className="ml-auto flex items-center gap-2">
+							<div className="ms-auto flex items-center gap-2">
+								<LanguageSwitcher />
 								<AvailabilityControl />
 								<NotificationMenu unread={unread} onCountChange={onUnreadChange} />
 								<AccountMenu name={person} email={email} console={consolePath} />
@@ -344,7 +346,7 @@ export function PortalShell({
 							role="dialog"
 							aria-modal="true"
 							aria-label="Navigation"
-							className="portal-rail-scroll absolute inset-y-0 left-0 flex w-[264px] max-w-[86vw] flex-col overflow-y-auto bg-rail px-3 pb-5 pt-4 shadow-[0_18px_55px_rgba(25,30,38,0.24)]"
+							className="portal-rail-scroll absolute inset-y-0 start-0 flex w-[264px] max-w-[86vw] flex-col overflow-y-auto bg-rail px-3 pb-5 pt-4 shadow-[0_18px_55px_rgba(25,30,38,0.24)]"
 						>
 							<div className="mb-3 flex items-center justify-between gap-2 px-2">
 								<Link to="/dashboard" className="min-w-0">

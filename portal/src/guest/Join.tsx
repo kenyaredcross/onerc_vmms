@@ -12,6 +12,7 @@ import { API, errorMessage } from "../lib/api";
 import { formatDate, formatMoney } from "../lib/format";
 import { loginUrl, signupUrl, useSession } from "../lib/session";
 import { BrandLockup } from "../ui/brand";
+import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import { PlanCards } from "../ui/PlanCards";
 import {
@@ -1847,12 +1848,15 @@ function JoinBody() {
 				{/* Never `/` for somebody signed in — that is the public landing page,
 				    and leaving a half-finished application through it reads as having
 				    been signed out. A guest has no portal to be sent back to. */}
+				<div className="ms-auto flex items-center gap-2">
+					<LanguageSwitcher tone="dark" />
 				<Link
 					to={isGuest ? "/" : "/dashboard"}
-					className="ml-auto flex-none rounded-[7px] border border-white/[0.38] px-[18px] py-[9px] text-[13px] text-white transition hover:bg-white/10"
+					className="flex-none rounded-[7px] border border-white/[0.38] px-[18px] py-[9px] text-[13px] text-white transition hover:bg-white/10"
 				>
 					{isGuest ? "Back to site" : "Save & exit"}
 				</Link>
+				</div>
 			</header>
 
 			<div className="join-root mx-auto w-[min(1190px,calc(100%-32px))] py-6 sm:w-[min(1190px,calc(100%-48px))] lg:pb-[70px] lg:pt-[42px]">

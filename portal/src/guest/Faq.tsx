@@ -6,6 +6,7 @@ import { ContentProvider } from "../content/ContentProvider";
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
 import { BrandLockup } from "../ui/brand";
+import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
 import { Icon } from "../ui/icons";
 import { Empty, ErrorNote, PageHeading, Spinner, cx } from "../ui/primitives";
 
@@ -52,6 +53,7 @@ export default function Faq() {
 						<Link to="/">
 							<BrandLockup />
 						</Link>
+						<LanguageSwitcher />
 					</div>
 				</header>
 

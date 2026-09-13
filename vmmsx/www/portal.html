@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ lang }}"{% if lang == "ar" %} dir="rtl"{% endif %}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,7 +12,7 @@
 		<div id="root"></div>
 		<script>
 			window.csrf_token = "{{ csrf_token }}";
-			window.frappe = { boot: { sitename: "{{ sitename }}" } };
+			window.frappe = { boot: { sitename: "{{ sitename }}", lang: "{{ lang }}" } };
 		</script>
 		{%- if bundle_js %}
 		<script type="module" src="{{ bundle_js }}"></script>

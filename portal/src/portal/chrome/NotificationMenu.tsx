@@ -77,7 +77,7 @@ export function NotificationMenu({
 			{open && (
 				<div
 					role="menu"
-					className="absolute right-0 top-full z-50 mt-2 w-[min(392px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-card-line bg-white shadow-[0_16px_40px_rgba(20,32,46,0.16)]"
+					className="absolute end-0 top-full z-50 mt-2 w-[min(392px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-card-line bg-white shadow-[0_16px_40px_rgba(20,32,46,0.16)]"
 				>
 					<div className="flex items-center justify-between border-b border-card-line px-4 py-3">
 						<span className="text-[13px] font-semibold text-ink">Notifications</span>
