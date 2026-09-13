@@ -20,7 +20,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import cint
 
-from vmmsx.approvals.services import contract, routing, sla
+from vmmsx.approvals.services import contract, repair, routing, sla
 
 WORKFLOW_NAMING_SERIES = "AWF-.#####"
 
@@ -238,3 +238,21 @@ class VMMSApprovalWorkflow(Document):
 			),
 			title=_("Nothing Can Reject"),
 		)
+
+	def on_update(self):
+		"""Route whatever has been waiting for this workflow to exist.
+
+		**Applications do not wait for configuration.** A site is live from the
+		day it is installed and deciding who signs off on what happens on an
+		administrator's own timetable, so `engine.park` accepts an application
+		there is nobody to route yet — Submitted, assigned to nobody — rather
+		than turning away the one party who cannot fix the gap. Saving this
+		record is the moment that gap closes, and everything held against it
+		goes into the queue of whoever it now resolves to.
+
+		The work itself is `repair.on_workflow_saved`, enqueued after the
+		commit: configuration must not be slow to save or fail because a sweep
+		wanted running, and the sweep must read the workflow that was saved
+		rather than the one being saved.
+		"""
+		repair.on_workflow_saved(self)

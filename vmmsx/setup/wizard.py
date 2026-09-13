@@ -14,6 +14,7 @@ import frappe
 from frappe import _
 
 from vmmsx.member.services.society import ANCHOR_LEVEL_FIELD as MEMBER_ANCHOR_FIELD
+from vmmsx.setup import default_roles
 from vmmsx.volunteer.services.society import ANCHOR_LEVEL_FIELD as VOLUNTEER_ANCHOR_FIELD
 
 SETTINGS_DOCTYPE = "National Society Settings"
@@ -66,6 +67,19 @@ def setup_national_society(args):  # nosemgrep
 		}
 	)
 	settings.save(ignore_permissions=True)
+
+	# The role wiring could not run at install time, and this is the first moment
+	# it can. `default_roles.install()` saves this same Single, and on a fresh site
+	# the four identity fields above are mandatory and empty — the app ships with
+	# no society on it — so `after_install` caught the MandatoryError, logged it and
+	# carried on. Nothing re-runs it afterwards: this app declares
+	# `setup_wizard_stages` and not `setup_wizard_complete`, so without this call
+	# the six scope-role settings stay blank until somebody thinks to run
+	# `bench migrate`, and a blank `vmms_volunteer_scope_role` is an access model
+	# with nothing in it — no console section, and an approval that routes to
+	# nobody. Idempotent, and it fills blanks only, so a society that has already
+	# chosen its own roles keeps them.
+	default_roles.install()
 
 
 def _level_names(args) -> list[str]:

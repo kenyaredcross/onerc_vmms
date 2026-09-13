@@ -171,6 +171,15 @@ export interface ApprovalStatus {
 	state: string;
 	is_open: boolean;
 	is_terminal: boolean;
+	/**
+	 * Sent, and waiting on configuration rather than on a person: no approval
+	 * workflow governs this doctype yet, so nobody has been assigned to it.
+	 *
+	 * `stage` is null here exactly as it is on a draft, and the two mean
+	 * opposite things to whoever is reading — one has been sent and one has
+	 * not — so never infer this from a missing stage.
+	 */
+	awaiting_workflow: boolean;
 	geo_node: string | null;
 	geo_path: string | null;
 	/**
@@ -2066,6 +2075,15 @@ export interface IntakeHealth {
 	overdue: number;
 	/** Everything in scope past its SLA, whoever it is routed to. */
 	breached: number | null;
+	/**
+	 * Applications accepted while no approval workflow exists yet.
+	 *
+	 * They are in nobody's queue, because nobody has been assigned to them —
+	 * the engine holds them at Submitted rather than turning away an applicant
+	 * over configuration only an administrator can write. Normally `0` on a
+	 * governed door; `null` only where the caller cannot read the register.
+	 */
+	awaiting_setup: number | null;
 }
 
 export interface RegisterCount {

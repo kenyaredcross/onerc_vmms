@@ -91,6 +91,32 @@ def assert_approvable(doctype: str) -> None:
 		)
 
 
+def meets(doctype: str) -> bool:
+	"""Can `doctype` carry an approval at all? The same question, without the throw.
+
+	`assert_approvable` is asked when a workflow is *saved*; this is asked by
+	endpoints that need to know whether a doctype is one this app approves
+	before they will touch it. That used to be "is there a workflow for it",
+	which was the same answer right up until an application could be accepted
+	before its workflow was written — and refusing to describe a document the
+	portal is already showing somebody would be denying the thing it just handed
+	them. The narrowing is unchanged: only a doctype carrying the engine's own
+	four fields passes, which nothing outside this app does.
+	"""
+	if not (doctype and frappe.db.exists("DocType", doctype)):
+		return False
+
+	meta = frappe.get_meta(doctype)
+
+	for fieldname, fieldtypes in REQUIRED_FIELDS:
+		field = meta.get_field(fieldname)
+
+		if not field or field.fieldtype not in fieldtypes:
+			return False
+
+	return bool(_decision_table_field(meta))
+
+
 def decisions_field(doctype: str) -> str:
 	"""Fieldname of the decisions table on `doctype`."""
 	field = _decision_table_field(frappe.get_meta(doctype))

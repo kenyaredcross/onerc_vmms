@@ -73,6 +73,7 @@ function summary(over: Partial<PeopleSummary> = {}): PeopleSummary {
 				waiting: 8,
 				overdue: 2,
 				breached: 3,
+				awaiting_setup: 0,
 			},
 			{
 				kind: "members",
@@ -84,6 +85,7 @@ function summary(over: Partial<PeopleSummary> = {}): PeopleSummary {
 				waiting: 4,
 				overdue: 1,
 				breached: 0,
+				awaiting_setup: 0,
 			},
 		],
 		registers: [
@@ -102,6 +104,7 @@ function queueRow(doctype: string, name: string, breached = false): ApprovalStat
 		state: "In Review",
 		is_open: true,
 		is_terminal: false,
+		awaiting_workflow: false,
 		geo_node: "GEO-1",
 		geo_path: "Geita — Tanzania Red Cross Society",
 		applicant: {
@@ -261,6 +264,7 @@ describe("the People overview", () => {
 						waiting: 0,
 						overdue: 0,
 						breached: null,
+						awaiting_setup: null,
 					},
 				],
 			}),
@@ -288,6 +292,7 @@ describe("the People overview", () => {
 						waiting: 0,
 						overdue: 0,
 						breached: null,
+						awaiting_setup: 0,
 					},
 				],
 			}),
@@ -299,6 +304,38 @@ describe("the People overview", () => {
 		// "Nothing to do" and "nobody has configured this" are different answers.
 		expect(screen.getByText(/No approval workflow is configured/)).toBeTruthy();
 		expect(screen.getByText("Not governed")).toBeTruthy();
+	});
+
+	it("says how many applications an ungoverned door is holding", () => {
+		reads.set(
+			API.peopleSummary,
+			summary({
+				intake: [
+					{
+						kind: "volunteers",
+						doctype: "VMMS Volunteer Application",
+						readable: true,
+						governed: false,
+						in_review: null,
+						changes_requested: null,
+						waiting: 0,
+						overdue: 0,
+						breached: null,
+						// Applications arrive before a workflow does. They are in
+						// nobody's queue until one exists, so this figure is the
+						// only place an administrator would ever see them.
+						awaiting_setup: 6,
+					},
+				],
+			}),
+		);
+		reads.set(API.myQueue, []);
+
+		show();
+
+		expect(screen.getByText("6 waiting for an approval workflow")).toBeTruthy();
+		expect(screen.getByText("Needs setup")).toBeTruthy();
+		expect(screen.queryByText(/No approval workflow is configured/)).toBeNull();
 	});
 
 	it("orders the attention queue by breach first, then by how long it has waited", () => {

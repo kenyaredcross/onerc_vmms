@@ -24,6 +24,12 @@ twice, because in a distributed desk they will be.
 **One save per operation.** State is moved on the in-memory document, saved
 once, and only then does the queue get synced — so a rejected save leaves no
 ToDo pointing at an approval that did not happen.
+
+**A missing workflow is a moment, not an error.** Registration is open from the
+day a site is installed and the approval workflow is written some time after
+that, so `submit` parks an application it cannot route — Submitted, assigned to
+nobody, decided by nobody — and `repair.resync_pending` routes everything parked
+the moment the workflow arrives. See `park`.
 """
 
 import frappe
@@ -38,22 +44,37 @@ from vmmsx.approvals.services import applicant, assignment, config, contract, ro
 
 
 def submit(doc, user: str | None = None) -> dict:
-	"""Move a draft into review, or re-sync one that is already there.
+	"""Move a draft into review, re-sync one already there, or park one that cannot move.
 
 	Enforces the anchor rules before anything else: an application with no Geo
 	Node (ACC-02) or one anchored at a level this society does not allow
 	(ACC-03) never enters review, because neither can be routed.
+
+	Three entry states, and each is somebody arriving at a different moment:
+
+	    Draft        the ordinary submission — the rules above, then routing
+	    Submitted    parked before this society had a workflow. Routed now,
+	                 without re-running rules it already passed
+	    In Review    already moving: the queue is re-synced and nothing else
 	"""
 	user = user or frappe.session.user
-	workflow = config.for_doctype(doc.doctype)
+	workflow = config.optional(doc.doctype)
 
-	if contract.state(doc) == states.IN_REVIEW:
+	if not workflow:
+		return park(doc, user)
+
+	state = contract.state(doc)
+
+	if state == states.IN_REVIEW:
 		# Already in review. Re-resolve and re-sync the queue — an assignment
 		# somebody closed by hand comes back — and change no state.
 		auth = authorised(doc, workflow)
 		assignment.sync(doc.doctype, doc.name, auth["approvers"], _stage_description(doc, auth["stage"]))
 
 		return status(doc, user, workflow)
+
+	if state == states.SUBMITTED:
+		return _route_parked(doc, workflow, user)
 
 	config.anchor(doc, workflow)
 	config.assert_anchor_allowed(doc, workflow)
@@ -64,6 +85,56 @@ def submit(doc, user: str | None = None) -> dict:
 	routed = _advance(doc, workflow, after=None)
 
 	return _commit(doc, workflow, routed, user)
+
+
+def park(doc, user: str | None = None) -> dict:
+	"""Accept an application there is no workflow to route it through yet. Idempotent.
+
+	**A society that has not written its approval workflow has not closed its
+	doors.** A site is live from the day it is installed; deciding who signs off
+	on what is an administrator's job that happens on its own timetable, and the
+	person filling in the registration form is the one party who can do nothing
+	about it. So the honest answer to them is *received, and waiting* — which is
+	what Submitted already means — rather than a refusal that turns unfinished
+	setup into a public door that appears broken.
+
+	**Submitted, never Approved, and that is the opposite of what
+	`deployment/services/approval.py` does with the same gap.** The two gaps are
+	not the same question. A branch deploying its own volunteers can get on with
+	it when no approver was configured, because the work is theirs either way.
+	Nobody becomes a volunteer or a member without somebody deciding they should,
+	so here a missing workflow *delays* the decision; it never makes it.
+
+	Nothing is assigned, because there is nobody to assign it to. The moment a
+	workflow is saved, `repair.resync_pending` routes everything parked — and it
+	runs again on every migrate, every change of authority and once a day, so a
+	workflow that arrives by a patch or a fixture picks them up just the same.
+	"""
+	user = user or frappe.session.user
+
+	if contract.state(doc) != states.DRAFT:
+		# Terminal, already parked, or in review under a workflow that has since
+		# been deleted. None of those is something this may move.
+		return status(doc, user)
+
+	contract.set_state(doc, states.SUBMITTED)
+	contract.set_stage(doc, None)
+	doc.save()
+
+	return status(doc, user)
+
+
+def _route_parked(doc, workflow, user: str) -> dict:
+	"""Route an application accepted before this workflow existed.
+
+	**The entry rules are not re-run**, each for its own reason. The anchor is
+	re-read by `_advance` itself, because nothing can be routed without one. The
+	permitted anchor levels (ACC-03), the one-open-application rule and the
+	re-application cooldown all govern *entry*, and this application entered
+	already — applying them now could only strand somebody who did nothing wrong
+	behind configuration written after they applied.
+	"""
+	return _commit(doc, workflow, _advance(doc, workflow, after=None), user)
 
 
 def decide(doc, decision: str, reason: str | None = None, user: str | None = None) -> dict:
@@ -147,9 +218,15 @@ def decide(doc, decision: str, reason: str | None = None, user: str | None = Non
 
 
 def withdraw(doc, reason: str | None = None, user: str | None = None) -> dict:
-	"""The applicant takes their application back, where policy allows it."""
+	"""The applicant takes their application back, where policy allows it.
+
+	Allowed on a parked application too, and that is the point of reading the
+	policy through `_governing`: somebody who applied before their society had a
+	workflow must not be the one person who cannot change their mind, waiting on
+	configuration only an administrator can write.
+	"""
 	user = user or frappe.session.user
-	workflow = config.for_doctype(doc.doctype)
+	workflow = _governing(doc)
 
 	if not workflow.allow_withdrawal:
 		frappe.throw(
@@ -229,6 +306,23 @@ def expire_stale(now=None) -> dict:
 # --- the gate -------------------------------------------------------------
 
 
+def _governing(doc, workflow=None):
+	"""The workflow governing `doc`, or the standing default until one is written.
+
+	For the *read* paths only — what state is this in, who may act, may the
+	applicant take it back. Every one of those has a true answer about an
+	application that is waiting for a workflow, and `config.defaults()` is where
+	the answers come from: the doctype's own field defaults, so not one of them
+	is a second opinion written in Python.
+
+	The paths that *move* an application never come through here. They ask
+	`config.optional` and decide for themselves, because the difference between
+	"no stages configured" and "no workflow configured" is the difference
+	between approving somebody and keeping them waiting.
+	"""
+	return workflow or config.optional(doc.doctype) or config.defaults()
+
+
 def authorised(doc, workflow=None) -> dict:
 	"""Who may act on this document right now, and why.
 
@@ -258,7 +352,7 @@ def authorised(doc, workflow=None) -> dict:
 	could still approve today, which is the failure the whole access model
 	exists to prevent.
 	"""
-	workflow = workflow or config.for_doctype(doc.doctype)
+	workflow = _governing(doc, workflow)
 	stage = config.stage_by_name(workflow, contract.stage(doc))
 
 	if not stage:
@@ -570,7 +664,7 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 	module learning what either governed doctype is.
 	"""
 	user = user or frappe.session.user
-	workflow = workflow or config.for_doctype(doc.doctype)
+	workflow = _governing(doc, workflow)
 	auth = authorised(doc, workflow)
 	state = contract.state(doc)
 	node = doc.get(workflow.geo_node_field)
@@ -583,6 +677,11 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 		"state": state,
 		"is_open": states.is_open(state),
 		"is_terminal": states.is_terminal(state),
+		# Sent, and waiting on configuration rather than on a person. `stage` is
+		# None here exactly as it is on a draft, and a screen reading only that
+		# would tell somebody who has applied that they have not — so the
+		# difference is said out loud rather than left to be inferred.
+		"awaiting_workflow": states.is_open(state) and not workflow.get("workflow_for"),
 		"geo_node": node,
 		"geo_path": adapter.get_full_path(node) if node else None,
 		"applicant": applicant.of(doc, workflow),

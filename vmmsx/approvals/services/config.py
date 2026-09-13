@@ -41,6 +41,41 @@ def for_doctype(doctype: str):
 	return frappe.get_cached_doc(WORKFLOW_DOCTYPE, name)
 
 
+def optional(doctype: str):
+	"""The workflow governing `doctype`, or None where a society has written none.
+
+	The non-throwing half of `for_doctype`, for the callers that have a true
+	answer without one. `for_doctype` is unchanged: a caller that genuinely
+	cannot proceed should refuse at its own door rather than be handed an empty
+	object and carry on as though it had configuration.
+	"""
+	name = workflow_name(doctype)
+
+	if not name:
+		return None
+
+	return frappe.get_cached_doc(WORKFLOW_DOCTYPE, name)
+
+
+def defaults():
+	"""The policy a governed doctype stands on until its workflow is written.
+
+	A new, unsaved `VMMS Approval Workflow` and nothing more: the field defaults
+	the doctype itself carries — `geo_node` as the anchor, withdrawal allowed, no
+	cooldown, no expiry — **and no stages**. It is what lets the engine answer the
+	policy questions a screen asks about an application that arrived before
+	anybody configured who signs it off, without a single one of those answers
+	being written down a second time in Python.
+
+	**It is never walked by `engine._advance`.** A workflow with no stages
+	*approves* an application — that is exactly what "every remaining stage was
+	optional and empty" means, and it is right for a society that configured it
+	that way. It would be very wrong for a society that has configured nothing,
+	so the engine parks such an application instead. See `engine.park`.
+	"""
+	return frappe.new_doc(WORKFLOW_DOCTYPE)
+
+
 def workflow_name(doctype: str) -> str | None:
 	"""Docname of the workflow governing `doctype`, or None. Does not throw."""
 	if not doctype:

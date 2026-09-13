@@ -127,8 +127,18 @@ def _approvable(doctype: str, name: str, ptype: str):
 
 
 def _assert_governed(doctype: str) -> None:
-	"""Refuse doctypes no workflow governs, before anything else happens."""
-	if config.is_approvable(doctype):
+	"""Refuse doctypes this app does not approve, before anything else happens.
+
+	**The question is the contract, not the configuration.** It used to be "is
+	there a workflow for this", and that was the same answer right up until an
+	application could be accepted before its society had written one. Those
+	applications are real, their applicants can see them in the portal, and an
+	endpoint answering "not approvable" about a document this app had just
+	accepted would be denying the thing it handed them. The narrowing this check
+	exists for is untouched: `contract.meets` passes only a doctype carrying the
+	engine's own four fields, which nothing outside this app has.
+	"""
+	if config.is_approvable(doctype) or contract.meets(doctype):
 		return
 
 	frappe.throw(

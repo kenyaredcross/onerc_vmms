@@ -149,6 +149,8 @@ def _intake(register: dict, queue: dict) -> dict:
 
 	A doctype no workflow governs yet is answered with `governed: False` and no
 	numbers, rather than with zeroes that would read as "nothing to do".
+	`awaiting_setup` is the one figure such a door *can* give: how many people
+	have applied through it while the approval workflow has yet to be written.
 	"""
 	doctype = register["intake_doctype"]
 	readable = frappe.has_permission(doctype, "read")
@@ -170,6 +172,14 @@ def _intake(register: dict, queue: dict) -> dict:
 			"waiting": 0,
 			"overdue": 0,
 			"breached": None,
+			# **The one number an ungoverned door owes an administrator.**
+			# Applications are accepted before a workflow exists — `engine.park`
+			# holds them at Submitted rather than turning away somebody who
+			# cannot write the configuration themselves — and nobody is assigned
+			# to them until it does. So they are in nobody's queue, and without
+			# this they would be in nobody's sight either: the door would read as
+			# quiet at the exact moment it was filling up.
+			"awaiting_setup": _awaiting_setup(doctype) if readable else None,
 		}
 
 	mine = queue.get(doctype) or {}
@@ -190,7 +200,23 @@ def _intake(register: dict, queue: dict) -> dict:
 		# only what is routed to them. Derived by the SLA service per document,
 		# which is the same function the sweep and the queue badge use.
 		"breached": _breached_count(doctype),
+		# Normally zero here: this door has its workflow, and the engine moves
+		# Submitted to In Review inside the same transaction. Counted rather than
+		# assumed, because it is *not* zero for a document parked a moment ago
+		# that the sweep has yet to reach, or one it could not route and logged.
+		"awaiting_setup": _awaiting_setup(doctype),
 	}
+
+
+def _awaiting_setup(doctype: str) -> int:
+	"""Applications accepted but never routed — the parked ones.
+
+	Submitted is the parked state, and only `engine.park` ever persists it: every
+	other way into Submitted resolves to a stage inside the same transaction. So
+	this counts documents waiting for a workflow to exist, and on a door that
+	already has one it counts the handful the sweep has yet to reach.
+	"""
+	return _count(doctype, {"approval_state": states.SUBMITTED})
 
 
 def _returned_count(doctype: str) -> int:

@@ -271,7 +271,8 @@ def _behind_the_scenes(w) -> None:
 	w.p("engine.submit() is the entry point. In order, it:")
 	w.steps(
 		[
-			"reads the workflow for the document's doctype (config.for_doctype);",
+			"reads the workflow for the document's doctype (config.optional). Where a society has"
+			" not written one yet, the application is accepted and held — see below;",
 			"if the document is already in review, re-resolves and re-syncs the queue and changes"
 			" no state — an assignment somebody closed by hand comes back;",
 			"otherwise checks the anchor: config.anchor() throws if the Geo Node field is empty"
@@ -285,6 +286,32 @@ def _behind_the_scenes(w) -> None:
 			" leaves no ToDo pointing at an approval that did not happen.",
 		]
 	)
+	w.h3("Applying before the workflow exists")
+
+	w.p(
+		"A site is live from the day it is installed, and configuring who signs off on what"
+		" happens on an administrator's own timetable. An application that arrives in between is"
+		" accepted rather than refused: engine.park() records it as Submitted, assigns it to"
+		" nobody, and leaves it there. The applicant is told their application is in and waiting,"
+		" which is true, and is never shown a message about configuration they cannot write."
+	)
+	w.p(
+		"It is held, never approved. A workflow with no stages approves an application, because"
+		" that is what a society configuring no approvals asked for; no workflow at all is the"
+		" opposite statement, and nobody becomes a volunteer or a member without somebody"
+		" deciding they should."
+	)
+	w.p(
+		"The moment the workflow is saved, repair.resync_pending() routes everything that was"
+		" waiting and it lands in the queue of whoever it resolves to. The same sweep runs on"
+		" every migrate, on every change of authority and once a day, so a workflow created by a"
+		" patch or a fixture picks them up just the same. The anchor level rule, the"
+		" one-open-application rule and the cooldown are not re-applied at that point: they govern"
+		" entry, and the application entered already."
+	)
+
+	w.h3("Advancing through the stages")
+
 	w.p(
 		"_advance() walks the stages in sequence and stops at the first one that resolves"
 		" somebody. A stage that resolves nobody is skipped if it is optional, and entered anyway"

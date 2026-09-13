@@ -304,6 +304,20 @@ def make_workflow(stages: list[dict], doctype: str = APPROVABLE_DOCTYPE, **polic
 	return doc
 
 
+def remove_workflow(doctype: str = APPROVABLE_DOCTYPE) -> None:
+	"""Leave the stand-in ungoverned — a society that has not configured one yet.
+
+	The state a site is in on the day it is installed, and the one the engine's
+	parking behaviour is about. Force-deleted rather than cancelled: an approval
+	workflow is configuration, and configuration a society has not written does
+	not exist.
+	"""
+	existing = frappe.db.get_value(WORKFLOW_DOCTYPE, {"workflow_for": doctype}, "name")
+
+	if existing:
+		frappe.delete_doc(WORKFLOW_DOCTYPE, existing, force=True)
+
+
 def make_application(
 	title: str, geo_node: str, applicant: str | None = None, owner: str | None = None
 ) -> str:

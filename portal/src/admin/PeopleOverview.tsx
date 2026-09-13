@@ -373,6 +373,11 @@ function IntakeRow({ door }: { door: IntakeHealth }) {
 	const to = kind ? QUEUES[kind].list : null;
 	const heading = kind ? QUEUES[kind].heading : door.doctype;
 
+	// An ungoverned door still takes applications — they are held until somebody
+	// writes the workflow — so it says how many are waiting rather than only that
+	// it is unconfigured. That count is the reason to go and configure it.
+	const held = door.awaiting_setup ?? 0;
+
 	const body = (
 		<>
 			<span className="min-w-0 flex-1 basis-full sm:basis-auto">
@@ -381,7 +386,9 @@ function IntakeRow({ door }: { door: IntakeHealth }) {
 					{door.governed
 						? "Through the society's configured approval stages"
 						: door.readable
-							? "No approval workflow is configured for this yet"
+							? held > 0
+								? `${held} waiting for an approval workflow`
+								: "No approval workflow is configured for this yet"
 							: "These applications are not in your permissions"}
 				</span>
 			</span>
@@ -393,6 +400,10 @@ function IntakeRow({ door }: { door: IntakeHealth }) {
 			{door.breached ? (
 				<span className="flex-none">
 					<Pill tone="signal">{door.breached} overdue</Pill>
+				</span>
+			) : !door.governed && held > 0 ? (
+				<span className="flex-none">
+					<Pill tone="signal">Needs setup</Pill>
 				</span>
 			) : (
 				<span

@@ -656,10 +656,31 @@ describe("operations documents", () => {
 		expect(options).toEqual(["", "VMMS Deployment\nDEP-0001"]);
 	});
 
+	/**
+	 * A `fetch` stub that answers everything and keeps only the uploads.
+	 *
+	 * These tests used to count every `fetch` in the tree and call the total the
+	 * number of uploads. That stopped being the same number when the shell began
+	 * mounting a translation catalogue read on every page: a bare spy counts that
+	 * read as an upload, and — returning `undefined` rather than a promise —
+	 * hands the provider nothing to call `.then` on. This answers every request
+	 * and keeps the calls these tests are actually about.
+	 */
+	function uploads(): [string, RequestInit][] {
+		const posted: [string, RequestInit][] = [];
+
+		vi.stubGlobal("fetch", (url: string, init: RequestInit = {}) => {
+			if (url === "/api/method/upload_file") posted.push([url, init]);
+
+			return Promise.resolve({ ok: true, json: async () => ({ message: {} }) } as Response);
+		});
+
+		return posted;
+	}
+
 	it("refuses an upload with no target chosen, and keeps the context", async () => {
 		reads.set(API.operationsDocuments, answer());
-		const sent = vi.fn();
-		vi.stubGlobal("fetch", sent);
+		const posted = uploads();
 
 		show(<OperationsDocuments />, "/admin/deployments/documents");
 
@@ -670,7 +691,7 @@ describe("operations documents", () => {
 			});
 		});
 
-		expect(sent).not.toHaveBeenCalled();
+		expect(posted).toHaveLength(0);
 		expect(screen.getByText("Choose the operational record this file belongs to.")).toBeTruthy();
 		// The register is still on screen; an error must not cost the reader
 		// their place.
@@ -681,8 +702,7 @@ describe("operations documents", () => {
 
 	it("uploads privately, with the CSRF token, against a server-supplied target", async () => {
 		reads.set(API.operationsDocuments, answer());
-		const sent = vi.fn().mockResolvedValue({ ok: true });
-		vi.stubGlobal("fetch", sent);
+		const posted = uploads();
 		(window as unknown as { csrf_token: string }).csrf_token = "tok-1";
 
 		show(<OperationsDocuments />, "/admin/deployments/documents");
@@ -700,8 +720,8 @@ describe("operations documents", () => {
 			});
 		});
 
-		expect(sent).toHaveBeenCalledTimes(1);
-		const [url, init] = sent.mock.calls[0] as [string, RequestInit];
+		expect(posted).toHaveLength(1);
+		const [url, init] = posted[0];
 
 		expect(url).toBe("/api/method/upload_file");
 		expect((init.headers as Record<string, string>)["X-Frappe-CSRF-Token"]).toBe("tok-1");
