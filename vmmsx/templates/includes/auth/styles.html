@@ -40,7 +40,12 @@
 		--vm-hairline: #DCE3EB;
 		--vm-hairline-strong: #BFC8D4;
 		--vm-page: #F8FAFC;
-		--vm-aqua: #75D5D0;
+		/* The brand accent, and the reason it is not `--vm-action`: blue is what
+		   "act on this" means in this product — buttons, links, focus — and red
+		   is identity. The rule over the kicker, the eyebrow over a form heading
+		   and the shield on the trust line are the three places it appears here.
+		   Mirrors `red.DEFAULT` in `portal/tailwind.config.js`. */
+		--vm-red: #D71920;
 		--vm-display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
 		--vm-sans: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 	}
@@ -131,7 +136,11 @@
 		object-fit: contain;
 	}
 
-	.auth-lockup svg { color: var(--vm-action); }
+	/* The stand-in mark, on navy. White, never red: a red cross on a light ground
+	   is the protected emblem, and this is a geometric placeholder for a society
+	   that has not uploaded its own. Same rule and same shape as
+	   `portal/src/ui/brand.tsx`, which draws it white on a dark surface. */
+	.auth-lockup svg { color: #fff; }
 
 	.auth-lockup span {
 		font-family: var(--vm-display);
@@ -156,7 +165,7 @@
 		text-transform: uppercase;
 	}
 
-	.auth-brand-kicker::before { content: ""; width: 28px; height: 2px; background: var(--vm-aqua); }
+	.auth-brand-kicker::before { content: ""; width: 28px; height: 2px; background: var(--vm-red); }
 
 	.auth-brand-headline {
 		margin: 0;
@@ -168,13 +177,14 @@
 		color: #fff;
 	}
 
-	.auth-brand-body {
-		margin: 18px 0 0;
-		max-width: 34ch;
-		font-size: 16px;
-		line-height: 1.65;
-		color: rgba(255, 255, 255, 0.66);
-	}
+	/* Two greetings in the markup, one of them on screen. `data-panel` is written
+	   onto `.auth` from the URL hash by the script in `login.html`; with no
+	   attribute at all — the set-password page, or a page whose script did not
+	   run — the sign-in greeting stands. Both are rendered server-side, so the
+	   panel never blinks between them. */
+	.auth-brand-headline[data-for="signup"] { display: none; }
+	.auth[data-panel="signup"] .auth-brand-headline[data-for="login"] { display: none; }
+	.auth[data-panel="signup"] .auth-brand-headline[data-for="signup"] { display: block; }
 
 	.auth-brand-credit {
 		margin: 22px 0 0;
@@ -199,9 +209,9 @@
 		display: grid;
 		place-items: center;
 		flex: none;
-		border: 1px solid rgba(117, 213, 208, 0.7);
+		border: 1px solid rgba(215, 25, 32, 0.7);
 		border-radius: 11px 11px 14px 14px;
-		color: var(--vm-aqua);
+		color: var(--vm-red);
 	}
 
 	.auth-trust p { margin: 0; }
@@ -275,7 +285,7 @@
 		font-weight: 800;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
-		color: var(--vm-action);
+		color: var(--vm-red);
 	}
 
 	.auth-title {
@@ -583,7 +593,7 @@
 
 		.auth-brand-photo { display: block; }
 		.auth-brand-words { display: block; margin-top: 64px; }
-		.auth-brand-body, .auth-brand-kicker, .auth-trust { display: none; }
+		.auth-brand-kicker, .auth-trust { display: none; }
 		.auth-brand-headline { font-size: 42px; }
 		.auth-lockup img { height: 26px; }
 

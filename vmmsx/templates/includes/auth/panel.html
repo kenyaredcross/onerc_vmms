@@ -33,13 +33,23 @@
 		{%- endif %}
 	</a>
 
+	{#- Two greetings, one panel. The panel does not move when the form beside it
+	    switches between signing in and creating an account, so a single line had
+	    to be true for a returning volunteer *and* for somebody who has never been
+	    here — which is how it used to end up listing what the product does at
+	    a person who had come to type a password.
+
+	    The swap is CSS on `.auth[data-panel]`, set from the hash by the script in
+	    `login.html`. Both lines are in the markup and the sign-in one is what
+	    shows if that script never runs, so the panel is never blank and never
+	    flickers between the two. -#}
 	<div class="auth-brand-words">
 		<p class="auth-brand-kicker">{{ words.get("login.panel.kicker") or _("Welcome") }}</p>
-		<p class="auth-brand-headline">
-			{{ words.get("login.panel.headline") or _("One account for membership, volunteering and training.") }}
+		<p class="auth-brand-headline" data-for="login">
+			{{ words.get("login.panel.headline") or _("Good to have you back.") }}
 		</p>
-		<p class="auth-brand-body">
-			{{ words.get("login.panel.body") or _("Your record follows you between branches. Certificates, hours and deployments stay in one place.") }}
+		<p class="auth-brand-headline" data-for="signup">
+			{{ words.get("login.panel.headline_signup") or _("Good to have you with us.") }}
 		</p>
 		{%- if panel_image_credit %}
 		<p class="auth-brand-credit">{{ panel_image_credit }}</p>

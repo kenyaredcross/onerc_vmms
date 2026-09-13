@@ -125,12 +125,11 @@ export default {
 					soft: "#FFF0F1",
 					line: "#F0C8CA",
 				},
-				// The one cool highlight: a rule under a dark panel, the emphasis
-				// word in a hero, a "ready" caption. Never a text colour on white —
-				// it does not clear AA there and is never asked to.
+				// Brand highlights use Red Cross red: rules under dark panels,
+				// emphasis words in heroes, and compact readiness captions.
 				aqua: {
-					DEFAULT: "#75D5D0",
-					deep: "#16909A",
+					DEFAULT: "#D71920",
+					deep: "#9D2027",
 				},
 				// The four calendar categories — dots on a day, chips in the day
 				// panel. Recognition only; each is always paired with a text label

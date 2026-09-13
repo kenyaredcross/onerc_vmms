@@ -191,7 +191,7 @@
 					</div>
 					{{ heading(
 						words.get("login.signin.eyebrow") or _("Sign in"),
-						words.get("login.signin.title") or _("Welcome back"),
+						words.get("login.signin.title") or _("Sign in to your account"),
 						words.get("login.signin.body") or _("Use your registered email address to continue.")
 					) }}
 					<form class="form-signin form-login" role="form" novalidate>
@@ -211,7 +211,7 @@
 				<div class="login-content page-card">
 					{{ heading(
 						words.get("login.signin.eyebrow") or _("Sign in"),
-						words.get("login.signin.title") or _("Welcome back"),
+						words.get("login.signin.title") or _("Sign in to your account"),
 						words.get("login.signin.body") or _("Use your registered email address to continue.")
 					) }}
 					<form class="form-signin form-login" role="form" novalidate>
@@ -731,7 +731,32 @@
 			true
 		);
 
+		/*
+			Which greeting the panel carries.
+
+			The panel is outside every section `login.js` toggles, so it cannot
+			follow the form by being inside it. The hash is what actually moves
+			between the two — `#signup` and `#login` are the hrefs on the links
+			that switch them, and `login.js` reads the same hash to decide which
+			section to show — so one attribute on `.auth` keeps the panel in step
+			with a stylesheet rule rather than a second copy of the framework's
+			panel logic.
+
+			Everything that is not the sign-up panel gets the sign-in greeting,
+			forgotten-password and sign-in-by-email-link included: both are things
+			a person with an account is doing.
+		*/
+		function panel() {
+			var auth = document.querySelector(".auth");
+			if (!auth) return;
+
+			auth.setAttribute("data-panel", window.location.hash === "#signup" ? "signup" : "login");
+		}
+
 		$(function () {
+			panel();
+			$(window).on("hashchange", panel);
+
 			$(".btn-resend-signup").on("click", function (event) {
 				event.preventDefault();
 				resend();
