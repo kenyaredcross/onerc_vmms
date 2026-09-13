@@ -1013,6 +1013,7 @@ def _admin():
 		# because being staff is a role somebody holds rather than a thing they
 		# are instead of a volunteer.
 		("portal", "My portal"),
+		("volunteer_console", "Switch to volunteer console"),
 		# The way through to the Frappe desk, drawn only for somebody who may
 		# open it. Named here so a society can call it whatever it calls that.
 		("desk", "Desk"),

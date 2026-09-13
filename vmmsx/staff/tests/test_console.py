@@ -248,5 +248,5 @@ class TestTheEndpoint(IntegrationTestCase):
 
 		answer = endpoint.sections()
 
-		self.assertEqual(set(answer), {"available", "sections", "desk", "sms"})
+		self.assertEqual(set(answer), {"available", "sections", "desk"})
 		self.assertIsInstance(answer["available"], bool)

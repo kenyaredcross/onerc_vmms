@@ -17,10 +17,11 @@ role, if any, may open onerc_sms's own campaign builder at all. Left empty,
 same as every scope-role setting before it, so no non-administrator reaches
 it until a society chooses the role.
 
-`staff/services/console.py::sms_access()` reads the *result* of granting this
-role — `frappe.has_permission("SMS Campaign", ...)` — rather than this field
-directly, the same indirection every gated console section already goes
-through.
+`notifications/services/campaign.py::available()` reads the *result* of
+granting this role — `frappe.has_permission("SMS Campaign", ...)` — rather than
+this field directly, the same indirection every gated console section already
+goes through. That answer is what decides whether the Communication screen
+offers the SMS channel.
 """
 
 SCOPE_ROLE_FIELD = "vmms_sms_scope_role"

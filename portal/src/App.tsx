@@ -34,6 +34,7 @@ const Help = lazy(() => import("./portal/Help"));
 // routinely opened on a phone camera's browser, on whatever connection a field
 // site has.
 const Verify = lazy(() => import("./guest/Verify"));
+const WorkspaceHome = lazy(() => import("./WorkspaceHome"));
 
 const PortalLayout = lazy(() => import("./portal/PortalLayout"));
 const Dashboard = lazy(() => import("./portal/Dashboard"));
@@ -336,6 +337,14 @@ export default function App() {
 				    second so a checked card always has a URL. */}
 				<Route path="/verify" element={<Verify />} />
 				<Route path="/verify/:token" element={<Verify />} />
+				<Route
+					path="/start"
+					element={
+						<RequireAuth>
+							<WorkspaceHome />
+						</RequireAuth>
+					}
+				/>
 
 				<Route
 					element={

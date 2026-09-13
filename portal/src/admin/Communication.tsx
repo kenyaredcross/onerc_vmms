@@ -212,7 +212,22 @@ export default function Communication() {
 	if (!["system", "email", "sms", "whatsapp"].includes(channel) || !["compose", "sent"].includes(view)) return <Navigate to="/admin/communication/system/compose" replace />;
 	if (view === "sent") return <CommunicationHistory channel={channel} />;
 	if (!answer.channels[channelKey as keyof typeof answer.channels]) {
-		return <><PageHeading title={`Compose ${channel === "system" ? "notification" : channel}`} /><Card><SectionTitle>Channel unavailable</SectionTitle><p className="text-[13px] leading-relaxed text-muted">This channel is not available to your account on this site. Availability is determined by the server and the channel provider’s permissions.</p></Card></>;
+		const missingSms = channel === "sms" && !answer.sms_installed;
+		return (
+			<>
+				<PageHeading title={`Compose ${channel === "system" ? "notification" : channel}`} />
+				<Card>
+					<SectionTitle>
+						{missingSms ? "Install SMS to use this channel" : "Channel unavailable"}
+					</SectionTitle>
+					<p className="text-[13px] leading-relaxed text-muted">
+						{missingSms
+							? "The optional onerc_sms app is not installed on this site. Ask your system administrator to install and migrate onerc_sms, then reload this page. In-app notifications, email and WhatsApp remain available from the channel menu."
+							: "This channel is not available to your account on this site. Availability is determined by the server and the channel provider’s permissions."}
+					</p>
+				</Card>
+			</>
+		);
 	}
 
 	const available = CHANNELS.filter((channel) => answer.channels[channel.key]);

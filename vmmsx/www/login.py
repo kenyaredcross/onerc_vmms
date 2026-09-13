@@ -37,7 +37,7 @@ from frappe.utils.oauth import get_oauth2_authorize_url
 from frappe.www.login import get_context as framework_context
 
 from vmmsx import auth_page
-from vmmsx.registration.services.desk import PORTAL_HOME
+from vmmsx.registration.services.desk import WORKSPACE_HOME
 
 no_cache = True
 
@@ -84,17 +84,12 @@ def _point_social_logins_at_the_portal(context) -> None:
 	going. Same two guards the template's `last_visited` seeding makes, for the
 	same reason.
 
-	**Staff land on the portal too, and that is the accepted cost.** Unlike the
-	template's `last_visited` seeding — which the framework only consults for a
-	Website User — `redirect_post_login` uses the stamped destination whoever
-	signed in, and nothing on this side of an OAuth round trip knows which kind
-	of account is coming back: the account may not exist yet. So a System Manager
-	who signs in with Google and asked for nothing in particular arrives at the
-	portal rather than at the desk. That is a page they can open, with the
-	console and the desk both one click away in the sidebar, and it is traded
-	against the alternative: every volunteer signing in with Google landing on a
-	permission error. A member of staff who wants the desk asks for it, and the
-	guard above leaves that URL alone.
+	**The return is role-aware after authentication.** Nothing on this side of an
+	OAuth round trip knows which account is coming back: the account may not even
+	exist yet. The stamped address is therefore `/portal/start`, a small
+	authenticated SPA route that asks the same permission-driven console endpoint
+	as the manager shell. A manager continues to `/portal/admin`; everybody else
+	continues to `/portal/dashboard`. A URL that named a destination still wins.
 
 	Never raises. A provider list this could not rewrite is a page that still
 	takes a password, and a broken sign-in page is everybody locked out.
@@ -108,6 +103,6 @@ def _point_social_logins_at_the_portal(context) -> None:
 			# state token keyed by the URL's `state` argument, so the only way to
 			# change it is to mint a new one. The token the first call created is
 			# never used and expires on its own ten minutes later.
-			provider["auth_url"] = get_oauth2_authorize_url(provider["name"], PORTAL_HOME)
+			provider["auth_url"] = get_oauth2_authorize_url(provider["name"], WORKSPACE_HOME)
 	except Exception:
 		frappe.log_error(title="vmmsx: could not point social sign-in at the portal")

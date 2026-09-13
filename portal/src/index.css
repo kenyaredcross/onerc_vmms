@@ -298,6 +298,32 @@
 	}
 }
 
+/* ------------------------------------------------ signed-in desktop density
+
+   The operational screens are intentionally compact at the browser's normal
+   zoom. This is scoped to the two signed-in shells: the public landing page
+   and the one-time registration journey keep their larger reading scale, and
+   phones keep native sizing and touch targets. Browser zoom still composes on
+   top of this, so somebody who needs a larger view can enlarge it normally. */
+/* "The height of the window", which is `100vh` only while nothing is zooming
+   the document. The shells below ask for this instead of `100vh`. */
+html {
+	--screen: 100vh;
+}
+
+@media (min-width: 768px) {
+	html.workspace-density {
+		zoom: 0.8;
+		/* `zoom` scales viewport units along with everything else, so under this
+		   rule `100vh` paints at 80% of the window: a full-height rail would stop
+		   200px above the bottom of a 1000px window and every page would end on a
+		   strip of bare background. 100/0.8 is the height that paints as the whole
+		   window. Kept beside the zoom it corrects — change one of these two
+		   numbers and the other has to move with it. */
+		--screen: 125vh;
+	}
+}
+
 /* ------------------------------------------------- the registration wizard
 
    One room, roomier than the rest of the product.

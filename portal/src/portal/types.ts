@@ -1846,6 +1846,8 @@ export interface CommunicationOptions {
 	 * shape — it needs a gateway the society has stood up and linked to a phone.
 	 */
 	channels: { notification: boolean; email: boolean; sms: boolean; whatsapp: boolean };
+	/** Distinguishes a missing optional app from a caller without SMS access. */
+	sms_installed: boolean;
 	sms_templates: Array<{ name: string; template_name: string; category: string | null; message: string }>;
 	sms_source_doctypes: Array<{ value: string; label: string }>;
 	can_send: boolean;

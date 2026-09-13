@@ -36,6 +36,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { EditableText } from "../content/Editable";
 import { EditToolbar } from "../content/EditToolbar";
 import { BrandLockup } from "../ui/brand";
+import { GuidedTour, useWorkspaceDensity } from "../ui/GuidedTour";
 import { Icon, companionIcon } from "../ui/icons";
 import { AccountMenu } from "./chrome/AccountMenu";
 import { AvailabilityControl } from "./chrome/AvailabilityControl";
@@ -120,6 +121,7 @@ export function PortalShell({
 }) {
 	const location = useLocation();
 	const [drawer, setDrawer] = useState(false);
+	useWorkspaceDensity();
 
 	const title = titleFor(location.pathname, items);
 
@@ -140,7 +142,7 @@ export function PortalShell({
 	}, [drawer]);
 
 	const nav = (
-		<nav aria-label="Portal" className="flex flex-col gap-0.5">
+		<nav aria-label="Portal" className="flex flex-col gap-0.5" data-tour="portal-navigation">
 			{items.map((item, index) => {
 				const previous = items[index - 1];
 				const startsGroup = item.group && item.group !== previous?.group;
@@ -258,23 +260,25 @@ export function PortalShell({
 
 	return (
 		<ToastProvider>
-			<div className="portal-root min-h-screen">
-				<div className="flex min-h-screen">
+			<div className="portal-root min-h-[var(--screen)]">
+				<div className="flex min-h-[var(--screen)]">
 					{/* ---------------------------------------------------------- sidebar */}
 					<aside
-						className="portal-rail-scroll sticky top-0 hidden h-screen w-[264px] flex-none flex-col overflow-y-auto bg-rail px-3 pb-4 pt-4 md:flex"
+						data-tour="portal-nav"
+						className="portal-rail-scroll sticky top-0 hidden h-[var(--screen)] w-[264px] flex-none flex-col overflow-y-auto bg-rail px-3 pb-4 pt-4 md:flex"
 					>
 						{railBody}
 					</aside>
 
 					{/* --------------------------------------------------- content column */}
 					<div className="flex min-w-0 flex-1 flex-col">
-						<header className="sticky top-0 z-40 flex h-14 flex-none items-center gap-3 bg-canvas/95 px-4 backdrop-blur-sm md:px-6">
+						<header data-tour="portal-header" className="sticky top-0 z-40 flex h-14 flex-none items-center gap-3 bg-canvas/95 px-4 backdrop-blur-sm md:px-6">
 							<button
 								type="button"
 								onClick={() => setDrawer(true)}
 								aria-label="Open navigation"
 								aria-expanded={drawer}
+								data-tour="portal-nav-mobile"
 								className="-ml-1 grid h-8 w-8 flex-none place-items-center rounded-lg text-slate-strong transition hover:bg-rail-hover md:hidden"
 							>
 								<Icon.menu size={18} />
@@ -321,7 +325,7 @@ export function PortalShell({
 							</div>
 						</header>
 
-						<main className="min-w-0 flex-1 px-4 pb-16 pt-4 md:px-8">
+						<main data-tour="portal-content" className="min-w-0 flex-1 px-4 pb-16 pt-4 md:px-8">
 							<Outlet />
 						</main>
 					</div>
@@ -370,6 +374,31 @@ export function PortalShell({
 				)}
 
 				<EditToolbar />
+				<GuidedTour
+					id="portal"
+					steps={[
+						{
+							title: "Find your way around",
+							body: "Your calendar, tasks, deployments, membership and society updates are all grouped in this navigation.",
+							selector: "[data-tour='portal-nav'], [data-tour='portal-nav-mobile']",
+						},
+						{
+							title: "Your quick actions",
+							body: "Update availability, read notifications and open your account menu from the top of every page.",
+							selector: "[data-tour='portal-header']",
+						},
+						{
+							title: "The page you are working in",
+							body: "Each section opens here. Your dashboard starts with the next action that needs your attention.",
+							selector: "[data-tour='portal-content']",
+						},
+						{
+							title: "Account and manager console",
+							body: "Use your account menu for your profile, preferences, this tour, and the manager console when your role allows it.",
+							selector: "[data-tour='portal-account']",
+						},
+					]}
+				/>
 			</div>
 		</ToastProvider>
 	);

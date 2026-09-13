@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { initials, useSession } from "../../lib/session";
 import { Icon } from "../../ui/icons";
+import { startGuidedTour } from "../../ui/GuidedTour";
 import { Avatar, cx } from "../ui/kit";
 import { usePopover } from "./popover";
 
@@ -34,7 +35,7 @@ export function AccountMenu({
 		"flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-slate-strong transition hover:bg-canvas hover:text-ink";
 
 	return (
-		<div ref={holder} className="relative">
+		<div ref={holder} className="relative" data-tour="portal-account">
 			<button
 				ref={trigger}
 				type="button"
@@ -101,6 +102,18 @@ export function AccountMenu({
 								Switch to manager console
 							</Link>
 						)}
+						<button
+							type="button"
+							role="menuitem"
+							onClick={() => {
+								setOpen(false);
+								startGuidedTour("portal");
+							}}
+							className={item}
+						>
+							<Icon.compass size={15} className="flex-none text-slate-faint" />
+							Take a tour
+						</button>
 					</div>
 
 					<button

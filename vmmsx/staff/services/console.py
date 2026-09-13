@@ -73,8 +73,10 @@ GATED_SECTIONS = (
 	# for whoever a society named in `vmms_announcement_scope_role` and the reach
 	# of anything they send is bounded by their Geo Assignment rather than by
 	# this list. SMS rides on the same gate rather than adding `SMS Campaign`
-	# here: onerc_sms is optional, `sms_access()` below answers separately for
-	# it, and the screen offers the channel only when both are true.
+	# here: onerc_sms is optional, so whether the channel is offered at all is
+	# `notifications/services/campaign.py::available()`'s answer, asked on the
+	# screen itself. The tab is drawn for whoever may address people; which
+	# channels it then offers is a separate question, asked separately.
 	{"section": "communication", "doctypes": ("VMMS Announcement",)},
 )
 
@@ -108,10 +110,10 @@ ADMIN_SECTIONS = ({"section": "questions", "doctypes": ("VMMS Application Questi
 # Sections whose register belongs to an **optional companion app**, and which
 # therefore simply do not exist on a site that has not installed it.
 #
-# A third tuple rather than a fourth entry in `GATED_SECTIONS`, for the reason
-# `sms_access()` gives below: every doctype named there is one
-# `staff/tests/test_console.py` asserts exists on the site, which is a fair
-# assumption for this app's own doctypes and not one it can make about HRMS's.
+# A third tuple rather than a fourth entry in `GATED_SECTIONS`: every doctype
+# named there is one `staff/tests/test_console.py` asserts exists on the site,
+# which is a fair assumption for this app's own doctypes and not one it can
+# make about HRMS's.
 # vmmsx does not declare `hrms` in `required_apps` — a society running without
 # it is ordinary, not half-installed — so `_readable` skipping a doctype the
 # site does not have is the whole of the absence handling, and the tab is drawn
@@ -174,14 +176,7 @@ def visible(user: str | None = None) -> list[str]:
 	# in this console even if they hold none of its own scope roles.
 	admitted += [entry["section"] for entry in COMPANION_SECTIONS if _readable(entry["doctypes"], user)]
 
-	# The SMS side door is reason enough to be here too, the same argument as
-	# ADMIN_SECTIONS just above: somebody holding only the society's configured
-	# SMS role and none of the console's own scope roles still has a register
-	# behind what they may do — onerc_sms's campaign builder — and must not be
-	# bounced back to their own portal before the link to it ever renders. It
-	# is not a `section` of its own, so it never joins `sections` below; it
-	# only changes whether this function returns empty.
-	if not admitted and not sms_access(user):
+	if not admitted:
 		return []
 
 	sections = set(admitted) | set(UNGATED_SECTIONS)
@@ -193,29 +188,10 @@ def available(user: str | None = None) -> bool:
 	"""May this person open the console at all?
 
 	False for a volunteer, a member and anybody else holding none of the
-	society's staff scope roles and no access to the SMS side door either. The
-	console is not a screen they are shown empty; it is a place they are not
-	sent.
+	society's staff scope roles. The console is not a screen they are shown
+	empty; it is a place they are not sent.
 	"""
 	return bool(visible(user))
-
-
-def sms_access(user: str | None = None) -> bool:
-	"""May this person open onerc_sms's own campaign builder, on the desk?
-
-	Not a `GATED_SECTIONS` entry, deliberately: every doctype named there is
-	one `staff/tests/test_console.py` asserts *exists on the site*, a fair
-	assumption for vmmsx's own doctypes and onerc_core's, and not one this app
-	can make about `SMS Campaign` — it belongs to onerc_sms, an optional
-	companion app vmmsx does not require. Rides alongside `has_desk_access()`
-	in `api/console.py` instead: a side door into the framework's own form for
-	whoever `staff/services/permissions.py` has granted it to, the same shape
-	as the desk link itself, and for the same reason — nobody is shown a door
-	that would give them a permission error at the other end.
-	"""
-	user = user or frappe.session.user
-
-	return _readable(("SMS Campaign",), user)
 
 
 def _readable(doctypes: tuple[str, ...], user: str) -> bool:

@@ -291,7 +291,11 @@ const FINANCE: GroupDef = {
 };
 
 const GROUPS = [PEOPLE, OPERATIONS, FINANCE];
-const FLAT = [OVERVIEW, COMMUNICATION, EVENTS, CONTENT, QUESTIONS];
+const FLAT = [OVERVIEW, COMMUNICATION, EVENTS];
+// Configuration belongs beside the other ways out of daily console work, not
+// between Events and Communication. These routes stay permission-gated by the
+// same server section keys; only their place in the navigation changes.
+const SETTINGS = [CONTENT, QUESTIONS];
 
 /**
  * Every routable tab this console can ever draw, gated or not — flattened out
@@ -302,6 +306,7 @@ const FLAT = [OVERVIEW, COMMUNICATION, EVENTS, CONTENT, QUESTIONS];
  */
 const ALL_ROUTES: { to: string; section: string }[] = [
 	...FLAT,
+	...SETTINGS,
 	...GROUPS.map((group) => ({ to: group.to, section: group.section })),
 	...GROUPS.flatMap((group) => group.children),
 ];
@@ -352,7 +357,7 @@ export default function AdminLayout() {
 	const location = useLocation();
 
 	const access = useFrappeGetCall<{
-		message: { available: boolean; sections: string[]; desk?: boolean; sms?: boolean };
+		message: { available: boolean; sections: string[]; desk?: boolean };
 	}>(
 		API.consoleSections,
 		undefined,
@@ -449,6 +454,7 @@ export default function AdminLayout() {
 		);
 
 	const ordered: (NavItem | NavGroup)[] = [...flatAllowed.slice(0, 1), ...groups, ...flatAllowed.slice(1)];
+	const settings = SETTINGS.filter((tab) => allowed.has(tab.section));
 
 	return (
 		<ContentProvider surface="chrome,admin">
@@ -460,6 +466,7 @@ export default function AdminLayout() {
 			    thing they are instead of a volunteer. */}
 			<ConsoleShell
 				items={ordered}
+				settings={settings}
 				// The Deployments section's own navigation, and only while the
 				// current route is inside it. Passed from here rather than resolved
 				// inside `Shell` because the shell has no business knowing which of
@@ -482,11 +489,6 @@ export default function AdminLayout() {
 				// gates the VMMS tile on the apps screen, so nobody is offered a
 				// door that would give them a permission error.
 				desk={answer?.desk ? "/app" : null}
-				// A second, narrower door: onerc_sms's own campaign builder, for
-				// whoever `staff/services/permissions.py` has granted the society's
-				// configured SMS role. See `console.sms_access()`'s own docstring
-				// for why this doctype cannot be a gated section like the tabs above.
-				sms={answer?.sms ? "/app/sms-campaign/new" : null}
 				person={me.data?.message?.full_name || account.data?.message?.full_name || null}
 				subtitle="Manager"
 			/>

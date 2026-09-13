@@ -16,10 +16,10 @@ open onerc_sms's campaign builder at all. A **Custom Field owned by vmmsx**,
 exactly like every other scope-role setting. Core's National Society Settings
 doctype is not edited.
 
-**Left empty.** No non-administrator reaches onerc_sms's campaign builder
-until a society chooses the role — `staff/services/console.py::sms_access()`
-answers False until then, so the side door in the console stays closed rather
-than pointing at a screen that would refuse them.
+**Left empty.** No non-administrator files a campaign until a society chooses
+the role — `notifications/services/campaign.py::available()` answers False
+until then, so the Communication screen simply does not offer the SMS channel
+rather than offering one that would refuse them.
 
 A separate patch from any single module's setup, the same reason
 `install_deployment_scope_roles` and `install_stipend_scope_roles` are their

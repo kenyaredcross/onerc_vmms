@@ -95,7 +95,7 @@ export function Modal({
 				aria-modal="true"
 				aria-label={typeof title === "string" ? title : undefined}
 				className={cx(
-					"relative flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-card-line bg-white shadow-[0_30px_70px_rgba(10,18,27,0.28)] motion-safe:animate-[rise_.18s_ease-out]",
+					"relative flex max-h-[calc(var(--screen)-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-card-line bg-white shadow-[0_30px_70px_rgba(10,18,27,0.28)] motion-safe:animate-[rise_.18s_ease-out]",
 					size === "lg" ? "max-w-2xl" : "max-w-lg",
 				)}
 			>

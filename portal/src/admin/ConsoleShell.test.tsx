@@ -30,15 +30,22 @@ const ITEMS: NavItem[] = [
 	{ to: "/admin/deployments", labelKey: "c", fallback: "Deployments", icon: Icon.truck, hasSubNav: true },
 ];
 
-function show(route: string, subNav?: (horizontal: boolean) => React.ReactNode) {
+const SETTINGS: NavItem[] = [
+	{ to: "/admin/content", labelKey: "settings.content", fallback: "Page content", icon: Icon.pencil },
+	{ to: "/admin/questions", labelKey: "settings.questions", fallback: "Form questions", icon: Icon.book },
+];
+
+function show(route: string, subNav?: (horizontal: boolean) => React.ReactNode, settings: NavItem[] = []) {
 	return mount(
 		<Routes>
-			<Route element={<ConsoleShell items={ITEMS} subNav={subNav} />}>
+			<Route element={<ConsoleShell items={ITEMS} subNav={subNav} settings={settings} portal="/dashboard" desk="/app" />}>
 				<Route path="/admin" element={<p>overview body</p>} />
 				<Route path="/tasks" element={<p>tasks body</p>} />
 				<Route path="/admin/deployments" element={<p>deployments body</p>} />
 				<Route path="/admin/deployments/ongoing" element={<p>ongoing body</p>} />
 				<Route path="/admin/deployments/terms/:name" element={<p>one terms body</p>} />
+				<Route path="/admin/content" element={<p>content body</p>} />
+				<Route path="/admin/questions" element={<p>questions body</p>} />
 			</Route>
 		</Routes>,
 		{ route },
@@ -161,5 +168,17 @@ describe("the page title", () => {
 		show("/tasks");
 
 		expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+	});
+});
+
+describe("configuration shortcuts", () => {
+	it("keeps content and form configuration below the workspace shortcuts", () => {
+		show("/admin/content", undefined, SETTINGS);
+
+		const settings = screen.getByRole("navigation", { name: "Settings" });
+		expect(settings.querySelector('a[href="/admin/content"]')).toBeTruthy();
+		expect(settings.querySelector('a[href="/admin/questions"]')).toBeTruthy();
+		expect(screen.getByRole("link", { name: "Switch to volunteer console" }).getAttribute("href")).toBe("/dashboard");
+		expect(screen.queryByRole("link", { name: "Send SMS" })).toBeNull();
 	});
 });

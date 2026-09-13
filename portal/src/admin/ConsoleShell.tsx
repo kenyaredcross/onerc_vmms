@@ -36,6 +36,7 @@ import { EditableText } from "../content/Editable";
 import { EditToolbar } from "../content/EditToolbar";
 import { initials, useSession } from "../lib/session";
 import { BrandLockup } from "../ui/brand";
+import { GuidedTour, startGuidedTour, useWorkspaceDensity } from "../ui/GuidedTour";
 import { Icon, companionIcon } from "../ui/icons";
 import { cx } from "../portal/ui/kit";
 import { ToastProvider } from "../portal/ui/overlays";
@@ -173,7 +174,7 @@ export function ConsoleShell({
 	companions = [],
 	portal,
 	desk,
-	sms,
+	settings = [],
 	subtitle,
 	person,
 	subNav,
@@ -192,8 +193,8 @@ export function ConsoleShell({
 	portal?: string | null;
 	/** Where the Frappe desk is, for whoever may open it, or nothing. */
 	desk?: string | null;
-	/** Where onerc_sms's own campaign builder is, or nothing. */
-	sms?: string | null;
+	/** Administrative editors, kept with the other setup destinations. */
+	settings?: NavItem[];
 	subtitle?: string | null;
 	person?: string | null;
 	/**
@@ -209,6 +210,7 @@ export function ConsoleShell({
 }) {
 	const { user, logout } = useSession();
 	const location = useLocation();
+	useWorkspaceDensity();
 	const [drawer, setDrawer] = useState(false);
 	const [menu, setMenu] = useState(false);
 	const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -217,7 +219,7 @@ export function ConsoleShell({
 	const drawerPanel = useRef<HTMLDivElement>(null);
 	const menuButton = useRef<HTMLButtonElement>(null);
 
-	const current = currentTab(location.pathname, items);
+	const current = currentTab(location.pathname, [...items, ...settings]);
 
 	// A section with its own panel takes the rail down to icons whatever the
 	// stored preference says: two expanded navigation columns side by side is
@@ -451,7 +453,7 @@ export function ConsoleShell({
 		</nav>
 	);
 
-	/** Companion apps and the way back to a person's own portal — the rail's foot. */
+	/** The way out of daily work, followed by the console's configuration pages. */
 	const railFoot = (compact: boolean) => (
 		<>
 			{companions.length > 0 && (
@@ -495,8 +497,9 @@ export function ConsoleShell({
 				</>
 			)}
 
-			{(portal || desk || sms) && (
+			{(portal || desk || settings.length > 0) && (
 				<div
+					data-tour="console-shortcuts"
 					className={cx(
 						"mt-auto flex flex-col gap-1 border-t border-white/15 pt-3",
 						narrow && !compact && "items-center",
@@ -505,8 +508,8 @@ export function ConsoleShell({
 					{portal && (
 						<Link
 							to={portal}
-							aria-label={narrow && !compact ? "My portal" : undefined}
-							title={narrow && !compact ? "My portal" : undefined}
+							aria-label={narrow && !compact ? "Switch to volunteer console" : undefined}
+							title={narrow && !compact ? "Switch to volunteer console" : undefined}
 							className={cx(
 								"flex min-h-[36px] items-center rounded-[9px] bg-white/[0.12] text-[13.5px] font-semibold text-white transition-colors hover:bg-white/[0.18]",
 								narrow && !compact ? "h-9 w-9 justify-center" : "gap-3 px-2.5 py-2",
@@ -517,7 +520,7 @@ export function ConsoleShell({
 							</span>
 							{(!narrow || compact) && (
 								<>
-									<EditableText k="admin.nav.portal" fallback="My portal" className="flex-1 truncate" />
+									<EditableText k="admin.nav.volunteer_console" fallback="Switch to volunteer console" className="flex-1 truncate" />
 									<Icon.chevron size={14} className="-rotate-90 flex-none text-white/55" />
 								</>
 							)}
@@ -541,21 +544,30 @@ export function ConsoleShell({
 						</a>
 					)}
 
-					{sms && (
-						<a
-							href={sms}
-							aria-label={narrow && !compact ? "Send SMS" : undefined}
-							title={narrow && !compact ? "Send SMS" : undefined}
-							className={cx(
-								"flex min-h-[36px] items-center rounded-[9px] text-[13px] font-medium text-white/70 transition-colors hover:bg-white/[0.06] hover:text-white",
-								narrow && !compact ? "justify-center px-0 py-2" : "gap-3 px-2.5 py-2",
+					{settings.length > 0 && (
+						<div className="mt-2 border-t border-white/15 pt-2">
+							{(!narrow || compact) && (
+								<div className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/60">
+									Settings
+								</div>
 							)}
-						>
-							<span className="flex-none text-white/55">
-								<Icon.phone size={16} />
-							</span>
-							{(!narrow || compact) && <EditableText k="admin.nav.sms" fallback="Send SMS" className="flex-1" />}
-						</a>
+							<nav aria-label="Settings" className="flex flex-col gap-0.5">
+								{settings.map((item) => {
+									const active = within(location.pathname, item.to);
+									return (
+										<NavLink
+											key={item.to}
+											to={item.to}
+											aria-label={iconName(item, compact)}
+											title={iconName(item, compact)}
+											className={rowClass(active, compact)}
+										>
+											{rowContent(item, active, compact)}
+										</NavLink>
+									);
+								})}
+							</nav>
+						</div>
 					)}
 				</div>
 			)}
@@ -564,74 +576,63 @@ export function ConsoleShell({
 
 	return (
 		<ToastProvider>
-			<div className="console-root min-h-screen">
-				<div className="flex min-h-screen">
+			<div className="console-root min-h-[var(--screen)]">
+				<div className="flex min-h-[var(--screen)]">
 					{/* ---------------------------------------------------------- rail */}
-					<aside
-						className="portal-rail-scroll sticky top-0 hidden h-screen flex-none flex-col overflow-y-auto bg-rail px-3 pb-4 pt-4 transition-[width] duration-200 ease-out md:flex"
+					<div
+						data-tour="console-nav"
+						className="sticky top-0 hidden h-[var(--screen)] flex-none transition-[width] duration-200 ease-out md:block"
 						style={{ width: narrow ? RAIL_NARROW : RAIL_WIDE }}
 					>
-						<Link
-							to="/admin"
-							className={cx("mb-3 flex items-center px-2 pt-1", narrow && "justify-center px-0")}
-							aria-label="Console home"
-						>
-							<BrandLockup compact={narrow} wrap={!narrow} tone="dark" />
-						</Link>
-
-						{navigation(false)}
-
-						<div className="mt-auto flex flex-col gap-1 pt-4">
-							{railFoot(false)}
-
-							{/* The collapse control. A real button whose accessible name
-							    says what it will do, not what the rail currently is. */}
-							<button
-								type="button"
-								onClick={toggleCollapsed}
-								disabled={forced}
-								aria-label={narrow ? "Expand menu" : "Collapse menu"}
-								title={
-									forced ? "This section uses its own menu" : narrow ? "Expand menu" : "Collapse menu"
-								}
-								className={cx(
-									"mt-1 flex min-h-[34px] items-center rounded-[9px] text-[12.5px] font-medium text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-white/60",
-									narrow ? "h-9 w-9 justify-center self-center" : "gap-2.5 px-2.5 py-2",
-								)}
+						<aside className="portal-rail-scroll flex h-full flex-col overflow-y-auto bg-rail px-3 pb-4 pt-4">
+							<Link
+								to="/admin"
+								className={cx("mb-3 flex items-center px-2 pt-1", narrow && "justify-center px-0")}
+								aria-label="Console home"
 							>
-								<Icon.chevron
-									size={14}
-									className={cx("flex-none transition-transform", narrow ? "-rotate-90" : "rotate-90")}
-								/>
-								{!narrow && (
-									<EditableText
-										k="chrome.action.collapse"
-										fallback="Collapse menu"
-										className="flex-1 text-left"
-									/>
-								)}
-							</button>
-						</div>
-					</aside>
+								<BrandLockup compact={narrow} wrap={!narrow} tone="dark" />
+							</Link>
+
+							{navigation(false)}
+
+							<div className="mt-auto flex flex-col gap-1 pt-4">{railFoot(false)}</div>
+						</aside>
+						{/* Kept on the seam between navigation and content, where the
+						    effect of the control is visible before its label is read. */}
+						<button
+							type="button"
+							onClick={toggleCollapsed}
+							disabled={forced}
+							aria-label={narrow ? "Expand menu" : "Collapse menu"}
+							title={forced ? "This section uses its own menu" : narrow ? "Expand menu" : "Collapse menu"}
+							className="absolute right-0 top-[70px] z-40 grid h-7 w-7 translate-x-1/2 place-items-center rounded-full border border-card-line bg-white text-slate-strong shadow-sm transition hover:bg-canvas hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							<Icon.chevron size={13} className={cx("transition-transform", narrow ? "-rotate-90" : "rotate-90")} />
+						</button>
+					</div>
 
 					{/* -------------------------------------------------------- sub-nav */}
 					{/* A second navigation column, for a section big enough to be a
 					    small application of its own. White on the canvas rather than a
 					    second grey: three columns read as rail / section / content. */}
 					{subNav && (
-						<div className="sticky top-0 hidden h-screen w-[216px] flex-none overflow-y-auto border-r border-card-line bg-white px-3 py-4 lg:block">
+						<div className="sticky top-0 hidden h-[var(--screen)] w-[216px] flex-none overflow-y-auto border-r border-card-line bg-white px-3 py-4 lg:block">
 							{subNav(false)}
 						</div>
 					)}
 
 					{/* -------------------------------------------------- content column */}
 					<div className="flex min-w-0 flex-1 flex-col">
-						<header className="sticky top-0 z-40 flex h-14 flex-none items-center gap-3 bg-canvas/95 px-4 backdrop-blur-sm md:px-7">
+						<header
+							data-tour="console-header"
+							className="sticky top-0 z-30 flex h-14 flex-none items-center gap-3 bg-canvas/95 px-4 backdrop-blur-sm md:px-7"
+						>
 							<button
 								type="button"
 								onClick={() => setDrawer(true)}
 								aria-label="Open navigation"
 								aria-expanded={drawer}
+								data-tour="console-nav-mobile"
 								className="-ml-1 grid h-8 w-8 flex-none place-items-center rounded-lg text-slate-strong transition hover:bg-rail-hover md:hidden"
 							>
 								<Icon.menu size={18} />
@@ -705,6 +706,19 @@ export function ConsoleShell({
 												type="button"
 												role="menuitem"
 												onClick={() => {
+													setMenu(false);
+													startGuidedTour("console");
+												}}
+												className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[12.5px] font-medium text-slate-strong transition hover:bg-canvas hover:text-ink"
+											>
+												<Icon.compass size={15} />
+												Take a tour
+											</button>
+
+											<button
+												type="button"
+												role="menuitem"
+												onClick={() => {
 													// Frappe clears the session cookie; a hard navigation is
 													// wanted here so nothing stale survives in memory.
 													void logout().then(() => {
@@ -731,7 +745,7 @@ export function ConsoleShell({
 							</div>
 						)}
 
-						<main className="min-w-0 flex-1 px-4 pb-16 pt-4 md:px-7">
+						<main data-tour="console-content" className="min-w-0 flex-1 px-4 pb-16 pt-4 md:px-7">
 							<Outlet />
 						</main>
 					</div>
@@ -752,6 +766,7 @@ export function ConsoleShell({
 							role="dialog"
 							aria-modal="true"
 							aria-label="Navigation"
+							data-tour="console-nav-mobile"
 							className="portal-rail-scroll absolute inset-y-0 left-0 flex w-[272px] max-w-[86vw] flex-col overflow-y-auto bg-rail px-3 pb-5 pt-4 shadow-[0_18px_55px_rgba(25,30,38,0.24)]"
 						>
 							<div className="mb-3 flex items-center justify-between gap-2 px-2">
@@ -776,6 +791,31 @@ export function ConsoleShell({
 				)}
 
 				<EditToolbar />
+				<GuidedTour
+					id="console"
+					steps={[
+						{
+							title: "Manager navigation",
+							body: "Open the work areas your role gives you. Counts show items waiting for your attention.",
+							selector: "[data-tour='console-nav'], [data-tour='console-nav-mobile']",
+						},
+						{
+							title: "The current workspace",
+							body: "Large work areas add a second navigation row or column so their tools stay close together.",
+							selector: "[data-tour='console-header']",
+						},
+						{
+							title: "Work here",
+							body: "Queues, records, forms and reports open in this content area.",
+							selector: "[data-tour='console-content']",
+						},
+						{
+							title: "Switch or configure",
+							body: "Return to your volunteer console, open Desk, or manage page content and form questions from Settings.",
+							selector: "[data-tour='console-shortcuts']",
+						},
+					]}
+				/>
 			</div>
 		</ToastProvider>
 	);

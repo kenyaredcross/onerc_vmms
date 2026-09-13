@@ -23,6 +23,8 @@ and a test that re-derived it would pass for an implementation the framework
 disagreed with.
 """
 
+from unittest.mock import patch
+
 import frappe
 
 from vmmsx.registration.services import desk, workspaces
@@ -287,6 +289,12 @@ class TestWhereSigningInLands(RegistrationTestCase):
 		user.insert()
 
 		self.assertEqual(self.landing_for(user.name), desk.PORTAL_HOME)
+
+	def test_a_manager_lands_in_the_manager_console(self):
+		user = fixtures.make_user("landing.manager", [fixtures.APPROVER_ROLE])
+
+		with patch("vmmsx.staff.services.console.available", return_value=True):
+			self.assertEqual(self.landing_for(user), desk.MANAGER_HOME)
 
 	def test_the_administrator_is_sent_to_the_desk_by_name(self):
 		"""Named rather than left to the framework, which is the whole point.

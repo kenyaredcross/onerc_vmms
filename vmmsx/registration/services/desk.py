@@ -55,6 +55,10 @@ import frappe
 #: rather than `/portal`, which is the public landing page under a second name —
 #: see the routing table in `portal/src/App.tsx` and the two roots in `main.tsx`.
 PORTAL_HOME = "/portal/dashboard"
+MANAGER_HOME = "/portal/admin"
+# Authentication flows that must choose a return address before they know the
+# account land here; the SPA resolves manager versus volunteer after sign-in.
+WORKSPACE_HOME = "/portal/start"
 
 #: The one account this service leaves on the desk. `Administrator` is a
 #: framework primitive rather than a society role — the same exemption
@@ -190,7 +194,7 @@ def close(role: str) -> dict:
 
 
 def on_session_creation(login_manager=None) -> None:
-	"""Land every signed-in person in the portal, whatever else is installed.
+	"""Land people in the workspace their responsibilities open first.
 
 	`close()` above points each self-service *role* at `PORTAL_HOME`, and that
 	was the whole answer for as long as those roles were the only ones carrying
@@ -228,13 +232,20 @@ def on_session_creation(login_manager=None) -> None:
 	configured from would land in an events dashboard. Saying `/app` is the
 	honest version of "this one is not a portal person".
 
-	Everybody else lands in the portal, coordinators included: being staff is a
-	role somebody holds, not a thing they are instead of a volunteer, and the
-	console is one link away from the dashboard.
+	A person admitted by the permission-driven manager console lands there. No
+	role name is repeated here: `staff.services.console.available()` is the same
+	answer that gates the console itself, so a society's own managerial role is
+	covered as soon as its permissions are configured. Everyone else lands in
+	the volunteer portal. The framework Administrator remains on Desk because it
+	is the one account used to repair configuration before the app is available.
 	"""
-	frappe.local.flags.home_page = (
-		DESK_HOME if frappe.session.user == DESK_ACCOUNT else PORTAL_HOME
-	)
+	if frappe.session.user == DESK_ACCOUNT:
+		frappe.local.flags.home_page = DESK_HOME
+		return
+
+	from vmmsx.staff.services.console import available
+
+	frappe.local.flags.home_page = MANAGER_HOME if available() else PORTAL_HOME
 
 
 def has_portal_access() -> bool:

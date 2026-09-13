@@ -90,7 +90,19 @@ def options() -> dict:
 
 	sms_templates = []
 	sms_source_doctypes = []
-	if campaign.available() and frappe.has_permission("SMS Template", ptype="read"):
+	# `SMS Campaign` can exist while an optional app is being installed or
+	# migrated and `SMS Template` does not yet. Both ways of asking about a
+	# doctype the site does not have fail, at different points: for an ordinary
+	# caller `has_permission` itself raises `DoesNotExistError`, while for an
+	# Administrator it answers True and the `get_list` below raises instead.
+	# Either one used to take down the whole options request, hiding the in-app,
+	# email and WhatsApp channels along with SMS. Asking whether the doctype is
+	# here at all is the one guard that covers both.
+	if (
+		campaign.available()
+		and frappe.db.exists("DocType", "SMS Template")
+		and frappe.has_permission("SMS Template", ptype="read")
+	):
 		sms_templates = frappe.get_list(
 			"SMS Template",
 			fields=["name", "template_name", "category", "message"],
@@ -126,6 +138,10 @@ def options() -> dict:
 			CHANNEL_SMS: campaign.available(),
 			CHANNEL_WHATSAPP: whatsapp.available(),
 		},
+		# Availability answers whether this caller may use the channel. Installed
+		# answers why they cannot, so the screen can give a useful next step rather
+		# than a generic permission message.
+		"sms_installed": campaign.installed(),
 		"sms_templates": sms_templates,
 		"sms_source_doctypes": sms_source_doctypes,
 		# Whether they may actually send, asked of the same check `send` makes.
