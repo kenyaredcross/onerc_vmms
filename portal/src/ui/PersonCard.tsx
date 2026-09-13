@@ -7,8 +7,13 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 
-import { cx } from "./primitives";
+import { appRoute, cx } from "./primitives";
+
+/** How close to the edge of the window the card is allowed to come. */
+const EDGE = 16;
 
 /**
  * The floating summary that opens beside somebody's name in a register.
@@ -25,15 +30,19 @@ import { cx } from "./primitives";
  * knows how to do with a popover, and Escape returns focus to the trigger it
  * came from rather than dropping it on the document.
  *
- * **It never opens off the edge of the screen**, and that is the difference
- * between this and `HoverCard`, which places itself below-left and lets its
- * container worry about it. That is fine in a narrow column and wrong in a
- * register: the name column is at the left of a table that scrolls, the last
- * row is at the bottom of the viewport, and a card that opened below it would
- * put half of somebody's phone number under the fold. So the card measures
- * itself once it is open and flips above or left when there is not room —
- * measured rather than guessed, because the card's height depends on what
- * arrived in it.
+ * **It is drawn in a portal at the top of the document, not inside the row.**
+ * A register lives in a panel that scrolls sideways, and `overflow-x: auto`
+ * clips the other axis too — the browser has no way to scroll one axis and let
+ * the other overflow. A card positioned inside that panel is therefore sliced
+ * off at the table's own edge, which is how this looked before: a row near the
+ * top of a register opened a card and a coordinator saw a sliver of it. So the
+ * card is a child of `<body>`, positioned against the trigger's measured rect,
+ * and no ancestor's overflow can reach it.
+ *
+ * **It never opens off the edge of the screen.** The card measures itself once
+ * it is open and flips above or left when there is not room — measured rather
+ * than guessed, because the card's height depends on what arrived in it, and
+ * re-measured when the dossier lands or the page moves under it.
  *
  * **The body is a render prop and is only called while open.** That is what
  * makes fetch-on-open work: a register of two hundred rows must not pay for two
@@ -57,10 +66,12 @@ export function PersonCard({
 }) {
 	const [open, setOpen] = useState(false);
 	const [pinned, setPinned] = useState(false);
-	const [place, setPlace] = useState<{ above: boolean; right: boolean }>({
-		above: false,
-		right: false,
-	});
+	/**
+	 * Where the card sits. `top` and `left` are in the card's own units, which
+	 * are not the window's — see the placement effect. `above` flips it onto its
+	 * own bottom edge rather than moving it.
+	 */
+	const [at, setAt] = useState<{ above: boolean; top: number; left: number } | null>(null);
 
 	const holder = useRef<HTMLDivElement>(null);
 	const trigger = useRef<HTMLButtonElement>(null);
@@ -85,6 +96,20 @@ export function PersonCard({
 		setOpen(false);
 	}, []);
 
+	/**
+	 * Is this node part of the card's world?
+	 *
+	 * The card is no longer a descendant of the trigger, so "inside" is two
+	 * elements rather than one. Every dismissal asks this, and a check that
+	 * forgot the card would close it the moment somebody reached for the Call
+	 * link it exists to offer.
+	 */
+	const within = useCallback(
+		(node: Node | null) =>
+			Boolean(node && (holder.current?.contains(node) || card.current?.contains(node))),
+		[],
+	);
+
 	// Escape and a click elsewhere dismiss a pinned card. Both listeners are
 	// attached only while one is pinned, so a register of fifty rows is not
 	// fifty document listeners waiting for a key nobody pressed.
@@ -103,7 +128,7 @@ export function PersonCard({
 		};
 
 		const onPointer = (event: MouseEvent) => {
-			if (holder.current?.contains(event.target as Node)) return;
+			if (within(event.target as Node)) return;
 
 			close();
 		};
@@ -115,37 +140,121 @@ export function PersonCard({
 			document.removeEventListener("keydown", onKey);
 			document.removeEventListener("mousedown", onPointer);
 		};
-	}, [pinned, close]);
+	}, [pinned, close, within]);
 
-	// Measured after the card is in the DOM and before the browser paints, so it
-	// never appears in the wrong place for a frame. `getBoundingClientRect` is
-	// zero-everything in jsdom, which resolves to the default placement — the
-	// same one a wide desktop viewport gets.
+	/**
+	 * Put the card against the name it belongs to, and keep it there.
+	 *
+	 * **Re-measured every frame it is open, not on scroll and resize.** A card
+	 * placed once drifts off the name it belongs to, because the row moves under
+	 * it: the summary tiles and the page's own description arrive after the
+	 * register does and push every row down together. That is not a scroll, not a
+	 * resize and not a change in the card's own size, so the three obvious
+	 * listeners all miss it — and the card ends up hanging in the air a hundred
+	 * pixels above the person it describes. A frame loop sees all of it, costs one
+	 * `getBoundingClientRect` per frame for the single card that is open, and
+	 * stops the moment it closes.
+	 *
+	 * It only writes state when the answer actually changed, so a card sitting
+	 * still is a comparison per frame and no React render at all.
+	 *
+	 * `getBoundingClientRect` is zero-everything in jsdom, which resolves to the
+	 * default placement: below and left-aligned, the same one a wide desktop
+	 * viewport gets.
+	 */
 	useLayoutEffect(() => {
-		if (!open || !trigger.current || !card.current) return;
+		if (!open) return;
 
-		const anchor = trigger.current.getBoundingClientRect();
-		const height = card.current.offsetHeight || 0;
-		const room = {
-			below: window.innerHeight - anchor.bottom,
-			right: window.innerWidth - anchor.left,
+		let frame = 0;
+
+		const place = () => {
+			frame = requestAnimationFrame(place);
+
+			if (!trigger.current || !card.current) return;
+
+			const anchor = trigger.current.getBoundingClientRect();
+			const box = card.current.getBoundingClientRect();
+
+			/**
+			 * **The signed-in shells run at `zoom: 0.8`, and that splits the
+			 * page into two coordinate systems.** `getBoundingClientRect` answers
+			 * in window pixels, with the zoom already applied; `offsetHeight` and
+			 * every length this component writes into `style` answer in the
+			 * zoomed subtree's own units, which are 1/0.8 as large. Mixing the
+			 * two is what put the card a hundred pixels off the name — the
+			 * measured height was a quarter too big, and later the window's own
+			 * height was compared against a distance that was not in its units.
+			 *
+			 * So: every comparison below happens in window pixels, and the two
+			 * numbers that leave for `style` are converted back at the end. The
+			 * card measures its own scale, which is exact and needs no knowledge
+			 * of which shell it opened in.
+			 */
+			const scale = card.current.offsetWidth ? box.width / card.current.offsetWidth : 1;
+			const span = width * scale;
+
+			const fitsBelow = anchor.bottom + box.height <= window.innerHeight - EDGE;
+			const fitsAbove = anchor.top - box.height >= EDGE;
+
+			// Below is the default and above is the fallback — a card that
+			// flipped whenever it was slightly short would jump about on a short
+			// viewport. When neither side fits it stays below and is clamped onto
+			// the screen, rather than flipping into a position just as cut off.
+			const above = !fitsBelow && fitsAbove;
+
+			// Above is `anchor.top` and not `anchor.top - height`, because the
+			// card is flipped onto its own bottom edge with a transform rather
+			// than moved up by a height this has to be right about. The browser
+			// does that arithmetic as it paints, so the foot of the card meets
+			// the name whatever arrived inside it.
+			const y = above
+				? anchor.top
+				: Math.min(
+						Math.max(EDGE, anchor.bottom),
+						Math.max(EDGE, window.innerHeight - EDGE - box.height),
+					);
+
+			// Never off the left edge either: a right-flipped card beside a name
+			// near the start of a narrow window would go negative.
+			const x = Math.max(
+				EDGE,
+				window.innerWidth - anchor.left < span + EDGE ? anchor.right - span : anchor.left,
+			);
+
+			const next = { above, top: y / scale, left: x / scale };
+
+			setAt((was) =>
+				was && was.top === next.top && was.left === next.left && was.above === next.above
+					? was
+					: next,
+			);
 		};
 
-		setPlace({
-			// Flip up only when there is genuinely more room up there: a card
-			// that flipped whenever it was slightly short would jump about on a
-			// short viewport where neither side fits.
-			above: room.below < height + 16 && anchor.top > room.below,
-			right: room.right < width + 16,
-		});
+		place();
+
+		return () => cancelAnimationFrame(frame);
 	}, [open, width]);
+
+	// A fresh open measures itself from scratch rather than flashing up wherever
+	// the last one sat.
+	useEffect(() => {
+		if (!open) setAt(null);
+	}, [open]);
+
+	/** Mouse leaving for somewhere that is not the card's world closes it. */
+	const onLeave = (next: Node | null) => {
+		if (pinned) return;
+		if (within(next)) return;
+
+		setOpen(false);
+	};
 
 	return (
 		<div
 			ref={holder}
 			className={cx("relative inline-block", className)}
 			onMouseEnter={() => setOpen(true)}
-			onMouseLeave={() => !pinned && setOpen(false)}
+			onMouseLeave={(event) => onLeave(event.relatedTarget as Node)}
 		>
 			<button
 				ref={trigger}
@@ -166,7 +275,7 @@ export function PersonCard({
 					// this a keyboard reader could never reach the call or email
 					// action the card exists to offer.
 					if (pinned) return;
-					if (holder.current?.contains(event.relatedTarget as Node)) return;
+					if (within(event.relatedTarget as Node)) return;
 
 					setOpen(false);
 				}}
@@ -179,23 +288,49 @@ export function PersonCard({
 				{label}
 			</button>
 
-			{open && (
-				<div
-					ref={card}
-					id={id}
-					role="dialog"
-					aria-label="Person summary"
-					style={{ width }}
-					className={cx(
-						"absolute z-40 overflow-hidden rounded-2xl border border-card-line bg-white p-0 text-left shadow-[0_20px_50px_rgba(1,30,65,0.22)]",
-						place.above ? "bottom-full mb-1.5" : "top-full mt-1.5",
-						place.right ? "right-0" : "left-0",
-						cardClassName,
-					)}
-				>
-					{children()}
-				</div>
-			)}
+			{open &&
+				createPortal(
+					<div
+						ref={card}
+						style={{
+							top: at?.top ?? 0,
+							left: at?.left ?? 0,
+							// Flipped onto its own foot, in its own units, by the
+							// browser — the one measurement nothing here can get wrong.
+							transform: at?.above ? "translateY(-100%)" : "none",
+							width,
+							// One frame where the height is unknown and the flip has
+							// not been decided. Hidden rather than moved off-screen,
+							// so it still measures.
+							visibility: at ? "visible" : "hidden",
+						}}
+						// Above the console's own chrome — a sticky table header, an
+						// account menu — and deliberately below the modals and drawers at
+						// 60, which are the only things allowed to cover a card outright.
+						className="fixed z-[55]"
+						onMouseEnter={() => setOpen(true)}
+						onMouseLeave={(event) => onLeave(event.relatedTarget as Node)}
+					>
+						{/* The gap is padding on the portal rather than empty space,
+						    so a mouse crossing from the name into the card never
+						    passes over the row underneath and closes what it was
+						    reaching for. */}
+						<div className={at?.above ? "pb-1.5" : "pt-1.5"}>
+							<div
+								id={id}
+								role="dialog"
+								aria-label="Person summary"
+								className={cx(
+									"overflow-hidden rounded-2xl border border-card-line bg-white p-0 text-left shadow-[0_20px_50px_rgba(1,30,65,0.22)]",
+									cardClassName,
+								)}
+							>
+								{children()}
+							</div>
+						</div>
+					</div>,
+					document.body,
+				)}
 		</div>
 	);
 }
@@ -292,13 +427,33 @@ export function PersonSummaryBody({
 				</dl>
 			)}
 
-			<a
-				href={open.to}
-				className="block border-t border-card-line bg-surface px-4 py-3 text-[12px] font-bold text-blue-press hover:bg-blue-soft"
-			>
-				{open.label} →
-			</a>
+			<OpenRecord {...open} />
 		</>
+	);
+}
+
+/**
+ * The way out of the card and into the record.
+ *
+ * **Through the router, not a bare `<a href>`.** The router is mounted under a
+ * basename and an anchor carries none of it, so `/admin/registry/volunteer/…`
+ * went to the site rather than to this app and Frappe answered with its own
+ * "Page not found" — the same failure `appRoute` was written for, arriving in
+ * the one link on this card that exists to be followed.
+ */
+function OpenRecord({ to, label }: { to: string; label: string }) {
+	const style =
+		"block border-t border-card-line bg-surface px-4 py-3 text-[12px] font-bold text-blue-press hover:bg-blue-soft";
+	const route = appRoute(to);
+
+	return route === null ? (
+		<a href={to} className={style}>
+			{label} →
+		</a>
+	) : (
+		<Link to={route} className={style}>
+			{label} →
+		</Link>
 	);
 }
 
