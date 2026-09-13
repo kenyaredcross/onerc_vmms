@@ -544,7 +544,15 @@ def batch_candidates(name: str, **filters) -> dict:
 	its deployment's terms of reference where it has one, and its due date as the
 	day the availability question is asked about. The scope is the caller's
 	session and cannot be supplied.
+
+	The transport's own keys are dropped first: a whitelisted method declaring
+	`**kwargs` is handed the *whole* form dict, so the `cmd` Frappe routed the
+	request with arrives looking like a filter, and `matching.candidates` takes
+	named arguments — a stray one is a `TypeError` before the search runs.
 	"""
+	filters.pop("cmd", None)
+	filters.pop("csrf_token", None)
+
 	return batch_service.candidates(_batch(name, write=False), **filters)
 
 

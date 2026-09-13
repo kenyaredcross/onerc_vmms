@@ -393,3 +393,30 @@ class TestTheCountsAreDerived(BatchTestCase):
 		batch_service.generate(batch)
 
 		self.assertEqual(batch_service.counts(batch)["skipped"], 1)
+
+
+class TestTheCandidateListArrivesAsFrappeSendsIt(BatchTestCase):
+	"""The form dict a whitelisted method is actually handed.
+
+	`frappe.call` filters a request down to the arguments a method declares —
+	*unless* the method declares `**kwargs`, and then it is handed the whole form
+	dict, routing key and all. `batch_candidates` declares one so a coordinator's
+	screen can narrow the list by anything `matching.candidates` answers, which
+	means Frappe's own `cmd` arrives looking like one more filter. It takes named
+	arguments, so a stray one is a `TypeError` before the search runs.
+	"""
+
+	def test_the_search_survives_the_keys_frappe_adds(self):
+		from vmmsx.api import tasks as tasks_api
+
+		volunteer = self.volunteer()
+		batch = self.make_batch([volunteer])
+
+		found = frappe.call(
+			tasks_api.batch_candidates,
+			cmd="vmmsx.api.tasks.batch_candidates",
+			csrf_token="whatever-the-session-held",
+			name=batch.name,
+		)
+
+		self.assertIn(volunteer, [row["volunteer"] for row in found["candidates"]])

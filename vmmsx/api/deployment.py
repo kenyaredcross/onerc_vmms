@@ -1252,6 +1252,13 @@ def _terms_payload(values: dict) -> dict:
 	was sent, depending on how the caller framed the request. Parsed here so the
 	service takes lists either way, and unknown keys are left for `terms.update`
 	to ignore rather than being filtered twice in two places that could disagree.
+
+	The transport's own keys are the exception, and they are dropped rather than
+	ignored. A whitelisted method that declares `**kwargs` is handed the *whole*
+	form dict, so the `cmd` Frappe routed the request with arrives looking like a
+	field the caller sent. `terms.update` shrugs it off because it writes only
+	what it recognises; `terms.create` takes named arguments, and a stray one is
+	a `TypeError` before any of the work starts.
 	"""
 	tables = (
 		"stakeholders",
@@ -1264,6 +1271,8 @@ def _terms_payload(values: dict) -> dict:
 	)
 
 	parsed = dict(values)
+	parsed.pop("cmd", None)
+	parsed.pop("csrf_token", None)
 
 	for field in tables:
 		if isinstance(parsed.get(field), str):

@@ -26,6 +26,7 @@ all three.
 
 import frappe
 
+from vmmsx.api import deployment as deployment_api
 from vmmsx.approvals import states
 from vmmsx.approvals.services import engine
 from vmmsx.deployment.services import terms as terms_service
@@ -451,3 +452,69 @@ class TestANewProgrammeCannotBeAClosedOne(TermsTestCase):
 		draft.save()
 
 		self.assertTrue(draft.name)
+
+
+class TestTheEditorsCallArrivesAsFrappeSendsIt(TermsTestCase):
+	"""The form dict a whitelisted method is actually handed.
+
+	`frappe.call` filters the request down to the arguments a method declares —
+	*unless* the method declares `**kwargs`, and then it is handed the whole form
+	dict, routing key and all. Every terms endpoint declares one, because the
+	editor saves a mission one tab at a time and a tab it did not send must be
+	left alone rather than emptied.
+
+	So `cmd` arrives looking like a field the caller sent. `update_terms` shrugs
+	it off — it writes only what it recognises — but `create_terms` takes named
+	arguments, and until `_terms_payload` dropped it the Create button answered
+	500 with an unexpected keyword argument. These call the endpoints the way the
+	handler does rather than the way Python does, which is the only way that
+	difference shows up.
+	"""
+
+	def sent(self, method: str, **values) -> dict:
+		"""A request as it reaches the method: the caller's fields, plus Frappe's own."""
+		return {"cmd": f"vmmsx.api.deployment.{method}", "csrf_token": "whatever-the-session-held", **values}
+
+	def test_writing_one_survives_the_keys_frappe_adds(self):
+		written = frappe.call(
+			deployment_api.create_terms,
+			**self.sent(
+				"create_terms",
+				tor_name=f"Flood Response {frappe.generate_hash(length=6)}",
+				geo_scope=fixtures.default_scope(),
+				purpose="Whatever this society uses these terms for.",
+			),
+		)
+
+		self.assertTrue(written["name"])
+		self.assertEqual(written["is_submitted"], False)
+
+	def test_editing_one_survives_them_too(self):
+		draft = fixtures.make_terms(
+			f"{fixtures.TEST_PREFIX}-tor-{frappe.generate_hash(length=6)}", submit=False
+		)
+
+		frappe.call(
+			deployment_api.update_terms,
+			**self.sent("update_terms", name=draft.name, purpose="Rewritten on the mission tab."),
+		)
+
+		self.assertEqual(
+			frappe.db.get_value(fixtures.TERMS_DOCTYPE, draft.name, "purpose"),
+			"Rewritten on the mission tab.",
+		)
+
+	def test_and_the_mission_tables_still_arrive_as_the_json_they_are_sent_as(self):
+		"""The reason `**kwargs` is there at all, checked in the same breath: dropping
+		the transport's keys must not drop the editor's."""
+		written = frappe.call(
+			deployment_api.create_terms,
+			**self.sent(
+				"create_terms",
+				tor_name=f"Flood Response {frappe.generate_hash(length=6)}",
+				geo_scope=fixtures.default_scope(),
+				objectives=frappe.as_json([{"objective": "Do the work these terms describe."}]),
+			),
+		)
+
+		self.assertEqual(written["section_counts"]["objectives"], 1)
