@@ -804,7 +804,7 @@ const BUTTONS = {
 // changed when the console moved into the portal's language: `rounded-full` was
 // the old system's most characteristic move and it is not this one's.
 const BUTTON_BASE =
-	"inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-inherit";
+	"inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-inherit aria-disabled:cursor-not-allowed aria-disabled:opacity-45 aria-disabled:hover:bg-inherit";
 
 interface ButtonProps {
 	variant?: keyof typeof BUTTONS;
@@ -822,6 +822,22 @@ interface ButtonProps {
 	 * screen reader, which a spinner alone does not.
 	 */
 	busy?: boolean;
+	/**
+	 * Greyed out, and still pressable.
+	 *
+	 * `disabled` is the right answer for an action that is not available: it
+	 * takes the control out of the tab order and swallows the press. It is the
+	 * wrong one for an action somebody is *waiting to be allowed to take*,
+	 * because the button they are pointing at is usually the only thing on the
+	 * screen that knows why they cannot take it — and a dead control cannot say
+	 * so. The commonest thing somebody does with a form that will not go on is
+	 * press the greyed button and conclude it is broken.
+	 *
+	 * So `held` keeps the disabled look and the `aria-disabled` a screen reader
+	 * reads out, and lets the press through to the handler, which is then
+	 * obliged to answer. Only use it where there is an answer to give.
+	 */
+	held?: boolean;
 	/** Accessible name, when the label alone is not specific enough. */
 	label?: string;
 }
@@ -834,6 +850,7 @@ export function Button({
 	disabled,
 	type = "button",
 	busy = false,
+	held = false,
 	label,
 }: ButtonProps) {
 	return (
@@ -841,6 +858,7 @@ export function Button({
 			type={type}
 			onClick={onClick}
 			disabled={disabled || busy}
+			aria-disabled={held || undefined}
 			aria-busy={busy || undefined}
 			aria-label={label}
 			className={cx(BUTTON_BASE, BUTTONS[variant], className)}

@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API } from "../lib/api";
@@ -249,11 +249,36 @@ function onTheIdentityStep() {
 	return screen.findByRole("heading", { name: "Personal details" });
 }
 
+/**
+ * Answer one of the first step's two grouped questions.
+ *
+ * Citizenship and disability are `<fieldset>`s of radios rather than selects,
+ * so the question is the group's accessible name and the answer is the radio's
+ * — which is also the pair a screen reader reads out. Scoping through the group
+ * is what keeps a "Yes" meant for one question off the other one.
+ */
+function answer(question: RegExp, option: string) {
+	fireEvent.click(
+		within(screen.getByRole("group", { name: question })).getByRole("radio", { name: option }),
+	);
+}
+
 /** Press Continue, and let the autosave it triggers settle. */
 async function goOn() {
 	await act(async () => {
 		fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 	});
+}
+
+/**
+ * Is Continue holding this step, as far as anybody looking at it can tell?
+ *
+ * `aria-disabled`, not `disabled`: the button is greyed but deliberately still
+ * pressable, because the press is what takes somebody to the field that is
+ * missing. See the `held` prop on `Button`.
+ */
+function held(): boolean {
+	return screen.getByRole("button", { name: "Continue" }).getAttribute("aria-disabled") === "true";
 }
 
 describe("the guest registration hand-off", () => {
@@ -326,7 +351,7 @@ describe("the road a volunteer walks", () => {
 		open();
 
 		await onTheIdentityStep();
-		expect(screen.getByRole("heading", { name: "Citizenship" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Citizenship and support" })).toBeTruthy();
 		expect(screen.queryByText("Where you live")).toBeNull();
 		expect(screen.queryByText("Citizenship and where you live")).toBeNull();
 	});
@@ -347,11 +372,15 @@ describe("the road a volunteer walks", () => {
 		open();
 		await onTheIdentityStep();
 
-		const citizen = screen.getByLabelText(/^Are you a citizen of/);
-		expect((citizen as HTMLSelectElement).value).toBe("");
+		const citizen = screen.getByRole("group", { name: /^Are you a citizen of/ });
+		expect(
+			within(citizen)
+				.getAllByRole("radio")
+				.every((radio) => !(radio as HTMLInputElement).checked),
+		).toBe(true);
 		expect(screen.queryByLabelText(/^Country of citizenship/)).toBeNull();
 
-		fireEvent.change(citizen, { target: { value: "No" } });
+		answer(/^Are you a citizen of/, "No");
 		expect(screen.getByLabelText(/^Country of citizenship/)).toBeTruthy();
 		expect(screen.getByLabelText(/^Citizenship status in/)).toBeTruthy();
 	});
@@ -370,6 +399,61 @@ describe("the road a volunteer walks", () => {
 		await onTheIdentityStep();
 		expect(screen.getByText("amina@example.com")).toBeTruthy();
 		expect(screen.queryByText("Taken from your account")).toBeNull();
+	});
+
+	it("opens with the name on the account when the society has no record yet", async () => {
+		// Frappe's sign-up puts the whole typed name into one field, so this is
+		// what a person who created an account five minutes ago actually has.
+		reads.set(API.myProfile, null);
+		reads.set(API.myAccount, {
+			email: "amina@example.com",
+			full_name: "Amina Hassan",
+			first_name: "Amina",
+			last_name: "Hassan",
+		});
+		open();
+
+		await onTheIdentityStep();
+		expect((screen.getByLabelText(/^First name/) as HTMLInputElement).value).toBe("Amina");
+		expect((screen.getByLabelText(/^Last name/) as HTMLInputElement).value).toBe("Hassan");
+	});
+
+	it("leaves the society's own record alone, whatever the account is called", async () => {
+		// A person who corrected the spelling of their name on their profile must
+		// not have the sign-up form's version put back over it. Deliberately
+		// different in both halves from `PROFILE`, so either one being taken from
+		// the account shows up here.
+		reads.set(API.myAccount, {
+			email: "amina@example.com",
+			full_name: "Aminata Hassan",
+			first_name: "Aminata",
+			last_name: "Hassan",
+		});
+		open();
+
+		await onTheIdentityStep();
+		expect((screen.getByLabelText(/^First name/) as HTMLInputElement).value).toBe(
+			PROFILE.first_name,
+		);
+		expect((screen.getByLabelText(/^Last name/) as HTMLInputElement).value).toBe(
+			PROFILE.last_name,
+		);
+	});
+
+	it("does not put the account's name back over a correction", async () => {
+		reads.set(API.myProfile, null);
+		reads.set(API.myAccount, {
+			email: "amina@example.com",
+			full_name: "Amina Hassan",
+			first_name: "Amina",
+			last_name: "Hassan",
+		});
+		open();
+
+		await onTheIdentityStep();
+		fireEvent.change(screen.getByLabelText(/^First name/), { target: { value: "Aminata" } });
+
+		expect((screen.getByLabelText(/^First name/) as HTMLInputElement).value).toBe("Aminata");
 	});
 
 	it("requires a profile photograph before a volunteer can continue", async () => {
@@ -562,13 +646,13 @@ describe("what a volunteer agrees to", () => {
 
 		const boxes = screen.getAllByRole("checkbox", { name: /I have read and agree to this declaration/ });
 
-		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+		expect(held()).toBe(true);
 
 		fireEvent.click(boxes[0]);
-		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+		expect(held()).toBe(true);
 
 		fireEvent.click(boxes[1]);
-		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
+		expect(held()).toBe(false);
 	});
 
 	it("links out to a policy the society publishes on its own website", async () => {
@@ -618,7 +702,7 @@ describe("who to call, and who says a minor may volunteer", () => {
 
 		expect(screen.getByLabelText(/^Full name/)).toBeTruthy();
 		// A condition of approval, not of submission: the branch can chase it.
-		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
+		expect(held()).toBe(false);
 	});
 
 	it("refuses a contact that is missing any of the three the record insists on", async () => {
@@ -626,7 +710,7 @@ describe("who to call, and who says a minor may volunteer", () => {
 
 		fireEvent.change(screen.getByLabelText(/^Full name/), { target: { value: "Mercy" } });
 
-		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+		expect(held()).toBe(true);
 
 		fireEvent.change(screen.getByLabelText(/^Phone number/), {
 			target: { value: "+255700000001" },
@@ -636,11 +720,11 @@ describe("who to call, and who says a minor may volunteer", () => {
 		// the relationship mandatory too, and a row without it is refused by the
 		// framework on the next autosave — so the step holds here rather than
 		// letting somebody meet that refusal.
-		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+		expect(held()).toBe(true);
 
 		fireEvent.change(screen.getByLabelText(/^Relationship(?! to applicant)/), { target: { value: "Sister" } });
 
-		expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false);
+		expect(held()).toBe(false);
 	});
 
 	it("sends nothing at all when the contact was left blank", async () => {
@@ -878,9 +962,7 @@ describe("the disability question", () => {
 		// Still here: the step did not advance.
 		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
 
-		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
-			target: { value: "Prefer not to say" },
-		});
+		answer(/^Do you have a disability\?/, "Prefer not to say");
 
 		await goOn();
 
@@ -891,14 +973,12 @@ describe("the disability question", () => {
 		open();
 		await onTheIdentityStep();
 
-		expect(screen.queryByLabelText("Support requirements")).toBeNull();
+		expect(screen.queryByLabelText("What support would be helpful?")).toBeNull();
 
-		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
-			target: { value: "Yes" },
-		});
+		answer(/^Do you have a disability\?/, "Yes");
 
 		const type = screen.getByRole("combobox", { name: /^Disability type/ });
-		const support = screen.getByLabelText("Support requirements");
+		const support = screen.getByLabelText("What support would be helpful?");
 		expect(type.compareDocumentPosition(support) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 	});
 
@@ -908,12 +988,10 @@ describe("the disability question", () => {
 		open();
 		await onTheIdentityStep();
 
-		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
-			target: { value: "Yes" },
-		});
+		answer(/^Do you have a disability\?/, "Yes");
 		fireEvent.focus(screen.getByRole("combobox", { name: /^Disability type/ }));
 		fireEvent.click(screen.getByRole("option", { name: /Deafness/ }));
-		fireEvent.change(screen.getByLabelText("Support requirements"), {
+		fireEvent.change(screen.getByLabelText("What support would be helpful?"), {
 			target: { value: "A seat at briefings" },
 		});
 
@@ -932,7 +1010,7 @@ describe("the disability question", () => {
 		mount(<Join />, { route: "/join?path=member&type=annual" });
 		await onTheIdentityStep();
 
-		expect(screen.queryByLabelText(/^Do you have a disability\?/)).toBeNull();
+		expect(screen.queryByRole("group", { name: /^Do you have a disability\?/ })).toBeNull();
 	});
 });
 
@@ -1130,9 +1208,7 @@ describe("which disability, from the register", () => {
 	};
 
 	const disclose = () =>
-		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
-			target: { value: "Yes" },
-		});
+		answer(/^Do you have a disability\?/, "Yes");
 
 	it("is drawn only once somebody has said there is something", async () => {
 		open();
@@ -1190,9 +1266,7 @@ describe("which disability, from the register", () => {
 		disclose();
 		nameOne("Deafness");
 
-		fireEvent.change(screen.getByLabelText(/^Do you have a disability\?/), {
-			target: { value: "No" },
-		});
+		answer(/^Do you have a disability\?/, "No");
 
 		await goOn();
 		await goOn();
@@ -1219,5 +1293,111 @@ describe("which disability, from the register", () => {
 		expect(
 			screen.getByRole("option", { name: /Low vision/ }).getAttribute("aria-selected"),
 		).toBe("true");
+	});
+});
+/**
+ * The button that will not go on, and what it does when somebody presses it
+ * anyway.
+ *
+ * **A disabled Continue is the commonest way this form gets reported broken.**
+ * Nine fields on a step, one of them empty, and the only control anybody thinks
+ * to press is dead — so the press goes nowhere, nothing appears, and the
+ * conclusion is that the form does not work rather than that the form is
+ * waiting. It is still greyed, because "not yet" is true; it is no longer
+ * inert, because the press is the one moment the form is being asked the
+ * question it can answer.
+ */
+describe("a Continue that will not go on, and says which field is why", () => {
+	/** What the footer says after a blocked press, spoken as it is drawn. */
+	const outstanding = () => screen.getByRole("alert").textContent;
+
+	it("walks to the first unanswered field rather than swallowing the press", async () => {
+		reads.set(API.myProfile, { ...PROFILE, last_name: "" });
+
+		open();
+		await onTheIdentityStep();
+
+		expect(held()).toBe(true);
+		// Silent until asked. A step that opens complaining about fields nobody
+		// has reached yet is a form shouting at somebody who has done nothing.
+		expect(screen.queryByRole("alert")).toBeNull();
+
+		await goOn();
+
+		expect(document.activeElement).toBe(screen.getByLabelText(/^Last name/));
+		expect(outstanding()).toContain("Enter your last name");
+		// Still held: pressing it explained the hold, it did not lift it.
+		expect(held()).toBe(true);
+	});
+
+	it("follows the answers down the step, without being asked twice", async () => {
+		reads.set(API.myProfile, { ...PROFILE, first_name: "", last_name: "" });
+
+		open();
+		await onTheIdentityStep();
+		await goOn();
+
+		expect(document.activeElement).toBe(screen.getByLabelText(/^First name/));
+		expect(outstanding()).toContain("Enter your first name");
+
+		fireEvent.change(screen.getByLabelText(/^First name/), { target: { value: "Amina" } });
+
+		// No second press. The sentence names what is outstanding now, not what
+		// was outstanding when somebody last asked.
+		expect(outstanding()).toContain("Enter your last name");
+
+		fireEvent.change(screen.getByLabelText(/^Last name/), { target: { value: "Otieno" } });
+
+		// And it goes when there is nothing left to say.
+		expect(screen.queryByRole("alert")).toBeNull();
+		expect(held()).toBe(false);
+	});
+
+	it("anchors a question with no field of its own on its first answer", async () => {
+		reads.set(API.myProfile, { ...PROFILE, disability_status: "" });
+
+		open();
+		await onTheIdentityStep();
+		await goOn();
+
+		expect(outstanding()).toContain("Answer the disability question");
+		expect(document.activeElement).toBe(
+			within(screen.getByRole("group", { name: /^Do you have a disability\?/ })).getAllByRole(
+				"radio",
+			)[0],
+		);
+	});
+
+	/**
+	 * The last step gates on every step behind it, so its gaps are on screens
+	 * somebody is not looking at. Pointing at a control that is not on the page
+	 * would be no answer at all, so Submit takes them back to the step that asks
+	 * and *then* to the field.
+	 */
+	it("takes a blocked Submit back to the step the answer is missing from", async () => {
+		reads.set(API.myProfile, IDENTIFIED);
+
+		await walkTo("Check and submit");
+
+		// Back up the rail, take an answer away, and return to the end.
+		fireEvent.click(screen.getByRole("button", { name: /Personal details/ }));
+		fireEvent.change(await screen.findByLabelText(/^Last name/), { target: { value: "" } });
+		fireEvent.click(screen.getByRole("button", { name: /Check and submit/ }));
+		await screen.findByRole("heading", { name: "Check and submit" });
+
+		const submit = () => screen.getByRole("button", { name: "Submit registration" });
+
+		expect(submit().getAttribute("aria-disabled")).toBe("true");
+		// Said before anybody presses anything, and named — "Enter your last
+		// name" over a page of answers with no such box on it would be the form
+		// talking about somewhere else.
+		expect(screen.getByText("Personal details: Enter your last name")).toBeTruthy();
+
+		await act(async () => {
+			fireEvent.click(submit());
+		});
+
+		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
+		expect(document.activeElement).toBe(screen.getByLabelText(/^Last name/));
 	});
 });

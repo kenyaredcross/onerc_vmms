@@ -298,6 +298,41 @@
 	}
 }
 
+/* ------------------------------------------------- the registration wizard
+
+   One room, roomier than the rest of the product.
+
+   Everywhere else in this app a person is *working* — scanning a queue,
+   filling in a record they have filled in fifty times — and the controls are
+   sized for density. `/join` is the opposite: it is filled in once, often on a
+   borrowed phone, by somebody who has never seen this software and may be
+   reading in a second language. So the fields here are taller, the corners
+   softer and the labels at reading size, and none of that leaks into the
+   console or the portal.
+
+   Deliberately outside `@layer components`, and this is the whole trick: a
+   layered rule loses to every Tailwind utility whatever its specificity, and
+   the controls being restyled are built out of utilities. Unlayered, and with
+   `:where()` holding the selector at one class, these tie with `.rounded-lg`
+   and `.text-[13px]` and win on source order — they are emitted after
+   `@tailwind utilities` — while every two-class state utility the components
+   declare (`focus:border-blue`, `disabled:bg-surface`) still outranks them.
+   Sizes change; behaviour does not. */
+.join-root :where(input:not([type="radio"]):not([type="checkbox"]):not([type="file"]), select, textarea) {
+	min-height: 47px;
+	border-radius: 7px;
+	border-color: #cdd8e5;
+	padding: 11px 13px;
+	font-size: 14px;
+}
+
+/* A label that *is* a control — a tick row, one of the choice pills, the
+   photo button — is excluded: it sizes its own contents, and 14px would
+   flatten the difference between the question and the answer inside it. */
+.join-root :where(label, legend):not(:has(input)) {
+	font-size: 14px;
+}
+
 /* ------------------------------------------------------------------ motion */
 
 /* The registration wizard's step change. Movement carries the direction of
@@ -346,6 +381,25 @@
 	}
 }
 
+/* The field a held Continue button sent somebody to. A focused input draws its
+   own ring and needs none of this; a group of cards or declarations, anchored by
+   its container, has no such answer of its own — so it is flashed once, in the
+   same red the outstanding sentence beside the button is written in. Twice, so
+   it reads as a signal rather than as something loading. */
+@keyframes gap-flash {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 rgba(180, 35, 44, 0);
+	}
+	15%,
+	55% {
+		box-shadow: 0 0 0 3px rgba(180, 35, 44, 0.35);
+	}
+	35% {
+		box-shadow: 0 0 0 3px rgba(180, 35, 44, 0.08);
+	}
+}
+
 @keyframes draw-tick {
 	from {
 		stroke-dashoffset: 26;
@@ -372,6 +426,13 @@
 	animation: draw-tick 0.5s 0.12s cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 
+/* Only ever on something with no focus ring of its own — see `pointAt`. The
+   shadow follows whatever radius the element already has, so nothing here
+   reshapes the pill or the card it lands on. */
+.gap-flash {
+	animation: gap-flash 1.5s ease-out both;
+}
+
 /* Somebody who has asked their system for less movement gets the end state
    immediately rather than a shorter version of the same animation. */
 @media (prefers-reduced-motion: reduce) {
@@ -381,5 +442,13 @@
 	.tick-draw {
 		animation: none;
 		stroke-dashoffset: 0;
+	}
+
+	/* The mark still has to be made — it is the answer to a button press, not
+	   decoration — so it is held steady for the second and a half the animated
+	   one runs rather than dropped. */
+	.gap-flash {
+		animation: none;
+		box-shadow: 0 0 0 3px rgba(180, 35, 44, 0.35);
 	}
 }

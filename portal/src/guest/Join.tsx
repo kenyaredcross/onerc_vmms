@@ -39,6 +39,7 @@ import {
 import { Icon } from "../ui/icons";
 import { Button, Card, ErrorNote, Spinner, StateBadge, cx } from "../ui/primitives";
 import type {
+	Account,
 	ApplicationOptions,
 	Declaration,
 	EmergencyContact,
@@ -101,6 +102,96 @@ type DraftRegistration = OpenRegistration & {
  * What the applicant legally agrees to is `consents`, and it is a separate id
  * for exactly that reason.
  */
+/**
+ * One thing a step is still waiting for, and where on the screen it is asked.
+ *
+ * The wizard has always known this much — a step's completion rule is a list of
+ * conditions and it stopped at the first one that failed — but it only ever
+ * reported the *answer*, as a greyed-out button. Somebody who cannot see which
+ * of nine fields is the empty one has no move left except to read the whole
+ * screen again, and the commonest thing they do instead is press the dead
+ * button and conclude the form is broken.
+ *
+ * So the rule returns its unmet conditions rather than a boolean, each carrying
+ * the `id` of the control that answers it. `complete` is that list being empty;
+ * a step is met when its list is empty, and pressing a held Continue walks to
+ * the first entry.
+ */
+interface Gap {
+	/** The `id` of the control to put the cursor in. */
+	anchor: string;
+	/**
+	 * What is outstanding, addressed to the person filling the form.
+	 *
+	 * An instruction — "Enter your last name" — rather than a verdict about the
+	 * field, because it is read at the moment somebody is being sent to act on
+	 * it and the field's own label already says what it is.
+	 */
+	note: string;
+	/**
+	 * Which step it is on, where that is not the step being looked at.
+	 *
+	 * Only the last one asks: `confirm` gates on every step behind it, so its
+	 * gaps belong to screens somebody has to be taken back to first.
+	 */
+	step?: number;
+}
+
+/**
+ * Put the cursor on the control a gap names, and bring it into view.
+ *
+ * **Focus, not only a scroll.** Scrolling answers "where", and for a sighted
+ * person on a short step that is enough; focus answers it for everybody else
+ * too, puts the caret in the box so the next keystroke is the answer, and draws
+ * the ring that says which control is being talked about.
+ *
+ * Three shapes of anchor have to work here. A plain input focuses as itself. A
+ * fieldset of radio pills is anchored by its first radio, whose label is the
+ * pill — so the *label* is what gets scrolled to, or the viewport centres on a
+ * 17px circle. And a group with no control of its own at all — a column of
+ * plan cards, a list of declarations — is anchored by its container, which is
+ * given a temporary `tabindex` so it can take focus like anything else.
+ *
+ * `preventScroll` because the scroll above has already chosen where to put it:
+ * letting focus scroll as well lands the browser's "minimum scrolling" answer
+ * on top of the centred one, which reads as a jump and then a correction.
+ */
+function pointAt(anchor: string): void {
+	const field = document.getElementById(anchor);
+	if (!field) return;
+
+	// A radio, a tickbox and the visually hidden file input behind "Upload
+	// photo" all sit inside the label that draws them, and the label is the part
+	// with a size on screen.
+	const seen = field.closest("label") ?? field;
+
+	// Guarded: jsdom has no layout and so has no `scrollIntoView`, and a form
+	// that threw here would be worse than one that did not scroll.
+	seen.scrollIntoView?.({ behavior: "smooth", block: "center" });
+
+	if (!FOCUSABLE.has(field.tagName)) field.setAttribute("tabindex", "-1");
+	field.focus({ preventScroll: true });
+
+	// A text box takes a focus ring of its own and needs nothing more. A pill, a
+	// column of cards or a list of declarations does not, so the thing that was
+	// scrolled to is flashed instead — in the same red the sentence beside the
+	// button is written in.
+	if (FOCUSABLE.has(field.tagName) && seen === field) return;
+
+	// Removed first, or a second press over the same field would add a class the
+	// element already carries and animate nothing.
+	seen.classList.remove(FLASH);
+	// Reading a layout property is what restarts a CSS animation mid-flight.
+	void (seen as HTMLElement).offsetWidth;
+	seen.classList.add(FLASH);
+	window.setTimeout(() => seen.classList.remove(FLASH), 1600);
+}
+
+/** Elements that can take focus without being lent a `tabindex`. */
+const FOCUSABLE = new Set(["INPUT", "SELECT", "TEXTAREA", "BUTTON", "A"]);
+
+const FLASH = "gap-flash";
+
 type StepId =
 	| "path"
 	| "identity"
@@ -451,6 +542,22 @@ function JoinBody() {
 	const [furthest, setFurthest] = useState(0);
 	const [direction, setDirection] = useState<"forward" | "back">("forward");
 
+	/**
+	 * The field a blocked press of Continue sent somebody to, if any.
+	 *
+	 * Null until somebody presses a button that cannot go on yet, and null again
+	 * the moment the step is complete or they leave it. While it is set, the
+	 * sentence beside the button stops being the step's standing hint and
+	 * becomes an alert about one field — which is the difference between a form
+	 * that says "something is missing" and one that says which thing.
+	 *
+	 * `press` counts the presses rather than the gaps. Somebody who presses
+	 * Continue, scrolls away from the field it took them to and presses again
+	 * has to be taken back, and a second identical gap is not a state change.
+	 */
+	const [pointed, setPointed] = useState<{ gap: Gap; press: number } | null>(null);
+	const press = useRef(0);
+
 	// --- identity, which lands on the Red Profile and never on the satellite
 	const [profile, setProfile] = useState<RedProfile | null>(null);
 	const [firstName, setFirstName] = useState("");
@@ -635,6 +742,15 @@ function JoinBody() {
 		isGuest ? null : "join:my_profile",
 	);
 
+	// And what the *account* is called, for the first-timer core has never met.
+	// They typed their name into the sign-up form twenty seconds ago; asking for
+	// it again on the next screen is asking somebody to prove they meant it.
+	const account = useFrappeGetCall<{ message: Account | null }>(
+		API.myAccount,
+		undefined,
+		isGuest ? null : "join:my_account",
+	);
+
 	// Has this person already applied and not been answered? Asked before a step
 	// is drawn. Both registration endpoints refuse a second application anyway;
 	// this is so nobody finds that out at the end of a form.
@@ -690,6 +806,30 @@ function JoinBody() {
 		setGuardian(remembered.guardian_consents?.[0] ?? blankGuardian());
 		setRestoredDraft(remembered.name);
 	}, [draft.data, restoredDraft]);
+
+	/*
+		The name on the login, for somebody registering for the first time.
+
+		**Only where the form is still empty, and only before core has answered.**
+		This is a starting point, not a value: a person who has corrected the
+		spelling of their own name and then moved a step back must not find it
+		put back. The guard is the field's own emptiness, which is also what
+		stops this from fighting the two effects around it — a restored draft and
+		a profile the society already holds both land in the same boxes and both
+		outrank an account's guess.
+
+		What they type here is what the society ends up holding: `first_name` and
+		`last_name` travel with the registration to core's Red Profile, and from
+		that moment the portal greets them by the name in this box rather than by
+		the one the sign-up form took.
+	*/
+	useEffect(() => {
+		const known = account.data?.message;
+		if (!known || existing.data?.message) return;
+
+		setFirstName((current) => current || known.first_name);
+		setLastName((current) => current || known.last_name);
+	}, [account.data, existing.data]);
 
 	useEffect(() => {
 		const known = existing.data?.message;
@@ -831,6 +971,19 @@ function JoinBody() {
 	 * the picker rather than letting the default travel under an answer that
 	 * contradicts it.
 	 */
+	/**
+	 * Which of the two citizenship questions this society actually asks.
+	 *
+	 * Both are conditional — the yes/no form needs the society's own country to
+	 * be a question at all, and the standing needs the profile field to offer a
+	 * standing other than "Citizen" — and `CitizenshipAsk` and
+	 * `CitizenshipDetails` decide that for themselves from the same two values.
+	 * Read here too, so `gapsOf` holds the button shut over questions that are
+	 * on the screen and never over ones that are not.
+	 */
+	const asksIfCitizen = Boolean(options?.default_country_of_citizenship);
+	const otherStatuses = (options?.citizenship_statuses ?? []).filter((entry) => entry !== CITIZEN);
+
 	const answerCitizenship = (yes: boolean) => {
 		setIsCitizen(yes);
 		setCitizenship(yes ? (options?.default_country_of_citizenship ?? "") : "");
@@ -1053,53 +1206,178 @@ function JoinBody() {
 	}, [questions]);
 	const step = steps[Math.min(cursor, steps.length - 1)];
 
-	const complete = (id: StepId): boolean => {
+	/**
+	 * Everything this step is still waiting for, in the order the screen asks it.
+	 *
+	 * The wizard's completion rules, restated as a list rather than as an `&&`
+	 * chain, so the held Continue button can name what is missing and walk to it.
+	 * A step is met when this comes back empty — the same call, so the button's
+	 * greying and its explanation can never disagree about what is outstanding.
+	 *
+	 * Screen order, not rule order. "The first field that has not been filled"
+	 * means the topmost one, and a list that walked the conditions in whatever
+	 * order they were convenient to write would send somebody down the page and
+	 * then back up it.
+	 */
+	const gapsOf = (id: StepId): Gap[] => {
+		const gaps: Gap[] = [];
+		const need = (met: boolean, anchor: string, note: string) => {
+			if (!met) gaps.push({ anchor, note });
+		};
+
 		// Date of birth is required of a volunteer and not of a member, which is
 		// the same split `application.assert_ready` makes on the server: age governs
 		// what somebody may be sent to do and what safeguarding applies to them, and
 		// that question is only asked of the people a society deploys. Asked here so
 		// the button says so, rather than the submission failing six steps later.
-		if (id === "identity")
-			return Boolean(
-				firstName.trim() &&
-					lastName.trim() &&
-					// Nationality joined this step when the citizenship screen was
-					// dropped, and it is required of a volunteer for the same reason
-					// `assert_ready` requires it: a country of citizenship, not a
-					// screen, is what the society actually needs.
-					(path !== "volunteer" ||
-						(dateOfBirth &&
-							citizenship &&
-							isCitizen !== null &&
-							(isCitizen || citizenshipStatus) &&
-							disability &&
-							(disability !== DISABILITY_DISCLOSED || disabilities.length > 0) &&
-							photo)),
+		if (id === "identity") {
+			if (path === "volunteer") {
+				need(Boolean(photo), "join-photo", "Upload a profile photograph");
+			}
+
+			need(Boolean(firstName.trim()), "join-first", "Enter your first name");
+			need(Boolean(lastName.trim()), "join-last", "Enter your last name");
+
+			if (path === "volunteer") {
+				need(Boolean(dateOfBirth), "join-dob", "Enter your date of birth");
+
+				// Nationality joined this step when the citizenship screen was
+				// dropped, and it is required of a volunteer for the same reason
+				// `assert_ready` requires it: a country of citizenship, not a
+				// screen, is what the society actually needs.
+				//
+				// **Each condition is asked of a question that is on the screen.**
+				// The yes/no form of this is only drawn where the society has named
+				// its own country, and the standing only where its own field offers
+				// a standing to choose — so a society configured with neither used
+				// to hold the button shut over two questions nobody was being
+				// asked. That was invisible while the button said nothing; it would
+				// be a button pointing at nothing now.
+				if (asksIfCitizen) {
+					need(isCitizen !== null, "join-is-citizen-0", "Answer whether you are a citizen");
+				}
+
+				need(Boolean(citizenship), "join-citizenship", "Choose your country of citizenship");
+
+				if (asksIfCitizen && isCitizen === false && otherStatuses.length > 0) {
+					need(
+						Boolean(citizenshipStatus),
+						"join-citizenship-status",
+						"Choose your citizenship status",
+					);
+				}
+
+				need(Boolean(disability), "join-disability-0", "Answer the disability question");
+
+				if (disability === DISABILITY_DISCLOSED) {
+					need(disabilities.length > 0, "join-disabilities", "Choose at least one disability type");
+				}
+			}
+
+			return gaps;
+		}
+
+		// Nothing on this step is required beyond not contradicting itself: a
+		// profession of "Other" with no "Other" written out is the one answer the
+		// record cannot store. Stated rather than left to the fall-through at the
+		// bottom, because the fall-through is what an *unknown* step id gets and
+		// this one is known and deliberately near-unconditional.
+		if (id === "background") {
+			need(
+				backgroundIsCoherent(background),
+				"bg-other-profession",
+				"Say what your profession is",
 			);
-		// Nothing on this step is required, so there is nothing to be waiting for.
-		// Stated rather than left to the fall-through at the bottom, because the
-		// fall-through is what an *unknown* step id gets and this one is known and
-		// deliberately unconditional.
-		if (id === "background") return backgroundIsCoherent(background);
-		if (id === "declaration")
-			return Boolean(skills.length && languages.length && motivations.length);
-		if (id === "plan") return Boolean(membershipType);
-		if (id === "payment") return Boolean(paymentMethod);
-		if (id === "placement") return Boolean(node);
+
+			return gaps;
+		}
+
+		if (id === "declaration") {
+			need(skills.length > 0, "join-skills", "Choose at least one skill");
+			need(languages.length > 0, "join-languages", "Choose at least one language");
+			need(motivations.length > 0, "join-motivations", "Choose at least one motivation");
+
+			return gaps;
+		}
+
+		if (id === "plan") {
+			need(Boolean(membershipType), "join-plan", "Choose a membership type");
+
+			return gaps;
+		}
+
+		if (id === "payment") {
+			need(Boolean(paymentMethod), "join-payment", "Choose how you would like to pay");
+
+			return gaps;
+		}
+
+		if (id === "placement") {
+			need(
+				Boolean(node),
+				`serving-rung-${servingChain.length}`,
+				path === "member" ? "Choose your branch" : "Choose where you would like to volunteer",
+			);
+
+			return gaps;
+		}
+
 		// One complete document at least, nothing half-filled, no kind listed
 		// twice, every document this society insists on, and a copy of each one
 		// it asks for a copy of — which is exactly what the server will accept.
 		// The last two are `application._assert_identity_documents`, asked here
 		// so the button says so rather than the submission failing with a
 		// sentence about a profile the applicant cannot edit.
-		if (id === "identification")
-			return (
-				identifications.some(identificationIsUsable) &&
-				identifications.every(identificationIsCoherent) &&
-				!repeatedIdentification(identifications) &&
-				missingRequiredDocuments(identifications, options?.id_types ?? [], age).length === 0 &&
-				missingDocumentCopies(identifications, options?.id_types ?? []).length === 0
-			);
+		if (id === "identification") {
+			// The row that is short of something, and which of its three boxes is
+			// empty — because "enter an ID type and number" is no help at all on a
+			// step listing three documents, two of them finished.
+			const half = identifications.findIndex((row) => !identificationIsCoherent(row));
+
+			if (half !== -1) {
+				const row = identifications[half];
+
+				need(Boolean(row.id_type), `join-id-type-${half}`, "Choose what kind of document this is");
+				need(Boolean(row.id_number.trim()), `join-id-number-${half}`, "Enter the document number");
+			} else if (!identifications.some(identificationIsUsable)) {
+				need(false, "join-id-type-0", "Add one identification document");
+			}
+
+			// A kind listed twice is a row the server cannot see, so it is the
+			// second one that has to change.
+			if (repeatedIdentification(identifications)) {
+				const kinds = identifications.filter(identificationIsUsable).map((row) => row.id_type);
+				const repeat = identifications.findIndex(
+					(row, at) => identificationIsUsable(row) && kinds.indexOf(row.id_type) !== at,
+				);
+
+				need(false, `join-id-type-${Math.max(repeat, 0)}`, "This document is listed twice");
+			}
+
+			for (const label of missingRequiredDocuments(identifications, options?.id_types ?? [], age)) {
+				// Onto the last row, which is where the next document would be
+				// entered — and the "Add another" button beneath it is in view with
+				// it. A required document that is missing has no row to point at.
+				need(
+					false,
+					`join-id-type-${Math.max(identifications.length - 1, 0)}`,
+					`Add your ${label.toLowerCase()}`,
+				);
+			}
+
+			for (const label of missingDocumentCopies(identifications, options?.id_types ?? [])) {
+				const at = identifications.findIndex(
+					(row) =>
+						identificationIsUsable(row) &&
+						!row.attachment &&
+						(options?.id_types.find((type) => type.key === row.id_type)?.label ?? "") === label,
+				);
+
+				need(false, `join-id-file-${Math.max(at, 0)}`, `Upload a copy of your ${label.toLowerCase()}`);
+			}
+
+			return gaps;
+		}
 
 		// An emergency contact is a condition of *approval*, not of submission —
 		// `assert_approvable`, not `assert_ready` — so this step can be walked
@@ -1109,15 +1387,42 @@ function JoinBody() {
 		// The guardian block is the same bargain, and deliberately so. A minor
 		// whose parent has not signed anything yet should be able to send the
 		// application and let the branch chase the form.
-		if (id === "emergency")
-			return contacts.every(contactIsCoherent) && guardianIsCoherent(guardian);
+		if (id === "emergency") {
+			const half = contacts.findIndex((contact) => !contactIsCoherent(contact));
+
+			if (half !== -1) {
+				const contact = contacts[half];
+
+				need(Boolean(contact.contact_name.trim()), `ec-name-${half}`, "Enter the contact's name");
+				need(
+					Boolean(contact.relationship.trim()),
+					`ec-rel-${half}`,
+					"Say how you know this person",
+				);
+				need(
+					Boolean(contact.primary_phone.trim()),
+					`ec-phone-${half}`,
+					"Enter a number for this contact",
+				);
+			}
+
+			if (!guardianIsCoherent(guardian)) {
+				need(Boolean(guardian.guardian_name.trim()), "gc-name", "Enter your guardian's name");
+				need(Boolean(guardian.relationship.trim()), "gc-rel", "Say how they are related to you");
+				need(Boolean(guardian.phone.trim()), "gc-phone", "Enter a number for your guardian");
+			}
+
+			return gaps;
+		}
 
 		// Every required declaration, which is `declarations.assert_accepted`
 		// asked here so the button says so rather than the submission failing.
 		if (id === "consents") {
-			return declarations
-				.filter((row) => row.is_required)
-				.every((row) => accepted.includes(row.name));
+			for (const row of declarations.filter((entry) => entry.is_required)) {
+				need(accepted.includes(row.name), `declaration-${row.name}`, `Accept ${row.title}`);
+			}
+
+			return gaps;
 		}
 
 		// The same rule `questions.assert_answered` applies server-side, asked
@@ -1125,18 +1430,32 @@ function JoinBody() {
 		// always answered — "no" is an answer — which is why it is not tested for
 		// truth, only for presence.
 		if (id === "questions") {
-			return questions
-				.filter((question) => question.is_required)
-				.every((question) => Boolean(answers[question.name]));
+			for (const question of questions.filter((entry) => entry.is_required)) {
+				need(
+					Boolean(answers[question.name]),
+					`question-${question.name}`,
+					`Answer "${question.label}"`,
+				);
+			}
+
+			return gaps;
 		}
 
 		// The last step gates on all the others, not on itself. Steps can be
 		// jumped back to, so "I reached Submit" is not the same statement as
 		// "everything behind me is answered" — and the difference is a request
 		// the server would only refuse.
-		if (id === "confirm") return steps.slice(0, -1).every((entry) => complete(entry.id));
+		//
+		// Each gap keeps the step it came from, so Submit takes somebody back to
+		// the screen that asks rather than pointing at a control that is not on
+		// the page they are looking at.
+		if (id === "confirm") {
+			return steps
+				.slice(0, -1)
+				.flatMap((entry, index) => gapsOf(entry.id).map((gap) => ({ ...gap, step: index })));
+		}
 
-		return true;
+		return gaps;
 	};
 
 	/**
@@ -1214,17 +1533,65 @@ function JoinBody() {
 		setDirection(target >= cursor ? "forward" : "back");
 		setCursor(target);
 		setFurthest((seen) => Math.max(seen, target));
+		// A gap being pointed at belongs to the screen it was found on. Cleared
+		// before the move so a step somebody navigates away from does not leave
+		// its red sentence under the next one — `point` re-sets it afterwards in
+		// the one case where the move *is* the pointing.
+		setPointed(null);
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	};
 
+	/**
+	 * Answering "why can this not go on yet" by showing somebody the field.
+	 *
+	 * Called from the held Continue button, which is greyed but not dead. A
+	 * disabled control is the honest rendering of "not yet" and the useless
+	 * rendering of "not yet, because of something you cannot see": pressing it
+	 * is what somebody does when they cannot find what is missing, so that press
+	 * is the one chance the form has to tell them.
+	 *
+	 * The gap is remembered as well as walked to, because the sentence beside
+	 * the button changes with it — from the step's standing hint to a named,
+	 * spoken-aloud instruction about one field.
+	 */
+	const point = (gap: Gap) => {
+		// Its own step first, where it has one. `goTo` clears what is pointed at,
+		// so the order matters: the move, then the mark.
+		if (gap.step !== undefined && gap.step !== cursor) goTo(gap.step);
+
+		// A nonce, not the gap alone. Pressing Continue twice over the same
+		// unanswered field has to walk there twice, and an identical object would
+		// be an identical state and no effect at all.
+		setPointed({ gap, press: press.current + 1 });
+		press.current += 1;
+	};
+
 	const advance = () => {
-		if (!complete(step.id)) return;
+		const gaps = gapsOf(step.id);
+
+		if (gaps.length) {
+			point(gaps[0]);
+			return;
+		}
+
 		if (step.id === "confirm") {
 			void submit();
 			return;
 		}
 		goTo(cursor + 1);
 	};
+
+	/**
+	 * Walking to the marked field, once the screen it is on has been drawn.
+	 *
+	 * In an effect rather than in `point` because of the one case where the two
+	 * are not the same moment: a gap found from the last step belongs to a step
+	 * five screens back, and `document.getElementById` cannot find a control on
+	 * a page React has not rendered yet. By the time an effect runs, it has.
+	 */
+	useEffect(() => {
+		if (pointed) pointAt(pointed.gap.anchor);
+	}, [pointed]);
 
 	const identity = {
 		first_name: firstName.trim(),
@@ -1423,7 +1790,35 @@ function JoinBody() {
 					.filter(Boolean)
 					.join(" ");
 
-	const ready = complete(step.id);
+	// What this road is called, in the three places the concept names it: beside
+	// the mark in the top bar, at the head of the crumb, and on the pill.
+	const journey = path === "member" ? "Membership registration" : "Volunteer registration";
+	const next = steps[cursor + 1] ?? null;
+
+	// What this step is still waiting for, and whether that is nothing. Computed
+	// once per render and read by both the button and the sentence beside it.
+	const gaps = gapsOf(step.id);
+	const ready = gaps.length === 0;
+
+	/**
+	 * The outstanding requirement, once somebody has asked to see it.
+	 *
+	 * Not the gap that was pointed at — the *first one left*. Somebody sent to
+	 * an empty surname who fills it in has answered that sentence, and leaving it
+	 * on the screen would be the form still complaining about something that is
+	 * now done. It moves down the step with them and goes when the step is met.
+	 */
+	const outstanding = pointed && !ready ? gaps[0] : null;
+
+	/**
+	 * One gap as a sentence, named by its step where that is not this one.
+	 *
+	 * The last step gates on every step behind it, so "Enter your date of birth"
+	 * arrives over a page of answers with no such box on it. Naming the screen
+	 * is what makes that sentence a direction rather than a puzzle.
+	 */
+	const say = (gap: Gap) =>
+		gap.step !== undefined ? `${steps[gap.step].title}: ${gap.note}` : gap.note;
 	const canSaveDraft = Boolean(
 		firstName.trim() &&
 			lastName.trim() &&
@@ -1438,14 +1833,14 @@ function JoinBody() {
 			    journey named beside the mark and one way out of it. A registration
 			    is not a page of the site with a header on it — it is a room you are
 			    in — and the dark bar is what says so. */}
-			<header className="sticky top-0 z-30 flex h-[72px] items-center border-b border-white/[0.13] bg-rail px-5 sm:px-[34px]">
+			<header className="sticky top-0 z-30 flex h-[68px] items-center border-b border-white/[0.13] bg-rail px-[18px] sm:h-[78px] sm:px-[4%]">
 				<Link to="/" className="min-w-0">
 					<BrandLockup tone="dark" />
 				</Link>
 
 				{!isGuest && (
-					<p className="ml-[30px] hidden border-l border-white/[0.22] pl-[30px] text-[12px] text-white/[0.58] sm:block">
-						{path === "member" ? "Membership registration" : "Volunteer registration"}
+					<p className="ml-[22px] hidden border-l border-white/[0.22] pl-6 text-[14px] text-white/[0.62] sm:block">
+						{journey}
 					</p>
 				)}
 
@@ -1454,13 +1849,13 @@ function JoinBody() {
 				    been signed out. A guest has no portal to be sent back to. */}
 				<Link
 					to={isGuest ? "/" : "/dashboard"}
-					className="ml-auto flex-none rounded-full border border-white/30 px-3.5 py-[9px] text-[11px] font-bold text-white transition hover:bg-white/10"
+					className="ml-auto flex-none rounded-[7px] border border-white/[0.38] px-[18px] py-[9px] text-[13px] text-white transition hover:bg-white/10"
 				>
 					{isGuest ? "Back to site" : "Save & exit"}
 				</Link>
 			</header>
 
-			<div className="mx-auto w-[min(1180px,calc(100%-28px))] py-7 sm:w-[min(1180px,calc(100%-48px))] lg:pb-[70px] lg:pt-[34px]">
+			<div className="join-root mx-auto w-[min(1190px,calc(100%-32px))] py-6 sm:w-[min(1190px,calc(100%-48px))] lg:pb-[70px] lg:pt-[42px]">
 				{sessionLoading && <Spinner label="Checking your session…" />}
 
 				{!sessionLoading && isGuest && (
@@ -1509,7 +1904,7 @@ function JoinBody() {
 					!done &&
 					(!openApplication || resumable) &&
 					!draft.isLoading && (
-					<div className="grid gap-6 lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-[26px]">
+					<div className="grid gap-6 lg:grid-cols-[248px_minmax(0,1fr)] lg:gap-12">
 						{resumable && openApplication?.reason && (
 							<div className="lg:col-span-2">
 								<DraftNotice reason={openApplication.reason} />
@@ -1520,6 +1915,15 @@ function JoinBody() {
 							cursor={cursor}
 							furthest={furthest}
 							onJump={goTo}
+							// The concept's rail says "A little about you", which is true
+							// of the step it draws and of nothing else: the rail is
+							// sticky and frames the whole journey, so it names the
+							// journey instead. The sentence under it is the concept's,
+							// unchanged.
+							heading={path === "member" ? "Become a member" : "Join as a volunteer"}
+							standfirst={`Complete all ${steps.length} steps to join as a ${
+								path === "member" ? "member" : "volunteer"
+							}.`}
 							summary={
 								<Summary
 									path={path}
@@ -1534,6 +1938,43 @@ function JoinBody() {
 						/>
 
 						<div className="min-w-0">
+							{/* The step names itself above the card, not inside it. A sheet of
+							    paper does not carry its own title at the top of the page — the
+							    page does, and the sheet says which sheet it is. Putting the
+							    heading on the canvas is also what lets the card start with the
+							    first question instead of with three rows of chrome. */}
+							<div className="mb-[22px] flex items-start justify-between gap-5">
+								<div className="min-w-0">
+									<p className="text-[13px] text-muted">
+										{journey} / Step {String(cursor + 1).padStart(2, "0")}
+									</p>
+									<h1 className="mt-1.5 font-display text-[28px] font-bold leading-[1.2] tracking-[-0.037em] text-ink sm:text-[32px]">
+										{step.title}
+									</h1>
+									{step.blurb && (
+										<p className="mt-2 max-w-[640px] text-[14px] leading-[1.5] text-muted">
+											{step.blurb}
+										</p>
+									)}
+									{/* The choice the path step would have asked, kept reversible
+									    without a screen of its own. Drawn only on the first step,
+									    and only when the answer arrived with the person: further
+									    in, they have answered questions that belong to this path
+									    and switching would discard them, which is what the rail's
+									    own back-navigation is for. */}
+									{declared && cursor === 0 && (
+										<PathSwitch path={path} onChange={choosePath} />
+									)}
+								</div>
+
+								{/* Which of the two roads this is, for somebody who arrived on a
+								    link and has not been told. Gone below the breakpoint where the
+								    top bar already says it. */}
+								<span className="hidden flex-none rounded-full bg-blue-soft px-3 py-[7px] text-[12px] font-bold text-[#27519A] lg:inline-block">
+									{path === "member" ? "Membership application" : "Volunteer application"}
+								</span>
+							</div>
+
 							<form
 								onSubmit={(event) => {
 									event.preventDefault();
@@ -1545,7 +1986,7 @@ function JoinBody() {
 								<div
 									key={step.id}
 									className={cx(
-										"overflow-hidden rounded-2xl border border-card-line bg-white shadow-[0_9px_26px_rgba(1,30,65,0.035)]",
+										"overflow-hidden rounded-[14px] border border-card-line bg-white shadow-[0_5px_18px_rgba(24,48,76,0.04)]",
 										direction === "forward" ? "step-forward" : "step-back",
 									)}
 								>
@@ -1553,49 +1994,25 @@ function JoinBody() {
 									    left, and a bar that shows it. The count and the bar
 									    say the same thing twice on purpose — one of them is
 									    readable, the other is glanceable. */}
-									<header className="border-b border-card-line px-6 pb-6 pt-7 sm:px-9 sm:pb-[25px] sm:pt-[30px]">
-										<div className="mb-3.5 flex items-center justify-between gap-5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-body">
-											<span>
-												Step {cursor + 1} of {steps.length}
-											</span>
-											<strong className="text-blue">
-												{Math.round(((cursor + 1) / steps.length) * 100)}% complete
-												{steps.length - cursor - 1 > 0 &&
-													` · ${steps.length - cursor - 1} ${
-														steps.length - cursor - 1 === 1 ? "step" : "steps"
-													} left`}
-											</strong>
-										</div>
+									{/* The strip across the top of the sheet: what this one is, and
+									    whether anything on it has to be answered. */}
+									<div className="flex items-center justify-between gap-4 border-b border-card-line bg-[#FCFDFF] px-6 py-[18px] text-[13px] sm:px-[30px]">
+										<strong className="min-w-0 truncate font-semibold text-ink">{step.sheet}</strong>
+										<span className="flex-none text-[12px] text-muted">
+											{step.optional ? (
+												"All fields are optional"
+											) : (
+												<>
+													<span className="text-danger" aria-hidden="true">
+														*
+													</span>{" "}
+													Required fields
+												</>
+											)}
+										</span>
+									</div>
 
-										<div className="mb-[22px] h-[5px] overflow-hidden rounded-full bg-[#E7ECF2]">
-											<div
-												className="h-full rounded-full bg-gradient-to-r from-blue to-[#49A7DD] transition-[width] duration-500 ease-out"
-												style={{ width: `${((cursor + 1) / steps.length) * 100}%` }}
-											/>
-										</div>
-
-										<h1 className="font-display text-[26px] font-bold leading-[1.2] tracking-[-0.035em] text-ink sm:text-[30px]">
-											{step.title}
-										</h1>
-
-										{step.blurb && (
-											<p className="mt-2.5 max-w-[650px] text-[13px] leading-[1.55] text-slate-body">
-												{step.blurb}
-											</p>
-										)}
-										{/* The choice the path step would have asked, kept
-										    reversible without a screen of its own. Drawn only on
-										    the first step, and only when the answer arrived with
-										    the person: further in, they have answered questions
-										    that belong to this path and switching would discard
-										    them, which is what the rail's own back-navigation is
-										    for. */}
-										{declared && cursor === 0 && (
-											<PathSwitch path={path} onChange={choosePath} />
-										)}
-									</header>
-
-									<div className="px-6 py-7 sm:px-9 sm:py-8">
+									<div className={step.id === "identity" ? "" : "px-6 py-7 sm:px-[30px]"}>
 										{step.id === "path" && <PathStep path={path} onChange={choosePath} />}
 
 										{step.id === "identity" && (
@@ -1633,24 +2050,31 @@ function JoinBody() {
 											/>
 										)}
 
+										{/* A column of cards has no control an unanswered step
+										    can be anchored by — see `Gap` — so the group is, and
+										    it is lent a `tabindex` when somebody is sent to it. */}
 										{step.id === "plan" && (
-											<PlanCards
-												types={priced}
-												loading={types.isLoading}
-												selected={membershipType}
-												onSelect={setMembershipType}
-												columns={2}
-											/>
+											<div id="join-plan" className="rounded-xl">
+												<PlanCards
+													types={priced}
+													loading={types.isLoading}
+													selected={membershipType}
+													onSelect={setMembershipType}
+													columns={2}
+												/>
+											</div>
 										)}
 
 										{step.id === "payment" && (
-											<PaymentStep
-												methods={paymentMethods}
-												selected={paymentMethod}
-												onSelect={setPaymentMethod}
-												type={chosenType}
-												branch={node?.label ?? null}
-											/>
+											<div id="join-payment" className="rounded-xl">
+												<PaymentStep
+													methods={paymentMethods}
+													selected={paymentMethod}
+													onSelect={setPaymentMethod}
+													type={chosenType}
+													branch={node?.label ?? null}
+												/>
+											</div>
 										)}
 
 										{step.id === "placement" && (
@@ -1803,30 +2227,51 @@ function JoinBody() {
 											/>
 										)}
 
-										{failure && (
-											<div className="mt-6">
-												<ErrorNote>{failure}</ErrorNote>
-											</div>
-										)}
 									</div>
+
+									{/* Outside the body so it is padded whatever the step drew, and
+									    against the foot it is an answer to. */}
+									{failure && (
+										<div className="border-t border-card-line px-6 py-5 sm:px-[30px]">
+											<ErrorNote>{failure}</ErrorNote>
+										</div>
+									)}
 
 									{/* The concept's action bar: a tinted foot to the card
 									    rather than a rule across it, so the controls read as
 									    belonging to the whole step and not to the last field
 									    above them. */}
-									<div className="flex flex-wrap items-center gap-3 border-t border-card-line bg-[#FBFCFD] px-6 py-5 sm:px-9">
+									<div className="flex flex-wrap items-center gap-[18px] border-t border-card-line bg-[#FCFDFF] px-6 py-[21px] sm:px-[30px]">
 										{/* Only ever an answer to the button beside it. The
 										    autosave is silent — see `autosave` — so this is
 										    shown to somebody who pressed something and is
 										    waiting to hear, never on a step change. */}
-										<span className="order-last w-full text-[11px] text-slate-faint sm:order-none sm:mr-auto sm:w-auto">
+										<span className="order-last w-full text-[12px] text-muted sm:order-none sm:mr-auto sm:w-auto">
 											{saved && !busy ? (
 												<span className="flex items-center gap-1.5 font-semibold text-success">
 													<Icon.check size={13} />
 													{saved}
 												</span>
-											) : !ready && step.needs ? (
-												step.needs
+											) : outstanding ? (
+												/* Spoken, because somebody who pressed Continue and
+												   was moved to a field has the whole answer in the
+												   focus ring and none of it in the caret. `alert`
+												   rather than `status`: it is the direct answer to
+												   something they just did. */
+												<span
+													role="alert"
+													className="flex items-start gap-1.5 font-semibold text-danger"
+												>
+													<span aria-hidden="true">*</span>
+													<span>{say(outstanding)}</span>
+												</span>
+											) : !ready ? (
+												/* The step's own standing hint where it has one, and
+												   the first thing outstanding where it does not —
+												   which is how the last step, whose every gap is on a
+												   screen behind it, says what is holding Submit
+												   before anybody has pressed it. */
+												step.needs || (gaps[0] ? say(gaps[0]) : "")
 											) : (
 												"Your draft is saved whenever you continue."
 											)}
@@ -1837,6 +2282,7 @@ function JoinBody() {
 											variant="ghost"
 											onClick={() => void saveDraft()}
 											disabled={!canSaveDraft || busy}
+											className="px-2 text-[14px]"
 										>
 											{busyAction === "save" ? "Saving…" : "Save draft"}
 										</Button>
@@ -1845,14 +2291,25 @@ function JoinBody() {
 											variant="quiet"
 											onClick={() => goTo(cursor - 1)}
 											disabled={cursor === 0 || busy}
+											className="rounded-[7px] px-[18px] py-3 text-[14px]"
 										>
 											<span aria-hidden="true">←</span> Back
 										</Button>
 
+										{/* `held`, not `disabled`. A step that cannot go on yet
+										    still greys the button — the look is the honest one and
+										    it is unchanged — but the press goes through, and what
+										    it does is take somebody to the first thing that is
+										    missing. A dead button is the commonest way a form gets
+										    reported as broken: there is nothing on the screen
+										    saying which of nine fields is the empty one, and the
+										    only control anybody thinks to press answers nothing. */}
 										<Button
 											type="submit"
 											variant="primary"
-											disabled={!ready || busy}
+											held={!ready}
+											disabled={busy}
+											className="rounded-[7px] px-[22px] py-3 text-[14px]"
 										>
 											{step.id === "confirm" ? (
 												busyAction === "submit" ? (
@@ -1869,6 +2326,18 @@ function JoinBody() {
 									</div>
 								</div>
 							</form>
+
+							{/* Under the sheet, where a footer goes: where this is in the
+							    sequence, and what comes after it. The rail says the first of
+							    those on a wide screen and neither on a narrow one, and
+							    "what is next" is the question somebody actually has with a
+							    hand on the Continue button. */}
+							<div className="flex justify-between gap-5 px-0.5 py-[15px] text-[12px] text-muted">
+								<span className="truncate">
+									Step {cursor + 1} of {steps.length} · {step.title}
+								</span>
+								{next && <span className="flex-none truncate">Next: {next.title}</span>}
+							</div>
 						</div>
 					</div>
 				)}
@@ -1903,6 +2372,21 @@ interface StepDef {
 	blurb: string;
 	/** Shown beside a disabled Continue, so "why can't I go on" is answered. */
 	needs: string;
+	/**
+	 * What the sheet inside the card is called, on the strip across its top.
+	 *
+	 * Deliberately not `title` again. The heading above the card names the
+	 * *step* — where you are in the journey — and the strip names the *sheet*
+	 * you are about to fill in. "Personal details" over "Your personal
+	 * information" is the concept's own pairing, and repeating one string twice
+	 * in two type sizes would read as a rendering fault rather than as a label.
+	 */
+	sheet: string;
+	/**
+	 * Nothing on this step has to be answered, so its card says so instead of
+	 * printing a key to an asterisk that never appears.
+	 */
+	optional?: boolean;
 }
 
 /**
@@ -1944,6 +2428,8 @@ function stepsFor(
 			rail: "Registration type",
 			eyebrow: "Registration",
 			title: "Registration type",
+			sheet: "How you would like to join",
+			optional: true,
 			blurb: "Select how you would like to register.",
 			needs: "",
 		},
@@ -1952,7 +2438,8 @@ function stepsFor(
 			rail: "Personal details",
 			eyebrow: "",
 			title: "Personal details",
-			blurb: "Review and update your personal information.",
+			sheet: "Your personal information",
+			blurb: "Let\u2019s start with your name and a few details about you.",
 			needs: "Enter your first and last name",
 		},
 		/**
@@ -1968,7 +2455,8 @@ function stepsFor(
 			rail: "Additional questions",
 			eyebrow: "",
 			title: "Additional questions",
-			blurb: "Complete the questions below.",
+			sheet: "Questions from your society",
+			blurb: "A few more things your society asks everybody who applies.",
 			needs: "Complete all required questions",
 		},
 		/**
@@ -1985,6 +2473,7 @@ function stepsFor(
 			rail: "Declarations",
 			eyebrow: "",
 			title: "Declarations and consent",
+			sheet: "What you are agreeing to",
 			blurb: "Review each declaration and accept all required items.",
 			needs: "Accept all required declarations",
 		},
@@ -1993,6 +2482,8 @@ function stepsFor(
 			rail: "Check and submit",
 			eyebrow: "Last step",
 			title: "Check and submit",
+			sheet: "Your application",
+			optional: true,
 			blurb: "Review your information before submitting.",
 			needs: "",
 		},
@@ -2008,6 +2499,7 @@ function stepsFor(
 						rail: "Membership type",
 						eyebrow: "",
 						title: "Membership type",
+						sheet: "Membership options",
 						blurb: "Select a membership type.",
 						needs: "Choose a membership type",
 					},
@@ -2016,6 +2508,7 @@ function stepsFor(
 						rail: "Payment method",
 						eyebrow: "",
 						title: "Payment method",
+						sheet: "How you would like to pay",
 						blurb:
 							"Select a payment method. Payment is requested after submission.",
 						needs: "Select a payment method",
@@ -2025,6 +2518,7 @@ function stepsFor(
 						rail: "Branch",
 						eyebrow: "",
 						title: "Branch",
+						sheet: "Your branch",
 						blurb: "Select the branch that will manage your membership.",
 						needs: "Select a branch",
 					},
@@ -2044,6 +2538,7 @@ function stepsFor(
 						rail: "Volunteer location",
 						eyebrow: "",
 						title: "Volunteer location",
+						sheet: "Where you would like to serve",
 						blurb: "Select the branch or area where you would like to volunteer.",
 						needs: "Select a branch or area",
 					},
@@ -2052,6 +2547,7 @@ function stepsFor(
 						rail: "Identification",
 						eyebrow: "",
 						title: "Identification",
+						sheet: "Your identification documents",
 						blurb: "Provide your government identification details.",
 						needs: "Enter an ID type and number",
 					},
@@ -2060,6 +2556,7 @@ function stepsFor(
 						rail: "Volunteer details",
 						eyebrow: "",
 						title: "Volunteer details",
+						sheet: "About your volunteering",
 						blurb: "Add your skills, languages, and motivation.",
 						needs: "Choose at least one skill, language, and motivation",
 					},
@@ -2068,11 +2565,14 @@ function stepsFor(
 						rail: "Education and experience",
 						eyebrow: "",
 						title: "Education and experience",
+						sheet: "Your education and experience",
+						optional: true,
 						blurb:
 							"Add your education, training, work experience, licences, and references. All fields are optional.",
 						// No `needs`, and there is nothing to put in one. The rail's
 						// amber note names what a step is waiting for, and this step
-						// waits for nothing: `complete("background")` is always true.
+						// waits for nothing worth a standing note: `gapsOf("background")`
+						// is empty unless somebody picked "Other" and did not say what.
 						needs: "",
 					},
 					{
@@ -2080,6 +2580,8 @@ function stepsFor(
 						rail: "Emergency contact",
 						eyebrow: "",
 						title: "Emergency contact",
+						sheet: "Who we should contact",
+						optional: true,
 						blurb: "Add a person to contact in an emergency. This information is visible only to your branch.",
 						needs: "",
 					},
@@ -2175,93 +2677,130 @@ function Rail({
 	cursor,
 	furthest,
 	onJump,
+	heading,
+	standfirst,
 	summary,
 }: {
 	steps: StepDef[];
 	cursor: number;
 	furthest: number;
 	onJump: (index: number) => void;
+	heading: string;
+	standfirst: string;
 	summary: React.ReactNode;
 }) {
+	const percent = Math.round(((cursor + 1) / steps.length) * 100);
+
 	return (
-		<div className="lg:sticky lg:top-[92px] lg:self-start">
-			{/* Small screens get a bar and a count; an eight-rung ladder down the
-			    side of a phone would push the form itself below the fold. */}
-			<div className="lg:hidden">
-				<div className="flex items-baseline justify-between">
-					<span className="text-[13px] font-bold text-ink">{steps[cursor]?.rail}</span>
-					<span className="text-[11.5px] text-slate-faint">
-						{cursor + 1} / {steps.length}
-					</span>
-				</div>
-				<div className="mt-2 h-1 overflow-hidden rounded-full bg-card-line">
+		<div className="lg:sticky lg:top-[94px] lg:self-start lg:pt-2">
+			{/* The rail sits on the canvas rather than in a panel of its own. A
+			    white card beside a white card is two documents; this is a margin
+			    note about the one document on the page, and margin notes are not
+			    boxed. */}
+			<aside>
+				<p className="text-[11px] font-extrabold uppercase tracking-[0.13em] text-muted sm:text-[12px]">
+					Your application
+				</p>
+
+				{/* Everything between the eyebrow and the progress bar is the part a
+				    phone has no room for: on a small screen the ladder would push
+				    the first question below the fold, so the bar and its count
+				    carry the whole of "where am I" on their own. */}
+				<h2 className="mt-[7px] hidden font-display text-[22px] font-bold leading-tight tracking-[-0.027em] text-ink lg:block">
+					{heading}
+				</h2>
+				<p className="mt-[5px] hidden text-[14px] leading-[1.5] text-muted lg:block">
+					{standfirst}
+				</p>
+
+				<div
+					className="mb-2 mt-5 h-[5px] overflow-hidden rounded-full bg-[#DDE5EF]"
+					role="progressbar"
+					aria-label="Application progress"
+					aria-valuenow={cursor + 1}
+					aria-valuemin={1}
+					aria-valuemax={steps.length}
+				>
 					<div
 						className="h-full rounded-full bg-blue transition-[width] duration-500 ease-out"
-						style={{ width: `${((cursor + 1) / steps.length) * 100}%` }}
+						style={{ width: `${percent}%` }}
 					/>
 				</div>
-			</div>
-
-			<aside className="hidden overflow-hidden rounded-2xl border border-card-line bg-white lg:block">
-				<div className="bg-rail-soft px-[23px] py-[22px]">
-					<p className="text-[9px] font-extrabold uppercase tracking-[0.15em] text-aqua">
-						Your application
-					</p>
-					<h2 className="mt-1.5 font-display text-[17px] font-bold leading-tight text-white">
-						{steps.length} steps
-					</h2>
-					<span className="mt-2 block text-[10px] leading-[1.45] text-white/60">
-						Your draft is saved whenever you move to another step.
+				<div className="flex justify-between text-[12px] text-muted">
+					<span>
+						Step {cursor + 1} of {steps.length}
 					</span>
+					<span className="lg:hidden">{steps[cursor]?.rail}</span>
+					<span className="hidden lg:inline">{percent}% complete</span>
 				</div>
 
-				<nav aria-label="Application progress" className="grid p-2.5">
-					{steps.map((entry, index) => {
-						const isDone = index < cursor;
-						const isNow = index === cursor;
-						const reachable = index <= furthest;
+				<nav aria-label="Registration steps" className="hidden lg:block">
+					<ol className="mt-7">
+						{steps.map((entry, index) => {
+							const isDone = index < cursor;
+							const isNow = index === cursor;
+							const reachable = index <= furthest;
 
-						return (
-							<button
-								key={entry.id}
-								type="button"
-								disabled={!reachable}
-								onClick={() => onJump(index)}
-								aria-current={isNow ? "step" : undefined}
-								className={cx(
-									"grid min-h-[49px] grid-cols-[27px_minmax(0,1fr)] items-center gap-2.5 rounded-[9px] px-[9px] py-1.5 text-left text-[11.5px] font-semibold transition",
-									isNow
-										? "bg-blue-soft text-ink"
-										: reachable
-											? "text-slate-body hover:bg-blue-soft/60 hover:text-ink"
-											: "cursor-default text-slate-faint",
-								)}
-							>
-								<span
-									className={cx(
-										"grid h-[25px] w-[25px] place-items-center rounded-full text-[9.5px] font-bold transition",
-										isNow
-											? "bg-rail text-white"
-											: isDone
-												? "bg-rail/85 text-white"
-												: "bg-[#EEF2F6] text-slate-faint",
+							return (
+								<li key={entry.id} className="relative">
+									{/* The thread between one rung and the next. Absolute
+									    rather than a border on the circle, because it has
+									    to start below the circle and stop above the one
+									    under it. */}
+									{index < steps.length - 1 && (
+										<span
+											aria-hidden="true"
+											className="absolute left-4 top-[43px] h-6 w-px bg-[#D5DFEA]"
+										/>
 									)}
-								>
-									{isDone ? <Tick className="text-white" size={11} /> : index + 1}
-								</span>
-								<span className="truncate">{entry.rail}</span>
-							</button>
-						);
-					})}
+									<button
+										type="button"
+										disabled={!reachable}
+										onClick={() => onJump(index)}
+										aria-current={isNow ? "step" : undefined}
+										className={cx(
+											"flex min-h-[57px] w-full items-center gap-3.5 rounded-lg pr-2 text-left text-[14px] transition",
+											isNow
+												? "font-bold text-rail"
+												: reachable
+													? "text-[#6B798B] hover:text-ink"
+													: "cursor-default text-[#9AA6B4]",
+										)}
+									>
+										<span
+											className={cx(
+												"grid h-[33px] w-[33px] flex-none place-items-center rounded-full border text-[13px] transition",
+												isNow
+													? "border-rail bg-rail text-white shadow-[0_0_0_5px_#E4EBF5]"
+													: isDone
+														? "border-rail/85 bg-rail/85 text-white"
+														: "border-[#D5DFEA] bg-canvas",
+											)}
+										>
+											{isDone ? <Tick className="text-white" size={12} /> : index + 1}
+										</span>
+										<span className="min-w-0 flex-1 truncate">{entry.rail}</span>
+									</button>
+								</li>
+							);
+						})}
+					</ol>
 				</nav>
 
-				<div className="mx-[18px] mb-5 border-t border-card-line pt-4">
+				{/* What the wizard has collected, kept where somebody can check it
+				    without leaving the step they are on. Not in the concept, which
+				    draws a single step and has nothing to summarise yet; it earns
+				    its place by the fourth one. */}
+				<div className="mt-[30px] hidden border-t border-card-line pt-[23px] lg:block">
 					{summary}
+				</div>
 
-					<p className="mt-4 border-t border-card-line pt-3.5 text-[10.5px] leading-[1.5] text-slate-body">
-						Stuck on something?{" "}
-						<Link to="/locations" className="font-bold text-blue hover:underline">
-							Contact your branch →
+				<div className="mt-[30px] hidden border-t border-card-line pt-[23px] text-[14px] lg:block">
+					<strong className="font-semibold text-ink">Need a hand?</strong>
+					<p className="mt-1 text-[13px] leading-[1.5] text-muted">
+						Your local branch can help you with your application.{" "}
+						<Link to="/locations" className="font-semibold text-blue hover:underline">
+							Find your branch
 						</Link>
 					</p>
 				</div>
@@ -2305,21 +2844,24 @@ function Summary({
 
 	return (
 		<div>
-			<p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+			<p className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.13em] text-muted">
 				So far
 			</p>
-			<dl className="space-y-2.5">
+			{/* A row per answer, the label beside the answer rather than above it:
+			    the rail is a narrow column and a stack of label-over-value pairs
+			    reads as twice as many lines as there are facts. */}
+			<dl className="space-y-2">
 				{rows.map(([label, value]) => (
-					<div key={label} className="rise-in">
-						<dt className="text-[10.5px] uppercase tracking-wide text-slate-faint">{label}</dt>
+					<div key={label} className="rise-in flex items-baseline justify-between gap-3">
+						<dt className="flex-none text-[13px] text-muted">{label}</dt>
 						<dd
 							className={cx(
-								"truncate text-[12.5px]",
+								"min-w-0 truncate text-right text-[13px]",
 								value ? "font-semibold text-ink" : "text-slate-faint",
 							)}
 							title={value ?? undefined}
 						>
-							{value ?? "Not provided"}
+							{value ?? "—"}
 						</dd>
 					</div>
 				))}
@@ -2563,23 +3105,20 @@ function IdentityStep({
 	const email = profile?.email || accountEmail;
 
 	return (
-		<div className="space-y-7">
-			<section className="grid gap-6 border-b border-card-line pb-7 lg:grid-cols-[minmax(0,1fr)_210px]">
-				<header className="flex items-start justify-between gap-5 lg:col-span-2">
-					<div>
-						<p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-blue">
-							Your profile
-						</p>
-						<h2 className="mt-1 text-[18px] font-semibold leading-tight text-ink">
-							Name and contact
-						</h2>
-					</div>
-					<span className="flex-none rounded-full bg-[#EDF6F8] px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#27546F]">
-						Shared profile
-					</span>
-				</header>
+		<>
+			<Sheet
+				title="Name and contact"
+				note="Use your name as it appears on your identification."
+			>
+				<PhotoField
+					id="join-photo"
+					value={photo}
+					onChange={onPhoto}
+					required={path === "volunteer"}
+					name={`${firstName} ${lastName}`.trim()}
+				/>
 
-				<div className="grid min-w-0 gap-5 sm:grid-cols-2">
+				<div className="grid gap-[21px] sm:grid-cols-2 sm:gap-x-6">
 					<Field label="First name" required htmlFor="join-first">
 						<TextInput id="join-first" value={firstName} onChange={onFirstName} />
 					</Field>
@@ -2600,11 +3139,13 @@ function IdentityStep({
 
 					<Field
 						label="Email address"
-						hint="To change this, update your sign-in account."
+						hint="Linked to your account. To change it, update your sign-in details."
 					>
 						{/* Never an input. The signed-in account is the identity, so it is
-						    available even before this person has a Red Profile. */}
-						<div className="flex items-center gap-2 rounded-lg border border-rail-line bg-surface px-3 py-2 text-[13px] text-muted">
+						    available even before this person has a Red Profile. Drawn as
+						    a filled, locked field rather than as a line of text, so the
+						    row reads as the sixth question and not as a gap in the grid. */}
+						<div className="flex min-h-[47px] items-center gap-2 rounded-[7px] border border-[#CDD8E5] bg-[#F3F5F8] px-3 py-2.5 text-[14px] text-[#69798D]">
 							<span className="flex-none text-slate-faint">
 								<Icon.lock size={14} />
 							</span>
@@ -2641,105 +3182,223 @@ function IdentityStep({
 						/>
 					</Field>
 				</div>
+			</Sheet>
 
-				<PhotoField
-					id="join-photo"
-					value={photo}
-					onChange={onPhoto}
-					required={path === "volunteer"}
-					name={`${firstName} ${lastName}`.trim()}
-				/>
-			</section>
+			{/* Only a volunteer is asked either of these. A membership does not
+			    depend on them and `assert_ready` does not check them, so putting
+			    them on both paths would be this screen collecting something nobody
+			    needs.
 
-			{/* Only a volunteer is asked. A membership does not depend on it and
-			    `assert_ready` does not check it, so putting it on both paths would
-			    be this screen collecting something nobody needs. Drawn only once
-			    the vocabularies are in, because the yes/no form of the question is
-			    unanswerable without the society's own country. */}
-			{path === "volunteer" && options && (
-				<section className="border-b border-card-line pb-7">
-					<header className="mb-5">
-						<p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-blue">
-							Nationality
-						</p>
-						<h2 className="mt-1 text-[18px] font-semibold leading-tight text-ink">
-							Citizenship
-						</h2>
-						<p className="mt-1.5 max-w-2xl text-[12.5px] leading-relaxed text-muted">
-							This helps the Society apply the right identification and safeguarding rules.
-						</p>
-					</header>
-					<CitizenshipQuestion
-						countries={options.countries}
-						statuses={options.citizenship_statuses ?? []}
-						home={options.default_country_of_citizenship}
-						value={citizenship}
-						onChange={onCitizenship}
-						status={citizenshipStatus}
-						onStatus={onCitizenshipStatus}
-						isCitizen={isCitizen}
-						onIsCitizen={onIsCitizen}
-					/>
-				</section>
-			)}
-
-			{/* Volunteers only, for the same reason nationality is: a society has
-			    to know what adjustments to make before it sends somebody
-			    anywhere, and a membership does not turn on it. */}
+			    **One under the other, not side by side.** The concept draws them
+			    as a pair, and a pair is right while both are unanswered — they are
+			    the same shape of question and reading them together is what stops
+			    the step feeling like one question per screenful. But each has a
+			    consequence that opens underneath, and two columns have only one
+			    "underneath" between them: answering "no" to citizenship and "yes"
+			    to disability put the country picker between the disability
+			    question and the disability question's own follow-up. A question
+			    and what it opens have to stay adjacent, so the column wins. */}
 			{path === "volunteer" && (
-				<FieldSet
-					title="Disability and support requirements"
-					description="Provide any information needed to arrange appropriate support."
+				<Sheet
+					title="Citizenship and support"
+					note="Help us arrange the right guidance and support for you."
 				>
-					<div className="max-w-[470px]">
-						<Field label="Do you have a disability?" required htmlFor="join-disability">
-							<SelectInput
-								id="join-disability"
-								value={disability}
-								options={DISABILITY_ANSWERS}
-								onChange={onDisability}
-								placeholder="Choose an answer"
-							/>
-						</Field>
-					</div>
-
-					{/* A “Yes” needs at least one type. The free-text support request
-					    follows it, matching the order somebody answers the questions. */}
-					{disability === DISABILITY_DISCLOSED && (
-						<div className="rise-in mt-5 grid gap-5 rounded-xl border border-card-line bg-[#F7FAFC] p-5">
-							<MultiCombo
-								id="join-disabilities"
-								label="Disability type"
-								required
-								options={disabilityOptions}
-								selected={disabilities}
-								onToggle={(key) =>
-									onDisabilities(
-										disabilities.includes(key)
-											? disabilities.filter((entry) => entry !== key)
-											: [...disabilities, key],
-									)
-								}
-								placeholder="Search disability types"
-								empty="This society has not configured a list to choose from."
-							/>
-
-							<Field
-								label="Support requirements"
-								htmlFor="join-disability-needs"
-								hint="Optional"
-							>
-								<TextArea
-									id="join-disability-needs"
-									value={disabilityNeeds}
-									onChange={onDisabilityNeeds}
-									rows={3}
+					<div className="space-y-8">
+						{/* Drawn only once the vocabularies are in, because the yes/no
+						    form of the question is unanswerable without the society's
+						    own country. */}
+						{options && (
+							<div>
+								<CitizenshipAsk
+									countries={options.countries}
+									statuses={options.citizenship_statuses ?? []}
+									home={options.default_country_of_citizenship}
+									value={citizenship}
+									onChange={onCitizenship}
+									status={citizenshipStatus}
+									onStatus={onCitizenshipStatus}
+									isCitizen={isCitizen}
+									onIsCitizen={onIsCitizen}
 								/>
-							</Field>
+
+								{/* The consequence of "No". */}
+								{options.default_country_of_citizenship && isCitizen === false && (
+									<CitizenshipDetails
+										countries={options.countries}
+										statuses={options.citizenship_statuses ?? []}
+										home={options.default_country_of_citizenship}
+										value={citizenship}
+										onChange={onCitizenship}
+										status={citizenshipStatus}
+										onStatus={onCitizenshipStatus}
+									/>
+								)}
+							</div>
+						)}
+
+						<div>
+							<fieldset className="min-w-0 border-0 p-0">
+								<legend className="mb-3 flex items-center gap-1 text-[14px] font-semibold text-slate-strong">
+									Do you have a disability?
+									<span className="text-danger" aria-hidden="true">
+										*
+									</span>
+								</legend>
+								{/* Capped rather than full width. The answers are two or
+								    three words each and a pill stretched across the whole
+								    card is a button pretending to be a banner. */}
+								<div className="max-w-[470px]">
+									<ChoiceRow
+										name="join-disability"
+										value={disability}
+										options={DISABILITY_ANSWERS}
+										onChange={onDisability}
+									/>
+								</div>
+								<p className="mt-2.5 text-[12px] leading-relaxed text-muted">
+									We will ask how we can support you.
+								</p>
+							</fieldset>
+
+							{/* A "Yes" needs at least one type. The free-text support request
+							    follows it, matching the order somebody answers the questions. */}
+							{disability === DISABILITY_DISCLOSED && (
+								<div className="rise-in mt-6 grid gap-5 rounded-xl border border-card-line bg-[#F7FAFC] p-5">
+									<MultiCombo
+										id="join-disabilities"
+										label="Disability type"
+										required
+										options={disabilityOptions}
+										selected={disabilities}
+										onToggle={(key) =>
+											onDisabilities(
+												disabilities.includes(key)
+													? disabilities.filter((entry) => entry !== key)
+													: [...disabilities, key],
+											)
+										}
+										placeholder="Search disability types"
+										empty="This society has not configured a list to choose from."
+									/>
+
+									<Field
+										label="What support would be helpful?"
+										htmlFor="join-disability-needs"
+										hint="Optional"
+									>
+										<TextArea
+											id="join-disability-needs"
+											value={disabilityNeeds}
+											onChange={onDisabilityNeeds}
+											rows={3}
+										/>
+									</Field>
+								</div>
+							)}
 						</div>
-					)}
-				</FieldSet>
+					</div>
+				</Sheet>
 			)}
+		</>
+	);
+}
+
+/**
+ * One ruled sheet inside the card.
+ *
+ * The card's body carries no padding of its own, so a step that has more than
+ * one thing to ask draws each as a section with its own room and a rule between
+ * them. The rule runs the full width of the card rather than stopping at the
+ * text — that is what makes it read as a fold in one sheet of paper instead of
+ * as a border somebody put around a group of fields.
+ */
+function Sheet({
+	title,
+	note,
+	children,
+}: {
+	title?: string;
+	note?: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<section className="border-b border-card-line px-6 py-7 last:border-b-0 sm:px-[30px] sm:py-[28px]">
+			{title && (
+				<h2
+					className={cx(
+						"text-[18px] font-semibold leading-tight tracking-[-0.02em] text-ink",
+						note ? "" : "mb-[23px]",
+					)}
+				>
+					{title}
+				</h2>
+			)}
+			{note && <p className="mb-[23px] mt-1 text-[13px] leading-relaxed text-muted">{note}</p>}
+			{children}
+		</section>
+	);
+}
+
+/**
+ * A short closed question, answered by picking one of its answers.
+ *
+ * A `<select>` for two or three answers is a control that hides what it is
+ * asking until somebody opens it, on a form whose whole job is to be read
+ * before it is filled in. These are the same answers, visible, and each one is
+ * a target big enough for a thumb.
+ *
+ * A real `<input type="radio">` under each label rather than a styled button,
+ * so the group arrows, the name grouping and the announcement are the
+ * browser's own. The caller supplies the group's name through a `<legend>`.
+ */
+function ChoiceRow({
+	name,
+	value,
+	options,
+	onChange,
+}: {
+	name: string;
+	value: string;
+	options: string[];
+	onChange: (value: string) => void;
+}) {
+	return (
+		<div className="flex flex-wrap gap-2.5">
+			{options.map((option, index) => {
+				const picked = value === option;
+
+				return (
+					<label
+						key={option}
+						className={cx(
+							// `grow` with a small basis and no wrapping inside the pill:
+							// three answers that fit sit on one row, and one as long as
+							// "Prefer not to say" takes the next row whole rather than
+							// breaking itself over three lines in a narrow column.
+							"flex grow basis-[104px] cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-[7px] border px-[18px] py-[11px] text-[14px] font-medium transition",
+							picked
+								? "border-blue bg-[#EDF3FF] text-[#2055AF]"
+								: "border-[#CDD8E5] bg-white text-ink hover:border-blue-line",
+						)}
+					>
+						<input
+							// A group has no element of its own that can take focus, so
+							// the first answer in it is what an unanswered question is
+							// anchored by — see `Gap`. Numbered rather than named after
+							// the answer, because the answers are a society's own words
+							// and "join-disability-Prefer not to say" is not an id.
+							id={`${name}-${index}`}
+							type="radio"
+							name={name}
+							value={option}
+							checked={picked}
+							onChange={() => onChange(option)}
+							className="h-[17px] w-[17px] flex-none accent-blue"
+						/>
+						{option}
+					</label>
+				);
+			})}
 		</div>
 	);
 }
@@ -2794,42 +3453,52 @@ function PhotoField({
 	};
 
 	return (
-		<div>
+		<div className="mb-6 flex flex-wrap items-center gap-[18px] border-b border-[#EDF0F5] pb-[25px]">
+			<span className="grid h-[66px] w-[66px] flex-none place-items-center overflow-hidden rounded-full bg-[#E8F0FC] text-[21px] font-bold text-[#245A9C]">
+				{value ? <img src={value} alt="" className="h-full w-full object-cover" /> : initials}
+			</span>
+
+			<div className="min-w-[145px] flex-1">
+				<strong className="text-[14px] font-semibold text-ink">
+					Profile photograph
+					{required && (
+						<span className="ml-1 text-danger" aria-hidden="true">
+							*
+						</span>
+					)}
+				</strong>
+				<p className="mt-[3px] text-[12px] text-muted">
+					{required ? "Required · shown on your volunteer card" : "Shown on your profile card"}
+				</p>
+				<p className="text-[12px] text-muted">JPG or PNG · Maximum 5 MB</p>
+			</div>
+
+			{/* A label rather than a button, because the control it opens is the
+			    file input beside it. The input is `sr-only` rather than hidden, so
+			    it is still in the tab order and still announced — and the ring the
+			    label takes on `focus-within` is what makes that visible. */}
 			<label
 				htmlFor={id}
-				className="flex min-h-[184px] cursor-pointer flex-col items-center justify-center gap-3.5 rounded-[14px] border-[1.5px] border-dashed border-[#BAC8D5] bg-[#F7FAFC] p-5 text-center transition hover:border-blue hover:bg-[#F0F6FB] lg:h-full"
+				className="flex-none cursor-pointer rounded-[7px] border border-[#CED9E6] bg-white px-3.5 py-[9px] text-[13px] font-semibold text-ink transition hover:border-blue hover:text-blue focus-within:ring-2 focus-within:ring-blue focus-within:ring-offset-2"
 			>
-				<span className="grid h-[72px] w-[72px] place-items-center overflow-hidden rounded-full border-4 border-white bg-gradient-to-br from-[#1C72B5] to-[#0A365F] text-[20px] font-extrabold text-white shadow-[0_4px_14px_rgba(7,31,61,0.18)]">
-					{value ? <img src={value} alt="" className="h-full w-full object-cover" /> : initials}
-				</span>
-				<span className="grid justify-items-center gap-1">
-					<strong className="text-[13px] text-ink">
-						Profile photograph
-						{required && (
-							<span className="ml-1 text-danger" aria-hidden="true">
-								*
-							</span>
-						)}
-					</strong>
-					<small className="text-[10px] text-muted">
-						{required ? "Required · shown on your volunteer card" : "Shown on your profile card"}
-					</small>
-					<span className="mt-1.5 rounded-lg border border-[#CAD5DF] bg-white px-3 py-1.5 text-[10px] font-extrabold text-blue">
-						{loading ? "Uploading…" : value ? "Replace picture" : "Choose picture"}
-					</span>
-				</span>
+				<span aria-hidden="true">＋ </span>
+				{loading ? "Uploading…" : value ? "Replace photo" : "Upload photo"}
+				<input
+					id={id}
+					type="file"
+					accept="image/jpeg,image/png"
+					className="sr-only"
+					disabled={loading}
+					aria-required={required}
+					onChange={(event) => pick(event.target.files?.[0])}
+				/>
 			</label>
-			<input
-				id={id}
-				type="file"
-				accept="image/*"
-				className="sr-only"
-				disabled={loading}
-				aria-required={required}
-				onChange={(event) => pick(event.target.files?.[0])}
-			/>
 
-			{failure && <p className="mt-2 text-[11.5px] leading-relaxed text-danger">{failure}</p>}
+			{failure && (
+				<p role="alert" className="w-full text-[12px] leading-relaxed text-danger">
+					{failure}
+				</p>
+			)}
 		</div>
 	);
 }
@@ -2876,7 +3545,7 @@ function PlacementStep({
  * citizen is stopped at an empty required field instead of carrying the
  * society's country forward under an answer that contradicts it.
  */
-function CitizenshipQuestion({
+function CitizenshipAsk({
 	countries,
 	statuses,
 	home,
@@ -2898,13 +3567,9 @@ function CitizenshipQuestion({
 	isCitizen: boolean | null;
 	onIsCitizen: (yes: boolean) => void;
 }) {
-	// Everything but "Citizen", which the yes/no question has already answered.
-	// Offering it again under "No" would be a form contradicting itself.
-	const otherStatuses = statuses.filter((entry) => entry !== CITIZEN);
-
 	if (!home) {
 		return (
-			<div className="grid max-w-xl gap-5 sm:grid-cols-2">
+			<div className="grid min-w-0 max-w-xl gap-[21px] sm:grid-cols-2">
 				<Field label="Country of citizenship" required htmlFor="join-citizenship">
 					<Combo id="join-citizenship" value={value} onChange={onChange} options={countries} />
 				</Field>
@@ -2929,53 +3594,84 @@ function CitizenshipQuestion({
 	}
 
 	return (
-		<div>
+		<fieldset className="min-w-0 border-0 p-0">
+			<legend className="mb-3 flex items-center gap-1 text-[14px] font-semibold text-slate-strong">
+				Are you a citizen of {home}?
+				<span className="text-danger" aria-hidden="true">
+					*
+				</span>
+			</legend>
+
+			{/* Capped, like the question under it: two pills across a whole card
+			    is a pair of banners, not a pair of answers. */}
 			<div className="max-w-[470px]">
-				<Field label={`Are you a citizen of ${home}?`} required htmlFor="join-is-citizen">
+				<ChoiceRow
+					name="join-is-citizen"
+					value={isCitizen === null ? "" : isCitizen ? "Yes" : "No"}
+					options={["Yes", "No"]}
+					onChange={(answer) => onIsCitizen(answer === "Yes")}
+				/>
+			</div>
+
+			{isCitizen === true ? (
+				<p className="mt-2.5 text-[12px] leading-relaxed text-muted">
+					{home} will be recorded as your country of citizenship.
+				</p>
+			) : (
+				<p className="mt-2.5 text-[12px] leading-relaxed text-muted">
+					This determines which identification you will need.
+				</p>
+			)}
+		</fieldset>
+	);
+}
+
+/**
+ * What "no" costs: the country, and the standing this society's own field
+ * offers. Drawn under the pair of questions rather than inside one of them,
+ * because two fields in half a row is a column of squeezed controls beside a
+ * question with nothing under it.
+ */
+function CitizenshipDetails({
+	countries,
+	statuses,
+	home,
+	value,
+	onChange,
+	status,
+	onStatus,
+}: {
+	countries: string[];
+	statuses: string[];
+	home: string;
+	value: string;
+	onChange: (value: string) => void;
+	status: string;
+	onStatus: (value: string) => void;
+}) {
+	// Everything but "Citizen", which the yes/no question has already answered.
+	// Offering it again under "No" would be a form contradicting itself.
+	const otherStatuses = statuses.filter((entry) => entry !== CITIZEN);
+
+	return (
+		<div className="rise-in mt-6 grid gap-5 rounded-xl border border-card-line bg-[#F7FAFC] p-5 sm:grid-cols-2">
+			<Field label="Country of citizenship" required htmlFor="join-citizenship">
+				<Combo id="join-citizenship" value={value} onChange={onChange} options={countries} />
+			</Field>
+
+			{/* Drawn only where the society's own field offers something to choose.
+			    A site whose Select has been emptied gets the country question and no
+			    second one. */}
+			{otherStatuses.length > 0 && (
+				<Field label={`Citizenship status in ${home}`} required htmlFor="join-citizenship-status">
 					<SelectInput
-						id="join-is-citizen"
-						value={isCitizen === null ? "" : isCitizen ? "Yes" : "No"}
-						onChange={(answer) => onIsCitizen(answer === "Yes")}
-						options={["Yes", "No"]}
+						id="join-citizenship-status"
+						value={status}
+						onChange={onStatus}
+						options={otherStatuses}
 						placeholder="Choose an answer"
 					/>
 				</Field>
-			</div>
-
-			{isCitizen === true && (
-				<p className="mt-3 flex w-fit items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-[11px] text-emerald-700">
-					<span aria-hidden="true" className="grid h-[18px] w-[18px] place-items-center rounded-full bg-emerald-600 text-[9px] font-extrabold text-white">
-						✓
-					</span>
-					{home} will be recorded as your country of citizenship.
-				</p>
-			)}
-
-			{isCitizen === false && (
-				<div className="rise-in mt-5 grid max-w-xl gap-5 rounded-xl border border-card-line bg-[#F7FAFC] p-5 sm:grid-cols-2">
-					<Field label="Country of citizenship" required htmlFor="join-citizenship">
-						<Combo id="join-citizenship" value={value} onChange={onChange} options={countries} />
-					</Field>
-
-					{/* Drawn only where the society's own field offers something to
-					    choose. A site whose Select has been emptied gets the country
-					    question and no second one. */}
-					{otherStatuses.length > 0 && (
-						<Field
-							label={`Citizenship status in ${home}`}
-							required
-							htmlFor="join-citizenship-status"
-						>
-							<SelectInput
-								id="join-citizenship-status"
-								value={status}
-								onChange={onStatus}
-								options={otherStatuses}
-								placeholder="Choose an answer"
-							/>
-						</Field>
-					)}
-				</div>
 			)}
 		</div>
 	);
