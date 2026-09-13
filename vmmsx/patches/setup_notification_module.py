@@ -27,7 +27,7 @@ The announcement *types* are not seeded. News, Alert, Advisory read like
 obvious defaults and are not: they are a society's own vocabulary, the same as
 `VMMS Template Category` and `VMMS Time Log Category`, and shipping three
 English nouns would be this app deciding what a national society calls the
-things it sends. `vmmsx/seed/kenya.py` is where a worked example belongs.
+things it sends. A society writes its own from the desk.
 """
 
 import frappe

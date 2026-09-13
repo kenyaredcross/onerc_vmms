@@ -130,14 +130,6 @@ class TestContentBlocks(IntegrationTestCase):
 		self.assertEqual(report["existed"], 1)
 		self.assertEqual(frappe.db.get_value(BLOCK_DOCTYPE, TEST_KEY, "text_value"), "What the society wrote")
 
-	def test_overwrite_does_what_seed_will_not(self):
-		"""The Kenya seed's path: run deliberately, get the worked example."""
-		make_block(text_value="What the society wrote")
-
-		block_service.overwrite([{"content_key": TEST_KEY, "text_value": "The Kenya wording"}])
-
-		self.assertEqual(frappe.db.get_value(BLOCK_DOCTYPE, TEST_KEY, "text_value"), "The Kenya wording")
-
 	# --- writing ----------------------------------------------------------
 
 	def test_a_partial_write_leaves_the_other_fields_alone(self):

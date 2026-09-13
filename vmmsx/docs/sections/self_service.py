@@ -31,7 +31,6 @@ def render(w) -> None:
 	_owner_bypass(w)
 	_the_workspaces(w)
 	_configuration(w)
-	_the_seed(w)
 	_limits(w)
 	_what_is_tested(w)
 
@@ -564,31 +563,6 @@ def _configuration(w) -> None:
 	)
 
 
-def _the_seed(w) -> None:
-	w.h2("The Kenya seed")
-
-	w.p(
-		"vmmsx/seed/kenya.py is a worked configuration for one society, and it is data rather than"
-		" behaviour: no source file outside that package names Kenya, County, Branch, Ordinary or"
-		" any role it creates, and deleting the package would leave vmmsx working exactly as it does"
-		" now."
-	)
-	w.code("bench --site <site> execute vmmsx.seed.kenya.main")
-	w.p(
-		"It creates the society's identity, a three-level geo ladder with a national root, two"
-		" counties and two branches, two membership types (one fee-bearing auto-on-payment, one"
-		" routed), an approval workflow per approvable doctype, five roles, a demo approver placed"
-		" at a county by Geo Assignment, every role setting this app owns, and the three workspaces."
-		" Every step checks before it writes and reports created or exists, so running it twice"
-		" changes nothing."
-	)
-	w.p(
-		"Three things it deliberately will not do, and reports every run: it does not invent a logo"
-		" (an Attach Image is a real file), it does not set the demo approver's password, and it does"
-		" not configure another app's payment gateway."
-	)
-
-
 def _limits(w) -> None:
 	w.h2("What this layer does not do")
 
@@ -639,8 +613,5 @@ def _what_is_tested(w) -> None:
 			"test_workspaces.py — what is installed, that each names exactly the configured role,"
 			" that an unset or deleted role installs nothing and removes what is there, and who"
 			" lands where.",
-			"test_seed.py — the Kenya seed run for real, asserted record by record, proved"
-			" idempotent, and then a whole registration driven through the configuration it"
-			" produced and accepted by the approver it seeded.",
 		]
 	)

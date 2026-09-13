@@ -14,13 +14,13 @@ keeps in patches, and this app keeps a great deal there:
   scope-role setting the access model reads;
 * the geo anchor field on Buzz's `Buzz Event`;
 * the content surfaces, the notification types, the task and branch modules;
-* the society seed itself.
+* every starting vocabulary a form draws its options from.
 
 So a brand new site installed the app, marked nineteen patches "done", and had
 none of it. That is not a subtle failure: with no scope-role fields there is no
-access model, with no geo nodes nobody can register, and with the seed skipped
-the sign-up page reports that the society is not taking new accounts. Every one
-of those was seen on a real site before this file existed.
+access model, and with no content surfaces every editable slot on the portal
+falls back to hardcoded wording nobody can edit. Every one of those was seen on
+a real site before this file existed.
 
 **`after_install` therefore runs what a migrate would have run**, and it reads
 the list from `patches.txt` rather than restating it, so a patch added next year

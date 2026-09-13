@@ -80,3 +80,15 @@ vmmsx/public/portal/
 # onerc_payments keeps its own. Anchored to the root so a future one nested in
 # a module is a deliberate decision rather than an accident of this rule.
 /CLAUDE.md
+
+# Design prototypes
+#
+# `UI Concept/` is the static HTML/CSS the product was drawn against before it
+# was built. It is reference for whoever is designing a screen, not something
+# the app installs or serves — and it drifts from the real components the day
+# after it is consulted. Kept on disk, out of the repository, the same way the
+# generated guide above is.
+#
+# Anchored to the root: this is one folder at the top level, not a name that
+# should match at any depth.
+/UI Concept/

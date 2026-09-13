@@ -12,10 +12,9 @@ bought a name and lost every connection, so the parallel one goes.
 **Migrated rather than deleted, which is a deviation from the agreed plan and a
 deliberate one.** The plan said this is a test site, so existing `VMMS Project`
 records may be deleted after a link audit. The audit is the first thing this
-patch does — and on the Tanzania demo site it finds eight submitted terms of
-reference pointing at six projects. Deleting the projects would leave those
-eight documents pointing at nothing, on a site that exists to be demonstrated,
-for no saving at all: the conversion below is thirty lines and runs once. So the
+patch does — and on the site it was written against it found eight submitted
+terms of reference pointing at six projects. Deleting the projects would leave
+those eight documents pointing at nothing, for no saving at all: the conversion below is thirty lines and runs once. So the
 records are carried across and *then* the old ones deleted, which satisfies the
 instruction and leaves nothing dangling.
 

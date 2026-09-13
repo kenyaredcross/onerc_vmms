@@ -451,11 +451,6 @@ after_migrate = [
 	# answered, whether they withdrew, and what the application became. Dormant
 	# where HRMS is not installed, like the block above.
 	"vmmsx.setup.job_applicant_fields.install",
-	# Seed the society named in this site's config, if it is not on the site
-	# yet. Does nothing on every deploy after the first, and nothing at all on a
-	# site that names no society. See the module docstring for why this is asked
-	# from the site's own state rather than from a patch log.
-	"vmmsx.setup.bootstrap.ensure_society",
 ]
 
 # Scheduled Tasks

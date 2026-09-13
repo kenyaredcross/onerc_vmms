@@ -28,8 +28,7 @@ rather than left behind.
 
 Runs from `after_migrate`, because the thing that invalidates a queue is a
 society changing who holds a role where, and a deploy is the one moment this app
-is guaranteed to get to look. It is also what
-`patches/repair_approval_routing.py` calls after placing the missing approver.
+is guaranteed to get to look.
 """
 
 import frappe

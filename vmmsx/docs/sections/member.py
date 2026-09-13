@@ -407,8 +407,8 @@ def _lifetime(w) -> None:
 		"The reason this is a field rather than a large number is that a large number is still a"
 		" number. Before it existed, a society wanting a life membership configured one with a"
 		" duration of 3650 days, and that membership expires — silently, ten years after the"
-		" demonstration that sold it, with nobody watching for the day. The seeded Kenya"
-		" configuration carried exactly that stand-in and now carries is_lifetime instead."
+		" demonstration that sold it, with nobody watching for the day. is_lifetime says the thing"
+		" the society means, and no arithmetic can expire it."
 	)
 
 	w.h3("The duration guardrail, relaxed for one case and no other")

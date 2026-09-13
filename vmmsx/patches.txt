@@ -38,20 +38,6 @@ vmmsx.patches.setup_content_module
 vmmsx.patches.setup_notification_module
 vmmsx.patches.setup_task_module
 vmmsx.patches.setup_branch_module
-# Last, because a society's seed writes to the settings fields every patch
-# above installs. Does nothing unless the site names a seed in its own config.
-vmmsx.patches.seed_society
-# And after it, for the reason its own docstring gives: the patch above is
-# already in every existing site's Patch Log and a patch runs once per site by
-# name, so everything added to a seed since — the scope-role settings the
-# console's tab gating reads, and the operations companion that was never run
-# by a patch at all — arrives through a new name or not at all.
-vmmsx.patches.reseed_society_with_operations
-# Places the national-level approver the routing design has always depended on
-# and was never seeded, then re-opens the queue for applications that resolved
-# nobody at the time they were submitted. See the patch's own docstring: without
-# it, every application outside one region was admitted to nobody at all.
-vmmsx.patches.repair_approval_routing
 # Which role, if any, may open onerc_sms's own campaign builder — the one
 # setting vmmsx owns for a doctype it does not. See the patch's own docstring.
 vmmsx.patches.install_sms_scope_role
@@ -69,10 +55,6 @@ vmmsx.patches.migrate_participants_to_assignments
 # society edits from the moment they land. See the patch's own docstring for why
 # the availability windows already seeded are not the ones the grid can use.
 vmmsx.patches.seed_scheduling_vocabularies
-# Dense but fictional presentation activity for the explicitly configured
-# Tanzania demo site: people, memberships, projects, TORs, deployments, tasks,
-# notifications and historical email records. Other sites are left untouched.
-vmmsx.patches.seed_tanzania_presentation_scale
 # Which identity documents a volunteer must produce, and the age this society
 # treats as adult. Custom Fields vmmsx owns on core's Identification Type and
 # National Society Settings; all four ship empty, and empty narrows nothing.

@@ -289,31 +289,3 @@ def seed(rows) -> dict:
 
 	return {"created": created, "existed": existed}
 
-
-def overwrite(rows) -> dict:
-	"""Write blocks whether or not they exist. For a demo seed, not for migrate.
-
-	The difference from `seed` is the whole reason both exist. `seed` ships the
-	product's neutral defaults and must never clobber a society's words;
-	`overwrite` is what a worked example like the Kenya seed uses when somebody
-	runs it deliberately to *get* that example, and expects the page to look like
-	the example afterwards.
-	"""
-	written = 0
-
-	for row in rows:
-		key = row["content_key"]
-
-		if frappe.db.exists(BLOCK_DOCTYPE, key):
-			block = frappe.get_doc(BLOCK_DOCTYPE, key)
-			for field, value in row.items():
-				if field == "content_key":
-					continue
-				block.set(field, value)
-			block.save(ignore_permissions=True)  # Deliberate seed run, as Administrator.
-		else:
-			frappe.get_doc({"doctype": BLOCK_DOCTYPE, **row}).insert(ignore_permissions=True)
-
-		written += 1
-
-	return {"written": written}

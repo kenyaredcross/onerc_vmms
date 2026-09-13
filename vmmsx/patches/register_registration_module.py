@@ -29,8 +29,8 @@ process builds the map with the module in it.
 `install_app` has exactly this problem and solves it three lines after calling
 `add_module_defs`: delete the cached map and rebuild it before syncing. This
 does the same, so one migrate is enough. That matters on a hosted site, where
-migrate is the only thing that runs and `seed_society` further down the same run
-may create records in the doctypes this module owns.
+migrate is the only thing that runs and a later patch in the same run may create
+records in the doctypes this module owns.
 """
 
 import frappe

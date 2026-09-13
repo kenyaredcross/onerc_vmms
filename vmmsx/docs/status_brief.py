@@ -206,8 +206,8 @@ def _standing(w: Writer) -> None:
 	w.p(
 		"The spine runs end to end: a person registers themselves, the right coordinator reviews and"
 		" approves them, they become a volunteer, they are matched to work, they accept it, they"
-		" serve, and the hours are recorded against it. Kenya, Tanzania and The Gambia are each"
-		" seeded from source, so any of them can be demonstrated on a clean site. One decision"
+		" serve, and the hours are recorded against it. The app installs with no society on it and"
+		" is configured from the desk, so a national society is set up rather than ported. One decision"
 		" carries most of the weight: approval is a single engine rather than a feature repeated per"
 		" module, and a society changes its ladder, branches, types and wording by editing records,"
 		" not by writing code."

@@ -9,10 +9,10 @@ Manager`, both societies define the same six — somebody reviewing volunteer
 applications, somebody reviewing membership applications, somebody sending
 people out on deployment, an approved volunteer, an approved member, and an
 account that is none of those yet. That was previously a step the Gambia setup
-guide asked a real administrator to do by hand, in Desk > Role List, before
-anything else in the sequence — because nothing shipped them. This module ships
-them, the same idempotent way a seed's own `_roles()` does, so a brand-new site
-like Tanzania's has them the moment the app is installed.
+sequence asked a real administrator to do by hand, in Desk > Role List, before
+anything else — because nothing shipped them. This module ships them
+idempotently, so a brand-new site has them the moment the app is installed and
+the first Geo Assignment somebody writes has a role to name.
 
 **This creates records, not wiring, and that is deliberate.** Every module in
 this app that reads a role reads it from a setting a society names —
