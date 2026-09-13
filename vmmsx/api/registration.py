@@ -482,6 +482,54 @@ def my_profile() -> dict | None:
 
 
 @frappe.whitelist()
+def my_account() -> dict | None:
+	"""What the caller's *login* is called. The smaller question under `my_profile`.
+
+	`my_profile` answers "what does the society hold about this person", and
+	`None` is its ordinary answer for somebody who signed up last night and has
+	not registered for anything yet. Every screen that greets a person was
+	falling through that `None` to the session user — which is an email address —
+	so a new volunteer's first morning on the portal opened with "Good morning,
+	amina.hassan91." The account knows better: they typed their name into the
+	sign-up form to get here.
+
+	**It is the account's name, not the society's record of them.** The moment a
+	Red Profile exists it is the better answer and every caller prefers it; this
+	is the fallback underneath, and the prefill for the identity step of a
+	registration form, so that nobody is asked to type their own name twice.
+
+	`None` for a Guest, like `my_profile`, rather than an empty shape — a caller
+	testing for a name should not have to tell "not signed in" from "signed in
+	and nameless".
+	"""
+	user = frappe.session.user
+
+	if not user or user == "Guest":
+		return None
+
+	account = frappe.db.get_value(
+		"User", user, ["name", "first_name", "last_name", "email", "full_name"], as_dict=True
+	)
+
+	if not account:
+		return None
+
+	from vmmsx.registration.services import intake
+
+	first_name, last_name = intake.account_name(account)
+
+	return {
+		"email": account.email or account.name or "",
+		# The framework's own joined name, untouched. `first_name` and
+		# `last_name` beside it are the split of it — see `intake.account_name`
+		# for why a sign-up leaves one field holding both.
+		"full_name": (account.full_name or "").strip(),
+		"first_name": first_name,
+		"last_name": last_name,
+	}
+
+
+@frappe.whitelist()
 def identity_options() -> dict:
 	"""The vocabulary the identity step of a registration form has to draw.
 

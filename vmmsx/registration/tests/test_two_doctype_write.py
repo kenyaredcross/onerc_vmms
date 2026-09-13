@@ -247,3 +247,56 @@ class TestAdoption(RegistrationTestCase):
 
 		with fixtures.acting_as(user), self.assertRaises(frappe.ValidationError):
 			fixtures.submit_volunteer_form(self.branch())
+
+
+class TestTheNameOnTheLogin(RegistrationTestCase):
+	"""Undoing what Frappe's sign-up does to a name, in one place.
+
+	`sign_up` puts the whole typed name into `first_name` and leaves `last_name`
+	empty, because the form asks for a full name and the framework has nowhere
+	else to put it. Three things downstream want a first name — the portal's
+	greeting, the console's corner and the identity step of a registration form —
+	and a split done three times is three chances to do it differently, so it is
+	done by `intake.account_name` and tested here.
+	"""
+
+	class Account:
+		"""Only the two fields `account_name` reads, so the case under test is
+		visible in the call rather than buried in a fixture."""
+
+		def __init__(self, first_name, last_name=None):
+			self.first_name = first_name
+			self.last_name = last_name
+
+	def test_a_sign_up_name_is_split_into_a_first_and_a_last(self):
+		self.assertEqual(intake.account_name(self.Account("Jane Doe")), ("Jane", "Doe"))
+
+	def test_the_last_word_is_the_family_name_and_the_rest_are_given_names(self):
+		self.assertEqual(intake.account_name(self.Account("Amina Juma Hassan")), ("Amina Juma", "Hassan"))
+
+	def test_a_surname_the_account_already_carries_is_believed(self):
+		"""A user a coordinator created at the desk has both fields filled in
+		properly. Re-splitting this one would rename somebody."""
+		self.assertEqual(intake.account_name(self.Account("Mary Jane", "Watson")), ("Mary Jane", "Watson"))
+
+	def test_one_word_is_a_first_name_with_no_surname_invented(self):
+		self.assertEqual(intake.account_name(self.Account("Cher")), ("Cher", ""))
+
+	def test_an_account_with_no_name_at_all_returns_nothing_to_use(self):
+		"""What to do about it is the caller's decision: `_create` falls back to
+		the email, and the registration form asks."""
+		self.assertEqual(intake.account_name(self.Account("", "")), ("", ""))
+
+	def test_a_created_profile_takes_the_split_rather_than_the_whole_name(self):
+		"""The end of the chain: a form that collected no name still produces a
+		profile called "Jane Doe" rather than one called "Jane Doe Jane Doe"."""
+		user = fixtures.website_account("unsplit.name")
+		frappe.db.set_value("User", user, {"first_name": "Wanjiru Mwangi", "last_name": ""})
+		frappe.clear_document_cache("User", user)
+
+		profile = intake.for_user(user)
+
+		self.assertEqual(
+			frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, ["first_name", "last_name"]),
+			("Wanjiru", "Mwangi"),
+		)

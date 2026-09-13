@@ -10,7 +10,7 @@ import { CommunicationSubNav, inCommunication } from "./CommunicationNav";
 import { PeopleSubNav, inPeople } from "./PeopleNav";
 import { Spinner } from "../portal/ui/kit";
 import { QUEUES, QUEUE_KINDS, queueOf } from "./queues";
-import type { ApprovalStatus, RedProfile } from "../portal/types";
+import type { Account, ApprovalStatus, RedProfile } from "../portal/types";
 
 /**
  * The manager console.
@@ -375,6 +375,15 @@ export default function AdminLayout() {
 		"portal:my_profile",
 	);
 
+	// And the name on the login underneath it, for the same reason and on the
+	// same shared key: a coordinator whose account exists before their record
+	// does is still a person with a name they typed.
+	const account = useFrappeGetCall<{ message: Account | null }>(
+		API.myAccount,
+		undefined,
+		"portal:my_account",
+	);
+
 	// Nothing is drawn until the server has answered. Rendering the full sidebar
 	// and then removing tabs would show somebody a Stipends tab they are about to
 	// lose, which is worse than a moment of nothing.
@@ -478,7 +487,7 @@ export default function AdminLayout() {
 				// configured SMS role. See `console.sms_access()`'s own docstring
 				// for why this doctype cannot be a gated section like the tabs above.
 				sms={answer?.sms ? "/app/sms-campaign/new" : null}
-				person={me.data?.message?.full_name ?? null}
+				person={me.data?.message?.full_name || account.data?.message?.full_name || null}
 				subtitle="Manager"
 			/>
 		</ContentProvider>

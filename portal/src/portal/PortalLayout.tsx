@@ -5,7 +5,13 @@ import { API } from "../lib/api";
 import { geoPath } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { PortalShell, type PortalCompanion, type PortalNavItem } from "./PortalShell";
-import type { DeploymentInvitation, RedProfile, TaskSummary, VolunteerProfile } from "./types";
+import type {
+	Account,
+	DeploymentInvitation,
+	RedProfile,
+	TaskSummary,
+	VolunteerProfile,
+} from "./types";
 
 /**
  * The portal's destinations, in the order the brief names them.
@@ -41,6 +47,15 @@ export default function PortalLayout() {
 		API.myProfile,
 		undefined,
 		"portal:my_profile",
+	);
+
+	// The name on the login, for the window between somebody creating an account
+	// and the society holding a record of them. Without it the corner of the
+	// shell shows an email address to every new arrival.
+	const account = useFrappeGetCall<{ message: Account | null }>(
+		API.myAccount,
+		undefined,
+		"portal:my_account",
 	);
 
 	const unread = useFrappeGetCall<{ message: { unread: number } }>(
@@ -115,8 +130,18 @@ export default function PortalLayout() {
 				unread={unread.data?.message?.unread ?? 0}
 				onUnreadChange={() => void unread.mutate()}
 				console={console_.data?.message?.available ? "/admin" : null}
-				person={me.data?.message?.full_name ?? volunteer.data?.message?.full_name ?? null}
-				email={me.data?.message?.email ?? volunteer.data?.message?.email ?? null}
+				person={
+					me.data?.message?.full_name ||
+					volunteer.data?.message?.full_name ||
+					account.data?.message?.full_name ||
+					null
+				}
+				email={
+					me.data?.message?.email ||
+					volunteer.data?.message?.email ||
+					account.data?.message?.email ||
+					null
+				}
 				branch={branch}
 			/>
 		</ContentProvider>

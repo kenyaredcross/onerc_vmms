@@ -49,18 +49,44 @@ export function signupUrl(returnTo: string = window.location.pathname): string {
 }
 
 /**
- * A first name for the top bar's greeting, out of whatever `session.user` is
- * — an email in most societies, `Administrator` in this one. Good enough for
- * "Good morning, X": the part before an `@` if there is one, then the part
- * before the first separator in that.
+ * A first name for a greeting, out of whatever the caller could find.
+ *
+ * **Callers should hand it a real name.** A person's own record is the best
+ * answer, the name on their login (`api/registration.py::my_account`) is the
+ * one underneath it, and `session.user` — an email address — is the last
+ * resort, for an account that gave no name at all. The email is still handled
+ * here rather than refused, because "Good morning, amina" beats no greeting;
+ * it is simply not the case this exists to serve.
+ *
+ * The first word, and what counts as a word depends on what it was given. In an
+ * email address a dot, a dash and an underscore all stand in for the space
+ * nobody can type — `amina.hassan@` is two words. In a name they are part of
+ * it, so Anne-Marie is greeted as Anne-Marie rather than as Anne.
+ *
+ * **Case is corrected, but only where correcting it is safe.** A name typed
+ * "AMINA" or "amina" is shouted or mumbled and should read "Amina". A name that
+ * already mixes cases was typed deliberately — McKenzie, DeSilva, JoAnne — and
+ * is left exactly as its owner wrote it, because a rule that tidies those is a
+ * rule that misspells somebody's name on their own dashboard every morning.
+ * Where it does re-case, it does so after an apostrophe and a hyphen too, so
+ * O'BRIEN comes back as O'Brien rather than O'brien.
  */
 export function firstName(name: string | null | undefined): string {
 	if (!name) return "";
 
-	const local = name.includes("@") ? name.split("@")[0] : name;
-	const first = local.split(/[\s._-]+/).filter(Boolean)[0];
+	const isEmail = name.includes("@");
+	const local = isEmail ? name.split("@")[0] : name;
+	const first = local.split(isEmail ? /[\s._-]+/ : /\s+/).filter(Boolean)[0];
 
-	return first ? first[0].toUpperCase() + first.slice(1) : "";
+	if (!first) return "";
+
+	const mixed = first !== first.toLowerCase() && first !== first.toUpperCase();
+
+	if (mixed) return first;
+
+	return first
+		.toLowerCase()
+		.replace(/(^|['\u2019-])(\p{L})/gu, (_match, lead: string, letter: string) => lead + letter.toUpperCase());
 }
 
 /** Initials for an avatar tile. Empty string when there is nothing to shorten. */

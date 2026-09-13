@@ -19,6 +19,7 @@ import { PersonHero } from "../ui/PersonHero";
 import {
 	Avatar,
 	Button,
+	ButtonLink,
 	Card,
 	Empty,
 	ErrorNote,
@@ -34,6 +35,7 @@ import type {
 	IdentityOptions,
 	MembershipRow,
 	MyCertifications,
+	OpenRegistration,
 	RedProfile,
 	VolunteerProfile,
 } from "./types";
@@ -95,9 +97,22 @@ export default function Profile() {
 		"portal:my_memberships",
 	);
 
+	// Whether an application of theirs is already with the branch, and whether it
+	// has been sent. Without it this screen read "no volunteer record" as "never
+	// applied" for everybody — so somebody mid-review was told to apply again,
+	// which the server refuses, and somebody with an unfinished draft was told
+	// nothing about the answers sitting in it. Same key the dashboard and the
+	// deployments list use, so it is one answer rather than three.
+	const open = useFrappeGetCall<{ message: Record<string, OpenRegistration | null> }>(
+		API.myOpenRegistrations,
+		undefined,
+		"portal:open_registrations",
+	);
+
 	const profile = volunteer.data?.message ?? null;
 	const certs = training.data?.message?.certifications ?? [];
 	const held = (memberships.data?.message ?? []).find((row) => row.is_active);
+	const application = open.data?.message?.volunteer ?? null;
 
 	return (
 		<>
@@ -106,13 +121,15 @@ export default function Profile() {
 				trail={[{ label: "Home", to: "/dashboard" }, { label: "Profile" }]}
 			/>
 
-			{volunteer.isLoading && <Spinner label="Loading your profile…" />}
+			{/* The application is waited for as well as the record. This page has
+			    three different things to say to somebody with no profile, and two
+			    of them are wrong for the other two people — so it says none of them
+			    until it knows which person is reading. */}
+			{(volunteer.isLoading || open.isLoading) && <Spinner label="Loading your profile…" />}
 			{volunteer.error && <ErrorNote>{errorMessage(volunteer.error)}</ErrorNote>}
 
-			{!volunteer.isLoading && !profile && (
-				<Empty title="You have no volunteer record" icon={Icon.people}>
-					Your profile appears here once your branch has verified your application.
-				</Empty>
+			{!volunteer.isLoading && !open.isLoading && !profile && (
+				<NoRecordYet application={application} />
 			)}
 
 			{profile && (
@@ -203,6 +220,73 @@ export default function Profile() {
 				</>
 			)}
 		</>
+	);
+}
+
+/**
+ * What this page says to somebody who has no volunteer record.
+ *
+ * **"You have no volunteer record" was the whole of it**, under a sentence
+ * promising the profile would appear once a branch had verified an application
+ * — which is only true of somebody who has actually sent one. To everybody
+ * else it was a dead end: a statement of fact with nothing to do about it, on
+ * the page they went to precisely because they wanted to be a volunteer.
+ *
+ * Three people arrive here with nothing, and only one of them is waiting on a
+ * branch:
+ *
+ * - **Nobody has applied.** The way forward is the registration, so it is a
+ *   button and not a sentence.
+ * - **A draft is open.** The answers are saved and the form will resume where
+ *   they left it, which is worth saying — somebody who thinks their answers are
+ *   gone starts again from the first screen.
+ * - **It has been sent.** There is genuinely nothing for them to do, and a
+ *   button inviting them to apply a second time would be an invitation the
+ *   server refuses. So this one gets the sentence and no control.
+ */
+function NoRecordYet({ application }: { application: OpenRegistration | null }) {
+	if (application?.state === "Draft") {
+		// "Draft" is two opposite situations — nobody has sent it, or an approver
+		// sent it back — and `reviewed` is the server's answer to which. Telling
+		// somebody whose branch asked for a certificate that their form is simply
+		// unfinished is the same mistake the dashboard's panel used to make.
+		const returned = Boolean(application.reviewed);
+
+		return (
+			<Empty
+				title={
+					returned
+						? "Your application needs something from you"
+						: "Your volunteer registration is unfinished"
+				}
+				icon={Icon.people}
+				action={<ButtonLink to="/join?path=volunteer">Continue your registration</ButtonLink>}
+			>
+				{returned
+					? application.reason ||
+						"Your branch has asked for something before they can accept it."
+					: "Everything you answered has been saved. Pick it up where you left it, and your profile appears here once your branch has accepted it."}
+			</Empty>
+		);
+	}
+
+	if (application) {
+		return (
+			<Empty title="Your application is with your branch" icon={Icon.people}>
+				Your profile appears here once somebody there has accepted it.
+			</Empty>
+		);
+	}
+
+	return (
+		<Empty
+			title="You are not registered as a volunteer"
+			icon={Icon.people}
+			action={<ButtonLink to="/join?path=volunteer">Become a volunteer</ButtonLink>}
+		>
+			Volunteering is a separate record from your account. Register, and your profile appears here
+			once your branch has accepted it.
+		</Empty>
 	);
 }
 

@@ -20,11 +20,13 @@ import {
 	cx,
 } from "./ui/kit";
 import type {
+	Account,
 	DeploymentInvitation,
 	EventCard,
 	MembershipRow,
 	MyTimeLogs,
 	OpenRegistration,
+	RedProfile,
 	TaskSummary,
 	VolunteerProfile,
 } from "./types";
@@ -92,6 +94,20 @@ export default function Dashboard() {
 		"portal:events_upcoming",
 	);
 
+	// What to call this person. Three answers in descending order of authority,
+	// and the keys are the shell's own, so a dashboard that asks for them costs
+	// nothing on top of the chrome that has already asked.
+	const me = useFrappeGetCall<{ message: RedProfile | null }>(
+		API.myProfile,
+		undefined,
+		"portal:my_profile",
+	);
+	const account = useFrappeGetCall<{ message: Account | null }>(
+		API.myAccount,
+		undefined,
+		"portal:my_account",
+	);
+
 	const profile = volunteer.data?.message ?? null;
 	const rows = memberships.data?.message ?? [];
 	const time = logs.data?.message ?? null;
@@ -105,7 +121,16 @@ export default function Dashboard() {
 
 	const request = waiting[0] ?? null;
 	const attention = attentionTasks(work);
-	const greeting = firstName(profile?.full_name?.trim() || user);
+	// The society's record of them first, then their own record of themselves,
+	// then the login. The last is an email address and is the reason the other
+	// two are asked for: greeting a new volunteer as "amina.hassan91" on their
+	// first morning is the kind of thing nobody comes back from.
+	const greeting = firstName(
+		profile?.full_name?.trim() ||
+			me.data?.message?.full_name?.trim() ||
+			account.data?.message?.full_name?.trim() ||
+			user,
+	);
 	const standing = standingOf(profile, rows, openVolunteer, openMember);
 
 	// The concept's "choose a path" card, and the one rule that governs it: a

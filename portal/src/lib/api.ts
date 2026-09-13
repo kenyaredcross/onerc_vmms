@@ -40,6 +40,10 @@ export const API = {
 	// a red_profile and check create permission. They are deliberately absent
 	// from this file: no screen here acts on somebody else's behalf.
 	myProfile: "vmmsx.api.registration.my_profile",
+	// The name on the login, for the moment before there is a profile to read a
+	// name off. Every screen that greets somebody falls back to this rather than
+	// to the session user, which is an email address.
+	myAccount: "vmmsx.api.registration.my_account",
 	// The one endpoint here that overwrites rather than adds, and it is named for
 	// it. Registering can never rewrite what the society already holds; a person
 	// looking at their own details and correcting them is a different act, and

@@ -232,18 +232,51 @@ def _adopt(email: str, user: str) -> str | None:
 	return found.name
 
 
+def account_name(account) -> tuple[str, str]:
+	"""The first and last name on a login, as the person would write them.
+
+	**Frappe's own sign-up puts the whole typed name into `first_name`** — one
+	field holding "Amina Juma Hassan", with `last_name` left empty — because a
+	sign-up form asks for a full name and the framework has nowhere else to put
+	it. Everything downstream that wants a name has to undo that, and undoing it
+	in three places is three chances to do it differently, so it is done here.
+
+	**A surname the account already carries is believed.** A user a coordinator
+	created at the desk has both fields filled in properly, and re-splitting
+	"Mary Jane" across them would rename somebody. Only the single-field case is
+	divided, and it is divided at the *last* space, which takes the final word as
+	the family name and leaves the rest as given names — the reading that is
+	right for the largest number of people who will use this, and in any case a
+	starting point a person corrects in the form they are about to fill in.
+
+	Returns a pair that may be empty in either half. Nothing is invented from an
+	email address: what to do with an account that gave no name at all is the
+	caller's decision, and the two callers make different ones.
+	"""
+	first = (account.first_name or "").strip()
+	last = (account.last_name or "").strip()
+
+	if last or " " not in first:
+		return first, last
+
+	given, _, family = first.rpartition(" ")
+
+	return given.strip(), family.strip()
+
+
 def _create(account, email: str, values: dict | None) -> str:
 	"""A new Red Profile for a person the society has not met.
 
-	Names fall back to the account's own, because a Frappe signup puts the whole
-	name it was given into `first_name` and leaves `last_name` empty. A profile
-	with an empty `last_name` would be refused by core, so the fallback is not a
-	nicety: it is what makes a registration that collected nothing still work.
+	Names fall back to the account's own — see `account_name` for why that takes
+	a split rather than a read. A profile with an empty `last_name` would be
+	refused by core, so the last fallbacks are not a nicety: they are what makes
+	a registration that collected nothing still work.
 	"""
 	values = values or {}
+	account_first, account_last = account_name(account)
 
-	first_name = values.get("first_name") or account.first_name or email.split("@")[0]
-	last_name = values.get("last_name") or account.last_name or first_name
+	first_name = values.get("first_name") or account_first or email.split("@")[0]
+	last_name = values.get("last_name") or account_last or first_name
 
 	profile = {
 		"doctype": PROFILE_DOCTYPE,

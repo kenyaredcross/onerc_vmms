@@ -243,6 +243,21 @@ export interface ApprovalStatus {
 	}>;
 }
 
+/**
+ * `api/registration.py::my_account` — the name on the login itself.
+ *
+ * The fallback underneath `RedProfile`, for the window between somebody
+ * creating an account and the society holding a record of them. `first_name`
+ * and `last_name` are the framework's single name field split in two; see the
+ * endpoint.
+ */
+export interface Account {
+	email: string;
+	full_name: string;
+	first_name: string;
+	last_name: string;
+}
+
 /** `api/registration.py::_profile_dto`. */
 export interface RedProfile {
 	red_profile: string;
