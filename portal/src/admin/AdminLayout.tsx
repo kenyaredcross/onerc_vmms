@@ -45,8 +45,14 @@ import type { Account, ApprovalStatus, RedProfile } from "../portal/types";
  * `NavGroup` describes.** People & Insight opens Analytics and reveals
  * Members, Volunteers and the review queue beneath it: all four answer "who
  * are my people and how are things going," read-first, nothing here is an
- * act. Operations opens the Deployments hub and reveals Projects and Tasks:
- * all three answer "make something happen." Overview, Stipends, Events,
+ * act. Operations opens the Deployments hub and owns Projects and Tasks: all
+ * three answer "make something happen." Those two are listed in the Operations
+ * panel rather than under the rail row, because this group declares `hasSubNav`
+ * and a forced-narrow rail hides a group's children — see `DeploymentNav.tsx`,
+ * which says what that cost while they were only on the rail. People Management
+ * has the same shape and has not been moved: its panel already lists all six of
+ * its children, so it is one property away whenever somebody decides it.
+ * Overview, Stipends, Events,
  * Content and Questions stay outside both — none of them is a register
  * somebody browses for either reason, so grouping them would be tidying for
  * its own sake rather than a question the sidebar is answering.
@@ -202,6 +208,8 @@ interface GroupDef {
 	icon: NavItem["icon"];
 	/** This section renders its own `SubNav`; see `OPERATIONS` below. */
 	hasSubNav?: boolean;
+	/** Its children are listed in that `SubNav` rather than on the rail. */
+	childrenInPanel?: boolean;
 	children: TabDef[];
 }
 
@@ -212,6 +220,9 @@ const PEOPLE: GroupDef = {
 	fallback: "People Management",
 	icon: Icon.people,
 	hasSubNav: true,
+	// Listed in the People panel, not under this row — the same reason
+	// Operations gives below, and `PeopleNav.tsx` holds all six.
+	childrenInPanel: true,
 	// The two application queues, then recruitment, then the two registers.
 	// **Everybody asking to join, then everybody who already has.** A job
 	// opening is the third door into the society alongside volunteering and
@@ -247,6 +258,12 @@ const OPERATIONS: GroupDef = {
 	labelKey: "admin.nav.group.operations",
 	fallback: "Operations",
 	icon: Icon.truck,
+	// Listed in the Operations panel, not under this row. The rail cannot hold
+	// them open here — `hasSubNav` below takes it down to icons — and a
+	// hierarchy that disappears the moment somebody uses it is worse than one
+	// place that always has them. `ConsoleShell`'s `childrenInPanel` says the
+	// rest; `DeploymentNav.tsx` is where they live.
+	childrenInPanel: true,
 	children: [PROJECTS, TASKS],
 };
 
@@ -349,6 +366,7 @@ function narrowGroup(def: GroupDef, allowed: Set<string>): NavItem | NavGroup | 
 		fallback: def.fallback,
 		icon: def.icon,
 		hasSubNav: def.hasSubNav,
+		childrenInPanel: def.childrenInPanel,
 		children,
 	};
 }
@@ -398,7 +416,15 @@ export default function AdminLayout() {
 
 	const answer = access.data?.message;
 	const allowed = new Set(answer?.sections ?? []);
-	if (["queue", "registry", "analytics"].some((section) => allowed.has(section))) allowed.add("people");
+	// Holding any of People Management's own sections is what makes somebody a
+	// member of that workspace, and `people` is the derived key that says so:
+	// the group's row, its overview, and now its panel all stand on it.
+	// `recruitment` belongs in the list because recruitment moved into this
+	// group; while it was missing, somebody holding only job openings had the
+	// row and would have had no panel to reach the second page with.
+	if (["queue", "registry", "recruitment", "analytics"].some((section) => allowed.has(section))) {
+		allowed.add("people");
+	}
 
 	// No staff role at all, or the call failed — either way this is not their
 	// screen. A failure sends them somewhere real rather than to a shell that
@@ -472,12 +498,19 @@ export default function AdminLayout() {
 				// inside `Shell` because the shell has no business knowing which of
 				// this console's sections are big enough to need one.
 				subNav={
-					inDeployments(location.pathname)
-						? (horizontal) => <DeploymentSubNav horizontal={horizontal} />
+					// Gated on the section the panel belongs to, not only on the route.
+					// Operations now covers Tasks, which is its own section — somebody
+					// holding `tasks` and not `deployments` can stand on a page inside
+					// this workspace without being entitled to the workspace, and a
+					// panel of rows that all bounce them to /admin is worse than none.
+					// They keep a Tasks row of their own on the rail; `narrowGroup`
+					// says why.
+					inDeployments(location.pathname) && allowed.has("deployments")
+						? (horizontal) => <DeploymentSubNav horizontal={horizontal} sections={allowed} />
 						: inCommunication(location.pathname)
 							? (horizontal) => <CommunicationSubNav horizontal={horizontal} />
-							: inPeople(location.pathname)
-								? (horizontal) => <PeopleSubNav horizontal={horizontal} />
+							: inPeople(location.pathname) && allowed.has("people")
+								? (horizontal) => <PeopleSubNav horizontal={horizontal} sections={allowed} />
 								: undefined
 				}
 				portal="/dashboard"

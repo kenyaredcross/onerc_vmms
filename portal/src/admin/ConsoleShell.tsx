@@ -40,6 +40,7 @@ import { GuidedTour, startGuidedTour, useWorkspaceDensity } from "../ui/GuidedTo
 import { Icon, companionIcon } from "../ui/icons";
 import { cx } from "../portal/ui/kit";
 import { ToastProvider } from "../portal/ui/overlays";
+import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
 
 export interface NavItem {
 	to: string;
@@ -71,6 +72,20 @@ export interface NavItem {
  */
 export interface NavGroup extends Omit<NavItem, "groupKey" | "groupFallback"> {
 	children: NavItem[];
+	/**
+	 * These children are listed in the section's own panel, so the rail draws
+	 * this group as a single row rather than a heading that opens.
+	 *
+	 * For a section declaring `hasSubNav` the rail cannot hold the children open
+	 * anyway — arriving there forces it to icons, which hides them, and disables
+	 * the control that would bring them back. Rather than have the rail offer a
+	 * hierarchy it drops the moment you use it, the panel is the one place the
+	 * section's destinations are listed.
+	 *
+	 * The children stay declared: they are how this row knows it is the current
+	 * one on a child's route, and how the header names the page.
+	 */
+	childrenInPanel?: boolean;
 }
 
 /** A tab that leaves this app entirely. Route and label both come from the server. */
@@ -369,6 +384,29 @@ export function ConsoleShell({
 					const onGroupPage =
 						within(location.pathname, item.to) ||
 						item.children.some((child) => within(location.pathname, child.to));
+
+					// A group whose section carries its own panel draws as one row.
+					// The panel is that section's navigation — it lists these same
+					// destinations, on every route the section owns — and a rail that
+					// listed them too would be saying the same thing twice in two
+					// places that can drift. The children are still declared, because
+					// they are what tells this row it is the current one and tells the
+					// header which page it is on.
+					if (item.childrenInPanel) {
+						return (
+							<NavLink
+								key={item.to}
+								to={item.to}
+								end={item.end}
+								aria-label={iconName(item, compact)}
+								title={iconName(item, compact)}
+								className={({ isActive }) => rowClass(isActive || onGroupPage, compact)}
+							>
+								{({ isActive }) => rowContent(item, isActive || onGroupPage, compact)}
+							</NavLink>
+						);
+					}
+
 					const expanded = openGroups[item.to] ?? onGroupPage;
 					const toggle = () => setOpenGroups((state) => ({ ...state, [item.to]: !expanded }));
 
@@ -400,10 +438,19 @@ export function ConsoleShell({
 
 							{/* Children are hidden while the rail is icon-only: there is
 							    nowhere to indent to, and a second column of unlabelled
-							    icons is not a hierarchy anybody can read. The group's own
-							    row still navigates, which is the way in. */}
+							    icons is not a hierarchy anybody can read.
+
+							    **Which means a group that hides children has to put them
+							    somewhere else**, and for a group declaring `hasSubNav`
+							    that somewhere is its own panel — the rail is forced narrow
+							    there and `toggleCollapsed` is disabled, so this is not a
+							    state the reader can leave. Operations listed Projects and
+							    Tasks on the rail and nowhere else, and a coordinator
+							    standing on its overview had no route to either;
+							    `DeploymentNav.tsx` carries them now. The group's own row
+							    still navigates, which is the way in to the panel. */}
 							{expanded && (!narrow || compact) && (
-								<div className="ml-[20px] mt-0.5 flex flex-col gap-0.5 border-l border-white/15 pl-2.5">
+								<div className="ms-[20px] mt-0.5 flex flex-col gap-0.5 border-s border-white/15 ps-2.5">
 									{item.children.map((child) => (
 										<NavLink
 											key={child.to}
@@ -605,7 +652,7 @@ export function ConsoleShell({
 							disabled={forced}
 							aria-label={narrow ? "Expand menu" : "Collapse menu"}
 							title={forced ? "This section uses its own menu" : narrow ? "Expand menu" : "Collapse menu"}
-							className="absolute right-0 top-[70px] z-40 grid h-7 w-7 translate-x-1/2 place-items-center rounded-full border border-card-line bg-white text-slate-strong shadow-sm transition hover:bg-canvas hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+							className="absolute end-0 top-[70px] z-40 grid h-7 w-7 translate-x-1/2 place-items-center rounded-full border border-card-line bg-white text-slate-strong shadow-sm transition rtl:-translate-x-1/2 hover:bg-canvas hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							<Icon.chevron size={13} className={cx("transition-transform", narrow ? "-rotate-90" : "rotate-90")} />
 						</button>
@@ -633,7 +680,7 @@ export function ConsoleShell({
 								aria-label="Open navigation"
 								aria-expanded={drawer}
 								data-tour="console-nav-mobile"
-								className="-ml-1 grid h-8 w-8 flex-none place-items-center rounded-lg text-slate-strong transition hover:bg-rail-hover md:hidden"
+								className="-ms-1 grid h-8 w-8 flex-none place-items-center rounded-lg text-slate-strong transition hover:bg-rail-hover md:hidden"
 							>
 								<Icon.menu size={18} />
 							</button>
@@ -646,8 +693,9 @@ export function ConsoleShell({
 								{title}
 							</h1>
 
-							<div className="ml-auto flex items-center gap-2">
+							<div className="ms-auto flex items-center gap-2">
 								{search && <div className="hidden lg:block">{search}</div>}
+								<LanguageSwitcher />
 
 								<div ref={account} className="relative">
 									<button
@@ -685,7 +733,7 @@ export function ConsoleShell({
 									{menu && (
 										<div
 											role="menu"
-											className="p-card absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden py-1.5 shadow-pop"
+										className="p-card absolute end-0 top-full z-50 mt-1.5 w-56 overflow-hidden py-1.5 shadow-pop"
 										>
 											<div className="border-b p-divide px-4 pb-2.5 pt-1 sm:hidden">
 												<div className="truncate text-[12.5px] font-semibold text-ink">{user}</div>
@@ -767,7 +815,7 @@ export function ConsoleShell({
 							aria-modal="true"
 							aria-label="Navigation"
 							data-tour="console-nav-mobile"
-							className="portal-rail-scroll absolute inset-y-0 left-0 flex w-[272px] max-w-[86vw] flex-col overflow-y-auto bg-rail px-3 pb-5 pt-4 shadow-[0_18px_55px_rgba(25,30,38,0.24)]"
+							className="portal-rail-scroll absolute inset-y-0 start-0 flex w-[272px] max-w-[86vw] flex-col overflow-y-auto bg-rail px-3 pb-5 pt-4 shadow-[0_18px_55px_rgba(25,30,38,0.24)]"
 						>
 							<div className="mb-3 flex items-center justify-between gap-2 px-2">
 								<Link to="/admin" className="min-w-0">

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { mount } from "../test/harness";
 import { Icon } from "../ui/icons";
-import { ConsoleShell, type NavItem } from "./ConsoleShell";
+import { ConsoleShell, type NavGroup, type NavItem } from "./ConsoleShell";
 
 /**
  * The console shell's two structural promises.
@@ -154,6 +154,86 @@ describe("a section with its own navigation", () => {
 		expect(
 			screen.getByRole("link", { name: "Deployments" }).className.includes("bg-white/[0.12]"),
 		).toBe(true);
+	});
+});
+
+/**
+ * A group can keep its children in its section's panel instead of on the rail.
+ *
+ * The rail cannot hold them open for a section that has a panel: arriving
+ * forces the rail to icons, which hides a group's children, and disables the
+ * control that would bring them back. So the choice is a hierarchy that
+ * vanishes the moment somebody uses it, or one place that always has them.
+ */
+describe("a group whose children live in its panel", () => {
+	const GROUPED: (NavItem | NavGroup)[] = [
+		{ to: "/admin", labelKey: "a", fallback: "Overview", icon: Icon.home, end: true },
+		{
+			to: "/admin/deployments",
+			labelKey: "c",
+			fallback: "Operations",
+			icon: Icon.truck,
+			hasSubNav: true,
+			childrenInPanel: true,
+			children: [
+				{ to: "/admin/projects", labelKey: "p", fallback: "Projects", icon: Icon.tag },
+				{ to: "/admin/tasks", labelKey: "t", fallback: "Tasks", icon: Icon.check },
+			],
+		},
+		{
+			to: "/admin/finance",
+			labelKey: "f",
+			fallback: "Finance",
+			icon: Icon.receipt,
+			children: [{ to: "/admin/stipends", labelKey: "s", fallback: "Stipends", icon: Icon.receipt }],
+		},
+	];
+
+	function showGrouped(route: string) {
+		return mount(
+			<Routes>
+				<Route element={<ConsoleShell items={GROUPED} settings={[]} portal="/dashboard" desk="/app" />}>
+					<Route path="/admin" element={<p>overview body</p>} />
+					<Route path="/admin/deployments" element={<p>operations body</p>} />
+					<Route path="/admin/projects" element={<p>projects body</p>} />
+					<Route path="/admin/tasks" element={<p>tasks body</p>} />
+					<Route path="/admin/finance" element={<p>finance body</p>} />
+					<Route path="/admin/stipends" element={<p>stipends body</p>} />
+				</Route>
+			</Routes>,
+			{ route },
+		);
+	}
+
+	it("draws one row and offers no children, even on a wide rail", () => {
+		showGrouped("/admin");
+
+		expect(screen.getByRole("link", { name: "Operations" })).toBeTruthy();
+		expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
+		expect(screen.queryByRole("link", { name: "Tasks" })).toBeNull();
+	});
+
+	it("still lights that row on a child's route, which is what the children are for", () => {
+		showGrouped("/admin/projects");
+
+		expect(screen.getByText("projects body")).toBeTruthy();
+		expect(
+			screen.getByRole("link", { name: "Operations" }).className.includes("bg-white/[0.12]"),
+		).toBe(true);
+	});
+
+	it("still names the child page in the header, not the group", () => {
+		showGrouped("/admin/projects");
+
+		expect(screen.getByRole("heading", { level: 1, name: "Projects" })).toBeTruthy();
+	});
+
+	it("leaves an ordinary group opening on the rail as it was", () => {
+		// The flag is a property of a section that has a panel, not a new default.
+		// A group without one keeps its children where they have always been.
+		showGrouped("/admin/stipends");
+
+		expect(screen.getByRole("link", { name: "Stipends" })).toBeTruthy();
 	});
 });
 

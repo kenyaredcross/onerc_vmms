@@ -46,6 +46,22 @@ describe("focused coordinator workspaces", () => {
 		expect(screen.getByRole("link", { name: "Job openings" }).getAttribute("href")).toBe("/admin/recruitment/openings");
 	});
 
+	it("offers each People row only to somebody the server said holds its section", () => {
+		// Its six destinations come from three different sections, and the rail no
+		// longer lists them — so this filter is the only one left between a
+		// coordinator and a column of links back to /admin.
+		mount(<PeopleSubNav sections={new Set(["people", "registry"])} />, {
+			route: "/admin/registry/members",
+		});
+
+		expect(screen.getByRole("link", { name: "Active members" })).toBeTruthy();
+		expect(screen.getByRole("link", { name: "Active volunteers" })).toBeTruthy();
+		expect(screen.queryByRole("link", { name: "Volunteer applications" })).toBeNull();
+		expect(screen.queryByRole("link", { name: "Job openings" })).toBeNull();
+		// The overview is gated on `people`, which this panel already stands on.
+		expect(screen.getByRole("link", { name: "Overview" })).toBeTruthy();
+	});
+
 	it("recognises detail routes as part of their focused workspace", () => {
 		expect(inCommunication("/admin/communication/email/sent")).toBe(true);
 		expect(inPeople("/admin/queue/volunteers/APP-1")).toBe(true);
@@ -88,9 +104,44 @@ describe("focused coordinator workspaces", () => {
 		expect(screen.getByRole("link", { name: "Past deployments" }).getAttribute("href")).toBe("/admin/deployments/past");
 	});
 
+	it("carries Projects and Tasks, which the rail cannot show beside a panel", () => {
+		// The section declares `hasSubNav`, so standing here forces the rail to
+		// icons — which hides the Operations group's children and disables the
+		// control that would bring them back. Without these two rows there is no
+		// route from the Operations overview to Projects at all.
+		mount(<DeploymentSubNav sections={new Set(["deployments", "tasks"])} />, {
+			route: "/admin/deployments",
+		});
+
+		expect(screen.getByRole("link", { name: "Projects" }).getAttribute("href")).toBe("/admin/projects");
+		expect(screen.getByRole("link", { name: "Tasks" }).getAttribute("href")).toBe("/admin/tasks");
+	});
+
+	it("offers Tasks only to somebody the server said holds it", () => {
+		// Projects shares the `deployments` key this whole panel stands behind,
+		// so it is never the row in question. Tasks is its own section, and
+		// offering it to somebody without it is a link straight back to /admin.
+		mount(<DeploymentSubNav sections={new Set(["deployments"])} />, { route: "/admin/deployments" });
+
+		expect(screen.getByRole("link", { name: "Projects" })).toBeTruthy();
+		expect(screen.queryByRole("link", { name: "Tasks" })).toBeNull();
+	});
+
 	it("recognises a deployment detail route as part of Operations", () => {
 		expect(inDeployments("/admin/deployments/DEP-1")).toBe(true);
 		expect(inDeployments("/admin/deployments/terms/TOR-1")).toBe(true);
 		expect(inDeployments("/admin/people")).toBe(false);
+	});
+
+	it("counts Projects and Tasks as Operations, because the panel is their navigation", () => {
+		// They are no longer rows under the rail's Operations group, so a Projects
+		// page outside this section would be a page with none of its section's
+		// navigation on it and no way across to Tasks.
+		expect(inDeployments("/admin/projects")).toBe(true);
+		expect(inDeployments("/admin/projects/PROJ-1")).toBe(true);
+		expect(inDeployments("/admin/tasks")).toBe(true);
+		// Not a prefix match on the word: a different section starting with the
+		// same letters is a different section.
+		expect(inDeployments("/admin/projections")).toBe(false);
 	});
 });
