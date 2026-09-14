@@ -18,9 +18,20 @@ Two rules shape the wording below, and both matter more than it reading well:
   that renames itself and the pencil still edits the token rather than a frozen
   copy of today's name. Anything a token cannot supply is described in ordinary
   words a society replaces.
-- **No image is shipped as a default.** An empty image slot draws a branded
-  placeholder with an upload control on it, which is a better first run than a
-  photograph of somewhere the society does not work.
+- **Every photograph slot ships a default, and none of them is the society's.**
+  The pictures live in `public/images/defaults/` and are served from
+  `/assets/vmmsx/images/defaults/`; `DEFAULT_IMAGES` below says which slot gets
+  which. They are there so the first run of a fresh site is a finished-looking
+  page rather than nine navy rectangles, and a society replaces them with its
+  own through the pencil exactly as it replaces the wording. That is why the
+  filenames describe a scene and not a place: a shipped path is no more this
+  app's business naming a country than a shipped sentence is.
+
+  A slot a society *clears* stays cleared. `EditableImage` still draws the
+  branded gradient for an empty one, nothing re-fills it on migrate, and
+  `ship_default_photographs` is a one-time patch rather than a step in
+  `install_defaults()` precisely so a deliberately blank slot is not undone by
+  the next deploy.
 
 Adding a slot is adding a row here. Deleting one is deleting the row and the
 component that asked for it; a key nobody asks for is harmless, and a component
@@ -226,6 +237,87 @@ SURFACES = (
 )
 
 
+#: Where the shipped photographs are served from. Frappe symlinks
+#: `sites/assets/vmmsx` at `vmmsx/public`, so this is `public/images/defaults/`
+#: on disk.
+IMAGE_BASE = "/assets/vmmsx/images/defaults"
+
+#: The photograph each slot starts with: `{content_key: (file, alt, credit)}`.
+#:
+#: **One table rather than an argument at nine call sites**, and `_block()`
+#: reads it by key, so a slot cannot quietly acquire a picture that is not
+#: listed here and a picture cannot be listed for a slot that does not exist —
+#: `test_blocks.py` checks both directions, and that every file is really on
+#: disk. Renaming a file without changing its row is the failure this catches,
+#: because a missing image is a broken page that raises nothing.
+#:
+#: **The alt text describes the scene, never the place.** It is read aloud to
+#: somebody who cannot see the picture on a site that may be anywhere, so
+#: "a nurse beside a mother holding her baby" is the useful sentence and the
+#: county it was taken in is not.
+#:
+#: **The credit is the licence, and it is only as good as what was recorded.**
+#: Four slots put a credit on the screen — the landing hero, both photo bands,
+#: and the sign-in panel through `templates/includes/auth/panel.html`. Three
+#: pictures came with an attribution their terms require and carry it into those
+#: slots. The other five arrived with nothing written down, so the field is left
+#: empty for somebody who knows to fill in rather than filled with a guess: an
+#: invented attribution is worse than a missing one, and every template that
+#: draws a credit checks for it first, so a blank one prints nothing.
+DEFAULT_IMAGES = {
+	"landing.hero.image": (
+		"community-outreach.jpg",
+		"A volunteer sitting and talking with a boy on a low wall at the edge of a village",
+		"Neil Thomas / Safari Doctors · CC BY-SA 4.0",
+	),
+	"landing.card1.image": (
+		"first-aid-training.jpg",
+		"Three people practising chest compressions on training manikins",
+		"",
+	),
+	"landing.card2.image": (
+		"health-clinic.jpg",
+		"A nurse reading notes beside a mother holding her baby on a clinic bed",
+		"",
+	),
+	"landing.card3.image": (
+		"training-manual.jpg",
+		"Two women reading a training manual together outdoors",
+		"",
+	),
+	"landing.card4.image": (
+		"community-session.jpg",
+		"A facilitator leading a session with schoolchildren seated under a tent",
+		"",
+	),
+	"landing.band1.image": (
+		"community-gathering.jpg",
+		"A large group seated in the shade of two trees at a community gathering",
+		"DFID · CC BY 2.0",
+	),
+	"landing.band2.image": (
+		"ambulance.jpg",
+		"People waiting in a queue beside an ambulance parked under trees",
+		"U.S. Marine Corps · public domain",
+	),
+	"login.panel.image": (
+		"lake-shore.jpg",
+		"A wooden boat moored on a calm lake shore",
+		"",
+	),
+	# The one picture used twice, and the choice is deliberate. This hero wants
+	# an uncluttered *left half* for the wording to sit on, and of the eight only
+	# this one has one — the rest put a face or a vehicle there. The two screens
+	# are also never seen together: this is behind the sign-in, the landing band
+	# is in front of it.
+	"portal.home.hero.image": (
+		"community-gathering.jpg",
+		"A large group seated in the shade of two trees at a community gathering",
+		"DFID · CC BY 2.0",
+	),
+}
+
+
 def _block(key, label, surface, sequence, text="", href="", notes=""):
 	row = {
 		"content_key": key,
@@ -239,6 +331,20 @@ def _block(key, label, surface, sequence, text="", href="", notes=""):
 		row["link_href"] = href
 	if notes:
 		row["description"] = notes
+
+	# A photograph slot takes its starting picture from the table above rather
+	# than from an argument here, so the nine of them are declared together and
+	# `seed()` inserts the block with the image already on it. That is what makes
+	# a fresh install a finished page: no second pass, no patch, no empty slot
+	# between `bench install-app` and somebody uploading something.
+	default = DEFAULT_IMAGES.get(key)
+	if default:
+		filename, alt, credit = default
+		row["image"] = f"{IMAGE_BASE}/{filename}"
+		row["image_alt"] = alt
+		if credit:
+			row["image_credit"] = credit
+
 	return row
 
 
@@ -802,10 +908,9 @@ def _portal():
 			" be asked twice than not at all.",
 		),
 		_block("portal.home.heading", "Dashboard heading", s, 200, "Your dashboard"),
-		# The home hero. The photograph is a slot rather than a shipped asset, for
-		# the reason at the top of this file: an empty one draws the branded
-		# gradient, which is a better first run than a picture of somewhere the
-		# society does not work.
+		# The home hero. It ships a photograph like the rest of them — see
+		# `DEFAULT_IMAGES`, which also says why this one is the only picture used
+		# on two screens.
 		_block(
 			"portal.home.hero.image",
 			"Home hero photograph",

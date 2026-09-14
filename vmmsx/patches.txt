@@ -127,3 +127,10 @@ vmmsx.patches.install_other_profession
 # **inactive** into the form builder as worked examples, so nobody is asked one
 # until an administrator switches it on.
 vmmsx.patches.seed_optional_questions
+# The nine photograph slots ship a picture now, and `seed()` only ever creates
+# what is missing — so a site installed before that change has nine empty slots
+# it will never fill. Backfills the empty ones once, and repoints the eight
+# paths the deleted Kenya seed wrote into a folder that has since been renamed.
+# One-time rather than wired into `install_defaults()`: see the patch docstring
+# for why a slot cleared on purpose must stay cleared.
+vmmsx.patches.ship_default_photographs

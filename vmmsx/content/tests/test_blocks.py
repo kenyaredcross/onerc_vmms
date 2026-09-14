@@ -270,6 +270,81 @@ class TestShippedDefaults(IntegrationTestCase):
 		for key in default_content.RETIRED:
 			self.assertNotIn(key, shipped, f"{key} is retired and still seeded")
 
+	def test_every_shipped_photograph_is_actually_on_disk(self):
+		"""A renamed file and a stale row is a broken page that raises nothing.
+
+		`EditableImage` draws whatever path it is given into an `img`, and a 404
+		there is a silent grey box on the public home page. Nothing on the server
+		ever opens the file, so this is the only place the two halves — the table
+		in `default_content.py` and the folder in `public/images/` — are ever
+		compared.
+		"""
+		import pathlib
+
+		from vmmsx.content.seeds import default_content
+
+		folder = pathlib.Path(frappe.get_app_path("vmmsx", "public", "images", "defaults"))
+
+		for key, (filename, _alt, _credit) in default_content.DEFAULT_IMAGES.items():
+			self.assertTrue(
+				(folder / filename).is_file(),
+				f"{key} ships {filename}, which is not in public/images/defaults/",
+			)
+
+	def test_every_shipped_photograph_names_a_slot_that_exists(self):
+		"""A picture listed against a key nobody seeds is a picture nobody sees."""
+		from vmmsx.content.seeds import default_content
+
+		shipped = self.defaults()
+
+		for key in default_content.DEFAULT_IMAGES:
+			self.assertIn(key, shipped, f"{key} has a default photograph but is not a seeded slot")
+
+	def test_every_photograph_slot_ships_one(self):
+		"""The fresh-install promise: no screen opens with an empty picture frame.
+
+		A slot is a photograph slot if its key ends in `.image`, and every one of
+		them is meant to arrive filled. The failure this catches is a new image
+		slot added to a surface without a row in `DEFAULT_IMAGES` — which looks
+		completely fine in review and ships a navy rectangle.
+		"""
+		from vmmsx.content.seeds import default_content
+
+		for row in default_content.blocks():
+			key = row["content_key"]
+
+			if not key.endswith(".image"):
+				continue
+
+			self.assertTrue(
+				row.get("image"),
+				f"{key} is a photograph slot and ships no photograph",
+			)
+			self.assertTrue(
+				row.get("image_alt"),
+				f"{key} ships a photograph with no alt text",
+			)
+
+	def test_no_shipped_photograph_path_names_a_country(self):
+		"""The same rule the wording follows, applied to the paths.
+
+		`public/images/seed_kenya/` was where these came from, and the point of
+		moving them is that a Gambian society's home page does not load its
+		pictures out of a folder named after Kenya. A file renamed back, or a new
+		one added under the old scheme, would put that straight back.
+		"""
+		from vmmsx.content.seeds import default_content
+
+		self.assertEqual(default_content.IMAGE_BASE, "/assets/vmmsx/images/defaults")
+
+		for key, (filename, _alt, _credit) in default_content.DEFAULT_IMAGES.items():
+			for place in ("kenya", "lamu", "turkana", "sagana", "coast"):
+				self.assertNotIn(
+					place,
+					filename.lower(),
+					f"{key} ships {filename}, which names a place",
+				)
+
 	def test_saying_yes_to_an_event_reads_the_same_everywhere(self):
 		"""One pair of verbs for attendance, not six phrasings of two actions."""
 		shipped = self.defaults()
