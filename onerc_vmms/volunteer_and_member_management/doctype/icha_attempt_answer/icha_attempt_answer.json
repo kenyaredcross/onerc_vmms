@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "creation": "2026-09-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "question",
+  "course",
+  "selected_answer",
+  "correct_answer",
+  "is_correct"
+ ],
+ "fields": [
+  {
+   "fieldname": "question",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Question",
+   "options": "ICHA Question",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "question.course",
+   "fieldname": "course",
+   "fieldtype": "Data",
+   "label": "Course",
+   "read_only": 1
+  },
+  {
+   "fieldname": "selected_answer",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Selected Answer",
+   "options": "\nA\nB\nC\nD"
+  },
+  {
+   "fieldname": "correct_answer",
+   "fieldtype": "Data",
+   "label": "Correct Answer",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_correct",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Correct",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "ICHA Attempt Answer",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

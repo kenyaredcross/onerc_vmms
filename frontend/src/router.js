@@ -105,6 +105,12 @@ const routes = [
 		meta: { requiresAuth: true },
 	},
 	{
+		name: "IchaAssessment",
+		path: "/icha-assessment",
+		component: () => import("@/pages/IchaAssessment.vue"),
+		meta: { requiresAuth: true },
+	},
+	{
 		name: "NotFound",
 		path: "/:pathMatch(.*)*",
 		component: () => import("@/pages/NotFound.vue"),

@@ -79,7 +79,7 @@ const showMenu = ref(false);
 const menu = ref(null);
 let appsLoaded = false;
 
-const sidebarLinks = computed(() => getSidebarLinks({ user: userResource?.data }));
+const sidebarLinks = computed(() => getSidebarLinks(userResource?.data?.is_volunteer, userResource?.data));
 
 const handleOutsideClick = (e) => {
 	if (menu.value && !menu.value.contains(e.target)) {
@@ -99,9 +99,8 @@ watch(showMenu, (val) => {
 
 const addOtherLinks = () => {
 	if (user) {
-		otherLinks.value.push(
+		const links = [
 			...sideBarApps(),
-
 			{
 				name: "FAQ",
 				icon: "MessageCircleQuestion",
@@ -112,6 +111,17 @@ const addOtherLinks = () => {
 				icon: "CalendarDays",
 				to: "Events",
 			},
+		];
+
+		if (userResource?.data?.profession === "Research Assistant") {
+			links.push({
+				name: "ICHA Assessment",
+				icon: "ClipboardList",
+				to: "IchaAssessment",
+			});
+		}
+
+		links.push(
 			{
 				name: "Profile",
 				icon: "User",
@@ -122,6 +132,8 @@ const addOtherLinks = () => {
 				icon: "LogOut",
 			}
 		);
+
+		otherLinks.value.push(...links);
 	} else {
 		otherLinks.value.push(
 			{

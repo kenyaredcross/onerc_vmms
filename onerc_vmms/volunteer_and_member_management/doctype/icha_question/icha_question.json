@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-09-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "course",
+  "question",
+  "section_break_options",
+  "option_a",
+  "option_b",
+  "column_break_options",
+  "option_c",
+  "option_d",
+  "correct_answer"
+ ],
+ "fields": [
+  {
+   "fieldname": "course",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Course",
+   "options": "DiDRR\nHCD\nTREE\nWellness & Resilience",
+   "reqd": 1
+  },
+  {
+   "fieldname": "question",
+   "fieldtype": "Long Text",
+   "in_list_view": 1,
+   "label": "Question",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_options",
+   "fieldtype": "Section Break",
+   "label": "Answer Options"
+  },
+  {
+   "fieldname": "option_a",
+   "fieldtype": "Long Text",
+   "label": "Option A",
+   "reqd": 1
+  },
+  {
+   "fieldname": "option_b",
+   "fieldtype": "Long Text",
+   "label": "Option B",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_options",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "option_c",
+   "fieldtype": "Long Text",
+   "label": "Option C",
+   "reqd": 1
+  },
+  {
+   "fieldname": "option_d",
+   "fieldtype": "Long Text",
+   "label": "Option D",
+   "reqd": 1
+  },
+  {
+   "default": "B",
+   "fieldname": "correct_answer",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Correct Answer",
+   "options": "A\nB\nC\nD",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Volunteer and Member Management",
+ "name": "ICHA Question",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Employee"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "course",
+ "sort_order": "ASC",
+ "title_field": "question",
+ "track_changes": 0
+}
