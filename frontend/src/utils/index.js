@@ -388,7 +388,7 @@ export function getUserTimezone() {
 	}
 }
 
-export function getSidebarLinks(isVolunteer, user = null) {
+export function getSidebarLinks(isVolunteer) {
 	return [
 		{
 			label: "Profile",
@@ -425,12 +425,6 @@ export function getSidebarLinks(isVolunteer, user = null) {
 			icon: "Users",
 			to: "Membership",
 			activeFor: ["Membership"],
-		},
-		user?.profession === "Research Assistant" && {
-			label: "ICHA Assessment",
-			icon: "ClipboardList",
-			to: "IchaAssessment",
-			activeFor: ["IchaAssessment"],
 		},
 	].filter(Boolean);
 }
