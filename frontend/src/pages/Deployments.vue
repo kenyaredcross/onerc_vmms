@@ -114,6 +114,7 @@ const updateTabAndHash = (newTabValue) => {
 const projects = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.projects.get_all_deployed_projects",
 	auto: true,
+	cache: ["deployedProjects"],
 });
 
 const allProjects = computed(() => projects.data || []);

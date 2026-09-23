@@ -75,7 +75,7 @@ watch(currentTab, (newTab) => {
 const events = createResource({
 	url: "onerc_vmms.volunteer_and_member_management.api.events.get_events",
 	auto: true,
-	cache: searchTerm.value,
+	cache: ["events", "upcoming"],
 	makeParams() {
 		return {
 			search: searchTerm.value,

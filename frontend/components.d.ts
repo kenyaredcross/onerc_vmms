@@ -63,6 +63,7 @@ declare module 'vue' {
     NoPermission: typeof import('./src/components/NoPermission.vue')['default']
     NoSidebarLayout: typeof import('./src/components/NoSidebarLayout.vue')['default']
     NotPermitted: typeof import('./src/components/NotPermitted.vue')['default']
+    OfflineBanner: typeof import('./src/components/OfflineBanner.vue')['default']
     PaymentInfoAlert: typeof import('./src/components/PaymentInfoAlert.vue')['default']
     PaymentStatus: typeof import('./src/components/PaymentStatus.vue')['default']
     PendingApproval: typeof import('./src/components/PendingApproval.vue')['default']

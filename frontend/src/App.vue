@@ -10,6 +10,8 @@
 
 		<InstallPrompt v-if="isMobile" />
 
+		<OfflineBanner />
+
 		<Layout>
 			<div class="text-base">
 				<router-view />
@@ -28,6 +30,7 @@ import DesktopLayout from "./components/DesktopLayout.vue";
 import InstallPrompt from "./components/InstallPrompt.vue";
 import MobileLayout from "./components/MobileLayout.vue";
 import NoSidebarLayout from "./components/NoSidebarLayout.vue";
+import OfflineBanner from "./components/OfflineBanner.vue";
 import { useScreenSize } from "./utils/composables";
 
 const { isMobile } = useScreenSize();
