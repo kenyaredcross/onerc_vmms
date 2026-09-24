@@ -123,29 +123,14 @@ export function Card({
 	className,
 	pad = true,
 	as: As = "section",
-	accent,
 	children,
 }: {
 	className?: string;
 	pad?: boolean;
 	as?: "section" | "div" | "article";
-	/**
-	 * The one panel on a page carrying genuine attention — a deployment request
-	 * waiting on an answer. It takes the danger hairline (a soft red replacing
-	 * the neutral one) and pairs with a red "Action required" chip inside; the
-	 * two together say "this needs you" without a coloured slab down one edge.
-	 * Used at most once per screen, which is what keeps it meaning something.
-	 */
-	accent?: "danger";
 	children: ReactNode;
 }) {
-	return (
-		<As
-			className={cx("p-card", pad && "p-5", accent === "danger" && "!border-danger/55", className)}
-		>
-			{children}
-		</As>
-	);
+	return <As className={cx("p-card", pad && "p-5", className)}>{children}</As>;
 }
 
 /**
@@ -784,22 +769,14 @@ export function StatTile({
 	value,
 	to,
 	linkLabel,
-	urgent = false,
 }: {
 	label: ReactNode;
 	value: ReactNode;
 	to: string;
 	linkLabel: string;
-	/** The one tile that is a demand rather than a fact — a request awaiting an answer. */
-	urgent?: boolean;
 }) {
 	return (
-		<div
-			className={cx(
-				"p-card flex flex-col gap-1.5 p-[18px]",
-				urgent && "border-t-[3px] border-t-red",
-			)}
-		>
+		<div className="p-card flex flex-col gap-1.5 p-[18px]">
 			<span className="text-[11.5px] text-slate-body">{label}</span>
 			<strong className="font-display text-[27px] font-extrabold leading-none tracking-[-0.02em] text-ink tabular">
 				{value}

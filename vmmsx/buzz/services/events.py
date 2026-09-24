@@ -1,28 +1,23 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""BUZZ-02 — reading Buzz's published events, and stopping there.
+"""The portal's event seam with Buzz.
 
 The second half of the Buzz seam, and the reason it is a *separate* file from
 `geo.py` is that the two cross the boundary in opposite directions. `geo.py`
 writes into Buzz's model: vmmsx adds one custom field to `Buzz Event`. This
-module only reads, and only what Buzz already publishes to the world.
+module reads published events for volunteers and creates Buzz's own documents
+for managers with Buzz Event create permission.
 
-**Browse here, book there.** The portal lists events and then hands off. Every
-card's call to action is a full navigation to Buzz's own event page at
-`/b/<route>`, because Buzz owns registration, ticket types, coupons, payment,
-guest verification and check-in, and each of those is a flow with money or
-identity in it. Re-exposing any of them through a vmmsx endpoint would mean a
-second implementation of a booking rule that has to stay in step with Buzz's
-forever. So this file names no booking, ticket, attendee or check-in doctype —
-`tests/test_delegation.py` asserts that against the source, and it asserts it
-for the whole app including this file.
+**Browse here, book there.** The portal sends registration to Buzz's booking
+form at `/b/register/<route>`. Buzz owns payment, tickets and check-in. The
+manager's portal reads submitted tickets for its confirmed registration list;
+it does not create or change a booking. The narrow crossing stays in this seam.
 
 **Published is Buzz's decision, not ours.** The filter is `is_published`, the
 same flag Buzz's own public pages read. vmmsx invents no second notion of
-visibility and no approval step of its own: an event a society has published in
-Buzz is an event the portal shows, and one it has not is one the portal does not
-know exists.
+visibility and no approval step of its own: published events appear in the
+public listing; unpublished ones remain visible in the manager's draft list.
 
 **Geo is a filter, never a gate.** BUZZ-01 made `geo_node` optional on purpose,
 so most events carry no anchor at all. Filtering *out* the unanchored ones would
@@ -37,7 +32,7 @@ an import attempted, and every reader answers empty rather than raising.
 """
 
 import frappe
-from frappe.utils import getdate, today
+from frappe.utils import cint, getdate, today
 
 from vmmsx.buzz.services import geo
 
@@ -48,7 +43,8 @@ HOST_DOCTYPE = "Event Host"
 
 # Where Buzz serves an event to the public. One place, so a card's link and the
 # `href` in the DTO cannot drift apart.
-EVENT_PATH = "/b"
+EVENT_PATH = "/b/register"
+TICKET_DOCTYPE = "Event Ticket"
 
 # A listing is a listing. Somebody scrolling a season of events does not need
 # five hundred of them in one response, and an unbounded read on a public-ish
@@ -97,8 +93,102 @@ def is_available() -> bool:
 	return geo.is_available()
 
 
+def management_options() -> dict:
+	"""Choices for a new Buzz event, visible only to someone who may create one."""
+	can_create = is_available() and frappe.has_permission(EVENT_DOCTYPE, ptype="create")
+	if not can_create:
+		return {"available": is_available(), "can_create": False, "categories": [], "hosts": [], "venues": []}
+
+	return {
+		"available": True,
+		"can_create": True,
+		"categories": [row.name for row in frappe.get_all(CATEGORY_DOCTYPE, filters={"enabled": 1}, fields=["name"], order_by="name asc")],
+		"hosts": [row.name for row in frappe.get_all(HOST_DOCTYPE, fields=["name"], order_by="name asc")],
+		"venues": [row.name for row in frappe.get_all(VENUE_DOCTYPE, fields=["name"], order_by="name asc")],
+	}
+
+
+def managed_events(limit: int = MAX_ROWS) -> list[dict]:
+	"""Include unpublished work so a newly saved draft remains visible in the console."""
+	if not is_available() or not frappe.has_permission(EVENT_DOCTYPE, ptype="create"):
+		return []
+	rows = frappe.get_list(
+		EVENT_DOCTYPE,
+		fields=["name", "title", "start_date", "start_time", "category", "venue", "is_published", "route"],
+		order_by="start_date desc, creation desc",
+		limit=_bounded(limit),
+	)
+	return [
+		{
+			"name": str(row.name),
+			"title": row.title,
+			"start_date": str(row.start_date or ""),
+			"start_time": str(row.start_time or ""),
+			"category": row.category or "",
+			"venue": row.venue or "",
+			"is_published": bool(row.is_published),
+			"route": row.route or "",
+		}
+		for row in rows
+	]
+
+
+def create_event(values: dict) -> dict:
+	"""Create through Buzz's document, including its validation and default records."""
+	if not is_available():
+		frappe.throw(frappe._("Events are not available on this site."))
+	frappe.has_permission(EVENT_DOCTYPE, ptype="create", throw=True)
+
+	title = str(values.get("title") or "").strip()
+	category = str(values.get("category") or "").strip()
+	host = str(values.get("host") or "").strip()
+	start_date = str(values.get("start_date") or "").strip()
+	start_time = str(values.get("start_time") or "").strip()
+	end_time = str(values.get("end_time") or "").strip()
+	if not all((title, category, host, start_date, start_time, end_time)):
+		frappe.throw(frappe._("Title, category, host, start date, start time and end time are required."))
+	if not frappe.db.exists(CATEGORY_DOCTYPE, {"name": category, "enabled": 1}):
+		frappe.throw(frappe._("Choose an enabled event category."))
+	if not frappe.db.exists(HOST_DOCTYPE, host):
+		frappe.throw(frappe._("Choose an existing event host."))
+	venue = str(values.get("venue") or "").strip()
+	if venue and not frappe.db.exists(VENUE_DOCTYPE, venue):
+		frappe.throw(frappe._("Choose an existing event venue."))
+	medium = str(values.get("medium") or "In Person")
+	if medium not in ("In Person", "Online"):
+		frappe.throw(frappe._("Choose In Person or Online as the medium."))
+	if cint(values.get("external_registration_page")) and not str(values.get("registration_url") or "").strip():
+		frappe.throw(frappe._("Enter the registration URL for an external registration page."))
+	if cint(values.get("is_published")) and not cint(values.get("free_event")) and not cint(
+		values.get("external_registration_page")
+	):
+		frappe.throw(frappe._("Create a paid event as a draft, configure its ticket prices in Buzz Desk, then publish it."))
+
+	fields = (
+		"end_date", "short_description", "about", "time_zone", "banner_image", "card_image",
+		"registration_url", "registrations_close_at", geo.GEO_NODE_FIELD,
+	)
+	doc = frappe.get_doc({
+		"doctype": EVENT_DOCTYPE,
+		"title": title,
+		"category": category,
+		"host": host,
+		"start_date": start_date,
+		"start_time": start_time,
+		"end_time": end_time,
+		"medium": medium,
+		"venue": venue or None,
+		"is_published": cint(values.get("is_published")),
+		"free_event": cint(values.get("free_event")),
+		"external_registration_page": cint(values.get("external_registration_page")),
+		**{key: values.get(key) or None for key in fields},
+	})
+	doc.insert()
+	return {"name": str(doc.name), "title": doc.title, "is_published": bool(doc.is_published), "route": doc.route or ""}
+
+
 def event_url(route: str | None) -> str | None:
-	"""Buzz's own public page for this event, or None if it has no route.
+	"""Buzz's public booking form for this event, or None if it has no route.
 
 	An event with no route is one Buzz has not finished publishing —
 	`validate_route` fills the field in on publish — so there is nowhere to send
@@ -106,6 +196,43 @@ def event_url(route: str | None) -> str | None:
 	link to a 404.
 	"""
 	return f"{EVENT_PATH}/{route}" if route else None
+
+
+def registrations(event: str, start: int = 0, limit: int = 100) -> dict:
+	"""Read confirmed Buzz tickets for an event, using Buzz's own ticket state."""
+	if not is_available():
+		return {"total": 0, "registrations": []}
+
+	event_doc = frappe.get_doc(EVENT_DOCTYPE, event)
+	if not frappe.has_permission(EVENT_DOCTYPE, ptype="write", doc=event_doc) or not frappe.has_permission(
+		TICKET_DOCTYPE, ptype="read"
+	):
+		frappe.throw(frappe._("You are not allowed to see event registrations."), frappe.PermissionError)
+
+	start = max(0, cint(start))
+	limit = min(max(1, cint(limit)), 100)
+	filters = {"event": event_doc.name, "docstatus": 1}
+	rows = frappe.get_list(
+		TICKET_DOCTYPE,
+		filters=filters,
+		fields=["name", "attendee_name", "attendee_email", "booking", "creation"],
+		order_by="creation asc, name asc",
+		start=start,
+		limit=limit,
+	)
+	return {
+		"total": frappe.db.count(TICKET_DOCTYPE, filters),
+		"registrations": [
+			{
+				"ticket": row.name,
+				"name": row.attendee_name or "",
+				"email": row.attendee_email or "",
+				"booking": row.booking or "",
+				"registered_on": str(row.creation or ""),
+			}
+			for row in rows
+		],
+	}
 
 
 def upcoming(
@@ -503,7 +630,7 @@ def _as_card(row: dict) -> dict:
 		# nothing else. Either may be empty, and the card draws a placeholder.
 		"image": row.get("card_image") or row.get("banner_image") or "",
 		"geo_node": row.get(geo.GEO_NODE_FIELD) or "",
-		# **Where the call to action actually goes.** Buzz's own event page,
+		# **Where the call to action actually goes.** Buzz's own booking form,
 		# unless the society said registration happens somewhere else — an
 		# `external_registration_page` with a `registration_url` behind it is a
 		# society telling Buzz "not here", and a card that ignored it sent

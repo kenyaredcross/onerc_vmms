@@ -61,6 +61,7 @@ const EventDetail = lazy(() => import("./portal/Events").then((m) => ({ default:
 const OpportunityDetail = lazy(() =>
 	import("./portal/Opportunities").then((m) => ({ default: m.OpportunityDetail })),
 );
+const JobApplication = lazy(() => import("./portal/JobApplication"));
 // Stories and its reader share a chunk: somebody who opens the list is one click
 // from opening one, and splitting them would put a spinner between the two.
 const Stories = lazy(() => import("./portal/Stories"));
@@ -359,6 +360,7 @@ export default function App() {
 					<Route path="/calendar" element={<Calendar />} />
 					<Route path="/opportunities" element={<Opportunities />} />
 					<Route path="/opportunities/:name" element={<OpportunityDetail />} />
+					<Route path="/opportunities/:name/apply" element={<JobApplication />} />
 					<Route path="/stories" element={<Stories />} />
 					<Route path="/stories/:slug" element={<Story />} />
 					<Route path="/notifications" element={<Notifications />} />

@@ -19,41 +19,7 @@ import {
 } from "../ui/primitives";
 import type { Opportunity, VolunteerProfile } from "./types";
 
-/**
- * The society's notice board: the posts it is recruiting for.
- *
- * **This reads HRMS's `Job Opening`**, through `api/opportunities.py` and the
- * seam in `vmmsx/hr/services/openings.py`. It used to read
- * `VMMS Deployment Request` — the society's internal record of needing people
- * somewhere — and everything this screen said was written for that: that there
- * was no Apply button and that a coordinator staffs a deployment by matching
- * volunteers to it.
- *
- * **All of that became untrue when the source changed, and this screen went on
- * saying it.** A job opening *is* answerable: HRMS owns the application form,
- * the duplicate check and the pipeline, and the seam has served an `apply_href`
- * to send somebody there the whole time. Worse, the old card rendered HRMS's
- * `description` — a Text Editor field, markup by construction — through a `<p>`
- * that escaped it, so every visitor read a wall of `<div class="ql-editor
- * read-mode">` where the job description should have been. Both faults were the
- * same fault: a screen left pointing at names that no longer meant what they
- * used to.
- *
- * **So the board advertises a post and offers a way to answer it.** Department,
- * designation, employment type, where it is held, when it closes, the
- * description as its author formatted it, and a button that goes to HRMS.
- *
- * **What it still does not do is apply on anybody's behalf.** There is no
- * application endpoint in vmmsx and there will not be one: HRMS owns every
- * record after "I want this", and a vmmsx form posting into that pipeline would
- * be a second implementation of rules that have to stay in step with HRMS's
- * forever. The button is a full navigation, not a fetch.
- *
- * **Deployments are not here any more either.** The old board carried a "My
- * deployments" tab because it was itself a deployment board. `MyDeployments` is
- * still exported — the sidebar's own Deployments page renders it — but a tab
- * about rosters on a screen about vacancies was two subjects sharing a heading.
- */
+/** Published HRMS openings, with applications handled on the portal. */
 
 export default function Opportunities() {
 	// What has been typed, and what has been asked. Kept apart so the endpoint is
@@ -357,33 +323,19 @@ function Tags({ row }: { row: Opportunity }) {
 	);
 }
 
-/**
- * The button, and the honest version of it.
- *
- * **A full navigation out of the SPA**, because HRMS's application form is
- * HRMS's page. `target="_blank"` with `rel="noopener"` so somebody who opens it,
- * reads the form and changes their mind still has the board behind them.
- *
- * **There is always somewhere to go.** The button used to point at the opening's
- * own page and only fall back to the application form, which meant an opening
- * whose page link was wrong had no working way to answer it — and the page link
- * *was* wrong: the seam built it out of the doctype's name. It now points at
- * HRMS's form for this opening, which exists wherever HRMS does.
- */
+/** Apply on the portal; the server writes the existing HRMS applicant record. */
 function ApplyLink({ row, compact = false }: { row: Opportunity; compact?: boolean }) {
 	return (
-		<a
-			href={row.apply_href}
-			target="_blank"
-			rel="noopener noreferrer"
+		<Link
+			to={`/opportunities/${encodeURIComponent(row.name)}/apply`}
 			className={cx(
 				"inline-flex flex-none items-center gap-1.5 rounded-xl bg-blue font-bold text-white transition hover:bg-blue-press",
 				compact ? "px-4 py-2 text-[12.5px]" : "px-5 py-2.5 text-[13px]",
 			)}
 		>
 			Apply
-			<Icon.external size={compact ? 13 : 14} />
-		</a>
+			<Icon.chevron size={compact ? 13 : 14} className="-rotate-90" />
+		</Link>
 	);
 }
 
@@ -635,10 +587,8 @@ function OpportunityBody({ row }: { row: Opportunity }) {
 					How to apply
 				</h2>
 				<p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-					Applying opens the Society's recruitment system, which is where this post is held and
-					where your application will be read. Your volunteer record here is separate: keeping
-					it and your training current is what puts you in a coordinator's search when a
-					deployment needs somebody.
+					Apply here in the portal. Your application goes to the society's recruitment team,
+					who can review it alongside other applicants.
 				</p>
 				<div className="mt-4 flex flex-wrap items-center gap-2.5">
 					<ApplyLink row={row} />

@@ -67,6 +67,7 @@ def setup_national_society(args):  # nosemgrep
 		}
 	)
 	settings.save(ignore_permissions=True)
+	_ensure_national_node(level_keys[0], settings.organization_name)
 
 	# The role wiring could not run at install time, and this is the first moment
 	# it can. `default_roles.install()` saves this same Single, and on a fresh site
@@ -113,6 +114,32 @@ def _already_configured() -> bool:
 		and settings.get(VOLUNTEER_ANCHOR_FIELD)
 		and frappe.db.exists("Geo Level", settings.get(MEMBER_ANCHOR_FIELD))
 		and frappe.db.exists("Geo Level", settings.get(VOLUNTEER_ANCHOR_FIELD))
+	)
+
+
+def _ensure_national_node(top_level: str, organization_name: str) -> str:
+	"""Create the one parentless national root for a newly configured society.
+
+	The level ladder alone does not give the portal a selectable location. On a
+	setup retry, keep the existing root and all child nodes rather than making
+	a second national tree. A root is organisational, so it is always a group.
+	"""
+	existing = frappe.db.get_value(
+		"Geo Node", {"geo_level": top_level, "parent_geo_node": ("is", "not set")}, "name"
+	)
+	if existing:
+		return existing
+	return (
+		frappe.get_doc(
+			{
+				"doctype": "Geo Node",
+				"geo_node_name": organization_name,
+				"geo_level": top_level,
+				"is_group": 1,
+			}
+		)
+		.insert(ignore_permissions=True)
+		.name
 	)
 
 

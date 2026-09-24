@@ -59,6 +59,7 @@ OPENING_STATUSES = ("Open", "Closed")
 #: the society made. See `setup/job_applicant_fields.py`.
 PIPELINE = (
 	applicant_fields.STATUS_OPEN,
+	applicant_fields.STATUS_REPLIED,
 	applicant_fields.STATUS_SHORTLISTED,
 	applicant_fields.STATUS_HOLD,
 	applicant_fields.STATUS_ACCEPTED,
@@ -87,12 +88,16 @@ WRITABLE = (
 	"department",
 	"status",
 	"publish",
+	"route",
 	"description",
+	"posted_on",
 	"closes_on",
 	"job_application_route",
 	"location",
-	"vacancies",
 	"employment_type",
+	"job_opening_template",
+	"publish_applications_received",
+	"prevent_duplicate_applicant",
 	opening_fields.PURPOSE_FIELD,
 	# vmmsx's own description of the post, beyond HRMS's four link fields.
 	"opportunity_type",
@@ -137,13 +142,14 @@ NUMERIC = (
 #: is a form hint and the column stays writable, which is exactly why the
 #: allow-list has to leave it out rather than rely on the flag.
 INTEGER = (
-	"vacancies",
 	"notify_unshortlisted_applicants_after",
 )
 
 #: Tickboxes, which arrive from a browser as booleans.
 CHECKS = (
 	"publish",
+	"publish_applications_received",
+	"prevent_duplicate_applicant",
 	"enable_autograding",
 	"disqualify_if_requirement_not_met",
 	"allow_equivalent_experience",
@@ -154,7 +160,6 @@ CHECKS = (
 
 #: Dates.
 DATES = (
-	"closes_on",
 	"vmms_available_from",
 	"vmms_available_to",
 	"shortlisted_rejection_notification_date",
@@ -172,7 +177,7 @@ MULTISELECT = {
 #: The child tables the console edits as rows rather than as chips, and the
 #: columns of each that a coordinator fills in.
 #:
-#: Both are vmmsx's own doctypes, which is why they are here and
+#: These are vmmsx's own doctypes, which is why they are here and
 #: `required_skills`, `required_certification` and `required_licences` are not:
 #: those three point at HRMS's `Designation Skill`, LMS's `Certification` and a
 #: person-shaped `Personnel Licence` whose row marks an institution, a
@@ -185,10 +190,17 @@ ROW_TABLES = {
 	"vmms_desired_certifications": ("certification_type", "is_mandatory", "requirement_notes"),
 	# What an applicant has to upload before the form will take their answer.
 	"required_attachments": ("type", "document_name"),
+	# The complete question and scoring row. A validate hook prevents changes to
+	# question identity, type and required flag after an application exists.
+	"screening_questions": (
+		"question_id", "question", "question_type", "is_required", "is_knock_off",
+		"help_text", "options", "enable_scoring", "weight", "max_score",
+		"expected_answer", "depends_on_question", "show_if_answer_is",
+	),
 }
 
 #: The tickbox on a row, so it is stored as a flag rather than as `true`.
-ROW_CHECKS = ("is_mandatory",)
+ROW_CHECKS = ("is_mandatory", "is_required", "is_knock_off", "enable_scoring")
 
 
 def _absent() -> bool:
@@ -307,16 +319,19 @@ def detail(name: str) -> dict:
 		**{field: doc.get(field) for field in WRITABLE},
 		"name": doc.name,
 		"route": doc.get("route"),
+		"closed_on": str(doc.get("closed_on")) if doc.get("closed_on") else None,
+		"staffing_plan": doc.get("staffing_plan"),
+		"planned_vacancies": doc.get("planned_vacancies"),
+		"job_requisition": doc.get("job_requisition"),
+		"vacancies": doc.get("vacancies"),
+		"posted_on": str(doc.get("posted_on"))[:16].replace(" ", "T") if doc.get("posted_on") else None,
 		"url": board.opening_url(doc.get("route")),
 		"apply_url": board.apply_url(doc.name, doc.get("job_application_route")),
 		"purpose": doc.get(opening_fields.PURPOSE_FIELD),
-		# Every date as a `YYYY-MM-DD` string, because a browser puts one straight
-		# into a date input and a `datetime.date` reaching JSON is a shape it has
-		# to unpick. Sliced rather than merely stringified: `closes_on` is a
-		# *Datetime* — see `job_opening_fields.PROPERTIES` — and its
-		# "2026-09-02 00:00:00" renders as an empty date input, so amending any
-		# other field on an opening silently cleared its closing date.
+		# Date fields use YYYY-MM-DD; the two Datetime controls above and below
+		# keep their hours and minutes for the browser's datetime-local input.
 		**{field: (str(doc.get(field))[:10] if doc.get(field) else None) for field in DATES},
+		"closes_on": str(doc.get("closes_on"))[:16].replace(" ", "T") if doc.get("closes_on") else None,
 		# Every tickbox as a boolean, for the same reason: a `checked` prop takes
 		# one, and 0/1 through JSON is a value a form has to keep coercing.
 		**{field: bool(doc.get(field)) for field in CHECKS},
@@ -337,19 +352,7 @@ def detail(name: str) -> dict:
 			]
 			for table, columns in ROW_TABLES.items()
 		},
-		# The screening questions as HRMS holds them — read-only here. They are
-		# edited on the desk, and an application already decided against them
-		# must not have its wording changed underneath it; see
-		# `application.assert_questions_unlocked`.
-		"screening_questions": [
-			{
-				"question_id": row.get("question_id"),
-				"question": row.get("question"),
-				"question_type": row.get("question_type"),
-				"is_required": bool(row.get("is_required")),
-			}
-			for row in doc.get("screening_questions") or []
-		],
+		# The validate hook protects the question set once an application exists.
 		"pipeline": _pipeline_counts([doc.name]).get(doc.name, _empty_pipeline()),
 		"can_write": bool(doc.has_permission("write")),
 	}
@@ -570,6 +573,10 @@ def applicant(name: str) -> dict:
 		"email": doc.get("email_id"),
 		"phone": doc.get("phone_number"),
 		"country": doc.get("country"),
+		"source": doc.get("source"),
+		"source_name": doc.get("source_name"),
+		"designation": doc.get("designation"),
+		"employee_referral": doc.get("employee_referral"),
 		"status": doc.get("status"),
 		"opening": doc.get("job_title"),
 		"opening_title": opening_title or doc.get("job_title"),
@@ -577,6 +584,7 @@ def applicant(name: str) -> dict:
 		"cover_letter": doc.get("cover_letter"),
 		"resume_attachment": doc.get("resume_attachment"),
 		"volunteer": doc.get(applicant_fields.VOLUNTEER_FIELD),
+		"red_profile": doc.get(applicant_fields.PROFILE_FIELD),
 		"geo_node": doc.get(applicant_fields.GEO_NODE_FIELD),
 		"is_withdrawn": bool(doc.get(applicant_fields.WITHDRAWN_FIELD)),
 		"withdrawn_on": str(doc.get(applicant_fields.WITHDRAWN_FIELD) or "") or None,
@@ -655,6 +663,9 @@ def options() -> dict:
 		"departments": _vocabulary("Department", field="department_name"),
 		"companies": _vocabulary("Company"),
 		"employment_types": _vocabulary("Employment Type"),
+		"opening_templates": _vocabulary("Job Opening Template"),
+		"geo_nodes": _vocabulary("Geo Node"),
+		"deployments": _vocabulary("VMMS Deployment"),
 		"skills": _vocabulary("VMMS Skill"),
 		"languages": _vocabulary("Language", field="language_name"),
 		"projects": _vocabulary("Project", field="project_name"),
@@ -670,17 +681,18 @@ def options() -> dict:
 		# society that edits either edits the form with it.
 		"opening_types": _select_options("opportunity_type"),
 		"qualification_levels": _select_options("minimum_qualification_level"),
+		"question_types": _select_options("question_type", "Job Application Screening Questions"),
 	}
 
 
-def _select_options(fieldname: str) -> list[str]:
+def _select_options(fieldname: str, doctype: str = OPENING_DOCTYPE) -> list[str]:
 	"""A Select field's own words, or nothing before its patch has run.
 
 	These are Custom Fields, so a site between syncing this module and running
 	`patches/install_job_opening_fields.py` has the doctype and not the field —
 	the same graceful absence `_vocabulary` keeps, for the same reason.
 	"""
-	field = frappe.get_meta(OPENING_DOCTYPE).get_field(fieldname)
+	field = frappe.get_meta(doctype).get_field(fieldname)
 
 	if not field:
 		return []

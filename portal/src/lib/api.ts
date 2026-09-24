@@ -97,11 +97,11 @@ export const API = {
 	volunteerGeoLevels: "vmmsx.api.volunteer.geo_node_levels",
 	myVolunteer: "vmmsx.api.volunteer.my_volunteer",
 	myCertifications: "vmmsx.api.volunteer.my_certifications",
-	// The read half of `logTime`, and possessive like the rest: it takes no
-	// person, so the hours screen cannot be pointed at anybody else's history.
+	// Possessive like the rest: it takes no person, so the hours screen cannot be
+	// pointed at anybody else's history. There is no write beside it, and that is
+	// the point — a volunteer's hours are written from the attendance their
+	// coordinator verified, never typed by the person being credited with them.
 	myTimeLogs: "vmmsx.api.volunteer.my_time_logs",
-	timeLogOptions: "vmmsx.api.volunteer.time_log_options",
-	logTime: "vmmsx.api.volunteer.log_time",
 	findVolunteers: "vmmsx.api.volunteer.find_volunteers",
 	// The active register's own figures — counted across the whole scoped
 	// register rather than across the page a listing happened to fetch. The
@@ -242,6 +242,10 @@ export const API = {
 	assignVolunteers: "vmmsx.api.deployment.assign_volunteers",
 	setAssignmentRole: "vmmsx.api.deployment.set_assignment_role",
 	withdrawAssignment: "vmmsx.api.deployment.withdraw_assignment",
+	// What happened on the day, and the hours that went with it. The figure a
+	// coordinator verifies here is the one that lands on the volunteer's own
+	// record as their hours: there is no second place it can be entered.
+	recordAssignmentAttendance: "vmmsx.api.deployment.record_assignment_attendance",
 	// The manager's console. Both listings are `frappe.get_list`, so the
 	// caller's Geo Assignment is the floor the answer stands on and no argument
 	// on the screen widens it. A coordinator holding no assignment sees an empty
@@ -327,6 +331,10 @@ export const API = {
 	// The two pins. `locate` asks the geocoder and never fails a save; `pin` is
 	// the correction by hand that a geocoder cannot make.
 	locateDeployment: "vmmsx.api.deployment.locate_deployment",
+	// Type a place, get the candidates and their coordinates. A lookup against
+	// the site's configured geocoder — it reads nothing of the society's, and
+	// the pin is written by `placeDeploymentPin` once somebody picks one.
+	suggestPlaces: "vmmsx.api.deployment.suggest_places",
 	placeDeploymentPin: "vmmsx.api.deployment.place_deployment_pin",
 
 	// vmmsx/api/tasks.py — two doors into one doctype, checked differently.
@@ -459,21 +467,24 @@ export const API = {
 	faq: "vmmsx.api.faq.published",
 	branchLocations: "vmmsx.api.locations.branch_locations",
 
-	// vmmsx/api/opportunities.py — the notice board, and browsing only. There is
-	// no method here to answer an advertisement because this app has no record of
-	// a volunteer answering one: a coordinator matches people to a need and adds
-	// them to a roster. The screen says so rather than drawing a button.
+	// Published HRMS openings and applications into the existing applicant register.
 	opportunitiesBrowse: "vmmsx.api.opportunities.browse",
 	opportunityFilters: "vmmsx.api.opportunities.filters",
 	// One advertisement in full. Re-asks the board's own three predicates, so a
 	// guessed docname and an unpublished need both answer with nothing.
 	opportunityDetail: "vmmsx.api.opportunities.detail",
+	jobApplicationForm: "vmmsx.api.opportunities.job_application_form",
+	applyForJob: "vmmsx.api.opportunities.apply_for_job",
+	applyToOpening: "vmmsx.api.opportunities.apply_to_opening",
 
-	// vmmsx/api/events.py — browsing only. Buzz owns registration, tickets,
+	// vmmsx/api/events.py — browsing and a manager's confirmed roster. Buzz owns registration, tickets,
 	// payment and check-in, so a card's call to action is a full navigation to
 	// Buzz's own page and there is deliberately no booking method to name here.
 	eventsUpcoming: "vmmsx.api.events.upcoming",
 	eventFilters: "vmmsx.api.events.filters",
+	eventManagementOptions: "vmmsx.api.events.management_options",
+	managedEvents: "vmmsx.api.events.managed_events",
+	createEvent: "vmmsx.api.events.create_event",
 	// Three events for the public landing page, and the only guest-readable call
 	// in this group. It is a teaser rather than the calendar — no search, no
 	// filters, no paging — and every row is already published by Buzz to the
@@ -496,6 +507,7 @@ export const API = {
 	// gets the *number*, because somebody who ticked "I will be there" told their
 	// branch rather than every other volunteer on the site.
 	eventAttendees: "vmmsx.api.events.attendees",
+	eventRegistrations: "vmmsx.api.events.registrations",
 	// The month grid's one read. Everything published in a window, plus which of
 	// it is the caller's, in a single answer — a day cannot be drawn correctly
 	// until both are known, and two requests would mean markings that appear

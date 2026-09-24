@@ -36,7 +36,8 @@ from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, today
 
 from vmmsx.api import opportunities
-from vmmsx.hr.services import openings
+from vmmsx.deployment.tests import fixtures
+from vmmsx.hr.services import openings, recruitment
 
 EXTRA_TEST_RECORD_DEPENDENCIES = []
 
@@ -331,13 +332,13 @@ class TestTheDTOIsExplicit(OpeningsTestCase):
 		"""
 		name = self.opening("Answerable Post")
 
-		self.assertEqual(openings.detail(name)["apply_href"], f"/job_application/new?job_title={name}")
+		self.assertEqual(openings.detail(name)["apply_href"], f"/portal/opportunities/{name}/apply")
 
 	def test_a_society_that_named_its_own_application_form_gets_that_one(self):
 		"""`job_application_route` is HRMS's field for exactly this."""
 		name = self.opening("Custom Form Post", job_application_route="careers/apply")
 
-		self.assertEqual(openings.detail(name)["apply_href"], f"/careers/apply/new?job_title={name}")
+		self.assertEqual(openings.detail(name)["apply_href"], f"/portal/opportunities/{name}/apply")
 
 	def test_applying_does_not_depend_on_the_opening_having_a_page(self):
 		"""It used to: `apply_href` fell back to the opening's own page.
@@ -349,7 +350,7 @@ class TestTheDTOIsExplicit(OpeningsTestCase):
 		name = self.opening("Pageless But Open")
 		frappe.db.set_value("Job Opening", name, "route", None)
 
-		self.assertEqual(openings.detail(name)["apply_href"], f"/job_application/new?job_title={name}")
+		self.assertEqual(openings.detail(name)["apply_href"], f"/portal/opportunities/{name}/apply")
 
 	def test_closing_soon_is_within_a_week_and_not_otherwise(self):
 		soon = openings.detail(self.opening("Soon", closes_on=add_days(today(), 3)))
@@ -422,6 +423,73 @@ class TestFiltering(OpeningsTestCase):
 		self.assertEqual(openings._bounded(10_000), openings.MAX_ROWS)
 		self.assertEqual(openings._bounded(-5), 1)
 		self.assertEqual(openings._bounded("not a number"), openings.MAX_ROWS)
+
+
+class TestPortalJobApplication(OpeningsTestCase):
+	def candidate(self, active: bool = True) -> str:
+		from vmmsx.volunteer.services import society
+
+		user = fixtures.make_user(f"portal_job_{frappe.generate_hash(length=6)}")
+		profile = fixtures.make_profile("Portal", frappe.generate_hash(length=6), user=user, email=user)
+		branch = frappe.db.get_value("Geo Node", {"geo_level": society.volunteer_anchor_level()}, "name")
+		self.assertTrue(branch, "The test site needs a configured branch")
+		fixtures.make_volunteer(profile, branch, active=active)
+		return user
+
+	def test_signed_in_applicant_uses_safe_form_and_reaches_hrms_register(self):
+		opening = self.opening("Portal Job Application")
+		user = self.candidate()
+		frappe.set_user(user)
+
+		form = opportunities.job_application_form(opening)
+		self.assertEqual(form["opening"]["name"], opening)
+		self.assertFalse(form["volunteering"])
+		self.assertEqual(form["identity"]["email"], user)
+		self.assertTrue(form["may_apply"])
+
+		result = opportunities.apply_for_job(opening, full_name="Portal Candidate", cover_letter="I can help.")
+		applicant = frappe.get_doc("Job Applicant", result["name"])
+		self.assertEqual(applicant.job_title, opening)
+		self.assertEqual(applicant.email_id, user)
+		self.assertEqual(applicant.applicant_name, "Portal Candidate")
+		self.assertEqual(applicant.cover_letter, "I can help.")
+		self.assertTrue(opportunities.job_application_form(opening)["already_applied"])
+
+		with self.assertRaises(frappe.DuplicateEntryError):
+			opportunities.apply_for_job(opening, full_name="Portal Candidate")
+
+		frappe.set_user("Administrator")
+		visible = recruitment.applicants(opening=opening)["applicants"]
+		self.assertIn(result["name"], [row["name"] for row in visible])
+
+	def test_unregistered_person_must_register_before_applying(self):
+		opening = self.opening("Volunteer Only Job")
+		frappe.set_user(fixtures.make_user(f"portal_job_{frappe.generate_hash(length=6)}"))
+		form = opportunities.job_application_form(opening)
+		self.assertFalse(form["may_apply"])
+		self.assertEqual(form["eligibility"], "not_registered")
+		with self.assertRaises(frappe.PermissionError):
+			opportunities.apply_for_job(opening, full_name="Candidate")
+
+	def test_prospective_volunteer_must_wait_for_approval(self):
+		from unittest.mock import patch
+
+		opening = self.opening("Approval Required Job")
+		frappe.set_user(self.candidate(active=False))
+		with patch("vmmsx.api.registration._open_registration", return_value="pending-registration"):
+			form = opportunities.job_application_form(opening)
+			self.assertFalse(form["may_apply"])
+			self.assertEqual(form["eligibility"], "pending")
+			with self.assertRaisesRegex(frappe.PermissionError, "fully approved"):
+				opportunities.apply_for_job(opening, full_name="Candidate")
+
+	def test_hidden_and_closed_openings_cannot_take_applications(self):
+		openings = (self.opening("Hidden Job", publish=0), self.opening("Closed Job", status="Closed"))
+		user = fixtures.make_user(f"portal_job_{frappe.generate_hash(length=6)}")
+		frappe.set_user(user)
+		for opening in openings:
+			with self.assertRaises(frappe.ValidationError):
+				opportunities.apply_for_job(opening, full_name="Candidate")
 
 
 class TestASiteWithoutHRMS(IntegrationTestCase):

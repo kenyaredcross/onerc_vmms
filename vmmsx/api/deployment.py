@@ -411,11 +411,10 @@ def record_assignment_attendance(
 ) -> dict:
 	"""Say what happened on the day: all of it, some of it, or none of it.
 
-	The coordinator's statement, and deliberately not the volunteer's. `hours` is
-	the figure a coordinator verified; a volunteer's own time log is a separate
-	claim on a separate record, and a register that merged the two would have no
-	way to show them disagreeing — which is the only reason anybody verifies
-	anything.
+	The coordinator's statement, and the only one there is: volunteers do not
+	file their own hours. `hours` is the figure verified here, and the service
+	writes it onto the volunteer's record as their deployment time log, so the
+	hours a person is credited with are always hours somebody stood behind.
 
 	Gated on write permission on the assignment, which brings core's geo scoping
 	with it.
@@ -610,9 +609,33 @@ def get_my_assignment(assignment: str) -> dict:
 			"start_date": deployment.start_date,
 			"end_date": deployment.end_date,
 			"geo_node": deployment.geo_node,
+			# The branch in words, resolved the same way the invitation list
+			# resolves it. A volunteer reading the mission they are being asked
+			# to accept should not be shown a docname for the place.
+			"geo_path": _geo_path(deployment.geo_node),
 			"notes": deployment.notes,
+			# Where to report and where the work is, from the deployment's own
+			# record — the same `where_dto` the invitation list and the
+			# coordinator's map read. Without it this screen had nothing but the
+			# geo node, and a branch office that happened to publish its
+			# coordinates was standing in for the meeting point somebody was
+			# actually being asked to travel to.
+			"where": deployment_service.where_dto(deployment),
 		},
 	}
+
+
+def _geo_path(node: str | None) -> str:
+	"""A geo node as "Mbeya City — Mbeya", or an empty string if it names none."""
+	if not node:
+		return ""
+
+	from onerc_core.geo.services import adapter
+
+	try:
+		return adapter.get_full_path(node)
+	except Exception:
+		return ""
 
 
 def _flag(value: bool | int | str) -> bool:
@@ -677,8 +700,63 @@ def my_deployments() -> dict | None:
 
 	return {
 		"volunteer": volunteer,
-		"deployments": [_titled(row) for row in _status_rows(participation.deployments_of(volunteer))],
+		"deployments": _placed(
+			[_titled(row) for row in _status_rows(participation.deployments_of(volunteer))]
+		),
 	}
+
+
+def _placed(rows: list[dict]) -> list[dict]:
+	"""The caller's own deployments, each with the two places it had.
+
+	**Why the archive needs them at all.** A volunteer's assignment leaves the
+	invitation list the moment its outcome is recorded — `answered_for` is
+	Accepted and Declined — so a finished mission has no invitation left to
+	carry its meeting point, and the mission file drew no map. The record
+	itself still knows where it happened, so the archive reads it from there.
+
+	One query for the whole history rather than one per row, the same discipline
+	`_status_rows` states: a ten-year volunteer is a hundred missions, and a
+	hundred round trips is the difference between a page that opens and one that
+	does not.
+
+	`ignore_permissions`, for the reason `participation.history_of` gives: the
+	volunteer demonstrably served on these, they hold no Geo Assignment, and a
+	scoped read would hand them an empty history of their own work.
+	"""
+	if not rows:
+		return []
+
+	from vmmsx.deployment.services import geocoding
+
+	columns = [
+		"name",
+		"site_name",
+		"meeting_point",
+		"travel_notes",
+		"local_contact_name",
+		"local_contact_phone",
+		*geocoding.fields_for(geocoding.SITE).values(),
+		*geocoding.fields_for(geocoding.MEETING).values(),
+	]
+
+	places = {
+		record["name"]: record
+		for record in frappe.get_all(
+			DEPLOYMENT_DOCTYPE,
+			filters={"name": ("in", [row["name"] for row in rows])},
+			fields=columns,
+			ignore_permissions=True,
+		)
+	}
+
+	return [
+		{
+			**row,
+			"where": deployment_service.where_dto(places[row["name"]]) if row["name"] in places else None,
+		}
+		for row in rows
+	]
 
 
 def _titled(row: dict) -> dict:
@@ -1715,6 +1793,31 @@ def locate_deployment(name: str, place: str, force: bool | int | str = False) ->
 	geocoding.assert_known(place, geocoding.PLACES)
 
 	return geocoding.locate_place(deployment, place, force=_flag(force))
+
+
+@frappe.whitelist()
+def suggest_places(query: str, limit: int = 6) -> dict:
+	"""What a half-typed address might be, with the point that goes with each.
+
+	**A lookup, not a record.** It reads nothing of this society's and writes
+	nothing: it asks the site's configured geocoder what `query` might mean and
+	hands back the candidates, so a coordinator picks the right one instead of
+	typing coordinates off a phone. The pin is written by
+	`place_deployment_pin`, which checks write permission on the record. This
+	lookup is restricted to staff allowed to create a deployment or task because
+	each provider request may consume the site's geocoding quota.
+
+	Not deployment-specific despite living here: a task carries the same two
+	kinds of place, and when its editor grows the same field it calls this.
+	"""
+	# Suggestions spend provider quota. Only staff who can create the records
+	# using these places may ask the provider for candidates.
+	if not (frappe.has_permission(DEPLOYMENT_DOCTYPE, ptype="create") or frappe.has_permission("VMMS Task", ptype="create")):
+		frappe.throw(frappe._("You cannot search for places."), frappe.PermissionError)
+
+	from vmmsx.deployment.services import geocoding
+
+	return geocoding.suggest(query, limit=min(int(limit or 6), 10))
 
 
 @frappe.whitelist()

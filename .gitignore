@@ -92,3 +92,6 @@ vmmsx/public/portal/
 # Anchored to the root: this is one folder at the top level, not a name that
 # should match at any depth.
 /UI Concept/
+
+# Local launch rehearsal tracker; contains site-specific test evidence.
+/LAUNCH_MVP_TEST_PLAN.md

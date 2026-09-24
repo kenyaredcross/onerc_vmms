@@ -13,6 +13,17 @@
 		<script>
 			window.csrf_token = "{{ csrf_token }}";
 			window.frappe = { boot: { sitename: "{{ sitename }}", lang: "{{ lang }}" } };
+			// A tab left open during a rebuild can still request a chunk from the old build.
+			// Reload once to fetch the current entry, with a cooldown if the server is unavailable.
+			window.addEventListener("vite:preloadError", function (event) {
+				event.preventDefault();
+				var key = "vmms:asset-reload";
+				var last = Number(sessionStorage.getItem(key) || 0);
+				if (Date.now() - last > 30000) {
+					sessionStorage.setItem(key, String(Date.now()));
+					window.location.reload();
+				}
+			});
 		</script>
 		{%- if bundle_js %}
 		<script type="module" src="{{ bundle_js }}"></script>

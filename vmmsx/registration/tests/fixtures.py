@@ -368,6 +368,14 @@ def role_settings() -> tuple[str, ...]:
 	)
 
 
+def configured_settings() -> tuple[str, ...]:
+	"""Fields this suite replaces, including site-specific intake levels."""
+	from vmmsx.member.services.society import ANCHOR_LEVEL_FIELD as MEMBERSHIP_ANCHOR
+	from vmmsx.volunteer.services.society import ANCHOR_LEVEL_FIELD as VOLUNTEER_ANCHOR
+
+	return (*role_settings(), MEMBERSHIP_ANCHOR, VOLUNTEER_ANCHOR)
+
+
 def snapshot_settings() -> dict:
 	"""What the site had configured before this suite started.
 
@@ -378,7 +386,7 @@ def snapshot_settings() -> dict:
 	"""
 	settings = frappe.get_cached_doc(SETTINGS_DOCTYPE)
 
-	return {field: settings.get(field) for field in role_settings()}
+	return {field: settings.get(field) for field in configured_settings()}
 
 
 def restore_settings(snapshot: dict) -> None:
@@ -390,10 +398,12 @@ def restore_settings(snapshot: dict) -> None:
 
 
 def configure_society(tree: dict) -> None:
-	"""Every setting the journey reads, pointed at this suite's roles."""
+	"""Point roles and intake levels at this suite's isolated society."""
+	from vmmsx.member.services.society import ANCHOR_LEVEL_FIELD as MEMBERSHIP_ANCHOR
 	from vmmsx.member.services.society import MEMBER_ROLE_FIELD as MEMBERSHIP_MEMBER_ROLE
 	from vmmsx.member.services.society import PRINT_ROLE_FIELD
 	from vmmsx.registration.services.society import SELF_SERVICE_ROLE_FIELD
+	from vmmsx.volunteer.services.society import ANCHOR_LEVEL_FIELD as VOLUNTEER_ANCHOR
 	from vmmsx.volunteer.services.society import MEMBER_ROLE_FIELD as VOLUNTEER_MEMBER_ROLE
 
 	for role in TEST_ROLES:
@@ -407,6 +417,8 @@ def configure_society(tree: dict) -> None:
 			VOLUNTEER_MEMBER_ROLE: VOLUNTEER_ROLE,
 			MEMBERSHIP_MEMBER_ROLE: MEMBER_ROLE,
 			SELF_SERVICE_ROLE_FIELD: SELF_SERVICE_ROLE,
+			MEMBERSHIP_ANCHOR: tree["levels"]["branch"],
+			VOLUNTEER_ANCHOR: tree["levels"]["branch"],
 		}
 	)
 

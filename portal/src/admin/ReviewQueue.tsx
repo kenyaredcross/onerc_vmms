@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
@@ -119,6 +119,8 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	const spec = QUEUES[kind];
 	const band = QUEUE_BANDS.find((row) => row.segment === (segment ?? "")) ?? QUEUE_BANDS[0];
 	const isActionable = band.key === "actionable";
+	const [offset, setOffset] = useState(0);
+	useEffect(() => setOffset(0), [kind, band.key]);
 
 	// Two reads, and exactly one of them ever runs: `swrKey === null` is how
 	// this codebase says "do not ask". The open band is `my_queue`, which
@@ -132,8 +134,8 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	);
 	const history = useFrappeGetCall<{ message: ApprovalCases }>(
 		API.myCases,
-		{ doctype: spec.doctype, group: band.key },
-		isActionable ? null : `admin:my_cases:${kind}:${band.key}`,
+		{ doctype: spec.doctype, group: band.key, limit: 50, offset },
+		isActionable ? null : `admin:my_cases:${kind}:${band.key}:${offset}`,
 	);
 
 	const rows = isActionable ? (open.data?.message ?? []) : (history.data?.message?.cases ?? []);
@@ -181,6 +183,13 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 						<QueueRow key={row.name} row={row} spec={spec} actionable={isActionable} />
 					))}
 				</Table>
+			)}
+			{!isActionable && !error && (offset > 0 || history.data?.message?.has_more) && (
+				<div className="mt-4 flex items-center gap-3 text-sm">
+					<span>Showing {offset + 1}–{offset + rows.length}</span>
+					<button type="button" disabled={offset === 0 || isLoading} onClick={() => setOffset(Math.max(0, offset - 50))} className="font-semibold text-ink disabled:opacity-40">Previous</button>
+					<button type="button" disabled={!history.data?.message?.has_more || isLoading} onClick={() => setOffset(offset + 50)} className="font-semibold text-ink disabled:opacity-40">Next</button>
+				</div>
 			)}
 		</>
 	);

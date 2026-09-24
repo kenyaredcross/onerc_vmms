@@ -296,6 +296,69 @@
 	.article-body strong {
 		@apply font-bold text-ink;
 	}
+
+	/* ---------------------------------------------------------------- wallet
+
+	   The holder's card, shown in a column narrower than it was drawn for.
+
+	   The card body is a `VMMS Template` an administrator owns, laid out as a
+	   table because it is rendered to PDF by wkhtmltopdf as often as to a
+	   screen. It is authored at 460px with the QR code in a fixed 108px column
+	   beside the details, which is right on a profile page and right on paper,
+	   and wrong in the home page's right rail: a branch reading "Mbeya City —
+	   Mbeya — Tanzania Red Cross Society" gets about a hundred pixels and folds
+	   onto five lines.
+
+	   So where the column is genuinely too narrow for two cells side by side —
+	   a phone, and nothing wider — the frame stops being a table row and the
+	   check code sits under the details instead. A container query rather than
+	   a media query, because what matters is the width of the column the card
+	   is in and not the width of the window.
+
+	   **The threshold is a last resort, not a preference.** It was 390px, which
+	   caught the home page's right rail and drew the card as a tall stack there
+	   while the same card sat in its proper landscape shape on the profile and
+	   membership pages. One card, two shapes, for no reason a person could see.
+	   The rail is wide enough for the real thing now and this only fires below
+	   the narrowest phone the layout supports.
+
+	   **Nothing here is required to match.** Every selector is a class the
+	   shipped card happens to use; a society that rewrites its card loses these
+	   rules and gets the card it wrote, which is the same contract the rest of
+	   the templating has. */
+	.portal-wallet {
+		container-type: inline-size;
+	}
+
+	@container (max-width: 330px) {
+		.portal-wallet .vmms-card-frame,
+		.portal-wallet .vmms-card-frame > tbody,
+		.portal-wallet .vmms-card-frame > tbody > tr {
+			display: block;
+		}
+
+		.portal-wallet .vmms-card-body,
+		.portal-wallet .vmms-card-check {
+			display: block;
+			width: auto;
+		}
+
+		.portal-wallet .vmms-card-body {
+			padding-bottom: 14px;
+		}
+
+		.portal-wallet .vmms-card-check {
+			padding: 0 18px 18px;
+			text-align: start;
+			border-top: 1px solid #eef1f5;
+			padding-top: 14px;
+		}
+
+		.portal-wallet .vmms-card-qr {
+			width: 78px;
+			height: 78px;
+		}
+	}
 }
 
 /* ------------------------------------------------ signed-in desktop density

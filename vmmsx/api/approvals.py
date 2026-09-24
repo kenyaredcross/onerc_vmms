@@ -149,9 +149,8 @@ def _assert_governed(doctype: str) -> None:
 
 # --- the caller's own cases, beyond what is routed to them right now --------
 
-# What `my_cases` will read before it stops. A ceiling on work rather than a
-# page size: these lists are a branch's history, and a coordinator who has
-# cleared more than this wants a report rather than a screen.
+# Maximum response page and scoped draft scan batch. Older cases remain
+# reachable by offset instead of disappearing behind this limit.
 _CASE_CEILING = 200
 
 # The three bands a queue screen navigates between, named once.
@@ -170,7 +169,7 @@ CASE_GROUPS = (CASE_ACTIONABLE, CASE_CHANGES, CASE_CLOSED)
 
 
 @frappe.whitelist()
-def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = None) -> dict:
+def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = None, offset: int = 0) -> dict:
 	"""One band of `doctype`'s approvals, inside the caller's own scope.
 
 	The queue screens navigate three bands and `my_queue` only answers the
@@ -218,11 +217,19 @@ def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = Non
 	if not frappe.has_permission(doctype, "read"):
 		return {"group": group, "count": 0, "cases": []}
 
-	names = _changed(doctype, limit) if group == CASE_CHANGES else _closed(doctype, limit)
+	page_size = _bounded(limit)
+	try:
+		start = max(0, int(offset))
+	except (TypeError, ValueError):
+		start = 0
+	names = _changed(doctype, page_size + 1, start) if group == CASE_CHANGES else _closed(doctype, page_size + 1, start)
+	has_more = len(names) > page_size
+	names = names[:page_size]
 
 	return {
 		"group": group,
 		"count": len(names),
+		"has_more": has_more,
 		# `engine.status` per row, so a history screen and a live one describe an
 		# application with the same DTO. Read permission was already applied by
 		# the listing above; nothing here is a second door into a document.
@@ -240,18 +247,19 @@ def _bounded(limit) -> int:
 	return max(1, min(asked, _CASE_CEILING))
 
 
-def _closed(doctype: str, limit) -> list[str]:
+def _closed(doctype: str, limit, offset: int = 0) -> list[str]:
 	"""Applications in one of the four terminal states, newest first."""
 	return frappe.get_list(
 		doctype,
 		filters={"approval_state": ("in", list(states.TERMINAL_STATES))},
-		order_by="modified desc",
-		limit_page_length=_bounded(limit),
+		order_by="modified desc, name desc",
+		limit_start=offset,
+		limit_page_length=limit,
 		pluck="name",
 	)
 
 
-def _changed(doctype: str, limit) -> list[str]:
+def _changed(doctype: str, limit, offset: int = 0) -> list[str]:
 	"""Drafts that were sent back, newest first.
 
 	Two reads rather than a join: the scoped listing decides which documents the
@@ -261,29 +269,28 @@ def _changed(doctype: str, limit) -> list[str]:
 	across every branch's applications with the scope applied afterwards, which
 	is the shape of an accidental disclosure.
 	"""
-	drafts = frappe.get_list(
-		doctype,
-		filters={"approval_state": states.DRAFT},
-		order_by="modified desc",
-		limit_page_length=_bounded(limit),
-		pluck="name",
-	)
-
-	if not drafts:
-		return []
-
-	returned = set(
-		frappe.get_all(
-			contract.DECISION_DOCTYPE,
-			filters={
-				"parenttype": doctype,
-				"parent": ("in", drafts),
-				"decision": states.DECISION_MORE_INFO,
-			},
-			pluck="parent",
+	selected = []
+	scanned = 0
+	while len(selected) < offset + limit:
+		drafts = frappe.get_list(
+			doctype,
+			filters={"approval_state": states.DRAFT},
+			order_by="modified desc, name desc",
+			limit_start=scanned,
+			limit_page_length=_CASE_CEILING,
+			pluck="name",
 		)
-	)
-
-	# The listing's order is preserved: it is already newest-first and re-sorting
-	# a filtered subset would silently override it.
-	return [name for name in drafts if name in returned]
+		if not drafts:
+			break
+		returned = set(
+			frappe.get_all(
+				contract.DECISION_DOCTYPE,
+				filters={"parenttype": doctype, "parent": ("in", drafts), "decision": states.DECISION_MORE_INFO},
+				pluck="parent",
+			)
+		)
+		selected.extend(name for name in drafts if name in returned)
+		scanned += len(drafts)
+		if len(drafts) < _CASE_CEILING:
+			break
+	return selected[offset:offset + limit]

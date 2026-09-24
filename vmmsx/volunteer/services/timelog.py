@@ -8,9 +8,18 @@ A `VMMS Time Log` records that a volunteer served time somewhere on some day.
 record that changes what the server will accept:
 
     general       volunteering that stands on its own — training, an open day,
-                  office support. It may never carry a deployment.
-    deployment    time served on a specific deployment. It must name one, and
-                  the volunteer must be on that deployment's roster.
+                  office support. It may never carry a deployment, and it
+                  happened on one day, so it holds at most a day's hours.
+    deployment    time served on a specific deployment. It must name one, the
+                  volunteer must be on that deployment's roster, and it stands
+                  for the whole mission rather than one of its days.
+
+**Nobody types their own hours.** A deployment log is written by this module from
+the figure a coordinator verified when they recorded the deployment's attendance
+— see `from_verified_attendance()` — so the hours on a volunteer's record are a
+statement somebody made about work they saw, and there is no second claim for it
+to disagree with. A general log is still an ordinary record a society's staff
+file; what has gone is the volunteer entering a number for themselves.
 
 **Why the kinds are code and the categories are configuration.** Each value of
 `log_type` names a different validation rule, so a society adding a third value
@@ -27,10 +36,12 @@ its rule; it is never adding an `if` to a caller. Outside this module nothing
 compares `log_type` to anything.
 
 **What every log shares, whatever its kind.** The geo anchor (ACC-02) and the
-hours are checked *before* the dispatch, so a deployment log with no anchor is
-refused for the anchor rather than for anything about deployments. Every log is
-somewhere: an unplaced log is invisible to geo scoping and cannot be reported on
-by the branch whose work it was.
+floor under the hours are checked *before* the dispatch, so a deployment log
+with no anchor is refused for the anchor rather than for anything about
+deployments. Every log is somewhere: an unplaced log is invisible to geo scoping
+and cannot be reported on by the branch whose work it was. The *ceiling* over
+the hours is not shared, because the two kinds do not cover the same span of
+time; each states its own where its rule lives.
 
 **The ownership rule, which the deployment module finished.** A deployment log
 names a `VMMS Deployment` and is accepted only if that deployment's roster lists
@@ -47,7 +58,7 @@ answer, and it holds no second copy of what participation means.
 
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import flt, getdate, today
 
 TIME_LOG_DOCTYPE = "VMMS Time Log"
 
@@ -56,10 +67,10 @@ TYPE_DEPLOYMENT = "deployment"
 LOG_TYPES = (TYPE_GENERAL, TYPE_DEPLOYMENT)
 
 # A log of no time is not a record of anything, and one claiming more hours than
-# a day holds is a typo rather than a very long shift. Both are universal, which
-# is why they are here and not in a setting.
+# there were to give is a typo rather than a very long shift. Both are universal,
+# which is why they are here and not in a setting.
 MIN_HOURS = 0.0
-MAX_HOURS = 24.0
+MAX_HOURS_A_DAY = 24.0
 
 
 def kind(log) -> str:
@@ -114,15 +125,41 @@ def assert_anchor(log) -> None:
 
 
 def assert_hours(log) -> None:
+	"""Shared — a log records some time. *How much* there was to give is the kind's.
+
+	A log of no hours is not a record of anything, whatever kind it is, so the
+	floor is checked here with the other shared rules. The ceiling is not: a
+	general log happened on one day and cannot hold more than a day, while a
+	deployment log stands for the whole mission it names and holds as much as
+	that mission had days to give. One number would have had to be wrong for one
+	of them, so each kind states its own in the dispatch table below.
+	"""
 	hours = flt(log.get("hours"))
 
-	if MIN_HOURS < hours <= MAX_HOURS:
+	if hours > MIN_HOURS:
 		return
 
 	frappe.throw(
-		_("A time log records more than {0} and at most {1} hours. This one records {2}.").format(
-			MIN_HOURS, MAX_HOURS, hours
-		),
+		_("A time log records more than {0} hours. This one records {1}.").format(MIN_HOURS, hours),
+		frappe.ValidationError,
+		title=_("Implausible Hours"),
+	)
+
+
+def assert_ceiling(log, available: float, held_by: str) -> None:
+	"""Refuse a log claiming more time than the thing it is filed against held.
+
+	`held_by` names that thing in the reader's words — "a single day", "this
+	deployment's 5 days" — because the number on its own does not say why it is
+	the number.
+	"""
+	hours = flt(log.get("hours"))
+
+	if hours <= available:
+		return
+
+	frappe.throw(
+		_("This log records {0} hours, and {1} holds at most {2}.").format(hours, held_by, available),
 		frappe.ValidationError,
 		title=_("Implausible Hours"),
 	)
@@ -138,6 +175,8 @@ def _general(log) -> None:
 	it is deployment time, and filing it as general would put it outside every
 	rule that governs deployment time — the ownership check most of all.
 	"""
+	assert_ceiling(log, MAX_HOURS_A_DAY, _("a single day"))
+
 	if not (log.get("deployment") or "").strip():
 		return
 
@@ -170,6 +209,7 @@ def _deployment(log) -> None:
 	each other: the deployment module is the one that knows what participation
 	means, and the volunteer module is the one that knows what a time log is.
 	"""
+	from vmmsx.deployment.services import deployment as deployment_service
 	from vmmsx.deployment.services import participation
 
 	deployment = (log.get("deployment") or "").strip()
@@ -187,6 +227,18 @@ def _deployment(log) -> None:
 
 	participation.assert_participant(deployment, log.get("volunteer"))
 
+	# A deployment log stands for the mission, not for one of its days: a
+	# fortnight's service is one log of a fortnight's hours, because that is the
+	# shape of the figure a coordinator verifies. How long the mission ran is the
+	# deployment module's fact and is asked of it rather than recomputed here.
+	days = deployment_service.days_running(deployment)
+
+	assert_ceiling(
+		log,
+		days * MAX_HOURS_A_DAY,
+		_("a deployment of {0} day(s)").format(days),
+	)
+
 
 # --- the dispatch table ---------------------------------------------------
 #
@@ -197,6 +249,120 @@ _VALIDATE = {
 	TYPE_GENERAL: _general,
 	TYPE_DEPLOYMENT: _deployment,
 }
+
+
+# --- written from what a coordinator verified ------------------------------
+#
+# Volunteers do not file their own hours. A coordinator says what was served
+# when they record a deployment's attendance, and that figure becomes the
+# volunteer's deployment log here. Everything downstream — the register, the
+# analytics, the person's own screen — already reads time logs, so the hours
+# reach all three by being written once, in the one place that knows what a time
+# log is.
+
+
+def from_verified_attendance(assignment_doc) -> dict | None:
+	"""Write, correct or withdraw the log standing behind a verified figure.
+
+	**One log per assignment, rewritten rather than repeated.** The log points
+	back at the assignment it came from through `source_assignment`, so a
+	corrected attendance corrects the hours instead of filing a second claim, and
+	a log somebody wrote by hand — which carries no source — is never touched.
+
+	**Nothing verified, nothing recorded.** A figure of no hours, or an outcome
+	meaning they were not there, withdraws the log. Whether they were there is
+	put to `participation`, which owns the roster, so it means here exactly what
+	it means everywhere else: a No Show holds no place on the deployment and can
+	leave no hours behind on the record.
+
+	Written with permissions set aside, and deliberately. The act being recorded
+	is already authorised — a caller who may not write this assignment never
+	reaches this function — and requiring a coordinator to *also* hold create on
+	a volunteer's time logs would make the hours they verified depend on a
+	permission that has nothing to do with the work.
+	"""
+	from vmmsx.deployment.services import participation
+
+	hours = flt(assignment_doc.get("verified_hours"))
+	served = participation.is_participant(assignment_doc.deployment, assignment_doc.volunteer)
+
+	if hours <= MIN_HOURS or not served:
+		return withdraw_verified(assignment_doc.name)
+
+	deployment = (
+		frappe.db.get_value(
+			"VMMS Deployment",
+			assignment_doc.deployment,
+			["geo_node", "start_date", "end_date", "actual_end"],
+			as_dict=True,
+		)
+		or frappe._dict()
+	)
+
+	existing = verified_log(assignment_doc.name)
+	log = frappe.get_doc(TIME_LOG_DOCTYPE, existing) if existing else frappe.new_doc(TIME_LOG_DOCTYPE)
+
+	log.update(
+		{
+			"volunteer": assignment_doc.volunteer,
+			"log_type": TYPE_DEPLOYMENT,
+			"deployment": assignment_doc.deployment,
+			"source_assignment": assignment_doc.name,
+			"geo_node": assignment_doc.get("geo_node") or deployment.geo_node,
+			"activity_date": _day_recognised(assignment_doc, deployment),
+			"hours": hours,
+		}
+	)
+
+	# Only ever on the way in. The sentence is there so a log read on the desk
+	# says where its figure came from; once it exists, whatever a person has
+	# since written in that box is theirs.
+	if not log.notes:
+		log.notes = _("Recorded from the attendance your coordinator verified for this deployment.")
+
+	log.save(ignore_permissions=True)
+
+	return log_dto(log)
+
+
+def withdraw_verified(assignment: str) -> None:
+	"""Remove the log written from this assignment, if there is one.
+
+	Deleting rather than zeroing: a log of no hours is not a record of anything,
+	and `assert_hours` would refuse to save one anyway. What is being withdrawn
+	is a statement somebody made and has now unmade.
+	"""
+	existing = verified_log(assignment)
+
+	if existing:
+		frappe.delete_doc(TIME_LOG_DOCTYPE, existing, ignore_permissions=True)
+
+	return None
+
+
+def verified_log(assignment: str) -> str | None:
+	"""The docname of the log written from this assignment, or None."""
+	return frappe.db.get_value(TIME_LOG_DOCTYPE, {"source_assignment": assignment}, "name")
+
+
+def _day_recognised(assignment_doc, deployment) -> str:
+	"""The day a mission's hours are filed against: the last day of the service.
+
+	A deployment log carries the whole mission's hours, so it is dated where the
+	service ended rather than where it began — which is also the day the figure
+	on it became true. The person's own leaving date comes first, because
+	somebody who went home on the Wednesday did not serve until the Friday.
+	"""
+	# `getdate` because two of these are Datetimes and the field is a Date: the
+	# day is what is being recorded, never the hour somebody pressed the button.
+	return getdate(
+		assignment_doc.get("left_on")
+		or assignment_doc.get("end_date")
+		or deployment.get("actual_end")
+		or deployment.get("end_date")
+		or deployment.get("start_date")
+		or today()
+	)
 
 
 # --- reading --------------------------------------------------------------
@@ -224,7 +390,7 @@ def hours_served(volunteer: str, since=None, until=None) -> float:
 	return flt(sum(flt(hours) for hours in frappe.get_all(TIME_LOG_DOCTYPE, filters=filters, pluck="hours")))
 
 
-def summary(volunteer: str, limit: int = 10) -> dict:
+def summary(volunteer: str, limit: int = 10, offset: int = 0) -> dict:
 	"""What this volunteer has given, totalled and with the latest logs listed.
 
 	The coordinator's view needs both halves of the question. A total answers
@@ -258,11 +424,11 @@ def summary(volunteer: str, limit: int = 10) -> dict:
 		"total_hours": hours_served(volunteer),
 		"log_count": len(rows),
 		"hours_by_type": by_type,
-		"recent": recent(volunteer, limit=limit),
+		"recent": recent(volunteer, limit=limit, offset=offset),
 	}
 
 
-def recent(volunteer: str, limit: int = 10) -> list[dict]:
+def recent(volunteer: str, limit: int = 10, offset: int = 0) -> list[dict]:
 	"""The latest logs this volunteer filed, as explicit rows. Built field by field.
 
 	Never the documents. A log carries an anchor, a category and free-text notes,
@@ -293,7 +459,8 @@ def recent(volunteer: str, limit: int = 10) -> list[dict]:
 				"hours",
 				"notes",
 			],
-			order_by="activity_date desc, creation desc",
+			order_by="activity_date desc, creation desc, name desc",
+			limit_start=offset,
 			limit_page_length=limit,
 		)
 	]

@@ -1701,7 +1701,10 @@
     "· starts": "· huanza",
     "· ticked": "· tiki",
     "”. Your branch can add it to the list.": "” Tawi lako linaweza kuiongeza kwenye orodha.",
-    "← Back": "← Nyuma"
+    "← Back": "← Nyuma",
+    "You have been asked to join a deployment": "Umeombwa ujiunge na usambazaji",
+    "Your member card": "Kadi yako ya mwanachama",
+    "Your volunteer card": "Kadi yako ya kujitolea"
   },
   "ar": {
     "% complete": "٪ مكتمل",
@@ -3405,7 +3408,10 @@
     "· starts": "· يبدأ",
     "· ticked": "· تكتك",
     "”. Your branch can add it to the list.": "\". يمكن لفرعك إضافته إلى القائمة.",
-    "← Back": "← العودة"
+    "← Back": "← العودة",
+    "You have been asked to join a deployment": "لقد طُلب منك الانضمام إلى عملية نشر",
+    "Your member card": "بطاقة عضويتك",
+    "Your volunteer card": "بطاقتك التطوعية"
   },
   "pt": {
     "% complete": "% completo",
@@ -5109,7 +5115,10 @@
     "· starts": "· começa",
     "· ticked": "· marcado",
     "”. Your branch can add it to the list.": "\". Sua filial pode adicioná-lo à lista.",
-    "← Back": "← Voltar"
+    "← Back": "← Voltar",
+    "You have been asked to join a deployment": "Você foi solicitado a ingressar em uma implantação",
+    "Your member card": "Seu cartão de membro",
+    "Your volunteer card": "Seu cartão de voluntário"
   },
   "fr": {
     "% complete": "% complet",
@@ -6813,6 +6822,9 @@
     "· starts": "· commence",
     "· ticked": "· coché",
     "”. Your branch can add it to the list.": "\". Votre succursale peut l'ajouter à la liste.",
-    "← Back": "← Retour"
+    "← Back": "← Retour",
+    "You have been asked to join a deployment": "Vous avez été invité à rejoindre un déploiement",
+    "Your member card": "Votre carte de membre",
+    "Your volunteer card": "Votre carte de bénévole"
   }
 }

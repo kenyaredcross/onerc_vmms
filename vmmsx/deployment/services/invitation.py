@@ -230,6 +230,12 @@ def _rows_for(volunteer: str, statuses: tuple[str, ...]) -> list[dict]:
 		)
 	}
 
+	# The readable name of every branch these deployments are in, resolved once
+	# per distinct node rather than once per invitation. Without it the portal
+	# has nothing but the docname to print, and "GEO-00067" tells a volunteer
+	# being asked to travel there precisely nothing.
+	paths = _paths_for({deployment["geo_node"] for deployment in deployments.values()})
+
 	invitations = []
 
 	for row in rows:
@@ -253,6 +259,10 @@ def _rows_for(volunteer: str, statuses: tuple[str, ...]) -> list[dict]:
 				"start_date": row["start_date"] or deployment["start_date"],
 				"end_date": row["end_date"] or deployment["end_date"],
 				"geo_node": deployment["geo_node"],
+				# "Mbeya City — Mbeya — Southern Highlands". The docname stays
+				# beside it because a coordinator quoting a reference still wants
+				# it, but nothing a volunteer reads has to fall back to it.
+				"geo_path": paths.get(deployment["geo_node"], ""),
 				"notes": deployment["notes"],
 				# When to be there, where, how to get there, and who to ring. Built
 				# by the deployment service from the row above rather than restated
@@ -284,6 +294,31 @@ def _rows_for(volunteer: str, statuses: tuple[str, ...]) -> list[dict]:
 	invitations.sort(key=lambda row: (row["start_date"] is not None, row["start_date"]), reverse=True)
 
 	return invitations
+
+
+def _paths_for(nodes: set[str]) -> dict[str, str]:
+	"""Readable branch paths for a set of geo nodes, keyed by docname.
+
+	The adapter answers one node at a time and walks its ancestors to do it, so
+	a list of invitations spanning one branch would otherwise climb the same
+	tree once per row. A node that has since been deleted resolves to an empty
+	string rather than raising: an invitation whose branch has gone is still an
+	invitation somebody has to answer.
+	"""
+	from onerc_core.geo.services import adapter
+
+	paths = {}
+
+	for node in nodes:
+		if not node:
+			continue
+
+		try:
+			paths[node] = adapter.get_full_path(node)
+		except Exception:
+			paths[node] = ""
+
+	return paths
 
 
 def _tor_name(terms_of_reference: str | None) -> str | None:

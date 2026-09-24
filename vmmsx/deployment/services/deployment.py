@@ -47,7 +47,7 @@ datetimes from them rather than refusing the record.
 
 import frappe
 from frappe import _
-from frappe.utils import get_datetime, getdate, now_datetime, today
+from frappe.utils import date_diff, get_datetime, getdate, now_datetime, today
 
 from vmmsx.deployment.services import change
 
@@ -437,6 +437,26 @@ def covers(deployment, on_date=None) -> bool:
 def in_flight(deployment, on_date=None) -> bool:
 	"""Is this deployment both open and currently running?"""
 	return is_open(deployment) and covers(deployment, on_date)
+
+
+def days_running(name: str) -> int:
+	"""How many days the deployment ran, counting both ends. Never fewer than one.
+
+	Asked by the volunteer module, which needs to know how much time a deployment
+	could possibly hold before it will accept a figure of hours served against
+	it: a fortnight's mission holds a fortnight's hours, and a day's mission does
+	not. The period is this module's fact, so the question is answered here
+	rather than by a second reader of the same two columns.
+
+	A deployment with no period yet is one day, which refuses nothing a
+	single-day mission would have been allowed.
+	"""
+	period = frappe.db.get_value(DEPLOYMENT_DOCTYPE, name, ["start_date", "end_date"], as_dict=True)
+
+	if not period or not period.start_date or not period.end_date:
+		return 1
+
+	return max(1, date_diff(period.end_date, period.start_date) + 1)
 
 
 # --- the DTOs -------------------------------------------------------------

@@ -21,6 +21,8 @@ states against the three open ones. The scope itself is proved against a real
 scopeable doctype elsewhere — see the note at the foot of this file.
 """
 
+from unittest.mock import patch
+
 import frappe
 
 from vmmsx.api import approvals
@@ -174,6 +176,21 @@ class TestMyCases(ApprovalTestCase):
 		self.assertEqual(len(asked["cases"]), 2)
 		# A caller cannot ask the server to read the whole table.
 		self.assertLessEqual(len(huge["cases"]), approvals._CASE_CEILING)
+
+	def test_returned_case_survives_more_than_one_window_of_new_drafts(self):
+		drafts = [f"new-{index}" for index in range(205)] + ["returned-old"]
+
+		def scoped_drafts(*args, **kwargs):
+			start = kwargs["limit_start"]
+			return drafts[start:start + kwargs["limit_page_length"]]
+
+		def decisions(*args, **kwargs):
+			return ["returned-old"] if "returned-old" in kwargs["filters"]["parent"][1] else []
+
+		with patch.object(approvals.frappe, "get_list", side_effect=scoped_drafts), patch.object(
+			approvals.frappe, "get_all", side_effect=decisions
+		):
+			self.assertEqual(approvals._changed(fixtures.APPROVABLE_DOCTYPE, 2), ["returned-old"])
 
 
 # Scope itself is proved where a *scopeable* governed doctype exists: the

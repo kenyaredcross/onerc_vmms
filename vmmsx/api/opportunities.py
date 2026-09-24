@@ -1,44 +1,21 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""The opportunities board: the society's published job openings.
+"""Published HRMS openings and portal application endpoints.
 
-**It reads HRMS's `Job Opening`**, through the seam in
-`vmmsx/hr/services/openings.py`, which is the only file in this app that names
-that doctype. This endpoint adds a DTO boundary and nothing else, the same shape
-as `api/events.py` over the Buzz seam.
-
-**What this replaced, and why.** The board used to read
-`VMMS Deployment Request` — the society's own record of needing people
-somewhere. That record is real and still does its job, but it was the wrong
-thing to advertise: it is an internal staffing note, and there was no way for
-anybody to answer one. The screen said so out loud, explaining that a
-coordinator matches volunteers from the register instead, which is an honest
-sentence and a poor advertisement. A society already running its recruitment in
-HRMS has the opening, the application form and the pipeline there, so pointing
-the board at it is what lets somebody actually apply.
-
-**Browse here, apply there.** There is no application endpoint in this file and
-there will not be one. HRMS owns the applicant record, the duplicate check and
-everything after it, and each card's call to action is a full navigation to
-HRMS's own application form. A vmmsx endpoint wrapping any of that would be a second
-implementation of a rule that has to stay in step with HRMS's forever.
-
-**Signed in, deliberately.** Neither endpoint is `allow_guest`. The three
-guest-readable endpoints in this app are `content.surface`, `society.branding`
-and `locations.published`, each bounded by a flag on a document; a fourth needs
-the same justification, which is a question somebody has *before* they have an
-account. HRMS publishes its own openings to the website for that audience.
-
-**HRMS absent is an ordinary state, not an error.** vmmsx does not declare
-`hrms` in `required_apps`. On a site without it both endpoints answer empty and
-the screen says so rather than showing a spinner forever.
+Readers expose only curated, published openings. Applicants use their own
+signed-in identity and create records in HRMS's existing Job Applicant register.
+No browser call needs Job Opening read permission.
 """
 
 import frappe
+from frappe import _
 
 from vmmsx.hr.services import application as application_service
 from vmmsx.hr.services import openings as seam
+from vmmsx.registration.services import evidence
+from vmmsx.setup import job_applicant_fields as applicant_fields
+from vmmsx.setup import job_opening_fields as opening_fields
 
 APPLICANT_DOCTYPE = "Job Applicant"
 
@@ -138,6 +115,127 @@ def opening_questions(name: str) -> dict:
 			volunteer and application_service.live_application(name, volunteer)
 		),
 	}
+
+
+@frappe.whitelist()
+def job_application_form(name: str) -> dict:
+	"""A safe application form for a published opening, without Job Opening read permission."""
+	opening = seam.detail(name)
+	if not opening:
+		return {"opening": None}
+
+	user = frappe.session.user
+	if user == "Guest":
+		frappe.throw(_("Please sign in to apply."), frappe.PermissionError)
+
+	profile = frappe.db.get_value("Red Profile", {"user": user}, ["full_name", "phone"], as_dict=True)
+	account = frappe.db.get_value("User", user, ["full_name", "email"], as_dict=True)
+	email = (account.email if account else user) or user
+	volunteer = _my_volunteer()
+	volunteering = frappe.db.get_value("Job Opening", name, opening_fields.PURPOSE_FIELD) == opening_fields.PURPOSE_VOLUNTEER
+	eligibility = _volunteer_eligibility(volunteer)
+	return {
+		"opening": opening,
+		"volunteering": volunteering,
+		"questions": application_service.questions(name),
+		"identity": {
+			"full_name": (profile.full_name if profile else None) or (account.full_name if account else None) or "",
+			"email": email,
+			"phone": (profile.phone if profile else None) or "",
+		},
+		"already_applied": bool(volunteer and application_service.live_application(name, volunteer)) if volunteering else bool(
+			frappe.db.exists(APPLICANT_DOCTYPE, {"job_title": name, "email_id": email, "status": ("in", application_service.LIVE_STATUSES)})
+		),
+		"may_apply": eligibility == "approved",
+		"eligibility": eligibility,
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def apply_for_job(
+	name: str,
+	full_name: str,
+	phone: str | None = None,
+	cover_letter: str | None = None,
+	resume: str | None = None,
+	answers: dict | str | None = None,
+) -> dict:
+	"""Create an HRMS Job Applicant from the signed-in account's own email."""
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Please sign in to apply."), frappe.PermissionError)
+	if not seam.detail(name):
+		frappe.throw(_("This opening is no longer accepting applications."), frappe.ValidationError)
+	eligibility = _volunteer_eligibility(_my_volunteer())
+	if eligibility != "approved":
+		frappe.throw(_eligibility_message(eligibility), frappe.PermissionError)
+	if frappe.db.get_value("Job Opening", name, opening_fields.PURPOSE_FIELD) == opening_fields.PURPOSE_VOLUNTEER:
+		frappe.throw(_("Use the volunteer application for this role."), frappe.ValidationError)
+
+	account = frappe.db.get_value("User", frappe.session.user, ["email"], as_dict=True)
+	email = (account.email if account else frappe.session.user) or ""
+	if not email or "@" not in email:
+		frappe.throw(_("Your account needs an email address before you can apply."), frappe.ValidationError)
+	full_name = (full_name or "").strip()
+	if not full_name:
+		frappe.throw(_("Enter your full name."), frappe.MandatoryError)
+	if frappe.db.exists(APPLICANT_DOCTYPE, {"job_title": name, "email_id": email, "status": ("in", application_service.LIVE_STATUSES)}):
+		frappe.throw(_("You have already applied for this opening."), frappe.DuplicateEntryError)
+
+	resume = evidence.assert_uploaded(resume, "CV or resume") if resume else None
+	if resume:
+		file = frappe.db.get_value("File", {"file_url": resume}, ["owner", "attached_to_name"], as_dict=True)
+		if not file or file.owner != frappe.session.user or file.attached_to_name:
+			frappe.throw(_("Upload your own CV or resume before applying."), frappe.PermissionError)
+
+	parsed = frappe.parse_json(answers) if isinstance(answers, str) else (answers or {})
+	if not isinstance(parsed, dict):
+		frappe.throw(_("Answers must be a set of question responses."), frappe.ValidationError)
+	for question in application_service.questions(name):
+		if question["question_type"] == "Upload" and parsed.get(question["question_id"]):
+			url = evidence.assert_uploaded(parsed[question["question_id"]], question["question"])
+			file = frappe.db.get_value("File", {"file_url": url}, ["owner", "attached_to_name"], as_dict=True)
+			if not file or file.owner != frappe.session.user or file.attached_to_name:
+				frappe.throw(_("Upload your own file for {0}.").format(question["question"]), frappe.PermissionError)
+	applicant = frappe.get_doc({
+		"doctype": APPLICANT_DOCTYPE,
+		"job_title": name,
+		"applicant_name": full_name,
+		"email_id": email,
+		"phone_number": (phone or "").strip(),
+		"cover_letter": (cover_letter or "").strip(),
+		"status": applicant_fields.STATUS_OPEN,
+		applicant_fields.ANSWERS_FIELD: application_service.answer_rows(name, parsed),
+	})
+	applicant.insert(ignore_permissions=True)
+	if resume:
+		secured = evidence.secure(applicant, resume)
+		frappe.db.set_value(APPLICANT_DOCTYPE, applicant.name, "resume_attachment", secured, update_modified=False)
+	for row in applicant.get(applicant_fields.ANSWERS_FIELD) or []:
+		if row.answer_file:
+			secured = evidence.secure(applicant, row.answer_file)
+			frappe.db.set_value(row.doctype, row.name, "answer_file", secured, update_modified=False)
+	return {"name": applicant.name, "opening": name}
+
+
+def _volunteer_eligibility(volunteer: str | None) -> str:
+	"""Use the linked record and the registration engine's open application check."""
+	status = frappe.db.get_value("VMMS Volunteer", volunteer, "status") if volunteer else None
+	if status == "Active":
+		return "approved"
+
+	from vmmsx.api import registration
+
+	if registration._open_registration(registration.APPLICATION_DOCTYPE):
+		return "pending"
+	return "inactive" if status in ("Suspended", "Exited") else "not_registered"
+
+
+def _eligibility_message(eligibility: str) -> str:
+	if eligibility == "pending":
+		return _("Your volunteer application must be fully approved before you can apply for an opportunity.")
+	if eligibility == "inactive":
+		return _("Your volunteer record must be active before you can apply. Please contact your branch.")
+	return _("Register as a volunteer and wait for full approval before applying for an opportunity.")
 
 
 def _last_message() -> str | None:

@@ -108,6 +108,23 @@ class TestWhatTheConsoleMayWrite(RecruitmentTestCase):
 
 		self.assertTrue(frappe.db.exists("Job Opening", name))
 
+	def test_portal_fields_keep_desk_values_and_read_only_vacancies(self):
+		name = self._opening(
+			posted_on="2026-09-01 09:30:00",
+			closes_on="2026-10-01 17:00:00",
+			prevent_duplicate_applicant=1,
+			publish_applications_received=1,
+		)
+		detail = recruitment.detail(name)
+		self.assertEqual(detail["posted_on"], "2026-09-01T09:30")
+		self.assertEqual(detail["closes_on"], "2026-10-01T17:00")
+		self.assertTrue(detail["prevent_duplicate_applicant"])
+		self.assertTrue(detail["publish_applications_received"])
+
+		recruitment.save({"vacancies": 99, "posted_on": "2026-09-02T10:45"}, name=name)
+		self.assertNotEqual(frappe.db.get_value("Job Opening", name, "vacancies"), 99)
+		self.assertEqual(recruitment.detail(name)["posted_on"], "2026-09-02T10:45")
+
 	def test_the_multiselects_are_replaced_wholesale_not_appended(self):
 		"""A child table edited by re-posting the list has to be cleared first,
 		or every save doubles it."""
@@ -117,6 +134,23 @@ class TestWhatTheConsoleMayWrite(RecruitmentTestCase):
 		recruitment.save({"vmms_desired_languages": [second]}, name=name)
 
 		self.assertEqual(recruitment.detail(name)["vmms_desired_languages"], [second])
+
+	def test_screening_question_rows_round_trip(self):
+		question = {
+			"question_id": "Q1",
+			"question": "Can you travel?",
+			"question_type": "Yes/No",
+			"is_required": True,
+			"is_knock_off": False,
+			"help_text": "Answer for the assigned district.",
+			"enable_scoring": True,
+			"weight": 2,
+			"max_score": 5,
+			"expected_answer": "Yes",
+		}
+		name = self._opening(screening_questions=[question])
+		self.assertEqual(recruitment.detail(name)["screening_questions"][0]["question"], question["question"])
+		self.assertEqual(recruitment.detail(name)["screening_questions"][0]["weight"], 2)
 
 
 class TestStatusAndPublishAreDifferentQuestions(RecruitmentTestCase):

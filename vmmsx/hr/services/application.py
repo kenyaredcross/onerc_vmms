@@ -1,12 +1,10 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""Applying for a volunteering opening, on HRMS's own `Job Applicant`.
+"""Apply for a volunteering opening on HRMS's own `Job Applicant`.
 
-`openings.py` is the board — browse here, apply there, and HRMS owns everything
-after somebody decides they want it. That remains true for **employment**
-openings: this file never touches one, the public web form is untouched, and a
-society running recruitment in HRMS finds nothing about it changed.
+Employment applications use `api/opportunities.py::apply_for_job`; this service
+handles volunteer identity, eligibility, answers and conversion into work.
 
 A **volunteering** opening is a different act by a different person. The
 applicant is already somebody the society knows: an approved, active volunteer
@@ -119,7 +117,7 @@ def questions(opening: str) -> list[dict]:
 	"""
 	opening_doc = read(opening)
 
-	return [
+	rows = [
 		{
 			"question_id": row.question_id,
 			"question": row.question,
@@ -132,6 +130,20 @@ def questions(opening: str) -> list[dict]:
 		}
 		for row in (opening_doc.get("screening_questions") or [])
 	]
+	rows.extend(
+		{
+			"question_id": f"required_attachment:{row.name}",
+			"question": row.document_name or row.type or _("Required document"),
+			"question_type": "Upload",
+			"is_required": True,
+			"help_text": row.type or "",
+			"options": [],
+			"depends_on_question": None,
+			"show_if_answer_is": None,
+		}
+		for row in (opening_doc.get("required_attachments") or [])
+	)
+	return rows
 
 
 def _options(row) -> list[str]:
@@ -186,10 +198,15 @@ def _shape(opening_doc) -> set[tuple]:
 	A set rather than a list, so reordering is not a change — the order is a
 	presentation decision and nobody's answer depends on it.
 	"""
-	return {
+	shape = {
 		(row.question_id, row.question_type, bool(row.is_required))
 		for row in (opening_doc.get("screening_questions") or [])
 	}
+	shape.update(
+		(f"required_attachment:{row.name}", "Upload", True)
+		for row in (opening_doc.get("required_attachments") or [])
+	)
+	return shape
 
 
 def on_opening_validate(doc, method=None) -> None:
@@ -313,6 +330,12 @@ def answer_rows(opening: str, answers: dict) -> list[dict]:
 		given = given.strip() if isinstance(given, str) else given
 
 		if question["question_type"] == "Upload":
+			if question["is_required"] and not given:
+				frappe.throw(
+					_("{0} has to be uploaded.").format(frappe.bold(question["question"])),
+					frappe.MandatoryError,
+					title=_("Missing Document"),
+				)
 			if question["is_required"] or given:
 				given = evidence.assert_uploaded(given, question["question"])
 		elif question["is_required"] and given in (None, "", []):

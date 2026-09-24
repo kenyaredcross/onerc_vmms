@@ -4,7 +4,7 @@ import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
-import { formatClock, formatDate } from "../lib/format";
+import { branchPath, formatClock, formatDate } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { isoDate, todayIso } from "../ui/MonthGrid";
 import { CAL_META, CalendarGrid, type CalEntry } from "./ui/CalendarGrid";
@@ -121,7 +121,7 @@ export default function Calendar() {
 				start: dep.start_date,
 				end: dep.end_date || dep.start_date,
 				time: "Full-day deployment",
-				meta: dep.role || dep.geo_node,
+				meta: dep.role || branchPath(dep.geo_path),
 				metaLabel: dep.role ? "Role" : "Where",
 				summary: "A mission you have accepted.",
 				to: `/deployments/${encodeURIComponent(dep.deployment)}`,

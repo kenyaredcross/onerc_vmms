@@ -1,16 +1,17 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""The events screen's door onto Buzz. Read-only, and it stops at browsing.
+"""The events screen's door onto Buzz.
 
-Two endpoints, both thin: everything they know about events is in
+Every endpoint delegates to
 `vmmsx/buzz/services/events.py`, the seam, and this file adds a DTO boundary and
 nothing else. Naming Buzz's doctype here would break the rule
 `vmmsx/buzz/tests/test_delegation.py` enforces, and the rule is worth the
-indirection — it is what keeps the crossing findable in one place.
+indirection — it is what keeps the crossing findable in one place. Managers may
+create Buzz events here; Buzz's document still owns permission and validation.
 
-**There is no booking endpoint here and there will not be one.** Every card's
-call to action for a ticket is a full navigation to Buzz's own event page,
+**There is no booking write endpoint here.** Every card's
+call to action for a ticket is a full navigation to Buzz's booking page,
 because Buzz owns ticket types, coupons, payment, guest verification and
 check-in, and each of those is a flow with money or identity in it. A vmmsx
 endpoint wrapping any of them would be a second implementation of a rule that
@@ -21,10 +22,10 @@ somebody would be charged the wrong amount.
 to exist here.** It writes the society's own record of an intention — this
 volunteer told us they mean to be there — which is a fact about a person the
 society already holds a file on, not a claim about a seat, a payment or a place
-held. Nothing it writes is read by Buzz and nothing Buzz writes is read by it.
+held. The separate manager roster reads Buzz's confirmed tickets without
+changing a booking.
 `events/services/attendance.py` sets the line out in full, and
-`vmmsx/buzz/tests/test_delegation.py` still fails the build if any file in this
-app names a booking, ticket, attendee or check-in doctype.
+`vmmsx/buzz/tests/test_delegation.py` keeps Buzz's ticket read inside the seam.
 
 **The possessive three take no person.** `attending`, `attend` and
 `cancel_attendance` derive the profile from the session, the same shape as
@@ -37,7 +38,7 @@ for the landing page, and its own docstring says why that is a different act
 from browsing the society's calendar. Everything else refuses a guest.
 
 **Buzz absent is an ordinary state, not an error.** vmmsx does not declare
-`buzz` in `required_apps`. On a site without it both endpoints answer empty, and
+`buzz` in `required_apps`. On a site without it readers answer empty, and
 the screen says so rather than showing a spinner forever.
 """
 
@@ -51,6 +52,45 @@ from vmmsx.events.services import attendance
 #: than an argument on purpose: a guest-readable endpoint with nothing to pass
 #: it has no input to validate and no limit to talk somebody's way past.
 TEASER_ROWS = 3
+
+
+@frappe.whitelist()
+def management_options() -> dict:
+	"""Desk's available event choices and whether this caller may create one."""
+	return seam.management_options()
+
+
+@frappe.whitelist()
+def managed_events(limit: int = 60) -> dict:
+	"""The manager's Buzz records, including unpublished drafts."""
+	return {"events": seam.managed_events(limit=limit)}
+
+
+@frappe.whitelist(methods=["POST"])
+def create_event(
+	title: str,
+	category: str,
+	host: str,
+	start_date: str,
+	start_time: str,
+	end_time: str,
+	end_date: str | None = None,
+	medium: str = "In Person",
+	venue: str | None = None,
+	short_description: str | None = None,
+	about: str | None = None,
+	time_zone: str | None = None,
+	banner_image: str | None = None,
+	card_image: str | None = None,
+	geo_node: str | None = None,
+	free_event: int = 0,
+	is_published: int = 0,
+	external_registration_page: int = 0,
+	registration_url: str | None = None,
+	registrations_close_at: str | None = None,
+) -> dict:
+	"""Create the same Buzz Event Desk creates, with Buzz permissions and validation."""
+	return seam.create_event(locals())
 
 
 @frappe.whitelist(allow_guest=True)
@@ -177,6 +217,12 @@ def attendees(event: str, limit: int = 200) -> dict:
 		"going": attendance.count(event),
 		"attendees": attendance.roster(event, limit=limit),
 	}
+
+
+@frappe.whitelist()
+def registrations(event: str, start: int = 0, limit: int = 100) -> dict:
+	"""Confirmed Buzz registrations for managers; Buzz remains the booking authority."""
+	return seam.registrations(event, start=start, limit=limit)
 
 
 def _with_counts(events: list[dict]) -> list[dict]:

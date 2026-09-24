@@ -27,8 +27,9 @@ import {
 import { Modal, useToast } from "./ui/overlays";
 import type {
 	BranchLocation,
+	DeploymentWhere,
 	DeploymentInvitation,
-	DeploymentSummary,
+	MyDeploymentRow,
 	MyAssignment,
 	MyTimeLogs,
 	TermsMission,
@@ -62,7 +63,7 @@ export default function Deployments() {
 	}>(API.myInvitations, undefined, "portal:my_invitations");
 
 	const history = useFrappeGetCall<{
-		message: { volunteer: string; deployments: (DeploymentSummary & { title: string })[] } | null;
+		message: { volunteer: string; deployments: MyDeploymentRow[] } | null;
 	}>(API.myDeployments, undefined, "portal:my_deployments");
 
 	const locations = usePublishedPoints();
@@ -115,7 +116,7 @@ export default function Deployments() {
 									<AssignmentCard
 										key={row.assignment}
 										invitation={row}
-										location={locations(row.geo_node)}
+										location={reportingPoint(row.where, locations(row.geo_node))}
 									/>
 								))}
 							</div>
@@ -199,7 +200,7 @@ export default function Deployments() {
 										to={`/deployments/${encodeURIComponent(row.name)}`}
 										kicker={`${row.start_date ? row.start_date.slice(0, 4) : "Undated"} mission file`}
 										title={row.title}
-										meta={branchPath(row.geo_path) || row.geo_node || undefined}
+										meta={branchPath(row.geo_path) || undefined}
 										foot={`${dateRange(row.start_date, row.end_date) ?? "Undated"} · ${row.status}`}
 									/>
 								))}
@@ -215,9 +216,14 @@ export default function Deployments() {
 /* ------------------------------------------------------------------ shared */
 
 /**
- * Coordinates for a deployment location come from a published branch office
- * sharing its geo anchor — the one guest-readable source of a real point this
- * app has. A deployment with no matching office draws no map.
+ * A published branch office at the same geo anchor — the *fallback* point.
+ *
+ * The answer is the deployment's own record, which carries a site and a meeting
+ * point with coordinates (`where`). This is what a screen falls back to when a
+ * society has located neither: an office in the same branch is roughly where
+ * somebody is going, and roughly is better than a mission file with no map at
+ * all. It was the only source once, which is why finished missions — whose
+ * assignments have left the invitation list — showed nothing.
  */
 function usePublishedPoints(): (node: string | null) => BranchLocation | null {
 	const locations = useFrappeGetCall<{ message: { locations: BranchLocation[] } }>(
@@ -237,19 +243,84 @@ function usePublishedPoints(): (node: string | null) => BranchLocation | null {
 	}, [locations.data]);
 }
 
+/** A place on a map, whichever of the three sources answered for it. */
+interface MapPoint {
+	/** What the panel calls it: the words above the name. */
+	label: string;
+	name: string;
+	address: string | null;
+	latitude: number;
+	longitude: number;
+}
+
+/**
+ * Where somebody reports, and what to call it.
+ *
+ * **Three sources, in the order a person needs them.** The meeting point is
+ * where they are told to be, so it wins; the site is where the work is, which
+ * answers the same question for a mission that names no meeting point; a
+ * published branch office at the same anchor is the last resort, and it is the
+ * only one of the three that is not this deployment's own fact.
+ *
+ * Null where none of them carries a point, and the screens draw no map rather
+ * than a pin in the sea off Ghana — which is where a pair of empty coordinates
+ * lands.
+ */
+function reportingPoint(
+	where: DeploymentWhere | null | undefined,
+	office: BranchLocation | null,
+): MapPoint | null {
+	const meeting = where?.meeting_point;
+
+	if (meeting?.has_point && meeting.latitude != null && meeting.longitude != null) {
+		return {
+			label: "Reporting location",
+			name: meeting.name || meeting.address || "The meeting point",
+			address: meeting.name ? meeting.address : null,
+			latitude: meeting.latitude,
+			longitude: meeting.longitude,
+		};
+	}
+
+	const site = where?.site;
+
+	if (site?.has_point && site.latitude != null && site.longitude != null) {
+		return {
+			label: "Where this mission was",
+			name: site.name || site.address || "The mission site",
+			address: site.name ? site.address : null,
+			latitude: site.latitude,
+			longitude: site.longitude,
+		};
+	}
+
+	if (office && office.latitude != null && office.longitude != null) {
+		return {
+			label: "Reporting location",
+			name: office.location_name,
+			address: office.address,
+			latitude: office.latitude,
+			longitude: office.longitude,
+		};
+	}
+
+	return null;
+}
+
 /* -------------------------------------------------- the waiting assignment */
 
 /**
  * The concept's assignment card: what is being asked, and where to report,
- * side by side. The map is drawn only when a published office at the same geo
- * anchor carries real coordinates.
+ * side by side. The point is the deployment's own meeting point wherever it has
+ * one — see `reportingPoint` — and the map is drawn only where something
+ * carries real coordinates.
  */
 function AssignmentCard({
 	invitation,
 	location,
 }: {
 	invitation: DeploymentInvitation;
-	location: BranchLocation | null;
+	location: MapPoint | null;
 }) {
 	const duration =
 		invitation.start_date && invitation.end_date
@@ -258,7 +329,7 @@ function AssignmentCard({
 
 	const meta = [
 		invitation.role || null,
-		branchPath(invitation.geo_node) || invitation.geo_node || null,
+		branchPath(invitation.geo_path) || null,
 		invitation.start_date
 			? `${dateRange(invitation.start_date, invitation.end_date)}${
 					duration ? ` (${duration} days)` : ""
@@ -299,21 +370,21 @@ function AssignmentCard({
 				</Link>
 			</div>
 
-			{location && location.latitude != null && location.longitude != null && (
+			{location && (
 				<div className="border-t border-card-line bg-canvas p-5 lg:border-l lg:border-t-0">
 					<span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-rail-label">
-						Reporting point
+						{location.label}
 					</span>
 					<div className="mt-2.5">
 						<OsmMap
 							latitude={location.latitude}
 							longitude={location.longitude}
-							label={location.location_name}
+							label={location.name}
 							height={160}
 						/>
 					</div>
 					<strong className="mt-3 block text-[12.5px] font-semibold text-ink">
-						{location.location_name}
+						{location.name}
 					</strong>
 					{location.address && (
 						<small className="mt-1 block text-[11.5px] text-slate-body">{location.address}</small>
@@ -379,7 +450,10 @@ export function DeploymentRequest() {
 	}
 
 	const { assignment: row, terms, deployment } = mission;
-	const location = points(deployment.geo_node ?? row.geo_node ?? null);
+	// The mission's own meeting point, and only a branch office where it has
+	// none: somebody deciding whether they can get there needs the place they
+	// were told to report to, not one in the same county.
+	const location = reportingPoint(deployment.where, points(deployment.geo_node ?? row.geo_node ?? null));
 	// `Pending` is the one roster status that is still a question. Everything
 	// else — Assigned, Accepted, Declined, Withdrawn — has been answered or
 	// decided, and the panel says so rather than offering the buttons again.
@@ -463,8 +537,7 @@ export function DeploymentRequest() {
 								label="Location"
 								value={
 									branchPath(terms.geo_scope_path) ||
-									branchPath(deployment.geo_node) ||
-									deployment.geo_node ||
+									branchPath(deployment.geo_path) ||
 									"Not available"
 								}
 							/>
@@ -491,8 +564,7 @@ export function DeploymentRequest() {
 									label: "Location",
 									value:
 										branchPath(terms.geo_scope_path) ||
-										branchPath(deployment.geo_node) ||
-										deployment.geo_node ||
+										branchPath(deployment.geo_path) ||
 										"Not available",
 								},
 								{
@@ -559,21 +631,21 @@ export function DeploymentRequest() {
 				</div>
 
 				<aside className="space-y-[18px] lg:sticky lg:top-[72px]">
-					{location && location.latitude != null && location.longitude != null && (
+					{location && (
 						<Card pad={false}>
 							<OsmMap
 								latitude={location.latitude}
 								longitude={location.longitude}
-								label={location.location_name}
+								label={location.name}
 								height={180}
 								className="rounded-b-none border-0 border-b border-card-line"
 							/>
 							<div className="p-4">
 								<span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-rail-label">
-									Meeting and reporting point
+									{location.label}
 								</span>
 								<strong className="mt-1.5 block text-[12.5px] font-semibold text-ink">
-									{location.location_name}
+									{location.name}
 								</strong>
 								{location.address && (
 									<small className="mt-1 block text-[11.5px] text-slate-body">
@@ -762,7 +834,7 @@ export function DeploymentRecord() {
 	const points = usePublishedPoints();
 
 	const history = useFrappeGetCall<{
-		message: { volunteer: string; deployments: (DeploymentSummary & { title: string })[] } | null;
+		message: { volunteer: string; deployments: MyDeploymentRow[] } | null;
 	}>(API.myDeployments, undefined, "portal:my_deployments");
 
 	const invitations = useFrappeGetCall<{
@@ -815,7 +887,14 @@ export function DeploymentRecord() {
 	const status = row?.status ?? assignment?.deployment_status ?? "";
 	const start = row?.start_date ?? assignment?.start_date ?? null;
 	const end = row?.end_date ?? assignment?.end_date ?? null;
-	const location = points(row?.geo_node ?? assignment?.geo_node ?? null);
+	// Where the mission happened, from the mission's own record. The archive is
+	// the reason this reads `row` first: a finished deployment has no invitation
+	// left — an outcome takes the assignment out of the answered list — so the
+	// mission file is the only thing that still knows the place.
+	const location = reportingPoint(
+		row?.where ?? assignment?.where,
+		points(row?.geo_node ?? assignment?.geo_node ?? null),
+	);
 
 	const served = (logs.data?.message?.recent ?? [])
 		.filter((log) => log.deployment === name)
@@ -1015,22 +1094,27 @@ export function DeploymentRecord() {
 				</div>
 
 				<aside className="space-y-[18px] lg:sticky lg:top-[72px]">
-					{location && location.latitude != null && location.longitude != null && (
+					{location && (
 						<Card pad={false}>
 							<OsmMap
 								latitude={location.latitude}
 								longitude={location.longitude}
-								label={location.location_name}
+								label={location.name}
 								height={180}
 								className="rounded-b-none border-0 border-b border-card-line"
 							/>
 							<div className="p-4">
 								<span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-rail-label">
-									Reporting location
+									{location.label}
 								</span>
 								<strong className="mt-1.5 block text-[12.5px] font-semibold text-ink">
-									{location.location_name}
+									{location.name}
 								</strong>
+								{location.address && (
+									<small className="mt-1 block text-[11.5px] text-slate-body">
+										{location.address}
+									</small>
+								)}
 								<a
 									href={`https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=13/${location.latitude}/${location.longitude}`}
 									target="_blank"
@@ -1053,7 +1137,7 @@ export function DeploymentRecord() {
 								{ label: "Dates", value: dateRange(start, end) ?? "Undated" },
 								{
 									label: "Location",
-									value: branchPath(row?.geo_path) || row?.geo_node || "Not available",
+									value: branchPath(row?.geo_path) || "Not available",
 								},
 								terms ? { label: "Terms of Reference", value: terms.tor_name } : null,
 								{

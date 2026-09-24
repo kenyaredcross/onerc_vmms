@@ -311,7 +311,24 @@ function NoRecordYet({ application }: { application: OpenRegistration | null }) 
  * has no member card, and a panel saying so on their own profile would be the
  * software telling them something they know.
  */
-export function HolderCard({ kind }: { kind: "volunteer" | "member" }) {
+export function HolderCard({
+	kind,
+	title = "Your card",
+	note = true,
+}: {
+	kind: "volunteer" | "member";
+	/**
+	 * What to call it above the card. Two of these sit together on the home
+	 * page, where "Your card" twice would say which of them is which to nobody.
+	 */
+	title?: string;
+	/**
+	 * The line explaining what a scan of the QR discloses. True where somebody
+	 * has come looking for their card and has room to read about it; false where
+	 * the card is one panel among several and the sentence is repeated furniture.
+	 */
+	note?: boolean;
+}) {
 	const { data, isLoading } = useFrappeGetCall<{ message: { html: string } | null }>(
 		kind === "volunteer" ? API.myVolunteerCard : API.myMemberCard,
 		undefined,
@@ -325,7 +342,7 @@ export function HolderCard({ kind }: { kind: "volunteer" | "member" }) {
 	return (
 		<Card>
 			<div className="mb-4 flex items-center justify-between gap-3">
-				<SectionTitle>Your card</SectionTitle>
+				<SectionTitle>{title}</SectionTitle>
 				<a
 					className="text-[12px] font-semibold text-ink underline underline-offset-2"
 					href={`/api/method/vmmsx.api.cards.download_my_card?kind=${kind}`}
@@ -334,12 +351,17 @@ export function HolderCard({ kind }: { kind: "volunteer" | "member" }) {
 				</a>
 			</div>
 
-			<div dangerouslySetInnerHTML={{ __html: card.html }} />
+			{/* `portal-wallet` is what the stylesheet's container query hangs on:
+			    in a column too narrow for the card as it was drawn, the QR moves
+			    under the details rather than squeezing them. */}
+			<div className="portal-wallet" dangerouslySetInnerHTML={{ __html: card.html }} />
 
-			<p className="mt-4 text-[11.5px] leading-relaxed text-slate-faint">
-				The code on your card can be scanned by anybody who needs to check it. They see your name,
-				your branch and whether it is current, and nothing else.
-			</p>
+			{note && (
+				<p className="mt-4 text-[11.5px] leading-relaxed text-slate-faint">
+					The code on your card can be scanned by anybody who needs to check it. They see your name,
+					your branch and whether it is current, and nothing else.
+				</p>
+			)}
 		</Card>
 	);
 }

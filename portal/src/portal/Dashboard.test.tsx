@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API } from "../lib/api";
 import { mount } from "../test/harness";
-import type { OpenRegistration } from "./types";
+import type { DeploymentInvitation, OpenRegistration, VolunteerProfile } from "./types";
 
 /**
  * The panel that tells somebody where their own registration stands.
@@ -61,6 +61,69 @@ function registration(over: Partial<OpenRegistration> = {}): OpenRegistration {
 	};
 }
 
+function volunteer(over: Partial<VolunteerProfile> = {}): VolunteerProfile {
+	return {
+		volunteer: "VOL-00010",
+		red_profile: "RED-00010",
+		full_name: "Godfrey Mwakyusa",
+		email: "godfrey@example.com",
+		phone: null,
+		gender: null,
+		date_of_birth: null,
+		preferred_language: null,
+		profile_photo: null,
+		status: "Active",
+		joined_on: "2025-12-19",
+		exited_on: null,
+		geo_node: "GEO-00066",
+		geo_path: "Mbeya City — Mbeya — Tanzania Red Cross Society",
+		home_geo_node: "GEO-00066",
+		home_geo_path: "Mbeya City — Mbeya — Tanzania Red Cross Society",
+		...over,
+	};
+}
+
+/** A place the society has named but never located, which is the common case. */
+function place() {
+	return {
+		name: null,
+		address: null,
+		latitude: null,
+		longitude: null,
+		has_point: false,
+		located_on: null,
+		map: null,
+		directions: null,
+	};
+}
+
+function invitation(over: Partial<DeploymentInvitation> = {}): DeploymentInvitation {
+	return {
+		assignment: "DASG-00004",
+		deployment: "DEP-00002",
+		title: "Landslide Risk Assessment",
+		terms_of_reference: "TOR-00002",
+		deployment_status: "Planned",
+		start_date: "2026-09-06",
+		end_date: "2026-09-14",
+		geo_node: "GEO-00067",
+		geo_path: "Rungwe — Mbeya — Tanzania Red Cross Society",
+		notes: null,
+		where: {
+			site: place(),
+			meeting_point: place(),
+			travel_notes: null,
+			local_contact: { name: null, phone: null },
+		},
+		response: "Pending",
+		role: "Assessor",
+		invited_on: "2026-09-01",
+		responded_on: null,
+		response_note: null,
+		...over,
+	};
+}
+
 beforeEach(() => {
 	reads.clear();
 });
@@ -73,7 +136,7 @@ describe("a draft nobody has sent yet", () => {
 	it("says the application is unfinished, not that the branch is waiting", () => {
 		mount(<Dashboard />);
 
-		expect(screen.getByText("Your application is not finished")).toBeTruthy();
+		expect(screen.getByText("Your volunteer application is not finished")).toBeTruthy();
 		expect(screen.queryByText("Your application needs something from you")).toBeNull();
 	});
 
@@ -105,7 +168,7 @@ describe("a draft an approver sent back", () => {
 	it("says the branch has asked for something, and shows what", () => {
 		mount(<Dashboard />);
 
-		expect(screen.getByText("Your application needs something from you")).toBeTruthy();
+		expect(screen.getByText("Your volunteer application needs something from you")).toBeTruthy();
 		expect(screen.getByText("Send us your first-aid certificate.")).toBeTruthy();
 	});
 
@@ -126,7 +189,112 @@ describe("a registration that is with the branch", () => {
 
 		mount(<Dashboard />);
 
-		expect(screen.getByText("Your application is under review")).toBeTruthy();
+		expect(screen.getByText("Your volunteer application is under review")).toBeTruthy();
 		expect(screen.queryByRole("link", { name: /continue application/i })).toBeNull();
+	});
+});
+
+describe("separate membership and volunteer paths", () => {
+	it("identifies a membership review and still offers volunteer registration", () => {
+		reads.set(API.myOpenRegistrations, {
+			member: registration({
+				doctype: "VMMS Membership",
+				name: "MEM-00017",
+				path: "member",
+				state: "In Review",
+			}),
+			volunteer: null,
+		});
+
+		mount(<Dashboard />);
+
+		expect(screen.getByText("Your membership application is under review")).toBeTruthy();
+		expect(screen.getByRole("heading", { name: /your membership application is with your branch/i })).toBeTruthy();
+		expect(screen.getByRole("link", { name: /register as a volunteer/i }).getAttribute("href")).toBe("/join?path=volunteer");
+	});
+
+	it("shows each open application by kind without offering either path again", () => {
+		reads.set(API.myOpenRegistrations, {
+			member: registration({ name: "MEM-00017", path: "member", state: "In Review" }),
+			volunteer: registration({ state: "Submitted" }),
+		});
+
+		mount(<Dashboard />);
+
+		expect(screen.getByText("Your membership application is under review")).toBeTruthy();
+		expect(screen.getByText("Your volunteer application is in")).toBeTruthy();
+		expect(screen.queryByRole("link", { name: /register as a volunteer/i })).toBeNull();
+	});
+});
+
+/**
+ * What the home page shows an accepted volunteer about themselves.
+ *
+ * Three complaints, one shape. The greeting carried a green "Active volunteer"
+ * chip, which told somebody reading their own front page a thing they knew.
+ * The record down the right printed a status, a number and a branch as three
+ * lines of type, when the society renders an actual card carrying exactly
+ * those. And the deployment request beside them named the place as
+ * "GEO-00067", because the invitation came down with a docname and no path.
+ */
+describe("an accepted volunteer's own front page", () => {
+	beforeEach(() => {
+		reads.set(API.myVolunteer, volunteer());
+		reads.set(API.myOpenRegistrations, {});
+	});
+
+	it("does not label somebody's own name with their standing", () => {
+		mount(<Dashboard />);
+
+		expect(screen.queryByText(/active volunteer/i)).toBeNull();
+	});
+
+	it("draws the card the society issued, where a line of type used to be", () => {
+		reads.set(API.myVolunteerCard, {
+			html: '<div class="vmms-card">Godfrey Mwakyusa · VOL-00010</div>',
+		});
+
+		mount(<Dashboard />);
+
+		expect(screen.getByText("Your volunteer card")).toBeTruthy();
+		expect(screen.getByText(/Godfrey Mwakyusa · VOL-00010/)).toBeTruthy();
+		// And the row that said the same three things is gone rather than
+		// repeated underneath it. The label is written "Volunteer" and uppercased
+		// in CSS, so this is the literal the record block renders.
+		expect(screen.queryByText("Volunteer")).toBeNull();
+		expect(screen.queryByText("VOL-00010")).toBeNull();
+	});
+
+	it("still writes the record out for somebody the society has issued no card to", () => {
+		mount(<Dashboard />);
+
+		expect(screen.queryByText("Your volunteer card")).toBeNull();
+		expect(screen.getByText("VOL-00010")).toBeTruthy();
+	});
+
+	it("names the branch a deployment is in, never its document reference", () => {
+		reads.set(API.myInvitations, {
+			volunteer: "VOL-00010",
+			waiting: [invitation()],
+			answered: [],
+		});
+
+		mount(<Dashboard />);
+
+		expect(screen.getByText(/Rungwe · Mbeya/)).toBeTruthy();
+		expect(screen.queryByText(/GEO-00067/)).toBeNull();
+	});
+
+	it("asks the question in words instead of calling it a priority", () => {
+		reads.set(API.myInvitations, {
+			volunteer: "VOL-00010",
+			waiting: [invitation()],
+			answered: [],
+		});
+
+		mount(<Dashboard />);
+
+		expect(screen.getByText("You have been asked to join a deployment")).toBeTruthy();
+		expect(screen.queryByText(/your priority/i)).toBeNull();
 	});
 });

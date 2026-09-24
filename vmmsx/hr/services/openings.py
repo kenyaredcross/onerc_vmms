@@ -1,40 +1,11 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""HR-01 — the only file in vmmsx that knows HRMS's `Job Opening` exists.
+"""Curated readings of published HRMS Job Openings for the portal board.
 
-The opportunities board reads the society's **published job openings**, and this
-is the whole crossing. It is the Buzz seam again, in every respect that matters,
-because it is the same shape of problem: another app owns the record, publishes
-it to the world, and owns everything that happens after somebody decides they
-want it.
-
-**Browse here, apply there.** Every card's call to action is a full navigation
-to HRMS — its page for the opening, or its form for answering one. HRMS owns the
-applicant record, the duplicate check, the interview rounds and the offer — each a flow with a person's history in it, and
-re-exposing any of them through a vmmsx endpoint would be a second
-implementation of a rule that has to stay in step with HRMS's forever. So this
-file names no applicant, interview or offer doctype.
-
-**Published is HRMS's decision, and so is open.** Two flags, both theirs:
-`publish` is what puts an opening on the website at all, and `status` is whether
-the society is still recruiting. vmmsx invents no third notion of visibility. An
-opening a society has published and left open is one the board shows; anything
-else is one the board does not know exists.
-
-**Safe when HRMS is absent.** vmmsx does not declare `hrms` in `required_apps`:
-a society running without it is ordinary, not half-installed. `is_available()`
-asks `frappe.get_installed_apps()` rather than importing and catching failure —
-an app can sit in the bench without being installed on *this* site, which is the
-case that actually bites — and every reader answers empty rather than raising.
-
-**Why this replaced the deployment request.** The board used to read
-`VMMS Deployment Request`, which is the society's *internal* record of needing
-people somewhere, and it had no way for anybody to answer it: a coordinator
-matched volunteers from the register instead. A society that already runs its
-recruitment in HRMS has the advertisement, the application form and the pipeline
-there, and pointing the board at it means a volunteer can actually apply. The
-deployment request keeps its own job — staffing a roster — and is untouched.
+Only published, open, unexpired openings are shown. HRMS continues to own the
+opening and applicant records; the portal supplies its own application page so
+ordinary users do not need Job Opening read permission in the browser.
 """
 
 from urllib.parse import quote
@@ -44,12 +15,6 @@ from frappe.utils import getdate, today
 
 HRMS_APP = "hrms"
 OPENING_DOCTYPE = "Job Opening"
-
-# HRMS's own web form for answering an opening, and where the query names which
-# one. Both mirror `hrms/templates/generators/job_opening.html`, the page this
-# board stands in for: an opening links to `/<form>/new?job_title=<docname>`.
-APPLICATION_PATH = "job_application"
-APPLICATION_QUERY = "job_title"
 
 # A board is a board. An unbounded read on a listing endpoint is how a slow
 # query becomes an outage.
@@ -82,24 +47,13 @@ def opening_url(route: str | None) -> str | None:
 
 
 def apply_url(opening: str, route: str | None) -> str:
-	"""HRMS's application form, already knowing which opening it is for.
+	"""The portal's application page for this published opening.
 
-	The same address HRMS's own opening page puts behind its Apply button: the
-	society's form where it has named one on the opening, the standard
-	`job_application` web form otherwise, `/new` because that is where a web
-	form takes a first answer, and the docname in the query so nobody retypes
-	the post they have just read.
-
-	**Not the opening's own page, which is what this used to fall back to.**
-	That page carries an Apply button of its own, so the fallback was one hop
-	from the form and looked harmless — but it was the *only* destination the
-	DTO offered, so when the page link was wrong there was no working way to
-	apply at all. Answering with the form directly means the board's one call
-	to action does not depend on a second page being reachable.
+	The HRMS web form queries Job Opening from the browser and can return 403 for
+	ordinary applicants. The portal reads the curated opening and submits through
+	an endpoint that checks publication and writes the existing HRMS applicant.
 	"""
-	form = (route or APPLICATION_PATH).strip("/")
-
-	return f"/{form}/new?{APPLICATION_QUERY}={quote(opening)}"
+	return f"/portal/opportunities/{quote(opening, safe='')}/apply"
 
 
 def published(search: str | None = None, department: str | None = None, limit: int = MAX_ROWS) -> list[dict]:
@@ -175,6 +129,8 @@ def detail(opening: str) -> dict | None:
 	)
 
 	if not row:
+		return None
+	if row.get("closes_on") and getdate(row.closes_on) < getdate(today()):
 		return None
 
 	return _as_card(row)

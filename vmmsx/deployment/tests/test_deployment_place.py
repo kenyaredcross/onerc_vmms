@@ -21,10 +21,19 @@ The rules worth asserting rather than believing:
    address does not.
 4. **The links are pure.** `map` and `directions` need no network, and they are
    `None` — never a link to nowhere — where there is no point.
+5. **Three providers, one reading.** A society's geocoder answers in one of
+   three envelopes, and what this app wants out of all three is the same two
+   things: words a person recognises and a point to put a pin on. The readers
+   are asserted against captured payloads rather than against a live service,
+   so the suite needs no network and cannot be broken by somebody else's
+   outage.
 """
+
+from unittest.mock import patch
 
 import frappe
 
+from vmmsx.api import deployment as deployment_api
 from vmmsx.deployment.services import deployment as deployment_service
 from vmmsx.deployment.services import geocoding
 from vmmsx.deployment.tests import fixtures
@@ -89,6 +98,14 @@ class TestADeploymentSavesWithoutAPoint(PlaceTestCase):
 
 
 class TestAFailureIsAnAnswer(PlaceTestCase):
+	def test_a_user_without_record_creation_permission_cannot_spend_geocoder_quota(self):
+		with patch.object(deployment_api.frappe, "has_permission", return_value=False), patch.object(
+			geocoding, "suggest"
+		) as suggest:
+			with self.assertRaises(frappe.PermissionError):
+				deployment_api.suggest_places("Arusha")
+			suggest.assert_not_called()
+
 	def test_an_empty_address_is_refused_with_a_sentence(self):
 		answer = geocoding.locate("")
 
@@ -197,3 +214,110 @@ class TestTheInvitationCarriesTheWholeThing(PlaceTestCase):
 		self.assertEqual(rows[0]["where"]["meeting_point"]["name"], "Branch office car park")
 		self.assertTrue(rows[0]["schedule"]["briefing_on"])
 		self.assertEqual(rows[0]["coordinator_contact"]["user"], deployment.coordinator)
+
+# Captured payloads, trimmed to the fields the readers touch. Real shapes from
+# the three providers this app knows how to read, kept here so the parsing is
+# tested without asking anybody's server for anything.
+NOMINATIM_PAYLOAD = [
+	{"display_name": "Kyela District Council, Kyela, Mbeya, Tanzania", "lat": "-9.5817", "lon": "33.8511"},
+	{"display_name": "Kyela, Mbeya, Tanzania", "lat": "-9.5", "lon": "33.85"},
+]
+
+PHOTON_PAYLOAD = {
+	"features": [
+		{
+			"geometry": {"coordinates": [33.8511, -9.5817]},
+			"properties": {"name": "Kyela District Council", "city": "Kyela", "country": "Tanzania"},
+		}
+	]
+}
+
+GOOGLE_PAYLOAD = {
+	"results": [
+		{
+			"formatted_address": "Kyela District Council, Kyela, Tanzania",
+			"geometry": {"location": {"lat": -9.5817, "lng": 33.8511}},
+		}
+	]
+}
+
+
+class ShapeTestCase(PlaceTestCase):
+	def read(self, shape: str, payload, limit: int = 6) -> list[dict]:
+		"""The reader, run as though the site were configured for that provider."""
+		with self.shaped(shape):
+			return geocoding._read(payload, limit)
+
+	def shaped(self, shape: str):
+		from contextlib import contextmanager
+
+		@contextmanager
+		def configured():
+			was = frappe.conf.get(geocoding.SHAPE_KEY)
+			frappe.conf[geocoding.SHAPE_KEY] = shape
+			try:
+				yield
+			finally:
+				if was is None:
+					frappe.conf.pop(geocoding.SHAPE_KEY, None)
+				else:
+					frappe.conf[geocoding.SHAPE_KEY] = was
+
+		return configured()
+
+
+class TestOneReadingOfThreeProviders(ShapeTestCase):
+	def test_nominatim_answers_are_read(self):
+		places = self.read(geocoding.NOMINATIM, NOMINATIM_PAYLOAD)
+
+		self.assertEqual(len(places), 2)
+		self.assertEqual(places[0]["label"], "Kyela District Council, Kyela, Mbeya, Tanzania")
+		self.assertEqual(places[0]["latitude"], -9.5817)
+		self.assertEqual(places[0]["longitude"], 33.8511)
+
+	def test_photon_answers_are_read_the_same_way_round(self):
+		"""GeoJSON is longitude first, which is the one way to get this wrong."""
+		places = self.read(geocoding.PHOTON, PHOTON_PAYLOAD)
+
+		self.assertEqual(len(places), 1)
+		self.assertEqual(places[0]["latitude"], -9.5817)
+		self.assertEqual(places[0]["longitude"], 33.8511)
+		self.assertIn("Kyela District Council", places[0]["label"])
+
+	def test_google_answers_are_read(self):
+		places = self.read(geocoding.GOOGLE, GOOGLE_PAYLOAD)
+
+		self.assertEqual(len(places), 1)
+		self.assertEqual(places[0]["latitude"], -9.5817)
+		self.assertEqual(places[0]["longitude"], 33.8511)
+		self.assertEqual(places[0]["label"], "Kyela District Council, Kyela, Tanzania")
+
+	def test_a_candidate_with_no_point_is_not_a_candidate(self):
+		payload = [{"display_name": "Somewhere", "lat": None, "lon": None}]
+
+		self.assertEqual(self.read(geocoding.NOMINATIM, payload), [])
+
+	def test_the_limit_is_honoured(self):
+		self.assertEqual(len(self.read(geocoding.NOMINATIM, NOMINATIM_PAYLOAD, limit=1)), 1)
+
+	def test_an_unknown_shape_reads_as_the_default_rather_than_failing(self):
+		"""A typo in site_config is not a reason for the search box to throw."""
+		places = self.read("mapz", NOMINATIM_PAYLOAD)
+
+		self.assertEqual(len(places), 2)
+
+
+class TestSuggestingAsksNothingItNeedNot(ShapeTestCase):
+	def test_half_a_word_asks_nobody(self):
+		"""Below three characters there is nothing to look up, and a public
+		geocoder should not be asked once per keystroke."""
+		answer = geocoding.suggest("Ky")
+
+		self.assertEqual(answer["places"], [])
+		self.assertIsNone(answer["reason"])
+
+	def test_an_unconfigured_site_says_so_rather_than_failing_quietly(self):
+		answer = geocoding.suggest("Kyela District Council")
+
+		self.assertEqual(answer["places"], [])
+		self.assertIn("no geocoding service configured", answer["reason"])

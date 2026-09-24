@@ -50,10 +50,21 @@ def is_lifetime(membership) -> bool:
 	return membership_service.is_lifetime(membership_service.type_of(membership))
 
 
+def existing_renewal(membership) -> str | None:
+	"""Find an application already replacing this period, including one awaiting payment."""
+	if not membership.name:
+		return None
+	return frappe.db.get_value(
+		MEMBERSHIP_DOCTYPE,
+		{"renews": membership.name, "membership_status": ("!=", membership_service.STATUS_CANCELLED)},
+		"name",
+	)
+
+
 def is_renewable(membership, as_of=None) -> bool:
 	"""Is this membership past its validity, and so eligible to be renewed?
 
-	True for two states, and no others: Expired outright, or Active with a
+	True for two states with no uncancelled renewal: Expired outright, or Active with a
 	`valid_to` that has already passed — the pre-expire-job window, where the
 	membership is current in name only. A still-current Active membership, a
 	Draft, or one Awaiting Payment or Approval is not renewable: there is
@@ -77,6 +88,8 @@ def is_renewable(membership, as_of=None) -> bool:
 	"""
 	if is_lifetime(membership):
 		return False
+	if existing_renewal(membership):
+		return False
 
 	if membership.membership_status == membership_service.STATUS_EXPIRED:
 		return True
@@ -94,6 +107,16 @@ def assert_renewable(membership) -> None:
 	early-payment/refund problem this module does not try to solve. The refusal
 	is the solution.
 	"""
+	newer = existing_renewal(membership)
+	if newer:
+		frappe.throw(
+			_("{0} already has a renewal application ({1}). Continue with that application instead.").format(
+				frappe.bold(membership.name), frappe.bold(newer)
+			),
+			frappe.ValidationError,
+			title=_("Already Renewed"),
+		)
+
 	if is_renewable(membership):
 		return
 

@@ -300,8 +300,11 @@ export function CalendarGrid({
 
 /* -------------------------------------------------------------------- chip */
 
+// No `overflow-hidden` anywhere on the button: the title is clipped by the
+// span inside it, because the preview hangs *above* the chip and an
+// `overflow` of `hidden` on the button itself cuts the whole card away.
 const CHIP_BASE =
-	"group relative block w-full truncate rounded-[5px] border-l-[3px] px-1.5 py-1 text-left text-[10px] font-semibold leading-[13px] transition";
+	"group relative block w-full rounded-[5px] border-l-[3px] px-1.5 py-1 text-left text-[10px] font-semibold leading-[13px] transition";
 
 function Chip({
 	entry,
@@ -363,7 +366,7 @@ function Strip({
 			aria-pressed={selected}
 			aria-label={accessibleName(entry)}
 			className={cx(
-				"group relative z-[1] block h-[19px] truncate bg-rail px-1.5 text-left text-[10px] font-semibold leading-[19px] text-white transition",
+				"group relative z-[1] block h-[19px] bg-rail px-1.5 text-left text-[10px] font-semibold leading-[19px] text-white transition",
 				// The bleed is on `width`, not on a negative margin: a negative
 				// margin beside `width: 100%` moves the following sibling and leaves
 				// this box exactly as wide as its cell, which is what left a hairline

@@ -8,6 +8,7 @@ import { branchPath, formatClock, formatDate, formatHours } from "../lib/format"
 import { firstName, useSession } from "../lib/session";
 import { Icon } from "../ui/icons";
 import { AvailabilityNudge } from "./chrome/AvailabilityNudge";
+import { HolderCard } from "./Profile";
 import {
 	Card,
 	Empty,
@@ -94,6 +95,21 @@ export default function Dashboard() {
 		"portal:events_upcoming",
 	);
 
+	// Whether this person actually holds a card of each kind. Asked here as well
+	// as inside `HolderCard` because the answer decides two things: whether the
+	// card is drawn, and whether the written-out record row beneath it is — and
+	// the key is the one `HolderCard` uses, so the two share a single request.
+	const volunteerCard = useFrappeGetCall<{ message: { html: string } | null }>(
+		API.myVolunteerCard,
+		undefined,
+		"portal:card:volunteer",
+	);
+	const memberCard = useFrappeGetCall<{ message: { html: string } | null }>(
+		API.myMemberCard,
+		undefined,
+		"portal:card:member",
+	);
+
 	// What to call this person. Three answers in descending order of authority,
 	// and the keys are the shell's own, so a dashboard that asks for them costs
 	// nothing on top of the chrome that has already asked.
@@ -117,6 +133,8 @@ export default function Dashboard() {
 	const events = upcoming.data?.message?.events ?? [];
 	const openVolunteer = open.data?.message?.volunteer ?? null;
 	const openMember = open.data?.message?.member ?? null;
+	const holdsVolunteerCard = Boolean(volunteerCard.data?.message?.html);
+	const holdsMemberCard = Boolean(memberCard.data?.message?.html);
 	const pending = [openVolunteer, openMember].filter(Boolean) as OpenRegistration[];
 
 	const request = waiting[0] ?? null;
@@ -142,7 +160,7 @@ export default function Dashboard() {
 
 	return (
 		<>
-			<header className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+			<header className="mb-5 min-w-0">
 				<div className="min-w-0">
 					<p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
 						{new Date().toLocaleDateString(undefined, {
@@ -162,10 +180,9 @@ export default function Dashboard() {
 						)}
 					</h1>
 				</div>
-				{settled && <StatusChip tone={standing.tone}>{standing.label}</StatusChip>}
 			</header>
 
-			<Welcome standing={standing.key} profile={profile} greeting={greeting} />
+			<Welcome standing={standing} profile={profile} greeting={greeting} pending={pending} />
 
 			{volunteer.error && (
 				<div className="mb-5">
@@ -173,17 +190,25 @@ export default function Dashboard() {
 				</div>
 			)}
 
-			<div className="flex flex-col gap-[22px] lg:grid lg:grid-cols-[minmax(0,1fr)_330px] lg:items-start">
+			{/* **Two columns from `xl`, not from `lg`, and the card is the reason.**
+			    The society's card is drawn at 460px so it can be printed, and the
+			    rail holds one now. A 440px rail at `lg` would leave about 230px
+			    for the column the actual work is in; below `xl` the page is one
+			    column instead, where the card has the whole width and the task
+			    list is not a gutter. */}
+			<div className="flex flex-col gap-[22px] xl:grid xl:grid-cols-[minmax(0,1fr)_440px] xl:items-start">
 				{/* ------------------------------------------------------------- left */}
 				<div className="flex min-w-0 flex-col gap-[22px]">
 					{pending.map((row) => (
 						<Application key={row.name} row={row} />
 					))}
 
-					{/* Only where nothing is already in front of a branch: a person
-					    mid-application is not choosing a path, they are finishing one. */}
-					{settled && pending.length === 0 && (offerVolunteer || offerMember) && (
-						<ChoiceCard offerVolunteer={offerVolunteer} offerMember={offerMember} />
+					{settled && (offerVolunteer || offerMember) && (
+						<ChoiceCard
+							offerVolunteer={offerVolunteer}
+							offerMember={offerMember}
+							hasApplication={pending.length > 0}
+						/>
 					)}
 
 					{profile && (
@@ -199,7 +224,6 @@ export default function Dashboard() {
 								value={invitations.isLoading ? "…" : waiting.length}
 								to="/deployments"
 								linkLabel="Deployment requests"
-								urgent={waiting.length > 0}
 							/>
 							<StatTile
 								label="Verified service"
@@ -288,19 +312,32 @@ export default function Dashboard() {
 				<div className="flex flex-col gap-[22px]">
 					<AvailabilityNudge />
 
-					{settled && standing.key === "new" && <Checklist />}
+					{settled && standing === "new" && <Checklist />}
+
+					{/* The thing they would put in a wallet, where a line of type used
+					    to stand in for it. Each draws nothing at all for somebody who
+					    holds no card of that kind, which is the ordinary case for most
+					    of the six standings this page serves. */}
+					<HolderCard kind="volunteer" title="Your volunteer card" note={false} />
+					<HolderCard kind="member" title="Your member card" note={false} />
 
 					<Card pad={false}>
 						<SectionHead title="Your record" />
-						<RecordVolunteer
-							profile={profile}
-							applied={Boolean(openVolunteer)}
-							loading={volunteer.isLoading}
-						/>
+						{/* Written out only where the card above has not already said it.
+						    A status, a number and a branch printed under a card carrying
+						    the same three is the page reading itself back. */}
+						{!holdsVolunteerCard && (
+							<RecordVolunteer
+								profile={profile}
+								applied={Boolean(openVolunteer)}
+								loading={volunteer.isLoading}
+							/>
+						)}
 						<RecordMembership
 							rows={rows}
 							applied={Boolean(openMember)}
 							loading={memberships.isLoading}
+							carded={holdsMemberCard}
 						/>
 						<RecordHours time={time} loading={logs.isLoading} />
 					</Card>
@@ -339,45 +376,37 @@ export default function Dashboard() {
 
 type StandingKey = "new" | "draft" | "review" | "action" | "active" | "member";
 
-interface Standing {
-	key: StandingKey;
-	label: string;
-	tone: "info" | "warning" | "danger" | "success" | "neutral";
-}
-
 /**
  * Where this person stands, from the records themselves.
  *
  * `reviewed` is the server's own answer to the one ambiguity: a `Draft` nobody
  * has submitted and a `Draft` an approver sent back are the same word for two
  * opposite situations.
+ *
+ * **A key and nothing else.** This used to carry a label and a colour for a
+ * chip beside the greeting, and the chip is gone: "Active volunteer" over
+ * somebody's own name is the software congratulating itself for knowing who
+ * logged in. Everything the standing decides — which welcome, whether the
+ * set-up list is drawn — reads this key, and a person who wants their standing
+ * has their card and their record down the right of the page.
  */
 function standingOf(
 	profile: VolunteerProfile | null,
 	memberships: MembershipRow[],
 	openVolunteer: OpenRegistration | null,
 	openMember: OpenRegistration | null,
-): Standing {
+): StandingKey {
 	const application = openVolunteer ?? openMember;
 
 	if (application) {
-		if (application.state === "Draft") {
-			return application.reviewed
-				? { key: "action", label: "Action required", tone: "danger" }
-				: { key: "draft", label: "Application in progress", tone: "warning" };
-		}
-		return { key: "review", label: "Application under review", tone: "info" };
+		if (application.state === "Draft") return application.reviewed ? "action" : "draft";
+		return "review";
 	}
 
-	if (profile) return { key: "active", label: `${profile.status} volunteer`, tone: "success" };
-	if (memberships.some((row) => row.is_active)) {
-		return { key: "member", label: "Active member", tone: "success" };
-	}
-	if (memberships.length > 0) {
-		return { key: "member", label: "Membership not active yet", tone: "warning" };
-	}
+	if (profile) return "active";
+	if (memberships.length > 0) return "member";
 
-	return { key: "new", label: "Registration not started", tone: "neutral" };
+	return "new";
 }
 
 /* ---------------------------------------------------------------- welcome */
@@ -434,13 +463,19 @@ function Welcome({
 	standing,
 	profile,
 	greeting,
+	pending,
 }: {
 	standing: StandingKey;
 	profile: VolunteerProfile | null;
 	greeting: string;
+	pending: OpenRegistration[];
 }) {
 	const copy = WELCOME[standing];
-	const [before, after] = HEADLINE[standing];
+	const kind = pending.length === 1 ? applicationKind(pending[0]) : null;
+	const [before, after] =
+		kind && (standing === "draft" || standing === "review" || standing === "action")
+			? [`Your ${kind} application is${standing === "review" ? " with your" : ""}`, HEADLINE[standing][1]]
+			: HEADLINE[standing];
 
 	return (
 		<section className="relative mb-[22px] grid overflow-hidden rounded-2xl bg-rail text-white shadow-[0_12px_34px_rgba(1,30,65,0.10)] md:grid-cols-[1.05fr_0.95fr]">
@@ -475,9 +510,11 @@ function Welcome({
 function ChoiceCard({
 	offerVolunteer,
 	offerMember,
+	hasApplication,
 }: {
 	offerVolunteer: boolean;
 	offerMember: boolean;
+	hasApplication: boolean;
 }) {
 	return (
 		<Card className="grid items-center gap-8 p-7 sm:p-9 lg:grid-cols-[0.88fr_1.12fr]">
@@ -490,7 +527,9 @@ function ChoiceCard({
 					/>
 				</h2>
 				<p className="mt-3.5 max-w-[390px] text-[12.5px] leading-relaxed text-slate-body">
-					{offerVolunteer && offerMember
+					{hasApplication
+						? "Membership and volunteering are separate. You can start the other path while this application is open."
+						: offerVolunteer && offerMember
 						? "Give your time as a volunteer or become a member of the society. You can add the other path later."
 						: offerVolunteer
 							? "You are already a member. Volunteering is a separate record, and you may hold both."
@@ -626,11 +665,22 @@ function Checklist() {
 
 /* ----------------------------------------------------------------- focus */
 
-/** The one thing being asked of this person right now. */
+/**
+ * The one thing being asked of this person right now.
+ *
+ * **It says what it is.** "Your priority" was the page ranking somebody's day
+ * for them in a word that named nothing; this is a branch asking a volunteer
+ * whether they can go somewhere on a date, so the heading says so and the
+ * badge beside it says what is outstanding.
+ *
+ * **The place is a place, not a reference.** `geo_path` comes down with the
+ * invitation now. It used to print `geo_node`, which is a docname — "GEO-00067"
+ * to somebody being asked whether they can travel there.
+ */
 function Focus({ request }: { request: DeploymentInvitation }) {
 	const meta = [
 		request.role || null,
-		branchPath(request.geo_node) || request.geo_node || null,
+		branchPath(request.geo_path) || null,
 		request.start_date
 			? `${formatDate(request.start_date)}${
 					request.end_date ? ` to ${formatDate(request.end_date)}` : ""
@@ -639,19 +689,17 @@ function Focus({ request }: { request: DeploymentInvitation }) {
 	].filter(Boolean);
 
 	return (
-		<Card accent="danger" className="p-6 sm:p-7">
+		<Card className="p-6 sm:p-7">
 			<div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
 				<div className="min-w-0">
-					<p className="text-[10px] font-bold uppercase tracking-[0.15em] text-red">
-						Your priority
+					<p className="text-[11px] font-semibold text-slate-body">
+						You have been asked to join a deployment
 					</p>
-					<h3 className="mt-2.5 font-display text-[18px] font-bold leading-snug tracking-[-0.02em] text-ink">
+					<h3 className="mt-2 font-display text-[18px] font-bold leading-snug tracking-[-0.02em] text-ink">
 						{request.title || request.deployment}
 					</h3>
 				</div>
-				<span className="flex-none rounded-lg bg-red-soft px-2.5 py-1.5 text-[11px] font-bold text-red-ink">
-					Awaiting your answer
-				</span>
+				<StatusChip tone="warning">Awaiting your answer</StatusChip>
 			</div>
 
 			{meta.length > 0 && <p className="mt-2 text-[12px] text-slate-body">{meta.join(" · ")}</p>}
@@ -896,10 +944,17 @@ function RecordMembership({
 	rows,
 	applied,
 	loading,
+	carded = false,
 }: {
 	rows: MembershipRow[];
 	applied: boolean;
 	loading: boolean;
+	/**
+	 * Whether the member card is already drawn above this. When it is, the row
+	 * keeps only the thing the card cannot do — the way through to managing the
+	 * membership — and leaves the type, the branch and the dates to the card.
+	 */
+	carded?: boolean;
 }) {
 	if (loading) {
 		return (
@@ -925,6 +980,16 @@ function RecordMembership({
 						Become a member
 					</Link>
 				)}
+			</RecordBlock>
+		);
+	}
+
+	if (carded) {
+		return (
+			<RecordBlock label="Memberships">
+				<Link to="/membership" className="text-[12px] font-bold text-blue hover:text-blue-hover">
+					{rows.length > 1 ? `Manage ${rows.length} memberships` : "Manage your membership"}
+				</Link>
 			</RecordBlock>
 		);
 	}
@@ -1031,6 +1096,10 @@ function stageIndex(state: string, unsent: boolean): number {
 	return 1;
 }
 
+function applicationKind(row: OpenRegistration): string {
+	return row.path === "member" ? "membership" : "volunteer";
+}
+
 function Application({ row }: { row: OpenRegistration }) {
 	const unsent = row.state === "Draft" && !row.reviewed;
 	const copy = (unsent ? UNSENT : STATE_COPY[row.state]) ?? {
@@ -1040,9 +1109,10 @@ function Application({ row }: { row: OpenRegistration }) {
 	};
 	const warn = copy.tone === "warn";
 	const at = stageIndex(row.state, unsent);
+	const title = copy.title.replace("Your application", `Your ${applicationKind(row)} application`);
 
 	return (
-		<Card accent={warn ? "danger" : undefined} className="p-6 sm:p-7">
+		<Card className="p-6 sm:p-7">
 			<div className="flex items-start gap-4">
 				<span
 					className={cx(
@@ -1056,7 +1126,7 @@ function Application({ row }: { row: OpenRegistration }) {
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-baseline justify-between gap-2">
 						<h2 className="font-display text-[17px] font-bold tracking-[-0.02em] text-ink">
-							{copy.title}
+							{title}
 						</h2>
 						<StatusBadge state={row.state} />
 					</div>

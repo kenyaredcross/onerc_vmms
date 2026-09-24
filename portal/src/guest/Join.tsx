@@ -1,5 +1,5 @@
 import { Fragment, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
 	FrappeContext,
 	useFrappeFileUpload,
@@ -727,7 +727,8 @@ function JoinBody() {
 	const [answers, setAnswers] = useState<Record<string, string>>({});
 
 	const [busy, setBusy] = useState(false);
-	const [busyAction, setBusyAction] = useState<"save" | "submit" | null>(null);
+	const [busyAction, setBusyAction] = useState<"save" | "submit" | "exit" | null>(null);
+	const navigate = useNavigate();
 	const [failure, setFailure] = useState<string | null>(null);
 	const [done, setDone] = useState(false);
 	// What the gateway said when the fee was requested, if one was. Held so the
@@ -919,19 +920,17 @@ function JoinBody() {
 	const chosenType = priced.find((row) => row.membership_type === membershipType) ?? null;
 
 	/**
-	 * Start on the society's first method, so the step opens answered.
+	 * A sole offered method needs no decision, so start with it selected.
 	 *
-	 * The order is the society's statement of what it would rather people used —
-	 * `methods.default()` reads the same first row on the server — and where
-	 * there is only one, preselecting is what turns a screen with a single
-	 * radio on it into a sentence telling somebody how they will pay.
+	 * When several methods are offered, leave the choice empty so the applicant
+	 * explicitly chooses how to pay before continuing.
 	 *
 	 * **Never overwrites an answer.** The functional form is load-bearing: a
 	 * resumed draft's remembered method arrives from its own effect and may land
 	 * either side of this one, and a default that clobbered it would quietly
 	 * change how somebody had already said they would pay.
 	 */
-	const defaultMethod = paymentMethods[0]?.gateway ?? "";
+	const defaultMethod = paymentMethods.length === 1 ? paymentMethods[0].gateway : "";
 
 	useEffect(() => {
 		if (defaultMethod) setPaymentMethod((current) => current || defaultMethod);
@@ -1308,7 +1307,11 @@ function JoinBody() {
 		}
 
 		if (id === "payment") {
-			need(Boolean(paymentMethod), "join-payment", "Choose how you would like to pay");
+			need(
+				paymentMethods.some((method) => method.gateway === paymentMethod),
+				"join-payment",
+				"Choose how you would like to pay",
+			);
 
 			return gaps;
 		}
@@ -1740,6 +1743,26 @@ function JoinBody() {
 		}
 	};
 
+	const saveAndExit = async () => {
+		if (busy) return;
+		if (!canSaveDraft) {
+			setFailure("Enter your name, branch and required registration details before saving and exiting.");
+			return;
+		}
+		setBusy(true);
+		setBusyAction("exit");
+		setFailure(null);
+		try {
+			await enqueue(persistDraft);
+			navigate("/dashboard");
+		} catch (saveError) {
+			setFailure(errorMessage(saveError, "Your draft could not be saved. Please try again."));
+		} finally {
+			setBusy(false);
+			setBusyAction(null);
+		}
+	};
+
 	const submit = async () => {
 		setBusy(true);
 		setBusyAction("submit");
@@ -1850,12 +1873,13 @@ function JoinBody() {
 				    been signed out. A guest has no portal to be sent back to. */}
 				<div className="ms-auto flex items-center gap-2">
 					<LanguageSwitcher tone="dark" />
-				<Link
-					to={isGuest ? "/" : "/dashboard"}
-					className="flex-none rounded-[7px] border border-white/[0.38] px-[18px] py-[9px] text-[13px] text-white transition hover:bg-white/10"
-				>
-					{isGuest ? "Back to site" : "Save & exit"}
-				</Link>
+				{isGuest ? (
+					<Link to="/" className="flex-none rounded-[7px] border border-white/[0.38] px-[18px] py-[9px] text-[13px] text-white transition hover:bg-white/10">Back to site</Link>
+				) : (
+					<button type="button" onClick={() => void saveAndExit()} disabled={busy || sessionLoading || done} className="flex-none rounded-[7px] border border-white/[0.38] px-[18px] py-[9px] text-[13px] text-white transition hover:bg-white/10 disabled:opacity-50">
+						{busyAction === "exit" ? "Saving…" : done ? "Go to dashboard below" : "Save & exit"}
+					</button>
+				)}
 				</div>
 			</header>
 
@@ -2497,7 +2521,6 @@ function stepsFor(
 		path === "member"
 			? [
 					shared.path,
-					shared.identity,
 					{
 						id: "plan",
 						rail: "Membership type",
@@ -2517,6 +2540,7 @@ function stepsFor(
 							"Select a payment method. Payment is requested after submission.",
 						needs: "Select a payment method",
 					},
+					shared.identity,
 					{
 						id: "placement",
 						rail: "Branch",
@@ -2614,9 +2638,8 @@ function stepsFor(
 		// one it was answered in, is not a confirmation — it is a form doubting
 		// somebody. What they picked is still on the last step to check.
 		.filter((entry) => entry.id !== "plan" || !planChosen)
-		// Nothing to pay, or nothing to choose between. See `asksHowToPay`: a
-		// step offering one option is a screen that only slows somebody down,
-		// and a free membership has no question here at all.
+		// A free membership has no payment step. A single method still needs
+		// its instructions shown before the applicant submits the form.
 		.filter((entry) => entry.id !== "payment" || asksHowToPay)
 		// A society that asks nothing extra gets no step for it, rather than an
 		// empty page between the last answer and Submit.
@@ -3702,7 +3725,7 @@ function methodBody(method: PaymentMethod, branch: string | null): string {
 	if (method.in_person) {
 		return branch
 			? `Pay at the ${branch} office. Your membership starts once the office has recorded it.`
-			: "Pay at the office you have chosen. Your membership starts once the office has recorded it.";
+			: "Pay at the branch office you select during registration. Your membership starts once the office has recorded it.";
 	}
 
 	return method.description || "";
@@ -3730,12 +3753,10 @@ function methodBody(method: PaymentMethod, branch: string | null): string {
  * to pay at writes it there rather than asking for a deploy.
  *
  * **And where it has not said, the in-person method still names an office.**
- * Paying at a counter is the only method that has a *place*, and the applicant
- * chose that place two steps ago — telling them "somebody will confirm this by
- * hand" instead, which is what the payments app's own description says, is
- * describing the software to the person it is being run on. So the branch is
- * written into the sentence. `in_person` comes from the server for that reason
- * and is not a gateway name: this file still knows of no M-Pesa and no bank.
+ * Paying at a counter is the only method that has a *place*. The applicant
+ * chooses the branch later in this journey, so the initial explanation says
+ * that payment will happen at the selected branch. `in_person` comes from
+ * the server and is not a gateway name.
  */
 function PaymentStep({
 	methods,
@@ -3748,7 +3769,7 @@ function PaymentStep({
 	selected: string;
 	onSelect: (gateway: string) => void;
 	type: PricedType | null;
-	/** The office the applicant picked, or null while nothing is chosen. */
+	/** The chosen office, or null before the branch step. */
 	branch: string | null;
 }) {
 	return (

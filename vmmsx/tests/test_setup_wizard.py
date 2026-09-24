@@ -42,6 +42,25 @@ class TestNationalSocietySetupWizard(IntegrationTestCase):
 		self.assertEqual(settings.get(VOLUNTEER_ANCHOR_FIELD), anchor_key)
 		self.assertEqual(frappe.db.get_value("Geo Level", {"geo_level_name": top}, "requires_parent"), 0)
 		self.assertEqual(frappe.db.get_value("Geo Level", anchor_key, "requires_parent"), 1)
+		root = frappe.db.get_value(
+			"Geo Node",
+			{
+				"geo_level": frappe.db.get_value("Geo Level", {"geo_level_name": top}),
+				"parent_geo_node": ("is", "not set"),
+			},
+			["geo_node_name", "is_group"],
+			as_dict=True,
+		)
+		self.assertEqual(root.geo_node_name, f"Test Society {token}")
+		self.assertTrue(root.is_group)
+		root_level = frappe.db.get_value("Geo Level", {"geo_level_name": top}, "name")
+		first = wizard._ensure_national_node(root_level, f"Test Society {token}")
+		second = wizard._ensure_national_node(root_level, f"Test Society {token}")
+		self.assertEqual(first, second)
+		self.assertEqual(
+			frappe.db.count("Geo Node", {"geo_level": root_level, "parent_geo_node": ("is", "not set")}),
+			1,
+		)
 
 	def test_setup_wires_the_scope_roles_the_install_could_not(self):
 		"""A fresh install cannot wire them: `default_roles.install()` saves National

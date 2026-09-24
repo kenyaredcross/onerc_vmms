@@ -98,6 +98,8 @@ export interface TimeLogRow {
 	log_category: string | null;
 	category_label: string | null;
 	deployment: string | null;
+	/** The society's word for that mission, resolved through its terms. */
+	deployment_title: string | null;
 	geo_node: string | null;
 	geo_path: string | null;
 	activity_date: string;
@@ -715,9 +717,7 @@ export interface Opportunity {
 	 */
 	href: string | null;
 	/**
-	 * Where "Apply" goes: HRMS's application form for this opening, the same
-	 * address HRMS's own page puts behind its Apply button. Always a
-	 * destination, because it does not depend on the opening having a page.
+	 * Portal application page for this opening.
 	 */
 	apply_href: string;
 }
@@ -905,7 +905,20 @@ export interface DeploymentInvitation {
 	start_date: string | null;
 	end_date: string | null;
 	geo_node: string;
+	/**
+	 * The branch in words — "Mbeya City — Mbeya". Print this, never `geo_node`:
+	 * a docname is how the desk finds the row, not somewhere a volunteer has
+	 * been asked to travel to.
+	 */
+	geo_path: string;
 	notes: string | null;
+	/**
+	 * The two places the deployment has, built by `deployment.where_dto` — the
+	 * same shape the coordinator's map reads, so an invitation and a deployment
+	 * page cannot describe one place differently. The meeting point is where
+	 * somebody is being asked to report.
+	 */
+	where: DeploymentWhere;
 	/** `Pending`, `Accepted` or `Declined`. */
 	response: string;
 	role: string;
@@ -1018,6 +1031,16 @@ export interface RosterRow {
 	is_on_deployment: boolean;
 	is_open: boolean;
 	is_settled: boolean;
+	/** An outcome has been recorded for the day, whichever of the three it was. */
+	has_outcome: boolean;
+	/** They were there: Participated or Partial Attendance. */
+	attended: boolean;
+	/**
+	 * The hours a coordinator verified. Not a claim beside the volunteer's — it
+	 * is written onto their record as their deployment hours, because nobody
+	 * files their own.
+	 */
+	verified_hours: number | null;
 	role: string;
 	is_leader: boolean;
 	start_date: string | null;
@@ -1122,8 +1145,29 @@ export interface MyAssignment {
 		start_date: string | null;
 		end_date: string | null;
 		geo_node: string | null;
+		/** The branch in words. Printed in place of `geo_node`, never beside it. */
+		geo_path: string;
 		notes: string | null;
+		/**
+		 * Where to report and where the work is, from the deployment's own
+		 * record. The map on this screen is drawn from here — a branch office
+		 * that happens to publish coordinates at the same geo anchor is the
+		 * fallback, not the answer.
+		 */
+		where: DeploymentWhere;
 	};
+}
+
+/**
+ * One mission on a volunteer's own record — `api/deployment.py::my_deployments`.
+ *
+ * `where` is null only where the deployment itself was deleted out from under
+ * the assignment; a mission that simply has no coordinates carries the two
+ * places with `has_point` false, and the screen says the address in words.
+ */
+export interface MyDeploymentRow extends DeploymentSummary {
+	title: string;
+	where: DeploymentWhere | null;
 }
 
 /* ---------------------------------------------------------- availability */
@@ -1995,7 +2039,7 @@ export interface EventCard {
 	geo_node: string;
 	/**
 	 * Where the call to action goes: the society's own registration page where
-	 * it set one, otherwise Buzz's event page. Always a full navigation away —
+	 * it set one, otherwise Buzz's registration form. Always a full navigation away —
 	 * booking is Buzz's, and this app does not re-implement it.
 	 */
 	href: string | null;
@@ -2120,6 +2164,7 @@ export interface PeopleReach {
 export interface ApprovalCases {
 	group: string;
 	count: number;
+	has_more?: boolean;
 	cases: ApprovalStatus[];
 }
 

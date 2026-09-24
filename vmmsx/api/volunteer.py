@@ -932,7 +932,7 @@ def _availability_flag(value: bool | int | str) -> bool:
 
 
 @frappe.whitelist()
-def my_time_logs(limit: int = 30) -> dict | None:
+def my_time_logs(limit: int = 30, offset: int = 0) -> dict | None:
 	"""What the logged-in person has logged, totalled and listed. Takes no person.
 
 	The read half of `log_time`, and the same shape as `my_volunteer` and
@@ -957,14 +957,46 @@ def my_time_logs(limit: int = 30) -> dict | None:
 	if not name:
 		return None
 
-	summary = timelog.summary(name, limit=_bounded_limit(limit))
+	try:
+		start = max(0, int(offset))
+	except (TypeError, ValueError):
+		start = 0
+	summary = timelog.summary(name, limit=_bounded_limit(limit), offset=start)
+	rows = summary["recent"]
+	categories = {row["log_category"] for row in rows if row["log_category"]}
+	deployments = {row["deployment"] for row in rows if row["deployment"]}
+	category_names = {
+		row.name: row.category_name
+		for row in frappe.get_all("VMMS Time Log Category", filters={"name": ("in", list(categories))}, fields=["name", "category_name"])
+	} if categories else {}
+	deployment_terms = {
+		row.name: row.terms_of_reference
+		for row in frappe.get_all("VMMS Deployment", filters={"name": ("in", list(deployments))}, fields=["name", "terms_of_reference"])
+	} if deployments else {}
+	terms = {value for value in deployment_terms.values() if value}
+	term_names = {
+		row.name: row.tor_name
+		for row in frappe.get_all("VMMS Terms of Reference", filters={"name": ("in", list(terms))}, fields=["name", "tor_name"])
+	} if terms else {}
+	from onerc_core.geo.services import adapter
+	geo_paths = {node: adapter.get_full_path(node) for node in {row["geo_node"] for row in rows if row["geo_node"]}}
 
-	return {**summary, "recent": [_my_log_row(row) for row in summary["recent"]]}
+	return {
+		**summary,
+		"recent": [
+			{
+				**row,
+				"geo_path": geo_paths.get(row["geo_node"]),
+				"category_label": category_names.get(row["log_category"], row["log_category"]),
+				"deployment_title": term_names.get(deployment_terms.get(row["deployment"])) or row["deployment"],
+			}
+			for row in rows
+		],
+	}
 
 
-#: The most logs one call returns. A person's own history is browsed, not paged
-#: through, and an unbounded read is one somebody eventually runs against a
-#: ten-year volunteer.
+#: The most logs one page returns. Offset paging keeps older entries available
+#: without making a ten-year volunteer download the whole record at once.
 MAX_LOG_ROWS = 100
 
 
@@ -975,29 +1007,6 @@ def _bounded_limit(limit) -> int:
 		return 30
 
 	return max(1, min(value, MAX_LOG_ROWS))
-
-
-def _my_log_row(row: dict) -> dict:
-	"""One of the caller's own logs, with the two opaque keys resolved to words.
-
-	Built on top of the service's row rather than replacing it, so the fields a
-	log *is* stay defined in one place. `log_type` is deliberately passed through
-	untouched and unbranched on: the screen groups by whatever values come back
-	and this module compares it to nothing, which is the discipline
-	`services/timelog.py` states for the whole app.
-	"""
-	from onerc_core.geo.services import adapter
-
-	return {
-		**row,
-		"geo_path": adapter.get_full_path(row["geo_node"]) if row["geo_node"] else None,
-		"category_label": (
-			frappe.db.get_value("VMMS Time Log Category", row["log_category"], "category_name")
-			or row["log_category"]
-		)
-		if row["log_category"]
-		else None,
-	}
 
 
 @frappe.whitelist()
@@ -1031,7 +1040,14 @@ def log_time(
 	deployment: str | None = None,
 	notes: str | None = None,
 ) -> dict:
-	"""File one time log.
+	"""File one time log. Staff only, and not how deployment hours arrive.
+
+	**Not a volunteer's own write.** It is gated on `create`, which a volunteer
+	self-service role does not hold, and the portal no longer offers it: hours
+	served on a deployment are written from the attendance a coordinator
+	verified. What is left for this endpoint is the general kind — the training
+	day, the open day, the office afternoon — recorded by somebody who runs the
+	register.
 
 	`log_type` defaults to the general kind. A caller asking for the deployment
 	kind names a deployment, and the ownership rule is enforced by the controller

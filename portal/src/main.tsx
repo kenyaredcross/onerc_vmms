@@ -59,7 +59,7 @@ if (!under(BASENAME)) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <FrappeProvider url={window.location.origin} siteName={getSiteName()}>
+    <FrappeProvider url={window.location.origin} siteName={getSiteName()} enableSocket={false}>
 		<LanguageProvider>
 			<BrowserRouter basename={BASENAME}>
 				<App />

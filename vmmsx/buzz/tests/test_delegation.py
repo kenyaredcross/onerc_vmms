@@ -10,13 +10,9 @@ and `vmmsx/buzz/services/events.py`, the two halves of the seam, and
 `vmmsx/patches/setup_buzz_seam.py`, the patch that installs the field — and
 nowhere else in the app.
 
-**Reading a listing is not building a bridge.** BUZZ-02 widened the seam
-deliberately and in one direction only: title, date, venue, category, image,
-route. No attendee, booking, ticket or check-in doctype Buzz owns is named
-anywhere in vmmsx at all, this file included. The portal's every call to action
-is a full navigation to `/b/<route>`, so Buzz keeps sole ownership of
-registration, money and check-in. There is no identity bridge here, RP-14 is
-deferred, and an attendee stays Buzz-native.
+**Registration remains in Buzz.** The portal links to `/b/register/<route>`;
+only the event seam may read submitted tickets for the manager's roster.
+Booking, payment and check-in remain in Buzz. No identity bridge is built.
 
 Mirrors `vmmsx/member/tests/test_delegation.py`'s shape: the raw text is
 scanned for doctype string literals, and the detector is tested against a
@@ -76,11 +72,12 @@ EVENT_DOCTYPE = "Buzz Event"
 FORBIDDEN_BUZZ_DOCTYPES = (
 	"Event Booking",
 	"Event Booking Attendee",
-	"Event Ticket",
 	"Event Ticket Type",
 	"Event Check In",
 	"Event Feedback",
 )
+
+TICKET_READ_PATH = "buzz/services/events.py"
 
 
 def app_files() -> list[Path]:
@@ -114,8 +111,19 @@ class TestBuzzStopsAtTheSeam(IntegrationTestCase):
 
 		self.assertEqual(offenders, [], "Buzz Event may only be named by the seam and its install patch")
 
-	def test_no_file_anywhere_names_buzz_s_identity_or_ticketing_doctypes(self):
-		"""Not even the seam. There is no identity bridge — RP-14 is deferred."""
+	def test_only_the_event_seam_reads_confirmed_buzz_tickets(self):
+		offenders = []
+		for path in app_files():
+			relative = str(path.relative_to(Path(frappe.get_app_path("vmmsx"))))
+			if relative == TICKET_READ_PATH:
+				continue
+			text = path.read_text()
+			if '"Event Ticket"' in text or "'Event Ticket'" in text:
+				offenders.append(relative)
+		self.assertEqual(offenders, [], "Only the event seam may read Buzz's confirmed tickets")
+
+	def test_no_file_anywhere_names_buzz_s_other_identity_or_ticketing_doctypes(self):
+		"""Booking and payment stay in Buzz; the roster is a narrow read-only seam."""
 		offenders = []
 
 		for path in app_files():

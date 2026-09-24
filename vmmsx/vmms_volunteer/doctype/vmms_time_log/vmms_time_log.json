@@ -19,6 +19,7 @@
   "hours",
   "deployment_section",
   "deployment",
+  "source_assignment",
   "notes_section",
   "notes"
  ],
@@ -118,6 +119,16 @@
    "label": "Deployment",
    "mandatory_depends_on": "eval:doc.log_type == \"deployment\"",
    "options": "VMMS Deployment"
+  },
+  {
+   "depends_on": "eval:doc.log_type == \"deployment\"",
+   "description": "The assignment whose verified attendance this log was written from. Set by the server when a coordinator records what was served; empty on a log somebody wrote by hand.",
+   "fieldname": "source_assignment",
+   "fieldtype": "Link",
+   "label": "Verified From",
+   "no_copy": 1,
+   "options": "VMMS Deployment Assignment",
+   "read_only": 1
   },
   {
    "fieldname": "notes_section",

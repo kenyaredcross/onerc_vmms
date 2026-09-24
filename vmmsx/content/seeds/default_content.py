@@ -972,6 +972,19 @@ def _portal():
 		),
 		_block("portal.tasks.heading", "Tasks page heading", s, 340, "Tasks"),
 		_block("portal.hours.heading", "Hours page heading", s, 400, "My hours"),
+		# The line under it, which says where the figures come from. A volunteer
+		# does not file their own hours: a coordinator records what was served
+		# when they confirm a deployment's attendance, and a page that did not
+		# say so reads as one that has lost the person's time.
+		_block(
+			"portal.hours.lead",
+			"Hours page, the line under the heading",
+			s,
+			405,
+			"Your coordinator records the hours you serve when they confirm attendance on a"
+			" deployment. They appear here, and your branch sees the same figures against your"
+			" record.",
+		),
 		_block("portal.profile.heading", "Profile page heading", s, 500, "Profile"),
 		_block("portal.opportunities.heading", "Opportunities page heading", s, 600, "Opportunities"),
 		_block("portal.deployments.heading", "Deployments page heading", s, 650, "Deployments"),

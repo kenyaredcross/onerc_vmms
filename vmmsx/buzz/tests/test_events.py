@@ -25,6 +25,7 @@ import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, today
 
+from vmmsx.api import events as events_api
 from vmmsx.buzz.services import events, geo
 
 EXTRA_TEST_RECORD_DEPENDENCIES = []
@@ -113,6 +114,108 @@ class EventFixtures(IntegrationTestCase):
 			.insert(ignore_permissions=True)
 			.name
 		)
+
+
+class TestPortalEventCreation(EventFixtures):
+	def test_creation_uses_buzz_and_draft_stays_off_public_calendar(self):
+		created = events_api.create_event(
+			title=f"{PREFIX} Portal draft",
+			category=self.category,
+			host=self.host.name,
+			start_date=add_days(today(), 3),
+			start_time="09:00",
+			end_time="16:00",
+		)
+		self.assertTrue(frappe.db.exists(geo.EVENT_DOCTYPE, created["name"]))
+		self.assertFalse(created["is_published"])
+		self.assertNotIn(f"{PREFIX} Portal draft", self.titles())
+		self.assertIn(created["name"], [row["name"] for row in events_api.managed_events()["events"]])
+
+	def test_publish_from_portal_appears_in_public_listing(self):
+		created = events_api.create_event(
+			title=f"{PREFIX} Portal published",
+			category=self.category,
+			host=self.host.name,
+			start_date=add_days(today(), 3),
+			start_time="09:00",
+			end_time="16:00",
+			free_event=1,
+			is_published=1,
+		)
+		self.assertTrue(created["is_published"])
+		self.assertTrue(created["route"])
+		self.assertIn(f"{PREFIX} Portal published", self.titles())
+
+	def test_paid_event_must_be_configured_in_buzz_desk_before_publishing(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "configure its ticket prices"):
+			events_api.create_event(
+				title=f"{PREFIX} Paid event",
+				category=self.category,
+				host=self.host.name,
+				start_date=add_days(today(), 3),
+				start_time="09:00",
+				end_time="16:00",
+				is_published=1,
+			)
+
+	def test_guest_cannot_create(self):
+		frappe.set_user("Guest")
+		with self.assertRaises(frappe.PermissionError):
+			events_api.create_event(
+				title=f"{PREFIX} Guest",
+				category=self.category,
+				host=self.host.name,
+				start_date=add_days(today(), 3),
+				start_time="09:00",
+				end_time="16:00",
+			)
+
+
+class TestConfirmedRegistrations(EventFixtures):
+	def test_only_submitted_buzz_tickets_appear_in_the_manager_roster(self):
+		event = self.make_event("Registration roster")
+		ticket_type = frappe.db.get_value("Event Ticket Type", {"event": event}, "name")
+		confirmed = frappe.get_doc({
+			"doctype": "Event Ticket",
+			"event": event,
+			"ticket_type": ticket_type,
+			"first_name": "Amina",
+			"last_name": "Otieno",
+			"attendee_email": "amina@example.org",
+		}).insert(ignore_permissions=True)
+		confirmed.submit()
+		frappe.get_doc({
+			"doctype": "Event Ticket",
+			"event": event,
+			"ticket_type": ticket_type,
+			"first_name": "Pending",
+			"attendee_email": "pending@example.org",
+		}).insert(ignore_permissions=True)
+
+		answer = events_api.registrations(event)
+		self.assertEqual(answer["total"], 1)
+		self.assertEqual(answer["registrations"][0]["name"], "Amina Otieno")
+		self.assertEqual(answer["registrations"][0]["email"], "amina@example.org")
+
+	def test_guest_cannot_read_registration_names(self):
+		event = self.make_event("Private roster")
+		frappe.set_user("Guest")
+		with self.assertRaises(frappe.PermissionError):
+			events_api.registrations(event)
+
+	def test_event_manager_can_read_roster_but_buzz_user_cannot(self):
+		from vmmsx.member.tests import fixtures as member_fixtures
+
+		event = self.make_event("Manager roster")
+		manager = member_fixtures.make_user("buzz_event_manager", ["Event Manager"])
+		viewer = member_fixtures.make_user("buzz_event_viewer", ["Buzz User"])
+
+		frappe.set_user(manager)
+		self.assertEqual(events_api.registrations(event)["total"], 0)
+
+		frappe.set_user(viewer)
+		with self.assertRaises(frappe.PermissionError):
+			events_api.registrations(event)
 
 
 class TestBuzzEventListing(EventFixtures):
@@ -207,7 +310,7 @@ class TestBuzzEventListing(EventFixtures):
 		route = frappe.db.get_value(geo.EVENT_DOCTYPE, name, "route")
 
 		self.assertTrue(route, "publishing an event should have given it a route")
-		self.assertEqual(card["href"], f"{events.EVENT_PATH}/{route}")
+		self.assertEqual(card["href"], f"/b/register/{route}")
 
 	def test_an_event_with_no_route_offers_nowhere_to_go(self):
 		"""Better than a button pointing at a 404."""
@@ -236,6 +339,8 @@ class TestBuzzEventListing(EventFixtures):
 				"image",
 				"geo_node",
 				"href",
+				"free",
+				"registrations_close_at",
 				"multi_day",
 			},
 		)

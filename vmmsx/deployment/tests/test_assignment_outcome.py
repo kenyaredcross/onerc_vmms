@@ -4,12 +4,12 @@
 """What became of one person's deployment: the day itself, and the swaps before it.
 
 The roster used to be able to say what somebody was asked and what they said.
-This suite is about the four things it can now say afterwards:
+This suite is about the five things it can now say afterwards:
 
 1. **What happened on the day.** Participated, Partial Attendance, No Show —
    three answers to "did they go", which is a different question from "what did
    they say" and was previously unanswerable. The two that mean they were there
-   keep them able to file their own hours; No Show does not.
+   keep them on the roster; No Show does not.
 2. **Expired is not Declined.** A question nobody answered in time and a person
    who said no look identical in a register that only has one of them, and only
    one of the two is worth chasing.
@@ -19,6 +19,10 @@ This suite is about the four things it can now say afterwards:
 4. **Readiness is recorded and gates nothing.** Refusing somebody at the gate on
    a field nobody filled in is how a record-keeping gap becomes an operational
    failure.
+5. **The verified figure is where a volunteer's hours come from.** Nobody types
+   their own: recording attendance writes the hours onto the volunteer's record
+   as their deployment time log, correcting it corrects that log, and an outcome
+   of No Show leaves none behind.
 """
 
 import frappe
@@ -28,6 +32,7 @@ from vmmsx.deployment.services import assignment as assignment_service
 from vmmsx.deployment.services import participation
 from vmmsx.deployment.tests import fixtures
 from vmmsx.deployment.tests.base import DeploymentTestCase
+from vmmsx.volunteer.services import timelog
 
 EXTRA_TEST_RECORD_DEPENDENCIES = []
 
@@ -87,10 +92,10 @@ class TestWhatHappenedOnTheDay(OutcomeTestCase):
 		self.assertTrue(answer["has_outcome"])
 		self.assertFalse(answer["attended"])
 
-	def test_somebody_who_was_there_can_still_file_their_hours(self):
-		"""The rule this outcome must not break: a register that recorded
-		attendance and then refused the volunteer's own account of it would punish
-		accurate record-keeping."""
+	def test_somebody_who_was_there_stays_on_the_roster(self):
+		"""The rule this outcome must not break: recording that somebody attended
+		is the very act that writes their hours, so an outcome that dropped them
+		off the roster would refuse the log it had just caused."""
 		deployment, doc = self.placed()
 		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED)
 
@@ -324,3 +329,98 @@ class TestReadinessIsRecordedAndGatesNothing(OutcomeTestCase):
 
 		self.assertTrue(doc.checked_in_at)
 		self.assertIsNone(doc.briefing_completed_on)
+
+
+class TestTheHoursFollowTheVerifiedFigure(OutcomeTestCase):
+	"""Where a volunteer's hours come from, now that they do not type them.
+
+	A coordinator says what was served; the server writes that onto the
+	volunteer's own record. Everything here is about the one thing that makes
+	that safe to do: the figure and the log are one statement, so there is never
+	a second one to reconcile.
+	"""
+
+	def logs_of(self, doc) -> list[dict]:
+		return frappe.get_all(
+			timelog.TIME_LOG_DOCTYPE,
+			filters={"volunteer": doc.volunteer},
+			fields=["name", "log_type", "hours", "deployment", "source_assignment"],
+		)
+
+	def test_verifying_the_hours_puts_them_on_the_volunteers_record(self):
+		deployment, doc = self.placed()
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=6)
+
+		rows = self.logs_of(doc)
+
+		self.assertEqual(len(rows), 1)
+		self.assertEqual(rows[0]["hours"], 6)
+		self.assertEqual(rows[0]["log_type"], timelog.TYPE_DEPLOYMENT)
+		self.assertEqual(rows[0]["deployment"], deployment.name)
+		self.assertEqual(timelog.hours_served(doc.volunteer), 6)
+
+	def test_the_log_says_which_verified_figure_it_came_from(self):
+		"""Provenance, and what makes the correction below a correction."""
+		_deployment, doc = self.placed()
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=6)
+
+		self.assertEqual(self.logs_of(doc)[0]["source_assignment"], doc.name)
+
+	def test_correcting_the_figure_corrects_the_log_rather_than_adding_one(self):
+		_deployment, doc = self.placed()
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=6)
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=4)
+
+		rows = self.logs_of(doc)
+
+		self.assertEqual(len(rows), 1)
+		self.assertEqual(rows[0]["hours"], 4)
+		self.assertEqual(timelog.hours_served(doc.volunteer), 4)
+
+	def test_withdrawing_the_figure_withdraws_the_hours(self):
+		"""A figure somebody has unmade is not a record of anything."""
+		_deployment, doc = self.placed()
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=6)
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=0)
+
+		self.assertEqual(self.logs_of(doc), [])
+
+	def test_somebody_who_did_not_come_is_credited_with_nothing(self):
+		_deployment, doc = self.placed()
+		assignment_service.record_attendance(doc, assignment_service.STATUS_NO_SHOW, hours=8)
+
+		self.assertEqual(self.logs_of(doc), [])
+		self.assertEqual(timelog.hours_served(doc.volunteer), 0)
+
+	def test_an_outcome_with_no_figure_records_no_hours(self):
+		"""Attendance and hours are two statements, and a coordinator may make
+		the first without yet being able to make the second."""
+		_deployment, doc = self.placed()
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED)
+
+		self.assertEqual(self.logs_of(doc), [])
+
+	def test_a_mission_holds_more_than_a_day_of_hours(self):
+		"""The figure covers the whole deployment, so the day's ceiling is the
+		wrong one to measure it against."""
+		_deployment, doc = self.placed(start_date=today(), end_date=add_days(today(), 4))
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=40)
+
+		self.assertEqual(timelog.hours_served(doc.volunteer), 40)
+
+	def test_but_not_more_than_the_mission_had_to_give(self):
+		_deployment, doc = self.placed(start_date=today(), end_date=today())
+
+		with self.assertRaises(frappe.ValidationError):
+			assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=30)
+
+	def test_the_hours_are_filed_on_the_last_day_of_the_service(self):
+		"""Where the mission ended, which is also the day the figure became true."""
+		_deployment, doc = self.placed(start_date=add_days(today(), -6), end_date=add_days(today(), -2))
+		assignment_service.record_attendance(doc, assignment_service.STATUS_PARTICIPATED, hours=12)
+
+		filed = frappe.db.get_value(
+			timelog.TIME_LOG_DOCTYPE, {"source_assignment": doc.name}, "activity_date"
+		)
+
+		self.assertEqual(str(filed), add_days(today(), -2))

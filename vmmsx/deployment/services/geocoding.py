@@ -33,17 +33,41 @@ see a deployment is a society's decision; which HTTP endpoint resolves an
 address is a property of the deployment the software is running on, in the same
 family as the database host. It is read from `site_config.json`:
 
-    "vmms_geocoding_url": "https://nominatim.openstreetmap.org/search"
+    "vmms_geocoding_url": "https://photon.komoot.io/api"
+    "vmms_geocoding_shape": "photon"        # nominatim (default), photon, google
+    "vmms_geocoding_key": "…"               # only the ones that want one
 
-With nothing configured — the shipped state — geocoding is simply off, and
-`locate` says so in a sentence a coordinator can act on rather than failing
-silently. Manual pins keep working, so a society that never configures a
+With nothing configured — the shipped state — geocoding is simply off, and both
+`locate` and `suggest` say so in a sentence a coordinator can act on rather than
+failing silently. Manual pins keep working, so a society that never configures a
 provider still gets maps and directions.
+
+**The shape is named rather than guessed.** Three providers answer the same
+question in three envelopes — a list of `display_name`/`lat`/`lon`, a GeoJSON
+feature collection with the point *longitude first*, a `results` array of
+`formatted_address` and `geometry.location` — and inferring which from the
+hostname would break the first time a society self-hosts one. `_read` holds one
+small reader per shape and nothing else in the app knows there is more than one.
+
+**Nominatim's own usage policy forbids a request per keystroke**, which is why
+`suggest` has a floor under the query length and the screen above it waits for a
+pause in the typing. A society expecting real traffic should point this at a
+provider that sells autocomplete — Photon, Geoapify and LocationIQ all answer in
+a shape above — or host one.
+
+**A word about Google.** `google` is a shape here because a society that has
+already bought a key should be able to use it, but Google's Maps Platform terms
+forbid using its geocoding results *with a non-Google map*, and this app draws
+OSM tiles everywhere. Configuring Google means either moving the display to
+Google's own maps or accepting that the combination is outside their licence.
+The OSM-based providers carry no such restriction, which is why the example
+above is one of them.
 
 **OpenStreetMap, because the portal already draws OSM tiles.** The links point
 at openstreetmap.org rather than any commercial map, so nothing here sends a
 society's deployment locations to a third party the moment somebody opens a
-record.
+record. A lookup is the one moment anything leaves this site, and it leaves only
+what somebody typed into the search box.
 """
 
 import frappe
@@ -52,6 +76,19 @@ from frappe.utils import now_datetime
 
 # The site-config key that names the search endpoint. Absent means off.
 PROVIDER_KEY = "vmms_geocoding_url"
+
+# Which shape that endpoint answers in, and the key it wants if it wants one.
+# A URL alone is not enough once there is more than one kind of provider: the
+# three below return the same fact — a label and a point — in three different
+# envelopes, and guessing from the hostname would be a rule that breaks the
+# first time somebody self-hosts one on their own domain.
+SHAPE_KEY = "vmms_geocoding_shape"
+API_KEY = "vmms_geocoding_key"
+
+NOMINATIM = "nominatim"
+PHOTON = "photon"
+GOOGLE = "google"
+SHAPES = (NOMINATIM, PHOTON, GOOGLE)
 
 # Seconds. Short on purpose: this runs inside a request somebody is waiting on,
 # and a geocode that has not answered in five seconds has failed as far as the
@@ -117,6 +154,170 @@ def _is_point(latitude, longitude) -> bool:
 # --- resolving an address ---------------------------------------------------
 
 
+def shape() -> str:
+	"""Which envelope this site's provider answers in. Nominatim unless told otherwise."""
+	configured = (frappe.conf.get(SHAPE_KEY) or NOMINATIM).strip().lower()
+
+	return configured if configured in SHAPES else NOMINATIM
+
+
+def _params(query: str, limit: int) -> dict:
+	"""The query string each provider expects, keyed by shape.
+
+	Written as a table rather than as branches for the same reason the time-log
+	kinds are: adding a provider is adding a row and a reader, never an `if` in
+	the middle of a request.
+	"""
+	return {
+		NOMINATIM: {"q": query, "format": "json", "limit": limit, "addressdetails": 1},
+		PHOTON: {"q": query, "limit": limit},
+		GOOGLE: {"address": query, "key": frappe.conf.get(API_KEY) or ""},
+	}[shape()]
+
+
+def _read(payload, limit: int) -> list[dict]:
+	"""Whatever came back, as a list of `{label, latitude, longitude}`.
+
+	Each reader is written against the one thing this app wants from a geocoder:
+	somewhere to put a pin, and the words to show the person who has to confirm
+	it is the right place. Everything else in those responses is left where it
+	is.
+	"""
+	rows = []
+
+	if shape() == PHOTON:
+		for feature in (payload or {}).get("features", [])[:limit]:
+			point = (feature.get("geometry") or {}).get("coordinates") or []
+			properties = feature.get("properties") or {}
+
+			if len(point) < 2:
+				continue
+
+			rows.append(
+				{
+					# Photon answers in pieces rather than in a sentence, so the
+					# label is assembled from the ones a person reads.
+					"label": ", ".join(
+						part
+						for part in (
+							properties.get("name"),
+							properties.get("street"),
+							properties.get("city") or properties.get("district"),
+							properties.get("state"),
+							properties.get("country"),
+						)
+						if part
+					),
+					"latitude": frappe.utils.flt(point[1]),
+					"longitude": frappe.utils.flt(point[0]),
+				}
+			)
+
+	elif shape() == GOOGLE:
+		for result in (payload or {}).get("results", [])[:limit]:
+			point = ((result.get("geometry") or {}).get("location")) or {}
+
+			if point.get("lat") is None:
+				continue
+
+			rows.append(
+				{
+					"label": result.get("formatted_address") or "",
+					"latitude": frappe.utils.flt(point.get("lat")),
+					"longitude": frappe.utils.flt(point.get("lng")),
+				}
+			)
+
+	else:
+		for result in (payload or [])[:limit]:
+			rows.append(
+				{
+					"label": result.get("display_name") or "",
+					"latitude": frappe.utils.flt(result.get("lat")),
+					"longitude": frappe.utils.flt(result.get("lon")),
+				}
+			)
+
+	return [row for row in rows if _is_point(row["latitude"], row["longitude"])]
+
+
+def _ask(query: str, limit: int):
+	"""One call to the configured provider, or None where it could not be made.
+
+	Never raises. A provider that is down is an operational fact somebody can
+	look up afterwards, and it is not a reason a coordinator cannot get on with
+	their afternoon.
+	"""
+	try:
+		import requests
+
+		answer = requests.get(
+			frappe.conf.get(PROVIDER_KEY),
+			params=_params(query, limit),
+			headers={"User-Agent": f"vmmsx/{frappe.local.site}"},
+			timeout=TIMEOUT,
+		)
+		answer.raise_for_status()
+
+		return answer.json()
+	except Exception as problem:
+		frappe.log_error(title="Geocoding failed", message=str(problem))
+
+		return None
+
+
+def suggest(query: str | None, limit: int = 6) -> dict:
+	"""What a half-typed address might be, each with the point that goes with it.
+
+	**The same provider, the same reading, one request per keystroke-ish.** This
+	is `locate` without the commitment: it hands back the candidates and lets a
+	person say which one is theirs, which is the difference between a screen
+	that guesses and one that asks. Picking one writes the pin, so the
+	coordinates are never typed by anybody.
+
+	Never raises, and says why on every empty answer, because "no suggestions"
+	and "no provider configured" look identical on a screen and are not the same
+	problem at all.
+	"""
+	query = (query or "").strip()
+
+	if len(query) < MIN_QUERY:
+		return {"places": [], "reason": None}
+
+	if not is_configured():
+		return {"places": [], "reason": _NOT_CONFIGURED()}
+
+	payload = _ask(query, limit)
+
+	if payload is None:
+		return {
+			"places": [],
+			"reason": _("The address could not be looked up just now. Try again, or place the pin by hand."),
+		}
+
+	places = _read(payload, limit)
+
+	return {
+		"places": places,
+		"reason": None
+		if places
+		else _("Nothing was found for that. Try a fuller address, or place the pin by hand."),
+	}
+
+
+#: Below this, a search is somebody still typing rather than somebody asking.
+MIN_QUERY = 3
+
+
+def _NOT_CONFIGURED() -> str:
+	"""Said in one place, because two screens ask the same question of one site."""
+	return _(
+		"This site has no geocoding service configured, so an address cannot be turned"
+		" into a point automatically. Place the pin by hand, or ask an administrator to"
+		" configure one."
+	)
+
+
 def locate(query: str | None) -> dict:
 	"""Resolve an address to a point. Never raises; always says what happened.
 
@@ -129,49 +330,33 @@ def locate(query: str | None) -> dict:
 		return _failed(_("There is no address to look up. Write one, or place the pin by hand."))
 
 	if not is_configured():
-		return _failed(
-			_(
-				"This site has no geocoding service configured, so an address cannot be turned"
-				" into a point automatically. Place the pin by hand, or ask an administrator to"
-				" configure one."
-			)
-		)
+		return _failed(_NOT_CONFIGURED())
 
-	try:
-		import requests
+	payload = _ask(query, limit=1)
 
-		answer = requests.get(
-			frappe.conf.get(PROVIDER_KEY),
-			params={"q": query, "format": "json", "limit": 1},
-			headers={"User-Agent": f"vmmsx/{frappe.local.site}"},
-			timeout=TIMEOUT,
-		)
-		answer.raise_for_status()
-		rows = answer.json()
-	except Exception as problem:
-		# Logged rather than raised. A geocoding provider that is down is an
-		# operational fact somebody should be able to look up afterwards, and it
-		# is not a reason a coordinator cannot get on with their afternoon.
-		frappe.log_error(title="Geocoding failed", message=str(problem))
+	if payload is None:
+		return _failed(_("The address could not be looked up just now. Place the pin by hand, or try again."))
 
-		return _failed(
-			_("The address could not be looked up just now. Place the pin by hand, or try again.")
-		)
+	# Read through the same three-envelope reader `suggest` uses. A second copy
+	# of "how this provider answers" is a second thing to fix the day a society
+	# switches provider, and the two would disagree about exactly the site
+	# nobody tested.
+	places = _read(payload, limit=1)
 
-	if not rows:
+	if not places:
 		return _failed(
 			_("Nothing was found for {0}. Try a fuller address, or place the pin by hand.").format(
 				frappe.bold(query)
 			)
 		)
 
-	first = rows[0]
+	first = places[0]
 
 	return {
 		"located": True,
-		"latitude": frappe.utils.flt(first.get("lat")),
-		"longitude": frappe.utils.flt(first.get("lon")),
-		"matched": first.get("display_name"),
+		"latitude": first["latitude"],
+		"longitude": first["longitude"],
+		"matched": first["label"],
 		"reason": None,
 	}
 

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, type ReactNode } from "react";
+import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
@@ -12,6 +12,7 @@ import type {
 	CandidateSearch,
 	DeploymentDetail as DeploymentDetailDto,
 	DeploymentFeed,
+	DeploymentPlace,
 	DeploymentRequestRow,
 	DeploymentSite,
 	DeploymentSites,
@@ -2229,6 +2230,346 @@ export function DeploymentDetail() {
  * fields are shown and not edited: what a mission learned is a record of what it
  * learned, and a form still open over it invites a quiet rewrite months later.
  */
+/**
+ * Putting a deployment on the map, which nothing could do until now.
+ *
+ * **The record has carried two points the whole time and had no way in.**
+ * `locate_deployment` and `place_deployment_pin` were on the server, the DTO
+ * carried `has_point`, and the volunteer's mission file drew a map when there
+ * was something to draw — so a society typed an address, nothing resolved it,
+ * and every map on every screen stayed empty. That is what this card is for.
+ *
+ * **Two ways, because the automatic one is not always available.** Looking an
+ * address up needs a provider in `site_config.json` (`vmms_geocoding_url`), and
+ * a site without one is told so in a sentence rather than left with a button
+ * that quietly does nothing. Typing the coordinates always works, and the pin
+ * somebody drops by hand is the one a later automatic pass will not touch.
+ */
+function Placement({
+	deployment,
+	onChanged,
+}: {
+	deployment: DeploymentDetailDto;
+	onChanged: () => void;
+}) {
+	return (
+		<div className="mt-5 border-t border-card-line pt-4">
+			<p className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
+				On the map
+			</p>
+			<p className="mt-1 text-[11.5px] leading-relaxed text-muted">
+				What a volunteer sees on their invitation and in their mission file. Until a place has a
+				point, their screens show the address in words and no map.
+			</p>
+
+			<div className="mt-3 space-y-2.5">
+				<PlacePin
+					deployment={deployment.name}
+					place="meeting"
+					label="Where people meet"
+					point={deployment.where.meeting_point}
+					onChanged={onChanged}
+				/>
+				<PlacePin
+					deployment={deployment.name}
+					place="site"
+					label="The deployment point"
+					point={deployment.where.site}
+					onChanged={onChanged}
+				/>
+			</div>
+		</div>
+	);
+}
+
+/** One candidate from the site's geocoder: words a person recognises, and a point. */
+interface PlaceSuggestion {
+	label: string;
+	latitude: number;
+	longitude: number;
+}
+
+/**
+ * Type where it is; pick the one that is right; the coordinates write themselves.
+ *
+ * **Nobody types a latitude.** A coordinator has an address in their head and a
+ * map in their pocket, and asking them for six decimal places was asking for
+ * the one thing they do not have. This asks the site's configured geocoder what
+ * the words might mean and shows the candidates; choosing one drops the pin.
+ *
+ * **It asks after a pause, not after a keystroke.** Every public geocoder rate
+ * limits, and OSM's own usage policy asks specifically that nobody fire one
+ * request per character. 400ms is long enough that a typed address is one
+ * request rather than thirty, and short enough that it still feels like
+ * typing. The request in flight is abandoned rather than cancelled: a late
+ * answer to an old query is dropped by the sequence check, so a slow provider
+ * cannot repaint the list with the results of a word somebody has finished
+ * deleting.
+ *
+ * **A site with no provider configured says so once**, in the sentence the
+ * server sends, and the coordinates below stay the way to get the job done.
+ */
+function PlaceSearch({
+	onPick,
+	busy,
+}: {
+	onPick: (found: PlaceSuggestion) => void;
+	busy: boolean;
+}) {
+	const { call } = useContext(FrappeContext) as FrappeConfig;
+
+	const [query, setQuery] = useState("");
+	const [places, setPlaces] = useState<PlaceSuggestion[]>([]);
+	const [note, setNote] = useState<string | null>(null);
+	const [looking, setLooking] = useState(false);
+
+	// The query this component last sent. A reply for anything else is stale by
+	// definition and is dropped rather than rendered.
+	const asked = useRef("");
+
+	useEffect(() => {
+		const text = query.trim();
+
+		if (text.length < 3) {
+			setPlaces([]);
+			setNote(null);
+			return;
+		}
+
+		const timer = window.setTimeout(async () => {
+			asked.current = text;
+			setLooking(true);
+
+			try {
+				const answer = await call.get<{
+					message: { places: PlaceSuggestion[]; reason: string | null };
+				}>(API.suggestPlaces, { query: text });
+
+				if (asked.current !== text) return;
+
+				setPlaces(answer.message.places);
+				setNote(answer.message.reason);
+			} catch (problem) {
+				if (asked.current === text) setNote(errorMessage(problem));
+			} finally {
+				if (asked.current === text) setLooking(false);
+			}
+		}, 400);
+
+		return () => window.clearTimeout(timer);
+	}, [query, call]);
+
+	return (
+		<div>
+			<Labelled
+				label="Find the place"
+				hint="Type the name or address, then choose the match. The coordinates are filled in for you."
+			>
+				<input
+					className={INPUT}
+					value={query}
+					onChange={(event) => setQuery(event.target.value)}
+					placeholder="Kyela District Council, Kyela"
+					autoComplete="off"
+				/>
+			</Labelled>
+
+			{looking && <p className="mt-2 text-[11.5px] text-muted">Looking…</p>}
+
+			{places.length > 0 && (
+				<ul className="mt-2 divide-y divide-card-line overflow-hidden rounded-xl border border-card-line">
+					{places.map((found) => (
+						<li key={`${found.latitude},${found.longitude},${found.label}`}>
+							<button
+								type="button"
+								disabled={busy}
+								onClick={() => onPick(found)}
+								className="block w-full px-3 py-2.5 text-left text-[12px] leading-snug text-ink transition hover:bg-surface disabled:opacity-50"
+							>
+								{found.label}
+								<span className="mt-0.5 block text-[11px] text-muted">
+									{found.latitude}, {found.longitude}
+								</span>
+							</button>
+						</li>
+					))}
+				</ul>
+			)}
+
+			{note && !looking && <p className="mt-2 text-[11.5px] leading-relaxed text-muted">{note}</p>}
+		</div>
+	);
+}
+
+/** One of the two places, where it stands, and the two ways to fix it. */
+function PlacePin({
+	deployment,
+	place,
+	label,
+	point,
+	onChanged,
+}: {
+	deployment: string;
+	place: "site" | "meeting";
+	label: string;
+	point: DeploymentPlace;
+	onChanged: () => void;
+}) {
+	const { call } = useContext(FrappeContext) as FrappeConfig;
+
+	const [open, setOpen] = useState(false);
+	const [busy, setBusy] = useState<string | null>(null);
+	const [said, setSaid] = useState<string | null>(null);
+	const [latitude, setLatitude] = useState(point.latitude != null ? String(point.latitude) : "");
+	const [longitude, setLongitude] = useState(
+		point.longitude != null ? String(point.longitude) : "",
+	);
+
+	const find = async () => {
+		setBusy("find");
+		setSaid(null);
+
+		try {
+			// `force`, because this button is somebody asking for the lookup to be
+			// run again: without it a point already on the record answers with
+			// itself and the press does nothing anybody can see.
+			const answer = await call.post<{
+				message: { located: boolean; matched: string | null; reason: string | null };
+			}>(API.locateDeployment, { name: deployment, place, force: 1 });
+
+			setSaid(
+				answer.message.located
+					? `Found${answer.message.matched ? `: ${answer.message.matched}` : ""}.`
+					: (answer.message.reason ?? "That address could not be placed."),
+			);
+			onChanged();
+		} catch (problem) {
+			setSaid(errorMessage(problem));
+		} finally {
+			setBusy(null);
+		}
+	};
+
+	const drop = async () => {
+		setBusy("drop");
+		setSaid(null);
+
+		try {
+			await call.post(API.placeDeploymentPin, {
+				name: deployment,
+				place,
+				latitude: Number(latitude),
+				longitude: Number(longitude),
+			});
+			setSaid("Pin dropped.");
+			setOpen(false);
+			onChanged();
+		} catch (problem) {
+			setSaid(errorMessage(problem));
+		} finally {
+			setBusy(null);
+		}
+	};
+
+	const typed = Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude));
+
+	/** A suggestion somebody picked: the pin is written from it, never typed. */
+	const choose = async (found: PlaceSuggestion) => {
+		setBusy("drop");
+		setSaid(null);
+
+		try {
+			await call.post(API.placeDeploymentPin, {
+				name: deployment,
+				place,
+				latitude: found.latitude,
+				longitude: found.longitude,
+			});
+			setLatitude(String(found.latitude));
+			setLongitude(String(found.longitude));
+			setSaid(`Placed at ${found.label}.`);
+			setOpen(false);
+			onChanged();
+		} catch (problem) {
+			setSaid(errorMessage(problem));
+		} finally {
+			setBusy(null);
+		}
+	};
+
+	return (
+		<div className="rounded-xl border border-card-line px-3.5 py-3">
+			<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+				<div className="min-w-0">
+					<p className="text-[12.5px] font-semibold text-ink">{label}</p>
+					<p className="mt-0.5 text-[11.5px] text-muted">
+						{point.has_point
+							? `${point.latitude}, ${point.longitude}${point.located_on ? " · from the address" : " · dropped by hand"}`
+							: point.address || point.name
+								? "Not on the map yet"
+								: "No address to place"}
+					</p>
+				</div>
+
+				<div className="flex flex-wrap items-center gap-2">
+					{point.map && (
+						<a
+							href={point.map}
+							target="_blank"
+							rel="noreferrer"
+							className="text-[11.5px] font-semibold text-blue hover:text-blue-hover"
+						>
+							Open ↗
+						</a>
+					)}
+					<Button
+						variant="quiet"
+						disabled={busy !== null || !point.address}
+						onClick={() => void find()}
+					>
+						{busy === "find" ? "Looking…" : "Find from the address"}
+					</Button>
+					<Button variant="quiet" onClick={() => setOpen((was) => !was)}>
+						{open ? "Close" : point.has_point ? "Move the pin" : "Type coordinates"}
+					</Button>
+				</div>
+			</div>
+
+			{open && (
+				<div className="mt-3">
+					<PlaceSearch onPick={(found) => void choose(found)} busy={busy !== null} />
+				</div>
+			)}
+
+			{open && (
+				<div className="mt-3 flex flex-wrap items-end gap-3 border-t border-card-line pt-3">
+					<Labelled label="Latitude">
+						<input
+							className={cx(INPUT, "w-[150px]")}
+							value={latitude}
+							onChange={(event) => setLatitude(event.target.value)}
+							placeholder="-8.9094"
+						/>
+					</Labelled>
+					<Labelled label="Longitude">
+						<input
+							className={cx(INPUT, "w-[150px]")}
+							value={longitude}
+							onChange={(event) => setLongitude(event.target.value)}
+							placeholder="33.4608"
+						/>
+					</Labelled>
+					<Button disabled={busy !== null || !typed || !latitude || !longitude} onClick={() => void drop()}>
+						{busy === "drop" ? "Saving…" : "Save the pin"}
+					</Button>
+				</div>
+			)}
+
+			{said && <p className="mt-2 text-[11.5px] text-slate-strong">{said}</p>}
+		</div>
+	);
+}
+
 function DeploymentDetailsEditor({
 	deployment,
 	templates,
@@ -2326,6 +2667,8 @@ function DeploymentDetailsEditor({
 						</p>
 					</div>
 				)}
+
+				<Placement deployment={deployment} onChanged={onSaved} />
 
 				{deployment.change_reason && (
 					<p className="mt-4 rounded-xl bg-surface px-3.5 py-2.5 text-[12px] leading-relaxed text-muted">
@@ -2569,7 +2912,7 @@ function DeploymentDetailsEditor({
  * filed its account somewhere else, or not at all.
  *
  * **Nothing blocks the close-out and this screen says so.** Not an unmarked
- * roster, not an open task, not somebody who never filed their hours: the
+ * roster, not an open task, not a day whose hours nobody recorded: the
  * endpoint's own docstring is explicit that a close-out which can be refused is
  * one that does not happen. Both fields are optional, always.
  *
@@ -2925,7 +3268,16 @@ function Roster({
 	);
 }
 
-/** One person on the deployment, what they said, and the two acts open on them. */
+/**
+ * One person on the deployment: what they said, what happened on the day, and
+ * the acts open on them.
+ *
+ * **The hours are recorded here because there is nowhere else.** A volunteer
+ * does not file their own — the figure a coordinator verifies below is written
+ * straight onto that person's record as their deployment hours. A roster with
+ * no way to say "they served six hours" is a register where nobody ever has
+ * any.
+ */
 function RosterEntry({
 	row,
 	busy,
@@ -2935,6 +3287,8 @@ function RosterEntry({
 	busy: string | null;
 	onAct: (label: string, method: string, args: Record<string, unknown>) => Promise<void>;
 }) {
+	const [recording, setRecording] = useState(false);
+
 	const tone =
 		row.status === "Accepted"
 			? "navy"
@@ -2970,6 +3324,10 @@ function RosterEntry({
 			<div className="flex flex-wrap items-center gap-2">
 				<Pill tone={tone}>{row.status}</Pill>
 
+				{row.verified_hours ? (
+					<Pill tone="navy">{row.verified_hours}h verified</Pill>
+				) : null}
+
 				{row.is_on_deployment && !row.is_leader && (
 					<Button
 						variant="quiet"
@@ -2996,10 +3354,134 @@ function RosterEntry({
 						{busy === `drop:${row.name}` ? "Withdrawing…" : "Withdraw"}
 					</Button>
 				)}
+
+				{/* Nothing to record against somebody who did not come: the day has
+				    been answered and the answer carries no hours. */}
+				{row.is_on_deployment && (!row.has_outcome || row.attended) && (
+					<Button variant="quiet" onClick={() => setRecording((was) => !was)}>
+						{recording
+							? "Close"
+							: row.has_outcome
+								? "Change the hours"
+								: "Record the day"}
+					</Button>
+				)}
 			</div>
+
+			{recording && (
+				<Attendance
+					row={row}
+					busy={busy}
+					onAct={onAct}
+					onDone={() => setRecording(false)}
+				/>
+			)}
 		</li>
 	);
 }
+
+/**
+ * What happened on the day, and the hours that went with it.
+ *
+ * **The outcome is said once.** The grammar admits an outcome from Assigned and
+ * Accepted and admits no move out of one, so a row that already carries an
+ * answer is offered the hours alone: correcting the day itself is an amendment
+ * somebody makes on the record, not a button that quietly rewrites history.
+ *
+ * **The hours belong to the two outcomes that mean they were there.** Asking
+ * how long a No Show served is not a question, and a figure typed beside one is
+ * withdrawn by the server rather than kept as a number nobody can read.
+ */
+function Attendance({
+	row,
+	busy,
+	onAct,
+	onDone,
+}: {
+	row: RosterRow;
+	busy: string | null;
+	onAct: (label: string, method: string, args: Record<string, unknown>) => Promise<void>;
+	onDone: () => void;
+}) {
+	const [outcome, setOutcome] = useState(row.status);
+	const [hours, setHours] = useState(row.verified_hours ? String(row.verified_hours) : "");
+
+	const label = `attendance:${row.name}`;
+	const attended = outcome === "Participated" || outcome === "Partial Attendance";
+	const settled = row.has_outcome;
+
+	const save = async () => {
+		await onAct(label, API.recordAssignmentAttendance, {
+			name: row.name,
+			outcome,
+			hours: attended && hours !== "" ? Number(hours) : undefined,
+		});
+		onDone();
+	};
+
+	return (
+		<div className="mt-3 w-full rounded-xl border border-card-line bg-surface p-3.5">
+			{!settled && (
+				<div className="flex flex-wrap gap-2">
+					{OUTCOMES.map((option) => (
+						<button
+							key={option.status}
+							type="button"
+							onClick={() => setOutcome(option.status)}
+							className={cx(
+								"rounded-xl border px-3 py-2 text-left text-[12px] transition",
+								outcome === option.status
+									? "border-blue bg-white text-ink"
+									: "border-card-line text-slate-faint hover:text-ink",
+							)}
+						>
+							<span className="block font-semibold">{option.status}</span>
+							<span className="block text-[11px]">{option.lead}</span>
+						</button>
+					))}
+				</div>
+			)}
+
+			{attended && (
+				<div className="mt-3 max-w-[260px]">
+					<Labelled
+						label="Hours served"
+						hint="This becomes their hours on their own record, so it is the figure you are standing behind."
+					>
+						<input
+							type="number"
+							min="0"
+							step="0.5"
+							className={INPUT}
+							value={hours}
+							onChange={(event) => setHours(event.target.value)}
+							placeholder="6"
+						/>
+					</Labelled>
+				</div>
+			)}
+
+			<div className="mt-3 flex flex-wrap items-center gap-2">
+				<Button
+					disabled={busy !== null || (!settled && !OUTCOMES.some((o) => o.status === outcome))}
+					onClick={() => void save()}
+				>
+					{busy === label ? "Recording…" : "Record"}
+				</Button>
+				<Button variant="quiet" onClick={onDone}>
+					Cancel
+				</Button>
+			</div>
+		</div>
+	);
+}
+
+/** The three answers to "did they go", with what each one means in plain words. */
+const OUTCOMES = [
+	{ status: "Participated", lead: "They served the whole mission." },
+	{ status: "Partial Attendance", lead: "They served part of it." },
+	{ status: "No Show", lead: "They did not come." },
+] as const;
 
 /* -------------------------------------------------------------- candidates */
 

@@ -209,6 +209,15 @@ class TestOneLiveApplicationPerPerson(ApplicationTestCase):
 
 
 class TestTheQuestionsAndTheAnswers(ApplicationTestCase):
+	def test_required_attachment_is_asked_for_and_enforced(self):
+		document_type = "Application test document"
+		if not frappe.db.exists("Supporting Document Type", document_type):
+			frappe.get_doc({"doctype": "Supporting Document Type", "name": document_type}).insert(ignore_permissions=True)
+		opening = self.opening(required_attachments=[{"type": document_type, "document_name": "Identity document"}])
+		self.assertIn("Identity document", [question["question"] for question in application_service.questions(opening.name)])
+		with self.assertRaises(frappe.MandatoryError):
+			application_service.apply(opening.name, self.volunteer().name)
+
 	def question(self, **overrides):
 		values = {
 			"question_id": "Q1",

@@ -932,22 +932,18 @@ function Card({
 				    pressing it answers rather than opening the detail page
 				    underneath. */}
 				{row.href ? (
-					going ? (
-						<Withdraw busy={busy} onClick={onToggle} className="self-start" />
-					) : (
-						<button
-							type="button"
-							onClick={onToggle}
-							disabled={busy}
-							className="relative z-10 inline-flex items-center justify-center self-start rounded-full bg-rail px-4 py-2 text-[12px] font-bold text-white transition hover:bg-blue disabled:opacity-50"
-						>
-							{busy ? (
-								<EditableText k="portal.events.attending.saving" fallback="Saving…" />
-							) : (
-								<EditableText k="portal.events.card.action" fallback="Attend" />
-							)}
-						</button>
-					)
+					<div className="relative z-10 flex flex-wrap items-center gap-3">
+						<a href={row.href} className="inline-flex items-center justify-center rounded-full bg-rail px-4 py-2 text-[12px] font-bold text-white transition hover:bg-blue">
+							Register →
+						</a>
+						{going ? (
+							<span className="text-[11px] font-semibold text-blue">Branch notified</span>
+						) : (
+							<button type="button" onClick={onToggle} disabled={busy} className="text-[11px] font-semibold text-muted underline disabled:opacity-50">
+								{busy ? "Saving…" : "Tell branch I plan to attend"}
+							</button>
+						)}
+					</div>
 				) : (
 					<span className="text-[11px] italic text-slate-faint">
 						Registration is not open yet.
@@ -1130,7 +1126,16 @@ export function Event() {
 
 						<div className="mt-8">
 							{row.href ? (
-								<Attend row={row} />
+								<>
+									<a href={row.href} className="inline-flex items-center justify-center rounded-full bg-blue px-6 py-3 text-[13.5px] font-bold text-white transition hover:bg-blue-press">
+										Register for this event →
+									</a>
+									<p className="mt-2 text-[12px] text-muted">Buzz handles registration and confirms your place.</p>
+									<div className="mt-6 border-t border-card-line pt-5">
+										<p className="mb-3 text-[12px] font-semibold text-ink">Optional: let your branch know you plan to attend</p>
+										<Attend row={row} />
+									</div>
+								</>
 							) : (
 								<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] italic text-slate-faint">
 									Registration is not open yet.
@@ -1287,7 +1292,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 				{busy ? (
 					<EditableText k="portal.events.attending.saving" fallback="Saving…" />
 				) : (
-					<EditableText k="portal.events.card.action" fallback="Attend" />
+					"Tell your branch"
 				)}
 			</button>
 		);
@@ -1298,7 +1303,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 			<div className="flex flex-wrap items-center gap-2">
 				<span className="inline-flex items-center gap-1.5 rounded-full bg-blue/10 px-3 py-1 text-[11.5px] font-bold text-blue">
 					<Icon.check size={13} />
-					<EditableText k="portal.events.attend.confirmed" fallback="Attending" />
+					Branch notified
 				</span>
 			</div>
 
@@ -1366,7 +1371,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 					{busy ? (
 						<EditableText k="portal.events.attending.saving" fallback="Saving…" />
 					) : (
-						<EditableText k="portal.events.attend.withdraw" fallback="Cancel" />
+						"Withdraw notice"
 					)}
 				</button>
 

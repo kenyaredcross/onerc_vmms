@@ -84,6 +84,19 @@ class TestTheGeneralKindIsLive(TimeLogTestCase):
 
 		self.assertEqual(timelog.hours_served(volunteer.name), 7.5)
 
+	def test_recent_logs_can_be_paged_without_losing_the_total(self):
+		volunteer = fixtures.make_volunteer(fixtures.make_profile("Paged", "Logger"), self.society_a["ward"])
+		for amount in (2, 3, 4):
+			fixtures.make_time_log(volunteer.name, self.society_a["ward"], hours=amount)
+
+		first = timelog.summary(volunteer.name, limit=2)
+		second = timelog.summary(volunteer.name, limit=2, offset=2)
+		self.assertEqual(first["log_count"], 3)
+		self.assertEqual(second["log_count"], 3)
+		self.assertEqual(len(first["recent"]), 2)
+		self.assertEqual(len(second["recent"]), 1)
+		self.assertFalse({row["name"] for row in first["recent"]} & {row["name"] for row in second["recent"]})
+
 	def test_a_log_of_no_time_is_refused(self):
 		with self.assertRaises(frappe.ValidationError):
 			self.log(hours=0)

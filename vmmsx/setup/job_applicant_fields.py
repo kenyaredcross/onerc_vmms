@@ -4,10 +4,8 @@
 """What vmmsx adds to HRMS's `Job Applicant`, and what it deliberately leaves alone.
 
 HRMS owns the applicant: the name, the email, the CV, the status, the interview
-rounds, the offer. **None of that is touched.** An employment application on this
-site behaves exactly as HRMS built it, including the public web form, and that is
-the point rather than an accident — a society running recruitment in HRMS should
-not find its recruitment changed because it also runs volunteering.
+rounds and the offer. The portal application page writes an ordinary HRMS
+`Job Applicant`, so the recruiter sees it in the existing pipeline.
 
 What is added is everything a *volunteering* application needs and HRMS has
 nowhere for:
@@ -45,6 +43,7 @@ HRMS_APP = "hrms"
 # the withdrawal is a pair of fields beside the status, not a sixth value, so
 # HRMS's own screens and reports keep working on a vocabulary they own.
 STATUS_OPEN = "Open"
+STATUS_REPLIED = "Replied"
 STATUS_SHORTLISTED = "Shortlisted"
 STATUS_HOLD = "Hold"
 STATUS_ACCEPTED = "Accepted"

@@ -197,6 +197,24 @@ beforeEach(() => {
 
 	reads.set(API.myProfile, PROFILE);
 	reads.set(API.myOpenRegistrations, { volunteer: null, member: null });
+	reads.set(API.membershipTypes, {
+		types: [{
+			known: true,
+			membership_type: "annual",
+			membership_type_name: "Annual",
+			description: null,
+			amount: 0,
+			currency: "KES",
+			free: true,
+			is_lifetime: false,
+			duration_days: 365,
+			requires_approver: false,
+			benefits: [],
+		}],
+		questions: [],
+		declarations: [],
+		payment_methods: [],
+	});
 	reads.set(API.identityOptions, {
 		genders: ["Female", "Male"],
 		// Core's `Disability` register, two rows deep enough to tell a filtered
@@ -316,6 +334,47 @@ describe("the guest registration hand-off", () => {
 
 		expect(await screen.findByText("Volunteer registration")).toBeTruthy();
 		expect(screen.getByRole("heading", { name: "Sign in to continue" })).toBeTruthy();
+	});
+});
+
+describe("membership payment choice", () => {
+	beforeEach(() => {
+		reads.set(API.membershipTypes, {
+			types: [{
+				known: true,
+				membership_type: "annual",
+				membership_type_name: "Annual",
+				description: null,
+				amount: 1000,
+				currency: "KES",
+				free: false,
+				is_lifetime: false,
+				duration_days: 365,
+				requires_approver: false,
+				benefits: [],
+			}],
+			questions: [],
+			declarations: [],
+			payment_methods: [
+				{ gateway: "Manual", label: "Pay at a branch office", description: "", instructions: "", in_person: true },
+				{ gateway: "Mpesa Daraja", label: "M-Pesa", description: "Pay by phone", instructions: "", in_person: false },
+			],
+		});
+	});
+
+	it("takes a selected paid plan straight to an explicit payment choice", async () => {
+		mount(<Join />, { route: "/join?path=member&type=annual" });
+
+		expect(await screen.findByRole("heading", { name: "Payment method" })).toBeTruthy();
+		expect(screen.getByText("KES 1,000")).toBeTruthy();
+		expect(screen.getByRole("radio", { name: /M-Pesa/ }).getAttribute("aria-checked")).toBe("false");
+		expect(screen.getByRole("radio", { name: /Pay at a branch office/ }).getAttribute("aria-checked")).toBe("false");
+		expect(held()).toBe(true);
+
+		fireEvent.click(screen.getByRole("radio", { name: /M-Pesa/ }));
+		expect(held()).toBe(false);
+		await goOn();
+		expect(await onTheIdentityStep()).toBeTruthy();
 	});
 });
 
@@ -494,6 +553,14 @@ describe("leaving a step", () => {
 		await waitFor(() => expect(posted.length).toBe(1));
 		expect(posted[0].path).toBe(API.saveMyVolunteerDraft);
 		expect(posted[0].payload.geo_node).toBe(BRANCH.name);
+	});
+
+	it("saves the current step before exiting", async () => {
+		await reachTheFirstSavableStep();
+		expect(posted).toEqual([]);
+		await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save & exit" })));
+		expect(posted.at(-1)?.path).toBe(API.saveMyVolunteerDraft);
+		expect(posted.at(-1)?.payload.geo_node).toBe(BRANCH.name);
 	});
 
 	it("says nothing about having done it", async () => {

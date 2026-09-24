@@ -326,6 +326,20 @@ class TestRenewableFlag(RenewalTestCase):
 			rows[self.past_due_active.name]["membership_status"], membership_service.STATUS_ACTIVE
 		)
 
+	def test_an_expired_membership_with_a_pending_renewal_is_not_renewable_again(self):
+		result = renewal_service.renew(self.expired)
+		self.assertFalse(self.mine()[self.expired.name]["renewable"])
+
+		with fixtures.acting_as(self.user), self.assertRaisesRegex(
+			frappe.ValidationError, "already has a renewal application"
+		):
+			member_api.renew_membership(self.expired.name)
+
+		self.assertEqual(
+			frappe.db.count(fixtures.MEMBERSHIP_DOCTYPE, {"renews": self.expired.name}), 1
+		)
+		self.assertEqual(result["name"], renewal_service.existing_renewal(self.expired))
+
 	def test_the_flag_is_computed_server_side_on_every_row(self):
 		"""Structural: the DTO always carries the key, so a UI never has to guess."""
 		for row in self.mine().values():

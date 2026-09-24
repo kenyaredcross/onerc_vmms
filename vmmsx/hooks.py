@@ -261,6 +261,11 @@ after_install = "vmmsx.install.after_install"
 # See `registration/services/desk.py::on_user_insert` for why this is a doc event
 # rather than a copy of Frappe's sign-up endpoint.
 doc_events = {
+	"Geo Node": {
+		"after_insert": "vmmsx.finance.services.geo_cost_center.sync_node",
+		"on_update": "vmmsx.finance.services.geo_cost_center.sync_node",
+		"on_trash": "vmmsx.finance.services.geo_cost_center.before_delete",
+	},
 	"LMS Enrollment": {
 		"on_update": "vmmsx.volunteer.services.learning.on_enrollment_update",
 	},
@@ -335,6 +340,8 @@ on_session_creation = "vmmsx.registration.services.desk.on_session_creation"
 # layer a narrower coordinator role onto one child by naming that doctype's own
 # geo scope role in National Society Settings — see that module's docstring.
 after_migrate = [
+	"vmmsx.setup.geo_cost_center_fields.install",
+	"vmmsx.finance.services.geo_cost_center.backfill",
 	# The Custom Fields vmmsx owns on ERPNext's `Project`: the owning Geo Node,
 	# the donor block, and the risks and assumptions tables. **First**, and on
 	# every migrate rather than once in a patch, because `onerc_scopeable_doctypes`

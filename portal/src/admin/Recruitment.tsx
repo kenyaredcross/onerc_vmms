@@ -137,8 +137,17 @@ interface OpeningDetail {
 	department: string | null;
 	status: string;
 	publish: number;
+	route: string | null;
 	description: string | null;
+	posted_on: string | null;
 	closes_on: string | null;
+	closed_on: string | null;
+	staffing_plan: string | null;
+	planned_vacancies: number | null;
+	job_requisition: string | null;
+	job_opening_template: string | null;
+	publish_applications_received: boolean;
+	prevent_duplicate_applicant: boolean;
 	location: string | null;
 	vacancies: number | null;
 	employment_type: string | null;
@@ -180,12 +189,7 @@ interface OpeningDetail {
 	is_published: boolean;
 	url: string | null;
 	apply_url: string;
-	screening_questions: Array<{
-		question_id: string;
-		question: string;
-		question_type: string;
-		is_required: boolean;
-	}>;
+	screening_questions: ScreeningQuestion[];
 	pipeline: Pipeline;
 	can_write: boolean;
 }
@@ -203,6 +207,22 @@ interface RequiredAttachment {
 	document_name: string | null;
 }
 
+interface ScreeningQuestion {
+	question_id: string;
+	question: string;
+	question_type: string;
+	is_required: boolean;
+	is_knock_off: boolean;
+	help_text: string | null;
+	options: string | null;
+	enable_scoring: boolean;
+	weight: number | null;
+	max_score: number | null;
+	expected_answer: string | null;
+	depends_on_question: string | null;
+	show_if_answer_is: string | null;
+}
+
 interface Options {
 	available: boolean;
 	statuses?: string[];
@@ -212,6 +232,9 @@ interface Options {
 	departments?: { value: string; label: string }[];
 	companies?: { value: string; label: string }[];
 	employment_types?: { value: string; label: string }[];
+	opening_templates?: { value: string; label: string }[];
+	geo_nodes?: { value: string; label: string }[];
+	deployments?: { value: string; label: string }[];
 	skills?: { value: string; label: string }[];
 	languages?: { value: string; label: string }[];
 	projects?: { value: string; label: string }[];
@@ -222,10 +245,16 @@ interface Options {
 	email_templates?: { value: string; label: string }[];
 	opening_types?: string[];
 	qualification_levels?: string[];
+	question_types?: string[];
 }
 
 interface ApplicantDetail extends ApplicantRow {
 	country: string | null;
+	red_profile: string | null;
+	source: string | null;
+	source_name: string | null;
+	designation: string | null;
+	employee_referral: string | null;
 	cover_letter: string | null;
 	resume_attachment: string | null;
 	withdrawn_on: string | null;
@@ -261,11 +290,12 @@ function toggle(values: string[], key: string): string[] {
 }
 
 /** The pipeline, in the order somebody is moved through it. */
-const STAGES = ["Open", "Shortlisted", "Hold", "Accepted", "Rejected"] as const;
+const STAGES = ["Open", "Replied", "Shortlisted", "Hold", "Accepted", "Rejected"] as const;
 
 /** Each stage's dot colour on the board. Never the only signal — the heading names it. */
 const STAGE_TONE: Record<string, "neutral" | "info" | "warning" | "success" | "danger"> = {
 	Open: "info",
+	Replied: "info",
 	Shortlisted: "warning",
 	Hold: "neutral",
 	Accepted: "success",
@@ -453,15 +483,8 @@ function PipelineStrip({ pipeline, to }: { pipeline: Pipeline; to: string }) {
  * Advertising a post, and amending one.
  *
  * One form for both, because they are one act at two moments and a second form
- * would be a second place the field list drifts. Only the fields a volunteer
- * coordinator owns are here — HRMS's autograding block, its notification
- * templates and its salary range stay on the desk, where whoever configured
- * them can find them.
- *
- * **The screening questions are shown and not edited.** An application already
- * decided against a question must not have its wording changed underneath it —
- * `application.assert_questions_unlocked` enforces that server-side — so the
- * list is read-only here with a way through to the desk.
+ * would be a second place the field list drifts. The server keeps writes to a
+ * bounded list of fields and protects the question set after applications exist.
  */
 export function OpeningForm() {
 	const { name } = useParams<{ name: string }>();
@@ -483,14 +506,21 @@ export function OpeningForm() {
 		company: "",
 		department: "",
 		location: "",
-		vacancies: "",
 		employment_type: "",
+		job_opening_template: "",
+		publish_applications_received: false,
+		prevent_duplicate_applicant: false,
 		vmms_purpose: "Volunteer",
 		description: "",
+		posted_on: "",
 		closes_on: "",
+		vmms_geo_node: "",
+		vmms_project: "",
+		vmms_deployment: "",
 		vmms_available_from: "",
 		vmms_available_to: "",
 		publish: false,
+		route: "",
 		status: "Open",
 
 		// The rest of what vmmsx puts on an opening. Every one of these was a
@@ -521,6 +551,7 @@ export function OpeningForm() {
 	const [languages, setLanguages] = useState<string[]>([]);
 	const [certifications, setCertifications] = useState<DesiredCertification[]>([]);
 	const [attachments, setAttachments] = useState<RequiredAttachment[]>([]);
+	const [questions, setQuestions] = useState<ScreeningQuestion[]>([]);
 	const [failed, setFailed] = useState<string | null>(null);
 
 	// Fill the form once the record arrives. Keyed on the docname rather than on
@@ -536,14 +567,21 @@ export function OpeningForm() {
 			company: loaded.company ?? "",
 			department: loaded.department ?? "",
 			location: loaded.location ?? "",
-			vacancies: loaded.vacancies ? String(loaded.vacancies) : "",
 			employment_type: loaded.employment_type ?? "",
+			job_opening_template: loaded.job_opening_template ?? "",
+			publish_applications_received: loaded.publish_applications_received,
+			prevent_duplicate_applicant: loaded.prevent_duplicate_applicant,
 			vmms_purpose: loaded.vmms_purpose ?? "Volunteer",
 			description: loaded.description ?? "",
+			posted_on: loaded.posted_on ?? "",
 			closes_on: loaded.closes_on ?? "",
+			vmms_geo_node: loaded.vmms_geo_node ?? "",
+			vmms_project: loaded.vmms_project ?? "",
+			vmms_deployment: loaded.vmms_deployment ?? "",
 			vmms_available_from: loaded.vmms_available_from ?? "",
 			vmms_available_to: loaded.vmms_available_to ?? "",
 			publish: loaded.is_published,
+			route: loaded.route ?? "",
 			status: loaded.status ?? "Open",
 
 			opportunity_type: loaded.opportunity_type ?? "",
@@ -575,6 +613,7 @@ export function OpeningForm() {
 		setLanguages(loaded.vmms_desired_languages ?? []);
 		setCertifications(loaded.vmms_desired_certifications ?? []);
 		setAttachments(loaded.required_attachments ?? []);
+		setQuestions(loaded.screening_questions ?? []);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [loaded?.name]);
 
@@ -588,7 +627,7 @@ export function OpeningForm() {
 	if (choices && !choices.available) return <NotInstalled />;
 	if (editing && existing.error) return <ErrorNote>{errorMessage(existing.error)}</ErrorNote>;
 
-	const ready = form.job_title.trim().length > 0;
+	const ready = Boolean(form.job_title.trim() && form.company && form.designation);
 
 	const submit = async () => {
 		setFailed(null);
@@ -598,8 +637,8 @@ export function OpeningForm() {
 				name: editing ? name : undefined,
 				payload: {
 					...form,
-					vacancies: form.vacancies ? Number(form.vacancies) : null,
 					publish: form.publish ? 1 : 0,
+					...(form.posted_on ? { posted_on: form.posted_on } : {}),
 					closes_on: form.closes_on || null,
 					vmms_available_from: form.vmms_available_from || null,
 					vmms_available_to: form.vmms_available_to || null,
@@ -613,6 +652,7 @@ export function OpeningForm() {
 					vmms_desired_languages: languages,
 					vmms_desired_certifications: certifications,
 					required_attachments: attachments,
+					screening_questions: questions,
 				},
 			});
 
@@ -641,7 +681,7 @@ export function OpeningForm() {
 				<Card className="space-y-6">
 					<FormSection title="The post">
 						<FieldGrid>
-							<Field label="Title" required className="sm:col-span-2">
+							<Field label="Job Title" required className="sm:col-span-2">
 								<TextInput
 									value={form.job_title}
 									onChange={set("job_title") as (value: string) => void}
@@ -650,7 +690,7 @@ export function OpeningForm() {
 							</Field>
 
 							<Field
-								label="Kind"
+								label="Purpose"
 								hint={
 									form.vmms_purpose === "Volunteer"
 										? "Volunteers apply inside their own portal, with what the society already holds about them filled in."
@@ -667,7 +707,7 @@ export function OpeningForm() {
 								/>
 							</Field>
 
-							<Field label="Designation">
+							<Field label="Designation" required>
 								<Select
 									value={form.designation}
 									onChange={set("designation") as (value: string) => void}
@@ -685,7 +725,7 @@ export function OpeningForm() {
 								/>
 							</Field>
 
-							<Field label="Company">
+							<Field label="Company" required>
 								<Select
 									value={form.company}
 									onChange={set("company") as (value: string) => void}
@@ -694,23 +734,7 @@ export function OpeningForm() {
 								/>
 							</Field>
 
-							<Field
-								label="Where"
-								hint="Written as it should read on the advertisement."
-							>
-								<TextInput
-									value={form.location}
-									onChange={set("location") as (value: string) => void}
-									placeholder="Kilombero District"
-								/>
-							</Field>
-
-							{/* The society's own register of places, which is a different
-							    question from the line above: one is what the posting
-							    says, the other is the record it is filed against. See
-							    `setup/job_opening_fields.py`, which explains why both
-							    exist and why only one of them is a link. */}
-							<Field label="Recorded location" hint="From the society's own list of places.">
+							<Field label="Location" hint="From the society's own list of places.">
 								<Select
 									value={form.job_location}
 									onChange={set("job_location") as (value: string) => void}
@@ -733,7 +757,7 @@ export function OpeningForm() {
 							    an empty one. */}
 							{(choices?.opening_types ?? []).length > 0 && (
 								<Field
-									label="Open to"
+									label="Opening Type"
 									hint="Whether people outside the society may apply."
 								>
 									<Select
@@ -749,16 +773,7 @@ export function OpeningForm() {
 							)}
 
 
-							<Field label="Places" hint="How many people are being taken on.">
-								<TextInput
-									type="number"
-									min={1}
-									value={form.vacancies}
-									onChange={set("vacancies") as (value: string) => void}
-								/>
-							</Field>
-
-							<Field label="What the post is" className="sm:col-span-2">
+							<Field label="Description" className="sm:col-span-2">
 								<TextArea
 									rows={8}
 									value={form.description}
@@ -766,11 +781,14 @@ export function OpeningForm() {
 									placeholder="What the work is, who it is for, and what somebody would be doing."
 								/>
 							</Field>
+							<Field label="Route" hint="The path used for the published job page.">
+								<TextInput value={form.route} onChange={set("route") as (value: string) => void} placeholder="Generated from the title if blank" />
+							</Field>
 						</FieldGrid>
 					</FormSection>
 
 					<FormSection
-						title="What the society is looking for"
+						title="Desired Attributes"
 						hint="Used to match volunteers to the post. Neither is a bar to applying."
 					>
 						<div className="space-y-4">
@@ -780,7 +798,7 @@ export function OpeningForm() {
 							    opening and a volunteer filling in their own record
 							    should be operating the same field. */}
 							<MultiCombo
-								label="Desired skills"
+								label="Desired Skills"
 								selected={skills}
 								onToggle={(key) => setSkills(toggle(skills, key))}
 								options={(choices?.skills ?? []).map((option) => ({
@@ -791,7 +809,7 @@ export function OpeningForm() {
 								empty="No skills are configured on this site yet."
 							/>
 							<MultiCombo
-								label="Desired languages"
+								label="Desired Languages"
 								selected={languages}
 								onToggle={(key) => setLanguages(toggle(languages, key))}
 								options={(choices?.languages ?? []).map((option) => ({
@@ -808,7 +826,7 @@ export function OpeningForm() {
 							    a preference. Same shape a terms of reference uses for
 							    the same question. */}
 							<RowEditor<DesiredCertification>
-								title="Desired certifications"
+								title="Desired Certifications"
 								lead="Mandatory rows are a condition of the post; the rest rank a candidate higher."
 								addLabel="Add a certification"
 								empty="No certifications asked for."
@@ -822,14 +840,14 @@ export function OpeningForm() {
 								columns={[
 									{
 										key: "certification_type",
-										label: "Certification",
+										label: "Certification Type",
 										kind: "select",
 										span: 5,
 										options: choices?.certification_types ?? [],
 									},
 									{
 										key: "is_mandatory",
-										label: "Must hold it",
+										label: "Mandatory",
 										kind: "check",
 										checkedLabel: "Mandatory",
 										span: 3,
@@ -841,32 +859,30 @@ export function OpeningForm() {
 					</FormSection>
 
 					<FormSection
-						title="Screening"
-						hint="How an application is scored, and what disqualifies one outright. Every rule here is optional; a post with none is decided by a person reading it."
+						title="Requirements"
+						hint="These settings record the opening's screening criteria. Automatic grading is not active yet."
 					>
 						<div className="space-y-5">
 							<Check
 								checked={form.enable_autograding}
 								onChange={set("enable_autograding") as (value: boolean) => void}
-								label="Score applications automatically"
-								hint="Applications are graded against the screening questions as they arrive."
+								label="Enable Auto-Grading"
+								hint="Records the intended screening rule. Automatic grading is not active yet."
 							/>
 
 							<FieldGrid>
 								<Field
-									label="Pass score"
-									hint="Below this an application is not shortlisted."
+									label="Minimum Pass Score"
 								>
 									<TextInput
 										type="number"
 										min={0}
 										value={form.minimum_pass_score}
 										onChange={set("minimum_pass_score") as (value: string) => void}
-										disabled={!form.enable_autograding}
 									/>
 								</Field>
 
-								<Field label="Minimum education">
+								<Field label="Minimum Qualification Level">
 									<Select
 										value={form.minimum_qualification_level}
 										onChange={
@@ -880,7 +896,7 @@ export function OpeningForm() {
 									/>
 								</Field>
 
-								<Field label="Required grade or GPA" hint="As the society words it.">
+								<Field label="Required GPA / Grade" hint="As the society words it.">
 									<TextInput
 										value={form.required_gpa__grade}
 										onChange={set("required_gpa__grade") as (value: string) => void}
@@ -896,7 +912,7 @@ export function OpeningForm() {
 									/>
 								</Field>
 
-								<Field label="Minimum years of experience">
+								<Field label="Minimum Years of Experience">
 									<TextInput
 										type="number"
 										min={0}
@@ -907,7 +923,7 @@ export function OpeningForm() {
 									/>
 								</Field>
 
-								<Field label="In what" hint="The area that experience has to be in.">
+								<Field label="Experience Area" hint="The area that experience has to be in.">
 									<TextInput
 										value={form.experience_area}
 										onChange={set("experience_area") as (value: string) => void}
@@ -922,7 +938,7 @@ export function OpeningForm() {
 									onChange={
 										set("allow_equivalent_experience") as (value: boolean) => void
 									}
-									label="Accept equivalent experience instead of the qualification"
+									label="Allow Equivalent Experience"
 									hint="Somebody who has done the work but does not hold the certificate is still considered."
 								/>
 								<Check
@@ -930,7 +946,7 @@ export function OpeningForm() {
 									onChange={
 										set("disqualify_if_below_minimum") as (value: boolean) => void
 									}
-									label="Turn down anybody below the minimums"
+									label="Disqualify if Below Minimum"
 									hint="Otherwise they are ranked lower and a person still reads them."
 								/>
 								<Check
@@ -938,12 +954,12 @@ export function OpeningForm() {
 									onChange={
 										set("disqualify_if_requirement_not_met") as (value: boolean) => void
 									}
-									label="Turn down anybody missing a required certification or document"
+									label="Disqualify if Requirement Not Met"
 								/>
 							</div>
 
 							<RowEditor<RequiredAttachment>
-								title="Required attachments"
+								title="Required Attachments"
 								lead="Documents somebody has to upload before the application form will take their answer."
 								addLabel="Add a document"
 								empty="Nothing has to be attached."
@@ -953,14 +969,14 @@ export function OpeningForm() {
 								columns={[
 									{
 										key: "type",
-										label: "Kind of document",
+										label: "Type",
 										kind: "select",
 										span: 5,
 										options: choices?.document_types ?? [],
 									},
 									{
 										key: "document_name",
-										label: "What to call it on the form",
+										label: "Document Name",
 										span: 7,
 									},
 								]}
@@ -968,9 +984,35 @@ export function OpeningForm() {
 						</div>
 					</FormSection>
 
+					<FormSection title="Screening Questions" hint="Question IDs, types and required flags are locked once someone applies. The server checks this when saving.">
+						<RowEditor<ScreeningQuestion>
+							title="Screening Questions"
+							addLabel="Add a question"
+							empty="No screening questions."
+							rows={questions}
+							onChange={setQuestions}
+							blank={() => ({ question_id: "", question: "", question_type: "Text", is_required: false, is_knock_off: false, help_text: "", options: "", enable_scoring: false, weight: null, max_score: null, expected_answer: "", depends_on_question: "", show_if_answer_is: "" })}
+							columns={[
+								{ key: "question_id", label: "Question ID", span: 3 },
+								{ key: "question_type", label: "Question Type", kind: "select", span: 4, options: (choices?.question_types ?? []).map((value) => ({ value, label: value })) },
+								{ key: "question", label: "Question", kind: "area", span: 12 },
+								{ key: "help_text", label: "Help Text", kind: "area", span: 12 },
+								{ key: "options", label: "Options", kind: "area", span: 12 },
+								{ key: "is_required", label: "Is Required", kind: "check", checkedLabel: "Required", span: 3 },
+								{ key: "is_knock_off", label: "Is Knock Off", kind: "check", checkedLabel: "Knock off", span: 3 },
+								{ key: "enable_scoring", label: "Enable Scoring", kind: "check", checkedLabel: "Score", span: 3 },
+								{ key: "weight", label: "Weight", kind: "number", span: 3 },
+								{ key: "max_score", label: "Max Score", kind: "number", span: 3 },
+								{ key: "expected_answer", label: "Expected Answer", kind: "area", span: 12 },
+								{ key: "depends_on_question", label: "Depends On Question", span: 6 },
+								{ key: "show_if_answer_is", label: "Show If Answer Is", span: 6 },
+							]}
+						/>
+					</FormSection>
+
 					<FormSection
-						title="Turning people down"
-						hint="What an unsuccessful applicant hears, and when. Nothing is sent unless this is switched on."
+						title="Rejection Notification Settings"
+						hint="These settings record notification preferences. Automatic rejection emails are not active yet."
 					>
 						<div className="space-y-5">
 							<Check
@@ -980,12 +1022,12 @@ export function OpeningForm() {
 										value: boolean,
 									) => void
 								}
-								label="Tell unsuccessful applicants automatically"
-								hint="Off by default. With it off, somebody at the branch writes to them."
+								label="Enable Automatic Rejection Notifications"
+								hint="Records the notification setting configured on the opening."
 							/>
 
 							<FieldGrid>
-								<Field label="Email template" className="sm:col-span-2">
+								<Field label="Rejection Email Template" className="sm:col-span-2">
 									<Select
 										value={form.rejection_email_template}
 										onChange={
@@ -993,12 +1035,11 @@ export function OpeningForm() {
 										}
 										placeholder="Not set"
 										options={choices?.email_templates ?? []}
-										disabled={!form.enable_automatic_rejection_notifications}
 									/>
 								</Field>
 
 								<Field
-									label="Wait this many days"
+									label="Notify Unshortlisted Applicants After"
 									hint="Before writing to somebody who was never shortlisted."
 								>
 									<TextInput
@@ -1010,12 +1051,11 @@ export function OpeningForm() {
 												value: string,
 											) => void
 										}
-										disabled={!form.enable_automatic_rejection_notifications}
 									/>
 								</Field>
 
 								<Field
-									label="Write to shortlisted candidates on"
+									label="Shortlisted Rejection Notification Date"
 									hint="A single date, so everybody interviewed hears on the same day."
 								>
 									<TextInput
@@ -1026,7 +1066,6 @@ export function OpeningForm() {
 												value: string,
 											) => void
 										}
-										disabled={!form.enable_automatic_rejection_notifications}
 									/>
 								</Field>
 							</FieldGrid>
@@ -1036,23 +1075,25 @@ export function OpeningForm() {
 								onChange={
 									set("send_rejection_email_immediately") as (value: boolean) => void
 								}
-								label="Send as soon as the decision is made"
+								label="Send Rejection Email Immediately"
 								hint="Rather than waiting for the dates above."
-								disabled={!form.enable_automatic_rejection_notifications}
 							/>
 						</div>
 					</FormSection>
 
 					<FormSection title="Dates">
 						<FieldGrid>
-							<Field label="Applications close" hint="Leave empty to keep it open.">
+							<Field label="Posted On">
+								<TextInput type="datetime-local" value={form.posted_on} onChange={set("posted_on") as (value: string) => void} />
+							</Field>
+							<Field label="Closes On">
 								<TextInput
-									type="date"
+									type="datetime-local"
 									value={form.closes_on}
 									onChange={set("closes_on") as (value: string) => void}
 								/>
 							</Field>
-							<Field label="Employment type">
+							<Field label="Opportunity Type">
 								<Select
 									value={form.employment_type}
 									onChange={set("employment_type") as (value: string) => void}
@@ -1060,19 +1101,31 @@ export function OpeningForm() {
 									options={choices?.employment_types ?? []}
 								/>
 							</Field>
-							<Field label="Work starts">
+							<Field label="Needed From">
 								<TextInput
 									type="date"
 									value={form.vmms_available_from}
 									onChange={set("vmms_available_from") as (value: string) => void}
 								/>
 							</Field>
-							<Field label="Work ends">
+							<Field label="Needed Until">
 								<TextInput
 									type="date"
 									value={form.vmms_available_to}
 									onChange={set("vmms_available_to") as (value: string) => void}
 								/>
+							</Field>
+							<Field label="Job Opening Template">
+								<Select value={form.job_opening_template} onChange={set("job_opening_template") as (value: string) => void} placeholder="Not set" options={choices?.opening_templates ?? []} />
+							</Field>
+							<Field label="Owning Geo Node">
+								<Select value={form.vmms_geo_node} onChange={set("vmms_geo_node") as (value: string) => void} placeholder="Not set" options={choices?.geo_nodes ?? []} />
+							</Field>
+							<Field label="Project">
+								<Select value={form.vmms_project} onChange={set("vmms_project") as (value: string) => void} placeholder="Not set" options={choices?.projects ?? []} />
+							</Field>
+							<Field label="Deployment">
+								<Select value={form.vmms_deployment} onChange={set("vmms_deployment") as (value: string) => void} placeholder="Not set" options={choices?.deployments ?? []} />
 							</Field>
 						</FieldGrid>
 					</FormSection>
@@ -1094,9 +1147,11 @@ export function OpeningForm() {
 						<Check
 							checked={form.publish}
 							onChange={set("publish") as (value: boolean) => void}
-							label="Show on the society's website"
+							label="Publish on website"
 							hint="An open post can be left unadvertised and filled by invitation."
 						/>
+						<Check checked={form.publish_applications_received} onChange={set("publish_applications_received") as (value: boolean) => void} label="Publish Applications Received" />
+						<Check checked={form.prevent_duplicate_applicant} onChange={set("prevent_duplicate_applicant") as (value: boolean) => void} label="Prevent Duplicate Applications" />
 					</DecisionCard>
 
 					<div className="grid gap-2">
@@ -1117,23 +1172,6 @@ export function OpeningForm() {
 						</Button>
 					</div>
 
-					{editing && loaded && loaded.screening_questions.length > 0 && (
-						<Card>
-							<h3 className="text-[13px] font-semibold text-ink">Screening questions</h3>
-							<ul className="mt-2.5 space-y-2">
-								{loaded.screening_questions.map((question) => (
-									<li key={question.question_id} className="text-[12.5px] leading-relaxed text-slate-strong">
-										{question.question}
-										{question.is_required && <span className="ml-1 text-danger">*</span>}
-									</li>
-								))}
-							</ul>
-							<p className="mt-3 text-[11.5px] leading-relaxed text-muted">
-								Edited on the desk. Wording is copied onto each answer when somebody applies, so a
-								question changed now does not change what an earlier applicant was asked.
-							</p>
-						</Card>
-					)}
 				</div>
 			</div>
 		</>
@@ -1287,13 +1325,21 @@ export function OpeningDetailPage() {
 						<DetailList>
 							<Detail label="Designation">{doc.designation ?? "—"}</Detail>
 							<Detail label="Department">{doc.department ?? "—"}</Detail>
-							<Detail label="Where">{doc.location ?? "—"}</Detail>
-							<Detail label="Places">{doc.vacancies ?? "—"}</Detail>
-							<Detail label="Closes">{doc.closes_on ? formatDate(doc.closes_on) : "Left open"}</Detail>
-							<Detail label="Work starts">
+							<Detail label="Location">{doc.job_location ?? "—"}</Detail>
+							<Detail label="Vacancies">{doc.vacancies ?? "—"}</Detail>
+							<Detail label="Planned number of Positions">{doc.planned_vacancies ?? "—"}</Detail>
+							<Detail label="Staffing Plan">{doc.staffing_plan ?? "—"}</Detail>
+							<Detail label="Job Requisition">{doc.job_requisition ?? "—"}</Detail>
+							<Detail label="Posted On">{doc.posted_on ? formatDate(doc.posted_on) : "—"}</Detail>
+							<Detail label="Closes On">{doc.closes_on ? formatDate(doc.closes_on) : "—"}</Detail>
+							<Detail label="Closed On">{doc.closed_on ? formatDate(doc.closed_on) : "—"}</Detail>
+							<Detail label="Needed From">
 								{doc.vmms_available_from ? formatDate(doc.vmms_available_from) : "—"}
 							</Detail>
-							<Detail label="Branch">{branchPath(doc.vmms_geo_node) || doc.vmms_geo_node || "—"}</Detail>
+							<Detail label="Needed Until">{doc.vmms_available_to ? formatDate(doc.vmms_available_to) : "—"}</Detail>
+							<Detail label="Owning Geo Node">{branchPath(doc.vmms_geo_node) || doc.vmms_geo_node || "—"}</Detail>
+							<Detail label="Project">{doc.vmms_project ?? "—"}</Detail>
+							<Detail label="Deployment">{doc.vmms_deployment ?? "—"}</Detail>
 						</DetailList>
 
 						{(doc.vmms_desired_skills.length > 0 || doc.vmms_desired_languages.length > 0) && (
@@ -1425,7 +1471,7 @@ export function JobApplications() {
 				</Empty>
 			) : (
 				<Card pad={false}>
-					<Table head={["Applicant", "Opening", "Applied", "Stage"]} minWidth={780}>
+						<Table head={["Applicant", "Job Opening", "Applied", "Status"]} minWidth={780}>
 						{rows.map((row) => (
 							<Row key={row.name}>
 								<NameCell
@@ -1524,7 +1570,7 @@ export function JobApplicant() {
 				<div className="min-w-0 space-y-4">
 					{doc.cover_letter && (
 						<Card>
-							<h2 className="mb-2.5 text-[13.5px] font-semibold text-ink">In their words</h2>
+							<h2 className="mb-2.5 text-[13.5px] font-semibold text-ink">Cover Letter</h2>
 							<p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-slate-strong">
 								{doc.cover_letter}
 							</p>
@@ -1563,7 +1609,10 @@ export function JobApplicant() {
 					)}
 
 					{doc.is_withdrawn && (
-						<Card accent="danger">
+						// The danger hairline, written out here rather than as a `Card`
+						// prop: the volunteer portal wanted no red edges on any of its
+						// panels, and this is the one console panel that still earns one.
+						<Card className="!border-danger/55">
 							<h2 className="text-[13.5px] font-semibold text-ink">Withdrawn</h2>
 							<p className="mt-1.5 text-[13px] leading-relaxed text-slate-strong">
 								{doc.withdrawal_reason || "No reason was given."}
@@ -1577,9 +1626,14 @@ export function JobApplicant() {
 					<Card>
 						<h2 className="mb-3.5 text-[13.5px] font-semibold text-ink">Who this is</h2>
 						<DetailList>
-							<Detail label="Email">{doc.email ?? "—"}</Detail>
-							<Detail label="Phone">{doc.phone ?? "—"}</Detail>
-							<Detail label="Branch">{branchPath(doc.geo_node) || doc.geo_node || "—"}</Detail>
+							<Detail label="Full Name">{doc.applicant_name ?? "—"}</Detail>
+							<Detail label="Email Address">{doc.email ?? "—"}</Detail>
+							<Detail label="Phone Number">{doc.phone ?? "—"}</Detail>
+							<Detail label="Country">{doc.country ?? "—"}</Detail>
+							<Detail label="Designation">{doc.designation ?? "—"}</Detail>
+							<Detail label="Source">{doc.source ?? "—"}</Detail>
+							<Detail label="Source Name">{doc.source_name ?? "—"}</Detail>
+							<Detail label="Geo Node">{branchPath(doc.geo_node) || doc.geo_node || "—"}</Detail>
 							<Detail label="Volunteer">
 								{doc.volunteer ? (
 									<Link
@@ -1592,6 +1646,8 @@ export function JobApplicant() {
 									"Not in the register"
 								)}
 							</Detail>
+							<Detail label="Red Profile">{doc.red_profile ?? "—"}</Detail>
+							<Detail label="Employee Referral">{doc.employee_referral ?? "—"}</Detail>
 						</DetailList>
 
 						{doc.resume_attachment && (
@@ -1602,14 +1658,14 @@ export function JobApplicant() {
 								className="mt-4 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-blue hover:text-blue-hover"
 							>
 								<Icon.file size={14} />
-								Open their CV
+								Attachment
 							</a>
 						)}
 					</Card>
 
 					{doc.can_write && !doc.is_withdrawn && (
 						<DecisionCard eyebrow="Decision" title="Move this application">
-							<Field label="Stage">
+							<Field label="Status">
 								<Select
 									value={chosen}
 									onChange={setStage}
@@ -1618,7 +1674,7 @@ export function JobApplicant() {
 							</Field>
 
 							<Button onClick={() => void decide()} disabled={chosen === current} busy={move.loading}>
-								Save stage
+								Save status
 							</Button>
 
 							{/* Accepting and placing are two decisions, and the server

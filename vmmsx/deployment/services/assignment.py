@@ -104,10 +104,11 @@ ATTENDED = (STATUS_PARTICIPATED, STATUS_PARTIAL)
 
 # This person is, or was, on the deployment: they hold a place against the
 # headcount, and this is what `participation.is_participant` reads. The two
-# attendance outcomes are in it for a reason worth stating — a deployment that
-# has been closed out and had its attendance recorded must not thereby stop its
-# own participants filing the hours they served, which is exactly the rule
-# `participation.OWNERSHIP_RULE` exists to protect.
+# attendance outcomes are in it for a reason worth stating — recording that
+# somebody attended is the very act that writes their hours onto their record,
+# so an outcome that dropped them off the roster would refuse the log it had
+# just caused. `No Show` is not in it, and that is how somebody who did not come
+# ends up with no hours, by the same rule rather than by a second one.
 ON_DEPLOYMENT = (STATUS_ASSIGNED, STATUS_ACCEPTED, *ATTENDED)
 
 # Still somebody's problem — a coordinator's or a volunteer's.
@@ -665,10 +666,12 @@ def record_attendance(
 	back. Idempotent on the same outcome, which is what makes a double-clicked
 	button harmless.
 
-	`hours` is the coordinator's verified figure and is deliberately not the
-	volunteer's time log. The two are different claims by different people, and a
-	register that merged them would have no way to show a disagreement — which is
-	the whole reason anybody verifies anything.
+	**`hours` is where a volunteer's hours come from.** Volunteers do not file
+	their own time: the figure verified here is written onto the volunteer's
+	record as their deployment time log, so the register, the analytics and the
+	person's own screen all read one statement — made by somebody who was there
+	to see the work — rather than a claim and a counter-claim nobody can settle.
+	Correcting the figure corrects the log; an outcome of `No Show` withdraws it.
 	"""
 	if outcome not in OUTCOMES:
 		frappe.throw(
@@ -695,6 +698,15 @@ def record_attendance(
 		assignment_doc.participation_notes = notes
 
 	assignment_doc.save()
+
+	# The volunteer's own record of the hours, written from the figure just
+	# verified. It is one statement reaching two places, not two claims: see
+	# `timelog.from_verified_attendance`, which also withdraws the log when the
+	# outcome says they were not there.
+	from vmmsx.volunteer.services import timelog
+
+	timelog.from_verified_attendance(assignment_doc)
+
 	_note_in_feed(
 		assignment_doc,
 		_("{0}: {1}.").format(volunteer_label(assignment_doc.volunteer), _(outcome)),

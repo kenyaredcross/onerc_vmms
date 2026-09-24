@@ -6,14 +6,15 @@ import { EditableText } from "../content/Editable";
 import { API, errorMessage, myCertificateUrl } from "../lib/api";
 import { branchPath, formatDate, formatMoney } from "../lib/format";
 import { Icon } from "../ui/icons";
+import { PlanCards, planPrice } from "../ui/PlanCards";
 import { HolderCard } from "./Profile";
 import { ProofOfMembership } from "./ProofOfMembership";
 import {
 	Button,
 	Card,
-	Empty,
 	ErrorNote,
 	Notice,
+	PageHead,
 	Spinner,
 	StatusBadge,
 	cx,
@@ -79,28 +80,30 @@ export default function Membership() {
 
 	return (
 		<>
-			<header className="mx-auto mb-9 max-w-[790px] text-center">
-				<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue">
-					<EditableText k="portal.membership.eyebrow" fallback="Member account" />
-				</p>
-				<h1 className="mt-2.5 font-display text-[32px] font-extrabold leading-[1.08] tracking-[-0.04em] text-ink sm:text-[40px]">
-					<EditableText k="portal.membership.heading" fallback="Manage your memberships" />
-				</h1>
-				<p className="mx-auto mt-2.5 max-w-[650px] text-[13px] leading-relaxed text-slate-body">
+			{/* The portal's own page head rather than a centred 40px hero. Every
+			    other screen opens this way, and the cards below are what this page
+			    is actually about: a heading competing with them for the eye was
+			    the loudest thing on a page whose job is a comparison. */}
+			<PageHead
+				eyebrow={<EditableText k="portal.membership.eyebrow" fallback="Member account" />}
+				title={<EditableText k="portal.membership.heading" fallback="Membership" />}
+				lead={
 					<EditableText
 						k="portal.membership.lead"
 						fallback="Choose the membership that fits you, then manage every branch membership from one account."
 					/>
-				</p>
-				{rows.length > 0 && (
-					<a
-						href="#your-memberships"
-						className="mt-5 inline-flex rounded-lg bg-rail px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-rail-soft"
-					>
-						Go to your memberships
-					</a>
-				)}
-			</header>
+				}
+				actions={
+					rows.length > 0 ? (
+						<a
+							href="#your-memberships"
+							className="inline-flex min-h-[38px] items-center rounded-lg border border-card-line bg-white px-3.5 text-[12.5px] font-semibold text-slate-strong transition hover:border-slate-faint hover:text-ink"
+						>
+							Go to your memberships
+						</a>
+					) : undefined
+				}
+			/>
 
 			{error && (
 				<div className="mb-6">
@@ -109,12 +112,12 @@ export default function Membership() {
 			)}
 
 			{/* ------------------------------------------------------------- plans */}
-			<section className="mb-14">
-				<header className="mx-auto mb-6 max-w-[700px] text-center">
-					<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue">
-						<EditableText k="portal.membership.plans.eyebrow" fallback="Membership options" />
+			<section className="mx-auto mb-12 w-full max-w-[1060px]">
+				<header className="mb-5 max-w-[640px]">
+					<p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
+						<EditableText k="portal.membership.plans.eyebrow" fallback="Membership types" />
 					</p>
-					<h2 className="mt-1.5 font-display text-[22px] font-extrabold tracking-[-0.03em] text-ink">
+					<h2 className="mt-1.5 font-display text-[19px] font-bold tracking-[-0.02em] text-ink">
 						{pending.length > 0 ? (
 							<EditableText
 								k="portal.membership.plans.heading.pending"
@@ -127,49 +130,62 @@ export default function Membership() {
 							/>
 						)}
 					</h2>
-					<p className="mx-auto mt-2 max-w-[560px] text-[12px] leading-relaxed text-slate-body">
+					<p className="mt-2 text-[12.5px] leading-relaxed text-slate-body">
 						{pending.length > 0
 							? "Your application is with your branch. There is nothing to choose until they have decided on it."
 							: "Review the benefits and eligibility guidance, then join through the branch that serves you."}
 					</p>
 				</header>
 
-				{types.isLoading ? (
-					<Spinner label="Loading membership types…" />
-				) : priced.length === 0 ? (
-					<Empty icon={Icon.card} title="No membership types published">
-						Your society has not published any membership types yet. Ask your branch when they will
-						be available.
-					</Empty>
-				) : (
-					<div
-						className={cx(
-							"mx-auto grid w-full gap-3.5 sm:grid-cols-2",
-							priced.length > 2 ? "max-w-[1040px] xl:grid-cols-4" : "max-w-[720px]",
-						)}
-					>
-						{priced.map((plan) => (
-							<PlanCard
-								key={plan.membership_type}
-								plan={plan}
-								held={holdsType.has(plan.membership_type)}
-								// Nothing to choose while something is undecided: choosing
-								// would open a wizard that can only say the application is
-								// already in.
-								onJoin={pending.length > 0 ? undefined : () => join(plan.membership_type)}
-								// The same condition, for the same reason — and never for a
-								// plan somebody already holds here, where there is nothing
-								// left to prove.
-								onProve={
-									pending.length > 0 || holdsType.has(plan.membership_type)
-										? undefined
-										: () => setProving(plan)
-								}
-								onDetails={() => setDetail(plan)}
-							/>
-						))}
-					</div>
-				)}
+				<PlanCards
+					types={priced}
+					loading={types.isLoading}
+					held={[...holdsType]}
+					columns={3}
+					empty="Your society has not published any membership types yet. Ask your branch when they will be available."
+					// The act, inside the price panel. Nothing to choose while
+					// something is undecided: choosing would open a wizard that can
+					// only say the application is already in.
+					action={(plan) =>
+						pending.length > 0 ? (
+							<span className="grid min-h-[38px] place-items-center rounded-lg bg-white text-[12.5px] font-semibold text-muted">
+								Application in
+							</span>
+						) : (
+							<Button className="w-full" onClick={() => join(plan.membership_type)}>
+								{/* The concept says "Join" whether or not the type is
+								    already held — a second branch is a second record,
+								    which the note under the grid explains once rather
+								    than on four buttons. */}
+								Join
+							</Button>
+						)
+					}
+					footer={(plan) => (
+						<>
+							<button
+								type="button"
+								onClick={() => setDetail(plan)}
+								className="text-[11.5px] font-semibold text-blue underline-offset-2 transition hover:text-blue-hover hover:underline"
+							>
+								View details
+							</button>
+							{/* Claiming this plan rather than joining it, and deliberately
+							    the quiet action of the two: a new applicant outnumbers
+							    somebody proving an old card many times over. Never on one
+							    they already hold, where there is nothing left to prove. */}
+							{pending.length === 0 && !holdsType.has(plan.membership_type) && (
+								<button
+									type="button"
+									onClick={() => setProving(plan)}
+									className="text-[11.5px] font-semibold text-slate-body underline-offset-2 transition hover:text-ink hover:underline"
+								>
+									Already a member of this?
+								</button>
+							)}
+						</>
+					)}
+				/>
 
 				{types.error && (
 					<div className="mt-4">
@@ -178,7 +194,7 @@ export default function Membership() {
 				)}
 
 				{priced.length > 0 && (
-					<div className="mx-auto mt-5 max-w-[1040px]">
+					<div className="mt-5">
 						<Notice>
 							<strong className="font-semibold text-ink">Joining another branch?</strong> A new
 							branch application creates another membership record. Your existing memberships remain
@@ -189,23 +205,27 @@ export default function Membership() {
 			</section>
 
 			{/* ----------------------------------------------------------- records */}
-			<section id="your-memberships" className="mx-auto w-full max-w-[1040px] scroll-mt-20">
-				<header className="mb-4 flex flex-wrap items-end justify-between gap-4">
-					<div>
-						<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue">
+			<section id="your-memberships" className="mx-auto w-full max-w-[1060px] scroll-mt-20">
+				{/* The same header shape as the plans above it, so the page reads as
+				    two sections of one thing rather than two designs meeting. */}
+				<header className="mb-5 flex flex-wrap items-end justify-between gap-4">
+					<div className="min-w-0 max-w-[640px]">
+						<p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
 							Your account
 						</p>
-						<h2 className="mt-1.5 font-display text-[22px] font-extrabold tracking-[-0.03em] text-ink">
+						<h2 className="mt-1.5 font-display text-[19px] font-bold tracking-[-0.02em] text-ink">
 							Your memberships
 						</h2>
-						<p className="mt-1.5 text-[12px] text-slate-body">{summarise(held, pending)}</p>
+						<p className="mt-2 text-[12.5px] leading-relaxed text-slate-body">
+							{summarise(held, pending)}
+						</p>
 					</div>
 					{rows.length > 0 && (
 						<div className="flex items-center gap-2">
-							<span className="rounded-full bg-success-soft px-2.5 py-1.5 text-[11px] font-bold text-success">
+							<span className="rounded-full border border-success-line bg-success-soft px-3 py-1.5 text-[11px] font-semibold text-success">
 								{held.length} active
 							</span>
-							<span className="rounded-full bg-surface px-2.5 py-1.5 text-[11px] font-bold text-slate-body">
+							<span className="rounded-full border border-card-line bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-body">
 								{rows.length} {rows.length === 1 ? "record" : "records"}
 							</span>
 						</div>
@@ -215,9 +235,9 @@ export default function Membership() {
 				{isLoading ? (
 					<Spinner label="Loading your memberships…" />
 				) : rows.length === 0 ? (
-					<div className="rounded-2xl border border-dashed border-slate-mute bg-white px-6 py-12 text-center">
+					<div className="rounded-2xl border border-dashed border-card-line bg-white px-6 py-12 text-center">
 						<span
-							className="mx-auto mb-3.5 grid h-12 w-12 place-items-center rounded-full bg-blue-soft text-blue-press"
+							className="mx-auto mb-3.5 grid h-12 w-12 place-items-center rounded-full bg-surface text-slate-strong"
 							aria-hidden="true"
 						>
 							<Icon.card size={20} />
@@ -247,10 +267,10 @@ export default function Membership() {
 						{pending.length > 0 && (
 							<>
 								<div className="pt-4">
-									<p className="text-[10px] font-bold uppercase tracking-[0.12em] text-blue">
+									<p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
 										Not active yet
 									</p>
-									<p className="mt-1 text-[12px] text-slate-body">
+									<p className="mt-1.5 text-[12.5px] text-slate-body">
 										Applications still waiting for payment or branch approval.
 									</p>
 								</div>
@@ -332,147 +352,8 @@ function summarise(held: MembershipRow[], pending: MembershipRow[]): string {
 
 /* -------------------------------------------------------------------- plans */
 
-/** How a type's price reads, in the society's own currency and its own period. */
-function price(plan: PricedType): { amount: string; period: string } {
-	return {
-		amount: plan.free ? "Free" : formatMoney(plan.amount, plan.currency),
-		period: plan.is_lifetime
-			? "one-off"
-			: plan.duration_days === 365
-				? "/ year"
-				: plan.duration_days
-					? `/ ${plan.duration_days} days`
-					: "",
-	};
-}
-
-function PlanCard({
-	plan,
-	held,
-	onJoin,
-	onProve,
-	onDetails,
-}: {
-	plan: PricedType;
-	held: boolean;
-	onJoin?: () => void;
-	/**
-	 * Claiming this plan rather than joining it. Deliberately the quiet action
-	 * of the two: a new applicant outnumbers somebody proving an old card many
-	 * times over, and giving the two equal weight would make everybody stop and
-	 * read a question only a few of them are being asked.
-	 */
-	onProve?: () => void;
-	onDetails: () => void;
-}) {
-	const { amount, period } = price(plan);
-
-	return (
-		<article className="p-card flex min-w-0 flex-col overflow-hidden">
-			<span
-				aria-hidden="true"
-				className={cx("block h-1 w-full flex-none", held ? "bg-red" : "bg-rail/15")}
-			/>
-
-			<header className="flex items-start justify-between gap-3 px-5 pt-5">
-				<h3 className="font-display text-[15px] font-bold leading-snug tracking-[-0.02em] text-ink">
-					{plan.membership_type_name}
-				</h3>
-				{held && (
-					<span className="flex-none rounded-full border border-success-line bg-success-soft px-2 py-1 text-[9.5px] font-bold text-success">
-						You hold this
-					</span>
-				)}
-			</header>
-
-			<div className="mx-5 mt-4 border-t border-card-line pt-4">
-				<strong className="font-display text-[24px] font-extrabold tracking-[-0.03em] text-ink">
-					{amount}
-				</strong>
-				{period && <span className="ml-1.5 text-[11px] text-slate-body">{period}</span>}
-				{plan.description && (
-					<p className="mt-2 text-[11.5px] leading-relaxed text-slate-body">{plan.description}</p>
-				)}
-			</div>
-
-			{plan.benefits.length > 0 && (
-				<div className="mx-5 mt-4">
-					<strong className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-red">
-						What is included
-					</strong>
-					<ul className="mt-2.5 space-y-2">
-						{plan.benefits.map((benefit) => (
-							<li key={benefit.key} className="flex items-start gap-2 text-[11.5px] text-ink">
-								<span
-									className="mt-px grid h-3.5 w-3.5 flex-none place-items-center rounded-full bg-red-soft text-[8px] font-bold text-red"
-									aria-hidden="true"
-								>
-									✓
-								</span>
-								<span className="min-w-0 leading-snug">{benefit.label}</span>
-							</li>
-						))}
-					</ul>
-				</div>
-			)}
-
-			<div className="mx-5 mt-auto grid gap-1 border-t border-card-line pt-3.5 text-center text-[10px] text-muted">
-				{plan.is_lifetime ? "Duration" : "Renewal"}
-				<strong className="text-[11.5px] font-semibold text-ink">
-					{plan.is_lifetime
-						? "Lifetime membership"
-						: plan.duration_days
-							? `Runs for ${plan.duration_days} days, then renews`
-							: "Renewable"}
-				</strong>
-				{plan.requires_approver && (
-					<span className="text-[10px] text-muted">Branch approval required</span>
-				)}
-			</div>
-
-			<div className="m-5 mt-3.5 grid gap-2 sm:grid-cols-2">
-				<button
-					type="button"
-					onClick={onDetails}
-					className="min-h-[36px] rounded-lg border border-card-line bg-white text-[11px] font-bold text-ink transition hover:border-blue"
-				>
-					View details
-				</button>
-				{onJoin ? (
-					<button
-						type="button"
-						onClick={onJoin}
-						className="min-h-[36px] rounded-lg bg-rail text-[11px] font-bold text-white transition hover:bg-rail-soft"
-					>
-						{/* The concept says "Join" whether or not the type is already
-						    held — a second branch is a second record, which the note
-						    under the grid explains once rather than on four buttons. */}
-						Join
-					</button>
-				) : (
-					<span className="grid min-h-[36px] place-items-center rounded-lg bg-surface text-[11px] font-semibold text-muted">
-						Application in
-					</span>
-				)}
-			</div>
-
-			{onProve && (
-				<div className="mx-5 mb-5 -mt-1 text-center">
-					<button
-						type="button"
-						onClick={onProve}
-						className="text-[11px] font-semibold text-slate-body underline-offset-2 hover:text-blue hover:underline"
-					>
-						Already a member of this plan?
-					</button>
-				</div>
-			)}
-		</article>
-	);
-}
-
 function PlanDetail({ plan }: { plan: PricedType }) {
-	const { amount, period } = price(plan);
+	const { amount, period, monthly } = planPrice(plan);
 
 	return (
 		<div className="space-y-4">
@@ -481,6 +362,9 @@ function PlanDetail({ plan }: { plan: PricedType }) {
 					{amount}
 				</strong>
 				{period && <span className="ml-1.5 text-[12px] text-slate-body">{period}</span>}
+				{monthly && (
+					<p className="mt-1.5 text-[12px] font-medium text-blue-press">{monthly}</p>
+				)}
 			</div>
 
 			{plan.description && (
@@ -489,18 +373,13 @@ function PlanDetail({ plan }: { plan: PricedType }) {
 
 			{plan.benefits.length > 0 && (
 				<div>
-					<strong className="text-[10px] font-bold uppercase tracking-[0.1em] text-red">
+					<strong className="text-[10px] font-bold uppercase tracking-[0.1em] text-rail-label">
 						What is included
 					</strong>
 					<ul className="mt-2.5 space-y-2">
 						{plan.benefits.map((benefit) => (
-							<li key={benefit.key} className="flex items-start gap-2 text-[12.5px] text-ink">
-								<span
-									className="mt-0.5 grid h-4 w-4 flex-none place-items-center rounded-full bg-red-soft text-[9px] font-bold text-red"
-									aria-hidden="true"
-								>
-									✓
-								</span>
+							<li key={benefit.key} className="flex items-start gap-2.5 text-[12.5px] text-ink">
+								<Icon.check size={14} className="mt-[3px] flex-none text-success" />
 								<span className="min-w-0">
 									<span className="block leading-snug">{benefit.label}</span>
 									{benefit.description && (
@@ -543,13 +422,15 @@ function MembershipCard({ row, onChanged }: { row: MembershipRow; onChanged: () 
 	const toast = useToast();
 	const [busy, setBusy] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
+	const [renewal, setRenewal] = useState<{ membership_status: string; payment?: { transaction?: string | null; message?: string } } | null>(null);
 
 	const renew = async () => {
 		setBusy(true);
 		setFailure(null);
 		try {
-			await call.post(API.renewMembership, { membership: row.name });
-			toast("Membership renewed.");
+			const answer = await call.post<{ message: { membership_status: string; payment?: { transaction?: string | null; message?: string } } }>(API.renewMembership, { membership: row.name });
+			setRenewal(answer.message);
+			toast(answer.message.membership_status === "Active" ? "Membership renewed." : "Renewal application submitted.");
 			onChanged();
 		} catch (renewError) {
 			setFailure(errorMessage(renewError, "That membership could not be renewed."));
@@ -559,7 +440,7 @@ function MembershipCard({ row, onChanged }: { row: MembershipRow; onChanged: () 
 	};
 
 	return (
-		<Card className={cx("p-[22px]", !row.is_active && "border-dashed")}>
+		<Card className={cx("rounded-2xl p-[22px]", !row.is_active && "border-dashed")}>
 			<div className="flex flex-wrap items-start gap-3.5">
 				<span
 					className="grid h-[45px] w-[45px] flex-none place-items-center rounded-xl bg-cal-cert-soft text-cal-cert"
@@ -609,6 +490,13 @@ function MembershipCard({ row, onChanged }: { row: MembershipRow; onChanged: () 
 			{failure && (
 				<div className="mt-4">
 					<ErrorNote>{failure}</ErrorNote>
+				</div>
+			)}
+			{renewal && (
+				<div className="mt-4 rounded-xl border border-card-line bg-surface p-4 text-[13px] text-ink" role="status">
+					<p className="font-semibold">Renewal application: {renewal.membership_status}</p>
+					{renewal.payment?.message && <p className="mt-2 whitespace-pre-line">{renewal.payment.message}</p>}
+					{renewal.payment?.transaction && <p className="mt-2 font-mono text-[11px]">Reference {renewal.payment.transaction}</p>}
 				</div>
 			)}
 
