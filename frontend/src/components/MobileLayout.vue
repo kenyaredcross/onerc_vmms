@@ -113,14 +113,6 @@ const addOtherLinks = () => {
 			},
 		];
 
-		if (userResource?.data?.profession === "Research Assistant") {
-			links.push({
-				name: "ICHA Assessment",
-				icon: "ClipboardList",
-				to: "IchaAssessment",
-			});
-		}
-
 		links.push(
 			{
 				name: "Profile",
