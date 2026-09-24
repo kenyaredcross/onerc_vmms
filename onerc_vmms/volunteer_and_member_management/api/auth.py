@@ -1,3 +1,9 @@
+"""Token-based auth for the standalone offline mobile mini app.
+
+The mini app runs from a ``file://`` origin inside a WebView and cannot use
+Frappe's cookie session, so it authenticates with an API key/secret pair.
+"""
+
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
