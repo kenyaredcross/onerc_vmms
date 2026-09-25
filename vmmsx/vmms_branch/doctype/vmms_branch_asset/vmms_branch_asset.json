@@ -1,0 +1,85 @@
+{
+ "doctype": "DocType",
+ "name": "VMMS Branch Asset",
+ "module": "VMMS Branch",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "asset_name",
+   "label": "Asset",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "category",
+   "label": "Category",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "unit",
+   "label": "Unit",
+   "fieldtype": "Data",
+   "default": "each"
+  },
+  {
+   "fieldname": "geo_node",
+   "label": "Branch",
+   "fieldtype": "Link",
+   "options": "Geo Node",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "description",
+   "label": "Description",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "total_quantity",
+   "label": "Total Quantity",
+   "fieldtype": "Int",
+   "default": 0,
+   "read_only": 1
+  },
+  {
+   "fieldname": "available_quantity",
+   "label": "Available Quantity",
+   "fieldtype": "Int",
+   "default": 0,
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_active",
+   "label": "Active",
+   "fieldtype": "Check",
+   "default": 1
+  }
+ ],
+ "field_order": [
+  "asset_name",
+  "category",
+  "unit",
+  "geo_node",
+  "description",
+  "total_quantity",
+  "available_quantity",
+  "is_active"
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

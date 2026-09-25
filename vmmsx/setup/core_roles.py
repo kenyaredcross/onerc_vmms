@@ -1,11 +1,11 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""The six roles every society's ladder needs, so nobody hand-creates them.
+"""The shared roles every society's ladder needs, so nobody hand-creates them.
 
 `gambia.py` and `kenya.py` each carry their own `_roles()`, and diffing the two
 tables is the proof: underneath GRCS's extra `Branch Coordinator` and `Stipend
-Manager`, both societies define the same six — somebody reviewing volunteer
+Manager`, both societies define the same six original roles — somebody reviewing volunteer
 applications, somebody reviewing membership applications, somebody sending
 people out on deployment, an approved volunteer, an approved member, and an
 account that is none of those yet. That was previously a step the Gambia setup
@@ -20,9 +20,9 @@ this app that reads a role reads it from a setting a society names —
 literal in source, which is the rule `registration/services/desk.py` and
 `volunteer/services/society.py` both state and this module does not break: a
 society is free to point those settings at a role named something else
-entirely, or to rename one of the six after the fact. What was missing was not
-a choice of names — GRCS and Kenya independently reached for the same ones — it
-was the six existing at all before an administrator can point anything at them.
+entirely, or to rename a shipped role after the fact. What was missing was not
+a choice of names — GRCS and Kenya independently reached for the original six — it
+was the roles existing at all before an administrator can point anything at them.
 
 **Idempotent, and additive only.** Checks before it writes, same as every seed;
 never edits a role that already exists, so a society that has since changed a
@@ -39,9 +39,11 @@ ROLE_DEPLOYMENT_MANAGER = "Deployment Manager"
 ROLE_VOLUNTEER = "Volunteer"
 ROLE_MEMBER = "Member"
 ROLE_APPLICANT = "Society Applicant"
+ROLE_ASSET_MANAGER = "VMMS Asset Manager"
 
 # (name, description, desk_access)
 ROLES = (
+	(ROLE_ASSET_MANAGER, "Manages branch assets within assigned nodes.", True),
 	(
 		ROLE_VOLUNTEER_APPROVER,
 		"Reviews volunteer applications within the area they are assigned to.",
@@ -68,7 +70,7 @@ ROLES = (
 
 
 def install() -> list[dict]:
-	"""Create each of the six core roles that does not already exist.
+	"""Create each shipped core role that does not already exist.
 
 	Returns one row per role, saying what it did, so a `bench migrate` on a site
 	that already has them reports `exists` rather than being silent about having

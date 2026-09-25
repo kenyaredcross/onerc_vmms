@@ -11,6 +11,18 @@
  * than inventing one. See `NotBuilt` in `ui/primitives.tsx`.
  */
 export const API = {
+	assetBranches: "vmmsx.api.assets.branches",
+	assetStock: "vmmsx.api.assets.stock",
+	assetSearch: "vmmsx.api.assets.search_assets",
+	assetOutstanding: "vmmsx.api.assets.outstanding",
+	assetSearchVolunteers: "vmmsx.api.assets.search_volunteers",
+	assetCreate: "vmmsx.api.assets.create_asset",
+	assetReceive: "vmmsx.api.assets.receive",
+	assetIssue: "vmmsx.api.assets.issue",
+	assetReturn: "vmmsx.api.assets.return_asset",
+	assetRemind: "vmmsx.api.assets.remind",
+	myAssets: "vmmsx.api.assets.my_assets",
+	returnMyAsset: "vmmsx.api.assets.return_my_asset",
 	// onerc_core/api/article.py — stories and news, and they are *core's*.
 	// Called directly rather than proxied through a vmmsx endpoint, because
 	// wrapping them would be this app holding a second answer to what an article

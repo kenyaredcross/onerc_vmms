@@ -86,6 +86,7 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 		return _role(field) if resolve else field
 
 	return [
+		(holder("vmms_asset_scope_role"), {"VMMS Branch Asset": READ_ONLY, "VMMS Asset Transaction": READ_ONLY}),
 		(
 			holder(MEMBERSHIP_SCOPE_ROLE_FIELD),
 			{

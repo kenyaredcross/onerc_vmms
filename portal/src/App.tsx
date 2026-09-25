@@ -40,6 +40,7 @@ const PortalLayout = lazy(() => import("./portal/PortalLayout"));
 const Dashboard = lazy(() => import("./portal/Dashboard"));
 const Membership = lazy(() => import("./portal/Membership"));
 const Hours = lazy(() => import("./portal/Hours"));
+const MyAssets = lazy(() => import("./portal/MyAssets"));
 const Profile = lazy(() => import("./portal/Profile"));
 const Notifications = lazy(() => import("./portal/Notifications"));
 // Its own chunk rather than part of `Discover`: the events screen carries a
@@ -237,6 +238,7 @@ const JobApplicant = lazy(() =>
 );
 const WhatsAppChannel = lazy(() => import("./admin/WhatsApp"));
 const AdminEvents = lazy(() => import("./admin/Events"));
+const AdminAssets = lazy(() => import("./admin/Assets"));
 
 /**
  * Sends a signed-out visitor to Frappe's login and back again.
@@ -307,6 +309,8 @@ const ROUTE_NAMES: Record<string, string> = {
 	"admin/analytics": "analytics",
 	"admin/content": "page content",
 	"admin/questions": "form questions",
+	"admin/assets": "branch assets",
+	assets: "my equipment",
 	faq: "the answers",
 	help: "the answers",
 };
@@ -372,6 +376,7 @@ export default function App() {
 					<Route path="/availability" element={<Availability />} />
 					<Route path="/membership" element={<Membership />} />
 					<Route path="/hours" element={<Hours />} />
+					<Route path="/assets" element={<MyAssets />} />
 					<Route path="/tasks" element={<Tasks />} />
 					<Route path="/tasks/:name" element={<TaskRecord />} />
 					<Route path="/profile" element={<Profile />} />
@@ -455,6 +460,7 @@ export default function App() {
 					<Route path="recruitment/applications/:name" element={<JobApplicant />} />
 					<Route path="events" element={<AdminEvents />} />
 					<Route path="tasks" element={<AdminTasks />} />
+					<Route path="assets" element={<AdminAssets />} />
 					<Route path="analytics" element={<Analytics />} />
 					<Route path="people" element={<PeopleOverview />} />
 					<Route path="communication" element={<Navigate to="/admin/communication/system/compose" replace />} />

@@ -52,6 +52,7 @@ import frappe
 GATED_SECTIONS = (
 	{"section": "registry", "doctypes": ("VMMS Volunteer", "VMMS Membership")},
 	{"section": "tasks", "doctypes": ("VMMS Task",)},
+	{"section": "assets", "doctypes": ("VMMS Branch Asset",)},
 	{"section": "deployments", "doctypes": ("VMMS Deployment", "VMMS Deployment Request")},
 	{
 		"section": "stipends",
@@ -137,6 +138,7 @@ ORDER = (
 	"recruitment",
 	"registry",
 	"tasks",
+	"assets",
 	"deployments",
 	# The money reads before the paperwork that makes it: a coordinator opens
 	# Finance to see the position and Stipends to act on one payment.

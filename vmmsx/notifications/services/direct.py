@@ -66,7 +66,12 @@ ALERT = "Alert"
 
 
 def tell(
-	users: list[str], subject: str, doctype: str, name: str, about: str | None = None
+	users: list[str],
+	subject: str,
+	doctype: str,
+	name: str,
+	about: str | None = None,
+	link: str | None = None,
 ) -> list[str]:
 	"""Raise one notification per user, pointing at the record it is about.
 
@@ -104,6 +109,7 @@ def tell(
 			"document_name": name,
 			"subject": subject,
 			"from_user": frappe.session.user,
+			"link": link,
 		},
 	)
 

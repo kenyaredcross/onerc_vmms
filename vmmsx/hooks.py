@@ -637,6 +637,10 @@ onerc_affiliation_providers = [
 # All three settings fields ship **empty**, so core fails closed until a society
 # chooses each role. Installed by vmmsx.patches.install_deployment_scope_roles.
 onerc_scopeable_doctypes = [
+	# Asset management has its own shipped role and default setting. It still
+	# needs a Geo Assignment before a non-administrator can reach a branch.
+	{"doctype": "VMMS Branch Asset", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role"},
+	{"doctype": "VMMS Asset Transaction", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role"},
 	{
 		"doctype": "VMMS Membership",
 		"geo_node_field": "geo_node",

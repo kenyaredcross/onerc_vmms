@@ -110,6 +110,7 @@ export default function PortalLayout() {
 		},
 		{ to: "/membership", labelKey: "portal.nav.membership", fallback: "Memberships", icon: Icon.card, ...RECORD },
 		{ to: "/hours", labelKey: "portal.nav.hours", fallback: "Service hours", icon: Icon.clock, ...RECORD },
+		{ to: "/assets", labelKey: "portal.nav.assets", fallback: "My equipment", icon: Icon.tag, ...RECORD },
 		{ to: "/events", labelKey: "portal.nav.events", fallback: "Events", icon: Icon.sparkle, ...SOCIETY },
 		{ to: "/opportunities", labelKey: "portal.nav.opportunities", fallback: "Opportunities", icon: Icon.compass, ...SOCIETY },
 		{ to: "/stories", labelKey: "portal.nav.stories", fallback: "Stories", icon: Icon.book, ...SOCIETY },

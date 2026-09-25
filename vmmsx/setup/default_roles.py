@@ -9,6 +9,7 @@ from vmmsx.member.services.society import MEMBER_ROLE_FIELD, PRINT_ROLE_FIELD
 from vmmsx.registration.services.society import SELF_SERVICE_ROLE_FIELD
 from vmmsx.setup.core_roles import (
 	ROLE_APPLICANT,
+	ROLE_ASSET_MANAGER,
 	ROLE_MEMBER,
 	ROLE_MEMBERSHIP_APPROVER,
 	ROLE_VOLUNTEER,
@@ -21,6 +22,7 @@ SETTINGS_DOCTYPE = "National Society Settings"
 MEMBERSHIP_SCOPE_ROLE_FIELD = "vmms_membership_scope_role"
 
 DEFAULTS = {
+	"vmms_asset_scope_role": ROLE_ASSET_MANAGER,
 	MEMBERSHIP_SCOPE_ROLE_FIELD: ROLE_MEMBERSHIP_APPROVER,
 	VOLUNTEER_SCOPE_ROLE_FIELD: ROLE_VOLUNTEER_APPROVER,
 	PRINT_ROLE_FIELD: ROLE_MEMBERSHIP_APPROVER,
@@ -45,9 +47,9 @@ def install() -> None:
 	if changed:
 		settings.save(ignore_permissions=True)
 
-	# These six values still exist as fields because the runtime access layer
+	# These values still exist as fields because the runtime access layer
 	# resolves them in one consistent way. They are hidden configuration now,
-	# though: all six point at roles vmmsx itself ships, so asking every society
+	# though: all point at roles vmmsx itself ships, so asking every society
 	# to reproduce that wiring is setup ceremony rather than a policy choice.
 	for fieldname in DEFAULTS:
 		custom_field = frappe.db.get_value(

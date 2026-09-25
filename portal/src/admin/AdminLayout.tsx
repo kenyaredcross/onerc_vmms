@@ -153,6 +153,14 @@ const TASKS: TabDef = {
 	icon: Icon.check,
 };
 
+const ASSETS: TabDef = {
+	section: "assets",
+	to: "/admin/assets",
+	labelKey: "admin.nav.assets",
+	fallback: "Branch assets",
+	icon: Icon.tag,
+};
+
 const STIPENDS: TabDef = {
 	section: "stipends",
 	to: "/admin/finance/stipends",
@@ -308,7 +316,7 @@ const FINANCE: GroupDef = {
 };
 
 const GROUPS = [PEOPLE, OPERATIONS, FINANCE];
-const FLAT = [OVERVIEW, COMMUNICATION, EVENTS];
+const FLAT = [OVERVIEW, ASSETS, COMMUNICATION, EVENTS];
 // Configuration belongs beside the other ways out of daily console work, not
 // between Events and Communication. These routes stay permission-gated by the
 // same server section keys; only their place in the navigation changes.
