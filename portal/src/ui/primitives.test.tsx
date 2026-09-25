@@ -1,4 +1,5 @@
 import { createEvent, fireEvent, screen } from "@testing-library/react";
+import { Link, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { mount } from "../test/harness";
@@ -107,6 +108,44 @@ describe("registers are real tables", () => {
 		);
 
 		expect(screen.getAllByRole("columnheader")[1].className).toContain("text-right");
+	});
+});
+
+describe("navigable table rows", () => {
+	it("opens on the row or Enter but lets nested controls keep their own destinations", () => {
+		mount(
+			<Routes>
+				<Route path="/" element={
+					<Table head={["Record", "Action"]}>
+						<Row to="/record" label="Open record">
+							<Cell>Record number</Cell>
+							<Cell><Link to="/other">Other action</Link></Cell>
+						</Row>
+					</Table>
+				} />
+				<Route path="/record" element={<p>Record opened</p>} />
+				<Route path="/other" element={<p>Other opened</p>} />
+			</Routes>,
+		);
+
+		fireEvent.click(screen.getByRole("link", { name: "Other action" }));
+		expect(screen.getByText("Other opened")).toBeTruthy();
+	});
+
+	it("opens from keyboard focus on the row", () => {
+		mount(
+			<Routes>
+				<Route path="/" element={
+					<Table head={["Record"]}>
+						<Row to="/record" label="Open record"><Cell>Record number</Cell></Row>
+					</Table>
+				} />
+				<Route path="/record" element={<p>Record opened</p>} />
+			</Routes>,
+		);
+
+		fireEvent.keyDown(screen.getByRole("row", { name: "Open record" }), { key: "Enter" });
+		expect(screen.getByText("Record opened")).toBeTruthy();
 	});
 });
 

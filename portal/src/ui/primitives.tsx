@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { NavigableRow } from "./NavigableRow";
 
 export function cx(...parts: Array<string | false | null | undefined>): string {
 	return parts.filter(Boolean).join(" ");
@@ -1459,9 +1460,12 @@ export function Table({
 	);
 }
 
-export function Row({ children }: { children: ReactNode }) {
+export function Row({ children, to, openNewTab, label }: { children: ReactNode; to?: string; openNewTab?: string; label?: string }) {
+	const navigable = Boolean(to || openNewTab);
+	const className = cx("border-b border-card-line transition last:border-0 hover:bg-canvas", navigable && "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue");
+	if (navigable) return <NavigableRow to={to} openNewTab={openNewTab} label={label ?? "Open record"} className={className}>{children}</NavigableRow>;
 	return (
-		<tr className="border-b border-card-line transition last:border-0 hover:bg-canvas">
+		<tr className={className}>
 			{children}
 		</tr>
 	);

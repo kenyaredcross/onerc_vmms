@@ -122,9 +122,11 @@ export default function AdminEvents() {
 						<SectionTitle>Unpublished events</SectionTitle>
 						<ul className="mt-3 divide-y divide-card-line">
 							{drafts.map((event) => (
-								<li key={event.name} className="flex flex-wrap items-center justify-between gap-3 py-3 text-[12.5px]">
-									<span><strong className="text-ink">{event.title}</strong><span className="ml-2 text-muted">{formatDate(event.start_date)}</span></span>
-									<a href={`/app/buzz-event/${encodeURIComponent(event.name)}`} className="font-semibold text-blue hover:underline">Finish in Desk →</a>
+								<li key={event.name}>
+									<a href={`/app/buzz-event/${encodeURIComponent(event.name)}`} className="flex flex-wrap items-center justify-between gap-3 py-3 text-[12.5px] hover:bg-canvas">
+										<span><strong className="text-ink">{event.title}</strong><span className="ml-2 text-muted">{formatDate(event.start_date)}</span></span>
+										<span className="font-semibold text-blue hover:underline">Finish in Desk →</span>
+									</a>
 								</li>
 							))}
 						</ul>

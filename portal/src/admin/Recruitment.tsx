@@ -404,7 +404,7 @@ export function Openings() {
 				<Card pad={false}>
 					<Table head={["Opening", "Where", "Applications", "Closes", "State"]} minWidth={860}>
 						{answer.openings.map((row) => (
-							<Row key={row.name}>
+							<Row key={row.name} to={`/admin/recruitment/openings/${encodeURIComponent(row.name)}`} label={`Open ${row.job_title}`}>
 								<NameCell
 									to={`/admin/recruitment/openings/${encodeURIComponent(row.name)}`}
 									title={row.job_title}
@@ -1473,7 +1473,7 @@ export function JobApplications() {
 				<Card pad={false}>
 						<Table head={["Applicant", "Job Opening", "Applied", "Status"]} minWidth={780}>
 						{rows.map((row) => (
-							<Row key={row.name}>
+							<Row key={row.name} to={`/admin/recruitment/applications/${encodeURIComponent(row.name)}`} label={`Open ${row.applicant_name ?? row.name}`}>
 								<NameCell
 									to={`/admin/recruitment/applications/${encodeURIComponent(row.name)}`}
 									lead={<Avatar name={row.applicant_name} size={32} />}

@@ -1135,7 +1135,7 @@ export function OperationsDocuments() {
 				{(answer?.files.length ?? 0) > 0 && (
 					<Table head={["Document", "Attached to", "Record type", "Owner", "Updated", ""]}>
 						{(answer?.files ?? []).map((file) => (
-							<Row key={file.name}>
+							<Row key={file.name} openNewTab={file.file_url} label={`Open ${file.file_name}`}>
 								<Cell>
 									<span className="flex items-center gap-3">
 										<span

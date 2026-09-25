@@ -157,6 +157,24 @@ describe("the active volunteer register", () => {
 		});
 	});
 
+	it("opens the volunteer record from the row, while the name still opens its summary", () => {
+		volunteers();
+		mount(
+			<Routes>
+				<Route path="/admin/registry/volunteers" element={<VolunteersRegistry />} />
+				<Route path="/admin/registry/volunteer/:name" element={<p>Volunteer record opened</p>} />
+			</Routes>,
+			{ route: "/admin/registry/volunteers" },
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: /Alex Mwangi/ }));
+		expect(screen.getByRole("dialog", { name: "Person summary" })).toBeTruthy();
+		expect(screen.queryByText("Volunteer record opened")).toBeNull();
+
+		fireEvent.click(screen.getByRole("row", { name: "Open Alex Mwangi" }).querySelectorAll("td")[1]);
+		expect(screen.getByText("Volunteer record opened")).toBeTruthy();
+	});
+
 	it("does not send the capability filters this register no longer has", () => {
 		volunteers();
 		show(<VolunteersRegistry />, "/admin/registry/volunteers");
@@ -227,6 +245,20 @@ describe("the active member register", () => {
 		show(<MembersRegistry />, "/admin/registry/members");
 
 		expect(argsFor(API.findMembers)).toMatchObject({ current_only: 1, limit: 25, offset: 0 });
+	});
+
+	it("opens the member record from the row", () => {
+		members();
+		mount(
+			<Routes>
+				<Route path="/admin/registry/members" element={<MembersRegistry />} />
+				<Route path="/admin/registry/member/:name" element={<p>Member record opened</p>} />
+			</Routes>,
+			{ route: "/admin/registry/members" },
+		);
+
+		fireEvent.click(screen.getByText("MEM-00981"));
+		expect(screen.getByText("Member record opened")).toBeTruthy();
 	});
 
 	it("does not offer the recorded-status filter that would reach expired rows", () => {

@@ -245,7 +245,7 @@ function QueueRow({
 	const last = row.decisions.at(-1);
 
 	return (
-		<Row>
+		<Row to={to} label={`Open ${row.applicant?.full_name ?? row.name}`}>
 			<Cell>
 				<Link to={to} className="flex items-center gap-3 group">
 					<Avatar name={row.applicant?.full_name} photo={row.applicant?.photo} size={34} />

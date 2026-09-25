@@ -625,6 +625,16 @@ describe("operations documents", () => {
 		);
 	});
 
+	it("opens a file in a new tab from anywhere on its row", () => {
+		reads.set(API.operationsDocuments, answer());
+		show(<OperationsDocuments />, "/admin/deployments/documents");
+
+		const open = vi.spyOn(window, "open").mockImplementation(() => null);
+		fireEvent.click(screen.getByText("TOR-2026-041"));
+		expect(open).toHaveBeenCalledWith("/private/files/tor.pdf", "_blank", "noopener,noreferrer");
+		open.mockRestore();
+	});
+
 	it("narrows by record type through the server, not in the browser", async () => {
 		reads.set(API.operationsDocuments, answer());
 

@@ -293,7 +293,7 @@ function Volunteers() {
 						<>
 							<Table head={["Volunteer", "Volunteer number", "Serving branch", "Joined", ""]}>
 								{rows.map((row) => (
-									<Row key={row.volunteer}>
+									<Row key={row.volunteer} to={recordOf("volunteer", row.volunteer)} label={`Open ${row.full_name ?? row.volunteer}`}>
 										<Cell>
 											<VolunteerName row={row} />
 										</Cell>
@@ -545,7 +545,7 @@ function Members() {
 						<>
 							<Table head={["Member", "Membership number", "Type", "Branch", "Valid until", ""]}>
 								{rows.map((row) => (
-									<Row key={row.membership}>
+									<Row key={row.membership} to={recordOf("member", row.member)} label={`Open ${row.full_name ?? row.member}`}>
 										<Cell>
 											<MemberName row={row} />
 										</Cell>

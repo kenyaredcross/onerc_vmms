@@ -25,6 +25,7 @@ import { Link } from "react-router-dom";
 
 import { formatMoney } from "../../lib/format";
 import { Icon } from "../../ui/icons";
+import { NavigableRow } from "../../ui/NavigableRow";
 import { cx } from "../../portal/ui/kit";
 
 /* ------------------------------------------------------------ the portal's own
@@ -344,12 +345,15 @@ export function Table({
 }
 
 /** One record. `to` makes the whole row navigable without nesting a link in a link. */
-export function Row({ children, to, onClick }: { children: ReactNode; to?: string; onClick?: () => void }) {
-	const interactive = Boolean(to || onClick);
+export function Row({ children, to, openNewTab, label, onClick }: { children: ReactNode; to?: string; openNewTab?: string; label?: string; onClick?: () => void }) {
+	const navigable = Boolean(to || openNewTab);
+	const interactive = Boolean(navigable || onClick);
+	const className = cx("align-middle transition", interactive && "cursor-pointer hover:bg-canvas", navigable && "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue");
+	if (navigable) return <NavigableRow to={to} openNewTab={openNewTab} label={label ?? "Open record"} className={className}>{children}</NavigableRow>;
 
 	return (
 		<tr
-			className={cx("align-middle transition", interactive && "cursor-pointer hover:bg-canvas")}
+			className={className}
 			onClick={onClick}
 		>
 			{children}
