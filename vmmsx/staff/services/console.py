@@ -50,7 +50,7 @@ import frappe
 # membership role should get the screen with one list filled and the other
 # honestly empty, rather than no screen at all.
 GATED_SECTIONS = (
-	{"section": "registry", "doctypes": ("VMMS Volunteer", "VMMS Membership")},
+	{"section": "registry", "doctypes": ("VMMS Volunteer", "VMMS Membership", "VMMS Service Certificate Request")},
 	{"section": "tasks", "doctypes": ("VMMS Task",)},
 	{"section": "assets", "doctypes": ("VMMS Branch Asset",)},
 	{"section": "deployments", "doctypes": ("VMMS Deployment", "VMMS Deployment Request")},

@@ -360,6 +360,7 @@ after_migrate = [
 	# These are product defaults, not questions every national society needs to
 	# answer. Existing non-empty choices remain untouched.
 	"vmmsx.setup.default_roles.install",
+	"vmmsx.service_certificate.settings.install",
 	# Brand images appear on public portal, login and email surfaces. Core's main
 	# logo already carries this metadata; keep all companion assets consistent.
 	"vmmsx.setup.brand_assets.install",
@@ -637,6 +638,7 @@ onerc_affiliation_providers = [
 # All three settings fields ship **empty**, so core fails closed until a society
 # chooses each role. Installed by vmmsx.patches.install_deployment_scope_roles.
 onerc_scopeable_doctypes = [
+	{"doctype": "VMMS Service Certificate Request", "geo_node_field": "geo_node", "role_from_setting": "vmms_service_certificate_scope_role"},
 	# Asset management has its own shipped role and default setting. It still
 	# needs a Geo Assignment before a non-administrator can reach a branch.
 	{"doctype": "VMMS Branch Asset", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role"},

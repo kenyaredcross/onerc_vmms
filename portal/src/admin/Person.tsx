@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
+import { ServiceCertificateReviews } from "../certificates/ServiceCertificates";
 import { API, cardUrl, certificateUrl, errorMessage } from "../lib/api";
 import { formatDate, formatHours, formatMoney, geoPath } from "../lib/format";
 import { MultiCombo } from "../ui/form";
@@ -532,7 +533,7 @@ function VolunteerPage({ name }: { name: string }) {
 				onChanged={onChanged}
 			/>}
 
-			{tab === "service" && <><Card className="mb-5">
+			{tab === "service" && <><ServiceCertificateReviews volunteer={name} /><Card className="mb-5">
 				<SectionTitle>Certifications held</SectionTitle>
 				{dossier.certifications.length === 0 ? (
 					<Empty title="No certifications recorded">
@@ -719,7 +720,7 @@ function MemberPage({ name }: { name: string }) {
 			/>
 
 			{/* What the header could not carry — see the volunteer page's note. */}
-			{tab === "overview" && <><Card className="mb-5">
+			{tab === "overview" && <><ServiceCertificateReviews member={name} /><Card className="mb-5">
 				<SectionTitle>Who they are</SectionTitle>
 				<Definitions
 					rows={[

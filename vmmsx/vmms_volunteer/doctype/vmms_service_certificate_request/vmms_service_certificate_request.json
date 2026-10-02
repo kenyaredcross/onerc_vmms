@@ -1,0 +1,238 @@
+{
+ "doctype": "DocType",
+ "name": "VMMS Service Certificate Request",
+ "module": "VMMS Volunteer",
+ "engine": "InnoDB",
+ "field_order": [
+  "red_profile",
+  "applicant_name",
+  "applicant_kind",
+  "volunteer",
+  "member",
+  "membership",
+  "geo_node",
+  "request_date",
+  "service_from",
+  "service_to",
+  "position",
+  "service_summary",
+  "custom_values",
+  "configuration",
+  "approval_state",
+  "approval_stage",
+  "approval_stage_entered_on",
+  "approval_decisions",
+  "review_note",
+  "issued_on",
+  "issued_by",
+  "certificate_context",
+  "certificate_html",
+  "certificate_file",
+  "generation_status",
+  "service_evidence"
+ ],
+ "fields": [
+  {
+   "fieldname": "red_profile",
+   "label": "Applicant",
+   "fieldtype": "Link",
+   "options": "Red Profile",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "applicant_name",
+   "label": "Applicant Name",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "applicant_kind",
+   "label": "Requested As",
+   "fieldtype": "Select",
+   "options": "Volunteer\nMember",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "volunteer",
+   "label": "Volunteer",
+   "fieldtype": "Link",
+   "options": "VMMS Volunteer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "member",
+   "label": "Member",
+   "fieldtype": "Link",
+   "options": "VMMS Member",
+   "read_only": 1
+  },
+  {
+   "fieldname": "membership",
+   "label": "Membership",
+   "fieldtype": "Link",
+   "options": "VMMS Membership",
+   "read_only": 1
+  },
+  {
+   "fieldname": "geo_node",
+   "label": "Branch",
+   "fieldtype": "Link",
+   "options": "Geo Node",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "request_date",
+   "label": "Request Date",
+   "fieldtype": "Date",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_from",
+   "label": "Service From",
+   "fieldtype": "Date",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_to",
+   "label": "Service To",
+   "fieldtype": "Date",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "position",
+   "label": "Position",
+   "fieldtype": "Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_summary",
+   "label": "Service Summary / Supporting Information",
+   "fieldtype": "Small Text",
+   "read_only": 1
+  },
+  {
+   "fieldname": "custom_values",
+   "label": "Additional Answers",
+   "fieldtype": "JSON",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "configuration",
+   "label": "Certificate Configuration at Request",
+   "fieldtype": "JSON",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "approval_state",
+   "label": "Status",
+   "fieldtype": "Select",
+   "options": "Draft\nSubmitted\nIn Review\nApproved\nRejected\nWithdrawn\nExpired",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "approval_stage",
+   "label": "Approval Stage",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "approval_stage_entered_on",
+   "label": "Stage Entered On",
+   "fieldtype": "Datetime",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "approval_decisions",
+   "label": "Review History",
+   "fieldtype": "Table",
+   "options": "VMMS Approval Decision",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_note",
+   "label": "Service Verification Notes",
+   "fieldtype": "Small Text",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issued_on",
+   "label": "Issued On",
+   "fieldtype": "Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "issued_by",
+   "label": "Issued By",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "certificate_context",
+   "label": "Approved Certificate Values",
+   "fieldtype": "JSON",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "certificate_html",
+   "label": "Approved Certificate HTML",
+   "fieldtype": "Long Text",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "certificate_file",
+   "label": "Certificate File",
+   "fieldtype": "Link",
+   "options": "File",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "generation_status",
+   "label": "Certificate",
+   "fieldtype": "Select",
+   "options": "Not issued\nGenerating\nReady\nFailed",
+   "default": "Not issued",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_evidence",
+   "label": "Reviewed Service Records",
+   "fieldtype": "JSON",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 0
+  }
+ ],
+ "track_changes": 1,
+ "autoname": "format:CSR-{#####}",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "title_field": "applicant_name"
+}

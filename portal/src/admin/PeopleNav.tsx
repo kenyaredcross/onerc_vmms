@@ -48,6 +48,7 @@ export const PEOPLE_NAV: Destination[] = [
 		groupFallback: "Recruitment",
 		section: "recruitment",
 	},
+	{ to: "/admin/queue/service-certificates", labelKey: "admin.people.nav.service_certificates", fallback: "Service certificates", groupKey: "admin.people.nav.service", groupFallback: "Service records", section: "registry" },
 	{
 		// "Active volunteers", not "Volunteers": the register is of people
 		// currently active, and a row labelled with the wider word would promise

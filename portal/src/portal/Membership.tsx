@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
+import { ServiceCertificatePanel } from "../certificates/ServiceCertificates";
 import { EditableText } from "../content/Editable";
 import { API, errorMessage, myCertificateUrl } from "../lib/api";
 import { branchPath, formatDate, formatMoney } from "../lib/format";
@@ -207,6 +208,7 @@ export default function Membership() {
 			</section>
 
 			{/* ----------------------------------------------------------- records */}
+			<div className="mx-auto mb-6 w-full max-w-[1060px]"><ServiceCertificatePanel /></div>
 			<section id="your-memberships" className="mx-auto w-full max-w-[1060px] scroll-mt-20">
 				{/* The same header shape as the plans above it, so the page reads as
 				    two sections of one thing rather than two designs meeting. */}

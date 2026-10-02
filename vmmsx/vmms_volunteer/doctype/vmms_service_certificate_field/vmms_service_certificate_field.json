@@ -1,0 +1,69 @@
+{
+ "doctype": "DocType",
+ "name": "VMMS Service Certificate Field",
+ "module": "VMMS Volunteer",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "source",
+  "label",
+  "placement",
+  "required",
+  "hide_if_empty"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "label": "Show on Certificate",
+   "fieldtype": "Check",
+   "default": "1",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "source",
+   "label": "Value Source",
+   "fieldtype": "Select",
+   "options": "issue_date\napplicant_name\nid_number\nengagement_date\nposition\nsignatory\nbranch\nservice_period\nservice_hours\ncertificate_number\nservice_summary\ncustom_value",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "label",
+   "label": "Printed Label",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "placement",
+   "label": "Placement",
+   "fieldtype": "Select",
+   "options": "Header\nBody\nSignature",
+   "default": "Body",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "required",
+   "label": "Value Required",
+   "fieldtype": "Check",
+   "default": "1",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "hide_if_empty",
+   "label": "Hide When Empty",
+   "fieldtype": "Check",
+   "default": "1"
+  }
+ ],
+ "permissions": [],
+ "track_changes": 1,
+ "istable": 1,
+ "editable_grid": 1
+}

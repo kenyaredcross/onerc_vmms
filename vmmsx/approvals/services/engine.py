@@ -119,7 +119,7 @@ def park(doc, user: str | None = None) -> dict:
 
 	contract.set_state(doc, states.SUBMITTED)
 	contract.set_stage(doc, None)
-	doc.save()
+	_save_transition(doc)
 
 	return status(doc, user)
 
@@ -244,7 +244,7 @@ def withdraw(doc, reason: str | None = None, user: str | None = None) -> dict:
 
 	contract.set_state(doc, states.WITHDRAWN)
 	contract.set_stage(doc, None)
-	doc.save()
+	_save_transition(doc)
 	assignment.clear(doc.doctype, doc.name)
 	doc.add_comment("Comment", _("Withdrawn by {0}. {1}").format(user, reason or ""))
 
@@ -257,7 +257,7 @@ def expire(doc, workflow=None) -> dict:
 
 	contract.set_state(doc, states.EXPIRED)
 	contract.set_stage(doc, None)
-	doc.save()
+	_save_transition(doc)
 	assignment.clear(doc.doctype, doc.name)
 	doc.add_comment(
 		"Comment",
@@ -458,7 +458,7 @@ def _after_approval(doc, workflow, stage, auth) -> list[str]:
 
 def _commit(doc, workflow, routed: list[str], user: str) -> dict:
 	"""Save once, then put the document in front of whoever it now belongs to."""
-	doc.save()
+	_save_transition(doc)
 	assignment.sync(
 		doc.doctype,
 		doc.name,
@@ -738,3 +738,13 @@ def _stage_description(doc, stage) -> str:
 		return ""
 
 	return _("{0}: {1} {2}").format(_(stage.stage_label), doc.doctype, doc.name)
+
+
+def _save_transition(doc):
+	"""Let governed controllers distinguish engine transitions from ordinary edits."""
+	previous = frappe.flags.vmms_approval_transition
+	frappe.flags.vmms_approval_transition = (doc.doctype, doc.name)
+	try:
+		doc.save()
+	finally:
+		frappe.flags.vmms_approval_transition = previous

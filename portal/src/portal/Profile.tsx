@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { Link } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
+import { ServiceCertificatePanel } from "../certificates/ServiceCertificates";
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
 import { formatDate, geoPath } from "../lib/format";
@@ -208,6 +209,7 @@ export default function Profile() {
 					</div>
 					<div className="space-y-6 lg:col-span-2">
 						<PlacementCard profile={profile} />
+						<ServiceCertificatePanel />
 					</div>
 					</div>}
 

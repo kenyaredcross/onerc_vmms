@@ -83,11 +83,15 @@ def clear(doctype: str, name: str) -> dict:
 
 
 def _assign(doctype: str, name: str, users: list[str], description: str | None) -> None:
-	assign_to.add(
+	# Routing has already selected these users. The applicant may submit an
+	# owned portal record without permission to browse its doctype; assigning
+	# the resulting review is the engine's job, not an extra applicant grant.
+	assign_to._add(
 		{
 			"doctype": doctype,
 			"name": name,
 			"assign_to": users,
 			"description": description or "",
-		}
+		},
+		ignore_permissions=True,
 	)

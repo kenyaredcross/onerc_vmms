@@ -535,6 +535,7 @@ def _society_setup() -> dict:
 			("VMMS Approval Workflow", "workflow"),
 			("VMMS Template Category", "layout-list"),
 			("VMMS Template", "layout-template"),
+			("VMMS Service Certificate Settings", "file-text"),
 			("VMMS Application Question", "help-circle"),
 			("VMMS Declaration", "file-text"),
 			("VMMS Declaration Version", "history"),

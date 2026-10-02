@@ -76,6 +76,7 @@ const TaskRecord = lazy(() =>
 	import("./portal/Tasks").then((module) => ({ default: module.TaskRecord })),
 );
 
+const ServiceCertificateQueue = lazy(() => import("./certificates/ServiceCertificates"));
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 // The review queue is two lists and one detail page, all in one chunk: an
 // approver who opens a queue is one click from opening a row, and splitting
@@ -404,6 +405,7 @@ export default function App() {
 					    rather than on nothing. */}
 					<Route path="queue" element={<Navigate to="/admin/queue/volunteers" replace />} />
 					<Route path="queue/volunteers" element={<VolunteerQueue />} />
+					<Route path="queue/service-certificates" element={<ServiceCertificateQueue />} />
 					<Route path="queue/members" element={<MembershipQueue />} />
 					{/* The two history bands. Declared before `queue/:kind/:name`
 					    for a reader; React Router ranks a static segment above a

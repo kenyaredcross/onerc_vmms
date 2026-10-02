@@ -1,0 +1,82 @@
+{
+ "doctype": "DocType",
+ "name": "VMMS Service Certificate Settings",
+ "module": "VMMS Volunteer",
+ "engine": "InnoDB",
+ "field_order": [
+  "certificate_title",
+  "certificate_logo",
+  "template",
+  "identity_source",
+  "footer_text",
+  "tagline",
+  "certificate_fields",
+  "preview"
+ ],
+ "fields": [
+  {
+   "fieldname": "certificate_title",
+   "label": "Certificate Title",
+   "fieldtype": "Data",
+   "default": "CERTIFICATE OF SERVICE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "certificate_logo",
+   "label": "Certificate Logo",
+   "fieldtype": "Attach Image",
+   "description": "The logo printed on this certificate. It is independent of the organisation logo. Upload a PNG or JPEG image."
+  },
+  {
+   "fieldname": "template",
+   "label": "Layout Template",
+   "fieldtype": "Link",
+   "options": "VMMS Template",
+   "reqd": 1
+  },
+  {
+   "fieldname": "identity_source",
+   "label": "ID Number Source",
+   "fieldtype": "Select",
+   "options": "Primary identification\nRegistration number",
+   "default": "Primary identification",
+   "reqd": 1
+  },
+  {
+   "fieldname": "footer_text",
+   "label": "Footer Statement",
+   "fieldtype": "Small Text",
+   "default": "This Certificate has been issued without any alteration or erasure"
+  },
+  {
+   "fieldname": "tagline",
+   "label": "Bottom Tagline",
+   "fieldtype": "Data",
+   "default": "ALWAYS THERE"
+  },
+  {
+   "fieldname": "certificate_fields",
+   "label": "Certificate Fields",
+   "fieldtype": "Table",
+   "options": "VMMS Service Certificate Field",
+   "reqd": 1,
+   "description": "Drag rows to reorder them within each placement. The landscape design supports one header row, eight body rows and two signature rows."
+  },
+  {
+   "fieldname": "preview",
+   "label": "Preview",
+   "fieldtype": "HTML"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 0
+  }
+ ],
+ "track_changes": 1,
+ "issingle": 1
+}
