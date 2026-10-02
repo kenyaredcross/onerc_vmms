@@ -72,7 +72,9 @@ export default function Membership() {
 	const priced = types.data?.message?.types ?? [];
 
 	const held = rows.filter((row) => row.is_active);
-	const pending = rows.filter((row) => !row.is_active);
+	const pending = rows.filter((row) =>
+		["Draft", "Awaiting Payment", "Awaiting Approval"].includes(row.membership_status),
+	);
 	const holdsType = new Set(held.map((row) => row.membership_type));
 
 	const join = (membershipType: string) =>

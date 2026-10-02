@@ -268,11 +268,12 @@ def _my_membership():
 	if not member:
 		return None
 
-	name = frappe.db.get_value(
+	rows = frappe.get_all(
 		MEMBERSHIP_DOCTYPE,
-		{"member": member, "membership_status": membership_service.STATUS_ACTIVE},
-		"name",
+		filters={"member": member, "membership_status": membership_service.STATUS_ACTIVE},
+		fields=["name", "membership_status", "valid_to"],
 		order_by="valid_from desc",
 	)
+	name = next((row.name for row in rows if membership_service.is_current(row)), None)
 
 	return frappe.get_doc(MEMBERSHIP_DOCTYPE, name) if name else None

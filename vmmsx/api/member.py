@@ -428,7 +428,11 @@ def _my_active_memberships() -> list[str]:
 	if not member:
 		return []
 
-	return member_service.memberships(member, status=membership_service.STATUS_ACTIVE)
+	return [
+		name
+		for name in member_service.memberships(member, status=membership_service.STATUS_ACTIVE)
+		if membership_service.is_current(frappe.get_doc(MEMBERSHIP_DOCTYPE, name))
+	]
 
 
 @frappe.whitelist()
@@ -827,7 +831,7 @@ def my_memberships() -> list[dict]:
 				# showing a button the server would refuse is worse than no
 				# button.
 				"certificate_available": certificate.may_print(membership)
-				and membership.membership_status == membership_service.STATUS_ACTIVE,
+				and membership_service.is_current(membership, as_of),
 				# Whether this membership has lapsed far enough to renew — the
 				# "button only after expiry" behaviour, computed server-side so a
 				# UI can show the renew action exactly when it would succeed.

@@ -333,7 +333,7 @@ def assert_active(membership) -> None:
 	"""
 	from vmmsx.member.services import membership as membership_service
 
-	if membership.membership_status == membership_service.STATUS_ACTIVE:
+	if membership_service.is_current(membership):
 		return
 
 	frappe.throw(

@@ -804,14 +804,14 @@ def status(membership) -> dict:
 		"membership_type_name": membership_type.membership_type_name,
 		"approval_mode": membership_type.approval_mode,
 		"requires_approver": approval.requires_approver(membership_type),
-		"membership_status": membership.membership_status,
+		"membership_status": effective_status(membership),
 		# Whether this membership is in force *now*, stated rather than left to be
 		# derived from the status by whoever is reading. The six statuses are this
 		# module's vocabulary and comparing against one of them is this module's
 		# job: a browser bundle that wrote `status === "Active"` would be a second
 		# copy of that vocabulary, and the screen that had it told somebody they
 		# held a membership their branch had not approved yet.
-		"is_active": membership.membership_status == STATUS_ACTIVE,
+		"is_active": is_current(membership),
 		"geo_node": membership.geo_node,
 		"geo_path": adapter.get_full_path(membership.geo_node) if membership.geo_node else None,
 		"valid_from": membership.valid_from,

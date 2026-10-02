@@ -107,7 +107,14 @@ def derive_status(member) -> str:
 	if member.status == STATUS_TERMINATED:
 		return STATUS_TERMINATED
 
-	if memberships(member.name, status="Active"):
+	from vmmsx.member.services import membership as membership_service
+
+	active = frappe.get_all(
+		MEMBERSHIP_DOCTYPE,
+		filters={"member": member.name, "membership_status": membership_service.STATUS_ACTIVE},
+		fields=["membership_status", "valid_to"],
+	)
+	if any(membership_service.is_current(row) for row in active):
 		return STATUS_ACTIVE
 
 	# Ever activated? A membership that reached a validity window is a
@@ -276,6 +283,6 @@ def profile_dto(member) -> dict:
 		"full_name": identity.display_name(member),
 		"email": person.get("email"),
 		"phone": person.get("phone"),
-		"status": member.status,
+		"status": derive_status(member),
 		"joined_on": member.joined_on,
 	}

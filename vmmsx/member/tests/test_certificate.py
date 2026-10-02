@@ -10,6 +10,7 @@ and the receipt appears only when a gateway actually produced one.
 """
 
 import frappe
+from frappe.utils import add_days, today
 
 from vmmsx.member.services import approval, certificate
 from vmmsx.member.services import membership as membership_service
@@ -136,6 +137,26 @@ class TestCertificate(MemberTestCase):
 		profile = fixtures.make_profile("Not", "Yet")
 		membership = fixtures.make_membership(profile, fixtures.TYPE_AUTO, self.society_a["ward"])
 		membership_service.submit(membership)
+
+		with self.assertRaises(frappe.ValidationError):
+			member_api.get_certificate(membership.name)
+
+	def test_a_lapsed_active_record_cannot_serve_a_current_card_or_certificate(self):
+		from vmmsx.api import cards as cards_api
+		from vmmsx.api import member as member_api
+		from vmmsx.cards.services import token
+		from vmmsx.member.services import card
+		from vmmsx.member.services import member as member_service
+
+		membership = self.active_membership()
+		frappe.db.set_value(membership.doctype, membership.name, "valid_to", add_days(today(), -1))
+		membership.reload()
+		self.assertEqual(membership.membership_status, membership_service.STATUS_ACTIVE)
+		self.assertEqual(membership_service.status(membership)["membership_status"], membership_service.STATUS_EXPIRED)
+		self.assertFalse(membership_service.status(membership)["is_active"])
+		self.assertEqual(card.verify_dto(membership)["status"], membership_service.STATUS_EXPIRED)
+		self.assertFalse(cards_api.verify(token.ensure(membership))["is_current"])
+		self.assertEqual(member_service.derive_status(frappe.get_doc("VMMS Member", membership.member)), member_service.STATUS_LAPSED)
 
 		with self.assertRaises(frappe.ValidationError):
 			member_api.get_certificate(membership.name)
