@@ -135,3 +135,6 @@ vmmsx.patches.seed_optional_questions
 # One-time rather than wired into `install_defaults()`: see the patch docstring
 # for why a slot cleared on purpose must stay cleared.
 vmmsx.patches.ship_default_photographs
+# Reviewed legacy profession options, normalized to match migration crosswalks.
+# Adds missing rows to existing registers; also runs through after_install.
+vmmsx.patches.install_source_professions

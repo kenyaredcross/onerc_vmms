@@ -31,3 +31,11 @@ Pre-commit is configured to use the following tools for checking and formatting 
 ### License
 
 mit
+
+### Profession register
+
+Fresh installs and upgrades seed 684 profession options from the reviewed
+2026-10-20 legacy register export. Extra whitespace is collapsed to match
+migration lookup targets. Existing professions and profile links are preserved;
+the setup adds only missing options. Existing sites receive the options during
+`bench --site <site> migrate`; no browser script is required.
