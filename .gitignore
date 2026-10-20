@@ -95,3 +95,6 @@ vmmsx/public/portal/
 
 # Local launch rehearsal tracker; contains site-specific test evidence.
 /LAUNCH_MVP_TEST_PLAN.md
+
+# Local migration findings, approvals and site-specific run evidence.
+/VMMS_MIGRATION_RUNBOOK.local.md
