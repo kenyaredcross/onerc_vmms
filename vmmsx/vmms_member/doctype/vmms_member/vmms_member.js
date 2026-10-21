@@ -331,7 +331,7 @@ const vmmsx_member = {
 		if (!rows.length) {
 			return vmmsx_member.muted(
 				__(
-					"Nobody has recorded a decision on this person's memberships. A membership that activates on payment has no approver, so this is ordinary."
+					"No approval decision details are recorded."
 				)
 			);
 		}

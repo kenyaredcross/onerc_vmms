@@ -536,7 +536,7 @@ const vmmsx_volunteer = {
 				decisions.length
 					? `<ul class="vmms-decisions">${decisions.join("")}</ul>`
 					: vmmsx_volunteer.muted(
-							__("No decision was recorded, so no approver acted on this application.")
+							__("No approval decision details are recorded.")
 						)
 			}
 			${others}
