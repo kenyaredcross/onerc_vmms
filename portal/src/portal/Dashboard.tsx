@@ -8,14 +8,14 @@ import { branchPath, formatClock, formatDate, formatHours } from "../lib/format"
 import { firstName, useSession } from "../lib/session";
 import { Icon } from "../ui/icons";
 import { AvailabilityNudge } from "./chrome/AvailabilityNudge";
-import { HolderCard } from "./Profile";
+import { HomeDocument } from "./ui/HomeDocument";
+import { HomeStatTile as StatTile } from "./ui/HomeStatTile";
 import {
 	Card,
 	Empty,
 	ErrorNote,
 	SectionHead,
 	Skeleton,
-	StatTile,
 	StatusBadge,
 	StatusChip,
 	cx,
@@ -95,21 +95,6 @@ export default function Dashboard() {
 		"portal:events_upcoming",
 	);
 
-	// Whether this person actually holds a card of each kind. Asked here as well
-	// as inside `HolderCard` because the answer decides two things: whether the
-	// card is drawn, and whether the written-out record row beneath it is — and
-	// the key is the one `HolderCard` uses, so the two share a single request.
-	const volunteerCard = useFrappeGetCall<{ message: { html: string } | null }>(
-		API.myVolunteerCard,
-		undefined,
-		"portal:card:volunteer",
-	);
-	const memberCard = useFrappeGetCall<{ message: { html: string } | null }>(
-		API.myMemberCard,
-		undefined,
-		"portal:card:member",
-	);
-
 	// What to call this person. Three answers in descending order of authority,
 	// and the keys are the shell's own, so a dashboard that asks for them costs
 	// nothing on top of the chrome that has already asked.
@@ -133,8 +118,6 @@ export default function Dashboard() {
 	const events = upcoming.data?.message?.events ?? [];
 	const openVolunteer = open.data?.message?.volunteer ?? null;
 	const openMember = open.data?.message?.member ?? null;
-	const holdsVolunteerCard = Boolean(volunteerCard.data?.message?.html);
-	const holdsMemberCard = Boolean(memberCard.data?.message?.html);
 	const pending = [openVolunteer, openMember].filter(Boolean) as OpenRegistration[];
 
 	const request = waiting[0] ?? null;
@@ -159,7 +142,7 @@ export default function Dashboard() {
 	const settled = !volunteer.isLoading && !memberships.isLoading && !open.isLoading;
 
 	return (
-		<>
+		<div className="home-dashboard">
 			<header className="mb-5 min-w-0">
 				<div className="min-w-0">
 					<p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
@@ -295,7 +278,7 @@ export default function Dashboard() {
 
 					<Card pad={false}>
 						<SectionHead
-							title="Coming up near you"
+							title="Upcoming Events"
 							link={{ to: "/calendar", label: "View calendar →" }}
 						/>
 						<div>
@@ -314,30 +297,17 @@ export default function Dashboard() {
 
 					{settled && standing === "new" && <Checklist />}
 
-					{/* The thing they would put in a wallet, where a line of type used
-					    to stand in for it. Each draws nothing at all for somebody who
-					    holds no card of that kind, which is the ordinary case for most
-					    of the six standings this page serves. */}
-					<HolderCard kind="volunteer" title="Your volunteer card" note={false} />
-					<HolderCard kind="member" title="Your member card" note={false} />
-
 					<Card pad={false}>
 						<SectionHead title="Your record" />
-						{/* Written out only where the card above has not already said it.
-						    A status, a number and a branch printed under a card carrying
-						    the same three is the page reading itself back. */}
-						{!holdsVolunteerCard && (
-							<RecordVolunteer
-								profile={profile}
-								applied={Boolean(openVolunteer)}
-								loading={volunteer.isLoading}
-							/>
-						)}
+						<RecordVolunteer
+							profile={profile}
+							applied={Boolean(openVolunteer)}
+							loading={volunteer.isLoading}
+						/>
 						<RecordMembership
 							rows={rows}
 							applied={Boolean(openMember)}
 							loading={memberships.isLoading}
-							carded={holdsMemberCard}
 						/>
 						<RecordHours time={time} loading={logs.isLoading} />
 					</Card>
@@ -368,7 +338,7 @@ export default function Dashboard() {
 					</Card>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }
 
@@ -478,7 +448,7 @@ function Welcome({
 			: HEADLINE[standing];
 
 	return (
-		<section className="relative mb-[22px] grid overflow-hidden rounded-2xl bg-rail text-white shadow-[0_12px_34px_rgba(1,30,65,0.10)] md:grid-cols-[1.05fr_0.95fr]">
+		<section className="movement-dark relative mb-[22px] grid overflow-hidden rounded-2xl bg-rail text-white shadow-[0_12px_34px_rgba(1,30,65,0.10)] md:grid-cols-[1.05fr_0.95fr]">
 			<div className="relative z-10 flex flex-col justify-center px-7 py-9 sm:px-10 sm:py-11">
 				<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-aqua">
 					{standing === "active" && profile?.geo_path
@@ -754,6 +724,7 @@ function taskMeta(row: TaskSummary): string {
 /* ------------------------------------------------------------- coming up */
 
 interface DatedItem {
+	image?: string;
 	iso: string;
 	title: string;
 	meta: string;
@@ -776,6 +747,7 @@ function ComingUp({
 		if (!event.start_date || event.start_date < today) continue;
 		items.push({
 			iso: event.start_date,
+			image: event.image,
 			title: event.title,
 			meta: [formatClock(event.start_time), event.venue || event.medium]
 				.filter(Boolean)
@@ -827,7 +799,7 @@ function ComingUp({
 					<li key={`${item.to}-${index}`}>
 						<Link
 							to={item.to}
-							className="grid min-h-[70px] grid-cols-[54px_1fr_auto] items-center gap-3.5 px-[22px] transition hover:bg-canvas"
+							className="home-upcoming-row grid min-h-[94px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[54px_minmax(0,1fr)_auto] sm:gap-3.5 sm:px-[22px] transition hover:bg-canvas"
 						>
 							<time dateTime={item.iso} className="grid text-center leading-none">
 								<span className="font-display text-[18px] font-extrabold text-ink tabular">
@@ -837,11 +809,21 @@ function ComingUp({
 									{date.toLocaleDateString(undefined, { month: "short" })}
 								</span>
 							</time>
-							<span className="min-w-0">
-								<strong className="block truncate text-[12.5px] font-semibold text-ink">
-									{item.title}
-								</strong>
-								<span className="mt-1 block truncate text-[11px] text-slate-body">{item.meta}</span>
+							<span className="flex min-w-0 items-center gap-3 sm:gap-4">
+								{item.image && (
+									<img
+										src={item.image}
+										alt=""
+										loading="lazy"
+										className="h-[60px] w-[64px] shrink-0 rounded-lg object-cover sm:w-[88px]"
+									/>
+								)}
+								<span className="min-w-0">
+									<strong className="block text-[12.5px] font-semibold text-ink sm:truncate">
+										{item.title}
+									</strong>
+									<span className="mt-1 block text-[11px] text-slate-body sm:truncate">{item.meta}</span>
+								</span>
 							</span>
 							<span aria-hidden="true" className="text-[18px] leading-none text-slate-faint">
 								›
@@ -931,11 +913,11 @@ function RecordVolunteer({
 		<RecordBlock label="Volunteer">
 			<div className="flex flex-wrap items-center gap-2">
 				<StatusBadge state={profile.status} />
-				<span className="font-mono text-[11.5px] text-muted">{profile.volunteer}</span>
 			</div>
 			{profile.geo_path && (
 				<div className="mt-1.5 text-[12px] text-slate-body">{branchPath(profile.geo_path)}</div>
 			)}
+			<HomeDocument kind="volunteer" number={profile.volunteer} />
 		</RecordBlock>
 	);
 }
@@ -944,17 +926,10 @@ function RecordMembership({
 	rows,
 	applied,
 	loading,
-	carded = false,
 }: {
 	rows: MembershipRow[];
 	applied: boolean;
 	loading: boolean;
-	/**
-	 * Whether the member card is already drawn above this. When it is, the row
-	 * keeps only the thing the card cannot do — the way through to managing the
-	 * membership — and leaves the type, the branch and the dates to the card.
-	 */
-	carded?: boolean;
 }) {
 	if (loading) {
 		return (
@@ -984,16 +959,6 @@ function RecordMembership({
 		);
 	}
 
-	if (carded) {
-		return (
-			<RecordBlock label="Memberships">
-				<Link to="/membership" className="text-[12px] font-bold text-blue hover:text-blue-hover">
-					{rows.length > 1 ? `Manage ${rows.length} memberships` : "Manage your membership"}
-				</Link>
-			</RecordBlock>
-		);
-	}
-
 	const primary = rows.find((row) => row.is_active) ?? rows[0];
 
 	return (
@@ -1014,6 +979,9 @@ function RecordMembership({
 					.filter(Boolean)
 					.join(" · ")}
 			</div>
+			{primary.is_active && primary.certificate_available && (
+				<HomeDocument kind="member" number={primary.member} membership={primary.name} />
+			)}
 			<Link
 				to="/membership"
 				className="mt-2 inline-block text-[12px] font-bold text-blue hover:text-blue-hover"

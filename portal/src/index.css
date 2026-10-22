@@ -580,3 +580,38 @@ html[dir="rtl"] textarea,
 html[dir="rtl"] select {
 	text-align: right;
 }
+
+/* Approved volunteer Home design. Keep its information palette local. */
+:root { --movement-red: #D71920; --movement-navy: #011E41; --movement-border: #E4E5E7; }
+.home-dashboard { min-width: 0; }
+.home-dashboard .p-card { min-width: 0; }
+.home-dashboard :is(.text-blue, .text-blue-press) { color: var(--movement-navy); }
+.home-dashboard .movement-dark .text-aqua { color: var(--movement-red); }
+.portal-root:has(.home-dashboard) { background: #EEF0F3; }
+/* Home document links stay compact; full previews open on demand. */
+.home-record-document { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 10px; border: 1px solid var(--movement-border); border-radius: 9px; background: #FAFAFB; color: var(--movement-navy); }
+.home-record-document:hover { border-color: var(--movement-red); }
+.home-record-document:focus-visible { outline: 2px solid var(--movement-red); outline-offset: 3px; }
+.home-record-document-icon { display: grid; place-items: center; width: 30px; height: 34px; flex: none; border-radius: 6px; background: white; color: var(--movement-red); border: 1px solid var(--movement-border); }
+.home-document-dialog { width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--movement-border); border-radius: 14px; color: var(--movement-navy); background: white; overflow-y: auto; box-shadow: 0 24px 80px #011E4140; }
+.home-document-dialog::backdrop { background: #011E4180; }
+/* Document previews float above the row and stay open while hovered. */
+.home-document-access { position: relative; }
+.home-document-hover { position: absolute; z-index: 60; right: 0; bottom: 100%; width: min(360px, calc(100vw - 48px)); padding-bottom: 10px; }
+.home-document-hover-content { padding: 10px; border: 1px solid var(--movement-border); border-radius: 12px; background: white; box-shadow: 0 12px 36px #011E4126; }
+.home-document-access:has(dialog[open]) > .home-document-hover { display: none; }
+@media (hover: none) { .home-document-hover { display: none; } }
+
+.home-issued-viewport { width: 100%; overflow: hidden; }
+.home-issued-document { display: block; width: 600px; height: 520px; transform-origin: top left; border: 0; background: white; }
+.home-document-hover .home-issued-document { pointer-events: none; }
+.home-document-hover-content { max-height: min(360px, 60vh); overflow: auto; }
+
+.home-stat-tile { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; height: 100%; padding: 22px; border: 1px solid #C9D0D9; border-radius: 16px; background: linear-gradient(180deg, #FFF, #F7F7F8); color: var(--movement-navy); box-shadow: 0 1px 1px #011E4105; }
+.home-stat-tile:hover { border-color: #AEB9C5; background: white; }
+.home-stat-tile:focus-visible { outline: 2px solid var(--movement-red); outline-offset: 3px; }
+.home-stat-icon { display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 8px; border: 1px solid #C9D0D9; border-radius: 9px; background: white; color: #525E6C; }
+.home-stat-label { font-size: 14px; color: #525E6C; }
+.home-stat-value { margin: 18px 0 6px; font-size: 32px; font-weight: 600; line-height: 1; letter-spacing: -1px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.home-stat-link { font-size: 12px; font-weight: 600; line-height: 1.6; }
+@media (max-width: 600px) { .home-stat-tile { padding: 16px; border-radius: 12px; } .home-stat-value { margin-top: 12px; font-size: 27px; } .home-stat-label { font-size: 12px; } }

@@ -1704,7 +1704,15 @@
     "← Back": "← Nyuma",
     "You have been asked to join a deployment": "Umeombwa ujiunge na usambazaji",
     "Your member card": "Kadi yako ya mwanachama",
-    "Your volunteer card": "Kadi yako ya kujitolea"
+    "Your volunteer card": "Kadi yako ya kujitolea",
+    "Upcoming Events": "Matukio Yajayo",
+    "Membership certificate": "Cheti cha uanachama",
+    "View volunteer id": "Tazama kitambulisho cha kujitolea",
+    "View membership certificate": "Tazama cheti cha uanachama",
+    "Volunteer ID preview": "Hakiki ya kitambulisho cha kujitolea",
+    "Membership certificate preview": "Hakiki ya cheti cha uanachama",
+    "Your document is not available yet.": "Hati yako bado haipatikani.",
+    "Your document could not be loaded. Please try again.": "Hati yako haikuweza kupakiwa. Tafadhali jaribu tena."
   },
   "ar": {
     "% complete": "٪ مكتمل",
@@ -3411,7 +3419,15 @@
     "← Back": "← العودة",
     "You have been asked to join a deployment": "لقد طُلب منك الانضمام إلى عملية نشر",
     "Your member card": "بطاقة عضويتك",
-    "Your volunteer card": "بطاقتك التطوعية"
+    "Your volunteer card": "بطاقتك التطوعية",
+    "Upcoming Events": "الفعاليات القادمة",
+    "Membership certificate": "شهادة العضوية",
+    "View volunteer id": "عرض بطاقة المتطوع",
+    "View membership certificate": "عرض شهادة العضوية",
+    "Volunteer ID preview": "معاينة بطاقة المتطوع",
+    "Membership certificate preview": "معاينة شهادة العضوية",
+    "Your document is not available yet.": "المستند الخاص بك غير متاح بعد.",
+    "Your document could not be loaded. Please try again.": "تعذر تحميل المستند الخاص بك. يرجى المحاولة مرة أخرى."
   },
   "pt": {
     "% complete": "% completo",
@@ -5118,7 +5134,15 @@
     "← Back": "← Voltar",
     "You have been asked to join a deployment": "Você foi solicitado a ingressar em uma implantação",
     "Your member card": "Seu cartão de membro",
-    "Your volunteer card": "Seu cartão de voluntário"
+    "Your volunteer card": "Seu cartão de voluntário",
+    "Upcoming Events": "Próximos eventos",
+    "Membership certificate": "Certificado de membro",
+    "View volunteer id": "Ver identificação de voluntário",
+    "View membership certificate": "Ver certificado de membro",
+    "Volunteer ID preview": "Pré-visualização da identificação de voluntário",
+    "Membership certificate preview": "Pré-visualização do certificado de membro",
+    "Your document is not available yet.": "O seu documento ainda não está disponível.",
+    "Your document could not be loaded. Please try again.": "Não foi possível carregar o seu documento. Tente novamente."
   },
   "fr": {
     "% complete": "% complet",
@@ -6825,6 +6849,14 @@
     "← Back": "← Retour",
     "You have been asked to join a deployment": "Vous avez été invité à rejoindre un déploiement",
     "Your member card": "Votre carte de membre",
-    "Your volunteer card": "Votre carte de bénévole"
+    "Your volunteer card": "Votre carte de bénévole",
+    "Upcoming Events": "Événements à venir",
+    "Membership certificate": "Certificat d’adhésion",
+    "View volunteer id": "Voir la carte de bénévole",
+    "View membership certificate": "Voir le certificat d’adhésion",
+    "Volunteer ID preview": "Aperçu de la carte de bénévole",
+    "Membership certificate preview": "Aperçu du certificat d’adhésion",
+    "Your document is not available yet.": "Votre document n’est pas encore disponible.",
+    "Your document could not be loaded. Please try again.": "Votre document n’a pas pu être chargé. Veuillez réessayer."
   }
 }

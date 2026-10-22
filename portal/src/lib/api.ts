@@ -144,6 +144,7 @@ export const API = {
 
 	// vmmsx/api/member.py
 	myMemberships: "vmmsx.api.member.my_memberships",
+	memberCertificate: "vmmsx.api.member.get_certificate",
 	renewMembership: "vmmsx.api.member.renew_membership",
 	membershipTypes: "vmmsx.api.member.membership_types",
 	memberGeoLevels: "vmmsx.api.member.geo_node_levels",

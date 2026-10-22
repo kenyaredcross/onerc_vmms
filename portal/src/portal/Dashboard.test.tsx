@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API } from "../lib/api";
@@ -227,16 +227,7 @@ describe("separate membership and volunteer paths", () => {
 	});
 });
 
-/**
- * What the home page shows an accepted volunteer about themselves.
- *
- * Three complaints, one shape. The greeting carried a green "Active volunteer"
- * chip, which told somebody reading their own front page a thing they knew.
- * The record down the right printed a status, a number and a branch as three
- * lines of type, when the society renders an actual card carrying exactly
- * those. And the deployment request beside them named the place as
- * "GEO-00067", because the invitation came down with a docname and no path.
- */
+/** The Home summary stays compact while issued documents open on demand. */
 describe("an accepted volunteer's own front page", () => {
 	beforeEach(() => {
 		reads.set(API.myVolunteer, volunteer());
@@ -249,20 +240,19 @@ describe("an accepted volunteer's own front page", () => {
 		expect(screen.queryByText(/active volunteer/i)).toBeNull();
 	});
 
-	it("draws the card the society issued, where a line of type used to be", () => {
-		reads.set(API.myVolunteerCard, {
-			html: '<div class="vmms-card">Godfrey Mwakyusa · VOL-00010</div>',
-		});
-
+	it("keeps the issued ID compact and shows the real card on hover", () => {
+		reads.set(API.myVolunteerCard, { html: '<div class="vmms-card">Issued volunteer ID</div>' });
 		mount(<Dashboard />);
-
-		expect(screen.getByText("Your volunteer card")).toBeTruthy();
-		expect(screen.getByText(/Godfrey Mwakyusa · VOL-00010/)).toBeTruthy();
-		// And the row that said the same three things is gone rather than
-		// repeated underneath it. The label is written "Volunteer" and uppercased
-		// in CSS, so this is the literal the record block renders.
-		expect(screen.queryByText("Volunteer")).toBeNull();
-		expect(screen.queryByText("VOL-00010")).toBeNull();
+		expect(screen.queryByText("Your volunteer card")).toBeNull();
+		const button = screen.getByRole("button", { name: /view volunteer id/i });
+		expect(within(button).getByText("VOL-00010")).toBeTruthy();
+		expect(screen.queryByTitle("Volunteer ID preview")).toBeNull();
+		fireEvent.mouseEnter(button);
+		const frame = screen.getByTitle("Volunteer ID preview");
+		expect(frame.getAttribute("sandbox")).toBe("");
+		expect(frame.getAttribute("srcdoc")).toContain("Issued volunteer ID");
+		fireEvent.keyDown(document, { key: "Escape" });
+		expect(screen.queryByTitle("Volunteer ID preview")).toBeNull();
 	});
 
 	it("still writes the record out for somebody the society has issued no card to", () => {
@@ -296,5 +286,39 @@ describe("an accepted volunteer's own front page", () => {
 
 		expect(screen.getByText("You have been asked to join a deployment")).toBeTruthy();
 		expect(screen.queryByText(/your priority/i)).toBeNull();
+	});
+});
+
+
+describe("the approved Home page", () => {
+	it("shows event images alongside the original date and details", () => {
+		reads.set(API.eventsUpcoming, { events: [{ event: "EVENT-1", title: "First aid day", start_date: "2099-10-23", start_time: "09:00:00", venue: "Nairobi", image: "/files/event.jpg" }] });
+		mount(<Dashboard />);
+		expect(screen.getByText("Upcoming Events")).toBeTruthy();
+		const event = screen.getByRole("link", { name: /first aid day/i });
+		expect(event.querySelector("img")?.getAttribute("src")).toBe("/files/event.jpg");
+		expect(event.querySelector("time")?.getAttribute("datetime")).toBe("2099-10-23");
+	});
+
+	it("does not add a broken thumbnail to an event without an image", () => {
+		reads.set(API.eventsUpcoming, { events: [{ event: "EVENT-1", title: "First aid day", start_date: "2099-10-23", image: "" }] });
+		mount(<Dashboard />);
+		expect(screen.getByRole("link", { name: /first aid day/i }).querySelector("img")).toBeNull();
+	});
+
+	it("opens the holder's configured membership certificate on focus", () => {
+		reads.set(API.myMemberships, [{ name: "MEMBERSHIP-1", member: "MEMBER-1", is_active: true, certificate_available: true, membership_type_name: "Annual membership" }]);
+		reads.set("vmmsx.api.member.get_certificate", { body: "<h1>Issued membership certificate</h1>" });
+		mount(<Dashboard />);
+		const button = screen.getByRole("button", { name: /view membership certificate/i });
+		expect(within(button).getByText("MEMBER-1")).toBeTruthy();
+		fireEvent.focus(button);
+		expect(screen.getByTitle("Membership certificate preview").getAttribute("srcdoc")).toContain("Issued membership certificate");
+	});
+
+	it("offers no certificate preview when the server says it is unavailable", () => {
+		reads.set(API.myMemberships, [{ name: "MEMBERSHIP-1", member: "MEMBER-1", is_active: true, certificate_available: false, membership_type_name: "Annual membership" }]);
+		mount(<Dashboard />);
+		expect(screen.queryByRole("button", { name: /view membership certificate/i })).toBeNull();
 	});
 });
