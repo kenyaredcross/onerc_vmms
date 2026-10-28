@@ -57,6 +57,8 @@ Empower your organization with structured membership tiers, renewals, and paymen
 
 **[See Membership Management Documentation →](./onerc_vmms/docs/Membership-Management.md)**
 
+[M-Pesa accounting and recovery operations](./onerc_vmms/docs/Membership-Payment-Recovery.md)
+
 ---
 
 ## Event Management

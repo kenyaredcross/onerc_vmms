@@ -1,5 +1,12 @@
 # Event Management
 
+Paid event invoices linked through `event_booking` use VMMS's verified M-Pesa
+accounting and recovery flow. Tickets are issued by the Event Booking controller
+after invoice settlement, with checks against duplicate issuance on callbacks
+and recovery retries.
+
+[Payment deployment, recovery and verification](./Membership-Payment-Recovery.md)
+
 ## Navigation
 
 <div style="display: flex; align-items: center;">
