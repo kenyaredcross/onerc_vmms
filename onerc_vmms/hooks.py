@@ -149,9 +149,9 @@ role_home_page = {
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"Payment Request": "onerc_vmms.volunteer_and_member_management.overrides.server.payment_request.VMMSPaymentRequest"
+}
 
 # Document Events
 # ---------------
@@ -203,6 +203,9 @@ scheduler_events = {
 	],
 	"cron": {
 		"*/1 * * * *": ["onerc_vmms.volunteer_and_member_management.overrides.server.email.email_flush"],
+		"*/15 * * * *": [
+			"onerc_vmms.volunteer_and_member_management.services.membership_payments.retry_recent_payments"
+		],
 	},
 }
 
@@ -214,9 +217,9 @@ scheduler_events = {
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "onerc_vmms.event.get_events"
-# }
+override_whitelisted_methods = {
+	"frappe_mpsa_payments.frappe_mpsa_payments.api.m_pesa_api.stk_push_callback": "onerc_vmms.volunteer_and_member_management.services.membership_payments.stk_push_callback"
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
