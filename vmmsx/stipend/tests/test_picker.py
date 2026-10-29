@@ -23,8 +23,8 @@ name, or add somebody outside their own area. Every route in is tested:
    `nodes` and no `geo_node` parameter on any of it, which is why there is no
    check that could be forgotten.
 
-The users here are never System Managers. That role is core's documented scope
-bypass, and a test passing because of it would be asserting nothing.
+The scoped-user cases never use System Managers. The explicit Administrator
+case verifies core's documented exemption when the scope role is unconfigured.
 """
 
 import inspect
@@ -106,6 +106,15 @@ class TestBrowsingIsScoped(PickerTestCase):
 
 		self.assertTrue(result["pending_criteria"])
 		self.assertTrue(all(row["why"] for row in result["pending_criteria"]))
+
+
+class TestAdministratorVisibility(PickerTestCase):
+	def test_administrator_sees_every_area_without_a_configured_scope_role(self):
+		self.addCleanup(fixtures.set_volunteer_scope_role, fixtures.VOLUNTEER_SCOPE_ROLE)
+		fixtures.set_volunteer_scope_role(None)
+		with fixtures.acting_as("Administrator"):
+			found = set(self.candidate_names(picker.candidates()))
+		self.assertTrue({self.inside.name, self.also_inside.name, self.outside.name} <= found)
 
 
 class TestSearchingCannotReachOutside(PickerTestCase):

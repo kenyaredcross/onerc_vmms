@@ -218,6 +218,7 @@ def _searchable_nodes() -> set[str]:
 	whichever role the society named in its settings and this file contains no
 	role name at all. An unregistered doctype, an unresolvable role or a user
 	holding nothing all come back empty, and empty means nothing is visible.
+	Framework administrators retain core's unrestricted geographic visibility.
 
 	Recomputed on every call, deliberately. Caching it would mean a supervisor who
 	lost their assignment last week could still add volunteers today, which is the
@@ -231,6 +232,11 @@ def _searchable_nodes() -> set[str]:
 	"""
 	if not frappe.has_permission(VOLUNTEER_DOCTYPE, ptype="read"):
 		return set()
+
+	# Framework administrators have every geographic node even before a society
+	# configures its staff role. Keep this identical to core's scope exemption.
+	if scope.has_unrestricted_scope():
+		return scope.get_user_geo_scope(frappe.session.user, "")
 
 	registration = registry.for_doctype(VOLUNTEER_DOCTYPE)
 
