@@ -620,7 +620,7 @@ describe("operations documents", () => {
 		expect(screen.getByText("TOR-2026-041")).toBeTruthy();
 		expect(screen.getAllByText("Terms of Reference").length).toBeGreaterThan(0);
 		expect(screen.getAllByText(/Private/).length).toBeGreaterThan(0);
-		expect(screen.getByRole("link", { name: "Open" }).getAttribute("href")).toBe(
+		expect(screen.getByRole("link", { name: "Open Tana River TOR v1.4.pdf" }).getAttribute("href")).toBe(
 			"/private/files/tor.pdf",
 		);
 	});
@@ -629,10 +629,10 @@ describe("operations documents", () => {
 		reads.set(API.operationsDocuments, answer());
 		show(<OperationsDocuments />, "/admin/deployments/documents");
 
-		const open = vi.spyOn(window, "open").mockImplementation(() => null);
-		fireEvent.click(screen.getByText("TOR-2026-041"));
-		expect(open).toHaveBeenCalledWith("/private/files/tor.pdf", "_blank", "noopener,noreferrer");
-		open.mockRestore();
+  const link=screen.getByRole("link",{name:"Open Tana River TOR v1.4.pdf"});
+  expect(link.getAttribute("href")).toBe("/private/files/tor.pdf");
+  expect(link.getAttribute("target")).toBe("_blank");
+  expect(link.getAttribute("rel")).toBe("noreferrer");
 	});
 
 	it("narrows by record type through the server, not in the browser", async () => {
@@ -641,9 +641,7 @@ describe("operations documents", () => {
 		show(<OperationsDocuments />, "/admin/deployments/documents");
 
 		await act(async () => {
-			fireEvent.change(screen.getByLabelText("Record type"), {
-				target: { value: "VMMS Deployment" },
-			});
+			fireEvent.click(screen.getByRole("button", {name: /Deployment.*file/}));
 		});
 
 		expect(argsFor(API.operationsDocuments)).toEqual({
@@ -658,7 +656,7 @@ describe("operations documents", () => {
 		show(<OperationsDocuments />, "/admin/deployments/documents");
 
 		const options = Array.from(
-			(screen.getByLabelText(/Store against/) as HTMLSelectElement).options,
+			(screen.getByLabelText(/Attach to record/) as HTMLSelectElement).options,
 		).map((option) => option.value);
 
 		// One writable target and the empty prompt. A record the caller may read
@@ -718,7 +716,7 @@ describe("operations documents", () => {
 		show(<OperationsDocuments />, "/admin/deployments/documents");
 
 		await act(async () => {
-			fireEvent.change(screen.getByLabelText(/Store against/), {
+			fireEvent.change(screen.getByLabelText(/Attach to record/), {
 				target: { value: "VMMS Deployment\nDEP-0001" },
 			});
 		});
@@ -873,8 +871,8 @@ describe("the terms of reference gallery", () => {
 		expect(screen.getAllByText("Draft").length).toBeGreaterThan(0);
 		expect(screen.getAllByText("Rejected").length).toBeGreaterThan(0);
 		// A draft is the one you continue writing; the rest you open or review.
-		expect(screen.getByText("Continue writing →")).toBeTruthy();
-		expect(screen.getByText("Review document →")).toBeTruthy();
+		expect(screen.getByText("Continue writing")).toBeTruthy();
+		expect(screen.getByText("Review document")).toBeTruthy();
 	});
 
 	it("offers only the seven exact states as a filter, from the server's own list", async () => {

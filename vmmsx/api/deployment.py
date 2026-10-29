@@ -364,10 +364,14 @@ def _status_rows(names: list[str]) -> list[dict]:
 
 	tallies = assignment_service.counts_for_many(names)
 
-	return [
-		deployment_service.status_dto(frappe.get_doc(DEPLOYMENT_DOCTYPE, name), counts=tallies.get(name))
-		for name in names
-	]
+	rows = []
+	for name in names:
+		deployment = frappe.get_doc(DEPLOYMENT_DOCTYPE, name)
+		rows.append({
+			**deployment_service.status_dto(deployment, counts=tallies.get(name)),
+			"where": deployment_service.where_dto(deployment),
+		})
+	return rows
 
 
 def _names(value: list | str) -> list[str]:

@@ -1,3 +1,6 @@
+import { googleMapsUrl } from "../lib/maps";
+import { useRecordPage, RecordPager, RecordCollection } from "../ui/RecordPagination";
+import { OperationsFileLibrary } from "./projects/OperationsFileLibrary";
 import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
@@ -37,11 +40,9 @@ import {
 	type Crumb,
 	Empty,
 	ErrorNote,
-	Cell,
 	Meter,
 	PageHeading,
 	Pill,
-	Row,
 	SectionLabel,
 	SectionLink,
 	SectionTitle,
@@ -50,10 +51,12 @@ import {
 	StatGrid,
 	StatTile,
 	StateBadge,
-	Table,
 	cx,
 } from "../ui/primitives";
 import { Icon } from "../ui/icons";
+import { DeploymentDestination } from "../ui/DeploymentDestination";
+import { DeploymentArchiveCard } from "../ui/DeploymentArchiveCard";
+import { DeploymentJourney } from "../ui/DeploymentJourney";
 import { exceptionsFor } from "./counts";
 
 /**
@@ -540,7 +543,7 @@ function SiteList({
 }) {
 	return (
 		<div className="mt-3 max-h-56 overflow-y-auto rounded-xl border border-card-line">
-			<ul className="divide-y divide-card-line">
+			<RecordCollection as="ul" className="divide-y divide-card-line">
 				{rows.map((row) => {
 					const located = row.where.site.has_point;
 
@@ -574,7 +577,7 @@ function SiteList({
 						</li>
 					);
 				})}
-			</ul>
+			</RecordCollection>
 		</div>
 	);
 }
@@ -618,9 +621,9 @@ function SelectedDeployment({ row }: { row: DeploymentSite | null }) {
 			<p className="mt-1.5 text-[11.5px] text-muted">{geoPath(row.geo_path)}</p>
 
 			<div className="mt-3 flex flex-wrap gap-2">
-				{site.map && (
+				{site.has_point && (
 					<a
-						href={site.map}
+						href={googleMapsUrl(`${site.latitude},${site.longitude}`)}
 						target="_blank"
 						rel="noreferrer"
 						className="rounded-full border border-card-line px-3 py-1.5 text-[11.5px] font-semibold text-slate-strong transition hover:border-blue hover:text-blue-press"
@@ -628,9 +631,9 @@ function SelectedDeployment({ row }: { row: DeploymentSite | null }) {
 						Open map ↗
 					</a>
 				)}
-				{site.directions && (
+				{site.has_point && (
 					<a
-						href={site.directions}
+						href={googleMapsUrl(`${site.latitude},${site.longitude}`, 'directions')}
 						target="_blank"
 						rel="noreferrer"
 						className="rounded-full border border-card-line px-3 py-1.5 text-[11.5px] font-semibold text-slate-strong transition hover:border-blue hover:text-blue-press"
@@ -922,8 +925,7 @@ function ReadinessStrip({ rows, loading }: { rows: DeploymentSummary[]; loading:
  * an error afterwards. Everything goes up private.
  */
 export function OperationsDocuments() {
-	const [search, setSearch] = useState("");
-	const [recordType, setRecordType] = useState("");
+ const [search,setSearch]=useState(""); const [doctype,setDoctype]=useState("");
 	const [target, setTarget] = useState("");
 	const [uploading, setUploading] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
@@ -931,13 +933,12 @@ export function OperationsDocuments() {
 
 	const documents = useFrappeGetCall<{ message: OperationsDocumentsAnswer }>(
 		API.operationsDocuments,
-		{ search, ...(recordType ? { doctype: recordType } : {}) },
-		`admin:operations:documents:${search}:${recordType}`,
+		{search,doctype:doctype || undefined},
+		`admin:operations:documents:${doctype}:${search}`,
 	);
 
 	const answer = documents.data?.message;
 	const targets = answer?.targets ?? [];
-	const types = answer?.record_types ?? [];
 
 	const upload = async (file: File) => {
 		const selected = targets.find((item) => `${item.doctype}\n${item.name}` === target);
@@ -996,8 +997,8 @@ export function OperationsDocuments() {
 			<Card className="mb-5">
 				<div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
 					<Labelled
-						label="Store against"
-						hint="Only records you may write to are listed. The file inherits that record's permission scope."
+						label="Attach to record"
+						hint="Choose the project, terms of reference or deployment for this file."
 					>
 						<select
 							className={INPUT}
@@ -1049,135 +1050,10 @@ export function OperationsDocuments() {
 				)}
 			</Card>
 
-			<Card pad={false}>
-				<div className="flex flex-wrap items-center justify-between gap-3 border-b border-card-line px-5 py-4">
-					<div>
-						<SectionTitle>File library</SectionTitle>
-						<p className="mt-1 text-[11.5px] text-slate-faint">
-							{answer?.count ?? 0} files · private by default
-						</p>
-					</div>
+            {documents.isLoading && <Skeleton className="h-48" />}
+            {documents.error && <ErrorNote>{errorMessage(documents.error)}</ErrorNote>}
+            {!documents.isLoading && !documents.error && <OperationsFileLibrary answer={answer} onSearch={setSearch} onFolder={setDoctype} />}
 
-					<div className="flex flex-wrap items-center gap-2">
-						<label className="relative">
-							<span className="sr-only">Record type</span>
-							<select
-								value={recordType}
-								onChange={(event) => setRecordType(event.target.value)}
-								className={cx(
-									"appearance-none rounded-full border bg-white py-2 pl-4 pr-9 text-[12.5px] outline-none transition",
-									recordType
-										? "border-blue bg-blue-soft font-semibold text-blue-press"
-										: "border-card-line text-slate-strong hover:border-blue",
-								)}
-							>
-								<option value="">All record types</option>
-								{types.map((doctype) => (
-									<option key={doctype} value={doctype}>
-										{shortDoctype(doctype)}
-									</option>
-								))}
-							</select>
-							<svg
-								viewBox="0 0 24 24"
-								width="12"
-								height="12"
-								fill="none"
-								aria-hidden="true"
-								className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-faint"
-							>
-								<path
-									d="m6 9 6 6 6-6"
-									stroke="currentColor"
-									strokeWidth="2.2"
-									strokeLinecap="round"
-								/>
-							</svg>
-						</label>
-
-						<div className="relative">
-							<Icon.search
-								className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-faint"
-								size={15}
-							/>
-							<input
-								type="search"
-								className={`${INPUT} w-56 pl-9`}
-								placeholder="Search files or records"
-								aria-label="Search files or records"
-								value={search}
-								onChange={(event) => setSearch(event.target.value)}
-							/>
-						</div>
-					</div>
-				</div>
-
-				{documents.isLoading && (
-					<div className="p-5">
-						<Skeleton className="h-32" />
-					</div>
-				)}
-
-				{documents.error && (
-					<div className="p-5">
-						<ErrorNote>{errorMessage(documents.error)}</ErrorNote>
-					</div>
-				)}
-
-				{!documents.isLoading && !documents.error && (answer?.files.length ?? 0) === 0 && (
-					<Empty title="No operational files here">
-						{search || recordType
-							? "Nothing matches what you asked for. Clear the search or the record type."
-							: "Upload the first plan, briefing, assessment, photograph, or report and attach it to the record it belongs to."}
-					</Empty>
-				)}
-
-				{(answer?.files.length ?? 0) > 0 && (
-					<Table head={["Document", "Attached to", "Record type", "Owner", "Updated", ""]}>
-						{(answer?.files ?? []).map((file) => (
-							<Row key={file.name} openNewTab={file.file_url} label={`Open ${file.file_name}`}>
-								<Cell>
-									<span className="flex items-center gap-3">
-										<span
-											aria-hidden="true"
-											className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-surface text-ink"
-										>
-											<Icon.file size={17} />
-										</span>
-										<span className="min-w-0">
-											<span className="block truncate text-[13px] font-semibold text-ink">
-												{file.file_name}
-											</span>
-											<span className="mt-0.5 block text-[11px] text-slate-faint">
-												{formatBytes(file.file_size)}
-												{file.is_private ? " · Private" : " · Shared"}
-											</span>
-										</span>
-									</span>
-								</Cell>
-								<Cell className="text-muted">{file.attached_to_name}</Cell>
-								<Cell className="text-muted">{shortDoctype(file.attached_to_doctype)}</Cell>
-								<Cell className="text-muted">{file.owner}</Cell>
-								<Cell className="text-muted">{formatDate(file.modified)}</Cell>
-								<Cell className="text-right">
-									{/* A real link to the file rather than a script-driven
-									    download: a private file is served by Frappe against
-									    the same session, so whoever may read the record may
-									    open it and nobody else can. */}
-									<a
-										href={file.file_url}
-										target="_blank"
-										rel="noreferrer"
-										className="text-[12.5px] font-bold text-ink hover:underline"
-									>
-										Open
-									</a>
-								</Cell>
-							</Row>
-						))}
-					</Table>
-				)}
-			</Card>
 		</>
 	);
 }
@@ -1186,11 +1062,6 @@ function shortDoctype(doctype: string): string {
 	return doctype.replace(/^VMMS /, "");
 }
 
-function formatBytes(size: number | null): string {
-	if (!size) return "—";
-	if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
-	return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 /* ------------------------------------------------------------- deployments */
 
@@ -1262,9 +1133,11 @@ export function DeploymentsOngoing() {
 	const answer = data?.message;
 	const rows = answer?.deployments ?? [];
 
+	const paging = useRecordPage(rows);
 	const columns = ONGOING_COLUMNS.map((column) => ({
 		...column,
-		rows: rows.filter((row) => column.matches(row)),
+		rows: paging.slice.filter((row) => column.matches(row)),
+  total: rows.filter((row) => column.matches(row)).length,
 	}));
 
 	return (
@@ -1313,7 +1186,7 @@ export function DeploymentsOngoing() {
 								<h2 id={`col-${column.key}`} className="text-[12px] font-bold">
 									{column.label}
 								</h2>
-								<span className="tabular text-[12px] font-bold">{column.rows.length}</span>
+								<span className="tabular text-[12px] font-bold">{column.total}</span>
 							</div>
 
 							<p className="mb-2.5 px-1 text-[11px] leading-relaxed text-muted">
@@ -1337,6 +1210,7 @@ export function DeploymentsOngoing() {
 					))}
 				</div>
 			)}
+   <RecordPager {...paging} />
 		</>
 	);
 }
@@ -1476,91 +1350,21 @@ export function PastDeployments() {
 			)}
 
 			{rows.length > 0 && (
-				<ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+				<RecordCollection as="ul" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 					{rows.map((row) => (
 						<li key={row.name}>
 							<MissionFolder row={row} />
 						</li>
 					))}
-				</ul>
+				</RecordCollection>
 			)}
 		</>
 	);
 }
 
-/**
- * One closed mission, as the folder it is.
- *
- * The icon's tab is a real element rather than a background image, so it keeps
- * its shape at any width and can shift to the action colour on hover. The whole
- * card is one link: a folder you have to aim at a corner of is a folder nobody
- * opens.
- */
 function MissionFolder({ row }: { row: DeploymentSummary }) {
-	const filed = row.closed_out_on ?? row.actual_end ?? row.end_date;
-	const assignments = row.assignment_counts?.total ?? 0;
-	// The year the file is filed under, taken from the date it was actually
-	// filed rather than from today: a mission closed in December stays a
-	// December file in January.
-	const year = filed ? new Date(filed).getFullYear() : null;
-
-	return (
-		<Link
-			to={`/admin/deployments/${encodeURIComponent(row.name)}`}
-			className="group block h-full transition duration-200 hover:-translate-y-1"
-		>
-			<div className="flex h-full min-h-[260px] flex-col rounded-[18px] border border-card-line bg-white px-6 py-6 shadow-[0_1px_2px_rgba(16,32,51,0.04)] transition duration-200 group-hover:border-blue-line group-hover:shadow-[0_16px_32px_rgba(16,32,51,0.10)]">
-				<span aria-hidden="true" className="relative mb-7 mt-2 block h-12 w-[68px] rounded-md bg-blue-press shadow-sm transition group-hover:bg-blue">
-					<span className="absolute -top-3 left-1 h-4 w-8 rounded-t-md bg-blue" />
-				</span>
-
-				<p className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-faint">
-					{year ? `${year} mission file` : "Mission file"}
-				</p>
-				<p className="tabular mt-1 truncate font-mono text-[10.5px] text-muted">{row.name}</p>
-
-				<h3 className="mt-3 line-clamp-2 text-[16px] font-bold leading-snug text-ink">
-					{row.terms_of_reference || row.name}
-				</h3>
-
-				<p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-muted">
-					{geoPath(row.geo_path) || "No area recorded"}
-				</p>
-
-				<p className="mt-2 text-[12px] font-medium text-blue-press">
-					TOR · {assignments} {assignments === 1 ? "assignment" : "assignments"} · complete record
-				</p>
-
-				<div className="mt-auto flex items-center justify-between gap-3 border-t border-card-line pt-4">
-					<span className="flex min-w-0 items-center gap-2 text-[11.5px] font-semibold text-slate-strong">
-						<span
-							aria-hidden="true"
-							className={cx("h-2 w-2 flex-none rounded-full", FILED_TONES[row.status] ?? "bg-slate-faint")}
-						/>
-						<span className="truncate">{row.status}</span>
-					</span>
-					<span className="tabular flex-none text-[11.5px] text-muted">
-						{filed ? formatDate(filed) : "No date"}
-					</span>
-				</div>
-			</div>
-		</Link>
-	);
+ return <DeploymentArchiveCard row={row} to={`/admin/deployments/${encodeURIComponent(row.name)}`} />;
 }
-
-/**
- * The dot beside a filed mission's status.
- *
- * Three of the doctype's six can appear here, and each is a different kind of
- * ending: the work finished, the file was closed, or the operation was called
- * off. An unknown value gets the neutral dot rather than none, because a folder
- * with no marker at all reads as one that failed to load.
- */
-const FILED_TONES: Record<string, string> = {
-	Completed: "bg-warning-dot",
-	"Closed Out": "bg-success-dot",
-	Cancelled: "bg-danger-dot",
-};
 
 export function DeploymentList({ scope }: { scope?: DeploymentScope } = {}) {
 	const [searchParams] = useSearchParams();
@@ -1668,13 +1472,13 @@ export function DeploymentList({ scope }: { scope?: DeploymentScope } = {}) {
 			)}
 
 			{rows.length > 0 && (
-				<ul className="grid gap-3 sm:grid-cols-2">
+				<RecordCollection as="ul" className="grid gap-3 sm:grid-cols-2">
 					{rows.map((row) => (
 						<li key={row.name}>
 							<DeploymentCard row={row} />
 						</li>
 					))}
-				</ul>
+				</RecordCollection>
 			)}
 		</>
 	);
@@ -1713,7 +1517,9 @@ function DeploymentCard({ row }: { row: DeploymentSummary }) {
 					{row.end_date ? ` → ${formatDate(row.end_date)}` : ""}
 				</p>
 
-				<div className="mt-3.5">
+				<DeploymentJourney status={row.status} origin={row.where?.meeting_point.name || row.where?.meeting_point.address || 'Meeting point to be confirmed'} destination={row.where?.site.name || row.where?.site.address || geoPath(row.geo_path) || 'Site to be confirmed'} />
+
+    <div className="mt-3.5">
 					{row.volunteers_required > 0 ? (
 						<Meter
 							label="Staffed"
@@ -2089,6 +1895,7 @@ export function DeploymentDetail() {
 	return (
 		<>
 			<PageHeading title={deployment.terms?.tor_name || deployment.name} trail={trail} />
+			<DeploymentDestination key={deployment.name} status={deployment.status} where={deployment.where} area={geoPath(deployment.geo_path)} />
 
 			<div className="space-y-4">
 				<Card>
@@ -2512,9 +2319,9 @@ function PlacePin({
 				</div>
 
 				<div className="flex flex-wrap items-center gap-2">
-					{point.map && (
+					{point.has_point && (
 						<a
-							href={point.map}
+							href={googleMapsUrl(`${point.latitude},${point.longitude}`)}
 							target="_blank"
 							rel="noreferrer"
 							className="text-[11.5px] font-semibold text-blue hover:text-blue-hover"
@@ -3254,11 +3061,11 @@ function Roster({
 								</p>
 								<p className="mt-0.5 text-[11.5px] text-slate-faint">{group.lead}</p>
 
-								<ul className="mt-2 divide-y divide-card-line">
+								<RecordCollection as="ul" className="mt-2 divide-y divide-card-line">
 									{rows.map((row) => (
 										<RosterEntry key={row.name} row={row} busy={busy} onAct={onAct} />
 									))}
-								</ul>
+								</RecordCollection>
 							</div>
 						);
 					})}
@@ -3692,7 +3499,7 @@ function CandidatePane({
 						</span>
 					</div>
 
-					<ul className="divide-y divide-card-line">
+					<RecordCollection as="ul" className="divide-y divide-card-line">
 						{rows.map((person) => (
 							<CandidateRow
 								key={person.volunteer}
@@ -3702,7 +3509,7 @@ function CandidatePane({
 								onToggle={() => toggle(person.volunteer)}
 							/>
 						))}
-					</ul>
+					</RecordCollection>
 
 					{/* The negative margins match `Card`'s own `p-5 sm:p-6`, so the bar
 					    spans the card's full width and its inner padding lines the
@@ -4240,11 +4047,11 @@ export function RequestList() {
 				</Empty>
 			)}
 
-			<div className="space-y-3">
+			<RecordCollection as="div" className="space-y-3">
 				{rows.map((row) => (
 					<RequestCard key={row.name} row={row} />
 				))}
-			</div>
+			</RecordCollection>
 		</>
 	);
 }

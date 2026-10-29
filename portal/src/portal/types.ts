@@ -947,6 +947,8 @@ export interface BranchLocation {
 
 /** `deployment/services/deployment.py::status_dto` — one deployment in summary. */
 export interface DeploymentSummary {
+	/** Both ends of the journey, from the deployment record. */
+	where?: DeploymentWhere | null;
 	name: string;
 	terms_of_reference: string | null;
 	geo_node: string | null;

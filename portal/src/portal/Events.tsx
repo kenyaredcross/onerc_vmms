@@ -1,3 +1,4 @@
+import { googleMapsUrl } from "../lib/maps";
 import { useMemo, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useFrappeGetCall } from "frappe-react-sdk";
@@ -662,7 +663,7 @@ function Hero({
 						type="submit"
 						disabled={disabled}
 						aria-label="Search"
-						className="grid h-11 w-11 flex-none place-items-center rounded-full bg-blue text-white transition hover:bg-blue-press disabled:opacity-50"
+						className="movement-primary grid h-11 w-11 flex-none place-items-center rounded-full bg-action text-white transition hover:bg-action-press disabled:opacity-50"
 					>
 						<Icon.search size={16} />
 					</button>
@@ -1127,7 +1128,7 @@ export function Event() {
 						<div className="mt-8">
 							{row.href ? (
 								<>
-									<a href={row.href} className="inline-flex items-center justify-center rounded-full bg-blue px-6 py-3 text-[13.5px] font-bold text-white transition hover:bg-blue-press">
+									<a href={row.href} className="movement-primary inline-flex items-center justify-center rounded-full bg-action px-6 py-3 text-[13.5px] font-bold text-white transition hover:bg-action-press">
 										Register for this event →
 									</a>
 									<p className="mt-2 text-[12px] text-muted">Buzz handles registration and confirms your place.</p>
@@ -1287,7 +1288,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 				type="button"
 				onClick={() => void toggle(row.event)}
 				disabled={busy}
-				className="inline-flex items-center justify-center rounded-full bg-blue px-6 py-3 text-[13.5px] font-bold text-white transition hover:bg-blue-press disabled:opacity-50"
+				className="movement-primary inline-flex items-center justify-center rounded-full bg-action px-6 py-3 text-[13.5px] font-bold text-white transition hover:bg-action-press disabled:opacity-50"
 			>
 				{busy ? (
 					<EditableText k="portal.events.attending.saving" fallback="Saving…" />
@@ -1346,7 +1347,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 
 				{row.venue_address && (
 					<a
-						href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(row.venue_address)}`}
+						href={googleMapsUrl(row.venue_address)}
 						target="_blank"
 						rel="noreferrer"
 						className="inline-flex items-center gap-2 rounded-full border border-card-line bg-white px-4 py-2.5 text-[12.5px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"

@@ -1,3 +1,5 @@
+import { googleMapsUrl } from "../lib/maps";
+import { RecordCollection } from "../ui/RecordPagination";
 import { useContext, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
@@ -7,6 +9,9 @@ import { API, errorMessage, termsPdfUrl } from "../lib/api";
 import { branchPath, formatDate, formatHours } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { OsmMap } from "./ui/OsmMap";
+import { DeploymentDestination } from "../ui/DeploymentDestination";
+import { DeploymentArchiveCard } from "../ui/DeploymentArchiveCard";
+import { DeploymentMapFrame } from "../ui/DeploymentMapFrame";
 import {
 	BackLink,
 	Button,
@@ -15,7 +20,6 @@ import {
 	ErrorNote,
 	Facts,
 	FactList,
-	FolderCard,
 	GroupLabel,
 	Notice,
 	PageHead,
@@ -111,7 +115,7 @@ export default function Deployments() {
 									? `${waiting.length} requests waiting on you`
 									: "Waiting on your answer"}
 							</GroupLabel>
-							<div className="space-y-4">
+							<RecordCollection as="div" className="space-y-4">
 								{waiting.map((row) => (
 									<AssignmentCard
 										key={row.assignment}
@@ -119,7 +123,7 @@ export default function Deployments() {
 										location={reportingPoint(row.where, locations(row.geo_node))}
 									/>
 								))}
-							</div>
+							</RecordCollection>
 						</section>
 					) : (
 						<Card>
@@ -135,7 +139,7 @@ export default function Deployments() {
 						<section>
 							<GroupLabel>Confirmed</GroupLabel>
 							<Card pad={false}>
-								<ul className="divide-y divide-card-line">
+								<RecordCollection as="ul" className="divide-y divide-card-line">
 									{confirmed.map((row) => (
 										<li key={row.assignment}>
 											<Link
@@ -165,7 +169,7 @@ export default function Deployments() {
 											</Link>
 										</li>
 									))}
-								</ul>
+								</RecordCollection>
 							</Card>
 						</section>
 					)}
@@ -175,10 +179,10 @@ export default function Deployments() {
 						<header className="mb-4 flex flex-wrap items-end justify-between gap-3">
 							<div>
 								<h2 className="font-display text-[17px] font-bold tracking-[-0.02em] text-ink">
-									Deployment archive
+									Deployment history
 								</h2>
 								<p className="mt-1 text-[12px] text-slate-body">
-									Closed missions remain in your service history.
+									Your current and past assignments.
 								</p>
 							</div>
 						</header>
@@ -193,18 +197,11 @@ export default function Deployments() {
 								</Empty>
 							</Card>
 						) : (
-							<div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+							<RecordCollection as="div" className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
 								{sorted.map((row) => (
-									<FolderCard
-										key={row.name}
-										to={`/deployments/${encodeURIComponent(row.name)}`}
-										kicker={`${row.start_date ? row.start_date.slice(0, 4) : "Undated"} mission file`}
-										title={row.title}
-										meta={branchPath(row.geo_path) || undefined}
-										foot={`${dateRange(row.start_date, row.end_date) ?? "Undated"} · ${row.status}`}
-									/>
+         <DeploymentArchiveCard key={row.name} row={row} to={`/deployments/${encodeURIComponent(row.name)}`} />
 								))}
-							</div>
+							</RecordCollection>
 						)}
 					</section>
 				</div>
@@ -653,7 +650,7 @@ export function DeploymentRequest() {
 									</small>
 								)}
 								<a
-									href={`https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=15/${location.latitude}/${location.longitude}`}
+									href={googleMapsUrl(`${location.latitude},${location.longitude}`, 'directions')}
 									target="_blank"
 									rel="noreferrer"
 									className="mt-2 inline-block text-[11.5px] font-bold text-blue hover:text-blue-hover"
@@ -852,6 +849,7 @@ export function DeploymentRecord() {
 	);
 
 	const [tab, setTab] = useState<RecordTab>("overview");
+	const [mapDock, setMapDock] = useState<HTMLDivElement | null>(null);
 
 	const row = history.data?.message?.deployments.find((d) => d.name === name) ?? null;
 	const assignment =
@@ -917,6 +915,14 @@ export function DeploymentRecord() {
 					</p>
 				</div>
 			</header>
+
+			<DeploymentMapFrame key={name} dockTarget={mapDock}
+				card={<>
+					<DeploymentArchiveCard row={{ name, title, status, start_date: start, end_date: end, geo_path: row?.geo_path, closed_out_on: row?.closed_out_on, actual_end: row?.actual_end, where: row?.where ?? assignment?.where } as MyDeploymentRow} to={`/deployments/${encodeURIComponent(name)}`} />
+					{(row?.where ?? assignment?.where)?.travel_notes && <p className="deployment-document-travel">{(row?.where ?? assignment?.where)?.travel_notes}</p>}
+				</>}
+				map={<DeploymentDestination status={status} where={row?.where ?? assignment?.where} fallback={location} mapOnly />}
+			/>
 
 			<Tabs
 				tabs={[
@@ -1094,39 +1100,7 @@ export function DeploymentRecord() {
 				</div>
 
 				<aside className="space-y-[18px] lg:sticky lg:top-[72px]">
-					{location && (
-						<Card pad={false}>
-							<OsmMap
-								latitude={location.latitude}
-								longitude={location.longitude}
-								label={location.name}
-								height={180}
-								className="rounded-b-none border-0 border-b border-card-line"
-							/>
-							<div className="p-4">
-								<span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-rail-label">
-									{location.label}
-								</span>
-								<strong className="mt-1.5 block text-[12.5px] font-semibold text-ink">
-									{location.name}
-								</strong>
-								{location.address && (
-									<small className="mt-1 block text-[11.5px] text-slate-body">
-										{location.address}
-									</small>
-								)}
-								<a
-									href={`https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=13/${location.latitude}/${location.longitude}`}
-									target="_blank"
-									rel="noreferrer"
-									className="mt-2 inline-block text-[11.5px] font-bold text-blue hover:text-blue-hover"
-								>
-									Get directions ↗
-								</a>
-							</div>
-						</Card>
-					)}
-
+					<div ref={setMapDock} className="deployment-document-map-dock" />
 					<Card>
 						<h2 className="mb-3.5 font-display text-[14px] font-bold tracking-[-0.01em] text-ink">
 							Mission record
