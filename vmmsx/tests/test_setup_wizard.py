@@ -15,6 +15,54 @@ from vmmsx.volunteer.services.society import SCOPE_ROLE_FIELD as VOLUNTEER_SCOPE
 
 
 class TestNationalSocietySetupWizard(IntegrationTestCase):
+	def test_missing_language_preserves_the_configured_society_language(self):
+		for language in (None, "", "   "):
+			with self.subTest(language=language):
+				frappe.db.set_single_value(wizard.SETTINGS_DOCTYPE, "primary_language", "en")
+				args = self._language_setup_args()
+				if language is not None:
+					args["language"] = language
+				wizard.setup_national_society(args)
+				self.assertEqual(frappe.get_single(wizard.SETTINGS_DOCTYPE).primary_language, "en")
+
+	def test_missing_language_on_a_fresh_society_uses_the_system_language(self):
+		frappe.db.set_single_value(wizard.SETTINGS_DOCTYPE, "primary_language", "")
+		frappe.db.set_single_value("System Settings", "language", "en")
+		wizard.setup_national_society(self._language_setup_args())
+		self.assertEqual(frappe.get_single(wizard.SETTINGS_DOCTYPE).primary_language, "en")
+
+	def test_invalid_language_is_rejected_before_creating_geography(self):
+		args = self._language_setup_args()
+		args["language"] = "Not a real language"
+		level_count = frappe.db.count("Geo Level")
+		with self.assertRaisesRegex(frappe.ValidationError, "Choose a valid primary language"):
+			wizard.setup_national_society(args)
+		self.assertEqual(frappe.db.count("Geo Level"), level_count)
+
+	def test_explicit_language_overrides_the_configured_language(self):
+		frappe.db.set_single_value(wizard.SETTINGS_DOCTYPE, "primary_language", "fr")
+		args = self._language_setup_args()
+		args["language"] = "en"
+		wizard.setup_national_society(args)
+		self.assertEqual(frappe.get_single(wizard.SETTINGS_DOCTYPE).primary_language, "en")
+
+	def test_missing_language_without_a_fallback_has_a_clear_error(self):
+		frappe.db.set_single_value(wizard.SETTINGS_DOCTYPE, "primary_language", "")
+		frappe.db.set_single_value("System Settings", "language", "")
+		level_count = frappe.db.count("Geo Level")
+		with self.assertRaisesRegex(frappe.ValidationError, "Choose a valid primary language"):
+			wizard.setup_national_society(self._language_setup_args())
+		self.assertEqual(frappe.db.count("Geo Level"), level_count)
+
+	def _language_setup_args(self):
+		token = uuid.uuid4().hex[:8]
+		return {
+			"vmms_organization_name": f"Language Test Society {token}",
+			"vmms_organization_short_name": "LTS",
+			"country": "Kenya",
+			"vmms_geo_levels_json": frappe.as_json([{"label": f"Language Test {token}"}]),
+		}
+
 	def test_setup_writes_core_identity_levels_and_shared_application_anchor(self):
 		token = uuid.uuid4().hex[:8]
 		top = f"Wizard Country {token}"
