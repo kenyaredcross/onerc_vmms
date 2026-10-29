@@ -4,6 +4,8 @@
  "module": "VMMS Volunteer",
  "engine": "InnoDB",
  "field_order": [
+  "request_help",
+  "applicant_section",
   "red_profile",
   "applicant_name",
   "applicant_kind",
@@ -11,6 +13,7 @@
   "member",
   "membership",
   "geo_node",
+  "service_section",
   "request_date",
   "service_from",
   "service_to",
@@ -18,11 +21,13 @@
   "service_summary",
   "custom_values",
   "configuration",
+  "review_section",
   "approval_state",
   "approval_stage",
   "approval_stage_entered_on",
   "approval_decisions",
   "review_note",
+  "issue_section",
   "issued_on",
   "issued_by",
   "certificate_context",
@@ -219,6 +224,31 @@
    "fieldtype": "JSON",
    "read_only": 1,
    "hidden": 1
+  },
+  {
+   "fieldname": "request_help",
+   "fieldtype": "HTML",
+   "label": "Request guidance"
+  },
+  {
+   "fieldname": "applicant_section",
+   "fieldtype": "Section Break",
+   "label": "Applicant"
+  },
+  {
+   "fieldname": "service_section",
+   "fieldtype": "Section Break",
+   "label": "Service details"
+  },
+  {
+   "fieldname": "review_section",
+   "fieldtype": "Section Break",
+   "label": "Review"
+  },
+  {
+   "fieldname": "issue_section",
+   "fieldtype": "Section Break",
+   "label": "Certificate"
   }
  ],
  "permissions": [
