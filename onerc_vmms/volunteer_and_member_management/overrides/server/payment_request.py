@@ -10,12 +10,6 @@ from ...services.membership_payments import (
 
 
 class VMMSPaymentRequest(PaymentRequest):
-	def validate(self):
-		super().validate()
-		invoice = get_vmms_invoice(self)
-		if invoice:
-			get_receiving_account(self.payment_account, self.mode_of_payment, invoice.company, self.currency)
-
 	def create_payment_entry(self, submit=True):
 		invoice = get_vmms_invoice(self)
 		if not invoice:

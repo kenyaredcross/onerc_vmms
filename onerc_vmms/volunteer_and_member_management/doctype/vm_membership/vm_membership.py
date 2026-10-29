@@ -417,8 +417,6 @@ def make_invoice(membership, member, plan):
 
 
 def make_payment_request(membership, member, plan, phone_number=None):
-	from ...services.membership_payments import get_receiving_account
-
 	try:
 		invoice = None
 		mop = frappe.db.get_value("VM Settings", "VM Settings", "membership_mode_of_payment")
@@ -438,41 +436,35 @@ def make_payment_request(membership, member, plan, phone_number=None):
 			else make_invoice(membership, member, plan)
 		)
 
-		payment_gateway = get_payment_gateway_from_mop(mop, membership.company)
-		if not payment_gateway:
-			frappe.throw(
-				_("Please configure a payment gateway for Mode of Payment {0} and Company {1}").format(
-					mop, membership.company
-				)
-			)
-
+		# All branches collect through the configured shared paybill. Ledger
+		# routing is checked when posting a confirmed payment, not before STK.
 		gateway_account = frappe.db.get_value(
 			"Payment Gateway Account",
-			{
-				"payment_gateway": payment_gateway,
-				"company": membership.company,
-				"currency": membership.currency,
-			},
-			["name", "payment_account"],
+			{"is_default": 1, "currency": membership.currency},
+			["name", "payment_gateway"],
 			as_dict=True,
 		)
 		if not gateway_account:
-			# A central paybill may collect for branches; the callback routes
-			# its accounting entry through the company's Mode of Payment account.
-			gateway_account = frappe.db.get_value(
-				"Payment Gateway Account",
-				{"payment_gateway": payment_gateway, "is_default": 1, "currency": membership.currency},
-				["name", "payment_account"],
-				as_dict=True,
-			)
-
-		if not gateway_account:
+			# Preserve support for installations with an explicit company gateway.
+			payment_gateway = get_payment_gateway_from_mop(mop, membership.company)
+			if payment_gateway:
+				gateway_account = frappe.db.get_value(
+					"Payment Gateway Account",
+					{
+						"payment_gateway": payment_gateway,
+						"company": membership.company,
+						"currency": membership.currency,
+					},
+					["name", "payment_gateway"],
+					as_dict=True,
+				)
+		if not gateway_account or not gateway_account.payment_gateway:
 			frappe.throw(
-				_("Please set up a Payment Gateway Account for {0}, Company {1}, and currency {2}").format(
-					payment_gateway, membership.company, membership.currency
+				_("Please set up a Payment Gateway Account for Company {0} and currency {1}").format(
+					membership.company, membership.currency
 				)
 			)
-		get_receiving_account(gateway_account.payment_account, mop, membership.company, membership.currency)
+		payment_gateway = gateway_account.payment_gateway
 		payment_gateway_account = gateway_account.name
 
 		for stale_request in frappe.get_all(
@@ -489,7 +481,11 @@ def make_payment_request(membership, member, plan, phone_number=None):
 				"Mpesa Express Request",
 				{"reference_doctype": "Payment Request", "reference_name": stale_request, "result_code": "0"},
 			):
-				frappe.throw(_("Payment is already confirmed. Accounting recovery is pending; please do not pay again."))
+				frappe.throw(
+					_(
+						"Payment is already confirmed. Accounting recovery is pending; please do not pay again."
+					)
+				)
 			frappe.get_doc("Payment Request", stale_request).cancel()
 
 		payment_request = frappe.get_doc(

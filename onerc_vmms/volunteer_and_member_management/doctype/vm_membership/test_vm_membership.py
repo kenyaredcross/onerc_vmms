@@ -24,10 +24,17 @@ class TestMembershipPaymentRouting(unittest.TestCase):
 		self.invoice = SimpleNamespace(name="INV-1", outstanding_amount=500)
 		self.request = MagicMock()
 		self.stale_request = MagicMock()
-		self.branch_gateway = {"name": "Bomet-Mpesa-KES", "payment_account": "Mpesa - BMT"}
+		self.branch_gateway = {
+			"name": "Bomet-Mpesa-KES",
+			"payment_account": "Mpesa - BMT",
+			"payment_gateway": "Mpesa",
+		}
 		self.gateway = "Mpesa"
 		self.account_company = "Bomet"
 		self.mode_account = "Mpesa - BMT"
+		self.default_gateway = frappe._dict(
+			name="HQ-Mpesa-KES", payment_account="Mpesa - HQ", payment_gateway="Mpesa"
+		)
 		self.created = []
 		self.fake_frappe = MagicMock()
 		self.fake_frappe.ValidationError = frappe.ValidationError
@@ -63,11 +70,9 @@ class TestMembershipPaymentRouting(unittest.TestCase):
 		if doctype == "Payment Gateway Account":
 			if filters.get("currency", "KES") != "KES":
 				return None
-			# The HQ default must never override a matching branch account.
+			# The shared default controls collection independently of branch ledgers.
 			if filters.get("is_default"):
-				if kwargs.get("as_dict"):
-					return frappe._dict(name="HQ-Mpesa-KES", payment_account="Mpesa - HQ")
-				return "HQ-Mpesa-KES"
+				return self.default_gateway
 			if kwargs.get("as_dict"):
 				return frappe._dict(self.branch_gateway) if self.branch_gateway else None
 			return self.branch_gateway["name"] if self.branch_gateway else None
@@ -90,21 +95,35 @@ class TestMembershipPaymentRouting(unittest.TestCase):
 			return self.stale_request
 		raise AssertionError(f"Unexpected document: {doctype}")
 
-	def test_branch_account_is_not_replaced_by_hq_default(self):
+	def test_shared_paybill_is_used_even_when_branch_gateway_exists(self):
 		vm_membership.make_payment_request(self.membership, self.member, self.plan)
-		self.assertEqual(self.created[0]["payment_gateway_account"], "Bomet-Mpesa-KES")
+		self.assertEqual(self.created[0]["payment_gateway_account"], "HQ-Mpesa-KES")
 
 	def test_central_collection_gateway_can_use_valid_branch_ledger_mapping(self):
 		self.branch_gateway = None
 		vm_membership.make_payment_request(self.membership, self.member, self.plan)
 		self.assertEqual(self.created[0]["payment_gateway_account"], "HQ-Mpesa-KES")
 
-	def test_central_gateway_without_branch_ledger_mapping_is_rejected(self):
-		self.branch_gateway = None
-		self.mode_account = None
+	def test_explicit_company_gateway_remains_supported_without_default(self):
+		self.default_gateway = None
+		vm_membership.make_payment_request(self.membership, self.member, self.plan)
+		self.assertEqual(self.created[0]["payment_gateway_account"], "Bomet-Mpesa-KES")
+
+	def test_default_without_provider_is_rejected_before_request_creation(self):
+		self.default_gateway.payment_gateway = None
 		with self.assertRaises(frappe.ValidationError):
 			vm_membership.make_payment_request(self.membership, self.member, self.plan)
 		self.assertEqual(self.created, [])
+
+	def test_central_gateway_without_branch_ledger_mapping_can_send_prompt(self):
+		self.branch_gateway = None
+		self.mode_account = None
+		self.gateway = None
+		vm_membership.make_payment_request(self.membership, self.member, self.plan, "254712345678")
+		self.assertEqual(self.created[0]["payment_gateway_account"], "HQ-Mpesa-KES")
+		self.assertEqual(self.created[0]["payment_gateway"], "Mpesa")
+		self.request.insert.assert_called_once_with(ignore_permissions=True)
+		self.request.submit.assert_called_once_with()
 
 	def test_gateway_currency_must_match_membership(self):
 		self.membership.currency = "USD"
@@ -112,15 +131,15 @@ class TestMembershipPaymentRouting(unittest.TestCase):
 			vm_membership.make_payment_request(self.membership, self.member, self.plan)
 		self.assertEqual(self.created, [])
 
-	def test_gateway_account_must_belong_to_branch(self):
+	def test_collection_does_not_require_branch_account_ownership(self):
 		self.account_company = "Kenya Red Cross Society"
 		self.mode_account = None
-		with self.assertRaises(frappe.ValidationError):
-			vm_membership.make_payment_request(self.membership, self.member, self.plan)
-		self.assertEqual(self.created, [])
+		vm_membership.make_payment_request(self.membership, self.member, self.plan)
+		self.request.submit.assert_called_once_with()
 
 	def test_missing_gateway_is_rejected_before_request_creation(self):
 		self.gateway = None
+		self.default_gateway = None
 		with self.assertRaises(frappe.ValidationError):
 			vm_membership.make_payment_request(self.membership, self.member, self.plan)
 		self.assertEqual(self.created, [])

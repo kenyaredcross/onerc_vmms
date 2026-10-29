@@ -80,6 +80,34 @@ class TestMembershipPaymentEntry(unittest.TestCase):
 		self.assertEqual(self.generated_accounts, ["BMT"])
 		self.assertEqual(self.request.payment_account, "HQ")
 
+	def test_request_validation_does_not_require_branch_ledger_for_stk(self):
+		for kind in ("membership", "event"):
+			with self.subTest(kind=kind):
+				self.invoice.membership = "MEM-1" if kind == "membership" else None
+				self.invoice.event_booking = "BOOK-1" if kind == "event" else None
+				with (
+					patch.object(PaymentRequest, "validate", autospec=True) as validate,
+					patch(
+						f"{VMMSPaymentRequest.__module__}.get_receiving_account",
+						side_effect=AssertionError("Accounting must not block STK initiation"),
+					),
+				):
+					self.request.validate()
+				validate.assert_called_once_with(self.request)
+
+	def test_missing_branch_ledger_still_blocks_accounting(self):
+		original_lookup = self.lookup
+
+		def lookup(doctype, *args, **kwargs):
+			if doctype == "Mode of Payment Account":
+				return None
+			return original_lookup(doctype, *args, **kwargs)
+
+		self.fake.db.get_value.side_effect = lookup
+		with self.assertRaises(frappe.ValidationError):
+			self.request.create_payment_entry()
+		self.assertEqual(self.generated_accounts, [])
+
 	def test_retry_returns_existing_payment_without_posting_again(self):
 		self.request.create_payment_entry()
 		self.request.create_payment_entry()

@@ -15,7 +15,12 @@ Automatic M-Pesa processing fails at the accounting stage because the payment re
   `membership` or `event_booking` link. Other payment requests use ERPNext's
   standard implementation. Event invoice links are present in the existing
   deployed Buzz schema; no new fields are required.
-- Collection can use the central paybill. The Payment Entry receiving account
+- Membership collection uses the shared default Payment Gateway Account for its
+  currency, even when the branch has no receiving ledger mapping. An explicit
+  company gateway remains a fallback when no default is configured. The VMMS
+  controller does not require branch ledger routing during Payment Request
+  validation, so this accounting check cannot block membership or event STK
+  initiation. The Payment Entry receiving account
   must belong to the invoice company, match its currency, and be an enabled
   ledger account. VMMS falls back to the company's account under Mode of Payment.
 - The existing STK callback URL is routed through a VMMS whitelisted-method hook.
