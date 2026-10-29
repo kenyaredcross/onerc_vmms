@@ -58,14 +58,9 @@ MEMBERSHIP_DOCTYPE = "VMMS Membership"
 MEMBER_DOCTYPE = "VMMS Member"
 PROFILE_DOCTYPE = "Red Profile"
 
-# How many scoped rows one search will read before paging them.
-#
-# The read is bounded here rather than by the caller's `limit` because
-# `current_only` filters rows out *after* the query — see `search()`. It is a
-# ceiling on work, not a page size, and a register that reaches it is a branch
-# with more memberships than any coordinator scrolls through, which wants a
-# report rather than a screen.
-_READ_CEILING = 2000
+# Read the scoped register in batches before applying derived filters and UI
+# pagination. A batch boundary must never hide memberships or reduce totals.
+_READ_BATCH_SIZE = 2000
 
 # What the register reads off each membership. Named explicitly rather than
 # fetched as documents: a register is a list of many rows, and pulling a full
@@ -115,13 +110,13 @@ def search(
 	`current_only` removes rows the database already returned, so a `limit_start`
 	handed to SQL would page through the *unfiltered* result and hand back short
 	pages with rows missing between them — a pager that silently skips people.
-	So the scoped read is taken up to a ceiling, the derivation runs, and only
+	So the scoped read is taken in batches, the derivation runs, and only
 	then is the page cut. `total` is the count after filtering, which is what the
 	pager labels itself with.
 
-	The ceiling is what bounds the read rather than `limit`. A register is a
-	branch's membership list; reading it and slicing in Python is the honest cost
-	of a filter no query can express.
+	Each batch still uses the permission-aware query. Reading the full scoped
+	result keeps national registers and later pages complete while preserving
+	the same geographic restrictions as the first page.
 	"""
 	as_of = getdate(as_of or today())
 	filters = {}
@@ -141,13 +136,19 @@ def search(
 		filters["geo_node"] = ("in", [geo_node, *adapter.get_descendants(geo_node)])
 
 	# `get_list`, never `get_all` — this is the line the scope rests on.
-	found = frappe.get_list(
-		MEMBERSHIP_DOCTYPE,
-		filters=filters,
-		fields=list(_ROW_FIELDS),
-		order_by="valid_to desc, creation desc",
-		limit=_READ_CEILING,
-	)
+	found = []
+	while True:
+		batch = frappe.get_list(
+			MEMBERSHIP_DOCTYPE,
+			filters=filters,
+			fields=list(_ROW_FIELDS),
+			order_by="valid_to desc, creation desc, name desc",
+			limit=_READ_BATCH_SIZE,
+			limit_start=len(found),
+		)
+		found.extend(batch)
+		if len(batch) < _READ_BATCH_SIZE:
+			break
 
 	# Resolved once for the whole read, not once per row — see `_names_for`.
 	names = _names_for(found)
@@ -188,10 +189,7 @@ def _matches(row: dict, needle: str) -> bool:
 	membership itself is called. Case-folded, substring, and nothing cleverer —
 	a register search that guessed would be a register search nobody trusts.
 	"""
-	return any(
-		needle in (row.get(field) or "").lower()
-		for field in ("full_name", "member", "membership")
-	)
+	return any(needle in (row.get(field) or "").lower() for field in ("full_name", "member", "membership"))
 
 
 def _row(record, as_of, names: dict, type_names: dict) -> dict:

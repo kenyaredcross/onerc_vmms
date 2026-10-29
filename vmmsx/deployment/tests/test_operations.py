@@ -25,6 +25,8 @@ that derived them from one capped page would report a different number as the
 register grew.
 """
 
+from unittest.mock import patch
+
 import frappe
 from frappe.utils import add_days, today
 
@@ -313,6 +315,34 @@ class TestTheAggregates(OperationsTestCase):
 
 
 class TestOperationsDocuments(OperationsTestCase):
+	def test_search_finds_older_files_beyond_the_first_file_batch(self):
+		deployment = self.at(deployment_service.STATUS_PLANNED)
+		original = frappe.get_all
+		files = [
+			frappe._dict(file_name=f"boundary-{i:03d}.csv", file_url=f"/private/files/{i}.csv")
+			for i in range(200, -1, -1)
+		]
+
+		def file_rows(doctype, *args, **kwargs):
+			if doctype != "File":
+				return original(doctype, *args, **kwargs)
+			if deployment.name not in kwargs["filters"]["attached_to_name"][1]:
+				return []
+			limit = kwargs.get("limit_page_length", 20)
+			return files[:limit] if limit else files
+
+		with patch.object(frappe, "get_all", side_effect=file_rows):
+			with fixtures.acting_as("Administrator"):
+				answer = deployment_api.operations_documents(
+					doctype=fixtures.DEPLOYMENT_DOCTYPE, search="boundary-000"
+				)
+			with fixtures.acting_as(self.elsewhere):
+				outside = deployment_api.operations_documents(
+					doctype=fixtures.DEPLOYMENT_DOCTYPE, search="boundary-000"
+				)
+		self.assertEqual(answer["count"], 1)
+		self.assertEqual(outside["count"], 0)
+
 	def test_the_record_types_are_handed_over_rather_than_guessed(self):
 		with fixtures.acting_as(self.here):
 			answer = deployment_api.operations_documents()

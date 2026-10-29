@@ -22,6 +22,8 @@ the approval-band scoping assertion lives here rather than beside the engine's
 own suite, whose stand-in doctype core does not scope.
 """
 
+from unittest.mock import patch
+
 import frappe
 from frappe.utils import add_days, getdate, today
 
@@ -175,6 +177,21 @@ class TestTheFigures(RegisterSummaryTestCase):
 
 
 class TestTheSearch(RegisterSummaryTestCase):
+	def test_large_register_keeps_every_scoped_member_and_administrator_sees_all(self):
+		from vmmsx.member.services import register
+
+		for index in range(3):
+			self.activated(f"BeyondBatch{index}", fixtures.TYPE_FREE, self.society_a["ward"])
+		self.activated("BeyondBatchElsewhere", fixtures.TYPE_FREE, self.society_b["ward"])
+		with patch.object(register, "_READ_BATCH_SIZE", 2):
+			with fixtures.acting_as("Administrator"):
+				all_members = member_api.find_members(current_only=True, search="BeyondBatch", limit=1)
+			with fixtures.acting_as(self.here):
+				local_members = member_api.find_members(current_only=True, search="BeyondBatch", limit=1)
+		self.assertEqual(all_members["total"], 4)
+		self.assertEqual(local_members["total"], 3)
+		self.assertEqual(len(all_members["rows"]), 1)
+
 	def test_search_narrows_the_register_by_a_persons_name(self):
 		self.activated("Kilonzo", fixtures.TYPE_FREE, self.society_a["ward"])
 		self.activated("Wanjiku", fixtures.TYPE_FREE, self.society_a["ward"])

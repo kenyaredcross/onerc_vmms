@@ -1536,7 +1536,9 @@ def operations_documents(search: str | None = None, doctype: str | None = None) 
 			filters={"attached_to_doctype": parent, "attached_to_name": ["in", names], "is_folder": 0},
 			fields=["name", "file_name", "file_url", "file_size", "is_private", "attached_to_doctype", "attached_to_name", "owner", "creation", "modified"],
 			order_by="modified desc",
-			limit_page_length=200,
+			# Search is applied below, so a pre-search cap would make older
+			# attachments unreachable even when their parent is readable.
+			limit_page_length=0,
 		)
 		for row in rows:
 			if needle and needle not in (row.get("file_name") or "").lower() and needle not in (row.get("attached_to_name") or "").lower():
