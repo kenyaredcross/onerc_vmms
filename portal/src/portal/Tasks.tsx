@@ -1,3 +1,4 @@
+import { TaskBoard } from "../admin/tasks/TaskBoard";
 import { useContext, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
@@ -18,7 +19,6 @@ import {
 	Meter,
 	Notice,
 	PageHead,
-	SearchField,
 	Spinner,
 	Tabs,
 	cx,
@@ -41,8 +41,8 @@ import type { TaskChecklistItem, TaskDetail, TaskPlace, TaskSummary } from "./ty
  * whole reason `submitted` is a state of its own, and there is no "Complete"
  * button anywhere here.
  *
- * **The list is a register and the task is a page.** The approved concept draws
- * the two apart — a table a person scans and filters, and a record at its own
+ * **The workspace has Board, List and Table views; the task is a page.**
+ * Each view opens the same record at its own
  * address with the brief, the checklist, the evidence, the conversation and the
  * outcome. `/tasks/:name` is that address.
  */
@@ -76,37 +76,6 @@ export function TaskStateBadge({ status }: { status: string }) {
 			)}
 		>
 			{STATE_LABEL[status] ?? status}
-		</span>
-	);
-}
-
-/** The square mark at the head of a row — what kind of attention this needs. */
-function StateMark({ row }: { row: TaskSummary }) {
-	const tone = row.is_overdue
-		? "bg-red-soft text-red-ink"
-		: row.open_question
-			? "bg-blue-soft text-blue-press"
-			: row.status === "completed"
-				? "bg-success-soft text-success"
-				: row.status === "submitted"
-					? "bg-cal-cert-soft text-cal-cert"
-					: row.status === "accepted"
-						? "bg-warning-soft text-warning"
-						: "bg-blue-soft text-blue-press";
-
-	const icon = row.is_overdue
-		? Icon.bell
-		: row.open_question
-			? Icon.chat
-			: row.status === "completed"
-				? Icon.check
-				: row.status === "submitted"
-					? Icon.hourglass
-					: Icon.check;
-
-	return (
-		<span className={cx("grid h-9 w-9 flex-none place-items-center rounded-lg", tone)} aria-hidden="true">
-			{icon({ size: 16 })}
 		</span>
 	);
 }
@@ -215,17 +184,8 @@ export default function Tasks() {
 						<Summary label="Completed" value={counts.completed} note="Coordinator approved" />
 					</div>
 
-					<div className="p-card overflow-hidden">
-						<div className="flex flex-col gap-3 border-b border-card-line p-[18px] lg:flex-row lg:items-center lg:gap-5">
-							<div className="lg:w-[320px] lg:flex-none">
-								<SearchField
-									value={query}
-									onChange={setQuery}
-									label="Search your tasks"
-									placeholder="Search your tasks"
-									hint={`${shown.length} showing`}
-								/>
-							</div>
+     <div className="min-w-0">
+      <div className="mb-3 flex flex-wrap items-center gap-3">
 							<div className="min-w-0 lg:flex-1">
 								<FilterPills
 									label="Task status"
@@ -244,51 +204,18 @@ export default function Tasks() {
 							</div>
 						</div>
 
-						{/* Three column sets, not two: at 1024 there is room for the type,
-						    the due date and the state, and dropping the due date at a
-						    width that could carry it is what makes a register useless. */}
-						<div
-							aria-hidden="true"
-							className="hidden gap-3 border-b border-card-line bg-canvas px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.07em] text-muted lg:grid lg:grid-cols-[36px_minmax(0,1fr)_110px_100px_92px_56px] xl:grid-cols-[36px_minmax(0,1fr)_140px_120px_120px_100px_62px]"
-						>
-							<span className="col-span-2">Task</span>
-							<span>Type</span>
-							<span>Due</span>
-							<span className="hidden xl:block">Progress</span>
-							<span>Status</span>
-							<span />
-						</div>
-
-						{shown.length === 0 ? (
-							<Empty framed={false} icon={Icon.check} title={emptyTitle(filter, query)}>
-								{query
-									? "Try a different search, or another status."
-									: filter === "active"
-										? "A coordinator in your branch can assign you a piece of work, and it will arrive here and in your notifications."
-										: "Nothing here yet."}
-							</Empty>
-						) : (
-							<ul>
-								{shown.map((row) => (
-									<li key={row.name}>
-										<TaskRow row={row} />
-									</li>
-								))}
-							</ul>
-						)}
+      <TaskBoard
+       tasks={shown.map(task => ({ ...task, full_name: "You" }))}
+       href={name => `/tasks/${encodeURIComponent(name)}`}
+       volunteerView
+       searchValue={query}
+       onSearchChange={setQuery}
+      />
 					</div>
 				</>
 			)}
 		</>
 	);
-}
-
-function emptyTitle(filter: FilterKey, query: string): string {
-	if (query) return "No matching tasks";
-	if (filter === "active") return "Nothing is waiting on you";
-	if (filter === "questions") return "No clarification is outstanding";
-	if (filter === "completed") return "Nothing completed yet";
-	return "No tasks here";
 }
 
 function Summary({ label, value, note }: { label: string; value: number; note: string }) {
@@ -300,68 +227,6 @@ function Summary({ label, value, note }: { label: string; value: number; note: s
 			</strong>
 			<small className="mt-1.5 block text-[11px] text-muted">{note}</small>
 		</div>
-	);
-}
-
-function TaskRow({ row }: { row: TaskSummary }) {
-	return (
-		<Link
-			to={`/tasks/${encodeURIComponent(row.name)}`}
-			className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 border-b border-card-line px-4 py-3.5 transition last:border-b-0 hover:bg-blue-soft/40 lg:grid-cols-[36px_minmax(0,1fr)_110px_100px_92px_56px] xl:grid-cols-[36px_minmax(0,1fr)_140px_120px_120px_100px_62px]"
-		>
-			<StateMark row={row} />
-
-			<span className="min-w-0">
-				<span className="block truncate text-[10px] font-bold uppercase tracking-[0.06em] text-blue">
-					{row.name}
-					{row.task_type ? ` · ${row.task_type}` : ""}
-				</span>
-				<strong className="mt-1 block truncate text-[13px] font-semibold text-ink">
-					{row.subject}
-				</strong>
-				<span className="mt-0.5 flex flex-wrap items-center gap-2 text-[11.5px] text-slate-body">
-					{row.assigned_on ? `Assigned ${formatDate(row.assigned_on)}` : "Assigned"}
-					{row.open_question && (
-						<span className="rounded-full bg-blue-soft px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] text-blue-press">
-							Clarification pending
-						</span>
-					)}
-					{row.priority && row.priority !== "Normal" && (
-						<span className="rounded-full bg-surface px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.05em] text-slate-strong">
-							{row.priority}
-						</span>
-					)}
-				</span>
-			</span>
-
-			<span className="hidden min-w-0 truncate text-[12px] text-ink lg:block">
-				{row.task_type || "Not available"}
-			</span>
-
-			<span
-				className={cx(
-					"hidden truncate text-[12px] lg:block",
-					row.is_overdue ? "font-semibold text-red-ink" : "text-ink",
-				)}
-			>
-				{row.due_on ? formatDate(row.due_on) : "No due date"}
-			</span>
-
-			<span className="hidden xl:block">
-				<Meter value={row.percent_complete} label={`${row.subject} progress`} />
-			</span>
-
-			<span className="max-lg:justify-self-end">
-				<TaskStateBadge status={row.status} />
-			</span>
-
-			<span
-				aria-hidden="true"
-				className="hidden whitespace-nowrap text-[11.5px] font-bold text-blue lg:block"
-			>
-				Open →
-			</span>
-		</Link>
 	);
 }
 

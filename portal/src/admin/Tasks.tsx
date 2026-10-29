@@ -1,20 +1,20 @@
 import { useContext, useState, type ReactNode } from "react";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
+import { TaskBoard, type BoardTask } from "./tasks/TaskBoard";
+import { TaskDialog } from "./tasks/TaskDialog";
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
 import { formatDate } from "../lib/format";
 import { TaskState, Thread } from "../portal/Tasks";
-import type { GeoNode, TaskDetail, TaskSummary } from "../portal/types";
+import type { GeoNode, TaskDetail } from "../portal/types";
 import { GeoSelects, selectedNode } from "../ui/GeoSelects";
 import { RowEditor } from "./Mission";
 import {
 	Button,
 	Card,
-	Empty,
 	ErrorNote,
 	PageHeading,
-	Pill,
 	SectionTitle,
 	Spinner,
 	cx,
@@ -39,121 +39,24 @@ import {
  * the second, because work returned without one teaches nobody anything.
  */
 export default function AdminTasks() {
-	const [status, setStatus] = useState<string>("");
-	const [open, setOpen] = useState<string | null>(null);
-	const [assigning, setAssigning] = useState(false);
-
-	const { data, error, isLoading, mutate } = useFrappeGetCall<{
-		message: {
-			count: number;
-			tasks: TaskSummary[];
-			awaiting_sign_off: number;
-			awaiting_answer: number;
-		};
-	}>(API.branchTasks, status ? { status } : undefined, `admin:branch_tasks:${status}`);
-
-	const answer = data?.message;
-	const rows = answer?.tasks ?? [];
-
-	return (
-		<>
-			<PageHeading
-				title={<EditableText k="admin.tasks.heading" fallback="Tasks" />}
-				actions={
-					<>
-						{(answer?.awaiting_sign_off ?? 0) > 0 && (
-							<Pill tone="signal">{answer?.awaiting_sign_off} to sign off</Pill>
-						)}
-						{(answer?.awaiting_answer ?? 0) > 0 && (
-							<Pill tone="navy">{answer?.awaiting_answer} question(s)</Pill>
-						)}
-						<Button onClick={() => setAssigning((was) => !was)}>
-							{assigning ? "Close" : "Assign a task"}
-						</Button>
-					</>
-				}
-			/>
-
-			{assigning && (
-				<div className="mb-5">
-					<AssignForm
-						onAssigned={() => {
-							setAssigning(false);
-							void mutate();
-						}}
-					/>
-				</div>
-			)}
-
-			<div className="mb-4 flex flex-wrap gap-2">
-				{["", "assigned", "accepted", "submitted", "completed", "cancelled"].map((option) => (
-					<button
-						key={option || "all"}
-						type="button"
-						onClick={() => setStatus(option)}
-						className={cx(
-							"rounded-full border px-3.5 py-1.5 text-[12px] font-semibold capitalize transition",
-							status === option
-								? "border-blue bg-rail text-white"
-								: "border-card-line bg-white text-muted hover:border-blue hover:text-ink",
-						)}
-					>
-						{option || "All"}
-					</button>
-				))}
-			</div>
-
-			{isLoading && <Spinner label="Loading tasks…" />}
-			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
-
-			{answer && rows.length === 0 && (
-				<Empty title="No tasks here">
-					Nothing in your area matches. Assign one above, or clear the filter. If you hold no geo
-					assignment, this list is empty by design rather than by accident.
-				</Empty>
-			)}
-
-			{rows.length > 0 && (
-				<div className="grid gap-5 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-					<ul className="space-y-2.5">
-						{rows.map((row) => (
-							<li key={row.name}>
-								<button
-									type="button"
-									onClick={() => setOpen(row.name)}
-									className={cx(
-										"w-full rounded-xl border bg-white px-4 py-3 text-left transition",
-										(open ?? rows[0]?.name) === row.name
-											? "border-blue border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]"
-											: "border-card-line hover:border-card-line",
-									)}
-								>
-									<div className="flex items-start justify-between gap-2">
-										<span className="text-[13.5px] font-bold text-ink">{row.subject}</span>
-										<TaskState status={row.status} />
-									</div>
-									<div className="mt-1 text-[11.5px] text-muted">
-										{row.volunteer}
-										{row.due_on ? ` · due ${formatDate(row.due_on)}` : ""}
-										{row.open_question && " · question waiting"}
-									</div>
-								</button>
-							</li>
-						))}
-					</ul>
-
-					<SupervisePane name={open ?? rows[0].name} onChanged={() => void mutate()} />
-				</div>
-			)}
-		</>
-	);
+ const [open, setOpen] = useState<string | null>(null);
+ const [assigning, setAssigning] = useState(false);
+ const { data, error, isLoading, mutate } = useFrappeGetCall<{ message: { tasks: BoardTask[] } }>(API.branchTasks, {limit:0}, "admin:branch_tasks", {refreshInterval:30000});
+ return <>
+  <PageHeading title={<EditableText k="admin.tasks.heading" fallback="Tasks" />} />
+  {isLoading && <Spinner label="Loading tasks…" />}
+  {error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
+  {data && <TaskBoard tasks={data.message.tasks} onOpen={setOpen} onAssign={() => setAssigning(true)} onChanged={() => void mutate()} />}
+  {open && <TaskDialog title="Task details" onClose={() => setOpen(null)}><SupervisePane key={open} name={open} onChanged={() => void mutate()} /></TaskDialog>}
+  {assigning && <TaskDialog title="Assign task" onClose={() => setAssigning(false)}><AssignForm onAssigned={() => { setAssigning(false); void mutate(); }} /></TaskDialog>}
+ </>;
 }
 
 /** One task, with the coordinator's verbs on it. */
 function SupervisePane({ name, onChanged }: { name: string; onChanged: () => void }) {
 	const { call } = useContext(FrappeContext) as FrappeConfig;
 
-	const { data, isLoading, mutate } = useFrappeGetCall<{ message: TaskDetail }>(
+	const { data, isLoading, mutate } = useFrappeGetCall<{ message: TaskDetail & {full_name?:string} }>(
 		API.getTask,
 		{ name },
 		`admin:task:${name}`,
@@ -192,19 +95,26 @@ function SupervisePane({ name, onChanged }: { name: string; onChanged: () => voi
 							{task.subject}
 						</h2>
 						<p className="mt-1 font-mono text-[12px] text-slate-faint">
-							{task.name} · {task.volunteer}
+							{task.name} · {task.full_name || task.volunteer}
 						</p>
 					</div>
 					<TaskState status={task.status} />
 				</div>
 
+				<dl className="task-detail-facts">
+					<div><dt>Assignee</dt><dd>{task.full_name || task.volunteer}</dd></div>
+					<div><dt>Branch</dt><dd>{task.geo_node}</dd></div>
+					<div><dt>Due date</dt><dd>{task.due_on ? formatDate(task.due_on) : "No due date"}</dd></div>
+					<div><dt>Progress</dt><dd>{task.percent_complete}%</dd></div>
+				</dl>
+
 				<p className="whitespace-pre-wrap border-y border-card-line py-4 text-[13.5px] leading-relaxed text-slate-strong">
 					{task.description}
 				</p>
 
-				{task.completion_notes && (
+				{task.completion_notes && ["submitted", "completed"].includes(task.status) && (
 					<div className="border-b border-card-line py-4">
-						<SectionTitle>What they said when they finished</SectionTitle>
+						<SectionTitle>Completion notes</SectionTitle>
 						<p className="whitespace-pre-wrap text-[13px] text-slate-strong">
 							{task.completion_notes}
 						</p>
@@ -286,7 +196,7 @@ function SupervisePane({ name, onChanged }: { name: string; onChanged: () => voi
 			</Card>
 
 			<Card>
-				<SectionTitle>What has happened</SectionTitle>
+				<SectionTitle>Activity</SectionTitle>
 				<Thread thread={task.thread} />
 			</Card>
 		</div>
@@ -453,7 +363,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 			</div>
 
 			<div className="mt-4">
-				<Labelled label="What is being asked for" hint="The full brief.">
+				<Labelled label="Description" hint="The full brief.">
 					<textarea
 						className={cx(INPUT, "min-h-[96px] resize-y")}
 						value={description}
@@ -464,7 +374,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 
 			<div className="mt-4">
 				<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-					Where this work belongs
+					Branch
 				</p>
 				<GeoSelects chain={chain} onChain={setChain} />
 				<p className="mt-2 text-[12px] text-slate-faint">

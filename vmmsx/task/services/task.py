@@ -898,6 +898,7 @@ def dto(task) -> dict:
 		"name": task.name,
 		"subject": task.subject,
 		"description": task.description,
+		"full_name": frappe.db.get_value("Red Profile", frappe.db.get_value("VMMS Volunteer", task.volunteer, "red_profile"), "full_name") or task.volunteer,
 		"status": task.status,
 		"volunteer": task.volunteer,
 		"geo_node": task.geo_node,
@@ -993,6 +994,10 @@ def summary(task) -> dict:
 	"""
 	return {
 		"name": task.name,
+		"description": frappe.utils.strip_html(task.description or ""),
+		"full_name": frappe.db.get_value("Red Profile", frappe.db.get_value("VMMS Volunteer", task.volunteer, "red_profile"), "full_name") or task.volunteer,
+		"thread_count": len(task.updates or []),
+		"checklist": [{"idx": row.idx, "item": row.item, "is_required": bool(row.is_required), "is_done": bool(row.is_done)} for row in task.checklist or []],
 		"subject": task.subject,
 		"status": task.status,
 		"volunteer": task.volunteer,

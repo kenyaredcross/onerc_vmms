@@ -166,11 +166,43 @@ def branch_tasks(status: str | None = None, volunteer: str | None = None, limit:
 		TASK_DOCTYPE,
 		filters=filters,
 		order_by="modified desc",
-		limit_page_length=min(int(limit or PAGE), PAGE),
+		limit_page_length=0 if limit is not None and int(limit) == 0 else min(max(1, int(limit or PAGE)), PAGE),
 		pluck="name",
 	)
 
 	return _listing([task_service.summary(frappe.get_doc(TASK_DOCTYPE, name)) for name in names])
+
+
+@frappe.whitelist()
+def move_board_task(name: str, stage: str, reason: str | None = None) -> dict:
+	"""Coordinator board moves use the same guarded task services as the detail form."""
+	task = _writable(name)
+	current = "progress" if task.status == "accepted" and task.percent_complete > 0 else task.status
+	allowed = {
+		"assigned": {"accepted", "progress", "closed"},
+		"accepted": {"progress", "submitted", "closed"},
+		"progress": {"submitted", "closed"},
+		"submitted": {"progress", "completed", "closed"},
+	}
+	if stage == current:
+		return task_service.dto(task)
+	if stage not in allowed.get(current, set()):
+		frappe.throw(_("This task cannot move to that column."))
+	if stage == "completed":
+		return task_service.sign_off(task)
+	if stage == "closed":
+		return task_service.cancel(task, reason=reason)
+	if stage == "submitted":
+		return task_service.submit(task)
+	if current == "submitted":
+		if not reason or not reason.strip():
+			frappe.throw(_("Give a reason for returning this task."))
+		return task_service.send_back(task, reason)
+	if task.status == "assigned":
+		task_service.accept(task)
+	if stage == "progress":
+		return task_service.report_progress(task, _("Started from the coordinator task board."), percent=max(1, task.percent_complete or 0))
+	return task_service.dto(task)
 
 
 def _listing(rows: list[dict]) -> dict:

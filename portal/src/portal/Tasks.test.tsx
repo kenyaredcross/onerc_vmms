@@ -210,6 +210,21 @@ describe("the task workflow", () => {
 });
 
 describe("the task register", () => {
+ it("offers all three views with ten tasks per page and keeps volunteer actions on the record", () => {
+  reads.set(API.myTasks, { volunteer: "VOL-1", tasks: Array.from({length: 12}, (_, i) => summary({name: `TASK-${i + 1}`, subject: `Field task ${i + 1}`})) });
+  mount(<Tasks />);
+  expect(screen.getByRole("button", {name: "Board"})).toBeTruthy();
+  expect(screen.getAllByRole("link", {name: /^Open Field task/})).toHaveLength(10);
+  expect(screen.queryByRole("combobox", {name: /^Move /})).toBeNull();
+  expect(document.querySelector('[draggable="true"]')).toBeNull();
+  fireEvent.click(screen.getByRole("button", {name: "Table"}));
+  expect(screen.getByRole("table", {name: "Tasks"})).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", {name: "Next page"}));
+  expect(screen.getAllByRole("link", {name: /^Open Field task/})).toHaveLength(2);
+  fireEvent.click(screen.getByRole("button", {name: "List"}));
+  expect(screen.getByText("Page 2 of 2")).toBeTruthy();
+ });
+
 	it("separates the views by the states the server owns", () => {
 		mount(<Tasks />);
 
