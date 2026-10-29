@@ -1,7 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { useSession } from "../lib/session";
 import { Icon } from "./icons";
 
 export interface TourStep {
@@ -23,22 +22,6 @@ export function useWorkspaceDensity() {
 		document.documentElement.classList.add("workspace-density");
 		return () => document.documentElement.classList.remove("workspace-density");
 	}, []);
-}
-
-function stored(key: string): boolean {
-	try {
-		return window.localStorage.getItem(key) === "1";
-	} catch {
-		return false;
-	}
-}
-
-function remember(key: string) {
-	try {
-		window.localStorage.setItem(key, "1");
-	} catch {
-		/* A tour may still run when private browsing refuses site storage. */
-	}
 }
 
 /**
@@ -116,24 +99,16 @@ function visibleTarget(selector: string): HTMLElement | null {
 }
 
 /**
- * First-visit orientation for the two signed-in workspaces.
+ * On-demand orientation, opened by "Take a tour" in either workspace.
  *
  * The highlight is rendered into `document.body` so its fixed coordinates are
  * in the same viewport space as the element it points at, including after the
  * user changes browser zoom.
  */
 export function GuidedTour({ id, steps }: { id: string; steps: TourStep[] }) {
-	const { user } = useSession();
-	const key = useMemo(() => `vmms.tour.${id}.${user || "user"}.v1`, [id, user]);
 	const [open, setOpen] = useState(false);
 	const [index, setIndex] = useState(0);
 	const [rect, setRect] = useState<DOMRect | null>(null);
-
-	useEffect(() => {
-		if (stored(key)) return;
-		const timer = window.setTimeout(() => setOpen(true), 650);
-		return () => window.clearTimeout(timer);
-	}, [key]);
 
 	useEffect(() => {
 		const start = (event: Event) => {
@@ -168,13 +143,12 @@ export function GuidedTour({ id, steps }: { id: string; steps: TourStep[] }) {
 		if (!open) return;
 		const close = (event: KeyboardEvent) => {
 			if (event.key === "Escape") {
-				remember(key);
 				setOpen(false);
 			}
 		};
 		document.addEventListener("keydown", close);
 		return () => document.removeEventListener("keydown", close);
-	}, [key, open]);
+	}, [open]);
 
 	if (!open || steps.length === 0) return null;
 
@@ -197,7 +171,6 @@ export function GuidedTour({ id, steps }: { id: string; steps: TourStep[] }) {
 	const { top: tooltipTop, left: tooltipLeft } = place(box, viewWidth, viewHeight);
 
 	const finish = () => {
-		remember(key);
 		setOpen(false);
 	};
 
