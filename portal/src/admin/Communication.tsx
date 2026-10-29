@@ -1,10 +1,12 @@
-import { useContext, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
-import { Navigate, useParams } from "react-router-dom";
+import ChannelOverview from "./communication/ChannelOverview";
+import { CommunicationWorkspace } from "./communication/CommunicationWorkspace";
+import { MessageComposer } from "./communication/MessageComposer";
+import { useCommunicationActions, notifyCommunicationChanged } from "./communication/history";
+import { useContext, useState, type Dispatch, type SetStateAction } from "react";
+import { FrappeContext, useFrappeGetCall, useFrappeFileUpload, type FrappeConfig } from "frappe-react-sdk";
+import { Navigate, useParams, useNavigate } from "react-router-dom";
 
-import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
-import { useSocietyBranding } from "../ui/brand";
 import { GeoSelects } from "../ui/GeoSelects";
 import { Icon } from "../ui/icons";
 import {
@@ -17,12 +19,7 @@ import {
 	Spinner,
 	cx,
 } from "../ui/primitives";
-import type {
-	CommunicationOptions,
-	CommunicationReach,
-	CommunicationReport,
-	GeoNode,
-} from "../portal/types";
+import type { CommunicationOptions, CommunicationReach, CommunicationReport, GeoNode } from "../portal/types";
 
 /**
  * Saying something to the people a branch is responsible for.
@@ -53,6 +50,15 @@ import type {
  * it. The report says so in as many words, and links to where it is finished.
  */
 export default function Communication() {
+	const { channel = "system", view } = useParams();
+	if(view === "overview")return <ChannelOverview key={channel} />;
+	return <CommunicationContainer key={channel} />;
+}
+
+function CommunicationContainer() {
+	const navigate = useNavigate();
+ const { saveCommunicationDraft } = useCommunicationActions();
+	const { upload } = useFrappeFileUpload();
 	const { channel = "system", view = "compose" } = useParams<{ channel: string; view: string }>();
 	const { call } = useContext(FrappeContext) as FrappeConfig;
 	const channelKey = channel === "system" ? "notification" : channel;
@@ -91,6 +97,7 @@ export default function Communication() {
 	const [confirming, setConfirming] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
+	const [draftId, setDraftId] = useState<string | undefined>();
 	const [report, setReport] = useState<CommunicationReport | null>(null);
 
 	const answer = options.data?.message;
@@ -109,20 +116,42 @@ export default function Communication() {
 	const chosen = new Set(channels);
 	const wantsSms = chosen.has("sms");
 	const wantsWhatsapp = chosen.has("whatsapp");
-	// The two channels that are filed rather than sent, and therefore the two
-	// that can be held until a time. An announcement has nowhere to wait.
-	const canSchedule = wantsSms || wantsWhatsapp;
+	// The concept supports scheduling on every channel; campaigns still require approval.
+	const requiresApproval = wantsSms || wantsWhatsapp;
+	const canSchedule = true;
 	const composed = wantsSms ? smsMessage : wantsWhatsapp ? waMessage : body;
-	const phoneFields = useFrappeGetCall<{ message: string[] }>(API.smsDoctypeFields, { doctype: smsSourceDoctype }, wantsSms && smsSourceType === "Doctype Query" && smsSourceDoctype ? `sms:phones:${smsSourceDoctype}` : null);
-	const filterFields = useFrappeGetCall<{ message: SmsFilterField[] }>(API.smsFilterFields, { doctype: smsSourceDoctype }, wantsSms && smsSourceType === "Doctype Query" && smsSourceDoctype ? `sms:filters:${smsSourceDoctype}` : null);
+	const recipientCount =
+		wantsSms && smsSourceType === "Manual"
+			? new Set(
+					smsPhoneNumbers
+						.split(/\n|,/)
+						.map((value) => value.trim())
+						.filter(Boolean),
+				).size
+			: (counts?.[channelKey as keyof CommunicationReach] ?? 0);
+	const phoneFields = useFrappeGetCall<{ message: string[] }>(
+		API.smsDoctypeFields,
+		{ doctype: smsSourceDoctype },
+		wantsSms && smsSourceType === "Doctype Query" && smsSourceDoctype
+			? `sms:phones:${smsSourceDoctype}`
+			: null,
+	);
+	const filterFields = useFrappeGetCall<{ message: SmsFilterField[] }>(
+		API.smsFilterFields,
+		{ doctype: smsSourceDoctype },
+		wantsSms && smsSourceType === "Doctype Query" && smsSourceDoctype
+			? `sms:filters:${smsSourceDoctype}`
+			: null,
+	);
 
 	const ready =
 		Boolean(geoNode) &&
 		channels.length > 0 &&
 		title.trim().length > 0 &&
 		composed.trim().length > 0 &&
-		(!canSchedule || delivery === "approval" || Boolean(scheduledAt)) &&
-		(!wantsSms || smsSourceType === "VMMS Audience" ||
+		(!canSchedule || delivery === "approval" || (Boolean(scheduledAt) && new Date(scheduledAt).getTime() > Date.now())) &&
+		(!wantsSms ||
+			smsSourceType === "VMMS Audience" ||
 			(smsSourceType === "Doctype Query" && Boolean(smsSourceDoctype && smsPhoneField)) ||
 			(smsSourceType === "CSV Upload" && Boolean(smsCsvFile)) ||
 			(smsSourceType === "Manual" && Boolean(smsPhoneNumbers.trim())));
@@ -132,35 +161,47 @@ export default function Communication() {
 		setFailure(null);
 
 		try {
-			const response = await call.post<{ message: CommunicationReport }>(API.communicationSend, {
-				title: title.trim(),
-				body: composed.trim(),
-				geo_node: geoNode,
-				who,
-				channels,
-				urgency,
-				announcement_type: announcementType || undefined,
-				summary: summary.trim() || undefined,
-				expires_on: expiresOn || undefined,
-				// The address is what draws the link and the label only names it —
-				// the portal falls back to "Open" — so the two are sent
-				// independently rather than gated on each other.
-				link_label: linkLabel.trim() || undefined,
-				link_href: linkHref.trim() || undefined,
-				sms_message: smsMessage.trim() || undefined,
-				sms_template: smsTemplate || undefined,
-				sms_scheduled_at: delivery === "scheduled" ? scheduledAt : undefined,
-				sms_source_type: smsSourceType,
-				sms_source_doctype: smsSourceDoctype || undefined,
-				sms_phone_field: smsPhoneField || undefined,
-				sms_filters: smsFilters,
-				sms_csv_file: smsCsvFile || undefined,
-				sms_phone_numbers: smsPhoneNumbers || undefined,
-				whatsapp_message: waMessage.trim() || undefined,
-				whatsapp_scheduled_at: delivery === "scheduled" ? scheduledAt : undefined,
-			});
+			const response = await call.post<{ message: CommunicationReport & { history_id?: string } }>(
+				API.communicationSend,
+				{
+					title: title.trim(),
+					chain,
+					branch: branchOf(chain),
+					draft_id: draftId,
+					scheduled_at: delivery === "scheduled" ? scheduledAt : undefined,
+					body: composed.trim(),
+					geo_node: geoNode,
+					who,
+					channels,
+					urgency,
+					announcement_type: announcementType || undefined,
+					summary: summary.trim() || undefined,
+					expires_on: expiresOn || undefined,
+					// The address is what draws the link and the label only names it —
+					// the portal falls back to "Open" — so the two are sent
+					// independently rather than gated on each other.
+					link_label: linkLabel.trim() || undefined,
+					link_href: linkHref.trim() || undefined,
+					sms_message: smsMessage.trim() || undefined,
+					sms_template: smsTemplate || undefined,
+					sms_scheduled_at: delivery === "scheduled" ? scheduledAt : undefined,
+					sms_source_type: smsSourceType,
+					sms_source_doctype: smsSourceDoctype || undefined,
+					sms_phone_field: smsPhoneField || undefined,
+					sms_filters: smsFilters,
+					sms_csv_file: smsCsvFile || undefined,
+					sms_phone_numbers: smsPhoneNumbers || undefined,
+					whatsapp_message: waMessage.trim() || undefined,
+					whatsapp_scheduled_at: delivery === "scheduled" ? scheduledAt : undefined,
+				},
+			);
 
+			notifyCommunicationChanged();
+			setDraftId(undefined);
 			setReport(response.message);
+			navigate(
+				`/admin/communication/${channel}/sent${response.message.history_id ? `?message=${response.message.history_id}` : ""}`,
+			);
 			setConfirming(false);
 			// The words go, the audience stays. Somebody who has just told Arusha
 			// one thing is quite likely to tell Arusha the next thing, and making
@@ -188,13 +229,13 @@ export default function Communication() {
 		setUploadingCsv(true);
 		setFailure(null);
 		try {
-			const data = new FormData();
-			data.append("file", file);
-			data.append("is_private", "1");
-			const response = await fetch("/api/method/upload_file", { method: "POST", body: data, credentials: "same-origin" });
-			const payload = await response.json() as { message?: { file_url?: string }; exception?: string };
-			if (!response.ok || !payload.message?.file_url) throw new Error(payload.exception || "CSV upload failed.");
-			setSmsCsvFile(payload.message.file_url);
+			const header = (await file.text())
+				.split(/\r?\n/, 1)[0]
+				.split(",")
+				.map((value) => value.trim().replace(/^"|"$/g, ""));
+			if (!header.includes("phone_number")) throw new Error("The CSV must include a phone_number column.");
+			const uploaded = await upload(file, { isPrivate: true });
+			setSmsCsvFile(uploaded.file_url);
 		} catch (error) {
 			setFailure(errorMessage(error, "The CSV file could not be uploaded."));
 		} finally {
@@ -209,8 +250,9 @@ export default function Communication() {
 	if (options.error || !answer) {
 		return <ErrorNote>{errorMessage(options.error, "This screen could not be opened.")}</ErrorNote>;
 	}
-	if (!["system", "email", "sms", "whatsapp"].includes(channel) || !["compose", "sent"].includes(view)) return <Navigate to="/admin/communication/system/compose" replace />;
-	if (view === "sent") return <CommunicationHistory channel={channel} />;
+	if (!["system", "email", "sms", "whatsapp"].includes(channel) || !["compose", "sent"].includes(view))
+		return <Navigate to="/admin/communication/system/compose" replace />;
+
 	if (!answer.channels[channelKey as keyof typeof answer.channels]) {
 		const missingSms = channel === "sms" && !answer.sms_installed;
 		return (
@@ -234,476 +276,502 @@ export default function Communication() {
 	// The channel's name as a person says it, and the verb on the button. Both
 	// were inline ternaries when there were three channels; a fourth is where
 	// that stops being readable, and "Compose whatsapp" is what it produced.
-	const noun = channel === "system" ? "notification" : channel === "sms" ? "SMS" : channel === "whatsapp" ? "WhatsApp" : "email";
-	const verb = canSchedule ? `Create ${noun} draft` : `Send ${noun}`;
-
-	return (
+	const saveDraft = async () => {
+		setFailure(null); setBusy(true);
+ try { const draft = await saveCommunicationDraft({
+			channel,
+			title,
+			body: composed,
+			geo_node: geoNode,
+			who,
+			branch: branchOf(chain),
+			chain,
+			id: draftId,
+			draft_fields: {
+				urgency,
+				summary,
+				expiresOn,
+				linkLabel,
+				linkHref,
+				announcementType,
+				smsTemplate,
+				delivery,
+				scheduledAt,
+				smsSourceType,
+				smsSourceDoctype,
+				smsPhoneField,
+				smsFilters,
+				smsCsvFile,
+				smsPhoneNumbers,
+			},
+		});
+		navigate(`/admin/communication/${channel}/sent?status=Draft&message=${draft.id}`);
+ } catch(error) { setFailure(errorMessage(error, "The draft could not be saved.")); } finally { setBusy(false); }
+	};
+	const recipientFields = (
 		<>
-			<div className="mb-4 flex flex-wrap items-center gap-3">
-				<div>
-					<h2 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-ink">
-						<EditableText k={`admin.communication.${channel}.heading`} fallback={`Compose ${noun}`} />
-					</h2>
-					<p className="mt-1.5 text-[13px] text-muted">
-						<EditableText k="admin.communication.lead" fallback="Sent to the volunteers and members your branches cover." />
-					</p>
-				</div>
-				<div className="ml-auto flex items-center gap-2">
-					<span className="hidden rounded-md bg-surface px-2.5 py-1.5 text-[11.5px] font-medium text-muted sm:block">{canSchedule ? "Filed for approval" : "Sends immediately"}</span>
-					<Button variant="primary" disabled={!ready || !answer.can_send} onClick={() => setConfirming(true)}>
-						{verb}
-						{counts ? ` to ${counts[channelKey as keyof CommunicationReach] ?? 0}` : ""}
-					</Button>
-				</div>
-			</div>
-
-			{report && <Report report={report} onDismiss={() => setReport(null)} />}
-			{failure && (
-				<div className="mb-5">
-					<ErrorNote>{failure}</ErrorNote>
-				</div>
+			<label className="comm-field-label">Branch</label>
+			<GeoSelects chain={chain} onChain={setChain} idPrefix="comms" />
+			<label className="comm-field-label" htmlFor="comm-audience">
+				Audience
+			</label>
+			<select id="comm-audience" value={who} onChange={(e) => setWho(e.target.value)}>
+				{answer.audiences.map((option) => (
+					<option key={option} value={option}>
+						{option}
+					</option>
+				))}
+			</select>
+			{counts && (
+				<p className="comm-reach">
+					<Icon.people size={15} />
+					<strong>{counts[channelKey as keyof CommunicationReach] ?? 0}</strong> reachable recipients ·{" "}
+					{counts.addressed} people in this audience
+				</p>
 			)}
+		</>
+	);
+	const advancedFields = (
+		<>
+			{wantsSms && (
+				<section>
+					<h3>Contact source</h3>
+					<label className="mb-4 block">
+						<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Source type</span>
+						<select
+							value={smsSourceType}
+							onChange={(event) => {
+								setSmsSourceType(event.target.value);
+								setSmsFilters([]);
+							}}
+							className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+						>
+							<option>VMMS Audience</option>
+							<option>Doctype Query</option>
+							<option>CSV Upload</option>
+							<option>Manual</option>
+						</select>
+					</label>
 
-			<div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_285px]">
-				<div className="p-card overflow-hidden">
-					<ComposerSection number="1" title="Audience" help="Choose a geographic scope and the people within it. The server rechecks this scope when you send.">
-						<div className="mb-4">
-							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-								Which part of the society
-							</span>
-							{/* The same cascading picker every placement form uses, so it
-							    draws one control per rung of this society's own ladder and
-							    this screen never learns how deep it goes. A branch and
-							    everything beneath it is what gets addressed — the server
-							    resolves the subtree. */}
-							<GeoSelects chain={chain} onChain={setChain} idPrefix="comms" />
-						</div>
-
-						<div>
-							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-								Which of its people
-							</span>
-							<div className="flex flex-wrap gap-2">
-								{answer.audiences.map((option) => (
-									<button
-										key={option}
-										type="button"
-										onClick={() => setWho(option)}
-										className={cx(
-											"rounded-lg border px-3.5 py-1.5 text-[12.5px] font-semibold capitalize transition",
-											option === who
-												? "border-blue bg-blue-soft text-blue-press"
-												: "border-card-line bg-white text-slate-strong hover:border-blue hover:text-ink",
-										)}
-									>
-										{option}
-									</button>
-								))}
-							</div>
-							{geoNode && (
-								<div className="mt-3 flex flex-wrap items-center gap-2">
-									<span className="rounded-md bg-blue-soft px-2.5 py-1 text-[11.5px] font-semibold text-blue-press">{branchOf(chain)}</span>
-									<span className="rounded-md bg-blue-soft px-2.5 py-1 text-[11.5px] font-semibold capitalize text-blue-press">{who}</span>
-									{counts && <span className="text-[11.5px] text-muted">{counts.addressed} people addressed</span>}
-								</div>
-							)}
-						</div>
-					</ComposerSection>
-
-					{wantsSms && (
-						<ComposerSection number="2" title="Contact source" help="Use the VMMS audience above, or configure the same query, CSV, or manual source offered by OneRC SMS Desk.">
-							<label className="mb-4 block">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Source type</span>
-								<select value={smsSourceType} onChange={(event) => { setSmsSourceType(event.target.value); setSmsFilters([]); }} className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft">
-									<option>VMMS Audience</option><option>Doctype Query</option><option>CSV Upload</option><option>Manual</option>
-								</select>
-							</label>
-
-							{smsSourceType === "Doctype Query" && <>
-								<div className="grid gap-4 sm:grid-cols-2">
-									<label><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Source DocType</span><select value={smsSourceDoctype} onChange={(event) => { setSmsSourceDoctype(event.target.value); setSmsPhoneField(""); setSmsFilters([]); }} className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"><option value="">Select volunteer or member records</option>{(answer.sms_source_doctypes ?? []).map((doctype) => <option key={doctype.value} value={doctype.value}>{doctype.label}</option>)}</select>{(answer.sms_source_doctypes ?? []).length === 0 && <span className="mt-1.5 block text-[11px] text-slate-faint">No volunteer or member DocTypes are readable by your account.</span>}</label>
-									<label><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Phone field</span><select value={smsPhoneField} onChange={(event) => setSmsPhoneField(event.target.value)} disabled={!smsSourceDoctype || phoneFields.isLoading} className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"><option value="">Select phone field</option>{(phoneFields.data?.message ?? []).map((field) => <option key={field}>{field}</option>)}</select></label>
-								</div>
-								<div className="mt-5 border-t border-card-line pt-4">
-									<div className="mb-3 flex items-center justify-between"><h4 className="text-[12.5px] font-semibold text-ink">Filters</h4><button type="button" onClick={() => setSmsFilters((rows) => [...rows, { filter_field: "", operator: "Equals", filter_value: "" }])} disabled={!smsSourceDoctype} className="rounded-full border border-card-line bg-white px-3 py-1.5 text-[11px] font-medium text-blue disabled:opacity-50">Add filter</button></div>
-									<div className="space-y-2">{smsFilters.map((row, index) => <div key={index} className="grid gap-2 rounded-[12px] bg-surface p-2 sm:grid-cols-[1fr_120px_1fr_30px]">
-										<select aria-label={`Filter ${index + 1} field`} value={row.filter_field} onChange={(event) => updateSmsFilter(setSmsFilters, index, "filter_field", event.target.value)} className="min-w-0 rounded-[9px] border border-card-line bg-white px-2.5 py-2 text-[11.5px]"><option value="">Field</option>{(filterFields.data?.message ?? []).map((field) => <option key={field.value} value={field.value}>{field.label}</option>)}</select>
-										<select aria-label={`Filter ${index + 1} operator`} value={row.operator} onChange={(event) => updateSmsFilter(setSmsFilters, index, "operator", event.target.value)} className="rounded-[9px] border border-card-line bg-white px-2 py-2 text-[11.5px]">{SMS_FILTER_OPERATORS.map((operator) => <option key={operator}>{operator}</option>)}</select>
-										<input aria-label={`Filter ${index + 1} value`} value={row.filter_value} onChange={(event) => updateSmsFilter(setSmsFilters, index, "filter_value", event.target.value)} placeholder="Value" className="min-w-0 rounded-[9px] border border-card-line px-2.5 py-2 text-[11.5px]" />
-										<button type="button" aria-label={`Remove filter ${index + 1}`} onClick={() => setSmsFilters((rows) => rows.filter((_, rowIndex) => rowIndex !== index))} className="grid h-[34px] w-[30px] place-items-center rounded-[9px] text-slate-faint hover:bg-white hover:text-blue">×</button>
-									</div>)}</div>
-								</div>
-							</>}
-
-							{smsSourceType === "CSV Upload" && <label className="block"><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">CSV file</span><input type="file" accept=".csv,text/csv" disabled={uploadingCsv} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadCsv(file); }} className="w-full rounded-xl border border-card-line bg-white px-3 py-2 text-[12px]" /><span className="mt-1.5 block text-[11px] text-slate-faint">{uploadingCsv ? "Uploading…" : smsCsvFile ? `Uploaded: ${smsCsvFile}` : "The file must contain a phone_number column."}</span></label>}
-							{smsSourceType === "Manual" && <label className="block"><span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Phone numbers</span><textarea value={smsPhoneNumbers} onChange={(event) => setSmsPhoneNumbers(event.target.value)} rows={6} placeholder={"+255700000001\n+255700000002"} className="w-full resize-y rounded-xl border border-card-line px-3.5 py-2.5 font-mono text-[12.5px] outline-none focus:border-blue" /><span className="mt-1.5 block text-[11px] text-slate-faint">One number per line, including country code.</span></label>}
-						</ComposerSection>
-					)}
-
-					<ComposerSection number={wantsSms ? "3" : "2"} title="Message" help={channel === "sms" ? "Name the campaign, optionally start from a OneRC SMS template, then write the text." : channel === "whatsapp" ? "Name the broadcast, then write the message. The name is for your records and is not sent." : "Write the title and message people will receive."}>
-						<label className="mb-4 block">
-							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-								{channel === "sms" ? "Campaign name" : channel === "whatsapp" ? "Broadcast name" : "Subject"}
-							</span>
-							<input
-								value={title}
-								onChange={(event) => setTitle(event.target.value)}
-								placeholder={channel === "sms" ? "Community health outreach reminder" : channel === "whatsapp" ? "Flood advisory — Kilombero" : "Branch meeting moved to Saturday"}
-								className="w-full rounded-xl border border-card-line px-3.5 py-2.5 text-[13.5px] outline-none focus:border-blue"
-							/>
-						</label>
-
-						{wantsSms && (answer.sms_templates ?? []).length > 0 && (
-							<label className="mb-4 block">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Template</span>
-								<select
-									value={smsTemplate}
-									onChange={(event) => {
-										const next = event.target.value;
-										setSmsTemplate(next);
-										const template = (answer.sms_templates ?? []).find((item) => item.name === next);
-										if (template) setSmsMessage(template.message);
-									}}
-									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
-								>
-									<option value="">Write without a template</option>
-									{(answer.sms_templates ?? []).map((template) => <option key={template.name} value={template.name}>{template.template_name}{template.category ? ` · ${template.category}` : ""}</option>)}
-								</select>
-							</label>
-						)}
-
-						{!wantsSms && !wantsWhatsapp && <label className="mb-4 block">
-							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-								Message
-							</span>
-							<textarea
-								value={body}
-								onChange={(event) => setBody(event.target.value)}
-								rows={6}
-								placeholder="Write the message"
-								className="w-full resize-y rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
-							/>
-						</label>}
-
-						{/* Only when SMS was chosen, and separate from the message
-						    above on purpose: 160 characters is a different piece of
-						    writing from a notice, and merging the two would send
-						    either a truncated notice or an essay by text. */}
-						{wantsSms && (
-							<label className="mb-4 block">
-								<span className="mb-2 flex items-center justify-between gap-3 text-[12.5px] font-semibold text-slate-strong">
-									<span>Text message</span>
-									<span
-										className={cx(
-											"tabular text-[11.5px] font-bold",
-											(smsMessage || body).length > 160
-												? "text-blue-press"
-												: "text-slate-faint",
-										)}
-									>
-										{(smsMessage || body).length} characters
-									</span>
-								</span>
-								<textarea
-									value={smsMessage}
-									onChange={(event) => setSmsMessage(event.target.value)}
-									rows={3}
-									placeholder="Write the SMS message"
-									className="w-full resize-y rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
-								/>
-								<span className="mt-1.5 block text-[11.5px] leading-relaxed text-slate-faint">
-									Anything over 160 characters is sent as more than one message.
-								</span>
-							</label>
-						)}
-
-						{/* Its own wording, for the same reason the SMS has its own:
-						    this arrives on a phone in a thread beside messages from
-						    family, and an announcement's register reads oddly there.
-						    No character counter — WhatsApp does not charge by length
-						    and a limit invented here would be a fiction. */}
-						{wantsWhatsapp && (
-							<label className="mb-4 block">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">WhatsApp message</span>
-								<textarea
-									value={waMessage}
-									onChange={(event) => setWaMessage(event.target.value)}
-									rows={5}
-									placeholder="Write the message"
-									className="w-full resize-y rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
-								/>
-								<span className="mt-1.5 block text-[11.5px] leading-relaxed text-slate-faint">
-									A line telling people how to stop receiving these is added underneath.
-								</span>
-							</label>
-						)}
-
-						{!wantsSms && !wantsWhatsapp && <div className="grid gap-4 sm:grid-cols-2">
-							<label className="block">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-									How urgent
-								</span>
-								<select
-									value={urgency}
-									onChange={(event) => setUrgency(event.target.value)}
-									className="w-full rounded-xl border border-card-line bg-white px-3.5 py-2.5 text-[13.5px] capitalize outline-none focus:border-blue"
-								>
-									{answer.urgencies.map((option) => (
-										<option key={option} value={option} className="capitalize">
-											{option}
-										</option>
-									))}
-								</select>
-								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
-									Decides how high this sits in somebody's list.
-								</span>
-							</label>
-
-							{answer.types.length > 0 && (
-								<label className="block">
+					{smsSourceType === "Doctype Query" && (
+						<>
+							<div className="grid gap-4 sm:grid-cols-2">
+								<label>
 									<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-										What kind of thing it is
+										Source DocType
 									</span>
 									<select
-										value={announcementType}
-										onChange={(event) => setAnnouncementType(event.target.value)}
+										value={smsSourceDoctype}
+										onChange={(event) => {
+											setSmsSourceDoctype(event.target.value);
+											setSmsPhoneField("");
+											setSmsFilters([]);
+										}}
 										className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
 									>
-										<option value="">Not filed under one</option>
-										{answer.types.map((type) => (
-											<option key={type.name} value={type.name}>
-												{type.name}
+										<option value="">Select volunteer or member records</option>
+										{(answer.sms_source_doctypes ?? []).map((doctype) => (
+											<option key={doctype.value} value={doctype.value}>
+												{doctype.label}
 											</option>
 										))}
 									</select>
-									<span className="mt-1.5 block text-[11.5px] text-slate-faint">
-										Your society's own vocabulary. Filing only, never delivery.
-									</span>
+									{(answer.sms_source_doctypes ?? []).length === 0 && (
+										<span className="mt-1.5 block text-[11px] text-slate-faint">
+											No volunteer or member DocTypes are readable by your account.
+										</span>
+									)}
 								</label>
-							)}
+								<label>
+									<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
+										Phone field
+									</span>
+									<select
+										value={smsPhoneField}
+										onChange={(event) => setSmsPhoneField(event.target.value)}
+										disabled={!smsSourceDoctype || phoneFields.isLoading}
+										className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+									>
+										<option value="">Select phone field</option>
+										{(phoneFields.data?.message ?? []).map((field) => (
+											<option key={field}>{field}</option>
+										))}
+									</select>
+								</label>
+							</div>
+							<div className="mt-5 border-t border-card-line pt-4">
+								<div className="mb-3 flex items-center justify-between">
+									<h4 className="text-[12.5px] font-semibold text-ink">Filters</h4>
+									<button
+										type="button"
+										onClick={() =>
+											setSmsFilters((rows) => [
+												...rows,
+												{ filter_field: "", operator: "Equals", filter_value: "" },
+											])
+										}
+										disabled={!smsSourceDoctype}
+										className="rounded-full border border-card-line bg-white px-3 py-1.5 text-[11px] font-medium text-blue disabled:opacity-50"
+									>
+										Add filter
+									</button>
+								</div>
+								<div className="space-y-2">
+									{smsFilters.map((row, index) => (
+										<div
+											key={index}
+											className="grid gap-2 rounded-[12px] bg-surface p-2 sm:grid-cols-[1fr_120px_1fr_30px]"
+										>
+											<select
+												aria-label={`Filter ${index + 1} field`}
+												value={row.filter_field}
+												onChange={(event) =>
+													updateSmsFilter(setSmsFilters, index, "filter_field", event.target.value)
+												}
+												className="min-w-0 rounded-[9px] border border-card-line bg-white px-2.5 py-2 text-[11.5px]"
+											>
+												<option value="">Field</option>
+												{(filterFields.data?.message ?? []).map((field) => (
+													<option key={field.value} value={field.value}>
+														{field.label}
+													</option>
+												))}
+											</select>
+											<select
+												aria-label={`Filter ${index + 1} operator`}
+												value={row.operator}
+												onChange={(event) =>
+													updateSmsFilter(setSmsFilters, index, "operator", event.target.value)
+												}
+												className="rounded-[9px] border border-card-line bg-white px-2 py-2 text-[11.5px]"
+											>
+												{SMS_FILTER_OPERATORS.map((operator) => (
+													<option key={operator}>{operator}</option>
+												))}
+											</select>
+											<input
+												aria-label={`Filter ${index + 1} value`}
+												value={row.filter_value}
+												onChange={(event) =>
+													updateSmsFilter(setSmsFilters, index, "filter_value", event.target.value)
+												}
+												placeholder="Value"
+												className="min-w-0 rounded-[9px] border border-card-line px-2.5 py-2 text-[11.5px]"
+											/>
+											<button
+												type="button"
+												aria-label={`Remove filter ${index + 1}`}
+												onClick={() =>
+													setSmsFilters((rows) => rows.filter((_, rowIndex) => rowIndex !== index))
+												}
+												className="grid h-[34px] w-[30px] place-items-center rounded-[9px] text-slate-faint hover:bg-white hover:text-blue"
+											>
+												×
+											</button>
+										</div>
+									))}
+								</div>
+							</div>
+						</>
+					)}
 
-							{/* The four fields the announcement record has always carried
+					{smsSourceType === "CSV Upload" && (
+						<label className="block">
+							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">CSV file</span>
+							<input
+								type="file"
+								accept=".csv,text/csv"
+								disabled={uploadingCsv}
+								onChange={(event) => {
+									const file = event.target.files?.[0];
+									if (file) void uploadCsv(file);
+								}}
+								className="w-full rounded-xl border border-card-line bg-white px-3 py-2 text-[12px]"
+							/>
+							<span className="mt-1.5 block text-[11px] text-slate-faint">
+								{uploadingCsv
+									? "Uploading…"
+									: smsCsvFile
+										? "CSV attached"
+										: "The file must contain a phone_number column."}
+							</span>
+						</label>
+					)}
+					{smsSourceType === "Manual" && (
+						<label className="block">
+							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Phone numbers</span>
+							<textarea
+								aria-label="Phone numbers"
+								value={smsPhoneNumbers}
+								onChange={(event) => setSmsPhoneNumbers(event.target.value)}
+								rows={6}
+								placeholder={"+255700000001\n+255700000002"}
+								className="w-full resize-y rounded-xl border border-card-line px-3.5 py-2.5 font-mono text-[12.5px] outline-none focus:border-blue"
+							/>
+							<span className="mt-1.5 block text-[11px] text-slate-faint">
+								One number per line, including country code.
+							</span>
+						</label>
+					)}
+				</section>
+			)}
+			{!wantsSms && !wantsWhatsapp && (
+				<div className="grid gap-4 sm:grid-cols-2">
+					<label className="block">
+						<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Priority</span>
+						<select
+							value={urgency}
+							onChange={(event) => setUrgency(event.target.value)}
+							className="w-full rounded-xl border border-card-line bg-white px-3.5 py-2.5 text-[13.5px] capitalize outline-none focus:border-blue"
+						>
+							{answer.urgencies.map((option) => (
+								<option key={option} value={option} className="capitalize">
+									{option}
+								</option>
+							))}
+						</select>
+						<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+							Sets the notification priority.
+						</span>
+					</label>
+
+					{answer.types.length > 0 && (
+						<label className="block">
+							<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Message type</span>
+							<select
+								value={announcementType}
+								onChange={(event) => setAnnouncementType(event.target.value)}
+								className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+							>
+								<option value="">No category</option>
+								{answer.types.map((type) => (
+									<option key={type.name} value={type.name}>
+										{type.name}
+									</option>
+								))}
+							</select>
+							<span className="mt-1.5 block text-[11.5px] text-slate-faint">Optional message category.</span>
+						</label>
+					)}
+
+					{/* The four fields the announcement record has always carried
 							    and this composer never asked for. `send()` takes every
 							    one of them and `announce.publish` reads them: the summary
 							    is what a list row shows, the expiry is what takes it back
 							    down, and the pair at the bottom is where it points. An
 							    announcement written here had no summary, never expired
 							    and could not link anywhere. */}
-							<label className="block sm:col-span-2">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-									One-line summary
-								</span>
-								<input
-									value={summary}
-									onChange={(event) => setSummary(event.target.value)}
-									placeholder="What this is about, in a line"
-									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
-								/>
-								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
-									Optional. Shown in people's lists above the message itself.
-								</span>
-							</label>
+					<label className="block sm:col-span-2">
+						<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">One-line summary</span>
+						<input
+							value={summary}
+							onChange={(event) => setSummary(event.target.value)}
+							placeholder="What this is about, in a line"
+							className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+						/>
+						<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+							Optional. Shown in people's lists above the message itself.
+						</span>
+					</label>
 
-							<label className="block">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-									Take it down on
-								</span>
-								<input
-									type="date"
-									value={expiresOn}
-									min={new Date().toISOString().slice(0, 10)}
-									onChange={(event) => setExpiresOn(event.target.value)}
-									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
-								/>
-								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
-									Optional. It stops being shown after this day; nothing is deleted.
-								</span>
-							</label>
+					<label className="block">
+						<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Take it down on</span>
+						<input
+							type="date"
+							value={expiresOn}
+							min={new Date().toISOString().slice(0, 10)}
+							onChange={(event) => setExpiresOn(event.target.value)}
+							className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+						/>
+						<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+							Optional. It stops being shown after this day; nothing is deleted.
+						</span>
+					</label>
 
-							<label className="block">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-									Button text
-								</span>
-								<input
-									value={linkLabel}
-									onChange={(event) => setLinkLabel(event.target.value)}
-									placeholder="Read the notice"
-									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
-								/>
-								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
-									Optional. Names the link below; without it the button reads "Open".
-								</span>
-							</label>
+					<label className="block">
+						<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Button text</span>
+						<input
+							value={linkLabel}
+							onChange={(event) => setLinkLabel(event.target.value)}
+							placeholder="Read the notice"
+							className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+						/>
+						<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+							Optional. Names the link below; without it the button reads "Open".
+						</span>
+					</label>
 
-							<label className="block sm:col-span-2">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">
-									Where it points
-								</span>
-								{/* Not `type="url"`. `vmmsx/links.py` accepts a
+					<label className="block sm:col-span-2">
+						<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Link URL</span>
+						{/* Not `type="url"`. `vmmsx/links.py` accepts a
 								    site-relative path, http, https, mailto and tel, and
 								    the browser's url validation refuses three of those
 								    five — so it would block "/notices/flooding", which
 								    is the address a branch is most likely to use. The
 								    server is the one that checks. */}
-								<input
-									value={linkHref}
-									onChange={(event) => setLinkHref(event.target.value)}
-									placeholder="https://…  or  /notices/flooding"
-									className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
-								/>
-								<span className="mt-1.5 block text-[11.5px] text-slate-faint">
-									Optional. A page on your own site, another address, or an email or phone
-									link. Without button text it reads "Open".
-								</span>
-							</label>
-						</div>}
-					</ComposerSection>
-
-					<ComposerSection number={wantsSms ? "4" : "3"} title="Delivery" help={channel === "sms" ? "The SMS provider receives a draft campaign for approval; it is not sent immediately." : channel === "whatsapp" ? "This is filed for approval and never sent from here. Once approved it goes out steadily rather than all at once, which is what keeps the society's number in good standing." : "Delivery begins after you review and confirm the audience."} last>
-						<div className="grid gap-3 sm:grid-cols-2">
-							<button type="button" onClick={() => setDelivery("approval")} aria-pressed={!canSchedule || delivery === "approval"} className={cx("rounded-[13px] border p-4 text-left", !canSchedule || delivery === "approval" ? "border-blue/30 bg-[#EDF3FF]" : "border-card-line bg-white")}>
-								<div className="flex items-center gap-2 text-[12px] font-semibold text-blue"><Icon.check size={15} />{canSchedule ? "As soon as approved" : "Send now"}</div>
-								<p className="mt-1 text-[11px] leading-relaxed text-slate-faint">{CHANNELS.find((item) => item.key === channelKey)?.hint}</p>
-							</button>
-							<button type="button" disabled={!canSchedule} onClick={() => setDelivery("scheduled")} aria-pressed={canSchedule && delivery === "scheduled"} className={cx("rounded-[13px] border p-4 text-left", canSchedule && delivery === "scheduled" ? "border-blue/30 bg-[#EDF3FF]" : "border-card-line bg-surface/70", !canSchedule && "opacity-60")}>
-								<div className="text-[12px] font-semibold text-muted">Schedule</div>
-								<p className="mt-1 text-[11px] text-slate-faint">{wantsSms ? "Provider sends after approval at the chosen time." : wantsWhatsapp ? "Held until this time once it has been approved." : "Not supported for this channel."}</p>
-							</button>
-						</div>
-						{canSchedule && delivery === "scheduled" && (
-							<label className="mt-4 block">
-								<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Scheduled at</span>
-								<input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft" />
-								<span className="mt-1.5 block text-[11px] text-slate-faint">{wantsSms ? "Stored on the OneRC SMS campaign and evaluated when an approver submits it." : "A broadcast approved after this time goes out on approval rather than waiting."}</span>
-							</label>
-						)}
-					</ComposerSection>
+						<input
+							value={linkHref}
+							onChange={(event) => setLinkHref(event.target.value)}
+							placeholder="https://…  or  /notices/flooding"
+							className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+						/>
+						<span className="mt-1.5 block text-[11.5px] text-slate-faint">
+							Optional. A page on your own site, another address, or an email or phone link. Without button
+							text it reads "Open".
+						</span>
+					</label>
 				</div>
-
-				<aside className="space-y-3 lg:sticky lg:top-6">
-					<div className="rounded-[18px] bg-white p-4 border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)]">
-						<div className="mb-4 flex items-center justify-between gap-2">
-							<h3 className="text-[13px] font-semibold text-ink">{channel === "system" ? "Notification" : channel.toUpperCase()} preview</h3>
-							<span className="rounded-full border border-blue/20 bg-[#EDF3FF] px-2.5 py-1 text-[10px] font-medium text-blue">{counts ? `${counts[channelKey as keyof CommunicationReach] ?? 0} reachable` : "Choose audience"}</span>
-						</div>
-						<MessagePreview channel={channel} title={title} body={channel === "sms" ? (smsMessage || body) : body} />
-					</div>
-					<div className="p-card p-4">
-						<h3 className="mb-3 text-[13px] font-semibold text-ink">Before you send</h3>
-
-						{/* Nothing here until a branch is chosen. This used to carry a
-						    sentence explaining that choosing one would fill it in, which
-						    is the panel describing itself to somebody already looking at
-						    it being empty. The reach appears when there is reach. */}
-						{!geoNode ? null : (
-							<>
-								<p className="mb-4 text-[12.5px] leading-relaxed text-muted">
-									<b className="text-ink">{branchOf(chain)}</b> and everything under it
-									· <span className="capitalize">{who}</span>
-								</p>
-
-								{reach.isLoading && <Spinner label="Counting…" />}
-								{reach.error && <ErrorNote>{errorMessage(reach.error)}</ErrorNote>}
-
-								{counts && (
-									<>
-										{/* A list rather than a grid of tiles: these are four
-										    numbers that only mean anything against each other,
-										    and a tile each would spread the comparison over half
-										    a screen. */}
-										<dl className="divide-y divide-card-line">
-											<div className="flex items-baseline justify-between gap-3 pb-2.5">
-												<dt className="text-[12.5px] font-semibold text-ink">
-													People addressed
-												</dt>
-												<dd className="tabular text-[20px] font-semibold leading-none text-ink">
-													{counts.addressed}
-												</dd>
-											</div>
-											{available.map((channel) => (
-												<div
-													key={channel.key}
-													className="flex items-baseline justify-between gap-3 py-2.5"
-												>
-													<dt
-														className={cx(
-															"flex items-center gap-2 text-[12.5px]",
-															chosen.has(channel.key)
-																? "font-semibold text-ink"
-																: "text-slate-faint",
-														)}
-													>
-														<channel.icon size={13} />
-														{channel.label}
-													</dt>
-													<dd
-														className={cx(
-															"tabular text-[16px] font-bold leading-none",
-															chosen.has(channel.key)
-																? "text-ink"
-																: "text-slate-faint",
-														)}
-													>
-														{counts[channel.key]}
-													</dd>
-												</div>
-											))}
-										</dl>
-
-										{counts.addressed > 0 && (
-											<p className="mt-3 text-[11.5px] leading-relaxed text-slate-faint">
-												A channel reaching fewer people than are addressed is a
-												gap in what the society holds about them — a missing
-												login, address or number — not a smaller audience.
-											</p>
-										)}
-									</>
-								)}
-							</>
+			)}
+			<section>
+				<h3>Delivery</h3>
+				<div className="grid gap-3 sm:grid-cols-2">
+					<button
+						type="button"
+						onClick={() => setDelivery("approval")}
+						aria-pressed={!canSchedule || delivery === "approval"}
+						className={cx(
+							"rounded-[13px] border p-4 text-left",
+							!canSchedule || delivery === "approval"
+								? "border-blue/30 bg-blue-soft"
+								: "border-card-line bg-white",
 						)}
-
-						<div className="mt-4 border-t border-card-line pt-4">
-							<Button
-								variant="navy"
-								disabled={!ready || !answer.can_send}
-								onClick={() => setConfirming(true)}
-								className="w-full"
-							>
-								{channel === "sms" ? "Create SMS draft" : "Send now"}
-							</Button>
-
-							{!answer.can_send && (
-								<p className="mt-2 text-[11.5px] leading-relaxed text-slate-faint">
-									You may read this screen but not send from it.
-								</p>
-							)}
+					>
+						<div className="flex items-center gap-2 text-[12px] font-semibold text-blue">
+							<Icon.check size={15} />
+							{requiresApproval ? "As soon as approved" : "Send now"}
 						</div>
-						{/* An honest statement of what this screen cannot do, which is
-						    worth saying once. The sentence in front of it — "recipient
-						    selection is resolved from the geographic scope and audience
-						    group" — described the two controls directly above it, and
-						    went. */}
-						<p className="mt-3 text-[11px] leading-relaxed text-muted">
-							Picking individual people, saving a message to reuse and scheduling are not
-							available yet.
+						<p className="mt-1 text-[11px] leading-relaxed text-slate-faint">
+							{CHANNELS.find((item) => item.key === channelKey)?.hint}
 						</p>
-					</div>
-				</aside>
-			</div>
+					</button>
+					<button
+						type="button"
+						disabled={!canSchedule}
+						onClick={() => setDelivery("scheduled")}
+						aria-pressed={canSchedule && delivery === "scheduled"}
+						className={cx(
+							"rounded-[13px] border p-4 text-left",
+							canSchedule && delivery === "scheduled"
+								? "border-blue/30 bg-blue-soft"
+								: "border-card-line bg-surface/70",
+							!canSchedule && "opacity-60",
+						)}
+					>
+						<div className="text-[12px] font-semibold text-muted">Schedule</div>
+						<p className="mt-1 text-[11px] text-slate-faint">
+							{wantsSms
+								? "Provider sends after approval at the chosen time."
+								: wantsWhatsapp
+									? "Held until this time once it has been approved."
+									: "Deliver at the selected date and time."}
+						</p>
+					</button>
+				</div>
+				{canSchedule && delivery === "scheduled" && (
+					<label className="mt-4 block">
+						<span className="mb-2 block text-[12.5px] font-semibold text-slate-strong">Scheduled at</span>
+						<input
+							type="datetime-local"
+							value={scheduledAt}
+							onChange={(event) => setScheduledAt(event.target.value)}
+							className="w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
+						/>
+						<span className="mt-1.5 block text-[11px] text-slate-faint">
+							{wantsSms
+								? "Approval is required before the campaign can be sent."
+								: requiresApproval ? "Approval is required before the broadcast can be sent." : "Choose a future date and time in your local time zone."}
+						</span>
+					</label>
+				)}
+			</section>
+		</>
+	);
+	return (
+		<>
+			<CommunicationWorkspace
+				channel={channel}
+				view={view}
+				onReuse={(message) => {
+					setDraftId(message.status === "Draft" ? message.id : undefined);
+					const saved = message.draft_fields;
+					if (saved) {
+						setUrgency(saved.urgency);
+						setSummary(saved.summary);
+						setExpiresOn(saved.expiresOn);
+						setLinkLabel(saved.linkLabel);
+						setLinkHref(saved.linkHref);
+						setAnnouncementType(saved.announcementType);
+						setSmsTemplate(saved.smsTemplate);
+						setDelivery(saved.delivery);
+						setScheduledAt(saved.scheduledAt);
+						setSmsSourceType(saved.smsSourceType);
+						setSmsSourceDoctype(saved.smsSourceDoctype);
+						setSmsPhoneField(saved.smsPhoneField);
+						setSmsFilters(saved.smsFilters);
+						setSmsCsvFile(saved.smsCsvFile);
+						setSmsPhoneNumbers(saved.smsPhoneNumbers);
+					}
+					setChain(message.chain ?? []);
+					setWho(message.who || "everyone");
+					setTitle(message.title);
+					setBody(message.body);
+					setSmsMessage(message.body);
+					setWaMessage(message.body);
+				}}
+				composer={
+					<MessageComposer
+						channel={channel}
+						title={title}
+						body={composed}
+						onTitle={setTitle}
+						onBody={wantsSms ? setSmsMessage : wantsWhatsapp ? setWaMessage : setBody}
+						audience={
+							wantsSms && smsSourceType === "Manual"
+								? `${
+										new Set(
+											smsPhoneNumbers
+												.split(/\n|,/)
+												.map((value) => value.trim())
+												.filter(Boolean),
+										).size
+									} manual phone numbers · ${branchOf(chain)}`
+								: geoNode
+									? `${who} · ${branchOf(chain)}`
+									: ""
+						}
+						recipients={recipientFields}
+						settings={advancedFields}
+						ready={ready}
+						canSend={answer.can_send}
+						onReview={() => setConfirming(true)}
+						onSaveDraft={() => void saveDraft()}
+						templates={answer.sms_templates}
+						onTemplate={(name) => {
+							setSmsTemplate(name);
+							const template = answer.sms_templates.find((item) => item.name === name);
+							if (template) setSmsMessage(template.message);
+						}}
+						status={
+							<>
+								{failure && <ErrorNote>{failure}</ErrorNote>}
+								{report && <Report report={report} onDismiss={() => setReport(null)} />}
+							</>
+						}
+					/>
+				}
+			/>
 
 			<ConfirmDialog
 				open={confirming}
-				title="Send this now?"
-				confirmLabel="Yes, send it"
+				title={requiresApproval ? "Create campaign draft?" : delivery === "scheduled" ? "Schedule message?" : "Send message?"}
+				confirmLabel={requiresApproval ? "Create draft" : delivery === "scheduled" ? "Schedule message" : "Send message"}
 				busy={busy}
 				onConfirm={() => void send()}
 				onCancel={() => setConfirming(false)}
 			>
 				<p>
-					<b>{title || "This message"}</b> goes to{" "}
-					<b>{counts?.addressed ?? 0} people</b> — {who} at{" "}
-					{chain[chain.length - 1]?.label ?? "the branch you chose"} and everything under
-					it.
+					<b>{title || "This message"}</b> goes to <b>{recipientCount} recipients</b> — {who} at{" "}
+					{chain[chain.length - 1]?.label ?? "the branch you chose"} and everything under it.
 				</p>
 				<ul className="mt-3 space-y-1.5">
 					{available
@@ -714,7 +782,8 @@ export default function Communication() {
 									<channel.icon size={14} />
 								</span>
 								<span>
-									<b>{channel.label}</b> — {counts?.[channel.key] ?? 0} reachable
+									<b>{channel.label}</b> —{" "}
+									{channel.key === "sms" ? recipientCount : (counts?.[channel.key] ?? 0)} reachable
 									{channel.key === "sms" && ", filed as a draft campaign for approval"}
 									{channel.key === "whatsapp" && ", filed as a draft broadcast for approval"}
 								</span>
@@ -722,8 +791,9 @@ export default function Communication() {
 						))}
 				</ul>
 				<p className="mt-3">
-					An announcement cannot be recalled once it is out. Editing it afterwards corrects
-					it everywhere at once, which is the only way back.
+					{requiresApproval
+						? "The campaign is saved for approval before delivery."
+						: delivery === "scheduled" ? `Scheduled for ${new Date(scheduledAt).toLocaleString()}.` : "Review the audience before confirming delivery."}
 				</p>
 			</ConfirmDialog>
 		</>
@@ -740,69 +810,6 @@ export default function Communication() {
  */
 function branchOf(chain: GeoNode[]): string {
 	return (chain.length > 1 ? chain.slice(1) : chain).map((node) => node.label).join(" · ");
-}
-
-function ComposerSection({
-	number,
-	title,
-	help,
-	last = false,
-	children,
-}: {
-	number: string;
-	title: string;
-	help: string;
-	last?: boolean;
-	children: ReactNode;
-}) {
-	return (
-		<section className={cx("grid grid-cols-[34px_minmax(0,1fr)] gap-3 p-4 sm:p-5", !last && "border-b border-card-line")}>
-			<div className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#EDF3FF] text-[12px] font-semibold text-blue">{number}</div>
-			<div className="min-w-0">
-				<h3 className="text-[13px] font-semibold text-ink">{title}</h3>
-				<p className="mb-4 mt-1 text-[11px] leading-relaxed text-slate-faint">{help}</p>
-				{children}
-			</div>
-		</section>
-	);
-}
-
-/**
- * A mock of what the message will look like where it lands.
- *
- * **Everything in it is either what was typed or what the site actually knows.**
- * The email mock named the sender in its header bar and the bar said "Tanzania
- * Red Cross Society" — shipped source, so every other society composing an email
- * was shown a preview signed by a society on another continent. The name is read
- * from National Society Settings now, through the same call and the same SWR key
- * the lockup uses, and a site that has not named itself gets a neutral stand-in
- * rather than somebody else's name.
- *
- * **And it stopped inventing a greeting.** The mock opened "Hello Amina," over
- * every message. `announce._email` passes `subject=doc.title` and `content=` the
- * escaped body and nothing else, so no recipient has ever been greeted by name —
- * the preview was showing a line the email does not contain. The subject leads
- * now, which is what an inbox shows, and the body follows it.
- */
-function MessagePreview({ channel, title, body }: { channel: string; title: string; body: string }) {
-	const society = useSocietyBranding();
-
-	if (channel === "sms") return <><div className="relative mx-auto h-[390px] max-w-[220px] rounded-[34px] border-[7px] border-[#D8DCE2] bg-[#F8F8F8] px-3 pb-4 pt-14 shadow-inner before:absolute before:left-1/2 before:top-3 before:h-4 before:w-[62px] before:-translate-x-1/2 before:rounded-full before:bg-[#E2E5E9]"><div className="rounded-[13px] rounded-bl-[4px] bg-[#E8E8E8] p-3 text-[11px] leading-relaxed text-muted">{body || "Your message preview appears here."}</div></div><p className="mt-3 text-[10.5px] leading-relaxed text-slate-faint">{body.length} characters.</p></>;
-
-	// The green ground and the right-aligned bubble are what a WhatsApp thread
-	// looks like from the reader's side, and the point of a preview is to show
-	// the message where it will actually be read. The opt-out line is drawn in
-	// too, greyed, because the server appends it and a preview that omitted it
-	// would be showing a message nobody receives.
-	if (channel === "whatsapp") return <><div className="relative mx-auto h-[390px] max-w-[220px] overflow-hidden rounded-[34px] border-[7px] border-[#D8DCE2] bg-[#ECE5DD] px-3 pb-4 pt-14 shadow-inner before:absolute before:left-1/2 before:top-3 before:h-4 before:w-[62px] before:-translate-x-1/2 before:rounded-full before:bg-[#E2E5E9]"><div className="ml-auto max-w-[92%] rounded-[13px] rounded-br-[4px] bg-[#D9FDD3] p-2.5 text-[11px] leading-relaxed text-[#111B21]"><p className="whitespace-pre-wrap">{body || "Your message preview appears here."}</p><p className="mt-2 whitespace-pre-wrap text-[10px] text-[#667781]">Reply STOP to stop receiving messages from us.</p></div></div><p className="mt-3 text-[10.5px] leading-relaxed text-slate-faint">Sent one at a time, not all at once.</p></>;
-
-	if (channel === "email") return <div className="overflow-hidden rounded-[14px] border border-card-line"><div className="bg-[#24272C] px-4 py-3 text-[11px] font-semibold text-white">{society?.name || society?.short_name || "Your society"}</div><div className="bg-white p-4"><h4 className="text-[15px] font-medium text-ink">{title || "Your subject"}</h4><p className="mt-3 whitespace-pre-wrap text-[11px] leading-relaxed text-muted">{body || "Your email preview appears here."}</p></div></div>;
-
-	return <div className="rounded-[14px] bg-[#F5F5F5] p-3"><div className="grid grid-cols-[32px_minmax(0,1fr)] gap-2.5 rounded-[12px] bg-white p-3 shadow-[0_1px_2px_rgba(30,50,73,0.06)]"><span className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#EDF3FF] text-blue"><Icon.bell size={15} /></span><div><h3 className="text-[11px] font-semibold text-ink">{title || "Notification title"}</h3><p className="mt-1 whitespace-pre-wrap text-[10.5px] leading-relaxed text-muted">{body || "Your notification preview appears here."}</p></div></div></div>;
-}
-
-function CommunicationHistory({ channel }: { channel: string }) {
-	return <><PageHeading title={`Sent ${channel === "system" ? "notifications" : channel}`} lead="Nothing sent has been recorded here yet." /><Card><SectionTitle>Not available yet</SectionTitle><p className="text-[13px] leading-relaxed text-muted">You can post announcements and prepare SMS from here. A record of what has been sent, and who received it, is not available yet — and nothing is shown that cannot be confirmed.</p></Card></>;
 }
 
 /**
@@ -851,7 +858,21 @@ interface SmsFilterField {
 	description: string;
 }
 
-const SMS_FILTER_OPERATORS = ["Equals", "Not Equals", "Like", "Not Like", "In", "Not In", ">", "<", ">=", "<=", "Between", "Is Set", "Is Not Set"];
+const SMS_FILTER_OPERATORS = [
+	"Equals",
+	"Not Equals",
+	"Like",
+	"Not Like",
+	"In",
+	"Not In",
+	">",
+	"<",
+	">=",
+	"<=",
+	"Between",
+	"Is Set",
+	"Is Not Set",
+];
 
 function updateSmsFilter(
 	setRows: Dispatch<SetStateAction<SmsFilter[]>>,
@@ -859,7 +880,7 @@ function updateSmsFilter(
 	field: keyof SmsFilter,
 	value: string,
 ) {
-	setRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row));
+	setRows((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, [field]: value } : row)));
 }
 
 /** What each channel did, said plainly, once. */
@@ -870,18 +891,15 @@ function Report({ report, onDismiss }: { report: CommunicationReport; onDismiss:
 		<Card className="mb-5 border border-emerald-200 bg-emerald-50/40">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h2 className="text-[15px] font-semibold text-ink">That went out.</h2>
+					<h2 className="text-[15px] font-semibold text-ink">Message recorded</h2>
 					<ul className="mt-2 space-y-1 text-[12.5px] text-muted">
 						{report.notification_sent && sent && (
 							<li>
-								<b className="text-ink">{sent.delivered}</b> people now hold a copy in
-								the portal.
+								<b className="text-ink">{sent.delivered}</b> people now hold a copy in the portal.
 							</li>
 						)}
 						{report.email_sent && sent && (
-							<li>
-								Email queued to everybody in that audience with an address on file.
-							</li>
+							<li>Email queued to everybody in that audience with an address on file.</li>
 						)}
 						{report.whatsapp && (
 							<li>
@@ -889,17 +907,12 @@ function Report({ report, onDismiss }: { report: CommunicationReport; onDismiss:
 								    is there because "approved" does not mean "arrived"
 								    on this channel: the sending is paced, so a large
 								    branch is still receiving it an hour later. */}
-								<b className="text-ink">Nothing has been sent on WhatsApp yet.</b> A
-								draft broadcast to {report.whatsapp.recipients} numbers is waiting for
-								approval —{" "}
-								<a
-									href={report.whatsapp.url}
-									className="font-semibold text-ink underline underline-offset-2"
-								>
+								<b className="text-ink">Nothing has been sent on WhatsApp yet.</b> A draft broadcast to{" "}
+								{report.whatsapp.recipients} numbers is waiting for approval —{" "}
+								<a href={report.whatsapp.url} className="font-semibold text-ink underline underline-offset-2">
 									finish it here
 								</a>
-								. Once approved it goes out steadily, so a large branch takes a while
-								to reach.
+								. Once approved it goes out steadily, so a large branch takes a while to reach.
 							</li>
 						)}
 						{report.sms && (
@@ -907,20 +920,13 @@ function Report({ report, onDismiss }: { report: CommunicationReport; onDismiss:
 								{/* Said as plainly as possible: nothing has been texted yet,
 								    and somebody who believes it has will not go and approve
 								    it. */}
-								<b className="text-ink">Nothing has been texted yet.</b> A draft
-								campaign to {report.sms.recipients} numbers is waiting for approval —{" "}
-								<a
-									href={report.sms.url}
-									className="font-semibold text-ink underline underline-offset-2"
-								>
+								<b className="text-ink">Nothing has been texted yet.</b> A draft campaign to{" "}
+								{report.sms.recipients} numbers is waiting for approval —{" "}
+								<a href={report.sms.url} className="font-semibold text-ink underline underline-offset-2">
 									finish it here
 								</a>
 								{report.sms.malformed > 0 && (
-									<>
-										{" "}
-										· {report.sms.malformed} numbers were left out for having no
-										country code
-									</>
+									<> · {report.sms.malformed} numbers were left out for having no country code</>
 								)}
 								.
 							</li>

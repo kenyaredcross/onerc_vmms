@@ -29,6 +29,8 @@ function Glyph({ size = 17, className, d }: IconProps & { d: string }) {
 }
 
 export const Icon = {
+	columns: (p: IconProps) => <Glyph {...p} d="M3 4h18v16H3V4Zm6 0v16m6-16v16" />,
+	grid: (p: IconProps) => <Glyph {...p} d="M3 4h18v16H3V4Zm0 5h18M9 4v16" />,
 	home: (p: IconProps) => <Glyph {...p} d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z" />,
 	compass: (p: IconProps) => <Glyph {...p} d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3.5-12.5-2 5-5 2 2-5 5-2Z" />,
 	calendar: (p: IconProps) => <Glyph {...p} d="M7 3v3m10-3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" />,
@@ -51,6 +53,7 @@ export const Icon = {
 	external: (p: IconProps) => <Glyph {...p} d="M13 4h7v7M20 4l-9 9M17 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5" />,
 	signout: (p: IconProps) => <Glyph {...p} d="M15 17v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v2m3 9 4-4-4-4M10 12h11" />,
 	chevron: (p: IconProps) => <Glyph {...p} d="m6 9 6 6 6-6" />,
+	folder: (p: IconProps) => <Glyph {...p} d="M3 7a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />,
 	search: (p: IconProps) => <Glyph {...p} d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 5 5" />,
 	pin: (p: IconProps) => <Glyph {...p} d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Zm0-8.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />,
 	tag: (p: IconProps) => <Glyph {...p} d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Zm4.5-5.5v.01" />,
@@ -68,6 +71,9 @@ export const Icon = {
 	filter: (p: IconProps) => <Glyph {...p} d="M4 6h16M7 12h10m-7 6h4" />,
 	/** Waiting on somebody else. Used where a state is neither done nor failed. */
 	hourglass: (p: IconProps) => <Glyph {...p} d="M7 3h10M7 21h10M8 3v3.5c0 2 4 3.5 4 5.5s-4 3.5-4 5.5V21m8-18v3.5c0 2-4 3.5-4 5.5s4 3.5 4 5.5V21" />,
+	send: (p: IconProps) => <Glyph {...p} d="m21 3-7 18-4-7-7-4 18-7Zm0 0L10 14" />,
+	info: (p: IconProps) => <Glyph {...p} d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-11v6m0-10v.01" />,
+	bookmark: (p: IconProps) => <Glyph {...p} d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4Z" />,
 	mail: (p: IconProps) => <Glyph {...p} d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm-.6.6 8.6 6.4 8.6-6.4" />,
 	phone: (p: IconProps) => <Glyph {...p} d="M7 3h3l1.5 4.5-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2L21 14v3a2 2 0 0 1-2 2A16 16 0 0 1 5 5a2 2 0 0 1 2-2Z" />,
 	chat: (p: IconProps) => <Glyph {...p} d="M20 12a7.5 7.5 0 0 1-11 6.6L4.5 20l1.4-4.2A7.5 7.5 0 1 1 20 12Z" />,

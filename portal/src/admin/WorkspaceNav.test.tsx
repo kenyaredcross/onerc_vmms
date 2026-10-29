@@ -10,25 +10,25 @@ describe("focused coordinator workspaces", () => {
 	it("exposes direct channel routes and marks the current communication route", () => {
 		mount(<CommunicationSubNav />, { route: "/admin/communication/sms/compose" });
 
-		expect(screen.getByRole("link", { name: "Compose SMS" }).getAttribute("href")).toBe("/admin/communication/sms/compose");
-		expect(screen.getByRole("link", { name: "Sent SMS" }).getAttribute("href")).toBe("/admin/communication/sms/sent");
+		expect(screen.getByRole("link", { name: "Overview" }).getAttribute("href")).toBe("/admin/communication/sms/overview");
+		expect(screen.getByRole("link", { name: /History/ }).getAttribute("href")).toBe("/admin/communication/sms/sent");
 		// The channel switcher is a segmented control of four, and the selected
 		// one carries `aria-current` — the channel is a route, so somebody
 		// arriving by link is told which one they are on.
 		expect(screen.getByRole("link", { name: "SMS" }).getAttribute("aria-current")).toBe("page");
 		// "In app", not "System". The reader is a coordinator, not a sysadmin,
 		// and the channel is a notification inside the portal.
-		expect(screen.getByRole("link", { name: "In app" }).getAttribute("href")).toBe("/admin/communication/system/compose");
+		expect(screen.getByRole("link", { name: "In-app notifications" }).getAttribute("href")).toBe("/admin/communication/system/overview");
 	});
 
 	it("offers the channel's own screen only where there is a channel to look at", () => {
 		mount(<CommunicationSubNav />, { route: "/admin/communication/sms/compose" });
-		expect(screen.queryByRole("link", { name: "The channel" })).toBeNull();
+		expect(screen.queryByRole("link", { name: "Channel settings" })).toBeNull();
 
 		// WhatsApp is the one channel with a thing behind it: a linked phone that
 		// can drop, a pacing limit, and a list of people who replied STOP.
 		mount(<CommunicationSubNav />, { route: "/admin/communication/whatsapp/compose" });
-		expect(screen.getByRole("link", { name: "The channel" }).getAttribute("href")).toBe("/admin/communication/whatsapp/channel");
+		expect(screen.getByRole("link", { name: "Channel settings" }).getAttribute("href")).toBe("/admin/communication/whatsapp/channel");
 	});
 
 	it("keeps queues, recruitment and registers as distinct People routes", () => {

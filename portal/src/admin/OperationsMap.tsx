@@ -160,7 +160,7 @@ export function OperationsMap({
  * disappearing, because a pin that vanished would hide a deployment.
  */
 const TONES: Record<string, { color: string; fillColor: string }> = {
-	Planned: { color: "#0E42A8", fillColor: "#155EEF" },
+	Planned: { color: "#011E41", fillColor: "#45688D" },
 	Active: { color: "#1F6B45", fillColor: "#2E8B57" },
 	Suspended: { color: "#8C5A00", fillColor: "#B97900" },
 	Completed: { color: "#5E6775", fillColor: "#8A93A2" },

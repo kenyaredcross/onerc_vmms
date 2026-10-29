@@ -1,139 +1,90 @@
-import type { ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-
-import { EditableText } from "../content/Editable";
+import { Link, useLocation } from "react-router-dom";
+import { useFrappeGetCall } from "frappe-react-sdk";
+import { API } from "../lib/api";
+import { useSocietyBranding } from "../ui/brand";
+import { useSession } from "../lib/session";
 import { Icon } from "../ui/icons";
-import { cx } from "../portal/ui/kit";
-
-const channels = ["system", "email", "sms", "whatsapp"] as const;
-type Channel = (typeof channels)[number];
-
-const CHANNEL_TITLES: Record<Channel, string> = {
-	system: "In app",
-	email: "Email",
-	sms: "SMS",
-	whatsapp: "WhatsApp",
-};
-
-const CHANNEL_ICONS: Record<Channel, (props: { size?: number }) => ReactNode> = {
-	system: Icon.bell,
-	email: Icon.mail,
-	sms: Icon.phone,
-	whatsapp: Icon.whatsapp,
-};
-
-const channelTitle = (channel: Channel) => CHANNEL_TITLES[channel];
-
+import { isScheduledCommunication, useCommunicationHistory } from "./communication/history";
+const channels = [
+	{ key: "email", label: "Email", icon: Icon.mail },
+	{ key: "sms", label: "SMS", icon: Icon.phone },
+	{ key: "whatsapp", label: "WhatsApp", icon: Icon.chat },
+	{ key: "system", label: "In-app notifications", icon: Icon.bell },
+];
 export function inCommunication(pathname: string) {
 	return pathname === "/admin/communication" || pathname.startsWith("/admin/communication/");
 }
-
-/**
- * Communication's own column.
- *
- * **The channel is chosen first and it is a route, not a tab.** A composer for
- * SMS and a composer for WhatsApp are different forms with different limits, so
- * each one has an address; switching channel is a navigation and the screen is
- * rebuilt rather than half-reused.
- *
- * The four channels are a row of icons rather than four more list rows: they
- * are alternatives to each other, not four separate places, and a segmented
- * control is what that shape reads as. What you *do* on the chosen channel —
- * compose, look at what was sent, look at the channel itself — is the list
- * underneath.
- */
-export function CommunicationSubNav({ horizontal = false }: { horizontal?: boolean }) {
-	const { pathname } = useLocation();
-	const match = pathname.match(/^\/admin\/communication\/(system|email|sms|whatsapp)\/(compose|sent|channel)$/);
-	const channel = (match?.[1] ?? "system") as Channel;
-	const title = channelTitle(channel);
-	const composeLabel = channel === "system" ? "Compose notification" : `Compose ${title}`;
-	const sentLabel = channel === "system" ? "Sent notifications" : `Sent ${title}`;
-
-	const row = (isActive: boolean) =>
-		cx(
-			"flex min-h-[34px] items-center gap-2.5 rounded-lg px-3 py-1.5 text-[12.5px] transition-colors",
-			isActive
-				? "bg-blue-soft font-semibold text-blue-press"
-				: "font-medium text-slate-strong hover:bg-canvas hover:text-ink",
-		);
-
-	if (horizontal) {
-		return (
-			<nav aria-label="Communication sections" className="flex w-max items-center gap-1 py-0.5">
-				{channels.map((item) => (
-					<NavLink
-						key={item}
-						to={`/admin/communication/${item}/compose`}
-						className={cx(row(item === channel), "whitespace-nowrap")}
-					>
-						{channelTitle(item)}
-					</NavLink>
-				))}
-				<span aria-hidden="true" className="mx-1 h-4 w-px bg-card-line" />
-				<NavLink
-					to={`/admin/communication/${channel}/sent`}
-					className={({ isActive }) => cx(row(isActive), "whitespace-nowrap")}
-				>
-					Sent
-				</NavLink>
-			</nav>
-		);
-	}
-
+export function CommunicationSubNav({ horizontal = false, showChannels = true }: { horizontal?: boolean; showChannels?: boolean }) {
+	const society = useSocietyBranding();
+	const { user } = useSession();
+	const location = useLocation();
+	const channel = location.pathname.split("/")[3] || "email";
+	const {rows:history} = useCommunicationHistory(channel);
+	const draft = location.search.includes("status=Draft");
+	const scheduled = new URLSearchParams(location.search).get("status") === "Scheduled";
+	const overview = location.pathname.endsWith("/overview");
+	const { data } = useFrappeGetCall<{ message: { sender?: { name: string; email: string } } }>(
+		API.communicationOptions, undefined, "admin:communication_options",
+	);
+	const useSender = channel === "email" || channel === "system";
+	const accountName = useSender ? data?.message.sender?.name || society?.name || "Notifications" : history.find((row) => row.sender_email === user)?.sender || "Communication";
+	const accountEmail = useSender ? data?.message.sender?.email || "Sending address not configured" : user;
 	return (
-		<div className="flex flex-col">
-			<h2 className="px-3 pb-3.5 pt-1 text-[14px] font-semibold tracking-[-0.01em] text-ink">Communication</h2>
-
-			<div className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-rail-label">
-				Channel
+		<nav
+			className={`comm-section-nav ${horizontal ? "is-horizontal" : ""}`}
+			aria-label="Communication navigation"
+		>
+			{!horizontal && (
+				<div className="comm-account">
+					<span className="comm-account-avatar">
+						{accountName
+							.split(/\s+/)
+							.slice(0, 2)
+							.map((part) => part[0])
+							.join("")}
+					</span>
+					<h2>{accountName}</h2>
+					<p>{accountEmail}</p>
+				</div>
+			)}
+			<div className="comm-history-links">
+				<Link to={`/admin/communication/${channel}/overview`} className={overview ? "is-selected" : ""} aria-current={overview?"page":undefined}><Icon.home size={15} />Overview</Link>
+				<Link
+					to={`/admin/communication/${channel}/sent`}
+					className={!draft && !scheduled && location.pathname.endsWith("/sent") ? "is-selected" : ""}
+				>
+					<Icon.send size={15} />
+					History<span>{history.length}</span>
+				</Link>
+				<Link to={`/admin/communication/${channel}/sent?status=Scheduled`} className={scheduled ? "is-selected" : ""} aria-current={scheduled?"page":undefined}><Icon.calendar size={15} />Scheduled<span>{history.filter(isScheduledCommunication).length}</span></Link>
+				<Link
+					to={`/admin/communication/${channel}/sent?status=Draft`}
+					className={draft ? "is-selected" : ""} aria-current={draft?"page":undefined}
+				>
+					<Icon.file size={15} />
+					Drafts<span>{history.filter((row) => row.status === "Draft").length}</span>
+				</Link>
 			</div>
-
-			<nav aria-label="Communication channels" className="grid grid-cols-4 gap-1 rounded-xl bg-surface p-1">
-				{channels.map((item) => {
-					const Glyph = CHANNEL_ICONS[item];
-					const selected = item === channel;
-
-					return (
-						<NavLink
-							key={item}
-							to={`/admin/communication/${item}/compose`}
-							aria-current={selected ? "page" : undefined}
-							title={channelTitle(item)}
-							className={cx(
-								"grid place-items-center gap-1 rounded-lg px-1 py-2 text-center text-[9.5px] font-semibold transition",
-								selected
-									? "bg-white text-blue-press shadow-[0_1px_2px_rgba(30,50,73,0.06)]"
-									: "text-muted hover:text-ink",
-							)}
-						>
-							<Glyph size={15} />
-							<span className="truncate leading-none">{channelTitle(item)}</span>
-						</NavLink>
-					);
-				})}
-			</nav>
-
-			<nav aria-label={`${title} actions`} className="mt-4 flex flex-col gap-0.5">
-				<NavLink to={`/admin/communication/${channel}/compose`} className={({ isActive }) => row(isActive)}>
-					<Icon.pencil size={14} className="flex-none text-slate-faint" />
-					<EditableText k={`admin.communication.nav.${channel}.compose`} fallback={composeLabel} />
-				</NavLink>
-				<NavLink to={`/admin/communication/${channel}/sent`} className={({ isActive }) => row(isActive)}>
-					<Icon.check size={14} className="flex-none text-slate-faint" />
-					<EditableText k={`admin.communication.nav.${channel}.sent`} fallback={sentLabel} />
-				</NavLink>
-				{/* WhatsApp is the one channel with a *thing* behind it rather than
-				    just a history: a linked phone that can drop, a pacing limit, and
-				    a list of people who have replied STOP. The other three have no
-				    such surface, so they do not get an empty one. */}
-				{channel === "whatsapp" && (
-					<NavLink to="/admin/communication/whatsapp/channel" className={({ isActive }) => row(isActive)}>
-						<Icon.whatsapp size={14} className="flex-none text-slate-faint" />
-						<EditableText k="admin.communication.nav.whatsapp.channel" fallback="The channel" />
-					</NavLink>
-				)}
-			</nav>
-		</div>
+			{showChannels && !horizontal && <h3>Channels</h3>}
+			{showChannels && <div className="comm-channel-links">
+				{channels.map((item) => (
+					<Link
+						key={item.key}
+						to={`/admin/communication/${item.key}/overview`}
+						className={channel === item.key ? "is-selected" : ""}
+						aria-current={channel === item.key ? "page" : undefined}
+					>
+						<item.icon size={16} />
+						<span>{item.label}</span>
+					</Link>
+				))}
+			</div>}
+			{!horizontal && channel === "whatsapp" && (
+				<Link className="comm-channel-settings" to="/admin/communication/whatsapp/channel">
+					<Icon.filter size={15} />
+					Channel settings
+				</Link>
+			)}
+		</nav>
 	);
 }

@@ -1,3 +1,4 @@
+import { MetricCard } from "../ui/MetricCard";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useFrappeGetCall } from "frappe-react-sdk";
@@ -285,21 +286,23 @@ function Volunteers() {
 
 					{rows.length === 0 ? (
 						<Empty title="No active volunteers match">
-							You see the branches your Geo Assignments cover. If this is empty, either
-							nothing here matches what you asked for, there are no active volunteers in
-							your scope, or no scope role has been configured yet.
+							You see the branches your Geo Assignments cover. If this is empty, either nothing here matches
+							what you asked for, there are no active volunteers in your scope, or no scope role has been
+							configured yet.
 						</Empty>
 					) : (
 						<>
 							<Table head={["Volunteer", "Volunteer number", "Serving branch", "Joined", ""]}>
 								{rows.map((row) => (
-									<Row key={row.volunteer} to={recordOf("volunteer", row.volunteer)} label={`Open ${row.full_name ?? row.volunteer}`}>
+									<Row
+										key={row.volunteer}
+										to={recordOf("volunteer", row.volunteer)}
+										label={`Open ${row.full_name ?? row.volunteer}`}
+									>
 										<Cell>
 											<VolunteerName row={row} />
 										</Cell>
-										<Cell className="tabular font-mono text-[11.5px] text-slate-faint">
-											{row.volunteer}
-										</Cell>
+										<Cell className="tabular font-mono text-[11.5px] text-slate-faint">{row.volunteer}</Cell>
 										<Cell className="text-muted">{branchPath(row.geo_path)}</Cell>
 										<Cell className="text-muted">{formatDate(row.joined_on)}</Cell>
 										<Cell className="text-right">
@@ -488,9 +491,7 @@ function Members() {
 					{
 						label: "Renewals approaching",
 						value: figures?.renewing,
-						hint: figures
-							? `Falling due within ${figures.renewal_window_days} days`
-							: "Falling due soon",
+						hint: figures ? `Falling due within ${figures.renewal_window_days} days` : "Falling due soon",
 					},
 				]}
 			/>
@@ -537,21 +538,23 @@ function Members() {
 
 					{rows.length === 0 ? (
 						<Empty title="No active memberships match">
-							You see the branches your Geo Assignments cover. If this is empty, either
-							nothing here matches what you asked for, there are no current memberships in
-							your scope, or no scope role has been configured yet.
+							You see the branches your Geo Assignments cover. If this is empty, either nothing here matches
+							what you asked for, there are no current memberships in your scope, or no scope role has been
+							configured yet.
 						</Empty>
 					) : (
 						<>
 							<Table head={["Member", "Membership number", "Type", "Branch", "Valid until", ""]}>
 								{rows.map((row) => (
-									<Row key={row.membership} to={recordOf("member", row.member)} label={`Open ${row.full_name ?? row.member}`}>
+									<Row
+										key={row.membership}
+										to={recordOf("member", row.member)}
+										label={`Open ${row.full_name ?? row.member}`}
+									>
 										<Cell>
 											<MemberName row={row} />
 										</Cell>
-										<Cell className="tabular font-mono text-[11.5px] text-slate-faint">
-											{row.membership}
-										</Cell>
+										<Cell className="tabular font-mono text-[11.5px] text-slate-faint">{row.membership}</Cell>
 										<Cell>{row.membership_type_name}</Cell>
 										<Cell className="text-muted">{branchPath(row.geo_path)}</Cell>
 										<Cell className="text-muted">
@@ -595,9 +598,7 @@ function MemberName({ row }: { row: MemberRow }) {
 					<Avatar name={row.full_name} photo={row.photo} size={34} />
 					<span className="min-w-0">
 						<span className="block truncate font-semibold text-ink">{row.full_name}</span>
-						<span className="mt-0.5 block text-[11px] text-slate-faint">
-							{row.membership_type_name}
-						</span>
+						<span className="mt-0.5 block text-[11px] text-slate-faint">{row.membership_type_name}</span>
 					</span>
 				</span>
 			}
@@ -693,29 +694,38 @@ function SummaryStrip({
 	return (
 		<div className="mb-5">
 			<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-				{tiles.map((tile) => (
-					<div key={tile.label} className="rounded-xl border border-card-line bg-white p-4">
-						<div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-							{tile.label}
-						</div>
-						{loading ? (
-							<Skeleton className="mt-2 h-7 w-16" />
-						) : (
-							<div className="tabular mt-1.5 text-[24px] font-semibold leading-none text-ink">
-								{tile.value === null || tile.value === undefined
-									? "—"
-									: tile.value.toLocaleString()}
-							</div>
-						)}
-						<p className="mt-1.5 text-[11px] text-muted">{tile.hint}</p>
-					</div>
-				))}
+				{tiles.map((tile) => {
+					const Glyph =
+						tile.label === "Currently deployed"
+							? Icon.truck
+							: /month|Renewals/.test(tile.label)
+								? Icon.calendar
+								: /memberships/.test(tile.label)
+									? Icon.card
+									: Icon.people;
+					return (
+						<MetricCard
+							key={tile.label}
+							label={tile.label}
+							icon={<Glyph size={19} />}
+							value={
+								loading ? (
+									<Skeleton className="h-7 w-16" />
+								) : tile.value == null ? (
+									"—"
+								) : (
+									tile.value.toLocaleString()
+								)
+							}
+							note={tile.hint}
+						/>
+					);
+				})}
 			</div>
 
 			{capped && (
 				<p className="mt-2 text-[11px] leading-relaxed text-muted">
-					Your scope holds more records than one request can total exactly, so these figures are
-					a floor rather than a count. The table below is complete and paged.
+					Summary totals are partial. Use the table to view all records.
 				</p>
 			)}
 		</div>
@@ -809,9 +819,7 @@ function RegisterToolbar({
 
 			{chips.length > 0 && (
 				<div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-card-line pt-4">
-					<span className="mr-1 text-[11px] font-bold uppercase tracking-wide text-slate-faint">
-						Showing
-					</span>
+					<span className="mr-1 text-[11px] font-bold uppercase tracking-wide text-slate-faint">Showing</span>
 					{chips.map((chip) => (
 						<button
 							key={chip.key}
@@ -897,15 +905,7 @@ function SelectFilter({
 }
 
 /** A heading and one line of guidance over a control that needs both. */
-function Labelled({
-	label,
-	hint,
-	children,
-}: {
-	label: string;
-	hint?: string;
-	children: ReactNode;
-}) {
+function Labelled({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
 	return (
 		<div>
 			<span className="block text-[12.5px] font-semibold text-slate-strong">{label}</span>

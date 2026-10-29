@@ -1,0 +1,2 @@
+export type Asset = { name: string; asset_name: string; description?: string; images?: string[]; category: string; unit: string; geo_node: string; total_quantity: number; available_quantity: number; is_active: number };
+export type AssetIssue = { name: string; asset?: string; asset_name: string; volunteer_name: string; quantity: number; outstanding: number; geo_node: string; issued_on?: string; last_reminded_at?: string };

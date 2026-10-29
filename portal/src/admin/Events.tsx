@@ -1,3 +1,5 @@
+import { RecordCollection } from "../ui/RecordPagination";
+import { MetricCard } from "../ui/MetricCard";
 import { useContext, useState } from "react";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
@@ -17,7 +19,6 @@ import {
 	Pill,
 	SectionTitle,
 	Spinner,
-	Stat,
 	cx,
 } from "../ui/primitives";
 
@@ -120,7 +121,7 @@ export default function AdminEvents() {
 				{drafts.length > 0 && (
 					<Card className="mb-5">
 						<SectionTitle>Unpublished events</SectionTitle>
-						<ul className="mt-3 divide-y divide-card-line">
+						<RecordCollection as="ul" className="mt-3 divide-y divide-card-line">
 							{drafts.map((event) => (
 								<li key={event.name}>
 									<a href={`/app/buzz-event/${encodeURIComponent(event.name)}`} className="flex flex-wrap items-center justify-between gap-3 py-3 text-[12.5px] hover:bg-canvas">
@@ -129,19 +130,13 @@ export default function AdminEvents() {
 									</a>
 								</li>
 							))}
-						</ul>
+						</RecordCollection>
 					</Card>
 				)}
 					<div className="mb-6 grid gap-4 sm:grid-cols-3">
-						<Card>
-							<Stat value={events.length} label="Published and upcoming" />
-						</Card>
-						<Card>
-							<Stat value={runningNow} label="Running today" />
-						</Card>
-						<Card>
-							<Stat value={saidTheyAreComing} label="Planning to attend" />
-						</Card>
+						<MetricCard value={events.length} label="Published and upcoming" />
+						<MetricCard value={runningNow} label="Running today" />
+						<MetricCard value={saidTheyAreComing} label="Planning to attend" />
 					</div>
 
 					{categories.length > 0 && (
@@ -171,11 +166,11 @@ export default function AdminEvents() {
 							decision produced rather than holding a second flag of its own.
 						</Empty>
 					) : (
-						<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+						<RecordCollection as="div" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 							{events.map((event) => (
 								<EventTile key={event.event} event={event} />
 							))}
-						</div>
+						</RecordCollection>
 					)}
 				</>
 			)}
@@ -334,7 +329,7 @@ function Registrations({ event }: { event: EventCard }) {
 		message: { total: number; registrations: Array<{ ticket: string; name: string; email: string }> };
 	}>(
 		API.eventRegistrations,
-		{ event: event.event, start, limit: 100 },
+		{ event: event.event, start, limit: 25 },
 		open && !external ? `admin:event_registrations:${event.event}:${start}` : null,
 	);
 	const total = data?.message?.total ?? 0;
@@ -365,8 +360,8 @@ function Registrations({ event }: { event: EventCard }) {
 								))}
 							</ul>
 							<div className="mt-3 flex items-center gap-3 text-[12px]">
-								{start > 0 && <button type="button" onClick={() => setStart(Math.max(0, start - 100))} className="font-semibold text-blue">Previous</button>}
-								{start + rows.length < total && <button type="button" onClick={() => setStart(start + 100)} className="font-semibold text-blue">Next</button>}
+								{start > 0 && <button type="button" onClick={() => setStart(Math.max(0, start - 25))} className="font-semibold text-blue">Previous</button>}
+								{start + rows.length < total && <button type="button" onClick={() => setStart(start + 25)} className="font-semibold text-blue">Next</button>}
 							</div>
 						</>
 					)}
@@ -428,14 +423,14 @@ function Roster({ event }: { event: EventCard }) {
 						</p>
 					)}
 
-					<ul className="space-y-1">
+					<RecordCollection as="ul" className="space-y-1">
 						{attendees.map((person) => (
 							<li key={person.red_profile} className="text-[12px] text-muted">
 								<span className="font-semibold text-ink">{person.full_name}</span>
 								{person.phone && <span className="ml-2 text-slate-faint">{person.phone}</span>}
 							</li>
 						))}
-					</ul>
+					</RecordCollection>
 				</div>
 			)}
 		</div>

@@ -1,3 +1,4 @@
+import { RecordCollection } from "../ui/RecordPagination";
 import { useContext, useState } from "react";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
@@ -74,13 +75,13 @@ export function Invitations() {
 						Waiting on your answer
 					</SectionLabel>
 
-					<ul className="space-y-3">
+					<RecordCollection as="ul" className="space-y-3">
 						{waiting.map((invitation) => (
 							<li key={invitation.assignment}>
 								<InvitationCard invitation={invitation} onAnswered={() => void mutate()} />
 							</li>
 						))}
-					</ul>
+					</RecordCollection>
 				</div>
 			)}
 

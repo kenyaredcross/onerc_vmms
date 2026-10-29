@@ -8,6 +8,7 @@ import { FrappeProvider } from "frappe-react-sdk";
 import App from "./App";
 import { LanguageProvider } from "./i18n/LanguageProvider";
 import "./index.css";
+import "./design.css";
 
 declare global {
   interface Window {

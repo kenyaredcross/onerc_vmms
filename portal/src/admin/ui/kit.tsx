@@ -1,3 +1,5 @@
+import { recordChildren, useRecordPage, RecordPager } from "../../ui/RecordPagination";
+import { MetricCard } from "../../ui/MetricCard";
 /*
  * The manager console's component kit.
  *
@@ -95,46 +97,23 @@ export function Metric({
 		muted: "text-muted",
 	} as const;
 
-	const body = (
-		<>
-			<div className="flex items-start justify-between gap-3">
-				<span className="text-[12px] font-medium leading-snug text-muted">{label}</span>
-				{icon && (
-					<span className="flex-none text-slate-faint" aria-hidden="true">
-						{icon({ size: 16 })}
-					</span>
-				)}
-			</div>
-			<div className="tabular mt-2 text-[26px] font-semibold leading-none tracking-[-0.025em] text-ink">
-				{value}
-			</div>
-			{note && (
-				<div className={cx("mt-2 text-[11.5px] font-medium", tone ? tones[tone] : "text-muted")}>
-					{note}
-				</div>
-			)}
-		</>
+	return (
+		<MetricCard
+			label={label}
+			value={value}
+			note={note}
+			to={to}
+			icon={icon?.({ size: 19 })}
+			noteClassName={tone ? tones[tone] : undefined}
+		/>
 	);
-
-	if (to) {
-		return (
-			<Link to={to} className="p-card block p-4 transition hover:border-blue-line">
-				{body}
-			</Link>
-		);
-	}
-
-	return <div className="p-card p-4">{body}</div>;
 }
 
 /** The row `Metric`s sit in. Four across, collapsing to two and then one. */
 export function MetricGrid({ children, columns = 4 }: { children: ReactNode; columns?: 3 | 4 }) {
 	return (
 		<div
-			className={cx(
-				"mb-5 grid gap-3 sm:grid-cols-2",
-				columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3",
-			)}
+			className={cx("mb-5 grid gap-3 sm:grid-cols-2", columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3")}
 		>
 			{children}
 		</div>
@@ -171,8 +150,8 @@ export function Bar({
 		success: "bg-success",
 		warning: "bg-warning-dot",
 		danger: "bg-danger-dot",
-		in: "bg-[#6B4FA8]",
-		out: "bg-[#A9640F]",
+		in: "bg-[#45688D]",
+		out: "bg-[#011E41]",
 	} as const;
 
 	return (
@@ -184,7 +163,10 @@ export function Bar({
 			aria-label={label}
 			className="h-1.5 w-full overflow-hidden rounded-full bg-surface"
 		>
-			<div className={cx("h-full rounded-full transition-[width]", tones[tone])} style={{ width: `${pct}%` }} />
+			<div
+				className={cx("h-full rounded-full transition-[width]", tones[tone])}
+				style={{ width: `${pct}%` }}
+			/>
 		</div>
 	);
 }
@@ -217,9 +199,7 @@ export function Money({
 	} as const;
 
 	return (
-		<span className={cx("tabular text-ink", sizes[size], className)}>
-			{formatMoney(amount, currency)}
-		</span>
+		<span className={cx("tabular text-ink", sizes[size], className)}>{formatMoney(amount, currency)}</span>
 	);
 }
 
@@ -322,7 +302,9 @@ export function Table({
 	/** Below this the table scrolls rather than crushing its columns. */
 	minWidth?: number;
 }) {
+ const paging = useRecordPage(recordChildren(children));
 	return (
+ <>
 		<div className="overflow-x-auto">
 			<table className="w-full border-collapse text-left" style={{ minWidth }}>
 				<thead>
@@ -338,24 +320,45 @@ export function Table({
 						))}
 					</tr>
 				</thead>
-				<tbody className="divide-y divide-card-line">{children}</tbody>
+				<tbody className="divide-y divide-card-line">{paging.slice}</tbody>
 			</table>
 		</div>
+ <RecordPager {...paging} />
+ </>
 	);
 }
 
 /** One record. `to` makes the whole row navigable without nesting a link in a link. */
-export function Row({ children, to, openNewTab, label, onClick }: { children: ReactNode; to?: string; openNewTab?: string; label?: string; onClick?: () => void }) {
+export function Row({
+	children,
+	to,
+	openNewTab,
+	label,
+	onClick,
+}: {
+	children: ReactNode;
+	to?: string;
+	openNewTab?: string;
+	label?: string;
+	onClick?: () => void;
+}) {
 	const navigable = Boolean(to || openNewTab);
 	const interactive = Boolean(navigable || onClick);
-	const className = cx("align-middle transition", interactive && "cursor-pointer hover:bg-canvas", navigable && "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue");
-	if (navigable) return <NavigableRow to={to} openNewTab={openNewTab} label={label ?? "Open record"} className={className}>{children}</NavigableRow>;
+	const className = cx(
+		"align-middle transition",
+		interactive && "cursor-pointer hover:bg-canvas",
+		navigable &&
+			"focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue",
+	);
+	if (navigable)
+		return (
+			<NavigableRow to={to} openNewTab={openNewTab} label={label ?? "Open record"} className={className}>
+				{children}
+			</NavigableRow>
+		);
 
 	return (
-		<tr
-			className={className}
-			onClick={onClick}
-		>
+		<tr className={className} onClick={onClick}>
 			{children}
 		</tr>
 	);
@@ -474,19 +477,20 @@ export function RecordBanner({
  * The fields of a record, as a definition list.
  *
  * A real `dl`, so a screen reader announces "Branch: Ubungo" rather than two
- * unrelated pieces of text. Two columns on a wide screen, stacked below —
- * label over value is the only shape that survives a narrow viewport without
- * either half being truncated to nothing.
+ * unrelated pieces of text. Labels sit above their values at every width. Long values wrap within
+ * their field rather than widening the card.
  */
 export function DetailList({ children }: { children: ReactNode }) {
-	return <dl className="grid gap-x-6 gap-y-3.5 sm:grid-cols-[minmax(120px,150px)_minmax(0,1fr)]">{children}</dl>;
+	return (
+		<dl className="detail-list grid min-w-0 grid-cols-1 gap-4">{children}</dl>
+	);
 }
 
 export function Detail({ label, children }: { label: ReactNode; children: ReactNode }) {
 	return (
-		<div className="contents">
-			<dt className="text-[12px] font-medium text-muted sm:py-0.5">{label}</dt>
-			<dd className="m-0 min-w-0 text-[13px] text-ink sm:py-0.5">{children ?? "—"}</dd>
+		<div className="min-w-0">
+			<dt className="text-[12px] font-medium text-muted">{label}</dt>
+			<dd className="m-0 mt-1 min-w-0 text-[13px] text-ink [overflow-wrap:anywhere]">{children ?? "—"}</dd>
 		</div>
 	);
 }
@@ -528,11 +532,7 @@ export function DecisionCard({
 
 /** A board of stages — the shape a pipeline is actually read in. */
 export function Board({ children }: { children: ReactNode }) {
-	return (
-		<div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2">
-			{children}
-		</div>
-	);
+	return <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2">{children}</div>;
 }
 
 export function BoardColumn({
@@ -558,7 +558,10 @@ export function BoardColumn({
 	return (
 		<section className="flex w-[248px] flex-none flex-col rounded-xl bg-surface p-2.5">
 			<header className="mb-2 flex items-center gap-2 px-1.5">
-				<span className={cx("h-1.5 w-1.5 flex-none rounded-full", dots[tone ?? "neutral"])} aria-hidden="true" />
+				<span
+					className={cx("h-1.5 w-1.5 flex-none rounded-full", dots[tone ?? "neutral"])}
+					aria-hidden="true"
+				/>
 				<h3 className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-ink">{title}</h3>
 				<span className="tabular text-[12px] font-semibold text-muted">{count}</span>
 			</header>

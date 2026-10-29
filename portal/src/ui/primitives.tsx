@@ -1,3 +1,5 @@
+import { recordChildren, useRecordPage, RecordPager, RecordCollection } from "./RecordPagination";
+import { MetricCard } from "./MetricCard";
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavigableRow } from "./NavigableRow";
@@ -103,10 +105,7 @@ export function PageHeading({
 											</span>
 										)}
 										{crumb.to ? (
-											<Link
-												to={crumb.to}
-												className="font-medium transition hover:text-blue hover:underline"
-											>
+											<Link to={crumb.to} className="font-medium transition hover:text-blue hover:underline">
 												{crumb.label}
 											</Link>
 										) : (
@@ -121,14 +120,10 @@ export function PageHeading({
 					)}
 				</div>
 
-				{actions && (
-					<div className="flex flex-wrap items-center gap-2 pt-1">{actions}</div>
-				)}
+				{actions && <div className="flex flex-wrap items-center gap-2 pt-1">{actions}</div>}
 			</div>
 
-			{lead && (
-				<p className="mt-2.5 max-w-2xl text-[13.5px] leading-relaxed text-slate-body">{lead}</p>
-			)}
+			{lead && <p className="mt-2.5 max-w-2xl text-[13.5px] leading-relaxed text-slate-body">{lead}</p>}
 		</div>
 	);
 }
@@ -222,7 +217,7 @@ export function FormProgressTabs<Key extends string>({
 				aria-valuenow={completed}
 			>
 				<span
-					className="block h-full rounded-full bg-blue transition-[width] duration-300"
+					className="block h-full rounded-full bg-action transition-[width] duration-300"
 					style={{ width: `${percent}%` }}
 				/>
 			</div>
@@ -315,9 +310,7 @@ export function SectionLink({ to, children }: { to: string; children: ReactNode 
  * quieter than the label naming the whole card or the hierarchy inverts.
  */
 export function SectionTitle({ children }: { children: ReactNode }) {
-	return (
-		<h3 className="mb-3 text-[13.5px] font-semibold tracking-[-0.01em] text-ink">{children}</h3>
-	);
+	return <h3 className="mb-3 text-[13.5px] font-semibold tracking-[-0.01em] text-ink">{children}</h3>;
 }
 
 /** A hairline between parts of a card. */
@@ -342,13 +335,7 @@ const TONES = {
 	page: "bg-surface text-slate-strong",
 } as const;
 
-export function Pill({
-	tone = "quiet",
-	children,
-}: {
-	tone?: keyof typeof TONES;
-	children: ReactNode;
-}) {
+export function Pill({ tone = "quiet", children }: { tone?: keyof typeof TONES; children: ReactNode }) {
 	return (
 		<span
 			className={cx(
@@ -493,11 +480,7 @@ export function Avatar({
 		<span
 			aria-hidden="true"
 			style={{ width: size, height: size, fontSize: Math.round(size * 0.36) }}
-			className={cx(
-				"grid flex-none place-items-center rounded-full font-semibold",
-				tones[tone],
-				ringed,
-			)}
+			className={cx("grid flex-none place-items-center rounded-full font-semibold", tones[tone], ringed)}
 		>
 			{letters || "·"}
 		</span>
@@ -519,15 +502,6 @@ export const TINTS = ["navy", "teal", "violet", "amber", "sky", "rose"] as const
 
 export type Tint = (typeof TINTS)[number];
 
-const TINT_CLASS: Record<Tint, string> = {
-	navy: "bg-tint-navy-soft text-tint-navy",
-	teal: "bg-tint-teal-soft text-tint-teal",
-	violet: "bg-tint-violet-soft text-tint-violet",
-	amber: "bg-tint-amber-soft text-tint-amber",
-	sky: "bg-tint-sky-soft text-tint-sky",
-	rose: "bg-tint-rose-soft text-tint-rose",
-};
-
 /**
  * One figure, with its icon and what it is called.
  *
@@ -545,7 +519,6 @@ export function StatTile({
 	value,
 	hint,
 	icon,
-	tint = "navy",
 	to,
 }: {
 	label: ReactNode;
@@ -555,47 +528,7 @@ export function StatTile({
 	tint?: Tint;
 	to?: string;
 }) {
-	const body = (
-		<>
-			<div className="flex items-start justify-between gap-3">
-				<div className="min-w-0">
-					<div className="truncate text-[11.5px] font-normal text-muted">{label}</div>
-					<div className="tabular mt-2 text-[28px] font-semibold leading-none tracking-[-0.025em] text-ink">
-						{value}
-					</div>
-				</div>
-
-				{icon && (
-					<span
-						className={cx(
-							"grid h-11 w-11 flex-none place-items-center rounded-control",
-							TINT_CLASS[tint],
-						)}
-						aria-hidden="true"
-					>
-						{icon({ size: 20 })}
-					</span>
-				)}
-			</div>
-
-			{hint && <div className="mt-2.5 text-[11.5px] leading-snug text-slate-faint">{hint}</div>}
-		</>
-	);
-
-	// `h-full` so a row of tiles beside a taller card squares off with it rather
-	// than leaving a ragged shelf of white halfway down the row.
-	if (to) {
-		return (
-			<Link
-				to={to}
-				className="p-card block h-full p-5 transition duration-200 hover:border-blue-line focus-visible:border-blue-line"
-			>
-				{body}
-			</Link>
-		);
-	}
-
-	return <div className="card h-full p-5">{body}</div>;
+	return <MetricCard label={label} value={value} note={hint} to={to} icon={icon?.({ size: 19 })} />;
 }
 
 /**
@@ -608,11 +541,7 @@ export function StatTile({
  * four-digit figure.
  */
 export function StatGrid({ children, className }: { children: ReactNode; className?: string }) {
-	return (
-		<div className={cx("grid gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4", className)}>
-			{children}
-		</div>
-	);
+	return <div className={cx("grid gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4", className)}>{children}</div>;
 }
 
 /** A figure with no tile around it, for use inside a card that has its own. */
@@ -743,14 +672,7 @@ export function Ring({
 	return (
 		<div className="relative flex-none" style={{ width: size, height: size }}>
 			<svg width={size} height={size} className="-rotate-90" aria-hidden="true">
-				<circle
-					cx={size / 2}
-					cy={size / 2}
-					r={r}
-					fill="none"
-					stroke="#EDF0F5"
-					strokeWidth={stroke}
-				/>
+				<circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#EDF0F5" strokeWidth={stroke} />
 				<circle
 					cx={size / 2}
 					cy={size / 2}
@@ -775,8 +697,8 @@ export function Ring({
 /* ----------------------------------------------------------------- buttons */
 
 const BUTTONS = {
-	/** The one thing this screen is for. Blue, and only ever one per view. */
-	primary: "bg-blue text-white hover:bg-blue-hover active:bg-blue-press",
+	/** The main action uses brand red, distinct from quiet navy navigation. */
+	primary: "movement-primary bg-action text-white hover:bg-action-hover active:bg-action-press",
 	/** The authority charcoal — a strong second action, or a dark-surface action. */
 	navy: "bg-rail text-white hover:bg-rail/90",
 	/**
@@ -785,8 +707,7 @@ const BUTTONS = {
 	 * do" wants.
 	 */
 	soft: "bg-blue-soft text-blue-press hover:bg-blue-line/50",
-	quiet:
-		"border border-rail-line bg-white text-slate-strong hover:border-slate-faint hover:text-ink",
+	quiet: "border border-rail-line bg-white text-slate-strong hover:border-slate-faint hover:text-ink",
 	ghost: "text-blue hover:bg-blue-soft",
 	/**
 	 * Destructive, and never carried by colour alone.
@@ -797,8 +718,7 @@ const BUTTONS = {
 	 * The *label* is the real signal and callers are expected to say what will
 	 * be destroyed — "Delete draft", not "Delete".
 	 */
-	danger:
-		"border border-danger-line bg-white text-danger hover:bg-danger-soft",
+	danger: "border border-danger-line bg-white text-danger hover:bg-danger-soft",
 } as const;
 
 // 8px, not a pill, and the app's own face rather than the display one. Both
@@ -1043,10 +963,7 @@ export function Spinner({ label = "Loading…", page = false }: { label?: string
  */
 export function Skeleton({ className }: { className?: string }) {
 	return (
-		<div
-			aria-hidden="true"
-			className={cx("animate-pulse rounded-control bg-hairline-soft", className)}
-		/>
+		<div aria-hidden="true" className={cx("animate-pulse rounded-control bg-hairline-soft", className)} />
 	);
 }
 
@@ -1100,9 +1017,7 @@ export function Empty({
 		<div
 			className={cx(
 				"text-center",
-				framed
-					? "rounded-xl border border-dashed border-card-line bg-surface/40 px-6 py-10"
-					: "px-2 py-6",
+				framed ? "rounded-xl border border-dashed border-card-line bg-surface/40 px-6 py-10" : "px-2 py-6",
 			)}
 		>
 			{icon && (
@@ -1117,9 +1032,7 @@ export function Empty({
 			)}
 			<p className="text-[13.5px] font-semibold text-ink">{title}</p>
 			{children && (
-				<p className="mx-auto mt-2 max-w-md text-[12.5px] leading-relaxed text-slate-body">
-					{children}
-				</p>
+				<p className="mx-auto mt-2 max-w-md text-[12.5px] leading-relaxed text-slate-body">{children}</p>
 			)}
 			{action && <div className="mt-4 flex flex-wrap justify-center gap-2">{action}</div>}
 		</div>
@@ -1141,15 +1054,7 @@ export function Empty({
  * sentence should not be shown it: say what is not here yet in the society's
  * terms, and leave the internals to the code that has them.
  */
-export function NotBuilt({
-	what,
-	needs,
-	children,
-}: {
-	what: string;
-	needs: string;
-	children?: ReactNode;
-}) {
+export function NotBuilt({ what, needs, children }: { what: string; needs: string; children?: ReactNode }) {
 	return (
 		<div className="rounded-xl border border-dashed border-card-line bg-white px-8 py-12 text-center">
 			<div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-surface">
@@ -1219,9 +1124,7 @@ export function ListRow({
 					{meta && <div className="mt-0.5 truncate text-[11.5px] text-slate-body">{meta}</div>}
 				</div>
 
-				{trailing && (
-					<div className="flex flex-none items-center gap-2 sm:gap-2.5">{trailing}</div>
-				)}
+				{trailing && <div className="flex flex-none items-center gap-2 sm:gap-2.5">{trailing}</div>}
 			</div>
 
 			{children && <div className="mt-3">{children}</div>}
@@ -1261,9 +1164,7 @@ export function ListRow({
  * its bottom edge.
  */
 export function List({ children, className }: { children: ReactNode; className?: string }) {
-	return (
-		<div className={cx("divide-y divide-hairline-soft", className)}>{children}</div>
-	);
+	return <RecordCollection className={cx("divide-y divide-hairline-soft", className)}>{children}</RecordCollection>;
 }
 
 /* -------------------------------------------------------------- pagination */
@@ -1366,25 +1267,11 @@ export function Pager({
  * eventually has.
  */
 export function usePaged<T>(rows: T[], size: number) {
-	const [page, setPage] = useState(0);
-	const pageCount = Math.max(1, Math.ceil(rows.length / size));
-	const safe = Math.min(page, pageCount - 1);
-
-	// Derived during render rather than in an effect: an effect would paint the
-	// empty page once before correcting it.
-	if (safe !== page) setPage(safe);
-
-	return {
-		page: safe,
-		pageCount,
-		total: rows.length,
-		slice: rows.slice(safe * size, safe * size + size),
-		onPage: (next: number) => {
-			setPage(Math.max(0, Math.min(next, pageCount - 1)));
-			window.scrollTo({ top: 0, behavior: "smooth" });
-		},
-		reset: () => setPage(0),
-	};
+ const paging = useRecordPage(rows, size);
+ return { ...paging, onPage: (next: number) => {
+  paging.onPage(next);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+ }, reset: () => paging.onPage(0) };
 }
 
 /* ------------------------------------------------------------------ tables */
@@ -1433,7 +1320,9 @@ export function Table({
 	 */
 	caption?: string;
 }) {
+ const paging = useRecordPage(recordChildren(children));
 	return (
+ <>
 		<div className={cx("p-card overflow-x-auto", sticky && "max-h-[70vh] overflow-y-auto")}>
 			<table className="w-full border-collapse text-left" style={{ minWidth }}>
 				{caption && <caption className="sr-only">{caption}</caption>}
@@ -1454,21 +1343,38 @@ export function Table({
 						))}
 					</tr>
 				</thead>
-				<tbody>{children}</tbody>
+				<tbody>{paging.slice}</tbody>
 			</table>
 		</div>
+ <RecordPager {...paging} />
+ </>
 	);
 }
 
-export function Row({ children, to, openNewTab, label }: { children: ReactNode; to?: string; openNewTab?: string; label?: string }) {
+export function Row({
+	children,
+	to,
+	openNewTab,
+	label,
+}: {
+	children: ReactNode;
+	to?: string;
+	openNewTab?: string;
+	label?: string;
+}) {
 	const navigable = Boolean(to || openNewTab);
-	const className = cx("border-b border-card-line transition last:border-0 hover:bg-canvas", navigable && "cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue");
-	if (navigable) return <NavigableRow to={to} openNewTab={openNewTab} label={label ?? "Open record"} className={className}>{children}</NavigableRow>;
-	return (
-		<tr className={className}>
-			{children}
-		</tr>
+	const className = cx(
+		"border-b border-card-line transition last:border-0 hover:bg-canvas",
+		navigable &&
+			"cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue",
 	);
+	if (navigable)
+		return (
+			<NavigableRow to={to} openNewTab={openNewTab} label={label ?? "Open record"} className={className}>
+				{children}
+			</NavigableRow>
+		);
+	return <tr className={className}>{children}</tr>;
 }
 
 export function Cell({ children, className }: { children: ReactNode; className?: string }) {
@@ -1642,12 +1548,7 @@ export function ActionMenu({
 			>
 				{label}
 				<svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
-					<path
-						d="m6 9 6 6 6-6"
-						stroke="currentColor"
-						strokeWidth="2.2"
-						strokeLinecap="round"
-					/>
+					<path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
 				</svg>
 			</button>
 
@@ -1671,9 +1572,7 @@ export function ActionMenu({
 							}}
 							className={cx(
 								"flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-40",
-								action.tone === "danger"
-									? "text-blue-press hover:bg-blue-soft"
-									: "text-ink hover:bg-surface",
+								action.tone === "danger" ? "text-blue-press hover:bg-blue-soft" : "text-ink hover:bg-surface",
 							)}
 						>
 							{action.icon && (
@@ -1771,9 +1670,7 @@ export function ConfirmDialog({
 				aria-modal="true"
 				className="relative w-full max-w-[440px] rounded-xl border border-card-line bg-white p-6 shadow-pop"
 			>
-				<h2 className="text-[16px] font-semibold tracking-[-0.01em] text-ink">
-					{title}
-				</h2>
+				<h2 className="text-[16px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
 
 				<div className="mt-2.5 text-[13px] leading-relaxed text-slate-body">{children}</div>
 

@@ -13,7 +13,7 @@ from vmmsx.setup.core_roles import ROLE_ASSET_MANAGER
 ASSET = "VMMS Branch Asset"
 TRANSACTION = "VMMS Asset Transaction"
 PICKER_LIMIT = 20
-LIST_LIMIT = 50
+LIST_LIMIT = 5000
 ASSET_PORTAL = "/portal/assets"
 
 
@@ -52,7 +52,7 @@ def _branch_nodes(geo_node: str) -> set[str]:
 
 
 def _row(doc) -> dict:
-	return {
+	row = {
 		key: doc.get(key)
 		for key in (
 			"name",
@@ -66,6 +66,14 @@ def _row(doc) -> dict:
 			"is_active",
 		)
 	}
+
+	row["images"] = frappe.get_all(
+		"File",
+		filters={"attached_to_doctype": ASSET, "attached_to_name": doc.get("name"), "is_folder": 0},
+		pluck="file_url",
+		limit=5,
+	)
+	return row
 
 
 @frappe.whitelist()
@@ -111,7 +119,7 @@ def stock(geo_node: str | None = None, search: str | None = None) -> dict:
 		order_by="asset_name asc",
 		limit=LIST_LIMIT + 1,
 	)
-	return {"assets": rows[:LIST_LIMIT], "has_more": len(rows) > LIST_LIMIT}
+	return {"assets": [_row(row) for row in rows[:LIST_LIMIT]], "has_more": len(rows) > LIST_LIMIT}
 
 
 @frappe.whitelist()
@@ -142,8 +150,13 @@ def create_asset(
 	category: str | None = None,
 	unit: str = "each",
 	description: str | None = None,
+	quantity: int = 0,
+	images: list | str | None = None,
+	is_active: int = 1,
 ) -> dict:
 	_manager(geo_node)
+	opening = _opening_quantity(quantity)
+	files = _image_files(images)
 	if not asset_name or not asset_name.strip():
 		frappe.throw(_("Enter an asset name."))
 	doc = frappe.get_doc(
@@ -154,12 +167,89 @@ def create_asset(
 			"category": category,
 			"unit": unit or "each",
 			"description": description,
+			"is_active": int(is_active),
 			"total_quantity": 0,
 			"available_quantity": 0,
 		}
 	)
 	doc.insert(ignore_permissions=True)
+	for file in files:
+		file.attached_to_doctype = ASSET
+		file.attached_to_name = doc.name
+		file.save(ignore_permissions=True)
+	if opening:
+		receive(doc.name, opening)
+		doc.reload()
 	return _row(doc)
+
+
+def _opening_quantity(value) -> int:
+	if str(value).strip() == "0":
+		return 0
+	quantity = _positive(value)
+	if quantity > 1000000:
+		frappe.throw(_("Opening stock cannot exceed 1,000,000."))
+	return quantity
+
+
+def _image_files(images) -> list:
+	urls = frappe.parse_json(images) if isinstance(images, str) else (images or [])
+	if not isinstance(urls, list) or len(urls) > 5:
+		frappe.throw(_("Attach up to five images."))
+	files = []
+	for url in urls:
+		name = frappe.db.get_value("File", {"file_url": url, "owner": frappe.session.user}, "name")
+		if not name:
+			frappe.throw(_("Choose an image you uploaded."), frappe.PermissionError)
+		file = frappe.get_doc("File", name)
+		if (
+			not file.is_private
+			or file.attached_to_name
+			or not str(file.file_name).lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+			or file.file_size > 5 * 1024 * 1024
+		):
+			frappe.throw(_("Use unattached JPG, PNG or WebP images, up to 5 MB each."))
+		from io import BytesIO
+
+		from PIL import Image
+
+		try:
+			with Image.open(BytesIO(file.get_content())) as image:
+				if image.format not in {"JPEG", "PNG", "WEBP"}:
+					raise ValueError("Unsupported image")
+				image.verify()
+		except OSError, ValueError:
+			frappe.throw(_("The attachment is not a valid image."))
+		files.append(file)
+	return files
+
+
+@frappe.whitelist()
+def update_asset(
+	name: str,
+	asset_name: str,
+	geo_node: str,
+	category: str | None = None,
+	unit: str = "each",
+	is_active: int = 1,
+) -> dict:
+	item = _locked(name)
+	_manager(geo_node)
+	if item.geo_node != geo_node and item.total_quantity > item.available_quantity:
+		frappe.throw(_("Return issued items before changing the branch."))
+	if not asset_name or not asset_name.strip() or not unit or not unit.strip():
+		frappe.throw(_("Enter an asset name and unit."))
+	item.update(
+		{
+			"asset_name": asset_name.strip(),
+			"geo_node": geo_node,
+			"category": category,
+			"unit": unit.strip(),
+			"is_active": int(is_active),
+		}
+	)
+	item.save(ignore_permissions=True)
+	return _row(item)
 
 
 def _locked(name: str):
@@ -398,7 +488,7 @@ def outstanding(geo_node: str | None = None, search: str | None = None) -> list[
 	return frappe.db.sql(
 		f"""
 		SELECT issued.name, issued.asset, issued.geo_node, issued.volunteer,
-			issued.quantity, issued.occurred_at, issued.last_reminded_at,
+			issued.quantity, issued.occurred_at, issued.occurred_at AS issued_on, issued.last_reminded_at,
 			issued.reminder_count, asset.asset_name,
 			COALESCE(profile.full_name, issued.volunteer) AS volunteer_name,
 			COALESCE(returned.quantity, 0) AS returned,

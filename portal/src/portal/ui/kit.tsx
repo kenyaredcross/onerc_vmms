@@ -1,3 +1,6 @@
+import { RecordCollection } from "../../ui/RecordPagination";
+import { FolderTile } from "../../ui/FolderCard";
+import { MetricCard } from "../../ui/MetricCard";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -10,7 +13,7 @@ import { Icon } from "../../ui/icons";
  * grey shell, borderless cards, `rounded-full` everything, Schibsted Grotesk.
  * The portal is a separate visual world: one continuous IBM Plex workspace, a
  * cool paper-grey canvas, white panels held by a hairline, 10–12px radii, a
- * single restrained blue. Nothing here is imported by `admin/`, and nothing in
+ * navy information palette with red primary actions. Nothing here is imported by `admin/`, and nothing in
  * `admin/` is imported here except the shared icon set and the `cx` helper,
  * which carry no visual opinion.
  *
@@ -46,20 +49,14 @@ export function PageHead({
 		<div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
 			<div className="min-w-0">
 				{eyebrow && (
-					<div className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-						{eyebrow}
-					</div>
+					<div className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">{eyebrow}</div>
 				)}
 				<h1 className="mt-2 font-display text-[27px] font-bold leading-[1.15] tracking-[-0.025em] text-ink sm:text-[30px]">
 					{title}
 				</h1>
-				{lead && (
-					<p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-slate-body">{lead}</p>
-				)}
+				{lead && <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-slate-body">{lead}</p>}
 			</div>
-			{actions && (
-				<div className="flex flex-wrap items-center gap-2 max-sm:self-start">{actions}</div>
-			)}
+			{actions && <div className="flex flex-wrap items-center gap-2 max-sm:self-start">{actions}</div>}
 		</div>
 	);
 }
@@ -137,13 +134,7 @@ export function Card({
  * The header strip inside a `pad={false}` card — a title on the left, a
  * "see all" link on the right. The link is a destination, never a verb.
  */
-export function SectionHead({
-	title,
-	link,
-}: {
-	title: ReactNode;
-	link?: { to: string; label: string };
-}) {
+export function SectionHead({ title, link }: { title: ReactNode; link?: { to: string; label: string } }) {
 	return (
 		<div className="flex items-center justify-between gap-3 border-b p-divide px-[18px] py-4">
 			<h2 className="text-[13.5px] font-semibold text-ink">{title}</h2>
@@ -248,9 +239,8 @@ export function StatusBadge({
 /* ------------------------------------------------------------------ buttons */
 
 const BUTTON_TONES = {
-	primary: "bg-blue text-white hover:bg-blue-hover active:bg-blue-press",
-	quiet:
-		"border border-rail-line bg-white text-slate-strong hover:border-slate-faint hover:text-ink",
+	primary: "movement-primary bg-action text-white hover:bg-action-hover active:bg-action-press",
+	quiet: "border border-rail-line bg-white text-slate-strong hover:border-slate-faint hover:text-ink",
 	soft: "bg-blue-soft text-blue-press hover:bg-blue-line/50",
 	danger: "border border-danger-line bg-white text-danger hover:bg-danger-soft",
 } as const;
@@ -432,9 +422,7 @@ export function ListRow({
 				<div className="line-clamp-2 text-[13px] font-semibold leading-snug text-ink">{title}</div>
 				{meta && <div className="mt-0.5 truncate text-[11.5px] text-muted">{meta}</div>}
 			</div>
-			{trailing && (
-				<div className="flex flex-none items-center gap-2 self-start pt-0.5">{trailing}</div>
-			)}
+			{trailing && <div className="flex flex-none items-center gap-2 self-start pt-0.5">{trailing}</div>}
 			{chevron && (
 				<span className="flex-none text-[18px] leading-none text-slate-faint" aria-hidden="true">
 					›
@@ -464,7 +452,7 @@ export function ListRow({
 
 /** The container `ListRow`s sit in — a hairline drawn by the gap between them. */
 export function List({ children }: { children: ReactNode }) {
-	return <div className="divide-y divide-card-line">{children}</div>;
+	return <RecordCollection className="divide-y divide-card-line">{children}</RecordCollection>;
 }
 
 /** The square tint behind a list row's icon. */
@@ -562,9 +550,7 @@ export function Spinner({ label = "Loading…", page = false }: { label?: string
 					page ? "h-8 w-8 border-[3px]" : "h-4 w-4 border-2",
 				)}
 			/>
-			<span
-				className={cx("text-slate-strong", page ? "text-[13.5px] font-semibold" : "text-[13px]")}
-			>
+			<span className={cx("text-slate-strong", page ? "text-[13.5px] font-semibold" : "text-[13px]")}>
 				{label}
 			</span>
 		</div>
@@ -575,10 +561,7 @@ export function Skeleton({ className }: { className?: string }) {
 	return (
 		<div
 			aria-hidden="true"
-			className={cx(
-				"animate-pulse rounded-lg bg-card-line/70 motion-reduce:animate-none",
-				className,
-			)}
+			className={cx("animate-pulse rounded-lg bg-card-line/70 motion-reduce:animate-none", className)}
 		/>
 	);
 }
@@ -625,9 +608,7 @@ export function Empty({
 				</span>
 			)}
 			<p className="text-[13.5px] font-semibold text-ink">{title}</p>
-			{children && (
-				<p className="mx-auto mt-1 max-w-sm text-[12px] leading-relaxed text-muted">{children}</p>
-			)}
+			{children && <p className="mx-auto mt-1 max-w-sm text-[12px] leading-relaxed text-muted">{children}</p>}
 			{action && <div className="mt-4 flex flex-wrap justify-center gap-2">{action}</div>}
 		</div>
 	);
@@ -718,9 +699,7 @@ export function Facts({
 		<dl className={cx("grid gap-x-5 gap-y-4", grid[columns], className)}>
 			{rows.map((row, index) => (
 				<div key={index} className="min-w-0">
-					<dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-rail-label">
-						{row.label}
-					</dt>
+					<dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-rail-label">{row.label}</dt>
 					<dd className="mt-1.5 text-[12.5px] font-semibold leading-snug text-ink">{row.value}</dd>
 				</div>
 			))}
@@ -744,9 +723,7 @@ export function FactList({
 		<dl className="space-y-3.5">
 			{rows.map((row, index) => (
 				<div key={index} className="min-w-0">
-					<dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-rail-label">
-						{row.label}
-					</dt>
+					<dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-rail-label">{row.label}</dt>
 					<dd className="mt-1 text-[12.5px] font-semibold leading-snug text-ink">{row.value}</dd>
 				</div>
 			))}
@@ -776,18 +753,12 @@ export function StatTile({
 	linkLabel: string;
 }) {
 	return (
-		<div className="p-card flex flex-col gap-1.5 p-[18px]">
-			<span className="text-[11.5px] text-slate-body">{label}</span>
-			<strong className="font-display text-[27px] font-extrabold leading-none tracking-[-0.02em] text-ink tabular">
-				{value}
-			</strong>
-			<Link
-				to={to}
-				className="mt-0.5 text-[11.5px] font-bold text-blue transition-colors hover:text-blue-hover"
-			>
-				{linkLabel} →
-			</Link>
-		</div>
+		<MetricCard
+			label={label}
+			value={value}
+			to={to}
+			note={<span className="font-semibold text-blue">{linkLabel} →</span>}
+		/>
 	);
 }
 
@@ -822,9 +793,7 @@ export function Meter({
 					style={{ width: `${pct}%` }}
 				/>
 			</div>
-			<span className="w-8 flex-none text-right text-[11px] font-semibold text-muted tabular">
-				{pct}%
-			</span>
+			<span className="w-8 flex-none text-right text-[11px] font-semibold text-muted tabular">{pct}%</span>
 		</div>
 	);
 }
@@ -835,13 +804,7 @@ export function Meter({
  * The concept's side-ruled note — a standing explanation, never an error and
  * never dismissible. `ErrorNote` is the other thing and stays separate.
  */
-export function Notice({
-	tone = "info",
-	children,
-}: {
-	tone?: "info" | "success";
-	children: ReactNode;
-}) {
+export function Notice({ tone = "info", children }: { tone?: "info" | "success"; children: ReactNode }) {
 	return (
 		<div
 			className={cx(
@@ -984,26 +947,5 @@ export function FolderCard({
 	meta?: ReactNode;
 	foot?: ReactNode;
 }) {
-	return (
-		<Link
-			to={to}
-			className="p-card group flex min-h-[168px] flex-col p-5 transition hover:-translate-y-[3px] hover:border-slate-faint hover:shadow-[0_10px_24px_rgba(1,30,65,0.07)] motion-reduce:hover:translate-y-0"
-		>
-			<span className="mb-4 mt-1" aria-hidden="true">
-				<svg viewBox="0 0 46 32" width="46" height="32" role="presentation">
-					<path
-						d="M2 6a3 3 0 0 1 3-3h14l4 4h18a3 3 0 0 1 3 3v17a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3z"
-						className="fill-[#4a98d5]"
-					/>
-					<path d="M2 11h42v16a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3z" className="fill-[#2675b9]" />
-				</svg>
-			</span>
-			<span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-muted">{kicker}</span>
-			<strong className="mt-1.5 line-clamp-2 text-[13px] font-semibold leading-snug text-ink">
-				{title}
-			</strong>
-			{meta && <span className="mt-1.5 text-[11.5px] text-slate-body">{meta}</span>}
-			{foot && <span className="mt-auto pt-3 text-[11px] font-semibold text-blue">{foot}</span>}
-		</Link>
-	);
+	return <FolderTile to={to} title={title} kicker={kicker} summary={meta} footer={foot}/>;
 }

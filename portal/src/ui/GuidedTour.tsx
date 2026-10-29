@@ -260,7 +260,7 @@ export function GuidedTour({ id, steps }: { id: string; steps: TourStep[] }) {
 						type="button"
 						autoFocus
 						onClick={() => (index === steps.length - 1 ? finish() : setIndex(index + 1))}
-						className="rounded-lg bg-blue px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-blue-hover"
+						className="movement-primary rounded-lg bg-action px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-action-hover"
 					>
 						{index === steps.length - 1 ? "Finish" : "Next"}
 					</button>

@@ -30,24 +30,11 @@ const AXIS = "#D8DEE9";
 const MARK = "#011E41";
 const MARK_MUTED = "#C7CEDB";
 
-/**
- * The two-series pair, for the one chart in this product that honestly has two.
- *
- * **Blue is not among them, and neither is green-and-red.** Blue means "act on
- * this" everywhere in the product and a blue data mark would dilute it; green
- * for income and red for expenditure would reuse the reserved status hues *and*
- * put a moral valence on a figure that has none — a society paying its
- * volunteers is not a society doing something wrong.
- *
- * A retoned violet and amber from the `tint` family instead, stepped until they
- * pass every check in the palette validator against this app's canvas:
- * lightness band, chroma floor, adjacent-pair separation under protanopia and
- * tritanopia, normal-vision separation, and 3:1 against the surface. Colour is
- * still never the only signal — the pair is legended, and the read-out names
- * the series in text.
+/** Finance's paired series use the same navy family as the overview.
+ * Labels, paired marks and tooltips carry identity alongside colour.
  */
-const SERIES_IN = "#6B4FA8";
-const SERIES_OUT = "#A9640F";
+const SERIES_IN = "#45688D";
+const SERIES_OUT = "#011E41";
 
 export interface Column {
 	label: string;

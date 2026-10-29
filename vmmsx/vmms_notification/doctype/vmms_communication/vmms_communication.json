@@ -1,0 +1,71 @@
+{
+ "doctype": "DocType",
+ "name": "VMMS Communication",
+ "module": "VMMS Notification",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "field_order": [
+  "geo_node",
+  "channel",
+  "status",
+  "title",
+  "payload",
+  "report",
+  "scheduled_at",
+  "pinned"
+ ],
+ "fields": [
+  {
+   "fieldname": "geo_node",
+   "label": "Geo Node",
+   "fieldtype": "Link",
+   "options": "Geo Node"
+  },
+  {
+   "fieldname": "channel",
+   "label": "Channel",
+   "fieldtype": "Select",
+   "options": "email\nsms\nwhatsapp\nsystem"
+  },
+  {
+   "fieldname": "status",
+   "label": "Status",
+   "fieldtype": "Select",
+   "options": "Draft\nScheduled\nPending approval\nQueued\nSent\nFailed"
+  },
+  {
+   "fieldname": "title",
+   "label": "Title",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "payload",
+   "label": "Payload",
+   "fieldtype": "JSON"
+  },
+  {
+   "fieldname": "report",
+   "label": "Report",
+   "fieldtype": "JSON"
+  },
+  {
+   "fieldname": "scheduled_at",
+   "label": "Scheduled At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "pinned",
+   "label": "Pinned",
+   "fieldtype": "Check"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1
+  }
+ ],
+ "track_changes": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

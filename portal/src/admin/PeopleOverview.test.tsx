@@ -173,8 +173,8 @@ describe("the People overview", () => {
 
 		show();
 
-		expect(screen.getByText("Active volunteers in scope")).toBeTruthy();
-		expect(screen.getByText("Active memberships in scope")).toBeTruthy();
+		expect(screen.getByText("Active volunteers")).toBeTruthy();
+		expect(screen.getByText("Active members")).toBeTruthy();
 		expect(screen.getAllByText("1,284").length).toBeGreaterThan(0);
 		expect(screen.getAllByText("3,842").length).toBeGreaterThan(0);
 	});
@@ -227,7 +227,7 @@ describe("the People overview", () => {
 
 		// Scoped to the tile itself: the intake block below it legitimately
 		// carries zeroes, and a page-wide search for "0" would find those.
-		const tile = screen.getByText("Active memberships in scope").parentElement;
+		const tile = screen.getByText("Active members").closest(".overview-metric");
 
 		expect(tile?.textContent).toContain("—");
 		expect(tile?.textContent).not.toContain("0");
@@ -239,9 +239,9 @@ describe("the People overview", () => {
 
 		show();
 
-		expect(screen.getByText("Intake health")).toBeTruthy();
-		expect(screen.getAllByText("Volunteer applications").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("Membership applications").length).toBeGreaterThan(0);
+		expect(screen.getByText("Applications overview")).toBeTruthy();
+		expect(screen.getAllByRole("link", {name:/Volunteer applications/}).length).toBeGreaterThan(0);
+		expect(screen.getAllByRole("link", {name:/Membership applications/}).length).toBeGreaterThan(0);
 		// In review across the scope, changes requested, and what is routed here.
 		expect(screen.getByText("19")).toBeTruthy();
 		expect(screen.getByText("3 overdue")).toBeTruthy();
@@ -273,8 +273,8 @@ describe("the People overview", () => {
 
 		show();
 
-		expect(screen.getByText("These applications are not in your permissions")).toBeTruthy();
-		expect(screen.queryByText(/No approval workflow is configured/)).toBeNull();
+		expect(screen.getByText("You do not have access to these applications.")).toBeTruthy();
+		expect(screen.queryByText(/0 applications awaiting workflow setup./)).toBeNull();
 	});
 
 	it("says an ungoverned door is not governed rather than showing it as empty", () => {
@@ -302,7 +302,7 @@ describe("the People overview", () => {
 		show();
 
 		// "Nothing to do" and "nobody has configured this" are different answers.
-		expect(screen.getByText(/No approval workflow is configured/)).toBeTruthy();
+		expect(screen.getByText(/0 applications awaiting workflow setup./)).toBeTruthy();
 		expect(screen.getByText("Not governed")).toBeTruthy();
 	});
 
@@ -333,9 +333,9 @@ describe("the People overview", () => {
 
 		show();
 
-		expect(screen.getByText("6 waiting for an approval workflow")).toBeTruthy();
+		expect(screen.getByText("6 applications awaiting workflow setup.")).toBeTruthy();
 		expect(screen.getByText("Needs setup")).toBeTruthy();
-		expect(screen.queryByText(/No approval workflow is configured/)).toBeNull();
+		expect(screen.queryByText(/0 applications awaiting workflow setup./)).toBeNull();
 	});
 
 	it("orders the attention queue by breach first, then by how long it has waited", () => {
@@ -389,6 +389,6 @@ describe("the People overview", () => {
 
 		show();
 
-		expect(screen.getByText("Nothing is waiting on you")).toBeTruthy();
+		expect(screen.getByText("No applications to review")).toBeTruthy();
 	});
 });

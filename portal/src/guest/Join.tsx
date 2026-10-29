@@ -1857,8 +1857,8 @@ function JoinBody() {
 			    journey named beside the mark and one way out of it. A registration
 			    is not a page of the site with a header on it — it is a room you are
 			    in — and the dark bar is what says so. */}
-			<header className="sticky top-0 z-30 flex h-[68px] items-center border-b border-white/[0.13] bg-rail px-[18px] sm:h-[78px] sm:px-[4%]">
-				<Link to="/" className="min-w-0">
+			<header className="movement-header sticky top-0 z-30 flex h-[68px] items-center border-b border-white/[0.13] bg-rail px-[18px] sm:h-[78px] sm:px-[4%]">
+				<Link to="/" className="min-w-0 flex-1 sm:flex-none">
 					<BrandLockup tone="dark" />
 				</Link>
 
@@ -2749,7 +2749,7 @@ function Rail({
 					aria-valuemax={steps.length}
 				>
 					<div
-						className="h-full rounded-full bg-blue transition-[width] duration-500 ease-out"
+						className="h-full rounded-full bg-action transition-[width] duration-500 ease-out"
 						style={{ width: `${percent}%` }}
 					/>
 				</div>
@@ -2798,7 +2798,7 @@ function Rail({
 											className={cx(
 												"grid h-[33px] w-[33px] flex-none place-items-center rounded-full border text-[13px] transition",
 												isNow
-													? "border-rail bg-rail text-white shadow-[0_0_0_5px_#E4EBF5]"
+													? "border-action bg-action text-white shadow-[0_0_0_5px_#FFF0F1]"
 													: isDone
 														? "border-rail/85 bg-rail/85 text-white"
 														: "border-[#D5DFEA] bg-canvas",
@@ -2980,7 +2980,7 @@ function SignInFirst({ path }: { path: Path }) {
 			<div className="flex flex-wrap gap-2.5">
 				<a
 					href={loginUrl(here())}
-					className="inline-flex items-center rounded-xl bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-blue-press"
+					className="movement-primary inline-flex items-center rounded-xl bg-action px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-action-press"
 				>
 					Sign in
 				</a>
@@ -3404,7 +3404,7 @@ function ChoiceRow({
 							// breaking itself over three lines in a narrow column.
 							"flex grow basis-[104px] cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-[7px] border px-[18px] py-[11px] text-[14px] font-medium transition",
 							picked
-								? "border-blue bg-[#EDF3FF] text-[#2055AF]"
+								? "border-blue bg-blue-soft text-blue-press"
 								: "border-[#CDD8E5] bg-white text-ink hover:border-blue-line",
 						)}
 					>

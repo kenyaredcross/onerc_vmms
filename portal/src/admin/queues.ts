@@ -63,21 +63,21 @@ export const QUEUE_BANDS: QueueBand[] = [
 		segment: "",
 		label: "Applications",
 		empty: "Nothing is waiting on you.",
-		lead: "Routed to you specifically by the approval engine, not to everybody who holds your role.",
+		lead: "Applications assigned to you for review.",
 	},
 	{
 		key: "changes",
 		segment: "changes",
 		label: "Changes requested",
 		empty: "Nothing has been sent back for corrections.",
-		lead: "Sent back to the applicant. They are drafts again, and review restarts from the first stage when they resubmit.",
+		lead: "Applications returned to applicants for corrections.",
 	},
 	{
 		key: "closed",
 		segment: "closed",
 		label: "Closed",
 		empty: "Nothing here has been decided yet.",
-		lead: "Approved, rejected, withdrawn and expired applications, kept with their decisions and evidence.",
+		lead: "Approved, rejected, withdrawn and expired applications.",
 	},
 ];
 

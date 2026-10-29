@@ -1,3 +1,4 @@
+import { RecordCollection } from "../ui/RecordPagination";
 import { useContext, useState, type ReactNode } from "react";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
@@ -504,7 +505,7 @@ function ReportList() {
 
 			{rows.length > 0 && (
 				<div className="grid gap-5 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-					<ul className="space-y-2.5">
+					<RecordCollection as="ul" className="space-y-2.5">
 						{rows.map((row) => (
 							<li key={row.report}>
 								<button
@@ -532,7 +533,7 @@ function ReportList() {
 								</button>
 							</li>
 						))}
-					</ul>
+					</RecordCollection>
 
 					<ReportPane
 						report={rows.find((row) => row.report === (open ?? rows[0].report)) ?? rows[0]}
@@ -959,7 +960,7 @@ function FormList() {
 
 			{rows.length > 0 && (
 				<div className="grid gap-5 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-					<ul className="space-y-2.5">
+					<RecordCollection as="ul" className="space-y-2.5">
 						{rows.map((row) => (
 							<li key={row.payment_form}>
 								<button
@@ -988,7 +989,7 @@ function FormList() {
 								</button>
 							</li>
 						))}
-					</ul>
+					</RecordCollection>
 
 					<FormPane
 						form={

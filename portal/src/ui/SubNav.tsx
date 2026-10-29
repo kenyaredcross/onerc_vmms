@@ -57,10 +57,10 @@ export function SubNav({
 }) {
 	const row = (isActive: boolean) =>
 		cx(
-			"flex min-h-[34px] items-center gap-2 rounded-lg px-3 py-1.5 text-[12.5px] transition-colors",
+			"section-nav-link flex min-h-[36px] items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors",
 			isActive
-				? "bg-blue-soft font-semibold text-blue-press"
-				: "font-medium text-slate-strong hover:bg-canvas hover:text-ink",
+				? "font-semibold text-ink"
+				: "font-normal text-slate-strong hover:bg-canvas hover:text-ink",
 		);
 
 	const count = (badge?: number) =>
@@ -87,8 +87,8 @@ export function SubNav({
 	}
 
 	return (
-		<div className="flex flex-col">
-			<h2 className="px-3 pb-3.5 pt-1 text-[14px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
+		<div className="section-nav flex flex-col">
+			<h2 className="px-3 pb-3.5 pt-1 text-[16px] font-bold tracking-[-0.01em] text-ink">{title}</h2>
 
 			<nav aria-label={`${title} sections`} className="flex flex-col gap-0.5">
 				{items.map((item, index) => {
@@ -98,9 +98,9 @@ export function SubNav({
 					return (
 						<div key={item.to}>
 							{started && (
-								<div className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-[0.09em] text-rail-label">
+								<h3 className="section-nav-group px-3 pb-2 pt-5 text-[13px] font-bold text-ink">
 									<EditableText k={item.groupKey as string} fallback={item.groupFallback ?? ""} />
-								</div>
+								</h3>
 							)}
 
 							<NavLink to={item.to} end={item.end} className={({ isActive }) => row(isActive)}>

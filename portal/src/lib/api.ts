@@ -11,6 +11,12 @@
  * than inventing one. See `NotBuilt` in `ui/primitives.tsx`.
  */
 export const API = {
+	assetUpdate: "vmmsx.api.assets.update_asset",
+	moveBoardTask: "vmmsx.api.tasks.move_board_task",
+	communicationHistory: "vmmsx.api.communication.history",
+	communicationDraft: "vmmsx.api.communication.save_draft",
+	communicationPin: "vmmsx.api.communication.pin",
+	overviewRegisters: "vmmsx.api.analytics.overview_registers",
 	assetBranches: "vmmsx.api.assets.branches",
 	assetStock: "vmmsx.api.assets.stock",
 	assetSearch: "vmmsx.api.assets.search_assets",

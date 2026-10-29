@@ -542,6 +542,7 @@ scheduler_events = {
 	"cron": {
 		"*/15 * * * *": [
 			"vmmsx.notifications.services.whatsapp.release_scheduled",
+			"vmmsx.api.communication.release_scheduled",
 		]
 	},
 }

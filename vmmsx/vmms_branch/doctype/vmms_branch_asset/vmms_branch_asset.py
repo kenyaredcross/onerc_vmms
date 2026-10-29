@@ -22,8 +22,8 @@ class VMMSBranchAsset(Document):
 				frappe.throw(_("New assets start at zero. Receive stock after creation."))
 		else:
 			old = self.get_doc_before_save()
-			if old and self.geo_node != old.geo_node:
-				frappe.throw(_("Move stock with a branch transfer, not by changing its branch."))
+			if old and self.geo_node != old.geo_node and old.total_quantity > old.available_quantity:
+				frappe.throw(_("Return issued items before changing the branch."))
 			if old and (
 				self.total_quantity != old.total_quantity or self.available_quantity != old.available_quantity
 			):

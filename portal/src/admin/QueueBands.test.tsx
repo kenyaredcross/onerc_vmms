@@ -170,7 +170,7 @@ describe("the three bands", () => {
 		expect(cases[0].params).toEqual({
 			doctype: "VMMS Volunteer Application",
 			group: "changes",
-			limit: 50,
+			limit: 25,
 			offset: 0,
 		});
 		// `my_queue` answers "routed to me now" and could not answer this band at
@@ -186,7 +186,7 @@ describe("the three bands", () => {
 		expect(calls.find((call) => call.path === API.myCases)?.params).toEqual({
 			doctype: "VMMS Membership",
 			group: "closed",
-			limit: 50,
+			limit: 25,
 			offset: 0,
 		});
 	});

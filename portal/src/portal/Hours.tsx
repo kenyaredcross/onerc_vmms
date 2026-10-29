@@ -53,7 +53,7 @@ export default function Hours() {
 	);
 	const history = useFrappeGetCall<{ message: MyTimeLogs | null }>(
 		API.myTimeLogs,
-		{ limit: 100, offset },
+		{ limit: 25, offset },
 		showHistory ? `portal:my_time_logs:${offset}` : null,
 	);
 
@@ -109,9 +109,9 @@ export default function Hours() {
 							<>
 								<History data={history.data?.message ?? null} loading={history.isLoading} error={history.error} />
 								<div className="mt-4 flex items-center gap-3 text-sm text-muted">
-									<span>{history.data?.message?.log_count ? `Showing ${offset + 1}–${Math.min(offset + 100, history.data.message.log_count)} of ${history.data.message.log_count}` : "No entries yet"}</span>
-									<button type="button" disabled={offset === 0 || history.isLoading} onClick={() => setOffset(Math.max(0, offset - 100))} className="font-semibold text-ink disabled:opacity-40">Previous</button>
-									<button type="button" disabled={history.isLoading || offset + 100 >= (history.data?.message?.log_count ?? 0)} onClick={() => setOffset(offset + 100)} className="font-semibold text-ink disabled:opacity-40">Next</button>
+									<span>{history.data?.message?.log_count ? `Showing ${offset + 1}–${Math.min(offset + 25, history.data.message.log_count)} of ${history.data.message.log_count}` : "No entries yet"}</span>
+									<button type="button" disabled={offset === 0 || history.isLoading} onClick={() => setOffset(Math.max(0, offset - 25))} className="font-semibold text-ink disabled:opacity-40">Previous</button>
+									<button type="button" disabled={history.isLoading || offset + 25 >= (history.data?.message?.log_count ?? 0)} onClick={() => setOffset(offset + 25)} className="font-semibold text-ink disabled:opacity-40">Next</button>
 								</div>
 							</>
 						)}

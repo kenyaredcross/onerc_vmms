@@ -1,167 +1,67 @@
 import { useContext, useEffect, useState } from "react";
-import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
-
-import { API, errorMessage } from "../lib/api";
+import { FrappeContext, useFrappeGetCall } from "frappe-react-sdk";
+import { API } from "../lib/api";
+import { Icon } from "../ui/icons";
 import { formatDate } from "../lib/format";
-import { Button, Card, Empty, ErrorNote, PageHeading, Spinner } from "../ui/primitives";
-
-type Branch = { name: string };
-type Asset = { name: string; asset_name: string; category: string; unit: string; geo_node: string; total_quantity: number; available_quantity: number; is_active: number };
-type Issue = { name: string; asset_name: string; volunteer_name: string; quantity: number; outstanding: number; geo_node: string; last_reminded_at?: string };
-type Volunteer = { name: string; full_name: string; home_geo_node: string };
-type ActionResult = { message?: { notification_queued?: boolean } };
-
-function useDebounced(value: string) {
-	const [settled, setSettled] = useState(value);
-	useEffect(() => {
-		const timer = window.setTimeout(() => setSettled(value.trim()), 250);
-		return () => window.clearTimeout(timer);
-	}, [value]);
-	return settled;
-}
-
-const INPUT = "w-full rounded-lg border border-card-line bg-white px-3 py-2 text-sm";
+import { AssetPreview } from "./assets/AssetPreview";
+import { AssetInsights } from "./assets/AssetInsights";
+import { AssetOverlay } from "./assets/AssetOverlay";
+import { exportAssets } from "./assets/export";
+import { AssetForm } from "./assets/AssetForm";
+import { AssetMovement } from "./assets/AssetMovement";
+import type { Asset, AssetIssue } from "./assets/types";
 
 export default function Assets() {
-	const { call } = useContext(FrappeContext) as FrappeConfig;
-	const [branch, setBranch] = useState("");
-	const [stockSearch, setStockSearch] = useState("");
-	const [assetSearch, setAssetSearch] = useState("");
-	const [volunteerSearch, setVolunteerSearch] = useState("");
-	const [issueSearch, setIssueSearch] = useState("");
-	const [asset, setAsset] = useState<Asset | null>(null);
-	const [volunteer, setVolunteer] = useState<Volunteer | null>(null);
-	const [quantity, setQuantity] = useState("1");
-	const [returnAmounts, setReturnAmounts] = useState<Record<string, string>>({});
-	const [name, setName] = useState("");
-	const [category, setCategory] = useState("");
-	const [unit, setUnit] = useState("each");
-	const [busy, setBusy] = useState(false);
-	const [failure, setFailure] = useState("");
-	const [notice, setNotice] = useState("");
-	const stockTerm = useDebounced(stockSearch);
-	const assetTerm = useDebounced(assetSearch);
-	const volunteerTerm = useDebounced(volunteerSearch);
-	const issueTerm = useDebounced(issueSearch);
+ const {call}=useContext(FrappeContext)!;
+ const stock=useFrappeGetCall<{message:{assets:Asset[]}}>(API.assetStock,undefined,"asset-stock");
+ const holdings=useFrappeGetCall<{message:AssetIssue[]}>(API.assetOutstanding,undefined,"asset-outstanding");
+ const branches=useFrappeGetCall<{message:{name:string}[]}>(API.assetBranches,undefined,"asset-branches");
+ const [tab,setTab]=useState("assets"),[search,setSearch]=useState(""),[branch,setBranch]=useState(""),[status,setStatus]=useState(""),[category,setCategory]=useState("");
+ const [page,setPage]=useState(0),[size,setSize]=useState(10),[selected,setSelected]=useState<string[]>([]),[sort,setSort]=useState(false);
+ const [editor,setEditor]=useState<Asset | "new" | null>(null),[movement,setMovement]=useState<{mode:"receive"|"issue"|"return";asset?:Asset;issue?:AssetIssue}|null>(null),[notice,setNotice]=useState(""),[failure,setFailure]=useState("");
+ const [reminder,setReminder]=useState<AssetIssue|null>(null),[remindBusy,setRemindBusy]=useState(false);
+ const [preview,setPreview]=useState<{asset:Asset;anchor:HTMLElement}|null>(null);
+ const assets=stock.data?.message.assets || [], categories=[...new Set([...assets.map(a=>a.category).filter(Boolean),"Medical","Clothing","Equipment","Logistics","Shelter"])].sort();
+ const rows=assets.filter(a=>(!branch||a.geo_node===branch)&&(!category||a.category===category)&&(!status||(a.is_active?"Active":"Inactive")===status)&&`${a.asset_name} ${a.name} ${a.category}`.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>(sort?-1:1)*a.asset_name.localeCompare(b.asset_name));
+ const issues=(holdings.data?.message || []).filter(i=>(!branch||i.geo_node===branch)&&`${i.asset_name} ${i.volunteer_name}`.toLowerCase().includes(search.toLowerCase()));
+ const total=tab==="assets"?rows.length:issues.length,pageCount=Math.max(1,Math.ceil(total/size)),current=Math.min(page,pageCount-1),visible=rows.slice(current*size,(current+1)*size);
+ useEffect(()=>setPage(0),[search,branch,category,status,size,tab]);
+ const clear=()=>{setSearch("");setBranch("");setCategory("");setStatus("");setPage(0);};
+ const saved=(text:string)=>{void stock.mutate();void holdings.mutate();setEditor(null);setMovement(null);setNotice(text);setFailure("");setPage(0);};
+ const remind=async()=>{if(!reminder)return;setRemindBusy(true);setFailure("");try{const response=await call.post<{message:{notification_queued:boolean}}>(API.assetRemind,{issue:reminder.name});void holdings.mutate();setNotice(response.message.notification_queued?"Reminder queued.":"No linked account is available to receive this reminder.");setReminder(null);}catch(e){setFailure(e instanceof Error?e.message:"The reminder could not be recorded.");}finally{setRemindBusy(false);}};
+ const selectedAssets=assets.filter(a=>selected.includes(a.name));
 
-	const branches = useFrappeGetCall<{ message: Branch[] }>(API.assetBranches, undefined, "asset-branches");
-	const stock = useFrappeGetCall<{ message: { assets: Asset[]; has_more: boolean } }>(
-		API.assetStock, { geo_node: branch || undefined, search: stockTerm || undefined }, `asset-stock:${branch}:${stockTerm}`,
-	);
-	const holdings = useFrappeGetCall<{ message: Issue[] }>(
-		API.assetOutstanding, { geo_node: branch || undefined, search: issueTerm || undefined }, `asset-outstanding:${branch}:${issueTerm}`,
-	);
-	const assets = useFrappeGetCall<{ message: Asset[] }>(
-		API.assetSearch, { geo_node: branch, search: assetTerm },
-		branch && assetTerm.length >= 2 && !asset ? `asset-picker:${branch}:${assetTerm}` : null,
-	);
-	const people = useFrappeGetCall<{ message: Volunteer[] }>(
-		API.assetSearchVolunteers, { geo_node: branch, search: volunteerTerm },
-		branch && volunteerTerm.length >= 2 && !volunteer ? `asset-people:${branch}:${volunteerTerm}` : null,
-	);
-	const rows = stock.data?.message.assets ?? [];
-	const issues = holdings.data?.message ?? [];
-	const validQuantity = Number.isInteger(Number(quantity)) && Number(quantity) > 0;
-
-	async function act(method: string, args: Record<string, string | number>, kind: "create" | "receive" | "issue" | "return" | "remind") {
-		setBusy(true);
-		setFailure("");
-		setNotice("");
-		try {
-			const response = await call.post(method, args) as ActionResult;
-			await Promise.all([stock.mutate(), holdings.mutate(), assets.mutate()]);
-			if (kind === "create") { setName(""); setNotice("Asset added."); }
-			if (kind === "receive") { setAsset(null); setAssetSearch(""); setNotice("Stock received."); }
-			if (kind === "issue") {
-				setAsset(null); setVolunteer(null); setAssetSearch(""); setVolunteerSearch("");
-				setNotice(response?.message?.notification_queued
-					? "Issue recorded. An in-app notification was queued for the volunteer."
-					: "Issue recorded. This volunteer has no linked login, so no in-app notification was queued.");
-			}
-			if (kind === "return") { setReturnAmounts({}); setNotice("Return recorded."); }
-			if (kind === "remind") setNotice(response?.message?.notification_queued
-				? "Reminder queued for the volunteer."
-				: "No reminder was queued because this volunteer has no linked login.");
-			setQuantity("1");
-		} catch (error) { setFailure(errorMessage(error)); }
-		finally { setBusy(false); }
-	}
-
-	return <div className="space-y-6">
-		<PageHeading title="Branch assets" lead="Find stock and volunteers by name, then record issues, returns and reminders." />
-		{failure && <ErrorNote>{failure}</ErrorNote>}
-		{notice && <p role="status" className="rounded-lg border border-blue/20 bg-blue/5 px-4 py-3 text-sm text-ink">{notice}</p>}
-		<Card className="space-y-4 p-5">
-			{branches.error && <ErrorNote>{errorMessage(branches.error)}</ErrorNote>}
-			<label className="block text-sm font-semibold">Branch
-				<select className={`${INPUT} mt-2`} value={branch} onChange={(event) => {
-					setBranch(event.target.value); setAsset(null); setVolunteer(null); setAssetSearch(""); setVolunteerSearch("");
-				}}>
-					<option value="">All assigned branches</option>
-					{(branches.data?.message ?? []).map((row) => <option key={row.name} value={row.name}>{row.name}</option>)}
-				</select>
-			</label>
-			{branch && <div className="flex flex-wrap gap-2">
-				<input className={`${INPUT} sm:w-56`} aria-label="New asset name" placeholder="New asset, e.g. helmet" value={name} onChange={(event) => setName(event.target.value)} />
-				<input className={`${INPUT} sm:w-44`} aria-label="Category" placeholder="Category, e.g. PPE" value={category} onChange={(event) => setCategory(event.target.value)} />
-				<input className={`${INPUT} sm:w-24`} aria-label="Unit" value={unit} onChange={(event) => setUnit(event.target.value)} />
-				<Button disabled={busy || !name.trim()} onClick={() => act(API.assetCreate, { asset_name: name, geo_node: branch, category, unit }, "create")}>Add asset</Button>
-			</div>}
-		</Card>
-
-		<Card className="space-y-4 p-5">
-			{stock.error && <ErrorNote>{errorMessage(stock.error)}</ErrorNote>}
-			<div className="flex flex-wrap items-end justify-between gap-3">
-				<h2 className="text-lg font-semibold">Stock</h2>
-				<input className={`${INPUT} sm:w-72`} type="search" aria-label="Search stock" placeholder="Search asset name" value={stockSearch} onChange={(event) => setStockSearch(event.target.value)} />
-			</div>
-			{stock.isLoading ? <Spinner label="Loading branch stock…" /> : rows.length === 0 ? <Empty title="No matching assets">Choose a branch and add stock, or change your search.</Empty> : <div className="overflow-x-auto">
-				<table className="w-full text-left text-sm"><thead><tr><th>Asset</th><th>Branch</th><th>Total</th><th>Available</th><th>Issued</th><th></th></tr></thead><tbody>
-					{rows.map((row) => <tr key={row.name} className="border-t"><td className="py-3 font-semibold">{row.asset_name}<span className="block font-normal text-muted">{row.category || row.unit}</span></td><td>{row.geo_node}</td><td>{row.total_quantity}</td><td>{row.available_quantity}</td><td>{row.total_quantity - row.available_quantity}</td><td>{branch === row.geo_node && <Button variant="soft" onClick={() => setAsset(row)}>Select</Button>}</td></tr>)}
-				</tbody></table>
-			</div>}
-			{stock.data?.message.has_more && <p className="text-sm text-muted">Showing the first 50 matches. Search by asset name to narrow the list.</p>}
-		</Card>
-
-		{branch && <Card className="space-y-5 p-5">
-			<h2 className="text-lg font-semibold">Receive or issue stock</h2>
-			<div className="grid gap-4 md:grid-cols-2">
-				<div>
-					<label className="block text-sm font-semibold">Asset</label>
-					{asset ? <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border p-3 text-sm"><span><strong>{asset.asset_name}</strong> · {asset.available_quantity} available</span><button type="button" className="font-semibold text-blue" onClick={() => setAsset(null)}>Change</button></div> : <>
-						<input className={`${INPUT} mt-2`} type="search" placeholder="Search asset name or category" value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} />
-						{assets.error && <ErrorNote>{errorMessage(assets.error)}</ErrorNote>}
-						{assetTerm.length >= 2 && assetSearch.trim() === assetTerm && <SearchResults loading={assets.isLoading} empty="No matching assets in this branch" full={(assets.data?.message.length ?? 0) === 20} rows={(assets.data?.message ?? []).map((row) => ({ id: row.name, title: row.asset_name, detail: `${row.available_quantity} available · ${row.category || row.unit}`, pick: () => setAsset(row) }))} />}
-					</>}
-				</div>
-				<div>
-					<label className="block text-sm font-semibold">Volunteer</label>
-					{volunteer ? <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border p-3 text-sm"><span><strong>{volunteer.full_name}</strong> · {volunteer.home_geo_node}</span><button type="button" className="font-semibold text-blue" onClick={() => setVolunteer(null)}>Change</button></div> : <>
-						<input className={`${INPUT} mt-2`} type="search" placeholder="Search name, email or volunteer ID" value={volunteerSearch} onChange={(event) => setVolunteerSearch(event.target.value)} />
-						{people.error && <ErrorNote>{errorMessage(people.error)}</ErrorNote>}
-						{volunteerTerm.length >= 2 && volunteerSearch.trim() === volunteerTerm && <SearchResults loading={people.isLoading} empty="No active volunteers found in this branch" full={(people.data?.message.length ?? 0) === 20} rows={(people.data?.message ?? []).map((row) => ({ id: row.name, title: row.full_name, detail: `${row.home_geo_node} · ${row.name}`, pick: () => setVolunteer(row) }))} />}
-					</>}
-				</div>
-			</div>
-			<div className="flex flex-wrap items-center gap-2">
-				<input className={`${INPUT} w-24`} aria-label="Quantity" type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
-				<Button disabled={busy || !asset || !validQuantity} onClick={() => asset && act(API.assetReceive, { asset: asset.name, quantity }, "receive")}>Receive</Button>
-				<Button disabled={busy || !asset || !volunteer || !asset.is_active || !validQuantity || Number(quantity) > asset.available_quantity} onClick={() => asset && volunteer && act(API.assetIssue, { asset: asset.name, volunteer: volunteer.name, quantity }, "issue")}>Issue to volunteer</Button>
-			</div>
-		</Card>}
-
-		<Card className="space-y-4 p-5">
-			{holdings.error && <ErrorNote>{errorMessage(holdings.error)}</ErrorNote>}
-			<div className="flex flex-wrap items-end justify-between gap-3"><h2 className="text-lg font-semibold">Currently held by volunteers</h2><input className={`${INPUT} sm:w-72`} type="search" aria-label="Search issued equipment" placeholder="Search volunteer or asset" value={issueSearch} onChange={(event) => setIssueSearch(event.target.value)} /></div>
-			{holdings.isLoading ? <Spinner label="Loading current issues…" /> : issues.length === 0 ? <p className="text-sm text-muted">No outstanding issues match this search.</p> : <div className="space-y-2">{issues.map((row) => <div key={row.name} className="flex flex-wrap items-center justify-between gap-3 border-t py-3 text-sm"><div><strong>{row.asset_name}</strong> · {row.volunteer_name} · {row.outstanding} outstanding · {row.geo_node}{row.last_reminded_at && <p className="text-xs text-muted">Last reminded {formatDate(row.last_reminded_at)}</p>}</div><div className="flex flex-wrap items-center gap-2"><input className={`${INPUT} w-20`} aria-label={`Return quantity for ${row.asset_name}`} type="number" min="1" max={row.outstanding} step="1" value={returnAmounts[row.name] ?? String(row.outstanding)} onChange={(event) => setReturnAmounts({ ...returnAmounts, [row.name]: event.target.value })} /><Button disabled={busy || Number(returnAmounts[row.name] ?? row.outstanding) < 1 || Number(returnAmounts[row.name] ?? row.outstanding) > row.outstanding || !Number.isInteger(Number(returnAmounts[row.name] ?? row.outstanding))} onClick={() => act(API.assetReturn, { issue: row.name, quantity: returnAmounts[row.name] ?? row.outstanding }, "return")}>Record return</Button><Button variant="soft" disabled={busy} onClick={() => act(API.assetRemind, { issue: row.name }, "remind")}>Send reminder</Button></div></div>)}</div>}
-			{issues.length === 50 && <p className="text-sm text-muted">Showing the latest 50 matches. Search by volunteer or asset to narrow the list.</p>}
-		</Card>
-	</div>;
-}
-
-function SearchResults({ rows, loading, empty, full }: { rows: Array<{ id: string; title: string; detail: string; pick: () => void }>; loading: boolean; empty: string; full: boolean }) {
-	return <div className="mt-2 rounded-lg border border-card-line bg-white p-1 text-sm">
-		{loading ? <p className="p-2 text-muted">Searching…</p> : rows.length === 0 ? <p className="p-2 text-muted">{empty}</p> : <ul className="max-h-64 overflow-y-auto">{rows.map((row) => <li key={row.id}><button type="button" className="w-full rounded-md p-2 text-left hover:bg-surface focus:bg-surface" onClick={row.pick}><strong className="block">{row.title}</strong><span className="text-muted">{row.detail}</span></button></li>)}</ul>}
-		{full && <p className="border-t p-2 text-xs text-muted">Showing 20 matches. Type more to narrow the search.</p>}
-	</div>;
+ const selectAll=visible.length>0&&visible.every(a=>selected.includes(a.name));
+ return <div className="assets-page">
+  <header className="assets-page-heading"><div><h1>Assets</h1><p>Manage branch inventory, availability and equipment issued to volunteers.</p></div><button type="button" className="asset-primary" onClick={()=>{setEditor("new");setNotice("");}}><Icon.plus size={15} />Add asset</button></header>
+  <nav className="assets-tabs" aria-label="Asset sections"><button aria-pressed={tab==="assets"} onClick={()=>setTab("assets")}>Inventory</button><button aria-pressed={tab==="issues"} onClick={()=>setTab("issues")}>Issued equipment <span>{holdings.data?.message.length || 0}</span></button></nav>
+  {notice && <p className="assets-notice" role="status">{notice}<button type="button" onClick={()=>setNotice("")} aria-label="Dismiss notice"><Icon.cross size={12} /></button></p>}
+  {(stock.isLoading || holdings.isLoading) && <p role="status">Loading inventory…</p>}
+  {(stock.error || holdings.error || branches.error) && <p className="asset-form-error" role="alert">Inventory could not be loaded. Reload to try again.</p>}
+  {failure && <p className="asset-form-error" role="alert">{failure}</p>}
+  <div className="assets-toolbar"><label className="assets-search"><Icon.search size={15} /><input aria-label="Search assets" placeholder={tab==="assets"?"Search assets…":"Search volunteer or asset…"} value={search} onChange={e=>setSearch(e.target.value)} /></label><div>
+   {(search||branch||category||status) && <button type="button" onClick={clear}>Clear filters</button>}
+   {tab==="assets" && <><select aria-label="Filter asset status" value={status} onChange={e=>setStatus(e.target.value)}><option value="">All statuses</option><option>Active</option><option>Inactive</option></select><select aria-label="Filter asset category" value={category} onChange={e=>setCategory(e.target.value)}><option value="">All categories</option>{categories.map(c=><option key={c}>{c}</option>)}</select></>}
+   <button type="button" className="assets-export" disabled={!total} onClick={()=>exportAssets(tab==="assets"?rows:issues,tab==="issues")}><Icon.download size={14} />Export CSV</button>
+   <select aria-label="Filter asset branch" value={branch} onChange={e=>setBranch(e.target.value)}><option value="">All branches</option>{branches.data?.message.map(b=><option key={b.name}>{b.name}</option>)}</select>
+  </div></div>
+  {tab==="assets"&&<AssetInsights assets={rows} />}
+  {tab==="assets"&&selectedAssets.length>0&&<div className="assets-selection-bar"><span>{selectedAssets.length} {selectedAssets.length===1?"asset":"assets"} selected</span>{rows.some(a=>!selected.includes(a.name))&&<button type="button" onClick={()=>setSelected([...new Set([...selected,...rows.map(a=>a.name)])])}>Select all {rows.length} matching assets</button>}<button type="button" className="assets-export" onClick={()=>exportAssets(selectedAssets,false,true)}><Icon.download size={14} />Export selected</button><button type="button" onClick={()=>setSelected([])}>Clear selection</button></div>}
+  <div className="assets-table-scroll"><table className="assets-table" aria-label={tab==="assets"?"Assets":"Issued equipment"}>
+   {tab==="assets"?<><thead><tr><th className="asset-select-cell"><input type="checkbox" aria-label="Select all assets on this page" checked={selectAll} ref={node=>{if(node)node.indeterminate=!selectAll&&visible.some(a=>selected.includes(a.name));}} onChange={e=>setSelected(e.target.checked?[...new Set([...selected,...visible.map(a=>a.name)])]:selected.filter(id=>!visible.some(a=>a.name===id)))} /></th><th aria-sort={sort?"descending":"ascending"}><button type="button" onClick={()=>setSort(!sort)}><Icon.inbox size={14} />Asset<Icon.chevron size={12} /></button></th><th><Icon.tag size={13} />Asset code</th><th><Icon.folder size={13} />Category</th><th><Icon.check size={13} />Status</th><th><Icon.inbox size={13} />Inventory</th><th>Total</th><th>Issued</th><th>Branch</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
+   {visible.map(a=><tr key={a.name} data-asset={a.name} data-selected={selected.includes(a.name)} tabIndex={0} aria-haspopup="dialog"
+    onMouseEnter={event=>setPreview({asset:a,anchor:event.currentTarget})}
+    onMouseLeave={event=>{if(!(event.relatedTarget instanceof Element&&event.relatedTarget.closest('[data-asset-preview]')))setPreview(null);}}
+    onFocus={event=>{if(event.target===event.currentTarget)setPreview({asset:a,anchor:event.currentTarget});}}
+    onBlur={event=>{if(!(event.relatedTarget instanceof Element&&event.relatedTarget.closest('[data-asset-preview]')))setPreview(null);}}
+    onClick={event=>{setPreview(null);if(!(event.target as Element).closest("button,input,select,summary,details,.asset-select-cell"))setEditor(a);}}
+    onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==="Enter"||event.key===" ")){event.preventDefault();setPreview(null);setEditor(a);}}}><td className="asset-select-cell"><input type="checkbox" aria-label={`Select ${a.asset_name}, ${a.geo_node}`} checked={selected.includes(a.name)} onChange={e=>setSelected(e.target.checked?[...selected,a.name]:selected.filter(id=>id!==a.name))} /></td><td><button type="button" className="asset-name" onClick={()=>setEditor(a)}>{a.asset_name}</button><small>{a.unit}</small></td><td className="asset-code">{a.name}</td><td>{a.category || "—"}</td><td><span className={`asset-badge ${a.is_active?"is-active":"is-inactive"}`}>{a.is_active?"Active":"Inactive"}</span></td><td><span className={`asset-badge ${a.available_quantity===0?"is-empty":a.available_quantity<=10?"is-low":"is-stock"}`}>{a.available_quantity===0?"Out of stock":`${a.available_quantity} available${a.available_quantity<=10?" · Low stock":""}`}</span></td><td className="asset-numeric">{a.total_quantity}</td><td className="asset-numeric">{a.total_quantity-a.available_quantity}</td><td>{a.geo_node}</td><td><details className="assets-row-menu"><summary aria-label={`Actions for ${a.asset_name}, ${a.geo_node}`}><Icon.dots size={16} /></summary><div>{[{label:"Edit asset",action:()=>setEditor(a)},{label:"Receive stock",action:()=>setMovement({mode:"receive",asset:a})},{label:"Issue to volunteer",action:()=>setMovement({mode:"issue",asset:a}),disabled:!a.is_active||a.available_quantity===0}].map(item=><button key={item.label} type="button" disabled={item.disabled} onClick={e=>{e.currentTarget.closest("details")?.removeAttribute("open");item.action();}}>{item.label}</button>)}</div></details></td></tr>)}
+   </tbody></>:<><thead><tr>{["Asset","Volunteer","Branch","Issued on","Quantity issued","Outstanding","Last reminder","Actions"].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{issues.slice(current*size,(current+1)*size).map(i=><tr key={i.name} data-issue={i.name}><td>{i.asset_name}</td><td>{i.volunteer_name}</td><td>{i.geo_node}</td><td>{i.issued_on?<time dateTime={i.issued_on}>{formatDate(i.issued_on)}</time>:"—"}</td><td>{i.quantity}</td><td>{i.outstanding}</td><td>{i.last_reminded_at?formatDate(i.last_reminded_at):"—"}</td><td><div className="asset-issue-actions"><button type="button" onClick={()=>setMovement({mode:"return",issue:i})}>Record return</button><button type="button" onClick={()=>{setFailure("");setReminder(i);}}>Send reminder</button></div></td></tr>)}</tbody></>}
+  </table>{total===0&&<div className="assets-empty"><h2>No {tab==="assets"?"assets":"issues"} found</h2><p>Try another search or clear your filters.</p><button onClick={clear}>Clear filters</button></div>}</div>
+  <footer className="assets-pagination"><div><span aria-live="polite">{total?current*size+1:0} – {Math.min((current+1)*size,total)} of {total} {tab==="assets"?"assets":"issues"}{selected.length>0&&tab==="assets"?` · ${selected.length} selected`:""}</span><label>Rows per page<select aria-label="Rows per page" value={size} onChange={e=>setSize(Number(e.target.value))}>{[10,25].map(n=><option key={n}>{n}</option>)}</select></label></div><nav aria-label="Asset pages"><button aria-label="Previous page" disabled={current===0} onClick={()=>setPage(current-1)}><Icon.back size={14} /></button>{Array.from({length:Math.min(5,pageCount)},(_,i)=>i+Math.max(0,Math.min(current-2,pageCount-5))).map(n=><button key={n} aria-label={`Page ${n+1}`} aria-current={current===n?"page":undefined} onClick={()=>setPage(n)}>{n+1}</button>)}<button aria-label="Next page" disabled={current>=pageCount-1} onClick={()=>setPage(current+1)}><Icon.arrow size={14} /></button></nav></footer>
+  {reminder&&<AssetOverlay title="Send reminder?" description="Confirm the equipment reminder before sending." onClose={()=>{if(!remindBusy){setReminder(null);setFailure("");}}}><div className="asset-reminder-confirm"><p>Send <strong>{reminder.volunteer_name}</strong> a reminder about <strong>{reminder.outstanding} × {reminder.asset_name}</strong>?</p><dl><div><dt>Branch</dt><dd>{reminder.geo_node}</dd></div><div><dt>Issued on</dt><dd>{reminder.issued_on?formatDate(reminder.issued_on):"Not recorded"}</dd></div>{reminder.last_reminded_at&&<div><dt>Last reminder</dt><dd>{formatDate(reminder.last_reminded_at)}</dd></div>}</dl>{failure&&<p role="alert" className="asset-form-error">{failure}</p>}</div><footer className="asset-confirm-footer"><button type="button" disabled={remindBusy} onClick={()=>setReminder(null)}>Cancel</button><button type="button" disabled={remindBusy} className="asset-primary" onClick={()=>void remind()}>{remindBusy?"Sending…":"Send reminder"}</button></footer></AssetOverlay>}
+  {preview&&!editor&&!movement&&!reminder&&<AssetPreview key={preview.asset.name} {...preview} onClose={()=>setPreview(null)} onEdit={()=>{setEditor(preview.asset);setPreview(null);}} />}
+  {editor && <AssetForm key={editor==="new"?"new":editor.name} asset={editor==="new"?undefined:editor} branches={branches.data?.message.map(b=>b.name)||[]} categories={categories} branch={branch} onClose={()=>setEditor(null)} onSaved={saved} />}
+  {movement && <AssetMovement {...movement} onClose={()=>setMovement(null)} onSaved={saved} />}
+ </div>;
 }

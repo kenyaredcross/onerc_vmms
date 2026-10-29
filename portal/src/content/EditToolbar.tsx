@@ -18,7 +18,7 @@ export function EditToolbar() {
 	if (!canEdit) return null;
 
 	return (
-		<div className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-card-line bg-white/95 px-2 py-1.5 shadow-pop backdrop-blur">
+		<div data-content-toolbar className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-card-line bg-white/95 px-2 py-1.5 shadow-pop backdrop-blur">
 			<span className="pl-2 text-[11px] font-bold uppercase tracking-wider text-slate-faint">
 				{editing ? "Editing" : "Page"}
 			</span>

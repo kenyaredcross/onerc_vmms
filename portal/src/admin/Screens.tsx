@@ -2,7 +2,9 @@ import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
-import { BarRows, ColumnChart, type Column } from "../ui/chart";
+import { BarRows } from "../ui/chart";
+import { PeopleAndDeployments } from "./overview/PeopleAndDeployments";
+import { RegistrationOverview, type Registration } from "./overview/RegistrationOverview";
 import { Icon } from "../ui/icons";
 import {
 	Card,
@@ -12,8 +14,6 @@ import {
 	SectionLink,
 	SectionTitle,
 	Spinner,
-	StatGrid,
-	StatTile,
 } from "../ui/primitives";
 import type { ApprovalStatus } from "../portal/types";
 
@@ -31,16 +31,7 @@ export function Overview() {
 		undefined,
 		"admin:my_queue",
 	);
-	const members = useFrappeGetCall<{ message: { count: number; member_count: number } }>(
-		API.findMembers,
-		{ limit: 200 },
-		"admin:find_members",
-	);
-	const volunteers = useFrappeGetCall<{ message: { count: number } }>(
-		API.findVolunteers,
-		{ limit: 200 },
-		"admin:find_volunteers",
-	);
+ const registers = useFrappeGetCall<{message:{volunteers:Registration[]; members:Registration[]; as_of:string; deployments:import("./overview/PeopleAndDeployments").Deployment[]}}>(API.overviewRegisters,undefined,"admin:overview_registers");
 	const analytics = useFrappeGetCall<{ message: OverviewSummary }>(
 		API.branchSummary,
 		{ months: 12 },
@@ -58,66 +49,30 @@ export function Overview() {
 				lead="A live view of the people, growth and activity across the areas you manage."
 			/>
 
-			<StatGrid className="mb-6">
-				<StatTile
-					label="Waiting on you"
-					value={queue.isLoading ? "—" : waiting.length}
-					icon={Icon.inbox}
-					tint="navy"
-					to="/admin/queue"
-				/>
-				<StatTile
-					label="Past their SLA"
-					value={queue.isLoading ? "—" : overdue}
-					hint={overdue > 0 ? "Overdue for a decision" : undefined}
-					icon={Icon.hourglass}
-					tint="amber"
-					to="/admin/queue"
-				/>
-				<StatTile
-					label="Members in scope"
-					// `?.` after `message` as well as after `data`. A read the server
-					// refuses answers `{"message": null}`, not an error — so the
-					// optional chain has to reach the *field*, or the console's front
-					// page throws on exactly the permission gap it was built to
-					// report honestly.
-					value={members.isLoading ? "—" : (members.data?.message?.member_count ?? "—")}
-					icon={Icon.card}
-					tint="violet"
-					to="/admin/registry/members"
-				/>
-				<StatTile
-					label="Volunteers in scope"
-					value={volunteers.isLoading ? "—" : (volunteers.data?.message?.count ?? "—")}
-					icon={Icon.people}
-					tint="teal"
-					to="/admin/registry/volunteers"
-				/>
-			</StatGrid>
+            {registers.isLoading && <Spinner label="Loading overview…" />}
+            {registers.error && <ErrorNote>{errorMessage(registers.error)}</ErrorNote>}
+            {registers.data && <><RegistrationOverview
+                volunteers={registers.data?.message?.volunteers ?? []}
+                members={registers.data?.message?.members ?? []}
+                asOf={registers.data?.message?.as_of ?? new Date().toISOString().slice(0,10)}
+            />
+            <PeopleAndDeployments
+                deployments={registers.data?.message?.deployments ?? []}
+                volunteers={registers.data?.message?.volunteers ?? []}
+                members={registers.data?.message?.members ?? []}
+            />
+            </>}
+            <div className="overview-review-note">
+                <Icon.inbox size={17} />
+                <span><strong>{waiting.length} applications</strong> waiting on you · {overdue} overdue for a decision</span>
+                <SectionLink to="/admin/queue">Review applications</SectionLink>
+            </div>
 
 			{analytics.isLoading && <Spinner label="Building your regional picture…" />}
 			{analytics.error && <ErrorNote>{errorMessage(analytics.error)}</ErrorNote>}
 
 			{summary && (
 				<div className="space-y-7">
-					<section>
-						<SectionLabel action={<SectionLink to="/admin/analytics">Explore analytics</SectionLink>}>
-							Registration trend
-						</SectionLabel>
-						<div className="grid gap-4 lg:grid-cols-2">
-							<ChartCard
-								title="New volunteers"
-								total={sumTrend(summary.trend, "volunteers")}
-								columns={trendColumns(summary.trend, "volunteers")}
-							/>
-							<ChartCard
-								title="New memberships"
-								total={sumTrend(summary.trend, "members")}
-								columns={trendColumns(summary.trend, "members")}
-							/>
-						</div>
-					</section>
-
 					<section>
 						<SectionLabel>People across your area</SectionLabel>
 						<div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]">
@@ -130,8 +85,8 @@ export function Overview() {
 									<div className="flex gap-4 text-[11px] font-semibold text-muted">
 										{/* The same two hexes `GeoBars` draws with. A legend that
 										    names a colour the bars are not is worse than none. */}
-										<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#6B4FA8]" />Volunteers</span>
-										<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#A9640F]" />Members</span>
+										<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#45688D]" />Volunteers</span>
+										<span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-[#011E41]" />Members</span>
 									</div>
 								</div>
 								<GeoBars rows={summary.coverage} />
@@ -172,24 +127,6 @@ interface OverviewSummary {
 	coverage: Array<{ geo_node: string; label: string; volunteers: number; members: number }>;
 }
 
-function ChartCard({ title, total, columns }: { title: string; total: number; columns: Column[] }) {
-	return (
-		<Card>
-			<div className="mb-4 flex items-start justify-between gap-4">
-				<div>
-					<SectionTitle>{title}</SectionTitle>
-					<p className="text-[11.5px] text-slate-faint">Last 12 months</p>
-				</div>
-				<div className="text-right">
-					<div className="text-[28px] font-semibold leading-none tabular-nums text-ink">{total}</div>
-					<div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-faint">total joined</div>
-				</div>
-			</div>
-			<ColumnChart columns={columns} />
-		</Card>
-	);
-}
-
 function GeoBars({ rows }: { rows: OverviewSummary["coverage"] }) {
 	// `rows` is typed as an array and is not guaranteed to be one: a summary
 	// assembled from several permission-scoped reads can legitimately come back
@@ -203,11 +140,9 @@ function GeoBars({ rows }: { rows: OverviewSummary["coverage"] }) {
 				<div key={row.geo_node} className="grid gap-2 sm:grid-cols-[minmax(110px,0.65fr)_minmax(0,2fr)] sm:items-center">
 					<div className="truncate text-[12.5px] font-semibold text-ink" title={row.label}>{row.label}</div>
 					<div className="space-y-1.5">
-						{/* The two-series pair from `ui/chart.tsx`, not navy-and-blue:
-						    blue means "act on this" everywhere else in the product and a
-						    blue data bar dilutes it. */}
-						<GeoBar value={row.volunteers} max={max} tone="bg-[#6B4FA8]" label="volunteers" />
-						<GeoBar value={row.members} max={max} tone="bg-[#A9640F]" label="members" />
+						{/* Match the activity chart's volunteer and member navy shades. */}
+						<GeoBar value={row.volunteers} max={max} tone="bg-[#45688D]" label="volunteers" />
+						<GeoBar value={row.members} max={max} tone="bg-[#011E41]" label="members" />
 					</div>
 				</div>
 			))}
@@ -233,21 +168,6 @@ function Attention({ value, label, urgent = false }: { value: number; label: str
 			<div className="text-[12.5px] font-semibold text-slate-strong">{label}</div>
 		</div>
 	);
-}
-
-function trendColumns(trend: OverviewSummary["trend"], key: "volunteers" | "members"): Column[] {
-	return trend.map((point) => ({ label: monthLabel(point.month), title: monthLabel(point.month, true), value: point[key] }));
-}
-
-function monthLabel(month: string, long = false): string {
-	const [year, index] = month.split("-");
-	const date = new Date(Number(year), Number(index) - 1, 1);
-	if (Number.isNaN(date.getTime())) return month;
-	return date.toLocaleDateString(undefined, { month: long ? "long" : "short", year: long ? "numeric" : "2-digit" });
-}
-
-function sumTrend(trend: OverviewSummary["trend"], key: "volunteers" | "members"): number {
-	return trend.reduce((total, point) => total + point[key], 0);
 }
 
 function breakdown(counts: Record<string, number>) {

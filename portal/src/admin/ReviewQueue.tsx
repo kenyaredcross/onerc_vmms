@@ -134,7 +134,7 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	);
 	const history = useFrappeGetCall<{ message: ApprovalCases }>(
 		API.myCases,
-		{ doctype: spec.doctype, group: band.key, limit: 50, offset },
+		{ doctype: spec.doctype, group: band.key, limit: 25, offset },
 		isActionable ? null : `admin:my_cases:${kind}:${band.key}:${offset}`,
 	);
 
@@ -187,8 +187,8 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 			{!isActionable && !error && (offset > 0 || history.data?.message?.has_more) && (
 				<div className="mt-4 flex items-center gap-3 text-sm">
 					<span>Showing {offset + 1}–{offset + rows.length}</span>
-					<button type="button" disabled={offset === 0 || isLoading} onClick={() => setOffset(Math.max(0, offset - 50))} className="font-semibold text-ink disabled:opacity-40">Previous</button>
-					<button type="button" disabled={!history.data?.message?.has_more || isLoading} onClick={() => setOffset(offset + 50)} className="font-semibold text-ink disabled:opacity-40">Next</button>
+					<button type="button" disabled={offset === 0 || isLoading} onClick={() => setOffset(Math.max(0, offset - 25))} className="font-semibold text-ink disabled:opacity-40">Previous</button>
+					<button type="button" disabled={!history.data?.message?.has_more || isLoading} onClick={() => setOffset(offset + 25)} className="font-semibold text-ink disabled:opacity-40">Next</button>
 				</div>
 			)}
 		</>

@@ -1,3 +1,4 @@
+import { RecordCollection } from "../ui/RecordPagination";
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useFrappeGetCall } from "frappe-react-sdk";
@@ -207,7 +208,7 @@ function FilterBar({
 				<button
 					type="submit"
 					aria-label="Search"
-					className="grid h-[42px] w-[42px] flex-none place-items-center justify-self-end rounded-full bg-blue text-white transition hover:bg-blue-press"
+					className="movement-primary grid h-[42px] w-[42px] flex-none place-items-center justify-self-end rounded-full bg-action text-white transition hover:bg-action-press"
 				>
 					<Icon.search size={16} />
 				</button>
@@ -329,7 +330,7 @@ function ApplyLink({ row, compact = false }: { row: Opportunity; compact?: boole
 		<Link
 			to={`/opportunities/${encodeURIComponent(row.name)}/apply`}
 			className={cx(
-				"inline-flex flex-none items-center gap-1.5 rounded-xl bg-blue font-bold text-white transition hover:bg-blue-press",
+				"movement-primary inline-flex flex-none items-center gap-1.5 rounded-xl bg-action font-bold text-white transition hover:bg-action-press",
 				compact ? "px-4 py-2 text-[12.5px]" : "px-5 py-2.5 text-[13px]",
 			)}
 		>
@@ -421,7 +422,7 @@ export function MyDeployments() {
 				</Empty>
 			)}
 
-			<ul className="space-y-2.5">
+			<RecordCollection as="ul" className="space-y-2.5">
 				{rows.map((row) => (
 					<li
 						key={String(row.name ?? row.deployment)}
@@ -438,7 +439,7 @@ export function MyDeployments() {
 						</div>
 					</li>
 				))}
-			</ul>
+			</RecordCollection>
 		</>
 	);
 }

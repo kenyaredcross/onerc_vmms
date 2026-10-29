@@ -7,7 +7,7 @@
  * OWN-WORLD: Inherited, deliberately. Deep TRCS navy (#011E41) rail carrying
  *   white text; cool paper-grey canvas (#F6F8FB) and a light 56px header beside
  *   it. White panels held by a 1px #E7EBF0 hairline. 10–12px radii. IBM Plex
- *   Sans throughout. Blue (#155EEF) is the only interactive colour. Rows, not
+ *   Sans throughout. Red primary actions and selection accents, navy links. Rows, not
  *   pills: the active nav row is a translucent-white fill.
  * WHAT THE CONSOLE ADDS: density the portal does not need — a two-level rail
  *   (groups that open), a section panel for the sections large enough to be
@@ -631,7 +631,7 @@ export function ConsoleShell({
 						className="sticky top-0 hidden h-[var(--screen)] flex-none transition-[width] duration-200 ease-out md:block"
 						style={{ width: narrow ? RAIL_NARROW : RAIL_WIDE }}
 					>
-						<aside className="portal-rail-scroll flex h-full flex-col overflow-y-auto bg-rail px-3 pb-4 pt-4">
+						<aside className="movement-rail portal-rail-scroll flex h-full flex-col overflow-y-auto bg-rail px-3 pb-4 pt-4">
 							<Link
 								to="/admin"
 								className={cx("mb-3 flex items-center px-2 pt-1", narrow && "justify-center px-0")}
@@ -672,7 +672,7 @@ export function ConsoleShell({
 					<div className="flex min-w-0 flex-1 flex-col">
 						<header
 							data-tour="console-header"
-							className="sticky top-0 z-30 flex h-14 flex-none items-center gap-3 bg-canvas/95 px-4 backdrop-blur-sm md:px-7"
+							className="movement-header sticky top-0 z-30 flex h-14 flex-none items-center gap-3 bg-canvas/95 px-4 backdrop-blur-sm md:px-7"
 						>
 							<button
 								type="button"

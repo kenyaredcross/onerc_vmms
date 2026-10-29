@@ -2,17 +2,17 @@
  * ─── DIRECTION CONTRACT ──────────────────────────────────────────────────────
  * THESIS: The volunteer portal is one continuous workspace — a quiet
  *   institutional back-office, not a dashboard. Sidebar, header and canvas share
- *   one ground; hierarchy comes from space and a single restrained blue, never
+ *   one ground; hierarchy comes from space, navy structure and red actions, never
  *   from colour blocks, stat-tile grids, or the pill-rail it refuses.
  * OWN-WORLD: A deep TRCS navy (#011E41) left rail carrying white text; a cool
- *   paper-grey canvas and a light header beside it (#F4F7FA). White panels held
- *   by a 1px #DFE6ED hairline and the faintest lift. 10–14px radii. IBM Plex Sans
+ *   neutral canvas and a light header beside it (#F7F7F8). White panels held
+ *   by a 1px #E4E5E7 hairline and the faintest lift. 10–14px radii. IBM Plex Sans
  *   for body, Schibsted Grotesk for headings — the approved concept's two-face
  *   hierarchy, drawn in the two faces this app already loads rather than the two
- *   it names. Navy ink (#102033) on the light side. Blue (#155EEF) is the
- *   interactive colour — primary buttons, links, focus, the active-nav accent.
- *   The active nav row is a restrained translucent-white fill, never a pill. Red
- *   Cross red held back for identity, urgency and destruction. 264px rail,
+ *   it names. Navy ink (#102033) on the light side. Brand red carries primary
+ *   buttons and active navigation markers; navy carries links and focus.
+ *   The active nav row has a restrained translucent-white fill and red edge.
+ *   Destructive actions retain their own labelled danger treatment. 264px rail,
  *   56px header, 36px nav rows — rows, not pills.
  * STORY: A signed-in volunteer lands, sees the one thing asked of them now at the
  *   top, then what is coming, then their own standing — and acts without hunting.
@@ -266,14 +266,14 @@ export function PortalShell({
 					{/* ---------------------------------------------------------- sidebar */}
 					<aside
 						data-tour="portal-nav"
-						className="portal-rail-scroll sticky top-0 hidden h-[var(--screen)] w-[264px] flex-none flex-col overflow-y-auto bg-rail px-3 pb-4 pt-4 md:flex"
+						className="movement-rail portal-rail-scroll sticky top-0 hidden h-[var(--screen)] w-[264px] flex-none flex-col overflow-y-auto bg-rail px-3 pb-4 pt-4 md:flex"
 					>
 						{railBody}
 					</aside>
 
 					{/* --------------------------------------------------- content column */}
 					<div className="flex min-w-0 flex-1 flex-col">
-						<header data-tour="portal-header" className="sticky top-0 z-40 flex h-14 flex-none items-center gap-3 bg-canvas/95 px-4 backdrop-blur-sm md:px-6">
+						<header data-tour="portal-header" className="movement-header sticky top-0 z-40 flex h-14 flex-none items-center gap-3 bg-canvas/95 px-4 backdrop-blur-sm md:px-6">
 							<button
 								type="button"
 								onClick={() => setDrawer(true)}

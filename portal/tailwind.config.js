@@ -11,13 +11,9 @@
 // half-redesigned between commits. They are not deprecated decoration: they are
 // the migration, and they get removed screen by screen as each is refactored.
 //
-// **Red is not the action colour.** The original system used the Red Cross red
-// for every primary button and focus ring, which put a protected emblem's
-// colour on every control in the product. Blue is the action colour and stays
-// so. Red comes back under two names and neither of them is "button": `danger`
-// for genuinely destructive things, and `red` for the approved concept's brand
-// accents — the greeting's name, a plan card's band, one urgent deadline. The
-// emblem itself is a society's uploaded asset and is never redrawn here.
+// Replica IFRC-inspired direction: brand red carries primary actions and
+// selected navigation. Navy carries information and charts; neutrals carry
+// surfaces. The danger palette remains separate from the brand/action palette.
 export default {
 	content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
 	theme: {
@@ -28,7 +24,7 @@ export default {
 				// the top row and the gaps between panels are all this colour, so
 				// they read as one surface with white panels floating on it rather
 				// than as a sidebar bolted to a content pane.
-				shell: "#ECECEC",
+				shell: "#F5F5F5",
 				// A second neutral, for surfaces that sit *inside* a white panel —
 				// a stat tile, a map well, an inset list. One step off white, so it
 				// separates without needing a border.
@@ -46,17 +42,26 @@ export default {
 				// colours. One line each, and every screen in both shells moves
 				// with them — the migration strategy this file already uses.
 				ink: "#102033",
-				muted: "#627083",
+				muted: "#525E6C",
 				// ------------------------------------------------------ the action
-				// Selected navigation, focus, active tabs, primary actions. The only
-				// hue in the product that means "act on this" or "you are here".
+				// Navy information palette; legacy blue utilities now resolve to navy.
+				// Primary actions and selected states use the separate action palette.
 				blue: {
-					DEFAULT: "#155EEF",
-					hover: "#1150D0",
-					press: "#0E42A8",
+					DEFAULT: "#011E41",
+					hover: "#082B56",
+					press: "#00152E",
 					// The selected-navigation wash and the focus halo.
-					soft: "#EDF3FF",
-					line: "#B9CDF8",
+					soft: "#F0F3F6",
+					line: "#C8D5E3",
+				},
+				// Brand action is distinct from navy information and danger.
+				action: {
+					DEFAULT: "#D71920",
+					hover: "#B9151B",
+					press: "#9D2027",
+					soft: "#FFF0F1",
+					line: "#F0C8CA",
+					ink: "#9D2027",
 				},
 				// ---------------------------------------------------------- status
 				// Each of these is only ever *half* of a status: every badge also
@@ -81,17 +86,9 @@ export default {
 				},
 
 				// ================================================================
-				// Portal fork — the volunteer workspace's own ground.
-				//
-				// The portal is "one continuous workspace": a deep TRCS navy left
-				// rail carrying white text, beside a cool paper-grey canvas and a
-				// light header. White panels held by a 1px hairline rather than a
-				// shadow. The console keeps `shell` / `surface` / borderless cards;
-				// these names appear only under `portal/`. `blue` (#155EEF) stays
-				// the interactive colour — primary buttons, links, focus, the
-				// active-nav accent — and is never the rail's field.
-				// ================================================================
-				canvas: "#F4F7FA",
+				// Both workspaces share neutral surfaces and a navy rail. Red action
+				// controls and active markers provide the Movement-inspired identity.
+				canvas: "#EEF0F3",
 				rail: {
 					// The sidebar field. Near-black navy; white text clears AA with
 					// enormous headroom (~16:1).
@@ -101,7 +98,7 @@ export default {
 					// (dark enough to clear WCAG AA on canvas and white alike, which
 					// #9AA0A8 did not). The rail's own text uses white-alpha inline.
 					hover: "#E8EEF6",
-					line: "#E2E7EE",
+					line: "#C9D0D9",
 					label: "#5E6775",
 					// The lighter navy the concept uses for a *feature* panel on the
 					// light side — the deployment request's summary block. Never the
@@ -110,10 +107,10 @@ export default {
 				},
 				// The hairline a portal panel actually carries. One notch cooler and
 				// lighter than the console's `hairline`, tuned to sit on `canvas`.
-				"card-line": "#DFE6ED",
+				"card-line": "#E4E5E7",
 				// ------------------------------------------------- brand accents
-				// The Red Cross red, back in the palette but not back as the action
-				// colour: `blue` is still what "act on this" means. This is for
+				// Brand red accents share their hue with semantic `action` controls.
+				// Use this decorative palette for
 				// identity (the greeting's name, a plan card's band), for genuine
 				// urgency (a response deadline), and for nothing else. `danger`
 				// remains the destructive tone and is deliberately a separate name,
@@ -141,7 +138,7 @@ export default {
 					// the concept has no fourth colour for.
 					task: "#B32530",
 					deployment: "#011E41",
-					event: "#155EEF",
+					event: "#45688D",
 					cert: "#6D4AA6",
 					"cert-soft": "#F2EDFB",
 				},
@@ -156,20 +153,18 @@ export default {
 					DEFAULT: "#24272C",
 					deep: "#1B1E22",
 				},
-				// Was the Red Cross red, used for every primary action and focus
-				// ring in the product. Now the action blue. This single line is
-				// what takes the red out of ~50 screens at once.
+				// Legacy action alias: red matches the semantic action palette.
 				signal: {
-					DEFAULT: "#155EEF",
-					dark: "#1150D0",
+					DEFAULT: "#D71920",
+					dark: "#B9151B",
 				},
 				// Retuned with `ink` and `muted` above: the same three weights of body
 				// text, navy-tinted rather than neutral, so a paragraph in a card and
 				// the heading over it belong to one family.
 				slate: {
-					body: "#627083",
+					body: "#525E6C",
 					strong: "#3B4A5C",
-					faint: "#8A96A5",
+					faint: "#657180",
 					mute: "#AEB9C5",
 				},
 				hairline: {

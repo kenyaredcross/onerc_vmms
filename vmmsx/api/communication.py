@@ -119,6 +119,13 @@ def options() -> dict:
 				sms_source_doctypes.append({"value": doctype, "label": doctype.removeprefix("VMMS ")})
 
 	return {
+		"sender": {
+			"name": frappe.db.get_value("User", frappe.session.user, "full_name") or frappe.session.user,
+			"email": frappe.db.get_value(
+				"Email Account", {"enable_outgoing": 1, "default_outgoing": 1}, "email_id"
+			)
+			or "",
+		},
 		"audiences": _select_options(meta, "audience"),
 		"urgencies": _select_options(meta, "urgency"),
 		# The society's own vocabulary for what kind of thing this is. Named by
@@ -184,8 +191,7 @@ def preview(geo_node: str, who: str) -> dict:
 	}
 
 
-@frappe.whitelist()
-def send(
+def _send_now(
 	title: str,
 	body: str,
 	geo_node: str,
@@ -391,3 +397,240 @@ def _assert_may_address(geo_node: str) -> None:
 			frappe.PermissionError,
 			title=_("Out of Your Area"),
 		)
+
+
+# Durable console history. The original channel services still own delivery and approval.
+COMMUNICATION = "VMMS Communication"
+
+
+def _console_record(doc) -> dict:
+	payload = frappe.parse_json(doc.payload) or {}
+	report = frappe.parse_json(doc.report) or {}
+	announcement = report.get("announcement") or {}
+	status, count, delivered, failed = doc.status, announcement.get("addressed", 0), 0, 0
+	if doc.channel == "system":
+		delivered = announcement.get("delivered", 0)
+	elif doc.channel == "email" and announcement.get("announcement"):
+		queues = frappe.get_all(
+			"Email Queue",
+			filters={
+				"reference_doctype": ANNOUNCEMENT_DOCTYPE,
+				"reference_name": announcement["announcement"],
+			},
+			fields=["name", "status"],
+		)
+		count = 0
+		for queue in queues:
+			recipients = frappe.get_all(
+				"Email Queue Recipient", filters={"parent": queue.name}, fields=["status"]
+			)
+			count += len(recipients)
+			delivered += sum(row.status == "Sent" for row in recipients)
+			failed += sum(row.status != "Sent" for row in recipients) if queue.status == "Error" else 0
+		if queues:
+			status = (
+				"Sent"
+				if all(row.status == "Sent" for row in queues)
+				else "Failed"
+				if all(row.status == "Error" for row in queues)
+				else "Queued"
+			)
+	elif doc.channel in {"sms", "whatsapp"}:
+		result = report.get(doc.channel) or {}
+		count = result.get("recipients", 0)
+		name = result.get("broadcast" if doc.channel == "whatsapp" else "campaign")
+		doctype = "VMMS WhatsApp Broadcast" if doc.channel == "whatsapp" else "SMS Campaign"
+		if name and frappe.db.exists(doctype, name):
+			campaign_doc = frappe.get_doc(doctype, name)
+			status = "Pending approval" if campaign_doc.docstatus == 0 else campaign_doc.status
+			delivered = campaign_doc.get("total_sent") or 0
+			failed = campaign_doc.get("total_failed") or 0
+	return {
+		"id": doc.name,
+		"channel": doc.channel,
+		"title": doc.title or "Untitled draft",
+		"body": payload.get("body", ""),
+		"status": status,
+		"date": str(doc.modified),
+		"sender": frappe.db.get_value("User", doc.owner, "full_name") or doc.owner,
+		"sender_email": doc.owner,
+		"branch": doc.geo_node or "",
+		"audience": payload.get("who", "everyone"),
+		"recipient_count": count,
+		"delivered": delivered,
+		"failed": failed,
+		"opened": 0,
+		"recipients": [],
+		"pinned": bool(doc.pinned),
+		"scheduled_at": str(doc.scheduled_at) if doc.scheduled_at else None,
+		"who": payload.get("who", "everyone"),
+		"chain": payload.get("chain", []),
+		"draft_fields": payload.get("draft_fields"),
+	}
+
+
+def _history_doc(name: str):
+	doc = frappe.get_doc(COMMUNICATION, name)
+	_assert_may_address(doc.geo_node)
+	return doc
+
+
+@frappe.whitelist()
+def history(channel: str) -> list[dict]:
+	_assert_may_read()
+	if channel not in {"email", "sms", "whatsapp", "system"}:
+		frappe.throw(_("Choose a valid communication channel."))
+	from onerc_core.access.services import scope
+	from onerc_core.society.services import config
+
+	filters = {"channel": channel}
+	if not scope.has_unrestricted_scope():
+		role = config.settings().get("vmms_announcement_scope_role")
+		nodes = scope.get_user_geo_scope(frappe.session.user, role) if role else set()
+		if not nodes:
+			return []
+		filters["geo_node"] = ("in", sorted(nodes))
+	# get_all is bounded above by the same announcement scope, never by a client scope.
+	names = frappe.get_all(
+		COMMUNICATION, filters=filters, pluck="name", order_by="modified desc", limit_page_length=0
+	)
+	return [_console_record(frappe.get_doc(COMMUNICATION, name)) for name in names]
+
+
+@frappe.whitelist()
+def save_draft(data: dict | str) -> dict:
+	data = frappe.parse_json(data) if isinstance(data, str) else data
+	if not isinstance(data, dict):
+		frappe.throw(_("Enter a message."))
+	_assert_may_address(data.get("geo_node"))
+	if data.get("channel") not in {"email", "sms", "whatsapp", "system"}:
+		frappe.throw(_("Choose a valid communication channel."))
+	if len(data.get("title", "")) > 140 or len(data.get("body", "")) > 100000:
+		frappe.throw(_("The message is too long."))
+	doc = _history_doc(data["id"]) if data.get("id") else frappe.new_doc(COMMUNICATION)
+	if doc.status and doc.status != "Draft":
+		frappe.throw(_("Only a saved draft can be edited."))
+	# Copy only composer fields; status, sender and delivery totals always belong to the server.
+	payload = {key: data.get(key) for key in ("title", "body", "geo_node", "who", "chain", "draft_fields")}
+	doc.update(
+		{
+			"title": data.get("title", "").strip(),
+			"geo_node": data["geo_node"],
+			"channel": data["channel"],
+			"status": "Draft",
+			"payload": frappe.as_json(payload),
+		}
+	)
+	doc.save(ignore_permissions=True)
+	return _console_record(doc)
+
+
+@frappe.whitelist()
+def pin(id: str) -> dict:
+	doc = _history_doc(id)
+	doc.pinned = not doc.pinned
+	doc.save(ignore_permissions=True)
+	return {"pinned": bool(doc.pinned)}
+
+
+@frappe.whitelist()
+def send(
+	title: str,
+	body: str,
+	geo_node: str,
+	who: str,
+	channels: list | str,
+	scheduled_at: str | None = None,
+	draft_id: str | None = None,
+	**kwargs,
+) -> dict:
+	from inspect import signature
+
+	from frappe.utils import get_datetime, now_datetime
+
+	_assert_may_address(geo_node)
+	chosen = frappe.parse_json(channels) if isinstance(channels, str) else channels
+	if not chosen or set(chosen) - {"notification", "email", "sms", "whatsapp"}:
+		frappe.throw(_("Choose a valid communication channel."))
+	if not title.strip() or not body.strip() or len(title) > 140 or len(body) > 100000:
+		frappe.throw(_("Enter a subject and message within the allowed length."))
+	when = get_datetime(scheduled_at) if scheduled_at else None
+	if when and when <= now_datetime():
+		frappe.throw(_("Choose a future delivery time."))
+	if draft_id:
+		frappe.db.sql("SELECT name FROM `tabVMMS Communication` WHERE name = %s FOR UPDATE", draft_id)
+	draft = _history_doc(draft_id) if draft_id else None
+	if draft and (
+		draft.status != "Draft"
+		or len(chosen) != 1
+		or draft.channel != ("system" if chosen[0] == "notification" else chosen[0])
+	):
+		frappe.throw(_("Only an unsent draft from this channel can be sent."))
+	payload = {key: value for key, value in kwargs.items() if key in signature(_send_now).parameters}
+	payload.update(title=title, body=body, geo_node=geo_node, who=who, channels=chosen)
+	if when:
+		payload.update(sms_scheduled_at=str(when), whatsapp_scheduled_at=str(when))
+	deferred = bool(when and set(chosen) <= {"notification", "email"})
+	report = {"announcement": None, "sms": None, "whatsapp": None} if deferred else _send_now(**payload)
+	for channel in chosen:
+		doc = draft or frappe.new_doc(COMMUNICATION)
+		status = (
+			"Scheduled"
+			if deferred
+			else "Pending approval"
+			if channel in {"sms", "whatsapp"}
+			else "Queued"
+			if channel == "email"
+			else "Sent"
+		)
+		stored = {**payload, "channels": [channel], "chain": kwargs.get("chain", [])}
+		doc.update(
+			{
+				"geo_node": geo_node,
+				"channel": "system" if channel == "notification" else channel,
+				"title": title,
+				"status": status,
+				"payload": frappe.as_json(stored),
+				"report": frappe.as_json(report),
+				"scheduled_at": when,
+			}
+		)
+		doc.save(ignore_permissions=True)
+		report["history_id"] = doc.name
+	return report
+
+
+def release_scheduled() -> None:
+	"""Release due emails/notifications as their author, rechecking current authority."""
+	from frappe.utils import now_datetime
+
+	original_user = frappe.session.user
+	names = frappe.get_all(
+		COMMUNICATION,
+		filters={"status": "Scheduled", "scheduled_at": ("<=", now_datetime())},
+		pluck="name",
+		limit=100,
+	)
+	for name in names:
+		frappe.db.savepoint("communication_delivery")
+		try:
+			frappe.db.sql("SELECT name FROM `tabVMMS Communication` WHERE name = %s FOR UPDATE", name)
+			doc = frappe.get_doc(COMMUNICATION, name)
+			if doc.status != "Scheduled":
+				continue
+			if not frappe.db.get_value("User", doc.owner, "enabled"):
+				raise frappe.PermissionError("Sender is disabled")
+			frappe.set_user(doc.owner)
+			payload = frappe.parse_json(doc.payload)
+			payload.pop("chain", None)
+			report = _send_now(**payload)
+			doc.update(
+				{"status": "Queued" if doc.channel == "email" else "Sent", "report": frappe.as_json(report)}
+			)
+			doc.save(ignore_permissions=True)
+		except Exception:
+			frappe.db.rollback(save_point="communication_delivery")
+			frappe.db.set_value(COMMUNICATION, name, "status", "Failed")
+			frappe.log_error(title="Scheduled communication failed")
+		finally:
+			frappe.set_user(original_user)

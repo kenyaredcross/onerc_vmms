@@ -1,3 +1,4 @@
+import { MetricCard } from "../ui/MetricCard";
 import { useState } from "react";
 import { useFrappeGetCall } from "frappe-react-sdk";
 
@@ -106,21 +107,11 @@ export default function Analytics() {
 			{summary && (
 				<div className="space-y-5">
 					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-						<Card>
-							<Stat value={summary.volunteers.total} label="Volunteers" />
-						</Card>
-						<Card>
-							<Stat value={summary.members.total} label="Memberships" />
-						</Card>
-						<Card>
-							<Stat value={formatHours(summary.hours.total)} label="Hours logged" />
-						</Card>
-						<Card>
-							<Stat value={summary.tasks.open} label="Open tasks" />
-						</Card>
-						<Card>
-							<Stat value={summary.deployments.total} label="Deployments" />
-						</Card>
+						<MetricCard value={summary.volunteers.total} label="Volunteers" />
+						<MetricCard value={summary.members.total} label="Memberships" />
+						<MetricCard value={formatHours(summary.hours.total)} label="Hours logged" />
+						<MetricCard value={summary.tasks.open} label="Open tasks" />
+						<MetricCard value={summary.deployments.total} label="Deployments" />
 					</div>
 
 					{summary.hours.truncated && (

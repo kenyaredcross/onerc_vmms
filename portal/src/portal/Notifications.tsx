@@ -1,3 +1,4 @@
+import { RecordCollection } from "../ui/RecordPagination";
 import { useFrappeGetCall, useFrappePostCall } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
@@ -97,7 +98,7 @@ export default function Notifications() {
 				</Empty>
 			)}
 
-			<ul className="space-y-3">
+			<RecordCollection as="ul" className="space-y-3">
 				{rows.map((row) => {
 					const tone = URGENCY[row.urgency];
 
@@ -189,7 +190,7 @@ export default function Notifications() {
 						</li>
 					);
 				})}
-			</ul>
+			</RecordCollection>
 		</>
 	);
 }

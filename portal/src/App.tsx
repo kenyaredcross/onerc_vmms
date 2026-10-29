@@ -465,7 +465,7 @@ export default function App() {
 					<Route path="assets" element={<AdminAssets />} />
 					<Route path="analytics" element={<Analytics />} />
 					<Route path="people" element={<PeopleOverview />} />
-					<Route path="communication" element={<Navigate to="/admin/communication/system/compose" replace />} />
+					<Route path="communication" element={<Navigate to="/admin/communication/email/overview" replace />} />
 					{/* Declared before the generic `:channel/:view` for a reader: the
 					    channel screen is not a composer and is WhatsApp's alone. */}
 					<Route path="communication/whatsapp/channel" element={<WhatsAppChannel />} />

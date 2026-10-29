@@ -1,3 +1,4 @@
+import { useRecordPage, RecordPager } from "../ui/RecordPagination";
 import { useEffect, useState } from "react";
 import { useFrappeGetCall, useFrappePostCall } from "frappe-react-sdk";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -1198,6 +1199,7 @@ export function OpeningDetailPage() {
 	const setStatus = useFrappePostCall(API.recruitmentSetOpeningStatus);
 	const setPublished = useFrappePostCall(API.recruitmentSetOpeningPublished);
 
+	const paging = useRecordPage(applicants.data?.message?.applicants ?? []);
 	if (opening.isLoading) return <Spinner page label="Loading the opening…" />;
 	if (opening.error) return <ErrorNote>{errorMessage(opening.error)}</ErrorNote>;
 
@@ -1294,14 +1296,14 @@ export function OpeningDetailPage() {
 						{rows.length === 0 ? (
 							<Empty framed={false} title="Nobody has applied yet" icon={Icon.inbox} />
 						) : (
-							<Board>
+							<> <Board>
 								{STAGES.map((stage) => {
-									const inStage = rows.filter(
+									const inStage = paging.slice.filter(
 										(row) => row.status === stage && !row.is_withdrawn,
 									);
 
 									return (
-										<BoardColumn key={stage} title={stage} count={inStage.length} tone={STAGE_TONE[stage]}>
+										<BoardColumn key={stage} title={stage} count={rows.filter(row => row.status === stage && !row.is_withdrawn).length} tone={STAGE_TONE[stage]}>
 											{inStage.map((row) => (
 												<BoardCard
 													key={row.name}
@@ -1314,7 +1316,7 @@ export function OpeningDetailPage() {
 										</BoardColumn>
 									);
 								})}
-							</Board>
+							</Board><RecordPager {...paging} /></>
 						)}
 					</Card>
 				</div>
@@ -1624,7 +1626,7 @@ export function JobApplicant() {
 
 				<div className="space-y-4 lg:sticky lg:top-[76px] lg:self-start">
 					<Card>
-						<h2 className="mb-3.5 text-[13.5px] font-semibold text-ink">Who this is</h2>
+						<h2 className="mb-3.5 text-[13.5px] font-semibold text-ink">Applicant details</h2>
 						<DetailList>
 							<Detail label="Full Name">{doc.applicant_name ?? "—"}</Detail>
 							<Detail label="Email Address">{doc.email ?? "—"}</Detail>

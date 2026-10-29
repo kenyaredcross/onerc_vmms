@@ -1,3 +1,4 @@
+import { FolderTile } from "./FolderCard";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -196,46 +197,7 @@ export function FolderCard({
 	/** The short facts on the folder's foot — "3 TORs · 6 deployments". */
 	counts?: ReactNode;
 }) {
-	return (
-		<Link
-			to={to}
-			className="card group flex h-full flex-col overflow-hidden transition duration-200 hover:shadow-[0_2px_10px_rgba(30,50,73,0.07)] focus-visible:shadow-[0_2px_10px_rgba(30,50,73,0.07)]"
-		>
-			<div className="grid h-[128px] place-items-center bg-surface">
-				<svg
-					viewBox="0 0 96 76"
-					width="78"
-					height="62"
-					aria-hidden="true"
-					className="text-blue-soft transition-transform duration-200 group-hover:-translate-y-0.5"
-				>
-					<path
-						d="M4 14a8 8 0 0 1 8-8h22l8 9h42a8 8 0 0 1 8 8v45a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8z"
-						fill="currentColor"
-					/>
-					<path
-						d="M4 26h88v40a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8z"
-						fill="currentColor"
-						className="text-blue-line/45"
-					/>
-				</svg>
-			</div>
-
-			<div className="flex flex-1 flex-col gap-1.5 px-5 pb-4 pt-4">
-				<h3 className="text-[14.5px] font-medium leading-snug tracking-tight text-ink">
-					{name}
-				</h3>
-				{summary && (
-					<p className="line-clamp-2 text-[12px] leading-relaxed text-muted">{summary}</p>
-				)}
-			</div>
-
-			<div className="flex items-center justify-between gap-3 border-t border-card-line px-5 py-3">
-				<span className="tabular min-w-0 truncate text-[11.5px] text-muted">{counts}</span>
-				{status && <StateBadge state={status} />}
-			</div>
-		</Link>
-	);
+	return <FolderTile to={to} title={name} summary={summary} footer={counts} badge={status ? <StateBadge state={status}/> : undefined}/>;
 }
 
 /* ------------------------------------------------------------- record rows */

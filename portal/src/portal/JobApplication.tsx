@@ -155,7 +155,7 @@ export default function JobApplication() {
 								<textarea className={control} rows={5} value={coverLetter} onChange={(event) => setCoverLetter(event.target.value)} placeholder="Tell us why you are interested in this role" />
 							</label>
 							{failure && <ErrorNote>{failure}</ErrorNote>}
-							<button type="submit" disabled={busy} className="rounded-xl bg-blue px-6 py-3 text-[13px] font-bold text-white hover:bg-blue-press disabled:opacity-50">{busy ? "Sending…" : "Submit application"}</button>
+							<button type="submit" disabled={busy} className="movement-primary rounded-xl bg-action px-6 py-3 text-[13px] font-bold text-white hover:bg-action-press disabled:opacity-50">{busy ? "Sending…" : "Submit application"}</button>
 						</form>
 					)}
 				</article>

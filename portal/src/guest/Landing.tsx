@@ -121,7 +121,7 @@ function LandingBody() {
 	}
 
 	return (
-		<div className="min-h-screen overflow-x-clip bg-white text-ink">
+		<div className="movement-public min-h-screen overflow-x-clip bg-white text-ink">
 			<Header />
 			<main>
 				<Hero />
@@ -142,10 +142,10 @@ function Header() {
 	const { isGuest, user } = useSession();
 
 	return (
-		<header className="absolute inset-x-0 top-0 z-30 border-b border-white/20 text-white">
+		<header className="movement-header absolute inset-x-0 top-0 z-30 border-b border-card-line bg-white text-ink">
 			<div className="mx-auto flex h-[88px] max-w-[1320px] items-center gap-2 px-4 sm:gap-8 sm:px-6">
 				<Link to="/" className="flex min-w-0 items-center">
-					<BrandLockup tone="dark" />
+					<BrandLockup tone="light" />
 				</Link>
 
 				<nav
@@ -156,23 +156,23 @@ function Header() {
 						<EditableLink
 							key={index}
 							k={`landing.nav.item${index}`}
-							className="relative py-2 text-[14px] font-semibold text-white/90 transition hover:text-white"
+							className="relative py-2 text-[14px] font-semibold text-ink transition hover:text-red-ink"
 						/>
 					))}
 				</nav>
 
 				<div className="ms-auto flex flex-none items-center gap-6">
-					<LanguageSwitcher tone="dark" />
+					<LanguageSwitcher tone="light" />
 					{isGuest ? (
 						<>
 							<EditableLink
 								k="chrome.action.signin"
 								fallback="Sign in"
-								className="relative whitespace-nowrap py-2 text-[14px] font-semibold text-white transition hover:text-white/75"
+								className="relative whitespace-nowrap py-2 text-[14px] font-semibold text-ink transition hover:text-red-ink"
 							/>
 							<JoinLink
 								to="/join"
-								className="inline-flex min-h-[42px] items-center whitespace-nowrap bg-white px-5 text-[14px] font-bold text-rail transition hover:bg-white/90"
+								className="inline-flex min-h-[42px] items-center whitespace-nowrap bg-action px-5 text-[14px] font-bold text-white transition hover:bg-action-hover"
 							>
 								<EditableText k="chrome.action.join" fallback="Join us" />
 							</JoinLink>
@@ -185,7 +185,7 @@ function Header() {
 						// about itself, and a member is allowed to read it.
 						<Link
 							to="/dashboard"
-							className="whitespace-nowrap rounded-full bg-blue px-4 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-blue-hover"
+							className="movement-primary whitespace-nowrap rounded-full bg-action px-4 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-action-hover"
 							title={user ?? undefined}
 						>
 							Go to dashboard
@@ -260,7 +260,7 @@ function HeroPrimary() {
 	return (
 		<JoinLink
 			to="/join?path=volunteer"
-			className="inline-flex min-h-[52px] items-center gap-7 whitespace-nowrap bg-white px-6 text-[14px] font-bold text-rail transition hover:-translate-y-0.5"
+			className="inline-flex min-h-[52px] items-center gap-7 whitespace-nowrap bg-action px-6 text-[14px] font-bold text-white transition hover:bg-action-hover hover:-translate-y-0.5"
 		>
 			<EditableText k="landing.hero.cta_primary" fallback="Become a volunteer" />
 			<Icon.arrow size={15} />
@@ -366,7 +366,7 @@ function FeatureGrid() {
 						<>
 							<JoinLink
 								to="/join?path=member"
-								className="rounded-full bg-blue px-5 py-3 text-[13px] font-bold text-white transition hover:bg-blue-hover"
+								className="movement-primary rounded-full bg-action px-5 py-3 text-[13px] font-bold text-white transition hover:bg-action-hover"
 							>
 								<EditableText k="landing.band2.cta_primary" />
 							</JoinLink>
@@ -505,7 +505,7 @@ function StatStrip() {
 
 	return (
 		<section className="bg-white px-4 py-8 sm:px-6 sm:py-10">
-			<div className="mx-auto grid max-w-shell grid-cols-2 overflow-hidden rounded-2xl bg-rail py-7 text-center border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] lg:grid-cols-4 lg:py-9">
+			<div className="mx-auto grid max-w-shell grid-cols-2 overflow-hidden rounded-2xl bg-white py-7 text-center border border-card-line shadow-[0_1px_2px_rgba(30,50,73,0.025)] lg:grid-cols-4 lg:py-9">
 				{shown.map((entry) => (
 					<div
 						key={entry.key}
@@ -520,23 +520,23 @@ function StatStrip() {
 						// figure on the page, and it won on source order rather
 						// than on meaning: it left one rule hanging off the right
 						// of the strip with nothing after it.
-						className="border-r border-white/10 px-3 py-4 last:border-r-0 [&:nth-child(2n)]:border-r-0 lg:py-0 lg:[&:nth-child(2n):not(:last-child)]:border-r"
+						className="border-r border-card-line px-3 py-4 last:border-r-0 [&:nth-child(2n)]:border-r-0 lg:py-0 lg:[&:nth-child(2n):not(:last-child)]:border-r"
 					>
 						{entry.live === undefined ? (
 							<EditableText
 								k={`landing.${entry.key}.value`}
 								as="div"
-								className="relative text-[30px] font-semibold leading-none tracking-[-.04em] text-white sm:text-[38px]"
+								className="relative text-[30px] font-semibold leading-none tracking-[-.04em] text-red-ink sm:text-[38px]"
 							/>
 						) : (
-							<div className="text-[30px] font-semibold leading-none tracking-[-.04em] text-white sm:text-[38px]">
+							<div className="text-[30px] font-semibold leading-none tracking-[-.04em] text-red-ink sm:text-[38px]">
 								{entry.live}
 							</div>
 						)}
 						<EditableText
 							k={entry.labelKey}
 							as="div"
-							className="relative mt-2 text-[9.5px] font-bold uppercase tracking-[.14em] text-white/45 sm:text-[10.5px]"
+							className="relative mt-2 text-[9.5px] font-bold uppercase tracking-[.14em] text-muted sm:text-[10.5px]"
 						/>
 					</div>
 				))}
@@ -762,7 +762,7 @@ function ClosingPanel() {
 					</div>
 					<JoinLink
 						to="/join"
-						className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-blue px-6 py-3.5 text-[14px] font-bold text-white transition hover:bg-blue-hover"
+						className="movement-primary inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-action px-6 py-3.5 text-[14px] font-bold text-white transition hover:bg-action-hover"
 					>
 						<EditableText k="landing.cta.button" fallback="Join us today" />
 						<Icon.arrow size={16} />

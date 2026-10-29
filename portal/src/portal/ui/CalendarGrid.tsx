@@ -52,25 +52,25 @@ export const CAL_META: Record<CalKind, { label: string; dot: string; text: strin
 			label: "Deadline",
 			dot: "bg-cal-task",
 			text: "text-cal-task",
-			chip: "bg-red-soft text-red-ink border-l-cal-task",
+			chip: "bg-red-soft text-red-ink",
 		},
 		deployment: {
 			label: "Deployment",
 			dot: "bg-cal-deployment",
 			text: "text-cal-deployment",
-			chip: "bg-rail text-white border-l-red",
+			chip: "bg-rail text-white",
 		},
 		event: {
 			label: "Event",
 			dot: "bg-cal-event",
 			text: "text-cal-event",
-			chip: "bg-blue-soft text-blue-press border-l-cal-event",
+			chip: "bg-blue-soft text-blue-press",
 		},
 		certification: {
 			label: "Certification",
 			dot: "bg-cal-cert",
 			text: "text-cal-cert",
-			chip: "bg-cal-cert-soft text-cal-cert border-l-cal-cert",
+			chip: "bg-cal-cert-soft text-cal-cert",
 		},
 	};
 
@@ -304,7 +304,7 @@ export function CalendarGrid({
 // span inside it, because the preview hangs *above* the chip and an
 // `overflow` of `hidden` on the button itself cuts the whole card away.
 const CHIP_BASE =
-	"group relative block w-full rounded-[5px] border-l-[3px] px-1.5 py-1 text-left text-[10px] font-semibold leading-[13px] transition";
+	"group relative block w-full rounded-[5px] px-1.5 py-1 text-left text-[10px] font-semibold leading-[13px] transition";
 
 function Chip({
 	entry,
