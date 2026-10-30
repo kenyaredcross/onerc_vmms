@@ -29,14 +29,30 @@ Automatic M-Pesa processing fails at the accounting stage because the payment re
   receipt. VMMS saves it in Mpesa Express Request and a dedicated Integration
   Request before attempting accounting. A later accounting rollback preserves
   that confirmation evidence.
-- Posting requires a server-to-server STK status query returning `ResultCode=0`
-  for the exact stored CheckoutRequestID. An HTTP success, a draft invoice, an
-  exception log, or a browser-supplied payment status does not establish payment.
+- Posting requires a successful server-to-server STK verification for the exact
+  stored CheckoutRequestID. Retries reuse the stored verified response, bound to
+  the checkout, Payment Request, settings, and amount, rather than requiring a
+  successful fresh query every time. Older VMMS confirmations without this binding
+  also require matching completed provider logs for the original initiation
+  (including amount) and successful query, using the same paybill and environment.
+  A callback alone, an HTTP success, a draft invoice, an exception log, or a
+  browser-supplied payment status does not establish verification. Requests
+  without usable stored evidence still require a new successful provider query.
+- A draft invoice retains its original posting date and time during recovery by
+  setting `set_posting_time` before normal submission. Its due date, payment
+  schedule, and payment terms are preserved; normal invoice validation still runs.
 - A row lock and existing submitted Payment Entry references prevent repeated
   callbacks or recovery attempts from posting the same request twice.
 - Existing submitted entries must have balanced, positive ledger totals in the
   invoice company. Incomplete historical entries require reconciliation rather
   than another posting.
+- Completion also requires full invoice settlement and a Payment Entry allocation
+  matching the verified amount. A paid invoice with an existing valid Payment
+  Entry is finalized without creating another entry. The result includes the
+  existing Payment Entry name for review.
+- Settled membership payments set the membership's `paid` flag. Draft memberships
+  use their native period logic; Pending, Active, Rejected, and Expired statuses
+  are retained. Recovery does not approve membership or extend its period again.
 - Paid event bookings are submitted through their own controller after full
   invoice settlement. Its normal submission hook issues the tickets and QR
   codes. VMMS checks one submitted ticket per attendee. A submitted booking is
@@ -64,8 +80,27 @@ the mode selected in VM Settings. A separate branch paybill is not required.
 
 Every 15 minutes the VMMS job checks up to 20 pending membership and event requests, prioritizing the
 least recently modified. It checks requests created in the last day plus older
-requests with a recorded successful result. Network failures and unmatched or
+requests with a recorded successful result. This includes Completed requests whose
+linked membership still has an unset paid flag, so existing accounting can be
+reused to finish payment recognition. Network failures and unmatched or
 unsuccessful status responses never create Payment Entries.
+
+## Delayed-recovery findings confirmed on 30 October 2026
+
+Three successful checkouts remained blocked because their draft invoices had
+`set_posting_time=0`. ERPNext replaced the posting date with the retry date while
+leaving the original due date and payment schedule behind, then rejected submission
+with "Due Date cannot be before Posting / Supplier Invoice Date". Preserving the
+original date allowed invoice ACC-SINV-2026-02093 to submit normally. The subsequent
+one-record accounting test created ACC-PAY-2026-00194, settled KES 500, and produced
+balanced Nairobi ledger entries. This already-posted payment must be reused.
+
+The same checkout had several successful provider queries on 28 October. Identical
+queries to the same production paybill returned "The transaction does not Exist"
+on 30 October. The evidence does not establish why the provider response changed.
+Requiring a fresh success on every accounting retry therefore stranded an already
+verified payment. Stored verification is now reusable under the checks above;
+missing or mismatched evidence remains unconfirmed.
 
 ## Inspect and recover the backlog
 
