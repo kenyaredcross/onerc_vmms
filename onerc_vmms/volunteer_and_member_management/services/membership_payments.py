@@ -1,12 +1,16 @@
 """Membership and event accounting and confirmed STK recovery, owned by VMMS."""
 
 import json
+from ast import literal_eval
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 import frappe
 from frappe import _
+from frappe.query_builder import DocType, Order
 from frappe.utils import add_days, cint, flt, now_datetime
+
+from ..utils.utils import system_session
 
 EXPRESS = "Mpesa Express Request"
 CONFIRMATION_SERVICE = "VMMS M-Pesa Confirmation"
@@ -100,7 +104,8 @@ def _original_callback(**kwargs):
 	return original(**kwargs)
 
 
-@frappe.whitelist(allow_guest=True, methods=["POST"])
+# Provider callbacks have no Desk session; accounting requires verified server evidence.
+@frappe.whitelist(allow_guest=True, methods=["POST"])  # nosemgrep: guest-whitelisted-method
 def stk_push_callback(**kwargs):
 	"""Override the existing callback URL for VM membership and event payments."""
 	response = (kwargs.get("Body") or {}).get("stkCallback") or {}
@@ -120,11 +125,10 @@ def stk_push_callback(**kwargs):
 	receipt = metadata.get("MpesaReceiptNumber")
 	if not valid_amount or not isinstance(receipt, str) or not receipt or len(receipt) > 100:
 		frappe.throw(_("M-Pesa confirmation does not match the initiated payment"))
-	# This is the same system identity used by the provider callback. Posting
-	# below additionally requires a successful server-to-server status query.
-	frappe.set_user("Administrator")
-	_store_confirmation(express, kwargs, metadata)
-	_recover_confirmed_payment(express)
+	# Restore the caller identity after processing this provider callback.
+	with system_session():
+		_store_confirmation(express, kwargs, metadata)
+		_recover_confirmed_payment(express)
 
 
 def _confirmation_log(express, output):
@@ -176,8 +180,8 @@ def _store_confirmation(express, payload, metadata):
 		fields["transaction_date"] = datetime.strptime(str(metadata["TransactionDate"]), "%Y%m%d%H%M%S")
 	frappe.db.set_value(EXPRESS, express.name, fields)
 	_confirmation_log(express, {"callback_result": payload["Body"]["stkCallback"]})
-	# Confirmation evidence must survive a subsequent failed accounting transaction.
-	frappe.db.commit()
+	# Provider confirmation must survive a later accounting rollback.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
 
 
 def _query_provider_status(express):
@@ -210,10 +214,98 @@ def _query_provider_status(express):
 	return responses[-1] if responses else {}
 
 
+def _verification_context(express):
+	return {
+		"checkout_request_id": express.checkout_request_id,
+		"reference_doctype": express.reference_doctype,
+		"reference_name": express.reference_name,
+		"settings": express.settings,
+		"amount": format(Decimal(str(express.amount)).normalize(), "f"),
+	}
+
+
+def _response_dict(value):
+	# The connector stores Python dict representations; VMMS stores JSON.
+	if not isinstance(value, str) or len(value) > 100_000:
+		return {}
+	try:
+		result = json.loads(value)
+	except (TypeError, ValueError):
+		try:
+			result = literal_eval(value)
+		except (ValueError, SyntaxError, TypeError, RecursionError):
+			return {}
+	return result if isinstance(result, dict) else {}
+
+
+def _is_verified_response(response, checkout):
+	return (
+		isinstance(response, dict)
+		and bool(checkout)
+		and str(response.get("ResultCode")) == "0"
+		and response.get("CheckoutRequestID") == checkout
+	)
+
+
+def _get_stored_verification(express):
+	output = _response_dict(
+		frappe.db.get_value(
+			"Integration Request",
+			{
+				"integration_request_service": CONFIRMATION_SERVICE,
+				"reference_doctype": EXPRESS,
+				"reference_docname": express.name,
+			},
+			"output",
+		)
+	)
+	response = output.get("verified_query")
+	if not _is_verified_response(response, express.checkout_request_id):
+		return None
+	context = output.get("verified_context")
+	if context is not None:
+		return response if context == _verification_context(express) else None
+	# Older VMMS confirmations have no binding. Corroborate them with both
+	# the original initiation and the successful server query, never a callback.
+	settings = frappe.get_doc("Mpesa Settings", express.settings)
+	host = "https://sandbox.safaricom.co.ke" if settings.sandbox else "https://api.safaricom.co.ke"
+	logs = frappe.get_all(
+		"Integration Request",
+		filters={
+			"integration_request_service": "Mpesa",
+			"reference_doctype": EXPRESS,
+			"reference_docname": express.name,
+			"status": "Completed",
+			"request_description": ["in", ["Mpesa STK Push", "VMMS Payment Verification"]],
+		},
+		fields=["request_description", "url", "data", "output"],
+		order_by="creation asc",
+		limit_page_length=200,
+	)
+	initiated = verified = False
+	for log in logs:
+		data, result = _response_dict(log.data), _response_dict(log.output)
+		if str(data.get("BusinessShortCode")) != str(settings.business_shortcode):
+			continue
+		if log.url == host + "/mpesa/stkpush/v1/processrequest":
+			try:
+				amount_matches = Decimal(str(data.get("Amount"))) == Decimal(str(express.amount))
+			except InvalidOperation:
+				amount_matches = False
+			initiated |= amount_matches and result.get("CheckoutRequestID") == express.checkout_request_id
+		elif log.url == host + "/mpesa/stkpushquery/v1/query":
+			verified |= data.get(
+				"CheckoutRequestID"
+			) == express.checkout_request_id and _is_verified_response(result, express.checkout_request_id)
+	return response if initiated and verified else None
+
+
 def _store_query_confirmation(express, response):
 	# Keep a previously captured receipt; STK query responses do not include it.
 	locked = frappe.get_doc(EXPRESS, express.name, for_update=True)
-	_confirmation_log(express, {"verified_query": response})
+	_confirmation_log(
+		express, {"verified_query": response, "verified_context": _verification_context(express)}
+	)
 	fields = {
 		"result_code": "0",
 		"result_desc": "Verified by M-Pesa; accounting pending",
@@ -221,24 +313,42 @@ def _store_query_confirmation(express, response):
 	if locked.status != "Completed":
 		fields["status"] = "In Progress"
 	frappe.db.set_value(EXPRESS, express.name, fields)
-	frappe.db.commit()
+	# Persist verified evidence before entering the accounting savepoint.
+	frappe.db.commit()  # nosemgrep: frappe-manual-commit
+
+
+def _confirm_membership_payment(invoice):
+	if not invoice.get("membership"):
+		return
+	if invoice.docstatus != 1 or flt(invoice.outstanding_amount) > 0:
+		frappe.throw(_("Membership payment can only be recognized after full invoice settlement"))
+	membership = frappe.get_doc("VM Membership", invoice.membership, for_update=True)
+	if membership.company != invoice.company:
+		frappe.throw(_("Membership and invoice must belong to the same company"))
+	if not membership.paid:
+		if membership.status == "Draft":
+			membership.validate_membership_period()
+		# Payment recognition does not approve, activate, or renew again.
+		membership.db_set("paid", 1)
 
 
 def _finish_accounting(express):
-	from frappe_mpsa_payments.utils.utils import handle_successful_transaction
-
 	from .event_payments import confirm_event_booking, validate_event_booking
 
 	express = frappe.get_doc(EXPRESS, express.name, for_update=True)
 	request = frappe.get_doc("Payment Request", express.reference_name, for_update=True)
 	invoice = get_vmms_invoice(request)
-	if not invoice or request.docstatus != 1 or express.docstatus != 1:
+	if not invoice or invoice.docstatus == 2 or request.docstatus != 1 or express.docstatus != 1:
 		frappe.throw(_("Only submitted VMMS payment requests can be recovered"))
+	if (
+		request.currency != "KES"
+		or invoice.currency != "KES"
+		or flt(express.amount) != flt(request.grand_total)
+	):
+		frappe.throw(_("M-Pesa amount differs from the payment request; reconciliation is required"))
 	validate_event_booking(invoice)
 	existing_payment = get_existing_payment(request, invoice)
-	if existing_payment:
-		validate_existing_payment(existing_payment, invoice.company)
-	else:
+	if not existing_payment:
 		if express.transaction_id and frappe.db.exists(
 			"Mpesa C2B Payment Register", {"transid": express.transaction_id, "docstatus": ["!=", 2]}
 		):
@@ -247,11 +357,40 @@ def _finish_accounting(express):
 			)
 		if request.currency != "KES" or flt(express.amount) != flt(request.outstanding_amount):
 			frappe.throw(_("M-Pesa amount differs from the outstanding request; reconciliation is required"))
-		settings = frappe.get_doc("Mpesa Settings", express.settings)
-		handle_successful_transaction(express, {}, settings, express.checkout_request_id)
+		if invoice.docstatus == 0:
+			if not invoice.posting_date:
+				frappe.throw(_("The invoice requires a posting date before recovery"))
+			# Prevent delayed submission from replacing the invoice date with
+			# today while leaving its due date and payment schedule in the past.
+			invoice.set_posting_time = 1
+			invoice.submit()
+		request.create_payment_entry()
+		existing_payment = get_existing_payment(request, invoice)
+	invoice.reload()
+	if not existing_payment or invoice.docstatus != 1 or flt(invoice.outstanding_amount) > 0:
+		frappe.throw(_("The payment has not fully settled the invoice; reconciliation is required"))
+	validate_existing_payment(existing_payment, invoice.company)
+	allocations = frappe.get_all(
+		"Payment Entry Reference",
+		filters={
+			"parent": existing_payment,
+			"parenttype": "Payment Entry",
+			"docstatus": 1,
+			"reference_doctype": "Sales Invoice",
+			"reference_name": invoice.name,
+		},
+		fields=["allocated_amount"],
+	)
+	if abs(sum(flt(row.allocated_amount) for row in allocations) - flt(express.amount)) > 0.001:
+		frappe.throw(_("The existing payment allocation differs from the verified M-Pesa amount"))
+	_confirm_membership_payment(invoice)
 	confirm_event_booking(invoice)
 	frappe.db.set_value("Payment Request", request.name, "status", "Paid")
-	frappe.db.set_value(EXPRESS, express.name, "status", "Completed")
+	frappe.db.set_value(
+		EXPRESS,
+		express.name,
+		{"status": "Completed", "result_desc": "Verified by M-Pesa; accounting completed"},
+	)
 	log_name = frappe.db.get_value(
 		"Integration Request",
 		{
@@ -273,31 +412,36 @@ def _finish_accounting(express):
 			room="website",
 			after_commit=True,
 		)
-	return {"status": "Completed", "payment_request": request.name}
+	return {
+		"status": "Completed",
+		"payment_request": request.name,
+		"payment_entry": existing_payment,
+		"invoice": invoice.name,
+		"membership": invoice.get("membership"),
+		"event_booking": invoice.get("event_booking"),
+	}
 
 
 def _recover_confirmed_payment(express):
-	try:
-		response = _query_provider_status(express)
-	except Exception:
-		frappe.log_error(title="VMMS M-Pesa verification failed", message=frappe.get_traceback())
-		frappe.db.set_value(
-			EXPRESS, express.name, "result_desc", "M-Pesa verification pending; retry scheduled"
-		)
-		return {"status": "Unconfirmed"}
-	if (
-		not express.checkout_request_id
-		or str(response.get("ResultCode")) != "0"
-		or response.get("CheckoutRequestID") != express.checkout_request_id
-	):
-		fields = {"result_desc": "M-Pesa settlement not yet verified"}
-		if (
-			response.get("CheckoutRequestID") == express.checkout_request_id
-			and response.get("ResultCode") is not None
-		):
-			fields["result_code"] = str(response["ResultCode"])
-		frappe.db.set_value(EXPRESS, express.name, fields)
-		return {"status": "Unconfirmed"}
+	response = _get_stored_verification(express)
+	if response is None:
+		try:
+			response = _query_provider_status(express)
+		except Exception:
+			frappe.log_error(title="VMMS M-Pesa verification failed", message=frappe.get_traceback())
+			frappe.db.set_value(
+				EXPRESS, express.name, "result_desc", "M-Pesa verification pending; retry scheduled"
+			)
+			return {"status": "Unconfirmed"}
+		if not _is_verified_response(response, express.checkout_request_id):
+			fields = {"result_desc": "M-Pesa settlement not yet verified"}
+			if (
+				response.get("CheckoutRequestID") == express.checkout_request_id
+				and response.get("ResultCode") is not None
+			):
+				fields["result_code"] = str(response["ResultCode"])
+			frappe.db.set_value(EXPRESS, express.name, fields)
+			return {"status": "Unconfirmed"}
 	_store_query_confirmation(express, response)
 	frappe.db.savepoint("vmms_membership_payment")
 	try:
@@ -309,13 +453,13 @@ def _recover_confirmed_payment(express):
 
 
 @frappe.whitelist(methods=["POST"])
-def recover_payment(name, dry_run=True):
+def recover_payment(name: str, dry_run: bool | str = True) -> dict:
 	"""Finance-only recovery; defaults to inspection and never initiates a charge."""
 	return _recover_payment(name, dry_run=dry_run)
 
 
 @frappe.whitelist(methods=["POST"])
-def recover_membership_payment(name, dry_run=True):
+def recover_membership_payment(name: str, dry_run: bool | str = True) -> dict:
 	return _recover_payment(name, dry_run=dry_run, payment_kind="membership")
 
 
@@ -361,29 +505,45 @@ def recover_pending_payments(since=None, limit=20, dry_run=True, payment_kind=No
 	frappe.only_for(("Accounts Manager", "System Manager"))
 	if payment_kind not in (None, "membership", "event"):
 		frappe.throw(_("Invalid VMMS payment type"))
-	scope = "ifnull(si.membership,'')!=''"
+	express = DocType(EXPRESS)
+	request = DocType("Payment Request")
+	invoice = DocType("Sales Invoice")
+	membership = DocType("VM Membership")
+	scope = invoice.membership.isnotnull() & (invoice.membership != "")
 	if payment_kind != "membership" and frappe.db.has_column("Sales Invoice", "event_booking"):
-		event_scope = "ifnull(si.event_booking,'')!=''"
-		scope = event_scope if payment_kind == "event" else f"({scope} or {event_scope})"
+		event_scope = invoice.event_booking.isnotnull() & (invoice.event_booking != "")
+		scope = event_scope if payment_kind == "event" else scope | event_scope
 	elif payment_kind == "event":
 		return []
-	rows = frappe.db.sql(
-		f"""
-		select er.name from `tabMpesa Express Request` er
-		join `tabPayment Request` pr on er.reference_doctype='Payment Request' and er.reference_name=pr.name
-		join `tabSales Invoice` si on pr.reference_doctype='Sales Invoice' and pr.reference_name=si.name
-		where {scope} and si.docstatus!=2 and pr.docstatus=1
-		and er.docstatus=1 and er.status='In Progress'
-		and (er.creation >= %(since)s or (%(include_confirmed)s=1 and er.result_code='0'))
-		order by er.modified asc, er.name asc limit %(limit)s
-	""",  # Only fixed, internal field expressions; all values remain bound parameters.
-		{
-			"since": since or add_days(now_datetime(), -1),
-			"include_confirmed": int(since is None),
-			"limit": max(1, min(cint(limit), 50)),
-		},
-		as_dict=True,
+	unrecognized_memberships = (
+		frappe.qb.from_(membership)
+		.select(membership.name)
+		.where((membership.paid == 0) | membership.paid.isnull())
 	)
+	pending = (express.status == "In Progress") | (
+		(express.status == "Completed") & invoice.membership.isin(unrecognized_memberships)
+	)
+	retry_window = express.creation >= (since or add_days(now_datetime(), -1))
+	if since is None:
+		retry_window |= express.result_code == "0"
+	rows = (
+		frappe.qb.from_(express)
+		.join(request)
+		.on((express.reference_doctype == "Payment Request") & (express.reference_name == request.name))
+		.join(invoice)
+		.on((request.reference_doctype == "Sales Invoice") & (request.reference_name == invoice.name))
+		.select(express.name)
+		.where(
+			scope
+			& (invoice.docstatus != 2)
+			& (request.docstatus == 1)
+			& (express.docstatus == 1)
+			& pending
+			& retry_window
+		)
+		.orderby(express.modified, express.name, order=Order.asc)
+		.limit(max(1, min(cint(limit), 50)))
+	).run(as_dict=True)
 	results = []
 	for row in rows:
 		try:

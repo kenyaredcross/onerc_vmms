@@ -1,5 +1,6 @@
 import frappe
 from erpnext.accounts.doctype.payment_request.payment_request import PaymentRequest
+from frappe import _
 
 from ...services.membership_payments import (
 	get_existing_payment,
@@ -22,7 +23,7 @@ class VMMSPaymentRequest(PaymentRequest):
 			validate_existing_payment(existing, invoice.company)
 			return frappe.get_doc("Payment Entry", existing)
 		if invoice.docstatus != 1 or invoice.outstanding_amount <= 0:
-			frappe.throw("The invoice must be submitted and outstanding before posting payment")
+			frappe.throw(_("The invoice must be submitted and outstanding before posting payment"))
 		if outstanding is not None:
 			self.outstanding_amount = outstanding
 		original_account = self.payment_account

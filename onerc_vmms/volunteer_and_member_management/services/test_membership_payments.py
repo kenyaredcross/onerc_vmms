@@ -1,6 +1,7 @@
 import inspect
 import json
 import unittest
+from contextlib import nullcontext
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -50,9 +51,9 @@ class TestMembershipPaymentEntry(unittest.TestCase):
 			p = patch.object(module, "frappe", self.fake)
 			p.start()
 			self.addCleanup(p.stop)
-		p = patch.object(payments, "_", lambda message: message)
-		p.start()
-		self.addCleanup(p.stop)
+			translation_patch = patch.object(module, "_", lambda message: message)
+			translation_patch.start()
+			self.addCleanup(translation_patch.stop)
 
 	def lookup(self, doctype, name, fields="name", **kwargs):
 		if doctype == "Payment Entry Reference":
@@ -155,6 +156,9 @@ class TestMembershipCallback(unittest.TestCase):
 				self.assertFalse(payments._is_dry_run(value))
 
 	def setUp(self):
+		session_patch = patch.object(payments, "system_session", side_effect=nullcontext)
+		session_patch.start()
+		self.addCleanup(session_patch.stop)
 		self.express = frappe._dict(
 			name="EXP-1",
 			amount=500,
