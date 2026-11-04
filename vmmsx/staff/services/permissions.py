@@ -27,16 +27,14 @@ widens it, by hand, through the ordinary Role Permissions Manager; this
 installer never touches `delete` in either direction, exactly the way
 `registration/services/permissions.py` never touches anything but `read`.
 
-**`VMMS Volunteer Application` is read-only, and it is deliberately widened
-past what geo scoping would give it.** `hooks.py`'s `onerc_scopeable_doctypes`
-comment explains why core does not register it: "being a County Coordinator
-does not make you this application's approver" is a statement about who may
-*decide* one, not about who may *browse* the queue, and `api/approvals.py`'s
-gate is what enforces the first and is unaffected by this grant. But because
-it is not geo-scoped, a `read` grant here is nationwide rather than narrowed to
-the holder's own assignment, unlike every other doctype this module touches —
-a real widening, accepted because the Volunteers workspace has shown this
-doctype as a shortcut since the cluster was built (`staff/tests/test_workspaces
+**`VMMS Volunteer Application` is read-only, and geo-scoped like the register.**
+"Being a County Coordinator does not make you this application's approver" is a
+statement about who may *decide* one, not about who may *browse* it, and
+`api/approvals.py`'s gate is what enforces the first and is unaffected by this
+grant. The read itself is narrowed by core to the holder's own assignment, the
+same as every other doctype this module touches; the grant exists because the
+Volunteers workspace has shown this doctype as a shortcut since the cluster was
+built (`staff/tests/test_workspaces
 .py::test_the_volunteers_child_covers_exactly_its_doctypes`) and a shortcut a
 society already sees should not be a permission error.
 
@@ -105,8 +103,7 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 				"VMMS Certification Type": FULL,
 				"VMMS Course Mapping": FULL,
 				"VMMS Time Log": FULL,
-				# See the module docstring: read-only, and nationwide rather than
-				# geo-narrowed, because core does not register this doctype.
+				# Read-only, and geo-narrowed by core like the register itself.
 				"VMMS Volunteer Application": READ_ONLY,
 			},
 		),

@@ -130,11 +130,11 @@ describe("no one type sets the height of the grid", () => {
 	});
 });
 
-describe("the fee is said in the unit people budget in", () => {
-	it("divides a yearly fee into months, hedged", () => {
+describe("the fee is said once, for the period it is charged for", () => {
+	it("does not break a yearly fee down into months", () => {
 		mount(<PlanCards types={[plan("Ordinary", 24_000)]} />);
 
-		expect(screen.getByText(/about .* a month/)).toBeTruthy();
+		expect(screen.queryByText(/about .* a month/)).toBeNull();
 	});
 
 	it("says nothing monthly about a lifetime fee, which has no months", () => {

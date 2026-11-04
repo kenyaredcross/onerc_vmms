@@ -1,0 +1,203 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-11-03 09:00:00.000000",
+ "description": "A volunteer the branch has put on its surge roster, after checking their professional licence.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "person_section",
+  "volunteer",
+  "profession",
+  "column_break_person",
+  "status",
+  "licence_section",
+  "licence_number",
+  "issuing_body",
+  "column_break_licence",
+  "licence_expiry",
+  "licence_document",
+  "check_section",
+  "checked_by",
+  "column_break_check",
+  "checked_on",
+  "notes",
+  "stood_down_section",
+  "stood_down_on",
+  "stood_down_by",
+  "column_break_stood_down",
+  "stood_down_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "default": "SURGE-.#####",
+   "options": "SURGE-.#####",
+   "hidden": 1,
+   "reqd": 1,
+   "description": "Automatic series for this record's number."
+  },
+  {
+   "fieldname": "person_section",
+   "fieldtype": "Section Break",
+   "label": "Volunteer"
+  },
+  {
+   "fieldname": "volunteer",
+   "fieldtype": "Link",
+   "label": "Volunteer",
+   "options": "VMMS Volunteer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Who is on the roster."
+  },
+  {
+   "fieldname": "profession",
+   "fieldtype": "Link",
+   "label": "Profession",
+   "options": "Profession",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "The profession they are on the roster for. The roster is grouped by it."
+  },
+  {
+   "fieldname": "column_break_person",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nStood Down",
+   "default": "Active",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "description": "Active while they are on the roster. Stood down keeps the record and the reason."
+  },
+  {
+   "fieldname": "licence_section",
+   "fieldtype": "Section Break",
+   "label": "Professional Licence"
+  },
+  {
+   "fieldname": "licence_number",
+   "fieldtype": "Data",
+   "label": "Licence Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "issuing_body",
+   "fieldtype": "Data",
+   "label": "Issued By",
+   "reqd": 1,
+   "description": "The regulator that issued the licence, for example the Nursing Council of Kenya."
+  },
+  {
+   "fieldname": "column_break_licence",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "licence_expiry",
+   "fieldtype": "Date",
+   "label": "Licence Valid Until",
+   "description": "Leave empty for a licence that does not expire. Once this date passes the person is shown as needing review."
+  },
+  {
+   "fieldname": "licence_document",
+   "fieldtype": "Attach",
+   "label": "Copy of the Licence"
+  },
+  {
+   "fieldname": "check_section",
+   "fieldtype": "Section Break",
+   "label": "Checked"
+  },
+  {
+   "fieldname": "checked_by",
+   "fieldtype": "Link",
+   "label": "Checked By",
+   "options": "User",
+   "read_only": 1,
+   "description": "Who checked the licence."
+  },
+  {
+   "fieldname": "column_break_check",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "checked_on",
+   "fieldtype": "Date",
+   "label": "Checked On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "stood_down_section",
+   "fieldtype": "Section Break",
+   "label": "Stood Down",
+   "depends_on": "eval:doc.status == 'Stood Down'"
+  },
+  {
+   "fieldname": "stood_down_on",
+   "fieldtype": "Date",
+   "label": "Stood Down On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stood_down_by",
+   "fieldtype": "Link",
+   "label": "Stood Down By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_stood_down",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "stood_down_reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-03 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Volunteer",
+ "name": "VMMS Surge Roster Entry",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "volunteer",
+ "track_changes": 1
+}

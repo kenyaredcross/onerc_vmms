@@ -415,6 +415,14 @@ html {
 	font-size: 14px;
 }
 
+.join-root .form-search-input {
+	padding-left: 36px;
+}
+
+.join-root :where(select, input[role="combobox"]:not(.form-search-input)) {
+	padding-right: 36px;
+}
+
 /* A label that *is* a control — a tick row, one of the choice pills, the
    photo button — is excluded: it sizes its own contents, and 14px would
    flatten the difference between the question and the answer inside it. */

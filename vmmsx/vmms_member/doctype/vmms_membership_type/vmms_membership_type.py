@@ -25,6 +25,7 @@ from vmmsx.member.services.approval import MODE_AUTO_ON_PAYMENT, MODES
 class VMMSMembershipType(Document):
 	def validate(self):
 		self.validate_approval_mode()
+		self.validate_age_requirement()
 		self.validate_duration()
 		self.validate_fee()
 		self.validate_payments_app()
@@ -43,6 +44,16 @@ class VMMSMembershipType(Document):
 			title=_("Unknown Approval Mode"),
 		)
 
+	def validate_age_requirement(self):
+		if not self.get("requires_age_requirement"):
+			return
+		lower, upper = cint(self.lower_age_limit), cint(self.upper_age_limit)
+		if lower < 0 or upper < lower:
+			frappe.throw(
+				_("Membership age limits must be non-negative and the maximum cannot be below the minimum."),
+				frappe.ValidationError,
+			)
+
 	def validate_duration(self):
 		"""A duration of at least one day, unless this type never ends.
 
@@ -58,11 +69,18 @@ class VMMSMembershipType(Document):
 		to how long the membership lasts, and a reader who found that one first
 		would be told something the record does not do.
 		"""
+		cycle = self.get("billing_cycle")
+		if cycle not in (None, "", "Monthly", "Yearly", "One Off"):
+			frappe.throw(
+				_("Choose Monthly, Yearly, One Off, or leave Billing Cycle empty."), frappe.ValidationError
+			)
+		if cycle == "One Off":
+			self.is_lifetime = 1
 		if self.is_lifetime:
 			self.duration_days = 0
 			return
 
-		if cint(self.duration_days) > 0:
+		if cycle in ("Monthly", "Yearly") or cint(self.duration_days) > 0:
 			return
 
 		frappe.throw(

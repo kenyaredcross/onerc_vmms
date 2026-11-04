@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "rea
 import { useFrappeFileUpload } from "frappe-react-sdk";
 
 import { errorMessage } from "../lib/api";
+import { FileLink, fileKind, fileNameOf } from "./FilePreview";
 import { cx } from "./primitives";
 
 /**
@@ -49,7 +50,7 @@ import { cx } from "./primitives";
 // coordinator writing a job opening and a member of the public filling in the
 // registration wizard are operating the same field.
 const CONTROL =
-	"w-full rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] text-ink transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft disabled:cursor-not-allowed disabled:bg-surface disabled:text-muted";
+	"w-full rounded-lg border border-rail-line bg-white py-2 text-[13px] text-ink transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft disabled:cursor-not-allowed disabled:bg-surface disabled:text-muted";
 
 const MULTILINE =
 	"w-full rounded-lg border border-rail-line bg-white px-3 py-2.5 text-[13px] leading-relaxed text-ink transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft disabled:cursor-not-allowed disabled:bg-surface disabled:text-muted";
@@ -139,6 +140,8 @@ export function TextInput({
 	min,
 	max,
 	step,
+	invalid,
+	describedBy,
 }: {
 	id?: string;
 	value: string;
@@ -157,16 +160,20 @@ export function TextInput({
 	min?: string | number;
 	max?: string;
 	step?: string | number;
+	invalid?: boolean;
+	describedBy?: string;
 }) {
 	return (
 		<input
 			id={id}
 			type={type}
+			aria-invalid={invalid || undefined}
+			aria-describedby={describedBy}
 			inputMode={inputMode}
 			min={min}
 			max={max}
 			step={step}
-			className={CONTROL}
+			className={cx(CONTROL, "px-3")}
 			value={value}
 			disabled={disabled}
 			placeholder={placeholder}
@@ -220,7 +227,7 @@ export function SelectInput({
 		<div className="relative">
 			<select
 				id={id}
-				className={cx(CONTROL, "appearance-none pr-9")}
+				className={cx(CONTROL, "appearance-none pl-3 pr-9")}
 				value={value}
 				disabled={disabled}
 				onChange={(event) => onChange(event.target.value)}
@@ -255,7 +262,7 @@ export function VocabularySelect({
 		<div className="relative">
 			<select
 				id={id}
-				className={cx(CONTROL, "appearance-none pr-9")}
+				className={cx(CONTROL, "appearance-none pl-3 pr-9")}
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
 			>
@@ -352,7 +359,7 @@ export function Combo({
 				aria-expanded={open}
 				aria-controls={listId}
 				aria-autocomplete="list"
-				className={cx(CONTROL, "pr-9")}
+				className={cx(CONTROL, "pl-3 pr-9")}
 				value={open ? query : value}
 				placeholder={value || placeholder}
 				onFocus={() => setOpen(true)}
@@ -626,7 +633,7 @@ export function MultiCombo({
 					aria-autocomplete="list"
 					aria-label={label}
 					aria-required={required}
-					className={cx(CONTROL, "pl-9")}
+					className={cx(CONTROL, "form-search-input pl-9 pr-3")}
 					value={query}
 					placeholder={placeholder}
 					onFocus={() => setOpen(true)}
@@ -875,12 +882,24 @@ export function PrivateUpload({
 				/>
 
 				{value && !loading && (
-					<span className="inline-flex items-center gap-1.5 text-[12px] text-slate-faint">
-						<Tick className="text-brand" />
-						Attached
+					<span className="inline-flex min-w-0 items-center gap-1.5 text-[12px]">
+						<Tick className="flex-none text-brand" />
+						<FileLink url={value} />
 					</span>
 				)}
 			</div>
+
+			{/* The file itself, so the person can see they attached the right
+			    one. A picture is shown; anything else is its name above. */}
+			{value && !loading && fileKind(fileNameOf(value)) === "image" && (
+				<a href={value} target="_blank" rel="noreferrer" className="mt-2 block w-fit">
+					<img
+						src={value}
+						alt="The attached file"
+						className="max-h-32 rounded-lg border border-card-line object-contain"
+					/>
+				</a>
+			)}
 
 			{failure && (
 				<p className="mt-2 text-[11.5px] leading-relaxed text-danger">{failure}</p>

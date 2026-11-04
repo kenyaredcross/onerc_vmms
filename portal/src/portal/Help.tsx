@@ -23,7 +23,7 @@ export default function Help() {
 				lead={
 					<EditableText
 						k="portal.help.lead"
-						fallback="What people ask most often. If your question is not here, your branch would rather be asked twice than not at all."
+						fallback="Frequently asked questions. If your question is not answered here, contact your branch."
 					/>
 				}
 			/>

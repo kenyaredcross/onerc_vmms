@@ -88,6 +88,6 @@ describe("event creation in the portal", () => {
 		fireEvent.click(screen.getByRole("button", { name: /confirmed registrations/i }));
 		expect(screen.getByText("1 confirmed registration")).toBeTruthy();
 		expect(screen.getByText("Amina Otieno")).toBeTruthy();
-		expect(screen.getByText(/2 said they are coming/i)).toBeTruthy();
+		expect(screen.getByText(/2 attending/i)).toBeTruthy();
 	});
 });

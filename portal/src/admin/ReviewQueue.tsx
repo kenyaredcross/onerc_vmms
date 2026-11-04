@@ -4,9 +4,12 @@ import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react
 
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
-import { branchPath, formatDate } from "../lib/format";
+import { branchPath, formatDate, formatMoney, geoPath } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { PersonHero, RegisterLinks } from "../ui/PersonHero";
+import { FileLink, FilePreview } from "../ui/FilePreview";
+import { RegistrationDetailsSummary, isWebAddress } from "../ui/RegistrationDetails";
+import { BackgroundCard } from "./Person";
 import { RecordPayment, owesAFee } from "./RecordPayment";
 import {
 	ActionMenu,
@@ -18,6 +21,7 @@ import {
 	Empty,
 	ErrorNote,
 	PageHeading,
+	Pager,
 	Pill,
 	Row,
 	SectionTitle,
@@ -37,10 +41,13 @@ import {
 	type QueueSpec,
 } from "./queues";
 import type {
+	AcceptedDeclaration,
 	ApplicationDecision,
 	ApprovalCases,
 	ApprovalStatus,
+	AuditEntry,
 	MembershipReview,
+	RegistrationFile,
 	Registers,
 	SocietyAnswer,
 } from "../portal/types";
@@ -91,6 +98,11 @@ const NO_ANSWERS: SocietyAnswer[] = [];
 
 /* ------------------------------------------------------------------- lists */
 
+/** The engine's state, unless the document is holding itself back — then why. */
+function shownState(status: ApprovalStatus): string {
+	return status.held ? (status.held_for?.label ?? "Not ready yet") : status.state;
+}
+
 export function VolunteerQueue({ band }: { band?: string } = {}) {
 	return <Queue kind="volunteers" band={band} />;
 }
@@ -100,7 +112,7 @@ export function MembershipQueue({ band }: { band?: string } = {}) {
 }
 
 /**
- * One registration's applications, in one of three routed bands.
+ * One registration's applications, in one of four routed bands.
  *
  * **The two queues never touch each other's endpoints.** `my_queue` and
  * `my_cases` both take the doctype off this queue's own spec, so a coordinator
@@ -110,10 +122,16 @@ export function MembershipQueue({ band }: { band?: string } = {}) {
  * costs nothing to somebody clearing eleven memberships.
  *
  * **The bands come from the server and none of them is derived here.**
- * `actionable` is what the engine routes to this user right now; `changes` is a
- * Draft with a recorded "More info requested" decision behind it; `closed` is
- * one of the four terminal states. Filtering an array in the browser could not
- * answer any of the last two, because neither is in this user's queue at all.
+ * `all` is every application the caller may read, paged, so an administrator
+ * or coordinator who holds no assignment still sees the register of
+ * applications; `actionable` is what the engine routes to this user right now;
+ * `changes` is a Draft with a recorded "More info requested" decision behind
+ * it; `closed` is one of the four terminal states. Filtering an array in the
+ * browser could not answer any but the second, because none of the others is
+ * in this user's queue at all.
+ *
+ * Seeing a row is not deciding it: every row carries the engine's own
+ * `can_act`, and the review page asks the engine again before a decision.
  */
 function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	const spec = QUEUES[kind];
@@ -123,9 +141,9 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	useEffect(() => setOffset(0), [kind, band.key]);
 
 	// Two reads, and exactly one of them ever runs: `swrKey === null` is how
-	// this codebase says "do not ask". The open band is `my_queue`, which
-	// re-checks routing per row; the other two are `my_cases`, which reads the
-	// governed doctype through a scoped listing because neither band is an
+	// this codebase says "do not ask". Assigned to me is `my_queue`, which
+	// re-checks routing per row; the other three are `my_cases`, which reads the
+	// governed doctype through a scoped listing because none of them is an
 	// assignment anybody holds.
 	const open = useFrappeGetCall<{ message: ApprovalStatus[] }>(
 		API.myQueue,
@@ -142,6 +160,10 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	const isLoading = isActionable ? open.isLoading : history.isLoading;
 	const error = isActionable ? open.error : history.error;
 	const overdue = rows.filter((row) => row.stage?.is_breached).length;
+	// All applications is paged, so its headline is the server's scoped total
+	// rather than the length of one page.
+	const isAll = band.key === "all";
+	const shown = isAll ? (history.data?.message?.total ?? rows.length) : rows.length;
 
 	return (
 		<>
@@ -152,7 +174,7 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 				actions={
 					<div className="flex flex-wrap items-center gap-2">
 						<Pill tone="navy">
-							{rows.length} {isActionable ? "waiting" : "shown"}
+							{shown} {isAll ? (shown === 1 ? "application" : "applications") : isActionable ? "waiting" : "shown"}
 						</Pill>
 						{/* Only when there are any. A permanent "0 overdue" is a
 						    reassurance nobody reads, and it takes the place of the
@@ -184,11 +206,42 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 					))}
 				</Table>
 			)}
-			{!isActionable && !error && (offset > 0 || history.data?.message?.has_more) && (
+			{/* All applications knows its total, so it gets page numbers like the
+			    registers. The other bands only know whether there is more. */}
+			{isAll && !error && history.data?.message?.total != null && (
+				<Pager
+					page={Math.floor(offset / 25)}
+					pageCount={Math.max(1, Math.ceil(history.data.message.total / 25))}
+					total={history.data.message.total}
+					noun={history.data.message.total === 1 ? "application" : "applications"}
+					onPage={(next) => setOffset(next * 25)}
+				/>
+			)}
+			{!isAll && !isActionable && !error && (offset > 0 || history.data?.message?.has_more) && (
 				<div className="mt-4 flex items-center gap-3 text-sm">
-					<span>Showing {offset + 1}–{offset + rows.length}</span>
-					<button type="button" disabled={offset === 0 || isLoading} onClick={() => setOffset(Math.max(0, offset - 25))} className="font-semibold text-ink disabled:opacity-40">Previous</button>
-					<button type="button" disabled={!history.data?.message?.has_more || isLoading} onClick={() => setOffset(offset + 25)} className="font-semibold text-ink disabled:opacity-40">Next</button>
+					{/* Only once the page has arrived: while the next page loads its
+					    rows are empty, and "Showing 26–25" is not a range. */}
+					{rows.length > 0 && (
+						<span>
+							Showing {offset + 1}–{offset + rows.length}
+						</span>
+					)}
+					<button
+						type="button"
+						disabled={offset === 0 || isLoading}
+						onClick={() => setOffset(Math.max(0, offset - 25))}
+						className="font-semibold text-ink disabled:opacity-40"
+					>
+						Previous
+					</button>
+					<button
+						type="button"
+						disabled={!history.data?.message?.has_more || isLoading}
+						onClick={() => setOffset(offset + 25)}
+						className="font-semibold text-ink disabled:opacity-40"
+					>
+						Next
+					</button>
 				</div>
 			)}
 		</>
@@ -196,7 +249,7 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 }
 
 /**
- * The band navigation, as three routed links.
+ * The band navigation, as four routed links.
  *
  * `NavLink` rather than buttons, so each band is a real address with
  * `aria-current` on the one you are standing in — which is what a screen reader
@@ -282,7 +335,7 @@ function QueueRow({
 								    the unstaffed branch behind it stays invisible. */}
 								{row.stage.is_blocked && (
 									<span className="mt-0.5 block text-[11px] text-slate-faint">
-										Nobody at this level — escalated to you
+										Escalated to you: no approver at this level
 									</span>
 								)}
 							</>
@@ -302,9 +355,11 @@ function QueueRow({
 					<Cell>
 						{/* One of the seven in `states.py`. Shown, never compared:
 						    the server put this row in this band. */}
-						<StateBadge state={row.state} />
+						<StateBadge state={shownState(row)} />
 					</Cell>
-					<Cell className="text-muted">{formatDate(last?.decided_on ?? null)}</Cell>
+					{/* An open application with no decision yet last moved when it
+					    entered its current stage. */}
+					<Cell className="text-muted">{formatDate(last?.decided_on ?? row.stage?.entered_on ?? null)}</Cell>
 					<Cell>
 						{last ? (
 							<>
@@ -437,16 +492,26 @@ function Review({
 	// society introduced grouping still reads as it was asked.
 	const grouped = useMemo(() => groupAnswers(answers), [answers]);
 
+	const files = record?.attachments ?? review?.attachments ?? [];
+	const memberDeclarations = review?.declarations ?? [];
+
 	const tabs: TabDef[] = [
 		{ key: "applicant", label: "Applicant" },
+		// In the order the registration form asks: who they are, then what they
+		// have done, then what they offer.
+		...(isVolunteer ? [{ key: "background", label: "Education and experience" }] : []),
 		isVolunteer
-			? { key: "declaration", label: "What they declared" }
+			? { key: "declaration", label: "Additional Info" }
 			: { key: "membership", label: "Membership" },
 		// The tab that carries the two things this decision can be refused over.
 		// Volunteer-only, and only once the record has loaded: an approver who
 		// cannot see the emergency contact would press Approve, be told no, and
 		// have nowhere to look.
-		...(isVolunteer && record ? [{ key: "safeguarding", label: "Contacts and consent" }] : []),
+		...(isVolunteer && record ? [{ key: "safeguarding", label: "Emergency contact and declarations" }] : []),
+		...(!isVolunteer && memberDeclarations.length
+			? [{ key: "declarations", label: "Declarations", count: memberDeclarations.length }]
+			: []),
+		...(record || review ? [{ key: "documents", label: "Documents", count: files.length || undefined }] : []),
 		...grouped.map((group) => ({
 			key: `q:${group.name}`,
 			label: group.name,
@@ -490,7 +555,7 @@ function Review({
 				photo={person?.photo}
 				docname={status.name}
 				subtitle={branchPath(status.geo_path) || undefined}
-				status={status.state}
+				status={shownState(status)}
 				badges={
 					<RegisterLinks registers={registers.data?.message} />
 				}
@@ -499,7 +564,7 @@ function Review({
 					{ label: "Phone", value: person?.phone },
 					...(status.stage
 						? [
-								{ label: "At stage", value: status.stage.label },
+								{ label: "Stage", value: status.stage.label },
 								{
 									label: "Due",
 									value: status.stage.is_breached
@@ -530,6 +595,22 @@ function Review({
 				</Card>
 			)}
 
+			{active === "background" && record && (
+				<>
+					<ProfessionalProfiles
+						linkedin={record.personal_details?.linkedin}
+						github={record.personal_details?.github}
+						profession={record.profession}
+					/>
+					<BackgroundCard background={record.background} files={files} />
+					{!hasBackground(record.background) && (
+						<Card>
+							<Empty title="No education or experience given." />
+						</Card>
+					)}
+				</>
+			)}
+
 			{active === "declaration" && record && (
 				<Card>
 					<Declared label="Skills" rows={record.skills} />
@@ -539,7 +620,7 @@ function Review({
 
 					{record.prior_experience && (
 						<div className="mt-5 border-t border-card-line pt-5">
-							<SectionTitle>In their own words</SectionTitle>
+							<SectionTitle>Previous volunteer experience</SectionTitle>
 							<p className="whitespace-pre-line text-[13px] leading-relaxed text-ink">
 								{record.prior_experience}
 							</p>
@@ -549,6 +630,12 @@ function Review({
 			)}
 
 			{active === "safeguarding" && record && <Safeguarding record={record} />}
+
+			{active === "declarations" && review && <Declarations rows={memberDeclarations} />}
+
+			{active === "documents" && <Documents files={files} />}
+
+
 
 			{active === "membership" && review && (
 				<MembershipFacts
@@ -575,6 +662,9 @@ function Review({
 			{active === "decision" && (
 				<Decision status={status} noun={spec.noun} person={person?.full_name ?? status.name} onDecided={onDecided} />
 			)}
+
+			{/* Under every tab, as Frappe shows Activity under a form. */}
+			<Activity doctype={spec.doctype} name={name} />
 		</>
 	);
 }
@@ -583,6 +673,7 @@ function Review({
 
 function VolunteerApplicant({ record }: { record: ApplicationDecision }) {
 	return (
+		<div className="space-y-6">
 		<dl className="grid gap-4 sm:grid-cols-2">
 			<Field label="Full name" value={record.full_name} />
 			<Field label="Applied on" value={formatDate(record.applied_on)} />
@@ -591,27 +682,45 @@ function VolunteerApplicant({ record }: { record: ApplicationDecision }) {
 			<Field label="Gender" value={record.gender} />
 			<Field label="Date of birth" value={formatDate(record.date_of_birth)} />
 			<Field label="Preferred language" value={record.preferred_language} />
+			<div>
+				<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">Identifications</dt>
+				<dd className="mt-1 space-y-1 text-[13px] text-ink">
+					{record.identifications.length === 0
+						? "—"
+						: record.identifications.map((row, index) => {
+								const file = record.attachments?.find(
+									(entry) => entry.table === "identifications" && entry.index === index,
+								);
+								return (
+									<div key={`${row.id_type}-${index}`} className="flex flex-wrap items-center gap-x-2">
+										<span>{`${row.id_type_name ?? row.id_type} ${row.id_number}`.trim()}</span>
+										{file && <FileLink url={file.url} name={file.file_name} className="text-[12px]" />}
+									</div>
+								);
+							})}
+				</dd>
+			</div>
+			<Field label="Country of citizenship" value={record.country_of_citizenship} />
+			<Field label="Citizenship status" value={record.citizenship_status} />
 			<Field
-				label="Identifications"
-				value={
-					record.identifications
-						.map((row) => `${row.id_type_name ?? row.id_type} ${row.id_number}`.trim())
-						.join(" · ") || null
-				}
-			/>
-			<Field label="Citizenship" value={record.country_of_citizenship} />
-			<Field
-				label="Lives"
+				label="Residence"
 				value={
 					record.residency_type === "Abroad"
 						? [record.country_of_residence, record.residence_address]
 								.filter(Boolean)
 								.join(" · ") || "Abroad"
-						: branchPath(record.home_geo_path)
+						: geoPath(record.home_geo_path)
 				}
 			/>
-			<Field label="Would serve at" value={branchPath(record.geo_path)} />
+			<Field label="Branch / County" value={branchPath(record.geo_path)} />
+			<Disability answers={record} />
 		</dl>
+		<RegistrationDetailsSummary
+			value={record.personal_details}
+			evidenceContext={{ doctype: "VMMS Volunteer Application", name: record.name }}
+			showProfileLinks={false}
+		/>
+		</div>
 	);
 }
 
@@ -631,12 +740,22 @@ function MembershipApplicant({ review }: { review: MembershipReview }) {
 	const person = review.applicant;
 
 	return (
+		<div className="space-y-6">
 		<dl className="grid gap-4 sm:grid-cols-2">
 			<Field label="Full name" value={person?.full_name} />
 			<Field label="Email" value={person?.email} />
 			<Field label="Phone" value={person?.phone} />
 			<Field label="Gender" value={person?.gender} />
 			<Field label="Date of birth" value={formatDate(person?.date_of_birth)} />
+			<Field label="Preferred language" value={person?.preferred_language} />
+			<Field
+				label="Identifications"
+				value={
+					(review.identifications ?? [])
+						.map((row) => `${row.id_type_name ?? row.id_type} ${row.id_number}`.trim())
+						.join(" · ") || null
+				}
+			/>
 			<Field label="Country of citizenship" value={person?.country_of_citizenship} />
 			<Field label="Citizenship status" value={person?.citizenship_status} />
 			<Field
@@ -644,10 +763,15 @@ function MembershipApplicant({ review }: { review: MembershipReview }) {
 				value={
 					person?.residency_type === "Abroad"
 						? [person.country_of_residence, person.residence_address].filter(Boolean).join(" · ")
-						: branchPath(person?.home_geo_path)
+						: geoPath(person?.home_geo_path)
 				}
 			/>
+			{review.profession && <Field label="Profession" value={review.profession} />}
+			<Disability answers={review} />
 		</dl>
+		<RegistrationDetailsSummary value={person?.personal_details} evidenceContext={{doctype:"VMMS Membership",name:review.name}} />
+
+		</div>
 	);
 }
 
@@ -666,7 +790,7 @@ function MembershipFacts({
 	return (
 		<>
 			<Card className="mb-5">
-				<SectionTitle>What was applied for</SectionTitle>
+				<SectionTitle>Membership details</SectionTitle>
 				<dl className="grid gap-4 sm:grid-cols-2">
 					<Field label="Type" value={row.membership_type_name ?? row.membership_type} />
 					<Field label="Branch" value={branchPath(row.membership_geo_path)} />
@@ -681,7 +805,7 @@ function MembershipFacts({
 			</Card>
 
 			<Card>
-				<SectionTitle>How it was paid for</SectionTitle>
+				<SectionTitle>Payment</SectionTitle>
 				<dl className="grid gap-4 sm:grid-cols-2">
 					<Field
 						label="Fee"
@@ -689,9 +813,29 @@ function MembershipFacts({
 					/>
 					<Field label="Settled" value={row.payment_settled ? "Yes" : "Not yet"} />
 					<Field label="Source" value={review.membership_source} />
-					<Field label="Paid on" value={formatDate(row.paid_on)} />
-					<Field label="Transaction" value={row.payment_transaction} />
-					<Field label="Receipt" value={row.payment_receipt} />
+					<Field label="Paid with" value={row.payment?.gateway} />
+					<Field
+						label="Amount paid"
+						value={
+							row.payment?.amount_paid !== null && row.payment?.amount_paid !== undefined && row.payment_settled
+								? formatMoney(row.payment.amount_paid, row.payment.currency_paid, true)
+								: null
+						}
+					/>
+					<Field
+						label={row.payment?.gateway?.toLowerCase().includes("m-pesa") ? "M-Pesa receipt" : "Receipt"}
+						value={row.payment_receipt || row.payment?.gateway_receipt}
+					/>
+					<Field
+						label="Paid on"
+						value={
+							row.payment?.transaction_date || row.paid_on
+								? formatDateTime((row.payment?.transaction_date || row.paid_on) as string)
+								: null
+						}
+					/>
+					<Field label="Paid from" value={row.payment?.paid_from || row.payer_phone} />
+					<Field label="Payment reference" value={row.payment_transaction} />
 				</dl>
 
 				{/* The act that answers the "Not yet" directly above it. This is
@@ -744,20 +888,22 @@ function Safeguarding({ record }: { record: ApplicationDecision }) {
 	const verified = record.guardian_consents.filter((row) => row.consent_given && row.is_verified);
 
 	return (
-		<>
+		// Apart, like the cards on every other tab, so the emergency contact,
+		// any guardian consent and the declarations read as separate sections.
+		<div className="space-y-5">
 			<Card>
-				<SectionTitle>If something happens</SectionTitle>
+				<SectionTitle>Emergency contact</SectionTitle>
 
 				{callable.length === 0 && (
 					<p className="mb-4 rounded-xl border border-blue/30 bg-blue/[0.06] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-ink">
 						{record.emergency_contacts.length === 0
 							? "No emergency contact. This application cannot be approved until one is added."
-							: "A contact is on file, but the applicant has not agreed to us calling them. This application cannot be approved until one we may contact is added."}
+							: "No emergency contact has permission to be contacted. This application cannot be approved until one does."}
 					</p>
 				)}
 
 				{record.emergency_contacts.length === 0 ? (
-					<Empty title="Nobody has been named yet." />
+					<Empty title="No emergency contact." />
 				) : (
 					record.emergency_contacts.map((row, index) => (
 						<dl
@@ -766,11 +912,11 @@ function Safeguarding({ record }: { record: ApplicationDecision }) {
 						>
 							<Field label="Name" value={row.contact_name} />
 							<Field label="Relationship" value={row.relationship} />
-							<Field label="Phone" value={row.primary_phone} />
-							<Field label="Alternative" value={row.alternative_phone} />
+							<Field label="Phone number" value={row.primary_phone} />
+							<Field label="Alternative phone number" value={row.alternative_phone} />
 							<Field
-								label="May we call them"
-								value={row.may_contact_in_emergency ? "Yes" : "No — permission withheld"}
+								label="Permission to contact in an emergency"
+								value={row.may_contact_in_emergency ? "Yes" : "No"}
 							/>
 						</dl>
 					))
@@ -779,27 +925,26 @@ function Safeguarding({ record }: { record: ApplicationDecision }) {
 
 			{record.is_minor && (
 				<Card>
-					<SectionTitle>Guardian consent</SectionTitle>
+					<SectionTitle>Parent or guardian consent</SectionTitle>
 
 					{verified.length === 0 && (
 						<p className="mb-4 rounded-xl border border-blue/30 bg-blue/[0.06] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-ink">
-							This applicant is a minor. Their application cannot be approved until a
-							guardian's consent has been recorded and somebody has marked it verified on
-							the application itself.
+							This applicant is a minor. This application cannot be approved until parent or
+							guardian consent is recorded and verified.
 						</p>
 					)}
 
 					{record.guardian_consents.length === 0 ? (
-						<Empty title="No guardian has been recorded." />
+						<Empty title="No parent or guardian consent." />
 					) : (
 						record.guardian_consents.map((row, index) => (
 							<dl
 								key={`${row.guardian_name}-${index}`}
 								className="mb-5 grid gap-4 border-b border-card-line pb-5 last:mb-0 last:border-0 last:pb-0 sm:grid-cols-2"
 							>
-								<Field label="Guardian" value={row.guardian_name} />
+								<Field label="Parent or guardian's name" value={row.guardian_name} />
 								<Field label="Relationship" value={row.relationship} />
-								<Field label="Phone" value={row.phone} />
+								<Field label="Phone number" value={row.phone} />
 								<Field label="Email" value={row.email} />
 								<Field
 									label="Consent given"
@@ -820,17 +965,10 @@ function Safeguarding({ record }: { record: ApplicationDecision }) {
 								{row.consent_evidence && (
 									<div className="sm:col-span-2">
 										<span className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-											Evidence
+											Consent document
 										</span>
-										<div className="mt-1">
-											<a
-												href={row.consent_evidence}
-												target="_blank"
-												rel="noreferrer"
-												className="text-[13px] font-semibold text-ink underline"
-											>
-												Open the uploaded consent
-											</a>
+										<div className="mt-1 text-[13px]">
+											<FileLink url={row.consent_evidence} />
 										</div>
 									</div>
 								)}
@@ -840,52 +978,387 @@ function Safeguarding({ record }: { record: ApplicationDecision }) {
 				</Card>
 			)}
 
-			<Card>
-				<SectionTitle>What they agreed to</SectionTitle>
+			<Declarations rows={record.declarations} />
+		</div>
+	);
+}
 
-				{record.declarations.length === 0 ? (
-					<Empty title="This society asked them to agree to nothing." />
-				) : (
-					<dl className="grid gap-4 sm:grid-cols-2">
-						{record.declarations.map((row) => (
-							<div key={row.declaration}>
-								<Field
-									label={row.title}
-									// The version, because that is what identifies the wording
-									// stored against this acceptance. The text itself is on the
-									// application; reprinting four declarations here would bury
-									// the two things above that actually gate the decision.
-									value={
-										row.accepted
-											? `Agreed · version ${row.version}${row.accepted_on ? ` · ${formatDate(row.accepted_on)}` : ""}`
-											: "Not agreed"
-									}
-								/>
+/** LinkedIn, GitHub and profession together, as the registration form asks them. */
+function ProfessionalProfiles({
+	linkedin,
+	github,
+	profession,
+}: {
+	linkedin?: string | null;
+	github?: string | null;
+	profession?: string | null;
+}) {
+	const link = (value?: string | null) =>
+		value && isWebAddress(value) ? (
+			<a
+				href={value}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="break-all font-semibold text-ink underline underline-offset-2"
+			>
+				{value}
+			</a>
+		) : (
+			value || "—"
+		);
 
-								{/* Where the society published the policy on its own site
-								    rather than here, the address is the whole of what the
-								    register holds — there are no words to fall back on. So
-								    it is shown, and shown as what it is: the page as it was
-								    addressed on the day, not a promise about what it says
-								    now. */}
-								{row.source === "Link" && row.external_url && (
-									<a
-										href={row.external_url}
-										target="_blank"
-										rel="noreferrer noopener"
-										className="mt-1 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-ink hover:underline"
-									>
-										<Icon.external size={12} />
-										The page they were shown
-									</a>
-								)}
-							</div>
-						))}
-					</dl>
-				)}
-			</Card>
+	return (
+		<Card className="mb-5">
+			<SectionTitle>Professional profiles</SectionTitle>
+			<dl className="grid gap-4 sm:grid-cols-2">
+				<div>
+					<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">LinkedIn profile</dt>
+					<dd className="mt-1 text-[13px] text-ink">{link(linkedin)}</dd>
+				</div>
+				<div>
+					<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">GitHub profile</dt>
+					<dd className="mt-1 text-[13px] text-ink">{link(github)}</dd>
+				</div>
+				<Field label="Profession" value={profession} />
+			</dl>
+		</Card>
+	);
+}
+
+/** Whether any education or experience table has a row. */
+function hasBackground(background?: ApplicationDecision["background"]): boolean {
+	return Boolean(background && Object.values(background).some((rows) => Array.isArray(rows) && rows.length > 0));
+}
+
+/** The disability answers from the identity step, only when the applicant gave any. */
+function Disability({
+	answers,
+}: {
+	answers: { disability_status?: string | null; disabilities?: string[]; disability_needs?: string | null };
+}) {
+	if (!answers.disability_status && !answers.disabilities?.length && !answers.disability_needs) return null;
+
+	return (
+		<>
+			<Field label="Disability" value={answers.disability_status} />
+			{!!answers.disabilities?.length && <Field label="Type of disability" value={answers.disabilities.join(", ")} />}
+			{answers.disability_needs && (
+				<div className="sm:col-span-2">
+					<Field label="Support needed" value={answers.disability_needs} />
+				</div>
+			)}
 		</>
 	);
+}
+
+/**
+ * What the applicant agreed to, and the exact wording of each version.
+ *
+ * The wording is the snapshot stored with the acceptance, so a declaration
+ * reworded since still reads as the version this applicant agreed to.
+ */
+function Declarations({ rows }: { rows: AcceptedDeclaration[] }) {
+	return (
+		<Card>
+			<SectionTitle>Declarations</SectionTitle>
+
+			{rows.length === 0 ? (
+				<Empty title="No declarations required." />
+			) : (
+				<ul className="divide-y divide-card-line">
+					{rows.map((row) => (
+						<li key={row.declaration} className="py-4 first:pt-0 last:pb-0">
+							<div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+								<span className="text-[13px] font-semibold text-ink">{row.title}</span>
+								<span className="text-[12px] text-muted">
+									{row.accepted
+										? `Agreed · version ${row.version}${row.accepted_on ? ` · ${formatDate(row.accepted_on)}` : ""}`
+										: "Not agreed"}
+								</span>
+							</div>
+
+							{row.body && (
+								<details className="group mt-2">
+									<summary className="cursor-pointer text-[12px] font-bold text-ink hover:underline">
+										Read version {row.version}
+									</summary>
+									<div
+										className="mt-2 max-h-80 overflow-auto rounded-xl border border-card-line bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-ink [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
+										// The society's own wording as stored with this acceptance.
+										// A Text Editor field, sanitised by Frappe when saved, and
+										// rendered the same way on the registration form.
+										dangerouslySetInnerHTML={{ __html: row.body }}
+									/>
+								</details>
+							)}
+
+							{/* Published on the society's own site rather than here, so the
+							    address is all the register holds. */}
+							{row.source === "Link" && row.external_url && (
+								<a
+									href={row.external_url}
+									target="_blank"
+									rel="noreferrer noopener"
+									className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink hover:underline"
+								>
+									<Icon.external size={12} />
+									Open the declaration
+								</a>
+							)}
+						</li>
+					))}
+				</ul>
+			)}
+		</Card>
+	);
+}
+
+/** Every file the applicant attached, shown as itself, under the step it came from. */
+function Documents({ files }: { files: RegistrationFile[] }) {
+	if (files.length === 0) {
+		return (
+			<Card>
+				<Empty title="No documents attached." />
+			</Card>
+		);
+	}
+
+	const groups: Array<{ name: string; files: RegistrationFile[] }> = [];
+	for (const file of files) {
+		const group = groups.find((entry) => entry.name === file.group);
+		if (group) group.files.push(file);
+		else groups.push({ name: file.group, files: [file] });
+	}
+
+	return (
+		<div className="space-y-5">
+			{groups.map((group) => (
+				<Card key={group.name}>
+					<SectionTitle>{group.name}</SectionTitle>
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						{group.files.map((file) => (
+							<FilePreview key={file.key} url={file.url} name={file.file_name} label={file.label} />
+						))}
+					</div>
+				</Card>
+			))}
+		</div>
+	);
+}
+
+/**
+ * The record's activity, at the foot of the page as Frappe shows it under a
+ * form: who created it, then each save and what it changed, newest first.
+ *
+ * Read from Frappe's own change log for the application or membership and the
+ * applicant's personal details. Approval decisions stay on the Decision tab.
+ */
+const ACTIVITY_SHOWN = 10;
+
+/**
+ * Whether this reader wants the activity shown, remembered in their browser so
+ * switching it on once keeps it on for every application they open. Off until
+ * they ask; a browser that will not store it simply starts off each time.
+ */
+const ACTIVITY_PREFERENCE = "vmmsx.review.activity";
+
+function activityWanted(): boolean {
+	try {
+		return window.localStorage.getItem(ACTIVITY_PREFERENCE) === "on";
+	} catch {
+		return false;
+	}
+}
+
+function rememberActivity(on: boolean) {
+	try {
+		window.localStorage.setItem(ACTIVITY_PREFERENCE, on ? "on" : "off");
+	} catch {
+		// Not stored: the switch still works on this page.
+	}
+}
+
+function Activity({ doctype, name }: { doctype: string; name: string }) {
+	// Not read until it is shown.
+	const [visible, setVisible] = useState(activityWanted);
+	const { data, error, isLoading } = useFrappeGetCall<{ message: AuditEntry[] }>(
+		API.auditTrail,
+		{ doctype, name },
+		visible ? `review:activity:${doctype}:${name}` : null,
+	);
+	const [all, setAll] = useState(false);
+	const entries = data?.message ?? [];
+	const shown = all ? entries : entries.slice(0, ACTIVITY_SHOWN);
+
+	return (
+		<section className="mt-8 border-t border-card-line pt-6" aria-label="Activity">
+			<div className="flex items-center justify-between gap-4">
+				<h2 id="activity-heading" className="text-[14px] font-bold text-ink">
+					Activity
+				</h2>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={visible}
+					aria-labelledby="activity-toggle-label"
+					onClick={() => {
+						rememberActivity(!visible);
+						setVisible(!visible);
+					}}
+					className="inline-flex items-center gap-2 text-[12px] font-semibold text-muted"
+				>
+					<span id="activity-toggle-label">Show activity</span>
+					<span
+						aria-hidden="true"
+						className={cx(
+							"relative inline-block h-5 w-9 rounded-full transition",
+							visible ? "bg-navy" : "bg-rail-line",
+						)}
+					>
+						<span
+							className={cx(
+								"absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all",
+								visible ? "left-[18px]" : "left-0.5",
+							)}
+						/>
+					</span>
+				</button>
+			</div>
+
+			{visible && (
+				<div className="mt-4">
+					{isLoading && <Spinner label="Loading activity…" />}
+					{error && <ErrorNote>{errorMessage(error, "The activity could not be loaded.")}</ErrorNote>}
+					{!isLoading && !error && entries.length === 0 && (
+						<p className="text-[12.5px] text-muted">No changes recorded.</p>
+					)}
+
+					{shown.length > 0 && (
+						<ol className="relative ml-3 border-l border-card-line">
+							{shown.map((entry, index) => (
+								<li key={`${entry.on}-${index}`} className="relative pb-5 pl-6 last:pb-0">
+									<span
+										aria-hidden="true"
+										className="absolute -left-3 top-0 grid h-6 w-6 place-items-center rounded-full border border-card-line bg-white text-[9.5px] font-bold text-muted"
+									>
+										{initials(entry.by)}
+									</span>
+									<ActivityLine entry={entry} />
+								</li>
+							))}
+						</ol>
+					)}
+
+					{entries.length > ACTIVITY_SHOWN && (
+						<button
+							type="button"
+							onClick={() => setAll((was) => !was)}
+							className="mt-4 text-[12px] font-bold text-ink hover:underline"
+						>
+							{all ? "Show less" : "Show all activity"}
+						</button>
+					)}
+				</div>
+			)}
+		</section>
+	);
+}
+
+/** One save, worded the way Frappe words its timeline. */
+function ActivityLine({ entry }: { entry: AuditEntry }) {
+	const when = (
+		<time dateTime={entry.on} title={formatDateTime(entry.on)} className="text-muted">
+			{" · "}
+			{timeAgo(entry.on)}
+		</time>
+	);
+	const what = entry.record === "Personal details" ? "personal details" : `this ${entry.record.toLowerCase()}`;
+
+	if (entry.kind === "created") {
+		return (
+			<p className="pt-0.5 text-[12.5px] text-ink">
+				<span className="font-semibold">{entry.by}</span> created {what}
+				{when}
+			</p>
+		);
+	}
+
+	const [only] = entry.changes;
+	if (entry.changes.length === 1) {
+		return (
+			<p className="pt-0.5 text-[12.5px] text-ink">
+				<span className="font-semibold">{entry.by}</span>{" "}
+				{only.row ? (
+					<>
+						changed {only.field} on {what}: {only.row}
+					</>
+				) : (
+					<>
+						changed {only.field} on {what} <Change change={only} />
+					</>
+				)}
+				{when}
+			</p>
+		);
+	}
+
+	return (
+		<div className="pt-0.5 text-[12.5px] text-ink">
+			<p>
+				<span className="font-semibold">{entry.by}</span> changed {what}
+				{when}
+			</p>
+			<ul className="mt-1 space-y-0.5 text-[12px]">
+				{entry.changes.map((change, at) => (
+					<li key={at}>
+						<span className="font-semibold">{change.field}</span>
+						{change.row ? <>: {change.row}</> : <> <Change change={change} /></>}
+					</li>
+				))}
+			</ul>
+		</div>
+	);
+}
+
+function Change({ change }: { change: AuditEntry["changes"][number] }) {
+	return (
+		<>
+			from <span className="font-semibold">{change.from ?? "empty"}</span> to{" "}
+			<span className="font-semibold">{change.to ?? "empty"}</span>
+		</>
+	);
+}
+
+function initials(name: string): string {
+	return (
+		name
+			.split(/\s+/)
+			.filter(Boolean)
+			.slice(0, 2)
+			.map((part) => part[0]?.toUpperCase() ?? "")
+			.join("") || "?"
+	);
+}
+
+/** "3 hours ago", and the date itself once it is more than a week old. */
+function timeAgo(value: string): string {
+	const then = new Date(value.replace(" ", "T")).getTime();
+	if (Number.isNaN(then)) return value;
+	const minutes = Math.round((Date.now() - then) / 60000);
+	if (minutes < 1) return "just now";
+	if (minutes < 60) return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
+	const hours = Math.round(minutes / 60);
+	if (hours < 24) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+	const days = Math.round(hours / 24);
+	if (days < 7) return days === 1 ? "1 day ago" : `${days} days ago`;
+	return formatDate(value.slice(0, 10));
+}
+
+/** A saved moment in the reader's own date and time format. */
+function formatDateTime(value: string): string {
+	const date = new Date(value.replace(" ", "T"));
+	if (Number.isNaN(date.getTime())) return value;
+	return `${formatDate(value.slice(0, 10))} ${date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 /** One declared vocabulary, drawn only when the applicant declared anything. */
@@ -926,15 +1399,7 @@ function Answers({ rows }: { rows: SocietyAnswer[] }) {
 					<dd className="mt-1 text-[13px] text-ink">
 						{answer.is_file ? (
 							answer.file_url ? (
-								<a
-									className="inline-flex items-center gap-1.5 font-semibold text-ink underline underline-offset-2"
-									href={answer.file_url}
-									target="_blank"
-									rel="noreferrer"
-								>
-									<Icon.external size={13} />
-									Open the file
-								</a>
+								<FileLink url={answer.file_url} />
 							) : (
 								"—"
 							)
@@ -990,7 +1455,7 @@ function groupAnswers(answers: SocietyAnswer[]): Array<{ name: string; answers: 
  * **A menu, not a row of buttons.** Approve, decline and ask-for-more are not
  * three things an approver might do — they are three answers to one question,
  * exactly one of which will ever be pressed. A row of three equally weighted
- * buttons puts Decline the same distance from a stray click as Approve, and
+ * buttons puts Reject the same distance from a stray click as Approve, and
  * reads as a toolbar rather than as a decision.
  *
  * **Choosing is not deciding.** Picking from the menu sets the intent, shows it
@@ -1007,41 +1472,51 @@ const DECISIONS = {
 	Approved: {
 		verb: "Approve",
 		// The button says the whole sentence rather than `{verb} this {noun}`,
-		// which composed to "Ask for more this volunteer applicant" for the one
+		// which composed to "Request more information this volunteer applicant" for the one
 		// verb that is a phrase rather than a word.
 		button: (noun: string) => `Approve this ${noun}`,
 		confirm: "Yes, approve",
 		tone: "navy" as const,
 		pill: "border-emerald-300 bg-emerald-50 text-emerald-700",
 		icon: Icon.check,
-		hint: "Endorses this application at your stage and moves it on.",
-		consequence:
-			"This endorses the application at your stage. If yours is the last stage, it is approved outright.",
+		hint: "Approves this stage and moves the application on.",
+		consequence: "This approves the application at your stage. If this is the last stage, the application is approved.",
 	},
 	"More info requested": {
-		verb: "Ask for more",
-		button: (noun: string) => `Ask this ${noun} for more`,
+		verb: "Request more information",
+		button: (noun: string) => `Request more information from this ${noun}`,
 		confirm: "Yes, send it back",
 		tone: "soft" as const,
 		pill: "border-amber-300 bg-amber-50 text-amber-800",
 		icon: Icon.back,
-		hint: "Hands it back to the applicant with your reason.",
+		hint: "Returns the application to the applicant with your reason.",
 		consequence:
-			"The application goes back to the applicant with your reason, and review starts from the beginning when they resubmit — what the earlier stages endorsed is not what they will be resubmitting.",
+			"The application is returned to the applicant with your reason. When they resubmit, review starts again from the first stage.",
 	},
 	Rejected: {
-		verb: "Decline",
-		button: (noun: string) => `Decline this ${noun}`,
-		confirm: "Yes, decline",
+		verb: "Reject",
+		button: (noun: string) => `Reject this ${noun}`,
+		confirm: "Yes, reject",
 		tone: "primary" as const,
 		pill: "border-blue/40 bg-blue/[.07] text-blue-press",
 		icon: Icon.cross,
-		hint: "Ends the application. Needs a reason.",
-		consequence: "This ends the application. It cannot be undone from this screen.",
+		hint: "Closes the application. A reason is required.",
+		consequence: "This closes the application. It cannot be undone.",
 	},
 } as const;
 
 type DecisionKey = keyof typeof DECISIONS;
+
+/** A stage's completion rule, as words. The engine's values are code. */
+const COMPLETION_RULES: Record<string, string> = {
+	single: "One approver",
+	any_of: "Any one approver",
+	all_of: "All approvers",
+};
+
+function completionRule(rule?: string | null): string | undefined {
+	return rule ? (COMPLETION_RULES[rule] ?? rule) : undefined;
+}
 
 function Decision({
 	status,
@@ -1099,15 +1574,27 @@ function Decision({
 		(key) => key !== "Rejected" || status.stage?.can_reject,
 	);
 
+	// Held back by the document itself: nobody's to decide yet, so nothing to press.
+	if (status.held) {
+		return (
+			<Card className="mb-5">
+				<SectionTitle>{status.held_for?.label ?? "Not ready yet"}</SectionTitle>
+				<p className="text-[13px] leading-relaxed text-slate-body">
+					{status.held_for?.note ?? "This application is not ready for a decision yet."}
+				</p>
+			</Card>
+		);
+	}
+
 	return (
 		<>
 			<Card className="mb-5">
-				<SectionTitle>Where this stands</SectionTitle>
+				<SectionTitle>Approval status</SectionTitle>
 				<dl className="grid gap-4 sm:grid-cols-2">
 					<Field label="Stage" value={status.stage?.label} />
-					<Field label="Entered stage" value={formatDate(status.stage?.entered_on)} />
-					<Field label="Decision rule" value={status.stage?.completion_rule} />
-					<Field label="Approvers resolved" value={String(status.approver_count)} />
+					<Field label="Stage started" value={formatDate(status.stage?.entered_on)} />
+					<Field label="Approval needed from" value={completionRule(status.stage?.completion_rule)} />
+					<Field label="Approvers" value={String(status.approver_count)} />
 				</dl>
 
 				{/* `is_blocked` means the stage found nobody at its own level. It is
@@ -1121,18 +1608,17 @@ function Decision({
 				    Assignment rather than here. */}
 				{status.stage?.is_blocked && (
 					<p className="mt-4 rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-						Nobody holds <b>{status.stage.required_role}</b> at this stage's level
-						here, so it was escalated
+						No one holds <b>{status.stage.required_role}</b> at this level, so this
+						application was escalated
 						{status.escalated_to?.length ? ` to ${status.escalated_to.join(", ")}` : " upward"}.
-						Assigning somebody at that level puts the decision back where the workflow
-						intends it.
+						Assign someone at this level in Geo Assignment to return it to them.
 					</p>
 				)}
 			</Card>
 
 			{status.decisions.length > 0 && (
 				<Card className="mb-5">
-					<SectionTitle>Decisions so far</SectionTitle>
+					<SectionTitle>Decision history</SectionTitle>
 					<Table head={["Decision", "Stage", "By", "When"]}>
 						{status.decisions.map((decision, index) => (
 							<Row key={index}>
@@ -1166,9 +1652,7 @@ function Decision({
 
 				{!status.can_act ? (
 					<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-						You cannot act on this one right now. The engine resolves approvers per
-						document, so holding the role is not the same as being this document's
-						approver.
+						You are not an approver for this application at its current stage.
 					</p>
 				) : (
 					<>
@@ -1230,7 +1714,7 @@ function Decision({
 										needsReason
 											? chosen === "More info requested"
 												? "Tell the applicant exactly what to add or correct."
-												: "The applicant is told this. Say what was wrong."
+												: "Reason for rejection. The applicant will see this."
 											: "Anything the next approver should know."
 									}
 								/>
@@ -1252,7 +1736,7 @@ function Decision({
 									<p className="mt-2 text-[11.5px] text-slate-faint">
 										{chosen === "More info requested"
 											? "Say what is missing so the applicant knows what to correct."
-											: "Declining needs a reason — the applicant is told it."}
+											: "A reason is required. The applicant will see it."}
 									</p>
 								)}
 							</div>

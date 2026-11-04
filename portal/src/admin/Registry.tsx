@@ -72,6 +72,10 @@ interface VolunteerRow {
 	geo_node: string | null;
 	geo_path: string | null;
 	deployable: boolean;
+	/** From Red Profile; "Other" arrives as what the person typed. */
+	profession?: string | null;
+	/** Whether they have an active entry on the surge roster. */
+	on_surge_roster?: boolean;
 }
 
 /** One page of a register. Server-side, so it is not a slice of a capped read. */
@@ -172,10 +176,41 @@ function useQueryTerm(): [string, (value: string) => void] {
 
 /* --------------------------------------------------------------- volunteers */
 
+/**
+ * A filter held in the address, like the search term. So the overview's
+ * disability figures can link to the people behind them, and a filtered list
+ * can be sent to a colleague.
+ */
+function useParamFilter(key: string): [string, (value: string) => void] {
+	const [params, setParams] = useSearchParams();
+	const value = params.get(key) ?? "";
+
+	const set = useCallback(
+		(next: string) => {
+			const updated = new URLSearchParams(params);
+
+			if (next) updated.set(key, next);
+			else updated.delete(key);
+
+			setParams(updated, { replace: true });
+		},
+		[key, params, setParams],
+	);
+
+	return [value, set];
+}
+
 function Volunteers() {
 	const [search, setSearch] = useQueryTerm();
+	const [profession, setProfession] = useParamFilter("profession");
+	const [disability, setDisability] = useParamFilter("disability");
+	const [disabilityCategory, setDisabilityCategory] = useParamFilter("disability_category");
 	const [chain, setChain] = useState<GeoNode[]>([]);
 	const [page, setPage] = useState(0);
+
+	const professions = useFrappeGetCall<{
+		message: { professions: Array<{ profession: string; count: number }>; without: number };
+	}>(API.registerProfessions, undefined, "registry:volunteers:professions");
 
 	const geoNode = chain.length > 0 ? chain[chain.length - 1].name : undefined;
 	const branchLabel = branchOf(chain);
@@ -215,9 +250,21 @@ function Volunteers() {
 			offset: page * PAGE,
 			search: search || undefined,
 			geo_node: geoNode,
+			profession: profession || undefined,
+			disability: disability || undefined,
+			disability_category: disabilityCategory || undefined,
 		},
-		`admin:find_volunteers:${page}:${search}:${geoNode ?? ""}`,
+		`admin:find_volunteers:${page}:${search}:${geoNode ?? ""}:${profession}:${disability}:${disabilityCategory}`,
 	);
+
+	const chips = [
+		...(branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []),
+		...(disabilityCategory
+			? [{ key: "disability_category", label: `Disability: ${disabilityCategory}`, clear: () => narrow(setDisabilityCategory)("") }]
+			: disability
+				? [{ key: "disability", label: "Persons with disabilities", clear: () => narrow(setDisability)("") }]
+				: []),
+	];
 
 	const rows = data?.message?.volunteers ?? [];
 	const total = data?.message?.total ?? 0;
@@ -260,14 +307,29 @@ function Volunteers() {
 				search={search}
 				onSearch={narrow(setSearch)}
 				placeholder="Search by name or volunteer number"
-				chips={branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []}
+				inline={
+					<SelectFilter
+						label="Profession"
+						value={profession}
+						onChange={narrow(setProfession)}
+						any="All professions"
+						options={(professions.data?.message?.professions ?? []).map((row) => ({
+							value: row.profession,
+							label: `${row.profession} (${row.count})`,
+						}))}
+					/>
+				}
+				chips={chips}
 				onClearAll={() => {
 					setSearch("");
+					setProfession("");
+					setDisability("");
+					setDisabilityCategory("");
 					setChain([]);
 					setPage(0);
 				}}
 			>
-				<Labelled label="Serving branch" hint="Their branch, and everything under it.">
+				<Labelled label="Serving branch" hint="Includes all areas below this branch.">
 					{/* One select per rung of the society's own ladder. This screen
 					    does not know how deep the hierarchy is or what a rung is
 					    called. */}
@@ -282,6 +344,9 @@ function Volunteers() {
 				<>
 					<div className="mb-4 flex flex-wrap gap-2">
 						<Pill tone="page">{total} active volunteers match</Pill>
+						{!profession && (professions.data?.message?.without ?? 0) > 0 && (
+							<Pill tone="page">{professions.data?.message?.without} with no profession recorded</Pill>
+						)}
 					</div>
 
 					{rows.length === 0 ? (
@@ -292,7 +357,7 @@ function Volunteers() {
 						</Empty>
 					) : (
 						<>
-							<Table head={["Volunteer", "Volunteer number", "Serving branch", "Joined", ""]}>
+							<Table head={["Volunteer", "Volunteer number", "Profession", "Serving branch", "Joined", ""]}>
 								{rows.map((row) => (
 									<Row
 										key={row.volunteer}
@@ -303,6 +368,14 @@ function Volunteers() {
 											<VolunteerName row={row} />
 										</Cell>
 										<Cell className="tabular font-mono text-[11.5px] text-slate-faint">{row.volunteer}</Cell>
+										<Cell className="text-muted">
+											{row.profession || "—"}
+											{row.on_surge_roster && (
+												<span className="ml-2 inline-flex rounded-full bg-blue-soft px-2 py-0.5 text-[10.5px] font-bold text-blue-press">
+													Surge roster
+												</span>
+											)}
+										</Cell>
 										<Cell className="text-muted">{branchPath(row.geo_path)}</Cell>
 										<Cell className="text-muted">{formatDate(row.joined_on)}</Cell>
 										<Cell className="text-right">
@@ -343,6 +416,7 @@ function Volunteers() {
 function VolunteerName({ row }: { row: VolunteerRow }) {
 	return (
 		<PersonCard
+			to={recordOf("volunteer", row.volunteer)}
 			label={
 				<span className="flex items-center gap-3">
 					{/* The face, then the name, then the record number — the order
@@ -403,7 +477,7 @@ function VolunteerSummary({ row }: { row: VolunteerRow }) {
 			loading={isLoading}
 			error={
 				error
-					? "The rest of this person's summary could not be read. Open their record to see it."
+					? "Some details could not be loaded. Open the record to see them."
 					: undefined
 			}
 			open={{ to: recordOf("volunteer", row.volunteer), label: "Open full record" }}
@@ -520,7 +594,7 @@ function Members() {
 					setPage(0);
 				}}
 			>
-				<Labelled label="Branch" hint="Where the membership is held, and everything under it.">
+				<Labelled label="Branch" hint="Includes all areas below the membership's branch.">
 					<GeoSelects chain={chain} onChain={narrow(setChain)} idPrefix="registry-mem" />
 				</Labelled>
 			</RegisterToolbar>
@@ -593,6 +667,7 @@ function Members() {
 function MemberName({ row }: { row: MemberRow }) {
 	return (
 		<PersonCard
+			to={recordOf("member", row.member)}
 			label={
 				<span className="flex items-center gap-3">
 					<Avatar name={row.full_name} photo={row.photo} size={34} />
@@ -646,7 +721,7 @@ function MemberSummary({ row }: { row: MemberRow }) {
 			loading={isLoading}
 			error={
 				error
-					? "The rest of this person's summary could not be read. Open their record to see it."
+					? "Some details could not be loaded. Open the record to see them."
 					: undefined
 			}
 			open={{ to: recordOf("member", row.member), label: "Open full record" }}
@@ -924,5 +999,5 @@ function Labelled({ label, hint, children }: { label: string; hint?: string; chi
  * nothing under it.
  */
 function branchOf(chain: GeoNode[]): string {
-	return (chain.length > 1 ? chain.slice(1) : chain).map((node) => node.label).join(" · ");
+	return chain[chain.length - 1]?.label ?? "";
 }

@@ -125,11 +125,29 @@ ADMIN_SECTIONS = ({"section": "questions", "doctypes": ("VMMS Application Questi
 # for why the record itself stays HRMS's.
 COMPANION_SECTIONS = ({"section": "recruitment", "doctypes": ("Job Opening", "Job Applicant")},)
 
+# Sections gated on **where somebody is placed** rather than on a register.
+# Both read registers other sections already gate, so a doctype would admit the
+# wrong people: every county coordinator may read volunteers, and none of them
+# is responsible for a region. The answer is `analytics/services/oversight.py`'s,
+# which names no role either: the regional one is the society's setting.
+#
+# - `region`: somebody holding the regional oversight role at a region, and
+#   national staff, who may open any region;
+# - `national`: anybody assigned at the top of the tree, and System Manager.
+#
+# Like the admin sections, each stands on its own: a regional head has reason to
+# be in the console even before any other section admits them.
+OVERSIGHT_SECTIONS = ("region", "national")
+
 # The order the sidebar draws every section in, gated or not. Kept here rather
 # than in the frontend so a society reading the list on the desk and a
 # coordinator reading it in the sidebar are reading the same order.
 ORDER = (
 	"overview",
+	# Beside the overview: each is an overview, of a region and of the country,
+	# for the people who answer for one.
+	"region",
+	"national",
 	"queue",
 	# Beside the two application queues under People: an opening is the third
 	# way somebody asks to join the society, and a recruiter clearing job
@@ -178,6 +196,8 @@ def visible(user: str | None = None) -> list[str]:
 	# in this console even if they hold none of its own scope roles.
 	admitted += [entry["section"] for entry in COMPANION_SECTIONS if _readable(entry["doctypes"], user)]
 
+	admitted += _oversight(user)
+
 	if not admitted:
 		return []
 
@@ -194,6 +214,17 @@ def available(user: str | None = None) -> bool:
 	empty; it is a place they are not sent.
 	"""
 	return bool(visible(user))
+
+
+def _oversight(user: str) -> list[str]:
+	from vmmsx.analytics.services import oversight
+
+	# National staff may open any region, so they get the tab even before the
+	# society has any regions to open: the page says so rather than vanishing.
+	if oversight.national_allowed(user):
+		return ["region", "national"]
+
+	return ["region"] if oversight.regions_for(user) else []
 
 
 def _readable(doctypes: tuple[str, ...], user: str) -> bool:

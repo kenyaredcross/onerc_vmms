@@ -38,6 +38,15 @@
 {%- set society = lockup() if lockup is defined else None -%}
 {%- set mark = (society and society.brand_logo) or brand_logo -%}
 {%- set society_name = (society and society.brand_name) or brand_name -%}
+{#-
+	A logo uploaded to this site is sent inside the email, not linked. A linked
+	`/files/...` image becomes an address on this site, and mail clients such as
+	Gmail fetch images from their own servers, so a site they cannot reach (a
+	local or internal one) shows a broken image. Frappe's `embed=` attaches the
+	file and points the image at the attachment. A logo hosted elsewhere stays a
+	link.
+-#}
+{%- set embed_mark = mark and (mark.startswith("/files/") or mark.startswith("/private/files/") or mark.startswith("/assets/") or mark.startswith("files/") or mark.startswith("assets/")) -%}
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 
@@ -58,7 +67,11 @@
 						<td align="left" valign="middle" class="email-masthead">
 							<a href="{{ site_url or '#' }}">
 								{% if mark %}
+								{% if embed_mark %}
+								<img embed="{{ mark }}" height="28" class="brand-logo" alt="{{ society_name or '' }}" />
+								{% else %}
 								<img src="{{ mark }}" height="28" class="brand-logo" alt="{{ society_name or '' }}" />
+								{% endif %}
 								{% endif %}
 								{% if society_name %}
 								<span class="brand-name">{{ society_name }}</span>

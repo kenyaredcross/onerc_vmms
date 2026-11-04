@@ -1,5 +1,5 @@
-import { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useContext, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { ServiceCertificatePanel } from "../certificates/ServiceCertificates";
@@ -7,6 +7,7 @@ import { EditableText } from "../content/Editable";
 import { API, errorMessage, myCertificateUrl } from "../lib/api";
 import { branchPath, formatDate, formatMoney } from "../lib/format";
 import { Icon } from "../ui/icons";
+import { PhonePayment } from "../ui/PhonePayment";
 import { PlanCards, planPrice } from "../ui/PlanCards";
 import { HolderCard } from "./Profile";
 import { ProofOfMembership } from "./ProofOfMembership";
@@ -46,6 +47,17 @@ import type { Declaration, MembershipRow, PricedType, RedProfile } from "./types
  */
 export default function Membership() {
 	const navigate = useNavigate();
+	const { call } = useContext(FrappeContext) as FrappeConfig;
+	const toast = useToast();
+	const [switching, setSwitching] = useState<string | null>(null);
+	const [switchFailure, setSwitchFailure] = useState<string | null>(null);
+	const { hash } = useLocation();
+
+	// Arriving from the dashboard's "Change membership type": the router does
+	// not scroll to an anchor by itself.
+	useEffect(() => {
+		if (hash) document.getElementById(hash.slice(1))?.scrollIntoView?.();
+	}, [hash]);
 
 	const { data, error, isLoading, mutate } = useFrappeGetCall<{ message: MembershipRow[] }>(
 		API.myMemberships,
@@ -81,6 +93,29 @@ export default function Membership() {
 	const join = (membershipType: string) =>
 		navigate(`/join?path=member&type=${encodeURIComponent(membershipType)}`);
 
+	// An application whose fee is not paid yet has gone to nobody, so its type
+	// can still be switched. The server says when; the plans below offer it.
+	const switchable = pending.find((row) => row.can_change_type) ?? null;
+
+	const switchTo = async (plan: PricedType) => {
+		if (!switchable || switching) return;
+		setSwitching(plan.membership_type);
+		setSwitchFailure(null);
+		try {
+			await call.post(API.changeMembershipType, {
+				name: switchable.name,
+				membership_type: plan.membership_type,
+			});
+			toast(`Changed to ${plan.membership_type_name}.`);
+			await mutate();
+			document.getElementById("your-memberships")?.scrollIntoView?.({ behavior: "smooth" });
+		} catch (switchError) {
+			setSwitchFailure(errorMessage(switchError, "The membership type was not changed. Try again."));
+		} finally {
+			setSwitching(null);
+		}
+	};
+
 	return (
 		<>
 			{/* The portal's own page head rather than a centred 40px hero. Every
@@ -115,7 +150,7 @@ export default function Membership() {
 			)}
 
 			{/* ------------------------------------------------------------- plans */}
-			<section className="mx-auto mb-12 w-full max-w-[1060px]">
+			<section id="membership-types" className="mx-auto mb-12 w-full max-w-[1060px] scroll-mt-20">
 				<header className="mb-5 max-w-[640px]">
 					<p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
 						<EditableText k="portal.membership.plans.eyebrow" fallback="Membership types" />
@@ -124,7 +159,7 @@ export default function Membership() {
 						{pending.length > 0 ? (
 							<EditableText
 								k="portal.membership.plans.heading.pending"
-								fallback="What your society offers"
+								fallback="Available membership types"
 							/>
 						) : (
 							<EditableText
@@ -134,9 +169,11 @@ export default function Membership() {
 						)}
 					</h2>
 					<p className="mt-2 text-[12.5px] leading-relaxed text-slate-body">
-						{pending.length > 0
-							? "Your application is with your branch. There is nothing to choose until they have decided on it."
-							: "Review the benefits and eligibility guidance, then join through the branch that serves you."}
+						{switchable
+							? "Your fee is not paid yet. You can switch to another type before you pay."
+							: pending.length > 0
+								? "Your application is with your branch for review."
+								: "Review the benefits and eligibility guidance, then join through the branch that serves you."}
 					</p>
 				</header>
 
@@ -144,13 +181,34 @@ export default function Membership() {
 					types={priced}
 					loading={types.isLoading}
 					held={[...holdsType]}
-					columns={3}
-					empty="Your society has not published any membership types yet. Ask your branch when they will be available."
+					columns={4}
+					empty="No membership types are available yet."
 					// The act, inside the price panel. Nothing to choose while
 					// something is undecided: choosing would open a wizard that can
 					// only say the application is already in.
 					action={(plan) =>
-						pending.length > 0 ? (
+						switchable ? (
+							plan.membership_type === switchable.membership_type ? (
+								<span className="grid min-h-[38px] place-items-center rounded-lg bg-white text-[12.5px] font-semibold text-muted">
+									Your choice
+								</span>
+							) : !switchable.switchable_types?.includes(plan.membership_type) ? (
+								// Outside this person's age, or closed to new members:
+								// the server's list, so nothing is offered it would refuse.
+								<span className="grid min-h-[38px] place-items-center rounded-lg bg-white px-2 text-center text-[12px] font-semibold text-muted">
+									Not open to you
+								</span>
+							) : (
+								<Button
+									className="w-full"
+									tone="soft"
+									busy={switching === plan.membership_type}
+									onClick={() => void switchTo(plan)}
+								>
+									Switch to this type
+								</Button>
+							)
+						) : pending.length > 0 ? (
 							<span className="grid min-h-[38px] place-items-center rounded-lg bg-white text-[12.5px] font-semibold text-muted">
 								Application in
 							</span>
@@ -189,6 +247,12 @@ export default function Membership() {
 						</>
 					)}
 				/>
+
+				{switchFailure && (
+					<div className="mt-4">
+						<ErrorNote>{switchFailure}</ErrorNote>
+					</div>
+				)}
 
 				{types.error && (
 					<div className="mt-4">
@@ -260,7 +324,7 @@ export default function Membership() {
 				) : (
 					<div className="space-y-3.5">
 						{held.map((row) => (
-							<MembershipCard key={row.name} row={row} onChanged={() => void mutate()} />
+							<MembershipCard key={`${row.name}:${row.membership_type}`} row={row} onChanged={() => void mutate()} />
 						))}
 
 						{/* The card itself, drawn only for a membership that is active:
@@ -279,7 +343,7 @@ export default function Membership() {
 									</p>
 								</div>
 								{pending.map((row) => (
-									<MembershipCard key={row.name} row={row} onChanged={() => void mutate()} />
+									<MembershipCard key={`${row.name}:${row.membership_type}`} row={row} onChanged={() => void mutate()} />
 								))}
 							</>
 						)}
@@ -357,7 +421,7 @@ function summarise(held: MembershipRow[], pending: MembershipRow[]): string {
 /* -------------------------------------------------------------------- plans */
 
 function PlanDetail({ plan }: { plan: PricedType }) {
-	const { amount, period, monthly } = planPrice(plan);
+	const { amount, period } = planPrice(plan);
 
 	return (
 		<div className="space-y-4">
@@ -366,9 +430,6 @@ function PlanDetail({ plan }: { plan: PricedType }) {
 					{amount}
 				</strong>
 				{period && <span className="ml-1.5 text-[12px] text-slate-body">{period}</span>}
-				{monthly && (
-					<p className="mt-1.5 text-[12px] font-medium text-blue-press">{monthly}</p>
-				)}
 			</div>
 
 			{plan.description && (
@@ -378,7 +439,7 @@ function PlanDetail({ plan }: { plan: PricedType }) {
 			{plan.benefits.length > 0 && (
 				<div>
 					<strong className="text-[10px] font-bold uppercase tracking-[0.1em] text-rail-label">
-						What is included
+						Benefits
 					</strong>
 					<ul className="mt-2.5 space-y-2">
 						{plan.benefits.map((benefit) => (
@@ -427,6 +488,8 @@ function MembershipCard({ row, onChanged }: { row: MembershipRow; onChanged: () 
 	const [busy, setBusy] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
 	const [renewal, setRenewal] = useState<{ membership_status: string; payment?: { transaction?: string | null; message?: string } } | null>(null);
+	// Kept once shown, so the receipt stays on screen after the list refreshes.
+	const [followPayment] = useState(Boolean(row.awaits_gateway_payment));
 
 	const renew = async () => {
 		setBusy(true);
@@ -548,6 +611,21 @@ function MembershipCard({ row, onChanged }: { row: MembershipRow; onChanged: () 
 					</span>
 				)}
 			</div>
+
+			{followPayment && (
+				<div className="mt-4">
+					<PhonePayment membership={row.name} phone={row.payer_phone} onSettled={onChanged} />
+				</div>
+			)}
+
+			{row.can_change_type && (
+				<a
+					href="#membership-types"
+					className="mt-3 inline-block text-[12px] font-bold text-blue hover:text-blue-hover"
+				>
+					Change membership type before you pay
+				</a>
+			)}
 		</Card>
 	);
 }

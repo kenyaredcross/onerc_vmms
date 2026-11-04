@@ -78,3 +78,6 @@ vmmsx/public/portal/
 # Local browser capture tools
 /portal/scripts/capture-route.mjs
 /portal/scripts/capture-route.ps1
+
+# Local Kenya geographic seed script, source data, and audit reports
+/VMMS-Kenya scripts/

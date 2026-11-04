@@ -141,11 +141,13 @@ function LandingBody() {
 function Header() {
 	const { isGuest, user } = useSession();
 
+	// See-through over the hero photograph, so the navy wash runs to the top of
+	// the page. The "Join us" button keeps the society's red.
 	return (
-		<header className="movement-header absolute inset-x-0 top-0 z-30 border-b border-card-line bg-white text-ink">
+		<header className="movement-header absolute inset-x-0 top-0 z-30 text-white">
 			<div className="mx-auto flex h-[88px] max-w-[1320px] items-center gap-2 px-4 sm:gap-8 sm:px-6">
 				<Link to="/" className="flex min-w-0 items-center">
-					<BrandLockup tone="light" />
+					<BrandLockup tone="dark" />
 				</Link>
 
 				<nav
@@ -156,19 +158,19 @@ function Header() {
 						<EditableLink
 							key={index}
 							k={`landing.nav.item${index}`}
-							className="relative py-2 text-[14px] font-semibold text-ink transition hover:text-red-ink"
+							className="relative py-2 text-[14px] font-semibold text-white/90 transition hover:text-white"
 						/>
 					))}
 				</nav>
 
 				<div className="ms-auto flex flex-none items-center gap-6">
-					<LanguageSwitcher tone="light" />
+					<LanguageSwitcher tone="dark" />
 					{isGuest ? (
 						<>
 							<EditableLink
 								k="chrome.action.signin"
 								fallback="Sign in"
-								className="relative whitespace-nowrap py-2 text-[14px] font-semibold text-ink transition hover:text-red-ink"
+								className="relative whitespace-nowrap py-2 text-[14px] font-semibold text-white transition hover:text-white/75"
 							/>
 							<JoinLink
 								to="/join"

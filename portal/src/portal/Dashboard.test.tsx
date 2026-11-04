@@ -194,6 +194,37 @@ describe("a registration that is with the branch", () => {
 	});
 });
 
+describe("a membership whose phone payment has not come in", () => {
+	beforeEach(() => {
+		reads.set(API.myOpenRegistrations, {
+			member: registration({
+				doctype: "VMMS Membership",
+				name: "MSHIP-02410",
+				path: "member",
+				state: "Submitted",
+				awaiting_payment: true,
+			}),
+			volunteer: null,
+		});
+	});
+
+	it("says the fee is not paid, not that the branch has it", () => {
+		mount(<Dashboard />);
+
+		expect(screen.getByRole("heading", { name: "Your membership fee is not paid yet" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: /pay your membership fee/i })).toBeTruthy();
+		expect(screen.queryByText(/application is in/i)).toBeNull();
+		expect(screen.queryByText(/reached your branch/i)).toBeNull();
+	});
+
+	it("puts payment first in the steps, ahead of the branch", () => {
+		mount(<Dashboard />);
+
+		expect(screen.getByText("Payment")).toBeTruthy();
+		expect(screen.queryByText("Submitted")).toBeNull();
+	});
+});
+
 describe("separate membership and volunteer paths", () => {
 	it("identifies a membership review and still offers volunteer registration", () => {
 		reads.set(API.myOpenRegistrations, {
@@ -271,7 +302,9 @@ describe("an accepted volunteer's own front page", () => {
 
 		mount(<Dashboard />);
 
-		expect(screen.getByText(/Rungwe · Mbeya/)).toBeTruthy();
+		// The place itself, without the region and society above it.
+		expect(screen.getAllByText(/Rungwe/).length).toBeGreaterThan(0);
+		expect(screen.queryByText(/Rungwe · Mbeya/)).toBeNull();
 		expect(screen.queryByText(/GEO-00067/)).toBeNull();
 	});
 

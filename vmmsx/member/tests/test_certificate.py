@@ -52,13 +52,16 @@ class TestCertificate(MemberTestCase):
 
 		self.assertEqual(context["member_name"], "Cert Holder")
 
-	def test_the_context_carries_the_geo_path_from_core_s_adapter(self):
+	def test_the_context_names_the_place_without_the_levels_above_it(self):
+		""""Timau", not "Timau — Meru — Highland": the certificate names the branch itself."""
 		from onerc_core.geo.services import adapter
 
 		membership = self.active_membership()
 		context = certificate.context_for(membership)
 
-		self.assertEqual(context["geo_path"], adapter.get_full_path(membership.geo_node))
+		full = adapter.get_full_path(membership.geo_node)
+		self.assertEqual(context["geo_path"], full.split(adapter.PATH_SEPARATOR)[0])
+		self.assertNotIn(adapter.PATH_SEPARATOR.strip(), context["geo_path"])
 
 	def test_the_context_carries_the_type_s_active_benefits(self):
 		membership = self.active_membership()

@@ -6,11 +6,11 @@ from contextlib import contextmanager
 import frappe
 from frappe import _
 from frappe.utils import cint, flt, format_date, get_datetime, getdate, nowdate
-from onerc_core.geo.services import adapter
 
 from vmmsx.approvals import states
 from vmmsx.approvals.services import contract, engine
 from vmmsx.notifications.services import direct
+from vmmsx.places import place_name
 from vmmsx.service_certificate import settings
 from vmmsx.templating.services import render
 from vmmsx.volunteer.services import identity
@@ -101,7 +101,7 @@ def options():
 					{
 						"kind": "Volunteer",
 						"record": row.name,
-						"branch": adapter.get_full_path(row.home_geo_node),
+						"branch": place_name(row.home_geo_node),
 						"joined_on": row.joined_on,
 					}
 				)
@@ -117,7 +117,7 @@ def options():
 						{
 							"kind": "Member",
 							"record": row.name,
-							"branch": adapter.get_full_path(row.geo_node),
+							"branch": place_name(row.geo_node),
 							"joined_on": row.valid_from,
 						}
 					)
@@ -173,7 +173,7 @@ def create(kind, record, service_from, service_to, position=None, service_summar
 		if configuration["identity_source"] == "Registration number"
 		else (identifications[0]["id_number"] if identifications else ""),
 		"engagement_date": str(choice["joined_on"] or ""),
-		"branch": adapter.get_full_path(geo_node),
+		"branch": place_name(geo_node),
 	}
 	allowed = {row["key"] for row in configuration["fields"] if row["source"] == "custom_value"}
 	answers = parsed(custom_values)

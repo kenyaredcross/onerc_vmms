@@ -37,6 +37,7 @@ from frappe.utils import getdate, today
 from vmmsx import elevation
 from vmmsx.approvals import states
 from vmmsx.approvals.services import contract
+from vmmsx.registration.services import attachments
 
 # The affiliation vocabulary key this satellite owns. A key, not a society's
 # label — core's config-vocabulary rule is explicit that a stable business key
@@ -402,6 +403,9 @@ def profile_dto(volunteer, as_of=None) -> dict:
 			else person.get("vmms_profession")
 		),
 		"background": identity.background(volunteer.red_profile),
+		# The files behind it, opened through `download_evidence` against this
+		# volunteer. See `registration/services/attachments.py`.
+		"attachments": attachments.for_record("VMMS Volunteer", volunteer, volunteer.red_profile),
 		"status": volunteer.status,
 		"joined_on": volunteer.joined_on,
 		"exited_on": volunteer.exited_on,

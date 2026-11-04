@@ -1,3 +1,4 @@
+import { RegistrationDetails, RegistrationDetailsSummary } from "../ui/RegistrationDetails";
 import { useContext, useState } from "react";
 import { Link } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
@@ -8,6 +9,9 @@ import { API, errorMessage } from "../lib/api";
 import { formatDate, geoPath } from "../lib/format";
 import {
 	BackgroundFields,
+	backgroundDateGaps,
+	profileLinkGaps,
+	type ProfileLinks,
 	backgroundFrom,
 	backgroundLines,
 	backgroundPayload,
@@ -266,7 +270,7 @@ function NoRecordYet({ application }: { application: OpenRegistration | null }) 
 			>
 				{returned
 					? application.reason ||
-						"Your branch has asked for something before they can accept it."
+						"Your branch has requested more information."
 					: "Everything you answered has been saved. Pick it up where you left it, and your profile appears here once your branch has accepted it."}
 			</Empty>
 		);
@@ -275,7 +279,7 @@ function NoRecordYet({ application }: { application: OpenRegistration | null }) 
 	if (application) {
 		return (
 			<Empty title="Your application is with your branch" icon={Icon.people}>
-				Your profile appears here once somebody there has accepted it.
+				Your profile appears here once your application is approved.
 			</Empty>
 		);
 	}
@@ -360,8 +364,7 @@ export function HolderCard({
 
 			{note && (
 				<p className="mt-4 text-[11.5px] leading-relaxed text-slate-faint">
-					The code on your card can be scanned by anybody who needs to check it. They see your name,
-					your branch and whether it is current, and nothing else.
+					Scanning the code shows only your name, branch and whether your membership is current.
 				</p>
 			)}
 		</Card>
@@ -409,6 +412,7 @@ function IdentityCard({
 						<Line label="Date of birth" value={formatDate(profile.date_of_birth)} />
 						<Line label="Preferred language" value={profile.preferred_language} />
 					</dl>
+					<RegistrationDetailsSummary value={person?.personal_details} />
 
 					<div className="mt-5 border-t border-card-line pt-4">
 						{person ? (
@@ -585,6 +589,7 @@ function IdentityForm({
 	const [gender, setGender] = useState(person.gender ?? "");
 	const [dateOfBirth, setDateOfBirth] = useState(person.date_of_birth ?? "");
 	const [language, setLanguage] = useState(person.preferred_language ?? "");
+	const [personalDetails, setPersonalDetails] = useState(person.personal_details ?? {});
 
 	const [busy, setBusy] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
@@ -612,6 +617,7 @@ function IdentityForm({
 				gender,
 				date_of_birth: dateOfBirth,
 				preferred_language: language,
+				personal_details: personalDetails,
 			});
 			onSaved();
 		} catch (saveError) {
@@ -625,6 +631,7 @@ function IdentityForm({
 
 	return (
 		<div className="mt-6 space-y-4 border-t border-card-line pt-5">
+			<RegistrationDetails bloodGroups={identity.data?.message?.blood_groups} value={personalDetails} onChange={setPersonalDetails} documentTypes={identity.data?.message?.supporting_document_types} showProfileLinks={false} idPrefix="profile-details"/>
 			{failure && <ErrorNote>{failure}</ErrorNote>}
 
 			<Field label="First name" required htmlFor="profile-first">
@@ -771,6 +778,7 @@ function BackgroundCard({
 	const [busy, setBusy] = useState(false);
 	const [failure, setFailure] = useState<string | null>(null);
 	const [draft, setDraft] = useState<BackgroundValues>(emptyBackground);
+	const [links, setLinks] = useState<ProfileLinks>({ linkedin: "", github: "" });
 
 	const identity = useFrappeGetCall<{ message: IdentityOptions }>(
 		API.identityOptions,
@@ -786,13 +794,26 @@ function BackgroundCard({
 	const held = backgroundFrom(person);
 	const lines = backgroundLines(options, held);
 
+	const heldLinks: ProfileLinks = {
+		linkedin: person?.personal_details?.linkedin ?? "",
+		github: person?.personal_details?.github ?? "",
+	};
+
 	const start = () => {
 		setDraft(held);
+		setLinks(heldLinks);
 		setFailure(null);
 		setEditing(true);
 	};
 
 	const save = async () => {
+		const dateGap = [...profileLinkGaps(links), ...backgroundDateGaps(draft)][0];
+		if (dateGap) {
+			setFailure(`${dateGap.note}.`);
+			document.getElementById(dateGap.anchor)?.focus();
+			return;
+		}
+
 		setBusy(true);
 		setFailure(null);
 
@@ -801,6 +822,9 @@ function BackgroundCard({
 				profession: draft.profession,
 				other_profession: draft.other_profession,
 				background: backgroundPayload(draft),
+				// Only these two keys: the server leaves every other personal
+				// detail as it is.
+				personal_details: { linkedin: links.linkedin.trim() || null, github: links.github.trim() || null },
 			});
 			setEditing(false);
 			onSaved();
@@ -825,6 +849,8 @@ function BackgroundCard({
 
 					<BackgroundFields
 						options={options}
+						profiles={links}
+						onProfiles={(patch) => setLinks((current) => ({ ...current, ...patch }))}
 						lead="All fields in this section are optional."
 						value={draft}
 						onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))}
@@ -841,7 +867,7 @@ function BackgroundCard({
 				</div>
 			) : (
 				<>
-					{lines.length === 0 && !held.profession ? (
+					{lines.length === 0 && !held.profession && !heldLinks.linkedin && !heldLinks.github ? (
 						// Not an `Empty`, which reads as something having gone wrong.
 						// Nobody was ever obliged to fill this in, so the absence is
 						// an invitation rather than a gap.
@@ -854,6 +880,8 @@ function BackgroundCard({
 								label="Profession"
 								value={held.profession === "Other" ? held.other_profession || "Other" : held.profession}
 							/>
+							{heldLinks.linkedin && <Line label="LinkedIn profile" value={heldLinks.linkedin} />}
+							{heldLinks.github && <Line label="GitHub profile" value={heldLinks.github} />}
 							{lines.map((row, index) => (
 								<Line key={index} label={row.label} value={row.value} />
 							))}
@@ -862,7 +890,7 @@ function BackgroundCard({
 
 					<div className="mt-5 border-t border-card-line pt-4">
 						<Button variant="quiet" onClick={start}>
-							{lines.length === 0 && !held.profession ? "Add details" : "Update details"}
+							{lines.length === 0 && !held.profession && !heldLinks.linkedin && !heldLinks.github ? "Add details" : "Update details"}
 						</Button>
 						<p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-faint">
 							Your branch will verify qualifications when required.

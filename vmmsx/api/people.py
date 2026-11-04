@@ -216,7 +216,14 @@ def _awaiting_setup(doctype: str) -> int:
 	this counts documents waiting for a workflow to exist, and on a door that
 	already has one it counts the handful the sweep has yet to reach.
 	"""
-	return _count(doctype, {"approval_state": states.SUBMITTED})
+	filters = {"approval_state": states.SUBMITTED}
+
+	# A membership whose M-Pesa fee is unpaid is parked too, on purpose: it goes
+	# to its branch once paid. That is the applicant's step, not setup.
+	if frappe.get_meta(doctype).has_field("membership_status"):
+		filters["membership_status"] = ("!=", "Awaiting Payment")
+
+	return _count(doctype, filters)
 
 
 def _returned_count(doctype: str) -> int:
@@ -255,20 +262,28 @@ def _breached_count(doctype: str) -> int:
 	calendar. Bounded by the same ceiling as everything else here.
 	"""
 	workflow = config.for_doctype(doctype)
-	names = frappe.get_list(
+	# The two fields the SLA rule reads, not the documents. Loading every
+	# application in review in full, child tables and all, to read two values
+	# off each made this one figure take seconds on a national register.
+	rows = frappe.get_list(
 		doctype,
 		filters={"approval_state": states.IN_REVIEW},
+		fields=["name", contract.STAGE_FIELD, contract.STAGE_ENTERED_FIELD],
 		limit_page_length=_DISTINCT_CEILING,
-		pluck="name",
 	)
 
 	late = 0
+	stages: dict = {}
 
-	for name in names:
-		doc = frappe.get_doc(doctype, name)
-		stage = config.stage_by_name(workflow, contract.stage(doc))
+	for row in rows:
+		key = contract.stage(row)
 
-		if stage and sla.is_breached(doc, stage):
+		if key not in stages:
+			stages[key] = config.stage_by_name(workflow, key)
+
+		stage = stages[key]
+
+		if stage and sla.is_breached(row, stage):
 			late += 1
 
 	return late

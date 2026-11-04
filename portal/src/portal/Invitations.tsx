@@ -214,8 +214,7 @@ function InvitationCard({
 				</button>
 
 				<p className="mt-1 text-[11.5px] text-slate-faint">
-					Accepting this is accepting these terms. They are what the society has written down about
-					the mission, and they cannot be changed afterwards without your being asked again.
+					By accepting, you agree to these terms. They cannot be changed without asking you again.
 				</p>
 
 				{reading && <Mission assignment={invitation.assignment} />}
@@ -249,8 +248,7 @@ function InvitationCard({
 			</div>
 
 			<p className="mt-2 text-[11.5px] text-slate-faint">
-				Whoever asked will be told either way. An answer cannot be changed here afterwards, so speak
-				to them if it needs to.
+				Your coordinator will be notified. To change your answer later, contact your coordinator.
 			</p>
 		</Card>
 	);
@@ -312,7 +310,7 @@ function Mission({ assignment }: { assignment: string }) {
 			)}
 
 			{terms.expected_outputs.length > 0 && (
-				<Part title="What it should achieve">
+				<Part title="Objectives">
 					<ul className="list-disc space-y-1 pl-4">
 						{terms.expected_outputs.map((row, index) => (
 							<li key={index}>{row.output}</li>
@@ -322,7 +320,7 @@ function Mission({ assignment }: { assignment: string }) {
 			)}
 
 			{terms.responsibilities && (
-				<Part title="What you would be doing">
+				<Part title="Duties">
 					<span className="whitespace-pre-line">{terms.responsibilities}</span>
 				</Part>
 			)}
@@ -344,7 +342,7 @@ function Mission({ assignment }: { assignment: string }) {
 			)}
 
 			{terms.stakeholders.length > 0 && (
-				<Part title="Who you would be dealing with">
+				<Part title="Key contacts">
 					<ul className="space-y-1">
 						{terms.stakeholders.map((row, index) => (
 							<li key={index}>

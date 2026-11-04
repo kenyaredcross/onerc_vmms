@@ -32,12 +32,19 @@ export interface QueueSpec {
 }
 
 /**
- * The three bands a queue navigates between, and the one place they are named.
+ * The four bands a queue navigates between, and the one place they are named.
  *
- * **Each is a route, not a tab index.** "What is waiting on me", "what has gone
- * back to the applicant" and "what is finished" are three different jobs, and
- * each deserves an address somebody can link, bookmark and come back to. A
- * component-local tab would give three screens one URL.
+ * **Each is a route, not a tab index.** "Every application I may see", "what is
+ * waiting on me", "what has gone back to the applicant" and "what is finished"
+ * are four different jobs, and each deserves an address somebody can link,
+ * bookmark and come back to. A component-local tab would give four screens one
+ * URL.
+ *
+ * The queue opens on All applications, not on the personal queue: an
+ * administrator or a coordinator who holds no assignment would otherwise land
+ * on an empty page in front of applications they are entitled to read. The
+ * personal queue lives at `/assigned`, and anything that means "waiting on
+ * you" links there.
  *
  * `group` is what `approvals.my_cases` is asked for. `segment` is what appears
  * in the address, and it is empty for the band the queue opens on — so the
@@ -59,9 +66,16 @@ export interface QueueBand {
 
 export const QUEUE_BANDS: QueueBand[] = [
 	{
-		key: "actionable",
+		key: "all",
 		segment: "",
-		label: "Applications",
+		label: "All applications",
+		empty: "No applications found.",
+		lead: "All applications you can access.",
+	},
+	{
+		key: "actionable",
+		segment: "assigned",
+		label: "Assigned to me",
 		empty: "Nothing is waiting on you.",
 		lead: "Applications assigned to you for review.",
 	},

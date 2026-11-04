@@ -64,9 +64,7 @@ class TestWebFormScripts(IntegrationTestCase):
 
 			if FORBIDDEN in source:
 				line = next(
-					number
-					for number, text in enumerate(source.splitlines(), start=1)
-					if FORBIDDEN in text
+					number for number, text in enumerate(source.splitlines(), start=1) if FORBIDDEN in text
 				)
 				offenders.append(f"{script.relative_to(APP_ROOT)}:{line}")
 
@@ -89,4 +87,17 @@ class TestWebFormScripts(IntegrationTestCase):
 				form = frappe.get_doc("Web Form", name)
 				context = frappe._dict(doc=form, web_form_doc=form)
 
-				form.add_custom_context_and_script(context)
+				try:
+					form.add_custom_context_and_script(context)
+				except frappe.Redirect:
+					targets = {
+						"register-as-a-member": "/portal/join?path=member",
+						"proof-of-membership": "/portal/membership",
+					}
+					self.assertIn(name, targets)
+					self.assertEqual(frappe.local.flags.redirect_location, targets[name])
+					# Legacy links now open the complete wizard; retained scripts must still compile.
+					script = next(
+						path for path in _web_form_scripts() if path.parent.name == name.replace("-", "_")
+					)
+					frappe.render_template(script.read_text(), context)

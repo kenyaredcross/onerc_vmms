@@ -191,7 +191,7 @@ export default function WhatsAppChannel() {
 
 			<div className="mb-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
 				<Card pad={false}>
-					<SectionHead title="What has been sent" />
+					<SectionHead title="Sent messages" />
 					{broadcasts.isLoading ? (
 						<Spinner label="Loading broadcasts…" />
 					) : rows.length === 0 ? (
@@ -268,8 +268,8 @@ export default function WhatsAppChannel() {
 							{/* Stated because it is a promise the society is making to
 							    everybody it messages, and the person choosing to send
 							    should know what it is. */}
-							A reply that is an opt-out word takes that number off the list. Anything else is
-							acknowledged and goes no further — nobody is reading this number.
+							Replies with an opt-out word remove the number from the list. Other replies are acknowledged
+							but not monitored.
 						</p>
 						{config.opt_out_notice && (
 							<p className="mt-3 rounded-lg bg-surface px-3 py-2.5 text-[12px] italic leading-relaxed text-muted">
@@ -285,7 +285,7 @@ export default function WhatsAppChannel() {
 				{optOuts.isLoading ? (
 					<Spinner label="Loading the list…" />
 				) : (optOuts.data?.message?.opt_outs ?? []).length === 0 ? (
-					<Empty framed={false} title="Nobody has opted out" icon={Icon.check} />
+					<Empty framed={false} title="No opt-outs" icon={Icon.check} />
 				) : (
 					<Table head={["Number", "When", "How"]} minWidth={420}>
 						{(optOuts.data?.message?.opt_outs ?? []).map((row) => (

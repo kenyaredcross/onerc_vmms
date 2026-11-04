@@ -1,0 +1,70 @@
+{#- The weekly approval summary. Built by `approvals/services/digest.py`. -#}
+{%- macro places_table(rows, first) -%}
+<table cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:14px;margin:6px 0 14px">
+	<tr style="background:#F6F8FB;text-align:left">
+		<th style="border-bottom:1px solid #E7EBF0">{{ first }}</th>
+		<th style="border-bottom:1px solid #E7EBF0;text-align:right">{{ _("Waiting") }}</th>
+		<th style="border-bottom:1px solid #E7EBF0;text-align:right">{{ _("Oldest (days)") }}</th>
+	</tr>
+	{%- for row in rows %}
+	<tr>
+		<td style="border-bottom:1px solid #E7EBF0">{{ row.place }}</td>
+		<td style="border-bottom:1px solid #E7EBF0;text-align:right">{{ row.count }}</td>
+		<td style="border-bottom:1px solid #E7EBF0;text-align:right">{{ row.oldest_days }}</td>
+	</tr>
+	{%- endfor %}
+</table>
+{%- endmacro -%}
+
+<div style="font-family:'IBM Plex Sans',Arial,sans-serif;color:#011E41;line-height:1.5">
+<h2 style="font-size:18px;margin:0 0 12px">{{ subject }}</h2>
+
+{%- if summary.kind == "approver" %}
+	{%- for s in summary.sections %}
+	<h3 style="font-size:16px;margin:18px 0 4px">{{ s.title }}: {{ s.stage }}</h3>
+	<p style="margin:0 0 6px">
+		{{ _("{0} waiting for your decision, {1} of them more than {2} days. The oldest has waited {3} days.").format(s.waiting_total, s.late_total, s.sla_days, s.oldest_days) }}
+	</p>
+	{{ places_table(s.waiting, _("Branch / County")) }}
+
+	<p style="margin:0 0 6px"><strong>{{ _("This week") }}</strong></p>
+	<p style="margin:0 0 14px">
+		{{ _("Arrived {0} · Approved {1} · Rejected {2} · Sent back {3}").format(s.week.arrived, s.week.approved, s.week.rejected, s.week.returned) }}
+	</p>
+
+	{%- if s.earlier.total %}
+	<p style="margin:0 0 6px"><strong>{{ _("Still at the earlier stage") }}</strong></p>
+	<p style="margin:0 0 6px">{{ _("{0} past that stage's deadline. The oldest has waited {1} days.").format(s.earlier.total, s.earlier.oldest_days) }}</p>
+	{{ places_table(s.earlier.places, _("Branch / County")) }}
+	{%- endif %}
+
+	<p style="margin:0 0 6px"><strong>{{ _("Waiting on the applicant") }}</strong></p>
+	{%- if s.with_applicant.total %}
+	<p style="margin:0 0 6px">{{ _("{0} sent back for more information. These are not counted as waiting for approval.").format(s.with_applicant.total) }}</p>
+	{{ places_table(s.with_applicant.places, _("Branch / County")) }}
+	{%- else %}
+	<p style="margin:0 0 14px">{{ _("None.") }}</p>
+	{%- endif %}
+
+	<p style="margin:14px 0"><a href="{{ s.queue_url }}" style="background:#D71920;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">{{ _("Open your approvals") }}</a></p>
+	{%- endfor %}
+{%- else %}
+	<p style="margin:0 0 6px">{{ _("Applications waiting more than {0} days for a decision, across the country.").format(summary.threshold) }}</p>
+	{%- for s in summary.sections %}
+	<h3 style="font-size:16px;margin:18px 0 4px">{{ s.title }}</h3>
+	{%- if s.overdue_total %}
+	<p style="margin:0 0 6px">{{ _("{0} waiting more than {1} days. The oldest has waited {2} days.").format(s.overdue_total, summary.threshold, s.oldest_days) }}</p>
+	{{ places_table(s.by_region, _("Region")) }}
+	<p style="margin:0 0 14px">
+		{%- for row in s.by_stage %}{{ row.label }}: {{ row.count }}{% if not loop.last %} · {% endif %}{% endfor %}
+	</p>
+	{%- else %}
+	<p style="margin:0 0 14px">{{ _("None waiting more than {0} days.").format(summary.threshold) }}</p>
+	{%- endif %}
+	<p style="margin:0 0 14px">
+		{{ _("Waiting on the applicant: {0}, of which {1} more than {2} days. These are not counted above.").format(s.with_applicant_total, s.with_applicant_old, summary.threshold) }}
+	</p>
+	<p style="margin:0 0 14px"><a href="{{ s.queue_url }}">{{ _("Open {0}").format(s.title) }}</a></p>
+	{%- endfor %}
+{%- endif %}
+</div>

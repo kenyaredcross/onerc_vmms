@@ -166,7 +166,8 @@ const vmmsx_membership = {
 			return;
 		}
 
-		if (dto.membership_status !== "Cancelled") {
+		// `can_cancel` is false where the society never cancels a membership.
+		if (dto.can_cancel) {
 			frm.add_custom_button(
 				__("Cancel membership"),
 				() => vmmsx_membership.ask_to_cancel(frm),

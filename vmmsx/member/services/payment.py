@@ -83,6 +83,20 @@ def fee(membership_type) -> dict:
 	}
 
 
+def recorded_fee(membership, membership_type) -> dict:
+	"""A submitted membership's fee, falling back only for pre-snapshot records.
+
+	A draft has not been snapshotted yet, whatever its currency says: every new
+	membership arrives with the site's default currency in that field, and
+	reading it as a snapshot showed a paid plan as free until submission.
+	"""
+	if membership.get("fee_snapshot_taken"):
+		return {"amount": flt(membership.get("amount")), "currency": membership.currency}
+	if membership.get("currency") and membership.get("membership_status") != "Draft":
+		return {"amount": flt(membership.get("amount")), "currency": membership.currency}
+	return fee(membership_type)
+
+
 def is_payable(membership_type) -> bool:
 	"""Does this type charge anything at all?"""
 	return fee(membership_type)["amount"] > 0
@@ -95,7 +109,7 @@ def is_settled(membership, membership_type) -> bool:
 	"paid" have to mean the same thing to activation, or a free membership would
 	wait forever for a payment nobody was ever going to make.
 	"""
-	if not is_payable(membership_type):
+	if recorded_fee(membership, membership_type)["amount"] <= 0:
 		return True
 
 	return bool(membership.paid_on)
@@ -124,7 +138,7 @@ def request(membership, membership_type) -> dict | None:
 	which driver is active, and swapping one for another remains a setting in the
 	payments app. MEM-01 is unchanged.
 	"""
-	if not is_payable(membership_type):
+	if recorded_fee(membership, membership_type)["amount"] <= 0:
 		return None
 
 	if membership.payment_transaction:
@@ -145,25 +159,41 @@ def request(membership, membership_type) -> dict | None:
 
 	member = frappe.get_doc("VMMS Member", membership.member)
 	person = identity.read(member, ("full_name", "email", "phone"))
-	charge = fee(membership_type)
+	charge = recorded_fee(membership, membership_type)
 
 	chosen = _chosen_method(membership)
 
-	response = initiate_payment(
-		amount=charge["amount"],
-		currency=charge["currency"],
-		direction=DIRECTION_INBOUND,
-		source_app=SOURCE_APP,
-		source_doctype=membership.doctype,
-		source_document=membership.name,
-		payer_name=identity.display_name(member),
-		payer_phone=person.get("phone"),
-		payer_email=person.get("email"),
-		metadata=frappe.as_json({"membership_type": membership_type.name, "geo_node": membership.geo_node}),
-		# None means "whatever the payments app has active", which is exactly
-		# what this call did before a method could be chosen.
-		gateway=chosen,
-	)
+	# A gateway that cannot be reached, or one set up without its credentials,
+	# raises. What it says is for whoever configures the gateway, so it goes to
+	# the error log and the applicant is told what they can do about it.
+	try:
+		response = initiate_payment(
+			amount=charge["amount"],
+			currency=charge["currency"],
+			direction=DIRECTION_INBOUND,
+			source_app=SOURCE_APP,
+			source_doctype=membership.doctype,
+			source_document=membership.name,
+			payer_name=identity.display_name(member),
+			payer_phone=membership.get("payer_phone") or person.get("phone"),
+			payer_email=person.get("email"),
+			metadata=frappe.as_json(
+				{"membership_type": membership_type.name, "geo_node": membership.geo_node}
+			),
+			# None means "whatever the payments app has active", which is exactly
+			# what this call did before a method could be chosen.
+			gateway=chosen,
+		)
+	except Exception:
+		frappe.log_error(title=f"Membership payment could not be started: {membership.name}")
+		frappe.throw(
+			_(
+				"The payment could not be started. Check the phone number and try again, or"
+				" choose another way to pay."
+			),
+			frappe.ValidationError,
+			title=_("Payment Not Started"),
+		)
 
 	membership.payment_transaction = response.get("transaction_id")
 
@@ -175,6 +205,168 @@ def request(membership, membership_type) -> dict | None:
 		membership.payment_method = chosen
 
 	return response
+
+
+# A transaction in one of these will never collect anything more. A fee whose
+# request ended here can be asked for again; one still Pending cannot, because
+# the payer may be entering their PIN at this moment.
+_ENDED = ("Failed", "Cancelled")
+
+
+def confirms_itself(membership) -> bool:
+	"""Will the gateway tell us when this fee is paid, without anybody pressing a button?
+
+	True for mobile money: the callback, or the status poll behind it, settles
+	the fee. False for a payment taken in person, which somebody at the branch
+	records, and for anything with no fee to collect.
+
+	**Why it matters to approval.** A fee the gateway settles is paid before the
+	branch is asked to look, so an approver never sees an application that has
+	not paid. A fee paid at a counter is recorded *from* the review screen, so
+	that application has to be in front of the branch first.
+	"""
+	from vmmsx.member.services import methods
+
+	if recorded_fee(membership, _type_of(membership))["amount"] <= 0:
+		return False
+
+	gateway = _gateway_of(membership)
+
+	return bool(gateway) and not methods.is_in_person(gateway)
+
+
+def progress(membership) -> dict:
+	"""Where this fee stands, asking the gateway again if it has not answered yet.
+
+	The applicant's screen calls this every few seconds after the M-Pesa prompt
+	is sent. Asking the payments app re-queries the gateway; when the payment
+	has gone through, the payments app calls `on_payment_confirmed` on this
+	membership, which records it and sends the membership to its branch — so
+	the answer read back afterwards already says so.
+
+	Never raises. A gateway that cannot be reached right now is the same answer
+	as one that has not heard from the payer yet: still waiting.
+	"""
+	membership_type = _type_of(membership)
+	transaction = membership.payment_transaction
+
+	if transaction and is_available() and confirms_itself(membership) and not membership.paid_on:
+		status = frappe.db.get_value("OneRC Payment Transaction", transaction, "status")
+
+		if status in ("Initiated", "Pending"):
+			try:
+				from onerc_payments.api.v1.payment import check_payment_status
+
+				check_payment_status(transaction)
+			except Exception:
+				frappe.log_error(title=f"Membership payment status could not be checked: {membership.name}")
+
+			membership.reload()
+
+	from vmmsx.member.services import methods
+
+	picture = settlement(membership, membership_type)
+	state = picture["gateway_status"]
+
+	return {
+		"membership": membership.name,
+		"membership_status": membership.membership_status,
+		"settled": picture["settled"],
+		"status": "Completed" if picture["settled"] else state,
+		"receipt": membership.payment_receipt or picture["gateway_receipt"],
+		"amount": picture["amount_paid"] if picture["amount_paid"] is not None else picture["fee_amount"],
+		"currency": picture["currency_paid"] or picture["fee_currency"],
+		"paid_from": picture["paid_from"],
+		"paid_on": membership.paid_on or picture["transaction_date"],
+		"gateway": picture["gateway"],
+		# How the screen shows the gateway: its logo, when this app ships one.
+		"logo": methods.presentation_of(_gateway_of(membership))["logo"],
+		"transaction": transaction,
+		# What the gateway said went wrong, when it did. Daraja's own words
+		# ("Request cancelled by user") are plain enough for the payer.
+		"failure": _failure_of(transaction) if state in _ENDED else None,
+		"can_retry": can_retry(membership),
+	}
+
+
+def can_retry(membership) -> bool:
+	"""May this fee be asked for again? Only once the last request has ended unpaid."""
+	if membership.paid_on or not confirms_itself(membership):
+		return False
+
+	from vmmsx.member.services import membership as membership_service
+
+	if membership.membership_status != membership_service.STATUS_AWAITING_PAYMENT:
+		return False
+
+	if not membership.payment_transaction:
+		return True
+
+	return (
+		frappe.db.get_value("OneRC Payment Transaction", membership.payment_transaction, "status") in _ENDED
+	)
+
+
+def retry(membership, payer_phone: str | None = None) -> dict:
+	"""Send the payment prompt again after the last one ended unpaid.
+
+	The ended transaction stays in the payments app as the record of that
+	attempt; the membership is pointed at the new one. A request still Pending
+	is refused, because a second prompt while the payer is entering their PIN
+	is how a person pays twice.
+	"""
+	if not can_retry(membership):
+		frappe.throw(
+			_("This payment cannot be sent again. It has been paid, or the last request is still open."),
+			frappe.ValidationError,
+			title=_("Payment Not Sent"),
+		)
+
+	from vmmsx.elevation import as_system
+
+	if payer_phone is not None and payer_phone.strip():
+		membership.payer_phone = payer_phone.strip()
+
+	previous = membership.payment_transaction
+	membership.payment_transaction = None
+	response = request(membership, _type_of(membership))
+
+	with as_system():
+		membership.save(ignore_permissions=True)
+
+	if previous:
+		membership.add_comment(
+			"Comment", _("Payment requested again. The earlier request {0} ended unpaid.").format(previous)
+		)
+
+	return {
+		"transaction": response.get("transaction_id") if response else None,
+		"status": response.get("status") if response else None,
+		"message": (response or {}).get("message") or "",
+	}
+
+
+def _type_of(membership):
+	from vmmsx.member.services import membership as membership_service
+
+	return membership_service.type_of(membership)
+
+
+def _gateway_of(membership) -> str | None:
+	"""The gateway collecting this fee: the transaction's own, else what was chosen."""
+	if membership.payment_transaction and is_available():
+		gateway = frappe.db.get_value("OneRC Payment Transaction", membership.payment_transaction, "gateway")
+		if gateway:
+			return gateway
+
+	return (membership.get("payment_method") or "").strip() or None
+
+
+def _failure_of(transaction: str | None) -> str | None:
+	if not transaction:
+		return None
+
+	return frappe.db.get_value("OneRC Payment Transaction", transaction, "failure_reason") or None
 
 
 def _chosen_method(membership) -> str | None:
@@ -248,7 +440,7 @@ def confirm_in_person(membership, receipt: str | None = None) -> dict:
 			title=_("Nothing To Record"),
 		)
 
-	if not is_payable(membership_type):
+	if recorded_fee(membership, membership_type)["amount"] <= 0:
 		frappe.throw(
 			_("{0} costs nothing, so there is no fee to record.").format(
 				frappe.bold(membership_type.membership_type_name)
@@ -375,6 +567,7 @@ _TRANSACTION_FIELDS = (
 	"gateway_receipt",
 	"gateway_reference",
 	"transaction_date",
+	"phone_number",
 )
 
 
@@ -416,14 +609,14 @@ def settlement(membership, membership_type=None) -> dict:
 	from vmmsx.member.services import membership as membership_service
 
 	membership_type = membership_type or membership_service.type_of(membership)
-	charge = fee(membership_type)
+	charge = recorded_fee(membership, membership_type)
 	proof = membership_service.is_proof(membership)
 
 	picture = {
 		"source": membership_service.source(membership),
 		"is_proof": proof,
 		"settled": proof or is_settled(membership, membership_type),
-		"payable": is_payable(membership_type),
+		"payable": charge["amount"] > 0,
 		"fee_amount": charge["amount"],
 		"fee_currency": charge["currency"],
 		# Stored on the membership because the membership asked for them: the
@@ -443,6 +636,7 @@ def settlement(membership, membership_type=None) -> dict:
 		"amount_paid": None,
 		"currency_paid": None,
 		"transaction_date": None,
+		"paid_from": None,
 	}
 
 	if proof or not membership.payment_transaction or not is_available():
@@ -486,6 +680,8 @@ def _transaction_picture(transaction_id: str) -> dict:
 		"amount_paid": row.amount,
 		"currency_paid": row.currency,
 		"transaction_date": row.transaction_date,
+		# The number the payment prompt went to, which is the one that paid.
+		"paid_from": row.phone_number,
 	}
 
 

@@ -116,47 +116,18 @@ export function formatHours(hours: number | null | undefined): string {
 }
 
 /**
- * Core renders a geo path joined with em dashes. Reversed here so the branch a
- * record belongs to reads first and the nation last, which is the order the
- * design shows and the order a person scanning a list needs.
+ * A place, by its own name: "Baringo", not "Baringo · KRCS South Rift · Kenya
+ * Red Cross Society".
+ *
+ * Core renders a path deepest-first and joined with em dashes, so the place a
+ * record belongs to is the first rung. The region and the society above it are
+ * the society's own structure, and everybody reading this already knows which
+ * region a county sits in, so they are not shown anywhere on the site. A record
+ * anchored at the society itself has a one-rung path, and that rung is shown.
  */
 export function geoPath(path: string | null | undefined): string {
-	if (!path) return "";
-	return path.split("—").map((part) => part.trim()).filter(Boolean).join(" · ");
+	return (path ?? "").split("—").map((part) => part.trim()).find(Boolean) ?? "";
 }
 
-/**
- * The same path without the crown — the society's own name at the end of it.
- *
- * **A value that is identical on every row carries no information and costs the
- * width of a column.** Inside this console every record belongs to the same
- * society, so "Ubungo · Dar es Salaam · Tanzania Red Cross Society" says one
- * thing and spends forty characters saying three. The branch is the part
- * somebody is reading for, and in a table cell or a filter chip it should be
- * the part they see.
- *
- * **The last rung, not the first**, and getting that backwards is easy: core
- * renders `get_full_path` deepest-first — `Ubungo — Dar es Salaam — Tanzania
- * Red Cross Society` — so the society is at the *end*. `geoPath` above keeps
- * that order, and this drops the tail rather than the head. (A cascading
- * picker's `chain` is the other way round, root-first, which is why the screens
- * that trim one of those slice from the front instead.)
- *
- * **Only when there is something under it.** A record anchored at the society
- * itself — a national announcement, a headquarters posting — has a one-rung
- * path, and dropping that rung would leave an empty cell where the answer is
- * "the whole society". So the crown comes off a path that has a branch beneath
- * it, and stays on one that does not.
- *
- * Deliberately a second function rather than a flag on `geoPath`: a public page
- * naming where an office is *should* say which society's office it is, and that
- * caller should not have to remember to ask for it.
- */
-export function branchPath(path: string | null | undefined): string {
-	const rungs = (path ?? "")
-		.split("—")
-		.map((part) => part.trim())
-		.filter(Boolean);
-
-	return (rungs.length > 1 ? rungs.slice(0, -1) : rungs).join(" · ");
-}
+/** The same rule. Kept as a name because sixty screens ask for a branch by it. */
+export const branchPath = geoPath;

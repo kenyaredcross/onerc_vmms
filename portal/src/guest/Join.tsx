@@ -7,17 +7,23 @@ import {
 	type FrappeConfig,
 } from "frappe-react-sdk";
 
+import { RegistrationDetails, RegistrationDetailsSummary, registrationDetailGaps } from "../ui/RegistrationDetails";
+import { RegistrationGeoSelects } from "../ui/RegistrationGeoSelects";
+import { ResidenceFields } from "../ui/ResidenceFields";
 import { ContentProvider } from "../content/ContentProvider";
 import { API, errorMessage } from "../lib/api";
 import { formatDate, formatMoney } from "../lib/format";
 import { loginUrl, signupUrl, useSession } from "../lib/session";
 import { BrandLockup } from "../ui/brand";
 import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
-import { GeoSelects, selectedNode } from "../ui/GeoSelects";
+import { fileNameOf } from "../ui/FilePreview";
+import { selectedNode } from "../ui/GeoSelects";
 import { PlanCards } from "../ui/PlanCards";
 import {
 	BackgroundFields,
+	backgroundDateGaps,
 	backgroundIsCoherent,
+	profileLinkGaps,
 	backgroundFrom,
 	backgroundLines,
 	backgroundPayload,
@@ -38,6 +44,7 @@ import {
 	VocabularySelect,
 } from "../ui/form";
 import { Icon } from "../ui/icons";
+import { PaymentLogo, PhonePayment, spacedPhone } from "../ui/PhonePayment";
 import { Button, Card, ErrorNote, Spinner, StateBadge, cx } from "../ui/primitives";
 import type {
 	Account,
@@ -50,6 +57,7 @@ import type {
 	IdentityOptions,
 	OpenRegistration,
 	PaymentMethod,
+	PersonalDetails,
 	PricedType,
 	RedProfile,
 	SocietyQuestion,
@@ -76,6 +84,7 @@ type DraftRegistration = OpenRegistration & {
 	membership_type?: string;
 	membership_status?: string;
 	payment_method?: string;
+	payer_phone?: string;
 	skills?: string[];
 	languages?: string[];
 	motivation?: string[];
@@ -207,23 +216,8 @@ type StepId =
 	| "consents"
 	| "confirm";
 
-/**
- * The residency branch, spelled exactly as `Red Profile` spells it and as
- * `volunteer/services/application.py::_assert_residency_complete` compares it.
- *
- * **This wizard no longer asks the question.** "Where do you live" was a
- * segmented control, a tickbox reading "I live in the area I want to serve" and
- * a second cascading picker behind it — three controls and most of a screen, to
- * confirm the answer already given two steps earlier on all but a handful of
- * registrations. A volunteer says where they want to volunteer; that is where
- * they live unless somebody says otherwise, and a desk clerk can say otherwise
- * on the profile itself.
- *
- * So `Local` travels with the serving branch, and `Abroad` survives here for one
- * reason: a profile that already says Abroad, with an address behind it, must
- * not be quietly rewritten to Local by somebody filling in a form that never
- * asked. See `persistDraft`.
- */
+/** Residence is independent of the selected serving branch. Existing home
+ * details remain until the applicant explicitly chooses to change them. */
 const LOCAL = "Local";
 const ABROAD = "Abroad";
 
@@ -647,7 +641,7 @@ function JoinBody() {
 	 * returning applicant should not retype a qualification the society already
 	 * holds.
 	 *
-	 * **Not one of them is required and no step gates on any of them.** A
+	 * **The background tables are optional.** The society can require a profession separately. A
 	 * volunteer application is not a job application. The step exists so somebody
 	 * who has a nursing licence can say so, not to make anybody who has not feel
 	 * they have failed a form.
@@ -657,6 +651,13 @@ function JoinBody() {
 	 * a way that a pre-drawn set of empty fields is not.
 	 */
 	const [background, setBackground] = useState<BackgroundValues>(emptyBackground);
+	const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({});
+	const [payerPhone, setPayerPhone] = useState("");
+	const [homeChain, setHomeChain] = useState<GeoNode[]>([]);
+	const [sameHome, setSameHome] = useState(true);
+	const [residency, setResidency] = useState(LOCAL);
+	const [residenceCountry, setResidenceCountry] = useState("");
+	const [residenceAddress, setResidenceAddress] = useState("");
 
 	// --- nationality, which the identity step asks
 	const [citizenship, setCitizenship] = useState("");
@@ -734,6 +735,8 @@ function JoinBody() {
 	// What the gateway said when the fee was requested, if one was. Held so the
 	// success screen can repeat it; nothing in this file reads inside it.
 	const [payment, setPayment] = useState<PaymentAsked | null>(null);
+	// The membership just submitted, so a phone payment can be followed to its receipt.
+	const [submitted, setSubmitted] = useState<string | null>(null);
 	const [saved, setSaved] = useState<string | null>(null);
 
 	// What core already knows, so the identity step prefills rather than asking a
@@ -793,6 +796,7 @@ function JoinBody() {
 
 		setMembershipType((current) => remembered.membership_type ?? current);
 		setPaymentMethod((current) => remembered.payment_method ?? current);
+		setPayerPhone(remembered.payer_phone ?? "");
 		setSkills(remembered.skills ?? []);
 		setLanguages(remembered.languages ?? []);
 		setMotivations(remembered.motivation ?? []);
@@ -851,6 +855,11 @@ function JoinBody() {
 		setDisabilities(known.disabilities ?? []);
 
 		setBackground(backgroundFrom(known));
+		setPersonalDetails(known.personal_details ?? {});
+		setResidency(known.residency_type || LOCAL);
+		setResidenceCountry(known.country_of_residence ?? "");
+		setResidenceAddress(known.residence_address ?? "");
+		setSameHome(!known.home_geo_node);
 
 		// Everything core already holds, primary first — `my_profile` orders it —
 		// rather than only the main one. A returning applicant who produced two
@@ -881,7 +890,7 @@ function JoinBody() {
 	const applicationOptions = useFrappeGetCall<{ message: ApplicationOptions }>(
 		API.applicationOptions,
 		undefined,
-		isGuest || path !== "volunteer" ? null : "join:application_options",
+		isGuest ? null : "join:application_options",
 	);
 
 	// ACC-03, and each path has its own answer. Both endpoints intersect the two
@@ -1042,6 +1051,17 @@ function JoinBody() {
 	);
 
 	const [prefilled, setPrefilled] = useState(false);
+	const [homePrefilled, setHomePrefilled] = useState(false);
+	const changeHomeChain = (chain: GeoNode[]) => {
+		setHomePrefilled(true);
+		setHomeChain(chain);
+	};
+	useEffect(() => {
+		const chain = suggestion.data?.message?.chain;
+		if (homePrefilled || !chain?.length) return;
+		setHomeChain(chain);
+		setHomePrefilled(true);
+	}, [suggestion.data, homePrefilled]);
 
 	useEffect(() => {
 		// `levels` decides how much of the chain is usable, so prefilling before it
@@ -1051,7 +1071,6 @@ function JoinBody() {
 
 		const chain = suggestion.data?.message?.chain;
 		if (!chain?.length) return;
-
 		setServingChain(usableChain(chain, allowedLevels));
 		setPrefilled(true);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1087,33 +1106,13 @@ function JoinBody() {
 		return `${method.label}, ${node.label}`;
 	}, [paymentMethods, paymentMethod, node]);
 
-	/**
-	 * Where this person lives, which this wizard no longer asks and still has to
-	 * send: `assert_ready` wants one complete residence shape before it will
-	 * accept a submission.
-	 *
-	 * **It fills in a blank; it never corrects an answer.** Somebody registering
-	 * for the first time has nothing on their profile, and the truthful default
-	 * for them is Local, at the branch they have just said they want to volunteer
-	 * with — that is what the deleted screen's tickbox was preselected to anyway.
-	 * Somebody who already has an answer recorded has it because a desk clerk or
-	 * an earlier registration put it there, and a form that never asked the
-	 * question has no business overwriting it:
-	 *
-	 * - **Abroad** carries a country and an address this form cannot supply, so
-	 *   it sends neither field and leaves the pair intact.
-	 * - **A recorded home area** stands, even where it is not the branch being
-	 *   applied to. People do volunteer away from home.
-	 */
-	const recordedResidency = existing.data?.message?.residency_type ?? "";
-
-	const residence =
-		recordedResidency === ABROAD
-			? {}
-			: {
-					residency_type: recordedResidency || LOCAL,
-					home_geo_node: recordedHome ?? node?.name,
-				};
+	/** The applicant confirms a shared area or supplies a separate local/abroad residence. */
+	const homeNode = selectedNode(homeChain)?.name ?? (homePrefilled ? undefined : recordedHome ?? undefined);
+	const residence = residency === ABROAD
+		? {residency_type: ABROAD, country_of_residence: residenceCountry, residence_address: residenceAddress}
+		: {residency_type: LOCAL, home_geo_node: sameHome ? node?.name : homeNode};
+	const requiresMemberIdentity = Boolean(identityOptions.data?.message?.member_requires_identity);
+	const collectLegacy = Boolean(identityOptions.data?.message?.collect_legacy_details);
 
 	/**
 	 * The society's own questions for whichever registration this is.
@@ -1184,8 +1183,8 @@ function JoinBody() {
 	const asksHowToPay = Boolean(chosenType && !chosenType.free && paymentMethods.length > 0);
 
 	const steps = useMemo(
-		() => stepsFor(path, declared, questions, declarations, planPreselected, asksHowToPay),
-		[path, declared, questions, declarations, planPreselected, asksHowToPay],
+		() => stepsFor(path, declared, questions, declarations, planPreselected, asksHowToPay, requiresMemberIdentity),
+		[path, declared, questions, declarations, planPreselected, asksHowToPay, requiresMemberIdentity],
 	);
 
 	// A tick that was never touched still has to be sent, because not sending it
@@ -1225,12 +1224,38 @@ function JoinBody() {
 			if (!met) gaps.push({ anchor, note });
 		};
 
-		// Date of birth is required of a volunteer and not of a member, which is
-		// the same split `application.assert_ready` makes on the server: age governs
-		// what somebody may be sent to do and what safeguarding applies to them, and
-		// that question is only asked of the people a society deploys. Asked here so
-		// the button says so, rather than the submission failing six steps later.
+		// Society age policy applies alongside any membership plan age band.
 		if (id === "identity") {
+			if (identityOptions.isLoading || identityOptions.error) {
+				need(false, "join-dob", identityOptions.error ? "Unable to load registration requirements. Please try again." : "Loading registration requirements…");
+			}
+			if (collectLegacy || (path === "member" && requiresMemberIdentity)) {
+				need(Boolean(phone.trim()), "join-phone", "Enter your phone number");
+				need(Boolean(gender), "join-gender", "Choose your gender");
+			}
+			if ((path === "member" && requiresMemberIdentity) || chosenType?.requires_age_requirement) {
+				need(Boolean(dateOfBirth), "join-dob", "Enter your date of birth");
+			}
+			if (dateOfBirth && chosenType?.requires_age_requirement && path === "member") {
+				const years = ageOn(dateOfBirth);
+				need(years >= (chosenType.lower_age_limit ?? 0) && years <= (chosenType.upper_age_limit ?? 0), "join-dob", `This membership is for ages ${chosenType.lower_age_limit ?? 0}–${chosenType.upper_age_limit ?? 0}`);
+			}
+			{
+				const policy = identityOptions.data?.message;
+				const min = path === "member" ? policy?.member_min_age : policy?.volunteer_min_age;
+				const max = path === "member" ? policy?.member_max_age : policy?.volunteer_max_age;
+				if (min || max) need(Boolean(dateOfBirth), "join-dob", "Enter your date of birth");
+				const years = dateOfBirth ? ageOn(dateOfBirth) : NaN;
+				if (dateOfBirth && min) need(years >= min, "join-dob", `Applicants must be at least ${min} years old`);
+				if (dateOfBirth && max) need(years <= max, "join-dob", `Applicants must be no older than ${max} years`);
+			}
+			if (path === "member" && requiresMemberIdentity) {
+				need(Boolean(citizenship), "join-citizenship", "Choose your country of citizenship");
+			}
+			if (path === "volunteer" && collectLegacy) {
+				need(Boolean(personalDetails.access_to_internet), "join-details-access_to_internet", "Answer the internet access question");
+			}
+
 			if (path === "volunteer") {
 				need(Boolean(photo), "join-photo", "Upload a profile photograph");
 			}
@@ -1283,11 +1308,14 @@ function JoinBody() {
 		// bottom, because the fall-through is what an *unknown* step id gets and
 		// this one is known and deliberately near-unconditional.
 		if (id === "background") {
+			if (collectLegacy) need(Boolean(background.profession), "bg-profession", "Choose your profession");
 			need(
 				backgroundIsCoherent(background),
 				"bg-other-profession",
 				"Say what your profession is",
 			);
+			gaps.push(...profileLinkGaps({ linkedin: personalDetails.linkedin ?? "", github: personalDetails.github ?? "" }));
+			gaps.push(...backgroundDateGaps(background));
 
 			return gaps;
 		}
@@ -1317,6 +1345,16 @@ function JoinBody() {
 		}
 
 		if (id === "placement") {
+			if (residency === LOCAL && (collectLegacy || requiresMemberIdentity)) {
+				need(Boolean(personalDetails.county?.trim()), "residence-county", "Enter your county of residence");
+				need(Boolean(personalDetails.sub_county?.trim()), "residence-sub_county", "Enter your sub-county of residence");
+				if (path === "volunteer" && collectLegacy) need(Boolean(personalDetails.ward?.trim()), "residence-ward", "Enter your ward of residence");
+			}
+			if (residency === ABROAD) {
+				need(Boolean(residenceCountry && residenceAddress.trim()), "join-residence-country", "Enter your country and address of residence");
+			} else if (!sameHome) {
+				need(Boolean(homeNode), "join-home", "Choose your home area");
+			}
 			need(
 				Boolean(node),
 				`serving-rung-${servingChain.length}`,
@@ -1333,6 +1371,11 @@ function JoinBody() {
 		// so the button says so rather than the submission failing with a
 		// sentence about a profile the applicant cannot edit.
 		if (id === "identification") {
+			if (path === "volunteer") for (const note of registrationDetailGaps(personalDetails, identityOptions.data?.message?.supporting_document_types)) gaps.push({anchor:"join-evidence",note});
+			for (const row of identifications.filter(identificationIsUsable)) {
+				const pattern = identityOptions.data?.message?.identification_patterns?.[row.id_type];
+				if (pattern) { try { need(new RegExp(`^(?:${pattern})$`).test(row.id_number), "join-id-number-0", "Check the identification number format"); } catch { /* Server validates patterns its own regex engine supports. */ } }
+			}
 			// The row that is short of something, and which of its three boxes is
 			// empty — because "enter an ID type and number" is no help at all on a
 			// step listing three documents, two of them finished.
@@ -1613,6 +1656,7 @@ function JoinBody() {
 			path === "volunteer"
 				? {
 						...identity,
+						personal_details: personalDetails,
 						geo_node: node?.name,
 						country_of_citizenship: citizenship,
 						citizenship_status: citizenshipStatus,
@@ -1634,8 +1678,7 @@ function JoinBody() {
 						// so all six are always sent: a table that vanished from the
 						// payload when somebody emptied it could never be emptied.
 						background: backgroundPayload(background),
-						// Not collected on any screen — derived, or left alone. See
-						// `residence`.
+						// Home and serving location are saved independently.
 						...residence,
 						// The whole set, not the first of it. Half-filled rows are
 						// dropped rather than sent: the server refuses a document
@@ -1660,6 +1703,12 @@ function JoinBody() {
 					}
 				: {
 						...identity,
+						personal_details: personalDetails,
+						country_of_citizenship: citizenship,
+						citizenship_status: citizenshipStatus,
+						...residence,
+						identifications: identifications.filter(identificationIsUsable).map(sentIdentification),
+						payer_phone: payerPhone,
 						membership_type: membershipType,
 						geo_node: node?.name,
 						// Always sent, including empty — the server reads `null` as
@@ -1771,11 +1820,12 @@ function JoinBody() {
 
 		try {
 			await enqueue(persistDraft);
-			const answer = await call.post<{ message?: { payment?: PaymentAsked } }>(
+			const answer = await call.post<{ message?: { name?: string; payment?: PaymentAsked } }>(
 				API.submitMyRegistration,
 				{ path },
 			);
 			setPayment(answer?.message?.payment ?? null);
+			setSubmitted(answer?.message?.name ?? null);
 			setDone(true);
 		} catch (submitError) {
 			setFailure(errorMessage(submitError, "Your registration was not accepted."));
@@ -1823,6 +1873,7 @@ function JoinBody() {
 	// once per render and read by both the button and the sentence beside it.
 	const gaps = gapsOf(step.id);
 	const ready = gaps.length === 0;
+	const dateError = dateOfBirth && !identityOptions.isLoading && !identityOptions.error ? gapsOf("identity").find((gap) => gap.anchor === "join-dob")?.note : undefined;
 
 	/**
 	 * The outstanding requirement, once somebody has asked to see it.
@@ -1898,7 +1949,17 @@ function JoinBody() {
 
 				{!sessionLoading && !isGuest && done && (
 					<div className="mx-auto max-w-2xl">
-						<Success path={path} payment={payment} />
+						<Success
+							path={path}
+							payment={payment}
+							membership={submitted}
+							byPhone={
+								path === "member" &&
+								Boolean(payment) &&
+								!paymentMethods.find((method) => method.gateway === paymentMethod)?.in_person
+							}
+							phone={payerPhone || identity.phone || null}
+						/>
 					</div>
 				)}
 
@@ -1923,6 +1984,7 @@ function JoinBody() {
 							state={openApplication.state}
 							otherOpen={otherOpen}
 							onSwitch={() => switchPath(other)}
+							awaitingPayment={openApplication.awaiting_payment ? openApplication.name : null}
 						/>
 					</div>
 				)}
@@ -2043,8 +2105,9 @@ function JoinBody() {
 									<div className={step.id === "identity" ? "" : "px-6 py-7 sm:px-[30px]"}>
 										{step.id === "path" && <PathStep path={path} onChange={choosePath} />}
 
-										{step.id === "identity" && (
+										{step.id === "identity" && (<>
 											<IdentityStep
+												requireIdentity={requiresMemberIdentity}
 												profile={profile}
 												accountEmail={user ?? ""}
 												genders={genders}
@@ -2057,6 +2120,8 @@ function JoinBody() {
 												isCitizen={isCitizen}
 												onIsCitizen={answerCitizenship}
 												firstName={firstName}
+												middleName={personalDetails.middle_name ?? ""}
+												onMiddleName={(middle_name) => setPersonalDetails((current) => ({ ...current, middle_name }))}
 												lastName={lastName}
 												phone={phone}
 												gender={gender}
@@ -2067,6 +2132,8 @@ function JoinBody() {
 												onPhone={setPhone}
 												onGender={setGender}
 												onDateOfBirth={setDateOfBirth}
+												dateError={dateError}
+												requireDateOfBirth={Boolean(identityOptions.data?.message?.member_min_age || identityOptions.data?.message?.member_max_age || chosenType?.requires_age_requirement)}
 												onPhoto={setPhoto}
 												disability={disability}
 												onDisability={answerDisability}
@@ -2076,6 +2143,8 @@ function JoinBody() {
 												onDisabilities={setDisabilities}
 												disabilityOptions={identityOptions.data?.message?.disabilities ?? []}
 											/>
+<Sheet><RegistrationDetails bloodGroups={identityOptions.data?.message?.blood_groups} value={personalDetails} onChange={setPersonalDetails} documents={false} showOtherNames={false} showProfileLinks={path !== "volunteer"} idPrefix="join-details" /></Sheet>
+</>
 										)}
 
 										{/* A column of cards has no control an unanswered step
@@ -2101,19 +2170,24 @@ function JoinBody() {
 													onSelect={setPaymentMethod}
 													type={chosenType}
 													branch={node?.label ?? null}
+													payerPhone={payerPhone}
+													onPayerPhone={setPayerPhone}
+													contactPhone={identity.phone || null}
 												/>
 											</div>
 										)}
 
-										{step.id === "placement" && (
+										{step.id === "placement" && (<>
 											<PlacementStep
 												chain={servingChain}
 												onChain={setServingChain}
 												allowedLevels={allowedLevels}
 											/>
+<ResidenceFields branchChain={servingChain} recordedHome={recordedHome} residency={residency} onResidency={setResidency} sameHome={sameHome} onSameHome={setSameHome} chain={homeChain} onChain={changeHomeChain} country={residenceCountry} onCountry={setResidenceCountry} address={residenceAddress} onAddress={setResidenceAddress} details={personalDetails} onDetails={setPersonalDetails} />
+</>
 										)}
 
-										{step.id === "identification" && (
+										{step.id === "identification" && (<>
 											<IdentificationStep
 												options={options}
 												loading={applicationOptions.isLoading}
@@ -2121,6 +2195,8 @@ function JoinBody() {
 												onRows={setIdentifications}
 												age={age}
 											/>
+{path === "volunteer" && <div id="join-evidence"><RegistrationDetails bloodGroups={identityOptions.data?.message?.blood_groups} value={personalDetails} onChange={setPersonalDetails} documentTypes={identityOptions.data?.message?.supporting_document_types} documentsOnly /></div>}
+</>
 										)}
 
 										{step.id === "declaration" && (
@@ -2141,6 +2217,11 @@ function JoinBody() {
 										{step.id === "background" && (
 											<BackgroundFields
 												options={identityOptions.data?.message}
+												profiles={{
+													linkedin: personalDetails.linkedin ?? "",
+													github: personalDetails.github ?? "",
+												}}
+												onProfiles={(patch) => setPersonalDetails((current) => ({ ...current, ...patch }))}
 												openEducationByDefault
 												value={background}
 												onChange={(patch) =>
@@ -2187,7 +2268,7 @@ function JoinBody() {
 											/>
 										)}
 
-										{step.id === "confirm" && (
+										{step.id === "confirm" && (<>
 											<ConfirmStep
 												path={path}
 												steps={steps}
@@ -2231,16 +2312,16 @@ function JoinBody() {
 													.filter((question) => answers[question.name])
 													.map((question) => ({
 														label: question.label,
-														// A tick reads as a word, a file as the fact that one
-														// arrived. Neither is useful to a person as "1" or as a
-														// path into the site's private files.
+														// A tick reads as a word and a file as its own name.
+														// Neither is useful to a person as "1" or as a path
+														// into the site's private files.
 														shown:
 															question.field_type === "Check"
 																? answers[question.name] === "1"
 																	? "Yes"
 																	: "No"
 																: question.field_type === "Attach"
-																	? "File attached"
+																	? fileNameOf(answers[question.name])
 																	: answers[question.name],
 													}))}
 												contacts={contacts.filter(contactIsUsable)}
@@ -2253,6 +2334,8 @@ function JoinBody() {
 													accepted: accepted.includes(declaration.name),
 												}))}
 											/>
+<div className="p-5"><RegistrationDetailsSummary value={personalDetails}/><p className="mt-3 text-sm">Residence: {residency === ABROAD ? `${residenceCountry} · ${residenceAddress}` : (sameHome ? node?.label : selectedNode(homeChain)?.label)}</p>{payerPhone && <p className="text-sm">Payer phone: {payerPhone}</p>}</div>
+</>
 										)}
 
 									</div>
@@ -2405,7 +2488,7 @@ interface StepDef {
 	 *
 	 * Deliberately not `title` again. The heading above the card names the
 	 * *step* — where you are in the journey — and the strip names the *sheet*
-	 * you are about to fill in. "Personal details" over "Your personal
+	 * you are about to fill in. "Personal Info" over "Your personal
 	 * information" is the concept's own pairing, and repeating one string twice
 	 * in two type sizes would read as a rendering fault rather than as a label.
 	 */
@@ -2449,6 +2532,7 @@ function stepsFor(
 	declarations: Declaration[],
 	planChosen: boolean = false,
 	asksHowToPay: boolean = false,
+	requiresIdentity: boolean = false,
 ): StepDef[] {
 	const shared: Record<"path" | "identity" | "questions" | "consents" | "confirm", StepDef> = {
 		path: {
@@ -2463,11 +2547,11 @@ function stepsFor(
 		},
 		identity: {
 			id: "identity",
-			rail: "Personal details",
+			rail: "Personal Info",
 			eyebrow: "",
-			title: "Personal details",
-			sheet: "Your personal information",
-			blurb: "Let\u2019s start with your name and a few details about you.",
+			title: "Personal Info",
+			sheet: "Organization & Personal Info",
+			blurb: "",
 			needs: "Enter your first and last name",
 		},
 		/**
@@ -2483,8 +2567,8 @@ function stepsFor(
 			rail: "Additional questions",
 			eyebrow: "",
 			title: "Additional questions",
-			sheet: "Questions from your society",
-			blurb: "A few more things your society asks everybody who applies.",
+			sheet: "Additional Questions",
+			blurb: "",
 			needs: "Complete all required questions",
 		},
 		/**
@@ -2501,16 +2585,16 @@ function stepsFor(
 			rail: "Declarations",
 			eyebrow: "",
 			title: "Declarations and consent",
-			sheet: "What you are agreeing to",
+			sheet: "Declarations",
 			blurb: "Review each declaration and accept all required items.",
 			needs: "Accept all required declarations",
 		},
 		confirm: {
 			id: "confirm",
-			rail: "Check and submit",
+			rail: "Review & Submit",
 			eyebrow: "Last step",
-			title: "Check and submit",
-			sheet: "Your application",
+			title: "Review & Submit",
+			sheet: "Application Summary",
 			optional: true,
 			blurb: "Review your information before submitting.",
 			needs: "",
@@ -2546,10 +2630,11 @@ function stepsFor(
 						rail: "Branch",
 						eyebrow: "",
 						title: "Branch",
-						sheet: "Your branch",
+						sheet: "Organization",
 						blurb: "Select the branch that will manage your membership.",
 						needs: "Select a branch",
 					},
+					...(requiresIdentity ? [{id: "identification" as const,rail:"Documents",eyebrow:"",title:"Documents",sheet:"Your identification documents",blurb:"Provide your identification details.",needs:"Enter an ID type and number"}] : []),
 					shared.questions,
 					// A membership can carry declarations too, and the filter below
 					// takes the step away again for a society that has written none
@@ -2563,28 +2648,28 @@ function stepsFor(
 					shared.identity,
 					{
 						id: "placement",
-						rail: "Volunteer location",
+						rail: "Branch / County",
 						eyebrow: "",
-						title: "Volunteer location",
-						sheet: "Where you would like to serve",
+						title: "Branch / County",
+						sheet: "Organization",
 						blurb: "Select the branch or area where you would like to volunteer.",
 						needs: "Select a branch or area",
 					},
 					{
 						id: "identification",
-						rail: "Identification",
+						rail: "Documents",
 						eyebrow: "",
-						title: "Identification",
-						sheet: "Your identification documents",
+						title: "Documents",
+						sheet: "Identification",
 						blurb: "Provide your government identification details.",
 						needs: "Enter an ID type and number",
 					},
 					{
 						id: "declaration",
-						rail: "Volunteer details",
+						rail: "Additional Info",
 						eyebrow: "",
-						title: "Volunteer details",
-						sheet: "About your volunteering",
+						title: "Additional Info",
+						sheet: "Skills & Languages",
 						blurb: "Add your skills, languages, and motivation.",
 						needs: "Choose at least one skill, language, and motivation",
 					},
@@ -2608,7 +2693,7 @@ function stepsFor(
 						rail: "Emergency contact",
 						eyebrow: "",
 						title: "Emergency contact",
-						sheet: "Who we should contact",
+						sheet: "Emergency Contact",
 						optional: true,
 						blurb: "Add a person to contact in an emergency. This information is visible only to your branch.",
 						needs: "",
@@ -3061,18 +3146,20 @@ function PathSwitch({ path, onChange }: { path: Path; onChange: (p: Path) => voi
  * to itself titled "Citizenship and where you live", and the pair was wrong in
  * both halves. Citizenship is one question with one answer for all but a
  * handful of people, and a whole rung of the ladder for it announced a
- * seriousness it does not have. "Where you live" was three controls asking the
- * form to repeat the branch chosen on the screen before it. So the second
- * question is gone entirely and the first sits with date of birth and gender,
+ * seriousness it does not have. Residence is collected independently on the placement screen.
+ * Nationality sits with date of birth and gender,
  * which is what it is: a fact about the person, on the page about the person.
  */
 function IdentityStep({
+	requireIdentity = false,
 	profile,
 	accountEmail,
 	genders,
 	path,
 	options,
 	firstName,
+	middleName,
+	onMiddleName,
 	lastName,
 	phone,
 	gender,
@@ -3089,6 +3176,8 @@ function IdentityStep({
 	onPhone,
 	onGender,
 	onDateOfBirth,
+	dateError,
+	requireDateOfBirth = false,
 	onPhoto,
 	disability,
 	onDisability,
@@ -3098,12 +3187,15 @@ function IdentityStep({
 	onDisabilities,
 	disabilityOptions,
 }: {
+	requireIdentity?: boolean;
 	profile: RedProfile | null;
 	accountEmail: string;
 	genders: string[];
 	path: Path;
 	options?: ApplicationOptions;
 	firstName: string;
+	middleName: string;
+	onMiddleName: (value: string) => void;
 	lastName: string;
 	phone: string;
 	gender: string;
@@ -3120,6 +3212,8 @@ function IdentityStep({
 	onPhone: (v: string) => void;
 	onGender: (v: string) => void;
 	onDateOfBirth: (v: string) => void;
+	dateError?: string;
+	requireDateOfBirth?: boolean;
 	onPhoto: (v: string) => void;
 	disability: string;
 	onDisability: (v: string) => void;
@@ -3141,7 +3235,7 @@ function IdentityStep({
 					id="join-photo"
 					value={photo}
 					onChange={onPhoto}
-					required={path === "volunteer"}
+					required={(path === "volunteer" || requireIdentity)}
 					name={`${firstName} ${lastName}`.trim()}
 				/>
 
@@ -3152,6 +3246,10 @@ function IdentityStep({
 
 					<Field label="Last name" required htmlFor="join-last">
 						<TextInput id="join-last" value={lastName} onChange={onLastName} />
+					</Field>
+
+					<Field label="Other names" htmlFor="join-middle">
+						<TextInput id="join-middle" value={middleName} onChange={onMiddleName} />
 					</Field>
 
 					<Field label="Phone number" htmlFor="join-phone">
@@ -3192,10 +3290,10 @@ function IdentityStep({
 
 					<Field
 						label="Date of birth"
-						required={path === "volunteer"}
+						required={(path === "volunteer" || requireIdentity || requireDateOfBirth)}
 						htmlFor="join-dob"
 						hint={
-							path === "volunteer"
+							(path === "volunteer" || requireIdentity)
 								? "Used for eligibility and safeguarding."
 								: undefined
 						}
@@ -3206,7 +3304,10 @@ function IdentityStep({
 							max={new Date().toISOString().slice(0, 10)}
 							value={dateOfBirth}
 							onChange={onDateOfBirth}
+							invalid={Boolean(dateError)}
+							describedBy={dateError ? "join-dob-error" : undefined}
 						/>
+						{dateError && <p id="join-dob-error" role="alert" className="mt-1.5 text-[12px] text-danger">{dateError}</p>}
 					</Field>
 				</div>
 			</Sheet>
@@ -3225,7 +3326,7 @@ function IdentityStep({
 			    to disability put the country picker between the disability
 			    question and the disability question's own follow-up. A question
 			    and what it opens have to stay adjacent, so the column wins. */}
-			{path === "volunteer" && (
+			{(path === "volunteer" || requireIdentity) && (
 				<Sheet
 					title="Citizenship and support"
 					note="Help us arrange the right guidance and support for you."
@@ -3266,7 +3367,7 @@ function IdentityStep({
 						<div>
 							<fieldset className="min-w-0 border-0 p-0">
 								<legend className="mb-3 flex items-center gap-1 text-[14px] font-semibold text-slate-strong">
-									Do you have a disability?
+									Are you a person with disability?
 									<span className="text-danger" aria-hidden="true">
 										*
 									</span>
@@ -3540,14 +3641,14 @@ function PlacementStep({
 	allowedLevels?: string[];
 }) {
 	return (
-		<FieldSet title="Branch or area">
-			<GeoSelects
+		<div>
+			<RegistrationGeoSelects
 				chain={chain}
 				onChain={onChain}
 				allowedLevels={allowedLevels}
 				idPrefix="serving"
 			/>
-		</FieldSet>
+		</div>
 	);
 }
 
@@ -3710,8 +3811,8 @@ function CitizenshipDetails({
  * The society's own `instructions` win wherever it wrote any — that field is
  * the whole reason a branch can say "ask for the cashier on the ground floor"
  * without a deploy. Failing that, an in-person method gets a sentence naming
- * the office the applicant chose, and everything else falls back to the
- * gateway's description.
+ * the office the applicant chose, a phone gateway says what will happen on the
+ * phone, and anything else says nothing rather than the gateway's description.
  *
  * **The description is not offered to the in-person method**, deliberately. On
  * this bench it reads "Admin manually confirms payments. Use for bank
@@ -3728,7 +3829,11 @@ function methodBody(method: PaymentMethod, branch: string | null): string {
 			: "Pay at the branch office you select during registration. Your membership starts once the office has recorded it.";
 	}
 
-	return method.description || "";
+	if (method.by_phone) return "You will get a payment request on your phone. Enter your PIN to pay.";
+
+	// Never the gateway's own description: it is written for whoever configures
+	// the payments app, and the server no longer sends it.
+	return "";
 }
 
 /**
@@ -3759,12 +3864,19 @@ function methodBody(method: PaymentMethod, branch: string | null): string {
  * the server and is not a gateway name.
  */
 function PaymentStep({
+	payerPhone,
+	onPayerPhone,
+	contactPhone,
 	methods,
 	selected,
 	onSelect,
 	type,
 	branch,
 }: {
+	payerPhone: string;
+	onPayerPhone: (value:string) => void;
+	/** The applicant's own number, used when the payer field is left empty. */
+	contactPhone: string | null;
 	methods: PaymentMethod[];
 	selected: string;
 	onSelect: (gateway: string) => void;
@@ -3772,30 +3884,102 @@ function PaymentStep({
 	/** The chosen office, or null before the branch step. */
 	branch: string | null;
 }) {
+	const chosen = methods.find((method) => method.gateway === selected) ?? null;
+	// One way of paying is not a choice: it is shown, not offered as a radio.
+	const only = methods.length === 1 ? methods[0] : null;
+
 	return (
-		<div className="max-w-xl space-y-4">
+		<div className="max-w-xl space-y-5">
 			{type && !type.free && (
-				<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-					This membership costs{" "}
-					<strong className="font-semibold text-ink">
+				<div className="flex items-center justify-between gap-4 rounded-2xl border border-card-line bg-white px-5 py-4">
+					<div className="min-w-0">
+						<p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-slate-faint">Membership fee</p>
+						<p className="mt-1 truncate text-[13px] font-semibold text-ink">{type.membership_type_name}</p>
+					</div>
+					<strong className="font-display text-[26px] font-extrabold tracking-[-0.03em] text-ink tabular">
 						{formatMoney(type.amount, type.currency)}
 					</strong>
-					. Payment will be requested after your application is submitted.
-				</p>
+				</div>
 			)}
 
-			<div className="space-y-3" role="radiogroup" aria-label="How would you like to pay?">
-				{methods.map((method) => (
-					<ChoiceCard
-						key={method.gateway}
-						selected={selected === method.gateway}
-						onSelect={() => onSelect(method.gateway)}
-						icon={<Icon.card size={20} />}
-						title={method.label}
-						body={methodBody(method, branch)}
-					/>
-				))}
-			</div>
+			{only ? (
+				<div className="flex items-center gap-4 rounded-2xl border border-card-line bg-surface px-5 py-4">
+					{only.logo ? (
+						<PaymentLogo src={only.logo} label={only.label} />
+					) : (
+						<span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-rail text-white" aria-hidden="true">
+							<Icon.card size={20} />
+						</span>
+					)}
+					<div className="min-w-0">
+						<p className="text-[14px] font-bold text-ink">Pay with {only.label}</p>
+						<p className="mt-0.5 text-[12.5px] leading-relaxed text-slate-body">{methodBody(only, branch)}</p>
+					</div>
+				</div>
+			) : (
+				<div className="space-y-3" role="radiogroup" aria-label="How would you like to pay?">
+					{methods.map((method) => (
+						<ChoiceCard
+							key={method.gateway}
+							selected={selected === method.gateway}
+							onSelect={() => onSelect(method.gateway)}
+							icon={method.logo ? undefined : <Icon.card size={20} />}
+							title={
+								method.logo ? (
+									<span className="flex items-center gap-3">
+										<PaymentLogo src={method.logo} label={method.label} />
+										{method.label}
+									</span>
+								) : (
+									method.label
+								)
+							}
+							body={methodBody(method, branch)}
+						/>
+					))}
+				</div>
+			)}
+
+			{(chosen?.by_phone ?? !chosen?.in_person) && (
+				<>
+					<Field
+						label="Phone number to pay from"
+						htmlFor="join-payer-phone"
+						hint={
+							contactPhone
+								? `Leave this empty to use your number, ${spacedPhone(contactPhone)}. Enter another number if someone else is paying.`
+								: "Enter the number that will pay. It can be someone else's."
+						}
+					>
+						<TextInput
+							id="join-payer-phone"
+							type="tel"
+							inputMode="tel"
+							placeholder={contactPhone ? spacedPhone(contactPhone) : "07XX XXX XXX"}
+							value={payerPhone}
+							onChange={onPayerPhone}
+						/>
+					</Field>
+
+					<div className="rounded-2xl border border-card-line bg-white px-5 py-4">
+						<p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-slate-faint">What happens next</p>
+						<ol className="mt-3 space-y-2.5 text-[12.5px] leading-relaxed text-slate-body">
+							{[
+								"Submit your application.",
+								"A payment request appears on the phone above.",
+								"Enter your PIN to pay. Your application then goes to your branch for review.",
+							].map((step, index) => (
+								<li key={step} className="flex items-start gap-2.5">
+									<span className="mt-px grid h-5 w-5 flex-none place-items-center rounded-full bg-surface text-[10.5px] font-bold text-ink ring-1 ring-card-line">
+										{index + 1}
+									</span>
+									<span>{step}</span>
+								</li>
+							))}
+						</ol>
+					</div>
+				</>
+			)}
 		</div>
 	);
 }
@@ -3839,8 +4023,7 @@ function IdentificationStep({
 	if (options.id_types.length === 0) {
 		return (
 			<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-				This society has not configured any identification types yet, and an application cannot be
-				submitted without one. Ask your branch to add them before registering.
+				Registration is not available yet. Please contact your branch.
 			</p>
 		);
 	}
@@ -4769,7 +4952,7 @@ function ConfirmStep({
 			)}
 
 			<Review
-				title={path === "member" ? "Branch" : "Volunteer location"}
+				title={path === "member" ? "Branch" : "Branch / County"}
 				onEdit={editor("placement")}
 			>
 				<Trail label="Placement" chain={chain} />
@@ -4791,7 +4974,7 @@ function ConfirmStep({
 						)}
 					</Review>
 
-					<Review title="Volunteer details" onEdit={editor("declaration")}>
+					<Review title="Additional Info" onEdit={editor("declaration")}>
 						<Chips label="Skills" values={declared.skills} />
 						<Chips label="Languages" values={declared.languages} />
 						<Chips label="Motivation" values={declared.motivations} />
@@ -5224,13 +5407,40 @@ function AlreadyApplied({
 	state,
 	otherOpen,
 	onSwitch,
+	awaitingPayment = null,
 }: {
 	path: Path;
 	state: string;
 	otherOpen: boolean;
 	onSwitch: () => void;
+	/** A membership held back until its phone payment arrives, by name. */
+	awaitingPayment?: string | null;
 }) {
 	const other: Path = path === "volunteer" ? "member" : "volunteer";
+
+	if (awaitingPayment) {
+		return (
+			<Card className="p-7 sm:p-9">
+				<h1 className="text-[26px] font-semibold leading-tight tracking-tight text-ink">
+					Your membership fee is not paid yet
+				</h1>
+				<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
+					Your registration goes to your branch for review once the payment is received.
+				</p>
+				<div className="mt-6 max-w-lg">
+					<PhonePayment membership={awaitingPayment} />
+				</div>
+				<div className="mt-7">
+					<Link
+						to="/dashboard"
+						className="inline-flex items-center rounded-xl border border-card-line bg-white px-5 py-2.5 text-[13px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
+					>
+						Go to your portal
+					</Link>
+				</div>
+			</Card>
+		);
+	}
 
 	return (
 		<Card className="p-7 sm:p-9">
@@ -5275,36 +5485,76 @@ function AlreadyApplied({
 	);
 }
 
-function Success({ path, payment }: { path: Path; payment: PaymentAsked | null }) {
+function Success({
+	path,
+	payment,
+	membership,
+	byPhone,
+	phone,
+}: {
+	path: Path;
+	payment: PaymentAsked | null;
+	membership: string | null;
+	/** The fee was asked for on the payer's phone, so the page waits for it. */
+	byPhone: boolean;
+	phone: string | null;
+}) {
+	const followPayment = byPhone && Boolean(membership);
+	// A membership paid by phone is held until the fee arrives, so it has not
+	// been submitted to anybody yet. The tick and "submitted" wait for the money.
+	const [paid, setPaid] = useState(false);
+	const unpaid = followPayment && !paid;
+
 	return (
 		<Card className="p-7 sm:p-9">
-			<div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-emerald-50">
-				<svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
-					<path
-						className="tick-draw"
-						d="m5 13 4 4L19 7"
-						stroke="#059669"
-						strokeWidth="2.6"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-				</svg>
-			</div>
+			{unpaid ? (
+				<div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-rail/[0.07] text-ink">
+					<Icon.clock size={26} />
+				</div>
+			) : (
+				<div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-emerald-50">
+					<svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
+						<path
+							className="tick-draw"
+							d="m5 13 4 4L19 7"
+							stroke="#059669"
+							strokeWidth="2.6"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						/>
+					</svg>
+				</div>
+			)}
 
 			<h1 className="text-[26px] font-semibold leading-tight tracking-tight text-ink">
-				Registration submitted
+				{unpaid ? "Pay your membership fee" : "Registration submitted"}
 			</h1>
 
 			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
-				Your {path === "volunteer" ? "application" : "membership registration"} has been submitted to your branch for review.
+				{unpaid
+					? "Pay the membership fee on your phone. Your registration goes to your branch for review once the payment is received."
+					: followPayment
+						? "Your membership fee is paid and your registration has gone to your branch for review."
+						: `Your ${path === "volunteer" ? "application" : "membership registration"} has been submitted to your branch for review.`}
 			</p>
+
+			{followPayment && membership && (
+				<div className="mt-6 max-w-lg">
+					<PhonePayment
+						membership={membership}
+						message={payment?.message}
+						phone={phone}
+						onSettled={() => setPaid(true)}
+					/>
+				</div>
+			)}
 
 			{/* What the gateway itself said, unedited. Mobile money has already put
 			    a prompt on the phone by the time this renders; a bank transfer
 			    needs an account number and a reference. Neither sentence is
 			    written in this app — see `membership._with_payment` — because only
 			    the driver that was asked knows what it just did. */}
-			{payment?.message && (
+			{!followPayment && payment?.message && (
 				<div className="mt-6 max-w-lg rounded-xl border border-card-line bg-surface px-4 py-3.5">
 					<p className="text-[10.5px] font-bold uppercase tracking-wider text-slate-faint">
 						Paying your fee

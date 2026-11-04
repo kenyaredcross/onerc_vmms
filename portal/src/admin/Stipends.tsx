@@ -334,7 +334,7 @@ function StartReport({ onCreated }: { onCreated: () => void }) {
 
 			<div className="mt-4">
 				<Labelled
-					label="What the branch did"
+					label="Activities"
 					hint="The narrative this report is. Required, and it is what the approver reads."
 				>
 					<textarea
@@ -347,7 +347,7 @@ function StartReport({ onCreated }: { onCreated: () => void }) {
 
 			<div className="mt-4">
 				<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-					Where this work happened
+					Location
 				</p>
 				<GeoSelects chain={chain} onChain={setChain} idPrefix="stipend-report" />
 			</div>
@@ -422,14 +422,13 @@ function StartPaymentForm({ onCreated }: { onCreated: () => void }) {
 			onOpen={setOpen}
 			label="Start a payment form"
 			title="Start a payment form"
-			lead="Against a progress report that already covers somebody. It takes the report's place, period and currency, so there is nothing here to answer twice."
+			lead="Based on a progress report with volunteers. Location, period and currency come from the report."
 		>
 			{reports.isLoading ? (
 				<Spinner label="Loading reports…" />
 			) : options.length === 0 ? (
 				<p className="text-[12.5px] leading-relaxed text-slate-faint">
-					No progress report covers anybody yet. A payment form pays the volunteers its report
-					names, so there has to be a report with people on it first.
+					No progress report with volunteers yet. Add volunteers to a progress report first.
 				</p>
 			) : (
 				<>
@@ -569,8 +568,7 @@ function ReportPane({ report, onChanged }: { report: StipendReport; onChanged: (
 
 			{report.volunteers.length === 0 ? (
 				<p className="mt-4 text-[12.5px] text-slate-faint">
-					No volunteers on this report yet. A report has to cover somebody before it can be
-					submitted.
+					No volunteers on this report. Add at least one before submitting.
 				</p>
 			) : (
 				<div className="mt-4">
@@ -670,7 +668,7 @@ function Narrative({
 	if (open) {
 		return (
 			<div className="mt-4">
-				<Labelled label="What the branch did" hint="Required. It is what the approver reads.">
+				<Labelled label="Activities" hint="Required. It is what the approver reads.">
 					<textarea
 						className={cx(INPUT, "min-h-[140px] resize-y")}
 						value={draft}
@@ -706,7 +704,7 @@ function Narrative({
 		<div className="mt-4 rounded-xl bg-surface px-4 py-3.5">
 			<div className="flex flex-wrap items-start justify-between gap-2">
 				<p className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-					What the branch did
+					Activities
 				</p>
 				{editable && (
 					<button
@@ -829,7 +827,7 @@ function AddVolunteer({ report, onChanged }: { report: string; onChanged: () => 
 					</select>
 				</Labelled>
 
-				<Labelled label="Role or activity" hint="What they were doing over the period.">
+				<Labelled label="Role or activity" hint="Activities during the period.">
 					<input
 						className={INPUT}
 						value={activity}
@@ -1110,8 +1108,7 @@ function RecordAttendance({
 
 			{covered.length === 0 ? (
 				<p className="mt-3 text-[12.5px] text-slate-faint">
-					The report behind this form covers nobody yet. A form pays the volunteers its report
-					names, so add them to the report first.
+					This form's report has no volunteers. Add volunteers to the report first.
 				</p>
 			) : (
 				<>
@@ -1186,11 +1183,10 @@ function RecordAttendance({
 						/>
 						<span>
 							<span className="block text-[12.5px] font-semibold text-ink">
-								They were there
+								Attended
 							</span>
 							<span className="mt-0.5 block text-[11.5px] leading-relaxed text-slate-faint">
-								Untick to record a day they were expected and did not attend. It is filed as a
-								day recorded and pays nothing.
+								Clear to record an absence. Absences are not paid.
 							</span>
 						</span>
 					</label>
@@ -1247,8 +1243,7 @@ function FormPane({ form, onChanged }: { form: StipendPaymentForm; onChanged: ()
 
 			{form.per_volunteer.length === 0 ? (
 				<p className="mt-3 text-[12.5px] text-slate-faint">
-					No attendance recorded on this form yet. Every figure here is summed from the grid, so
-					there is nothing to total until somebody is marked present.
+					No attendance recorded on this form yet. Totals appear once attendance is marked.
 				</p>
 			) : (
 				<div className="mt-3">

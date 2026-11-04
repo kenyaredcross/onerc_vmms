@@ -7,7 +7,7 @@ import { mount } from "../test/harness";
 import type { ApprovalStatus } from "../portal/types";
 
 /**
- * The two application queues, and the three bands each of them navigates.
+ * The two application queues, and the four bands each of them navigates.
  *
  * **The rule these hold is separation.** Volunteer applications and memberships
  * are two registers with two decision views, and the screens for them must never
@@ -127,7 +127,7 @@ describe("the two queues never touch each other's endpoints", () => {
 	it("asks my_queue for volunteer applications only, on the volunteer page", () => {
 		reads.set(API.myQueue, [application()]);
 
-		show(<VolunteerQueue />, "/admin/queue/volunteers");
+		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
 
 		const queue = calls.filter((call) => call.path === API.myQueue);
 
@@ -140,7 +140,7 @@ describe("the two queues never touch each other's endpoints", () => {
 	it("asks my_queue for memberships only, on the membership page", () => {
 		reads.set(API.myQueue, []);
 
-		show(<MembershipQueue />, "/admin/queue/members");
+		show(<MembershipQueue band="assigned" />, "/admin/queue/members/assigned");
 
 		const queue = calls.filter((call) => call.path === API.myQueue);
 
@@ -149,16 +149,31 @@ describe("the two queues never touch each other's endpoints", () => {
 		expect(JSON.stringify(calls)).not.toContain("VMMS Volunteer Application");
 	});
 
-	it("never calls the history endpoint while the open band is showing", () => {
+	it("never calls the history endpoint while the assigned band is showing", () => {
 		reads.set(API.myQueue, []);
 
-		show(<VolunteerQueue />, "/admin/queue/volunteers");
+		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
 
 		expect(calls.some((call) => call.path === API.myCases)).toBe(false);
 	});
+
+	it("opens on every readable application, not on the caller's own queue", () => {
+		reads.set(API.myCases, { group: "all", count: 0, total: 0, cases: [] });
+
+		show(<MembershipQueue />, "/admin/queue/members");
+
+		expect(calls.find((call) => call.path === API.myCases)?.params).toEqual({
+			doctype: "VMMS Membership",
+			group: "all",
+			limit: 25,
+			offset: 0,
+		});
+		expect(calls.some((call) => call.path === API.myQueue)).toBe(false);
+		expect(JSON.stringify(calls)).not.toContain("VMMS Volunteer Application");
+	});
 });
 
-describe("the three bands", () => {
+describe("the four bands", () => {
 	it("reads the changes band from my_cases and not from my_queue", () => {
 		reads.set(API.myCases, { group: "changes", count: 0, cases: [] });
 
@@ -191,13 +206,16 @@ describe("the three bands", () => {
 		});
 	});
 
-	it("offers all three bands as real routed links from every band", () => {
+	it("offers all four bands as real routed links from every band", () => {
 		reads.set(API.myCases, { group: "closed", count: 0, cases: [] });
 
 		show(<VolunteerQueue band="closed" />, "/admin/queue/volunteers/closed");
 
-		expect(screen.getByRole("link", { name: "Applications" }).getAttribute("href")).toBe(
+		expect(screen.getByRole("link", { name: "All applications" }).getAttribute("href")).toBe(
 			"/admin/queue/volunteers",
+		);
+		expect(screen.getByRole("link", { name: "Assigned to me" }).getAttribute("href")).toBe(
+			"/admin/queue/volunteers/assigned",
 		);
 		expect(screen.getByRole("link", { name: "Changes requested" }).getAttribute("href")).toBe(
 			"/admin/queue/volunteers/changes",
@@ -222,7 +240,7 @@ describe("what a row shows", () => {
 	it("names the applicant rather than the docname, and links to the record", () => {
 		reads.set(API.myQueue, [application()]);
 
-		show(<VolunteerQueue />, "/admin/queue/volunteers");
+		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
 
 		const link = screen.getAllByRole("link", { name: /Asha Mwangi/ })[0];
 
@@ -232,7 +250,7 @@ describe("what a row shows", () => {
 	it("shows the stage label without ever comparing it", () => {
 		reads.set(API.myQueue, [application()]);
 
-		show(<VolunteerQueue />, "/admin/queue/volunteers");
+		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
 
 		// Displayed verbatim. A society that renames this stage tomorrow changes
 		// this cell and nothing else in the app.
@@ -246,7 +264,7 @@ describe("what a row shows", () => {
 			}),
 		]);
 
-		show(<VolunteerQueue />, "/admin/queue/volunteers");
+		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
 
 		expect(screen.getByText("6 days over")).toBeTruthy();
 		expect(screen.getByText("1 overdue")).toBeTruthy();

@@ -755,6 +755,7 @@ def reset() -> None:
 	# terms of reference, so each goes before the thing it points at.
 	for doctype in (
 		TIME_LOG_DOCTYPE,
+		"VMMS Surge Roster Entry",
 		CERTIFICATION_DOCTYPE,
 		MAPPING_DOCTYPE,
 		APPLICATION_DOCTYPE,

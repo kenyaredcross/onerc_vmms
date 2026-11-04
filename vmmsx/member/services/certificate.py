@@ -38,6 +38,7 @@ from frappe.utils.pdf import get_pdf
 
 from vmmsx.cards.services import assets
 from vmmsx.member.services import identity, society
+from vmmsx.places import place_name
 from vmmsx.templating.services import render
 
 MEMBER_DOCTYPE = "VMMS Member"
@@ -61,7 +62,6 @@ def context_for(membership, absolute_assets: bool = False) -> dict:
 	own location: see `printable_asset()` for why a bare path is a trap for the
 	PDF renderer and not for anything else.
 	"""
-	from onerc_core.geo.services import adapter
 
 	from vmmsx.member.services import membership as membership_service
 
@@ -76,7 +76,7 @@ def context_for(membership, absolute_assets: bool = False) -> dict:
 		"membership_type": membership_type.membership_type_name,
 		"membership_type_key": membership_type.membership_type_key,
 		"geo_node": membership.geo_node,
-		"geo_path": adapter.get_full_path(membership.geo_node) if membership.geo_node else "",
+		"geo_path": place_name(membership.geo_node),
 		"valid_from": format_date(membership.valid_from) if membership.valid_from else "",
 		"valid_to": _valid_to_text(membership, membership_type),
 		# The same fact as a flag, for a template that wants to say it its own

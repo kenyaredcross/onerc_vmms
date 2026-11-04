@@ -5,9 +5,13 @@ import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react
 import { ServiceCertificateReviews } from "../certificates/ServiceCertificates";
 import { API, cardUrl, certificateUrl, errorMessage } from "../lib/api";
 import { formatDate, formatHours, formatMoney, geoPath } from "../lib/format";
+import { FileLink } from "../ui/FilePreview";
+import { Icon } from "../ui/icons";
 import { MultiCombo } from "../ui/form";
 import { PersonHero, RegisterLinks } from "../ui/PersonHero";
+import { RegistrationDetailsSummary } from "../ui/RegistrationDetails";
 import { RecordPayment, owesAFee } from "./RecordPayment";
+import { SurgeCard } from "./Surge";
 import {
 	Button,
 	Card,
@@ -26,6 +30,7 @@ import type {
 	ApplicationOptions,
 	DecisionRow,
 	DossierBackground,
+	RegistrationFile,
 	MemberDossier,
 	SelectorRow,
 	VolunteerDossier,
@@ -75,7 +80,7 @@ export default function Person() {
 	const { kind, name } = useParams<{ kind: string; name: string }>();
 
 	if (!name) {
-		return <ErrorNote>That link does not name anybody.</ErrorNote>;
+		return <ErrorNote>Record not found.</ErrorNote>;
 	}
 
 	if (kind === "volunteer") {
@@ -168,7 +173,7 @@ function RegisterNotes({
 						value={draft}
 						rows={5}
 						onChange={(event) => setDraft(event.target.value)}
-						placeholder="Why they are placed where they are, what was agreed, what to remember."
+						placeholder="Notes about this person's placement and agreements."
 						className="w-full resize-y rounded-lg border border-rail-line bg-white px-3 py-2 text-[13px] leading-relaxed text-ink outline-none transition placeholder:text-slate-faint focus:border-blue focus:ring-[3px] focus:ring-blue-soft"
 					/>
 					<p className="mt-1.5 text-[11.5px] leading-relaxed text-muted">
@@ -270,7 +275,7 @@ function Capabilities({
 	return (
 		<Card className="mb-5">
 			<div className="flex flex-wrap items-start justify-between gap-2">
-				<SectionTitle>What they can do now</SectionTitle>
+				<SectionTitle>Skills, languages and availability</SectionTitle>
 				{canAct && !open && (
 					<button
 						type="button"
@@ -432,13 +437,9 @@ function VolunteerPage({ name }: { name: string }) {
 					{ label: "Email", value: person.email },
 					{ label: "Phone", value: person.phone },
 					{ label: "Joined", value: formatDate(person.joined_on) },
-					{ label: "Home area", value: geoPath(person.home_geo_path) },
+					{ label: "Residence", value: geoPath(person.home_geo_path) },
 				]}
 			/>
-
-			{dossier.can_act && (
-				<VolunteerActions dossier={dossier} onActed={() => void mutate()} />
-			)}
 
 			{/* Drawn only when there is a card to print. `holds_card` is the same
 			    predicate `download_card` asserts on, so this link cannot offer
@@ -460,9 +461,9 @@ function VolunteerPage({ name }: { name: string }) {
 				onChange={setTab}
 				items={[
 					["overview", "Overview"],
-					["background", "Background"],
+					["background", "Education and experience"],
 					["service", "Service & deployments"],
-					["verification", "Verification"],
+					["verification", "Approval history"],
 					["notes", "Notes & history"],
 				]}
 			/>
@@ -474,7 +475,7 @@ function VolunteerPage({ name }: { name: string }) {
 			    they are missing — which in a card is a finding rather than a
 			    blank. */}
 			{tab === "overview" && <><Card className="mb-5">
-				<SectionTitle>Who they are</SectionTitle>
+				<SectionTitle>Personal details</SectionTitle>
 				<Definitions
 					rows={[
 						["Gender", person.gender],
@@ -483,30 +484,33 @@ function VolunteerPage({ name }: { name: string }) {
 						// Two Geo Nodes answering two different questions, under names
 						// that differ. Calling either of them simply "branch" is the
 						// confusion ACC-02 invites.
-						["Serving branch", geoPath(person.geo_path)],
-						["Home area", geoPath(person.home_geo_path)],
+						["Branch / County", geoPath(person.geo_path)],
+						["Residence", geoPath(person.home_geo_path)],
 						["Profession", person.profession],
 						["Exited", formatDate(person.exited_on)],
 					]}
 				/>
+			<div className="mt-5 border-t border-card-line pt-5">
+					<RegistrationDetailsSummary value={person.personal_details} evidenceContext={{doctype:"VMMS Volunteer",name}} />
+				</div>
 			</Card>
 
 			</>}
 
-			{tab === "background" && <BackgroundCard background={person.background} />}
+			{tab === "background" && <BackgroundCard background={person.background} files={person.attachments} />}
 
 			{tab === "overview" && <><Card className="mb-5">
-				<SectionTitle>May they be deployed</SectionTitle>
+				<SectionTitle>Deployment eligibility</SectionTitle>
 				<div className="mb-3">
 					{dossier.deployability.deployable ? (
-						<Pill tone="page">Ready to deploy</Pill>
+						<Pill tone="page">Eligible</Pill>
 					) : (
-						<Pill tone="page">Blocked</Pill>
+						<Pill tone="page">Not eligible</Pill>
 					)}
 				</div>
 				{dossier.deployability.reasons.length === 0 ? (
 					<p className="text-[13px] text-muted">
-						Nothing is standing in the way as at {formatDate(dossier.deployability.as_of)}.
+						No restrictions as of {formatDate(dossier.deployability.as_of)}.
 					</p>
 				) : (
 					<ul className="list-disc space-y-1 pl-5 text-[13px] text-muted">
@@ -533,14 +537,21 @@ function VolunteerPage({ name }: { name: string }) {
 				onChanged={onChanged}
 			/>}
 
-			{tab === "service" && <><ServiceCertificateReviews volunteer={name} /><Card className="mb-5">
-				<SectionTitle>Certifications held</SectionTitle>
+			{tab === "service" && <><SurgeCard
+				volunteer={dossier.volunteer}
+				entries={dossier.surge ?? []}
+				canAct={dossier.can_act}
+				volunteerActive={person.status === "Active"}
+				suggestedProfession={person.profession}
+				onChanged={onChanged}
+			/><ServiceCertificateReviews volunteer={name} /><Card className="mb-5">
+				<SectionTitle>Certifications</SectionTitle>
 				{dossier.certifications.length === 0 ? (
 					<Empty title="No certifications recorded">
 						Nothing has been recorded against this volunteer yet.
 					</Empty>
 				) : (
-					<Table head={["Certification", "Completed", "Expires", "Reference", "Standing"]}>
+					<Table head={["Certification", "Completed", "Expires", "Reference", "Status"]}>
 						{dossier.certifications.map((row) => (
 							<Row key={row.name}>
 								<Cell>
@@ -567,7 +578,7 @@ function VolunteerPage({ name }: { name: string }) {
 			</Card>
 
 			<Card className="mb-5">
-				<SectionTitle>Where they have served</SectionTitle>
+				<SectionTitle>Deployment history</SectionTitle>
 				{dossier.deployments.length === 0 ? (
 					<Empty title="No deployments recorded">
 						This volunteer has not been rostered onto anything yet.
@@ -596,7 +607,7 @@ function VolunteerPage({ name }: { name: string }) {
 			</Card>
 
 			<Card className="mb-5">
-				<SectionTitle>What they have given</SectionTitle>
+				<SectionTitle>Volunteer hours</SectionTitle>
 				<div className="mb-4 flex flex-wrap gap-2">
 					<Pill tone="page">{formatHours(dossier.time.total_hours)} in total</Pill>
 					<Pill tone="page">{dossier.time.log_count} logs</Pill>
@@ -609,7 +620,7 @@ function VolunteerPage({ name }: { name: string }) {
 					))}
 				</div>
 				{dossier.time.recent.length === 0 ? (
-					<Empty title="No hours logged">Nothing has been filed against this volunteer.</Empty>
+					<Empty title="No hours logged">No hours have been recorded for this volunteer.</Empty>
 				) : (
 					<Table head={["Date", "Category", "Where", "Hours"]}>
 						{dossier.time.recent.map((row) => (
@@ -625,18 +636,14 @@ function VolunteerPage({ name }: { name: string }) {
 			</Card></>}
 
 			{tab === "verification" && <><Card className="mb-5">
-				<SectionTitle>How they were verified</SectionTitle>
+				<SectionTitle>Approval history</SectionTitle>
 				<Verification verification={dossier.application} />
 			</Card>
 
 			{dossier.application.declared && (
 				<Card>
-					<SectionTitle>Declared when they applied</SectionTitle>
-					<p className="mb-4 text-[13px] text-muted">
-						What this person said about themselves on{" "}
-						{formatDate(dossier.application.applied_on) || "the day they applied"}. This is not
-						what they can currently do, which is above.
-					</p>
+					<SectionTitle>Additional Info</SectionTitle>
+					<p className="mb-4 text-[13px] text-muted">Provided at registration. Not verified.</p>
 					<Definitions
 						rows={[
 							["Skills", labels(dossier.application.declared.skills)],
@@ -648,6 +655,12 @@ function VolunteerPage({ name }: { name: string }) {
 					/>
 				</Card>
 			)}</>}
+
+			{/* Last on the page and closed until opened, so a status change is
+			    never one stray click away. */}
+			{dossier.can_act && (
+				<DangerZone dossier={dossier} onActed={() => void mutate()} />
+			)}
 		</>
 	);
 }
@@ -704,7 +717,7 @@ function MemberPage({ name }: { name: string }) {
 					{ label: "Email", value: person.email },
 					{ label: "Phone", value: person.phone },
 					{ label: "Member since", value: formatDate(dossier.standing.joined_on) },
-					{ label: "Home area", value: geoPath(person.home_geo_path) },
+					{ label: "Residence", value: geoPath(person.home_geo_path) },
 				]}
 			/>
 
@@ -714,14 +727,14 @@ function MemberPage({ name }: { name: string }) {
 				items={[
 					["overview", "Overview"],
 					["memberships", "Memberships"],
-					["verification", "Verification"],
+					["verification", "Approval history"],
 					["notes", "Notes & history"],
 				]}
 			/>
 
 			{/* What the header could not carry — see the volunteer page's note. */}
 			{tab === "overview" && <><ServiceCertificateReviews member={name} /><Card className="mb-5">
-				<SectionTitle>Who they are</SectionTitle>
+				<SectionTitle>Personal details</SectionTitle>
 				<Definitions
 					rows={[
 						["Gender", person.gender],
@@ -740,10 +753,13 @@ function MemberPage({ name }: { name: string }) {
 						],
 					]}
 				/>
+			<div className="mt-5 border-t border-card-line pt-5">
+					<RegistrationDetailsSummary value={person.personal_details} evidenceContext={{doctype:"VMMS Member",name}} />
+				</div>
 			</Card>
 
 			<Card className="mb-5">
-				<SectionTitle>Where they stand</SectionTitle>
+				<SectionTitle>Membership status</SectionTitle>
 				<div className="mb-4 flex flex-wrap gap-2">
 					<Pill tone="page">{dossier.standing.current_count} current</Pill>
 					<Pill tone="page">{dossier.standing.lapsed_count} lapsed</Pill>
@@ -762,8 +778,7 @@ function MemberPage({ name }: { name: string }) {
 				{/* Said out loud because a coordinator seeing "Active" above a plainly
 				    expired membership should not have to work out which one carries it. */}
 				<p className="mt-4 text-[12px] text-slate-faint">
-					Standing is over every membership this person holds. The counts are over the ones
-					your scope lets you see.
+					Status covers every membership this person holds. Counts include only memberships in your area.
 				</p>
 			</Card></>}
 
@@ -776,11 +791,10 @@ function MemberPage({ name }: { name: string }) {
 			/>}
 
 			{tab === "memberships" && <Card className="mb-5">
-				<SectionTitle>Memberships held</SectionTitle>
+				<SectionTitle>Memberships</SectionTitle>
 				{dossier.memberships.length === 0 ? (
-					<Empty title="No memberships in your scope">
-						Either this person holds none, or they are all at branches your Geo Assignments
-						do not cover.
+					<Empty title="No memberships in your area">
+						This person has no memberships at branches in your area.
 					</Empty>
 				) : (
 					<div className="space-y-4">
@@ -797,7 +811,7 @@ function MemberPage({ name }: { name: string }) {
 			</Card>}
 
 			{tab === "verification" && <Card>
-				<SectionTitle>How they were verified</SectionTitle>
+				<SectionTitle>Approval history</SectionTitle>
 				{dossier.history.length === 0 ? (
 					<Empty title="No decisions recorded">
 						Nothing in this person's memberships has been through an approval.
@@ -857,9 +871,8 @@ function Verification({
 }) {
 	if (!verification.application) {
 		return (
-			<Empty title="No application behind this record">
-				This volunteer was recorded directly rather than through an application, so there is no
-				approval trail to show.
+			<Empty title="No application on record">
+				This volunteer was added directly, not through an application.
 			</Empty>
 		);
 	}
@@ -903,7 +916,6 @@ function Decisions({ rows }: { rows: DecisionRow[] }) {
 	);
 }
 
-/** Label/value pairs. A row whose value is empty says so rather than being dropped. */
 /**
  * What this person said they have already done.
  *
@@ -918,56 +930,86 @@ function Decisions({ rows }: { rows: DecisionRow[] }) {
  * recorded" would report an omission that was never a gap — unlike "Who they
  * are" above, where a missing date of birth genuinely is a finding.
  *
- * **No attachments, and that is not an oversight.** The certificates and licence
- * scans behind these rows are private files anchored to the Red Profile, so the
- * link would resolve to a refusal for most people reading this page. They are
- * opened on the desk, on the profile itself. See `identity._BACKGROUND`.
+ * **Files come separately, in `files`.** The certificates and licence scans
+ * are private and anchored to the Red Profile, so each one is opened through
+ * `download_evidence` against the record being read rather than by its own
+ * address. A table with any file gets a File column.
  */
-function BackgroundCard({ background }: { background?: DossierBackground }) {
+export function BackgroundCard({
+	background,
+	files = [],
+}: {
+	background?: DossierBackground;
+	files?: RegistrationFile[];
+}) {
 	if (!background) return null;
 
-	const sections: Array<{ title: string; head: string[]; rows: string[][] }> = [
+	const sections: Array<{ title: string; table: string; head: string[]; rows: string[][] }> = [
 		{
 			title: "Education",
-			head: ["Institution", "Qualification", "Level", "Years"],
+			table: "education",
+			head: ["Institution", "Qualification", "Level", "Grade", "Major or subjects", "Years"],
 			rows: background.education.map((row) => [
 				row.institution,
 				row.qualification,
 				row.level,
+				row.class_per ?? "",
+				row.maj_opt_subj ?? "",
 				[row.started_in, row.is_ongoing ? "now" : row.finished_in].filter(Boolean).join("–"),
 			]),
 		},
 		{
 			title: "Training and courses",
-			head: ["Course", "Run by", "Completed"],
+			table: "training",
+			head: ["Course", "Run by", "Started", "Completed", "Notes"],
 			rows: background.training.map((row) => [
 				row.course_name,
 				row.institution,
+				formatDate(row.started_on),
 				formatDate(row.completed_on),
+				row.remarks,
+			]),
+		},
+		{
+			title: "Certifications",
+			table: "certifications",
+			head: ["Certification", "Issued by", "Description", "Issued", "Expires"],
+			rows: (background.certifications ?? []).map((row) => [
+				row.certification_name, row.organization, row.description,
+				formatDate(row.issue_date), row.expire ? formatDate(row.expiration_date) : "Does not expire",
 			]),
 		},
 		{
 			title: "Experience",
-			head: ["Organization", "Role", "From", "To"],
+			table: "work_experience",
+			head: ["Organization", "Role", "Location", "From", "To", "Responsibilities"],
 			rows: background.work_experience.map((row) => [
 				row.organization,
 				row.role,
+				row.location ?? "",
 				formatDate(row.started_on),
 				row.is_current ? "Still there" : formatDate(row.ended_on),
+				row.summary,
 			]),
 		},
 		{
 			title: "Licences",
-			head: ["Licence", "Issued by", "Number", "Valid until"],
+			table: "licences",
+			head: ["Type", "Licence", "Issued by", "Number", "Qualification", "Description", "Valid from", "Valid until"],
 			rows: background.licences.map((row) => [
+				row.license_type,
 				row.license_name,
 				row.institution,
 				row.registration_no,
+				row.qualification ?? "",
+				row.description ?? "",
+				formatDate(row.valid_from),
 				row.does_not_expire ? "Does not expire" : formatDate(row.valid_to),
 			]),
 		},
 		{
 			title: "Driving",
+			table: "driving_licences",
 			head: ["Class", "Number", "Valid until"],
 			rows: background.driving_licences.map((row) => [
 				row.licence_class,
@@ -977,12 +1019,16 @@ function BackgroundCard({ background }: { background?: DossierBackground }) {
 		},
 		{
 			title: "Referees",
-			head: ["Name", "How they know them", "Phone", "Email"],
+			table: "references",
+			head: ["Name", "Relationship", "Job title", "Organization", "Phone", "Email", "Notes"],
 			rows: background.references.map((row) => [
 				row.reference_name,
-				row.relationship || row.position,
+				row.relationship,
+				row.position,
+				row.organization,
 				row.phone,
 				row.email,
+				row.notes,
 			]),
 		},
 	].filter((section) => section.rows.length > 0);
@@ -991,31 +1037,42 @@ function BackgroundCard({ background }: { background?: DossierBackground }) {
 
 	return (
 		<Card className="mb-5">
-			<SectionTitle>What they say they have done</SectionTitle>
-			<p className="mb-4 text-[12.5px] leading-relaxed text-muted">
-				Told to us by this person when they registered. None of it has been checked — what the
-				Society has verified is under Certifications held.
-			</p>
+			<SectionTitle>Education and experience</SectionTitle>
+			<p className="mb-4 text-[12.5px] leading-relaxed text-muted">Provided at registration. Not verified.</p>
 
 			<div className="space-y-6">
-				{sections.map((section) => (
-					<div key={section.title}>
-						<p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-faint">
-							{section.title}
-						</p>
-						<Table head={section.head}>
-							{section.rows.map((cells, index) => (
-								<Row key={index}>
-									{cells.map((cell, at) => (
-										<Cell key={at} className={cell ? undefined : "text-muted"}>
-											{cell || "—"}
-										</Cell>
-									))}
-								</Row>
-							))}
-						</Table>
-					</div>
-				))}
+				{sections.map((section) => {
+					const fileOf = (index: number) =>
+						files.find((file) => file.table === section.table && file.index === index);
+					const withFiles = section.rows.some((_, index) => fileOf(index));
+
+					return (
+						<div key={section.title}>
+							<p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-faint">
+								{section.title}
+							</p>
+							<Table head={withFiles ? [...section.head, "File"] : section.head}>
+								{section.rows.map((cells, index) => {
+									const file = fileOf(index);
+									return (
+										<Row key={index}>
+											{cells.map((cell, at) => (
+												<Cell key={at} className={cell ? undefined : "text-muted"}>
+													{cell || "—"}
+												</Cell>
+											))}
+											{withFiles && (
+												<Cell className={file ? undefined : "text-muted"}>
+													{file ? <FileLink url={file.url} name={file.file_name} /> : "—"}
+												</Cell>
+											)}
+										</Row>
+									);
+								})}
+							</Table>
+						</div>
+					);
+				})}
 			</div>
 		</Card>
 	);
@@ -1065,27 +1122,36 @@ const VOLUNTEER_VERBS: Record<string, Array<keyof typeof VOLUNTEER_ACTS>> = {
 
 const VOLUNTEER_ACTS = {
 	suspend: {
-		label: "Suspend",
+		label: "Suspend volunteer",
+		description: "Stops this volunteer taking part until they are reinstated. Their record is kept.",
 		method: API.suspendVolunteer,
-		prompt: "Why is this volunteer being suspended?",
+		prompt: "Reason for suspension",
 	},
 	reinstate: {
 		label: "Reinstate",
+		description: "Brings this volunteer back.",
 		method: API.reinstateVolunteer,
-		prompt: "Why is this volunteer being reinstated?",
+		prompt: "Reason for reinstatement",
 		// Said out loud because it surprises people: reinstating hands the
 		// question back to the applications rather than setting somebody Active.
 		note: "Standing returns to whatever this volunteer's applications support, which may be Prospective rather than Active.",
 	},
 	exit: {
 		label: "Record exit",
+		description: "Records that this person has stopped volunteering. They can be reinstated later.",
 		method: API.recordVolunteerExit,
-		prompt: "Why are they leaving?",
+		prompt: "Reason for exit",
 		dated: true,
 	},
 } as const;
 
-function VolunteerActions({
+/**
+ * The status changes, at the foot of the record and closed until opened.
+ *
+ * Each one is a step away from the page's own buttons: open the zone, choose
+ * the change, give a reason, then confirm. Nothing changes on the first press.
+ */
+export function DangerZone({
 	dossier,
 	onActed,
 }: {
@@ -1093,6 +1159,7 @@ function VolunteerActions({
 	onActed: () => void;
 }) {
 	const { call } = useContext(FrappeContext) as FrappeConfig;
+	const [expanded, setExpanded] = useState(false);
 	const [open, setOpen] = useState<keyof typeof VOLUNTEER_ACTS | null>(null);
 	const [reason, setReason] = useState("");
 	const [onDate, setOnDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -1106,6 +1173,12 @@ function VolunteerActions({
 	}
 
 	const act = open ? VOLUNTEER_ACTS[open] : null;
+
+	const close = () => {
+		setOpen(null);
+		setReason("");
+		setFailure(null);
+	};
 
 	const perform = async () => {
 		if (!act || !open) {
@@ -1121,8 +1194,8 @@ function VolunteerActions({
 				reason,
 				...("dated" in act && act.dated ? { on_date: onDate } : {}),
 			});
-			setOpen(null);
-			setReason("");
+			close();
+			setExpanded(false);
 			onActed();
 		} catch (actError) {
 			setFailure(errorMessage(actError, "That change was not recorded."));
@@ -1132,80 +1205,113 @@ function VolunteerActions({
 	};
 
 	return (
-		<Card className="mb-5">
-			<SectionTitle>Standing</SectionTitle>
+		<section className="mt-10 rounded-2xl border border-danger-line bg-white">
+			<button
+				type="button"
+				aria-expanded={expanded}
+				aria-controls="danger-zone"
+				onClick={() => {
+					setExpanded(!expanded);
+					close();
+				}}
+				className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+			>
+				<span>
+					<span className="block text-[14px] font-bold text-danger">Danger zone</span>
+					<span className="block text-[12.5px] text-muted">Change this volunteer's status</span>
+				</span>
+				<Icon.chevron size={16} className={cx("flex-none text-muted transition", expanded && "rotate-180")} />
+			</button>
 
-			<div className="flex flex-wrap gap-2">
-				{verbs.map((verb) => (
-					<Button
-						key={verb}
-						variant={open === verb ? "navy" : "quiet"}
-						onClick={() => {
-							setOpen(open === verb ? null : verb);
-							setFailure(null);
-						}}
-					>
-						{VOLUNTEER_ACTS[verb].label}
-					</Button>
-				))}
-			</div>
+			{expanded && (
+				<ul id="danger-zone" className="divide-y divide-danger-line border-t border-danger-line">
+					{verbs.map((verb) => {
+						const option = VOLUNTEER_ACTS[verb];
+						return (
+							<li key={verb} className="px-5 py-4">
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<span className="min-w-0">
+										<span className="block text-[13.5px] font-semibold text-ink">{option.label}</span>
+										<span className="block text-[12.5px] text-muted">{option.description}</span>
+									</span>
+									{open !== verb && (
+										<Button
+											variant="danger"
+											onClick={() => {
+												close();
+												setOpen(verb);
+											}}
+										>
+											{option.label}
+										</Button>
+									)}
+								</div>
 
-			{act && (
-				<div className="mt-5 border-t border-card-line pt-5">
-					{"note" in act && act.note && (
-						<p className="mb-3 text-[13px] text-muted">{act.note}</p>
-					)}
+								{open === verb && act && (
+									<div className="mt-4">
+										{"note" in act && act.note && (
+											<p className="mb-3 text-[13px] text-muted">{act.note}</p>
+										)}
 
-					{"dated" in act && act.dated && (
-						<label className="mb-3 block">
-							<span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-faint">
-								Date they stopped volunteering
-							</span>
-							<input
-								type="date"
-								value={onDate}
-								onChange={(event) => setOnDate(event.target.value)}
-								className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
-							/>
-						</label>
-					)}
+										{"dated" in act && act.dated && (
+											<label className="mb-3 block">
+												<span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-faint">
+													Exit date
+												</span>
+												<input
+													type="date"
+													value={onDate}
+													onChange={(event) => setOnDate(event.target.value)}
+													className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
+												/>
+											</label>
+										)}
 
-					<label className="block">
-						<span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-faint">
-							{act.prompt}
-						</span>
-						<textarea
-							value={reason}
-							onChange={(event) => setReason(event.target.value)}
-							rows={3}
-							className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
-						/>
-					</label>
+										<label className="block">
+											<span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-faint">
+												{act.prompt}
+											</span>
+											<textarea
+												value={reason}
+												onChange={(event) => setReason(event.target.value)}
+												rows={3}
+												className="w-full rounded-xl border border-card-line px-3 py-2 text-[14px]"
+											/>
+										</label>
 
-					{/* Required here rather than only server-side: the service records a
-					    comment only when a reason is given, which makes it the entire
-					    record of why somebody's standing changed. */}
-					<p className="mt-2 text-[12px] text-slate-faint">
-						A reason is recorded against the volunteer. Nothing else says why this changed.
-					</p>
+										{/* Required here rather than only server-side: the service records a
+										    comment only when a reason is given, which makes it the entire
+										    record of why somebody's standing changed. */}
+										<p className="mt-2 text-[12px] text-slate-faint">
+											A reason is recorded against the volunteer. Nothing else says why this changed.
+										</p>
 
-					{failure && (
-						<div className="mt-3">
-							<ErrorNote>{failure}</ErrorNote>
-						</div>
-					)}
+										{failure && (
+											<div className="mt-3">
+												<ErrorNote>{failure}</ErrorNote>
+											</div>
+										)}
 
-					<div className="mt-4 flex gap-2">
-						<Button onClick={() => void perform()} disabled={busy || !reason.trim()}>
-							{busy ? "Recording…" : act.label}
-						</Button>
-						<Button variant="ghost" onClick={() => setOpen(null)} disabled={busy}>
-							Cancel
-						</Button>
-					</div>
-				</div>
+										<div className="mt-4 flex gap-2">
+											<Button
+												variant="danger"
+												onClick={() => void perform()}
+												disabled={busy || !reason.trim()}
+											>
+												{busy ? "Recording…" : act.label}
+											</Button>
+											<Button variant="ghost" onClick={close} disabled={busy}>
+												Cancel
+											</Button>
+										</div>
+									</div>
+								)}
+							</li>
+						);
+					})}
+				</ul>
 			)}
-		</Card>
+		</section>
 	);
 }
 
@@ -1309,9 +1415,9 @@ function MembershipCard({
 				</div>
 			)}
 
-			{canAct && (
+			{canAct && (row.can_cancel || (row.membership_status === "Active" && row.lapsed)) && (
 				<div className="mt-4 flex flex-wrap gap-2 border-t border-card-line pt-4">
-					{row.membership_status !== "Cancelled" && (
+					{row.can_cancel && (
 						<Button
 							variant="quiet"
 							onClick={() => {
@@ -1338,7 +1444,7 @@ function MembershipCard({
 				<div className="mt-4">
 					<label className="block">
 						<span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-faint">
-							Why is this membership being cancelled?
+							Reason for cancellation
 						</span>
 						<textarea
 							value={reason}

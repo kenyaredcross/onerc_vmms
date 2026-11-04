@@ -53,6 +53,11 @@ MEMBER_OWNED_FIELDS = frozenset(
 		"status",
 		"joined_on",
 		"notes",
+		# Legacy member/account references are satellite provenance, not copied identity.
+		"legacy_member_id",
+		"customer",
+		"customer_name",
+		"supplier",
 		"_user_tags",
 		"_comments",
 		"_assign",

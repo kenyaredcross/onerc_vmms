@@ -155,23 +155,34 @@ def make_user(handle: str, roles: list[str] | None = None) -> str:
 	return email
 
 
-def make_profile(first_name: str = "Amina", last_name: str = "Otieno", **kwargs) -> str:
-	"""A Red Profile — core's identity spine. The member links to this."""
-	slug = f"{first_name}.{last_name}".lower()
+#: A date of birth for anybody the fixtures make. Old enough to join, and fixed
+#: rather than derived from `today()` so an age-dependent assertion cannot change
+#: its answer on somebody's birthday.
+DEFAULT_DATE_OF_BIRTH = "1990-01-01"
 
-	return (
-		frappe.get_doc(
-			{
-				"doctype": "Red Profile",
-				"first_name": first_name,
-				"last_name": last_name,
-				"email": kwargs.pop("email", f"{slug}.{frappe.generate_hash(length=6)}{USER_DOMAIN}"),
-				**kwargs,
-			}
-		)
-		.insert()
-		.name
-	)
+
+def make_profile(first_name: str = "Amina", last_name: str = "Otieno", **kwargs) -> str:
+	"""A Red Profile — core's identity spine. The member links to this.
+
+	**It carries a date of birth by default**, because a society with an age
+	policy (Kenya's 7 to 150 applies even with the settings left at zero) refuses
+	to submit a membership without one. Without it every suite that submits a
+	membership would be arranging an applicant the product refuses, and would be
+	testing the refusal rather than the thing it means to test.
+
+	Pass `date_of_birth=None` to build somebody core knows nothing about.
+	"""
+	slug = f"{first_name}.{last_name}".lower()
+	values = {
+		"doctype": "Red Profile",
+		"first_name": first_name,
+		"last_name": last_name,
+		"email": kwargs.pop("email", f"{slug}.{frappe.generate_hash(length=6)}{USER_DOMAIN}"),
+		"date_of_birth": DEFAULT_DATE_OF_BIRTH,
+	}
+	values.update(kwargs)
+
+	return frappe.get_doc(values).insert().name
 
 
 def make_assignment(user: str, role: str, geo_node: str) -> str:

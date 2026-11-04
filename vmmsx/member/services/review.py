@@ -47,7 +47,7 @@ import frappe
 from frappe.utils import getdate, today
 
 from vmmsx.member.services import dossier, proof
-from vmmsx.registration.services import declarations, questions
+from vmmsx.registration.services import attachments, declarations, questions
 
 MEMBERSHIP_DOCTYPE = "VMMS Membership"
 MEMBER_DOCTYPE = "VMMS Member"
@@ -63,6 +63,7 @@ def decision_dto(membership, as_of=None) -> dict:
 	"""
 	as_of = getdate(as_of or today())
 	member = _member_of(membership)
+	profile = member.red_profile if member else None
 
 	return {
 		"name": membership.name,
@@ -91,6 +92,13 @@ def decision_dto(membership, as_of=None) -> dict:
 		"verified": proof.verified_dto(membership),
 		"declarations": declarations.accepted_of(membership),
 		"answers": questions.answers_of(membership),
+		# Every file on the person's record and on this membership, each opened
+		# through `download_evidence` against this membership.
+		"attachments": attachments.for_record("VMMS Membership", membership, profile),
+		# The identification documents and the identity step's remaining answers,
+		# so the approver sees everything the applicant entered.
+		"identifications": _identifications(profile),
+		**attachments.answers_of_profile(profile),
 	}
 
 
@@ -106,3 +114,37 @@ def _member_of(membership):
 		return None
 
 	return frappe.get_doc(MEMBER_DOCTYPE, membership.member)
+
+
+def _identifications(profile: str | None) -> list[dict]:
+	"""The member's identification documents, primary first, by type name."""
+	if not profile:
+		return []
+	rows = frappe.get_all(
+		"Red Profile Identification",
+		filters={"parent": profile, "parenttype": "Red Profile", "parentfield": "identifications"},
+		fields=["id_type", "id_number", "is_primary"],
+		order_by="is_primary desc, idx asc",
+	)
+	keys = [row.id_type for row in rows if row.id_type]
+	labels = (
+		dict(
+			frappe.get_all(
+				"Identification Type",
+				filters={"name": ("in", keys)},
+				fields=["name", "identification_type_name"],
+				as_list=True,
+			)
+		)
+		if keys
+		else {}
+	)
+	return [
+		{
+			"id_type": row.id_type,
+			"id_type_name": labels.get(row.id_type),
+			"id_number": row.id_number,
+			"is_primary": bool(row.is_primary),
+		}
+		for row in rows
+	]

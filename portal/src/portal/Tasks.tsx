@@ -610,7 +610,7 @@ function Overview({ task }: { task: TaskDetail }) {
 
 			<Card>
 				<h2 className="mb-4 font-display text-[14px] font-bold tracking-[-0.01em] text-ink">
-					Where the work is
+					Location
 				</h2>
 				<Facts
 					columns={2}

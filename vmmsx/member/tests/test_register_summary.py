@@ -47,9 +47,7 @@ class RegisterSummaryTestCase(MemberTestCase):
 
 		fixtures.make_template()
 		fixtures.make_type(fixtures.TYPE_FREE, approval.MODE_ROUTED, fee=0)
-		fixtures.make_type(
-			fixtures.TYPE_LIFETIME, approval.MODE_ROUTED, fee=0, is_lifetime=1
-		)
+		fixtures.make_type(fixtures.TYPE_LIFETIME, approval.MODE_ROUTED, fee=0, is_lifetime=1)
 
 		fixtures.grant_membership_access(fixtures.APPROVER_ROLE)
 		fixtures.grant_membership_access(fixtures.SCOPE_ROLE)
@@ -144,9 +142,7 @@ class TestTheFigures(RegisterSummaryTestCase):
 		later = self.activated("Later", fixtures.TYPE_FREE, self.society_a["ward"])
 		self.activated("LifeNoExpiry", fixtures.TYPE_LIFETIME, self.society_a["ward"])
 
-		frappe.db.set_value(
-			fixtures.MEMBERSHIP_DOCTYPE, soon.name, "valid_to", add_days(getdate(today()), 5)
-		)
+		frappe.db.set_value(fixtures.MEMBERSHIP_DOCTYPE, soon.name, "valid_to", add_days(getdate(today()), 5))
 		frappe.db.set_value(
 			fixtures.MEMBERSHIP_DOCTYPE,
 			later.name,
@@ -244,9 +240,7 @@ class TestScope(RegisterSummaryTestCase):
 		with fixtures.acting_as(self.here):
 			closed = {
 				case["name"]
-				for case in approvals.my_cases(
-					fixtures.MEMBERSHIP_DOCTYPE, approvals.CASE_CLOSED
-				)["cases"]
+				for case in approvals.my_cases(fixtures.MEMBERSHIP_DOCTYPE, approvals.CASE_CLOSED)["cases"]
 			}
 
 		# Both were approved. `frappe.get_list` is the line the scope rests on;
@@ -269,3 +263,42 @@ class TestScope(RegisterSummaryTestCase):
 		# Fails closed. Memberships carry personal data, and the safe direction
 		# for an unconfigured setting is nothing rather than everything.
 		self.assertEqual(figures["active"], 0)
+
+	def all_for(self, user: str) -> dict:
+		with fixtures.acting_as(user):
+			return approvals.my_cases(fixtures.MEMBERSHIP_DOCTYPE, approvals.CASE_ALL)
+
+	def test_all_applications_and_total_remain_inside_the_county_scope(self):
+		before = {user: self.all_for(user)["total"] for user in (self.here, self.elsewhere, "Administrator")}
+
+		mine = self.activated("AllBandHere", fixtures.TYPE_FREE, self.society_a["ward"])
+		theirs = self.activated("AllBandElsewhere", fixtures.TYPE_FREE, self.society_b["ward"])
+
+		here = self.all_for(self.here)
+		there = self.all_for(self.elsewhere)
+		everyone = self.all_for("Administrator")
+		names_here = {row["name"] for row in here["cases"]}
+		names_there = {row["name"] for row in there["cases"]}
+
+		# Rows: each coordinator sees their own county's application, never the other's.
+		self.assertIn(mine.name, names_here)
+		self.assertNotIn(theirs.name, names_here)
+		self.assertIn(theirs.name, names_there)
+		self.assertNotIn(mine.name, names_there)
+		# Total: the headline moves by what happened inside the caller's area only,
+		# so it cannot leak a count the page itself would not show.
+		self.assertEqual(here["total"] - before[self.here], 1)
+		self.assertEqual(there["total"] - before[self.elsewhere], 1)
+		self.assertEqual(everyone["total"] - before["Administrator"], 2)
+		# Seeing is not deciding: a viewer-only coordinator still cannot act.
+		self.assertFalse(any(row["can_act"] for row in here["cases"]))
+
+	def test_all_applications_with_no_scope_role_configured_is_empty(self):
+		self.activated("AllBandUnscoped", fixtures.TYPE_FREE, self.society_a["ward"])
+		self.addCleanup(fixtures.set_scope_role, fixtures.SCOPE_ROLE)
+		fixtures.set_scope_role(None)
+
+		answer = self.all_for(self.here)
+
+		self.assertEqual(answer["cases"], [])
+		self.assertEqual(answer["total"], 0)

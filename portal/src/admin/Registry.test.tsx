@@ -157,7 +157,7 @@ describe("the active volunteer register", () => {
 		});
 	});
 
-	it("opens the volunteer record from the row, while the name still opens its summary", () => {
+	it("opens the volunteer record from the name and the row, while the name still opens its summary", () => {
 		volunteers();
 		mount(
 			<Routes>
@@ -167,11 +167,13 @@ describe("the active volunteer register", () => {
 			{ route: "/admin/registry/volunteers" },
 		);
 
-		fireEvent.click(screen.getByRole("button", { name: /Alex Mwangi/ }));
+		const name = screen.getByRole("link", { name: /Alex Mwangi/ });
+		fireEvent.focus(name);
 		expect(screen.getByRole("dialog", { name: "Person summary" })).toBeTruthy();
 		expect(screen.queryByText("Volunteer record opened")).toBeNull();
 
-		fireEvent.click(screen.getByRole("row", { name: "Open Alex Mwangi" }).querySelectorAll("td")[1]);
+		// Clicking the name opens the person. It used to only pin the summary.
+		fireEvent.click(name);
 		expect(screen.getByText("Volunteer record opened")).toBeTruthy();
 	});
 
@@ -310,7 +312,7 @@ describe("the floating person summary", () => {
 
 		show(<VolunteersRegistry />, "/admin/registry/volunteers");
 
-		const trigger = screen.getAllByRole("button", { name: /Alex Mwangi/ })[0];
+		const trigger = screen.getAllByRole("link", { name: /Alex Mwangi/ })[0];
 		await act(async () => {
 			fireEvent.focus(trigger);
 		});
@@ -342,7 +344,7 @@ describe("the floating person summary", () => {
 		show(<VolunteersRegistry />, "/admin/registry/volunteers");
 
 		await act(async () => {
-			fireEvent.focus(screen.getAllByRole("button", { name: /Alex Mwangi/ })[0]);
+			fireEvent.focus(screen.getAllByRole("link", { name: /Alex Mwangi/ })[0]);
 		});
 
 		// Twice on the page now: the register's own column, and the card.
@@ -365,7 +367,7 @@ describe("the floating person summary", () => {
 
 		show(<VolunteersRegistry />, "/admin/registry/volunteers");
 
-		const trigger = screen.getAllByRole("button", { name: /Alex Mwangi/ })[0];
+		const trigger = screen.getAllByRole("link", { name: /Alex Mwangi/ })[0];
 
 		await act(async () => {
 			fireEvent.focus(trigger);
@@ -397,11 +399,10 @@ describe("the floating person summary", () => {
 
 		show(<VolunteersRegistry />, "/admin/registry/volunteers");
 
-		const trigger = screen.getAllByRole("button", { name: /Alex Mwangi/ })[0];
+		const trigger = screen.getAllByRole("link", { name: /Alex Mwangi/ })[0];
 
-		// Click pins it, which is what stops a card closing while somebody reads it.
 		await act(async () => {
-			fireEvent.click(trigger);
+			fireEvent.focus(trigger);
 		});
 		expect(screen.getByRole("dialog", { name: "Person summary" })).toBeTruthy();
 
@@ -421,7 +422,7 @@ describe("the floating person summary", () => {
 		show(<MembersRegistry />, "/admin/registry/members");
 
 		await act(async () => {
-			fireEvent.focus(screen.getAllByRole("button", { name: /Alice Kilonzo/ })[0]);
+			fireEvent.focus(screen.getAllByRole("link", { name: /Alice Kilonzo/ })[0]);
 		});
 
 		// The dossier is the person's — it covers every branch they hold a

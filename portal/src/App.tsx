@@ -93,6 +93,12 @@ const MembershipQueue = lazy(() =>
 // than tabs inside one page, for the reason every other split in this file
 // gives: "what is waiting on me", "what went back to the applicant" and "what
 // is finished" are three jobs, and each needs a link somebody can send.
+const VolunteerQueueAssigned = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({ default: () => <module.VolunteerQueue band="assigned" /> })),
+);
+const MembershipQueueAssigned = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({ default: () => <module.MembershipQueue band="assigned" /> })),
+);
 const VolunteerQueueChanges = lazy(() =>
 	import("./admin/ReviewQueue").then((module) => ({
 		default: () => <module.VolunteerQueue band="changes" />,
@@ -125,6 +131,13 @@ const RegistryMembers = lazy(() =>
 const RegistryVolunteers = lazy(() =>
 	import("./admin/Registry").then((module) => ({ default: module.VolunteersRegistry })),
 );
+// The surge roster, reached from People and from Operations. One screen, two trails.
+const SurgeRosterPeople = lazy(() =>
+	import("./admin/Surge").then((module) => ({ default: module.SurgeRosterPeople })),
+);
+const SurgeRosterOperations = lazy(() =>
+	import("./admin/Surge").then((module) => ({ default: module.SurgeRosterOperations })),
+);
 // One person in full, from either register. Its own chunk rather than part of
 // Registry's: the dossier screens are much the larger of the two, and a
 // coordinator scanning a list should not download them until they open somebody.
@@ -137,6 +150,9 @@ const AdminTasks = lazy(() => import("./admin/Tasks"));
 // Analytics used to be one of the `Screens` gaps and is now a real screen over
 // `api/analytics.py`, so it has its own chunk like the rest of them.
 const Analytics = lazy(() => import("./admin/Analytics"));
+// The Region and National tabs: one page between them, over `api/oversight.py`.
+const Region = lazy(() => import("./admin/Region"));
+const National = lazy(() => import("./admin/National"));
 
 const Deployments = lazy(() => import("./portal/Deployments"));
 // The two deployment records a volunteer opens: the invitation they are being
@@ -308,6 +324,8 @@ const ROUTE_NAMES: Record<string, string> = {
 	"admin/recruitment": "recruitment",
 	"admin/events": "events",
 	"admin/analytics": "analytics",
+	"admin/region": "your region",
+	"admin/national": "the national figures",
 	"admin/content": "page content",
 	"admin/questions": "form questions",
 	"admin/assets": "branch assets",
@@ -411,6 +429,8 @@ export default function App() {
 					    for a reader; React Router ranks a static segment above a
 					    dynamic one itself, so neither can be shadowed by a
 					    docname. */}
+					<Route path="queue/volunteers/assigned" element={<VolunteerQueueAssigned />} />
+					<Route path="queue/members/assigned" element={<MembershipQueueAssigned />} />
 					<Route path="queue/volunteers/changes" element={<VolunteerQueueChanges />} />
 					<Route path="queue/volunteers/closed" element={<VolunteerQueueClosed />} />
 					<Route path="queue/members/changes" element={<MembershipQueueChanges />} />
@@ -422,6 +442,7 @@ export default function App() {
 					<Route path="queue/:kind/:name" element={<ApplicationReview />} />
 					<Route path="registry/members" element={<RegistryMembers />} />
 					<Route path="registry/volunteers" element={<RegistryVolunteers />} />
+					<Route path="registry/surge" element={<SurgeRosterPeople />} />
 					{/* The kind is a path segment because a docname cannot say which
 					    register it belongs to, and probing both endpoints to find out
 					    would ask the server a question the link already knew. */}
@@ -440,6 +461,7 @@ export default function App() {
 					<Route path="deployments/new" element={<DeploymentCreate />} />
 					<Route path="deployments/requests" element={<DeploymentRequestList />} />
 					<Route path="deployments/documents" element={<OperationsDocuments />} />
+					<Route path="deployments/surge" element={<SurgeRosterOperations />} />
 					{/* Last: `deployments/:name` is one segment shorter than every route
 					    above it, and React Router matches the more specific static
 					    segments first regardless of declaration order, so this never
@@ -464,6 +486,8 @@ export default function App() {
 					<Route path="tasks" element={<AdminTasks />} />
 					<Route path="assets" element={<AdminAssets />} />
 					<Route path="analytics" element={<Analytics />} />
+					<Route path="region" element={<Region />} />
+					<Route path="national" element={<National />} />
 					<Route path="people" element={<PeopleOverview />} />
 					<Route path="communication" element={<Navigate to="/admin/communication/email/overview" replace />} />
 					{/* Declared before the generic `:channel/:view` for a reader: the

@@ -259,6 +259,9 @@ def search(
 	geo_node: str | None = None,
 	status: str | None = None,
 	search: str | None = None,
+	profession: str | None = None,
+	disability: str | None = None,
+	disability_category: str | None = None,
 	limit: int = 100,
 	offset: int = 0,
 ) -> list[str]:
@@ -311,6 +314,9 @@ def search(
 		geo_node=geo_node,
 		status=status,
 		search=search,
+		profession=profession,
+		disability=disability,
+		disability_category=disability_category,
 	)
 
 	if filters is None:
@@ -333,6 +339,9 @@ def count(
 	geo_node: str | None = None,
 	status: str | None = None,
 	search: str | None = None,
+	profession: str | None = None,
+	disability: str | None = None,
+	disability_category: str | None = None,
 ) -> int:
 	"""How many volunteers `search()` would match, ignoring its page.
 
@@ -352,6 +361,9 @@ def count(
 		geo_node=geo_node,
 		status=status,
 		search=search,
+		profession=profession,
+		disability=disability,
+		disability_category=disability_category,
 	)
 
 	if filters is None:
@@ -373,6 +385,9 @@ def _search_filters(
 	geo_node: str | None = None,
 	status: str | None = None,
 	search: str | None = None,
+	profession: str | None = None,
+	disability: str | None = None,
+	disability_category: str | None = None,
 ) -> dict | None:
 	"""The filters `search()` and `count()` both stand on, or None for "nothing".
 
@@ -412,6 +427,14 @@ def _search_filters(
 		if not candidates:
 			return None
 
+	profiled = _profiled(profession, disability, disability_category)
+
+	if profiled is not None:
+		candidates = profiled if candidates is None else candidates & profiled
+
+		if not candidates:
+			return None
+
 	filters = {}
 
 	if status:
@@ -427,6 +450,62 @@ def _search_filters(
 		filters[SERVING_BRANCH_FIELD] = ("in", [geo_node, *adapter.get_descendants(geo_node)])
 
 	return filters
+
+
+def _profiled(
+	profession: str | None,
+	disability: str | None,
+	disability_category: str | None,
+) -> set[str] | None:
+	"""Volunteers whose person has this profession or disability, or None for "not asked".
+
+	Both live on core's Red Profile, so this is the same two-step `_named` takes:
+	a candidate set, handed back to be a `name in (...)` filter on the **scoped**
+	`get_list`. Nothing reaches a caller from here.
+
+	`disability` is the answer to the yes/no question ("Yes" is the only value a
+	screen asks for). `disability_category` is the kind of disability, read from
+	the society's own Disability register, and implies "Yes".
+	"""
+	profession = (profession or "").strip()
+	disability = (disability or "").strip()
+	disability_category = (disability_category or "").strip()
+
+	if not (profession or disability or disability_category):
+		return None
+
+	conditions, values, joins = [], [], ""
+
+	if profession:
+		conditions.append("profile.vmms_profession = %s")
+		values.append(profession)
+
+	if disability or disability_category:
+		conditions.append("profile.vmms_disability_status = %s")
+		values.append(disability or "Yes")
+
+	if disability_category:
+		joins = """
+			join `tabVMMS Disability Selector` chosen
+				on chosen.parent = profile.name
+				and chosen.parenttype = 'Red Profile'
+				and chosen.parentfield = 'vmms_disabilities'
+			left join `tabDisability` listed on listed.name = chosen.disability"""
+		conditions.append("coalesce(nullif(chosen.disability_category, ''), listed.disability_type) = %s")
+		values.append(disability_category)
+
+	return set(
+		frappe.db.sql_list(
+			f"""
+			select distinct volunteer.name
+			from `tabVMMS Volunteer` volunteer
+			join `tabRed Profile` profile on profile.name = volunteer.red_profile
+			{joins}
+			where {" and ".join(conditions)}
+			""",
+			values,
+		)
+	)
 
 
 def _named(term: str) -> set[str]:

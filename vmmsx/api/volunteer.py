@@ -434,7 +434,8 @@ def get_dossier(name: str, as_of: str | None = None) -> dict:
 
 	from vmmsx.api import person
 	from vmmsx.deployment.services import participation
-	from vmmsx.volunteer.services import capabilities
+	from vmmsx.registration.services import parity
+	from vmmsx.volunteer.services import capabilities, surge
 	from vmmsx.volunteer.services import card as volunteer_card
 
 	volunteer = _readable(VOLUNTEER_DOCTYPE, name)
@@ -445,7 +446,10 @@ def get_dossier(name: str, as_of: str | None = None) -> dict:
 	return {
 		"volunteer": volunteer.name,
 		"as_of": as_of,
-		"identity": volunteer_service.profile_dto(volunteer, as_of=as_of),
+		"identity": {
+			**volunteer_service.profile_dto(volunteer, as_of=as_of),
+			"personal_details": parity.profile_dto(volunteer.red_profile),
+		},
 		"capabilities": capabilities.current(volunteer),
 		"certifications": _certification_rows(volunteer.name, as_of),
 		"deployability": certification.deployability(volunteer, as_of=as_of),
@@ -471,6 +475,9 @@ def get_dossier(name: str, as_of: str | None = None) -> dict:
 		# `False` here, which is the `_readable` / `_writable` split showing
 		# through to the screen.
 		"can_act": _can_act(volunteer),
+		# The surge roster entries this person has had, stood-down ones
+		# included, each with its standing derived today. See `surge.py`.
+		"surge": surge.for_volunteer(volunteer.name, as_of),
 	}
 
 
@@ -484,6 +491,9 @@ def find_volunteers(
 	search: str | None = None,
 	limit: int = 100,
 	offset: int = 0,
+	profession: str | None = None,
+	disability: str | None = None,
+	disability_category: str | None = None,
 ) -> dict:
 	"""Find volunteers by what they can do, **inside the caller's own scope**.
 
@@ -509,9 +519,12 @@ def find_volunteers(
 	whole match**, which is why they are two fields rather than one: a pager
 	labelled with the page's own length would report "1 of 1" on every page.
 
+	`profession`, `disability` and `disability_category` narrow by what is on
+	the person's Red Profile, through the same scoped read.
+
 	Returns explicit rows built field by field, not the documents.
 	"""
-	from vmmsx.volunteer.services import capabilities
+	from vmmsx.volunteer.services import capabilities, surge
 
 	criteria = {
 		"skills": skills,
@@ -520,9 +533,13 @@ def find_volunteers(
 		"geo_node": geo_node,
 		"status": status,
 		"search": search,
+		"profession": profession,
+		"disability": disability,
+		"disability_category": disability_category,
 	}
 
 	names = capabilities.search(**criteria, limit=limit, offset=offset)
+	rostered = surge.on_roster(names)
 
 	return {
 		"count": len(names),
@@ -530,7 +547,10 @@ def find_volunteers(
 		# `capabilities.count`, which shares `_search_filters` with the page
 		# above so the two cannot describe different questions.
 		"total": capabilities.count(**criteria),
-		"volunteers": [_match_row(frappe.get_doc(VOLUNTEER_DOCTYPE, name)) for name in names],
+		"volunteers": [
+			{**_match_row(frappe.get_doc(VOLUNTEER_DOCTYPE, name)), "on_surge_roster": name in rostered}
+			for name in names
+		],
 	}
 
 
@@ -544,10 +564,19 @@ def _match_row(volunteer) -> dict:
 	"""
 	from vmmsx.volunteer.services import capabilities, certification, identity
 
+	person = identity.read(volunteer, ("vmms_profession", "vmms_other_profession"))
+
 	return {
 		"volunteer": volunteer.name,
 		"red_profile": volunteer.red_profile,
 		"full_name": identity.display_name(volunteer),
+		# What kind of work they do, as the register's profession column and
+		# filter name it. "Other" shows what the person typed.
+		"profession": (
+			person.get("vmms_other_profession")
+			if person.get("vmms_profession") == "Other"
+			else person.get("vmms_profession")
+		),
 		# The face belongs to "enough to choose somebody" just as much as the
 		# name does: a list of candidates is a list a coordinator is *scanning*,
 		# and a photograph is how they pick out the person they already know
@@ -1118,7 +1147,8 @@ def _readable(doctype: str, name: str):
 	   to hand every volunteer a role that reads the register in order for them
 	   to see themselves in it would grant far more than it withholds.
 	2. **The ordinary permission layer**, which is Frappe's roles *and* core's
-	   geo scoping, because `VMMS Volunteer` is registered as scopeable.
+	   geo scoping, because `VMMS Volunteer` and `VMMS Volunteer Application`
+	   are both registered as scopeable.
 
 	**Recognised through `Red Profile.user`, never through `owner`.** They are
 	different people: a volunteer record is created by the approval that accepted
@@ -1126,9 +1156,9 @@ def _readable(doctype: str, name: str):
 	the approver a self-service view of everybody they ever accepted and give the
 	volunteer nothing.
 
-	Only `VMMS Volunteer` has a holder. An application's access rule is the
-	approval engine's person-gate, and it is deliberately not scopeable, so
-	nothing here second-guesses it.
+	Only `VMMS Volunteer` has a holder. An applicant reads their own application
+	through the registration endpoints, not this one; here an application is read
+	by staff, inside the area they hold the volunteer scope role in.
 	"""
 	doc = frappe.get_doc(doctype, name)
 
@@ -1310,3 +1340,140 @@ def _register_count(doctype: str, filters: dict) -> int:
 	rows = frappe.get_list(doctype, filters=filters, fields=[{"COUNT": "name"}], as_list=True)
 
 	return frappe.utils.cint(rows[0][0]) if rows else 0
+
+
+@frappe.whitelist()
+def register_professions() -> dict:
+	"""The professions active volunteers in the caller's scope hold, with how many.
+
+	The profession filter's options. Only professions somebody actually holds,
+	because the society's register runs to hundreds and a dropdown of every one
+	would be a list to scroll, not a question to answer.
+
+	**Scope is the floor.** The people are read through `frappe.get_list` on
+	`VMMS Volunteer`, which runs core's permission condition; their profiles are
+	only read after that.
+	"""
+	profiles = _active_profiles()
+	counts: dict[str, int] = {}
+	without = 0
+
+	for profession in _profile_values(profiles, "vmms_profession"):
+		if profession:
+			counts[profession] = counts.get(profession, 0) + 1
+		else:
+			without += 1
+
+	return {
+		"professions": [
+			{"profession": profession, "count": count}
+			for profession, count in sorted(counts.items(), key=lambda item: item[0].lower())
+		],
+		"without": without,
+		"active": len(profiles),
+	}
+
+
+@frappe.whitelist()
+def disability_summary() -> dict:
+	"""How many active volunteers in the caller's scope have a disability, and of what kind.
+
+	**Counts, not people.** Disability is sensitive personal data, so the
+	overview is told how many and of which kinds and nothing else. The names
+	are one more step away: the volunteer register, filtered by the same
+	answer, which is the ordinary scoped read every other name goes through.
+	The free-text answer about adjustments is not read here at all.
+
+	    yes / no / prefer_not / not_asked   the answer to the question
+	    categories                          people per kind of disability; a
+	                                        person with two kinds counts in both
+	    unspecified                         answered yes and named no kind
+	"""
+	profiles = _active_profiles()
+	answers: dict[str, list[str]] = {}
+
+	for profile, answer in zip(profiles, _profile_values(profiles, "vmms_disability_status"), strict=True):
+		answers.setdefault(answer or "", []).append(profile)
+
+	disabled = answers.get("Yes", [])
+	kinds: dict[str, set[str]] = {}
+	named: set[str] = set()
+
+	for chunk in _chunks(disabled):
+		rows = frappe.get_all(
+			"VMMS Disability Selector",
+			filters={"parenttype": "Red Profile", "parentfield": "vmms_disabilities", "parent": ("in", chunk)},
+			fields=["parent", "disability", "disability_category"],
+		)
+		listed = _disability_types({row.disability for row in rows if row.disability and not row.disability_category})
+
+		for row in rows:
+			named.add(row.parent)
+			category = row.disability_category or listed.get(row.disability)
+
+			if category:
+				kinds.setdefault(category, set()).add(row.parent)
+
+	return {
+		"active": len(profiles),
+		"yes": len(disabled),
+		"no": len(answers.get("No", [])),
+		"prefer_not": len(answers.get("Prefer not to say", [])),
+		"not_asked": len(answers.get("", [])),
+		"categories": sorted(
+			({"category": category, "count": len(people)} for category, people in kinds.items()),
+			key=lambda row: (-row["count"], row["category"]),
+		),
+		"unspecified": len(disabled) - len(named),
+	}
+
+
+# Profiles are read in pieces, so a national-scope reader's `in (...)` list
+# stays a size every database accepts.
+_PROFILE_CHUNK = 1000
+
+
+def _chunks(names: list[str]):
+	for start in range(0, len(names), _PROFILE_CHUNK):
+		yield names[start : start + _PROFILE_CHUNK]
+
+
+def _profile_values(profiles: list[str], fieldname: str) -> list:
+	"""One Red Profile field for each of these profiles, in the same order."""
+	values: dict[str, object] = {}
+
+	for chunk in _chunks(profiles):
+		for row in frappe.get_all(
+			"Red Profile", filters={"name": ("in", chunk)}, fields=["name", fieldname]
+		):
+			values[row.name] = row.get(fieldname)
+
+	return [values.get(profile) for profile in profiles]
+
+
+def _disability_types(disabilities: set[str]) -> dict:
+	if not disabilities:
+		return {}
+
+	return dict(
+		frappe.get_all(
+			"Disability",
+			filters={"name": ("in", sorted(disabilities))},
+			fields=["name", "disability_type"],
+			as_list=True,
+		)
+	)
+
+
+def _active_profiles() -> list[str]:
+	"""Red Profiles of the active volunteers this caller may see. Scoped by `get_list`."""
+	return [
+		profile
+		for profile in frappe.get_list(
+			VOLUNTEER_DOCTYPE,
+			filters={"status": "Active"},
+			pluck="red_profile",
+			limit_page_length=0,
+		)
+		if profile
+	]

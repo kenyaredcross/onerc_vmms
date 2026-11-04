@@ -68,6 +68,26 @@ const OVERVIEW: TabDef = {
 	end: true,
 };
 
+// A region, and the country, county by county. Gated server-side on where the
+// person is placed rather than on a register: see `OVERSIGHT_SECTIONS` in
+// `staff/services/console.py`. Drawn straight under Overview, because each is
+// an overview, for the people who answer for a region or for the country.
+const REGION: TabDef = {
+	section: "region",
+	to: "/admin/region",
+	labelKey: "admin.nav.region",
+	fallback: "My region",
+	icon: Icon.pin,
+};
+
+const NATIONAL: TabDef = {
+	section: "national",
+	to: "/admin/national",
+	labelKey: "admin.nav.national",
+	fallback: "National",
+	icon: Icon.globe,
+};
+
 // Both "registry": the same doctype permission (`VMMS Volunteer` or
 // `VMMS Membership`, either admits) governs both, the same as it did when this
 // was one Registry tab with a toggle. See `Registry.tsx`'s own docstring for
@@ -317,6 +337,7 @@ const FINANCE: GroupDef = {
 
 const GROUPS = [PEOPLE, OPERATIONS, FINANCE];
 const FLAT = [OVERVIEW, ASSETS, COMMUNICATION, EVENTS];
+const OVERSIGHT = [REGION, NATIONAL];
 // Configuration belongs beside the other ways out of daily console work, not
 // between Events and Communication. These routes stay permission-gated by the
 // same server section keys; only their place in the navigation changes.
@@ -331,6 +352,7 @@ const SETTINGS = [CONTENT, QUESTIONS];
  */
 const ALL_ROUTES: { to: string; section: string }[] = [
 	...FLAT,
+	...OVERSIGHT,
 	...SETTINGS,
 	...GROUPS.map((group) => ({ to: group.to, section: group.section })),
 	...GROUPS.flatMap((group) => group.children),
@@ -487,7 +509,13 @@ export default function AdminLayout() {
 			"children" in item ? { ...item, children: item.children.map(withBadge) } : withBadge(item),
 		);
 
-	const ordered: (NavItem | NavGroup)[] = [...flatAllowed.slice(0, 1), ...groups, ...flatAllowed.slice(1)];
+	const oversight = OVERSIGHT.filter((tab) => allowed.has(tab.section)).map(withBadge);
+	const ordered: (NavItem | NavGroup)[] = [
+		...flatAllowed.slice(0, 1),
+		...oversight,
+		...groups,
+		...flatAllowed.slice(1),
+	];
 	const settings = SETTINGS.filter((tab) => allowed.has(tab.section));
 
 	return (

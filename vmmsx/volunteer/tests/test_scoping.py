@@ -365,3 +365,103 @@ class TestABadRoleIsRefusedAtConfigTime(ScopingTestCase):
 		self.savable_settings().save()
 
 		self.assertFalse(frappe.db.get_single_value(fixtures.SETTINGS_DOCTYPE, fixtures.SCOPE_ROLE_SETTING))
+
+
+class TestApplicationsAreScoped(ScopingTestCase):
+	"""Volunteer applications follow the register: a county reads its own.
+
+	Registered on the application's Serving Branch, `geo_node`, under the same
+	volunteer scope role. An assignment high in the tree reads everything below
+	it, System Manager reads everything without one, and reading never confers
+	the engine's authority to decide.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		fixtures.grant_doctype_access(fixtures.APPLICATION_DOCTYPE, fixtures.SCOPE_ROLE)
+
+		# Assigned at the top of society A's tree — "national" for that society.
+		cls.top = fixtures.make_user("vscope_top", [fixtures.SCOPE_ROLE])
+		fixtures.make_assignment(cls.top, fixtures.SCOPE_ROLE, cls.society_a["region"])
+		cls.system_manager = fixtures.make_user("vscope_sysman", ["System Manager"])
+
+		cls.application_here = fixtures.make_application(
+			fixtures.make_profile("Applies", "Here"), cls.society_a["ward"]
+		).name
+		cls.application_elsewhere = fixtures.make_application(
+			fixtures.make_profile("Applies", "Elsewhere"), cls.society_b["ward"]
+		).name
+
+	def setUp(self):
+		super().setUp()
+		fixtures.set_scope_role(fixtures.SCOPE_ROLE)
+
+	def listed(self, user: str) -> set[str]:
+		frappe.set_user(user)
+		try:
+			return set(frappe.get_list(fixtures.APPLICATION_DOCTYPE, pluck="name", limit_page_length=0))
+		except frappe.PermissionError:
+			return set()
+
+	def may_read(self, user: str, name: str) -> bool:
+		doc = frappe.get_doc(fixtures.APPLICATION_DOCTYPE, name)
+		return frappe.has_permission(fixtures.APPLICATION_DOCTYPE, doc=doc, user=user, ptype="read")
+
+	def all_band(self, user: str) -> dict:
+		from vmmsx.api import approvals
+
+		with fixtures.acting_as(user):
+			return approvals.my_cases(fixtures.APPLICATION_DOCTYPE, approvals.CASE_ALL, limit=200)
+
+	def test_the_application_is_registered_on_its_serving_branch(self):
+		from onerc_core.access.services import registry
+
+		registration = registry.for_doctype(fixtures.APPLICATION_DOCTYPE)
+
+		self.assertIsNotNone(registration)
+		self.assertEqual(registry.geo_node_field(fixtures.APPLICATION_DOCTYPE), "geo_node")
+		# The same setting as the register: one role answers "whose volunteers".
+		self.assertEqual(
+			registration["role_from_setting"],
+			registry.for_doctype(fixtures.VOLUNTEER_DOCTYPE)["role_from_setting"],
+		)
+
+	def test_a_county_reads_its_own_applications_and_no_others(self):
+		listed = self.listed(self.here)
+
+		self.assertIn(self.application_here, listed)
+		self.assertNotIn(self.application_elsewhere, listed)
+		self.assertTrue(self.may_read(self.here, self.application_here))
+		self.assertFalse(self.may_read(self.here, self.application_elsewhere))
+
+	def test_the_all_applications_list_and_its_total_stay_in_the_county(self):
+		here = self.all_band(self.here)
+		there = self.all_band(self.elsewhere)
+
+		self.assertEqual({row["name"] for row in here["cases"]}, {self.application_here})
+		self.assertEqual(here["total"], 1)
+		self.assertEqual({row["name"] for row in there["cases"]}, {self.application_elsewhere})
+		self.assertEqual(there["total"], 1)
+
+	def test_an_assignment_at_the_top_reads_everything_below_it(self):
+		listed = self.listed(self.top)
+
+		self.assertIn(self.application_here, listed)
+		# Another society's tree is not below it.
+		self.assertNotIn(self.application_elsewhere, listed)
+
+	def test_system_manager_reads_every_application_without_an_assignment(self):
+		listed = self.listed(self.system_manager)
+
+		self.assertTrue({self.application_here, self.application_elsewhere} <= listed)
+		self.assertGreaterEqual(self.all_band(self.system_manager)["total"], 2)
+
+	def test_reading_an_application_grants_no_authority_to_decide_it(self):
+		self.assertFalse(any(row["can_act"] for row in self.all_band(self.top)["cases"]))
+
+	def test_no_scope_role_configured_reads_nothing(self):
+		fixtures.set_scope_role(None)
+
+		self.assertEqual(self.listed(self.here), set())
+		self.assertEqual(self.all_band(self.here)["total"], 0)

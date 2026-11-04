@@ -132,32 +132,32 @@ describe("deciding on an application", () => {
 
 	it("will not send a rejection without a reason, and says why", async () => {
 		open(status());
-		await choose(/Decline/);
+		await choose(/Reject/);
 
-		expect(submit(/Decline this volunteer applicant/).disabled).toBe(true);
-		expect(screen.getByText(/Declining needs a reason/)).toBeTruthy();
+		expect(submit(/Reject this volunteer applicant/).disabled).toBe(true);
+		expect(screen.getByText(/A reason is required/)).toBeTruthy();
 
 		give("Not eligible this cycle.");
-		expect(submit(/Decline this volunteer applicant/).disabled).toBe(false);
+		expect(submit(/Reject this volunteer applicant/).disabled).toBe(false);
 	});
 
 	it("will not send an application back without telling the applicant what to fix", async () => {
 		open(status());
-		await choose(/Ask for more/);
+		await choose(/Request more information/);
 
-		expect(submit(/Ask this volunteer applicant for more/).disabled).toBe(true);
+		expect(submit(/Request more information from this volunteer applicant/).disabled).toBe(true);
 		expect(screen.getByText(/Say what is missing/)).toBeTruthy();
 
 		give("Attach a national ID.");
-		expect(submit(/Ask this volunteer applicant for more/).disabled).toBe(false);
+		expect(submit(/Request more information from this volunteer applicant/).disabled).toBe(false);
 	});
 
 	it("treats whitespace as no reason at all", async () => {
 		open(status());
-		await choose(/Decline/);
+		await choose(/Reject/);
 
 		give("   \n  ");
-		expect(submit(/Decline this volunteer applicant/).disabled).toBe(true);
+		expect(submit(/Reject this volunteer applicant/).disabled).toBe(true);
 	});
 
 	it("lets an approval through without one", async () => {
@@ -173,7 +173,7 @@ describe("deciding on an application", () => {
 
 		await act(async () => screen.getByRole("button", { name: /Decide/ }).click());
 
-		expect(screen.queryByRole("menuitem", { name: /Decline/ })).toBeNull();
+		expect(screen.queryByRole("menuitem", { name: /Reject/ })).toBeNull();
 		expect(screen.getByRole("menuitem", { name: /Approve/ })).toBeTruthy();
 	});
 
@@ -181,7 +181,7 @@ describe("deciding on an application", () => {
 		open(status({ can_act: false }));
 
 		expect(screen.queryByRole("button", { name: /Decide/ })).toBeNull();
-		expect(screen.getByText(/holding the role is not the same as being this document's/)).toBeTruthy();
+		expect(screen.getByText(/You are not an approver for this application at its current stage/)).toBeTruthy();
 	});
 
 	/**
@@ -199,7 +199,7 @@ describe("deciding on an application", () => {
 			}),
 		);
 
-		const note = screen.getByText(/Nobody holds/);
+		const note = screen.getByText(/No one holds/);
 		expect(note.textContent).toContain("Volunteer Approver");
 		expect(note.textContent).toContain("national@example.com");
 	});
@@ -207,6 +207,37 @@ describe("deciding on an application", () => {
 	it("says nothing of the sort when the stage resolved somebody", () => {
 		open(status());
 
-		expect(screen.queryByText(/Nobody holds/)).toBeNull();
+		expect(screen.queryByText(/No one holds/)).toBeNull();
+	});
+});
+
+describe("an application held back until its fee is paid", () => {
+	beforeEach(() => reads.clear());
+
+	const held = () =>
+		status({
+			state: "Submitted",
+			stage: null,
+			can_act: false,
+			approver_count: 0,
+			held: true,
+			held_for: {
+				label: "Awaiting payment",
+				note: "The applicant has not paid the membership fee yet. The application goes to its approvers by itself once the payment is received.",
+			},
+		});
+
+	it("says it is awaiting payment rather than submitted", () => {
+		open(held());
+
+		expect(screen.getAllByText("Awaiting payment").length).toBeGreaterThan(0);
+		expect(screen.queryByText("Submitted")).toBeNull();
+	});
+
+	it("offers no decision until the payment is received", () => {
+		open(held());
+
+		expect(screen.getByText(/has not paid the membership fee yet/)).toBeTruthy();
+		expect(screen.queryByRole("button", { name: /Decide/ })).toBeNull();
 	});
 });

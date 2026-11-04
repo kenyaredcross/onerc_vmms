@@ -105,6 +105,21 @@ RETIRED = (
 # It is Attend and Cancel now, and the state either of them leaves behind is
 # Attending, wherever it is drawn.
 RELABELLED = {
+	# Plain, standard wording on the volunteer portal: section names say what is
+	# there, and a line under a heading says one thing once.
+	"portal.help.lead": (
+		"What people ask most often. If your question is not here, your branch would rather"
+		" be asked twice than not at all.",
+		"Frequently asked questions. If your question is not answered here, contact your branch.",
+	),
+	"portal.hours.lead": (
+		"Your coordinator records the hours you serve when they confirm attendance on a"
+		" deployment. They appear here, and your branch sees the same figures against your"
+		" record.",
+		"Your coordinator records your hours when attendance on a deployment is confirmed.",
+	),
+	"portal.membership.plans.heading.pending": ("What your society offers", "Available membership types"),
+	"portal.events.attend.heading": ("What you need on the day", "What to bring"),
 	"portal.events.card.action": ("Get tickets", "Attend"),
 	"chrome.action.join": ("Join free", "Join us"),
 	"landing.cta.button": ("Join free today", "Join us today"),
@@ -119,7 +134,7 @@ RELABELLED = {
 	"portal.events.attending.going": ("Going", "Attending"),
 	"portal.events.attending.withdraw": ("Can't make it", "Cancel"),
 	"portal.events.attending.label": ("Events you are going to", "Your events"),
-	"portal.events.hero.eyebrow": ("Find your next experience", "What's on"),
+	"portal.events.hero.eyebrow": ("What's on", "Events"),
 	"portal.events.attend.claim": (
 		"Your branch has been told to expect you. This does not book a ticket or hold a place.",
 		"Your branch has been told to expect you. This does not hold a place.",
@@ -904,8 +919,7 @@ def _portal():
 			"Help page lead",
 			s,
 			198,
-			"What people ask most often. If your question is not here, your branch would rather"
-			" be asked twice than not at all.",
+			"Frequently asked questions. If your question is not answered here, contact your branch.",
 		),
 		_block("portal.home.heading", "Dashboard heading", s, 200, "Your dashboard"),
 		# The home hero. It ships a photograph like the rest of them — see
@@ -968,7 +982,7 @@ def _portal():
 			"Membership plans heading, while an application is undecided",
 			s,
 			326,
-			"What your society offers",
+			"Available membership types",
 		),
 		_block("portal.tasks.heading", "Tasks page heading", s, 340, "Tasks"),
 		_block("portal.hours.heading", "Hours page heading", s, 400, "My hours"),
@@ -981,9 +995,7 @@ def _portal():
 			"Hours page, the line under the heading",
 			s,
 			405,
-			"Your coordinator records the hours you serve when they confirm attendance on a"
-			" deployment. They appear here, and your branch sees the same figures against your"
-			" record.",
+			"Your coordinator records your hours when attendance on a deployment is confirmed.",
 		),
 		_block("portal.profile.heading", "Profile page heading", s, 500, "Profile"),
 		_block("portal.opportunities.heading", "Opportunities page heading", s, 600, "Opportunities"),
@@ -1011,7 +1023,7 @@ def _portal():
 			"Events hero eyebrow",
 			s,
 			710,
-			"What's on",
+			"Events",
 		),
 		_block(
 			"portal.events.hero.headline",
@@ -1036,7 +1048,7 @@ def _portal():
 			"Attend panel heading",
 			s,
 			726,
-			"What you need on the day",
+			"What to bring",
 		),
 		_block("portal.events.attend.confirmed", "Attend confirmation chip", s, 727, "Attending"),
 		_block("portal.events.attend.calendar", "Add to calendar button", s, 727, "Add to calendar"),

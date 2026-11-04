@@ -77,8 +77,7 @@ export default function ContentAdmin() {
 			<PageHeading title="Page content" actions={<Pill tone="page">{total} slots</Pill>} />
 
 			<p className="-mt-2 mb-6 max-w-2xl text-[13.5px] text-muted">
-				Every heading, paragraph, button and photograph in this product is one of these. You
-				can also edit any of them in place, on the page itself, with the pencil.
+				All page text and images. You can also edit them on the page itself with Edit content.
 			</p>
 
 			{!canEdit && (

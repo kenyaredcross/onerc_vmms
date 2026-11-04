@@ -130,7 +130,20 @@ def publish(doc) -> dict:
 		doc.db_set("published_on", now_datetime(), update_modified=False)
 
 	if doc.also_email:
-		_email(doc, audience.emails(addressed))
+		addresses = audience.emails(addressed)
+
+		if addresses:
+			# Queued by a background job, after this request commits. Frappe
+			# writes one mail-queue record per recipient, and doing that for a
+			# society's whole register inside the request kept the sender
+			# waiting for several seconds with nothing on the screen moving.
+			frappe.enqueue(
+				"vmmsx.notifications.services.announce.queue_email",
+				queue="long",
+				enqueue_after_commit=True,
+				announcement=doc.name,
+				addresses=addresses,
+			)
 
 	return {
 		"announcement": doc.name,
@@ -138,6 +151,11 @@ def publish(doc) -> dict:
 		"delivered": delivered,
 		"created": created,
 	}
+
+
+def queue_email(announcement: str, addresses: list[str]) -> None:
+	"""The background job behind `publish`: queue the announcement's email."""
+	_email(frappe.get_doc(ANNOUNCEMENT_DOCTYPE, announcement), addresses)
 
 
 def _email(doc, addresses: list[str]) -> None:

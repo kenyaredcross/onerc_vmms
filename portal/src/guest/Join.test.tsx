@@ -260,11 +260,11 @@ function openAsGuest(route: string) {
 /**
  * Wait for the first screen to be drawn.
  *
- * By its heading, because "Personal details" is also the name of the rung in the rail
+ * By its heading, because "Personal Info" is also the name of the rung in the rail
  * beside it — the same words twice on purpose, and only one of them is the page.
  */
 function onTheIdentityStep() {
-	return screen.findByRole("heading", { name: "Personal details" });
+	return screen.findByRole("heading", { name: "Personal Info" });
 }
 
 /**
@@ -356,8 +356,15 @@ describe("membership payment choice", () => {
 			questions: [],
 			declarations: [],
 			payment_methods: [
-				{ gateway: "Manual", label: "Pay at a branch office", description: "", instructions: "", in_person: true },
-				{ gateway: "Mpesa Daraja", label: "M-Pesa", description: "Pay by phone", instructions: "", in_person: false },
+				{ gateway: "Manual", label: "Pay at a branch office", instructions: "", in_person: true },
+				{
+					gateway: "Mpesa Daraja",
+					label: "M-Pesa",
+					instructions: "",
+					in_person: false,
+					by_phone: true,
+					logo: "/assets/vmmsx/images/payments/mpesa.png",
+				},
 			],
 		});
 	});
@@ -376,13 +383,37 @@ describe("membership payment choice", () => {
 		await goOn();
 		expect(await onTheIdentityStep()).toBeTruthy();
 	});
+
+	it("shows a society's only method as the way to pay, in plain words", async () => {
+		reads.set(API.membershipTypes, {
+			...(reads.get(API.membershipTypes) as Record<string, unknown>),
+			payment_methods: [
+				{
+					gateway: "Mpesa Daraja",
+					label: "M-Pesa",
+					instructions: "",
+					in_person: false,
+					by_phone: true,
+					logo: "/assets/vmmsx/images/payments/mpesa.png",
+				},
+			],
+		});
+		mount(<Join />, { route: "/join?path=member&type=annual" });
+
+		expect(await screen.findByText("Pay with M-Pesa")).toBeTruthy();
+		expect(screen.queryByRole("radio", { name: /M-Pesa/ })).toBeNull();
+		expect(screen.getByRole("img", { name: "M-Pesa" }).getAttribute("src")).toBe("/assets/vmmsx/images/payments/mpesa.png");
+		expect(screen.getByText("You will get a payment request on your phone. Enter your PIN to pay.")).toBeTruthy();
+		expect(screen.queryByText(/Daraja|STK Push|B2C/)).toBeNull();
+		expect(screen.getByLabelText("Phone number to pay from")).toBeTruthy();
+	});
 });
 
 describe("the road a volunteer walks", () => {
 	it("asks where they would volunteer, not where they would serve", async () => {
 		open();
 
-		expect(await screen.findByText("Volunteer location")).toBeTruthy();
+		expect(await screen.findByText("Branch / County")).toBeTruthy();
 		expect(screen.queryByText("Where you'd serve")).toBeNull();
 	});
 
@@ -400,7 +431,7 @@ describe("the road a volunteer walks", () => {
 		await onTheIdentityStep();
 		await goOn();
 
-		expect(await screen.findByRole("heading", { name: "Volunteer location" })).toBeTruthy();
+		expect(await screen.findByRole("heading", { name: "Branch / County" })).toBeTruthy();
 		expect(screen.queryByText(/narrows to what sits inside your answer/)).toBeNull();
 		expect(screen.queryByText(/reviewed by the people responsible/)).toBeNull();
 		expect(screen.queryByText("The branch or area you want to volunteer with.")).toBeNull();
@@ -522,7 +553,7 @@ describe("the road a volunteer walks", () => {
 		await onTheIdentityStep();
 		expect(screen.getByText("Required · shown on your volunteer card")).toBeTruthy();
 		await goOn();
-		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Personal Info" })).toBeTruthy();
 	});
 });
 
@@ -601,7 +632,9 @@ describe("leaving a step", () => {
 		await goOn();
 
 		await waitFor(() => expect(posted.length).toBe(1));
-		expect(posted[0].payload).not.toHaveProperty("residency_type");
+		expect(posted[0].payload.residency_type).toBe("Abroad");
+		expect(posted[0].payload.country_of_residence).toBe("Kenya");
+		expect(posted[0].payload.residence_address).toBe("12 Kimathi Street, Nairobi");
 		expect(posted[0].payload).not.toHaveProperty("home_geo_node");
 	});
 
@@ -661,7 +694,7 @@ async function walkTo(heading: string) {
 	for (let press = 0; press < 8; press += 1) {
 		if (screen.queryByRole("heading", { name: heading })) return;
 
-		if (screen.queryByRole("heading", { name: "Volunteer details" })) {
+		if (screen.queryByRole("heading", { name: "Additional Info" })) {
 			for (const [picker, choice] of [
 				["Skills", "First aid"],
 				["Languages", "Swahili"],
@@ -924,7 +957,7 @@ describe("more than one of a thing", () => {
 	});
 
 	it("sends every identification, not only the first", async () => {
-		await walkTo("Identification");
+		await walkTo("Documents");
 
 		fireEvent.click(screen.getByRole("button", { name: "Add another document" }));
 
@@ -947,7 +980,7 @@ describe("more than one of a thing", () => {
 	});
 
 	it("does not offer a kind of document that is already listed", async () => {
-		await walkTo("Identification");
+		await walkTo("Documents");
 
 		fireEvent.click(screen.getByRole("button", { name: "Add another document" }));
 
@@ -1027,13 +1060,13 @@ describe("the disability question", () => {
 		await goOn();
 
 		// Still here: the step did not advance.
-		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Personal Info" })).toBeTruthy();
 
-		answer(/^Do you have a disability\?/, "Prefer not to say");
+		answer(/^Are you a person with disability\?/, "Prefer not to say");
 
 		await goOn();
 
-		expect(screen.queryByRole("heading", { name: "Personal details" })).toBeNull();
+		expect(screen.queryByRole("heading", { name: "Personal Info" })).toBeNull();
 	});
 
 	it("asks what would help only when somebody has said there is something", async () => {
@@ -1042,7 +1075,7 @@ describe("the disability question", () => {
 
 		expect(screen.queryByLabelText("What support would be helpful?")).toBeNull();
 
-		answer(/^Do you have a disability\?/, "Yes");
+		answer(/^Are you a person with disability\?/, "Yes");
 
 		const type = screen.getByRole("combobox", { name: /^Disability type/ });
 		const support = screen.getByLabelText("What support would be helpful?");
@@ -1055,7 +1088,7 @@ describe("the disability question", () => {
 		open();
 		await onTheIdentityStep();
 
-		answer(/^Do you have a disability\?/, "Yes");
+		answer(/^Are you a person with disability\?/, "Yes");
 		fireEvent.focus(screen.getByRole("combobox", { name: /^Disability type/ }));
 		fireEvent.click(screen.getByRole("option", { name: /Deafness/ }));
 		fireEvent.change(screen.getByLabelText("What support would be helpful?"), {
@@ -1077,18 +1110,18 @@ describe("the disability question", () => {
 		mount(<Join />, { route: "/join?path=member&type=annual" });
 		await onTheIdentityStep();
 
-		expect(screen.queryByRole("group", { name: /^Do you have a disability\?/ })).toBeNull();
+		expect(screen.queryByRole("group", { name: /^Are you a person with disability\?/ })).toBeNull();
 	});
 });
 
 describe("the required volunteer details", () => {
 	it("requires skills, languages and motivation and does not ask availability", async () => {
 		reads.set(API.myProfile, IDENTIFIED);
-		await walkTo("Volunteer details");
+		await walkTo("Additional Info");
 
 		expect(screen.queryByRole("combobox", { name: "Availability" })).toBeNull();
 		await goOn();
-		expect(screen.getByRole("heading", { name: "Volunteer details" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Additional Info" })).toBeTruthy();
 
 		for (const [picker, choice] of [
 			["Skills", "First aid"],
@@ -1100,7 +1133,7 @@ describe("the required volunteer details", () => {
 		}
 
 		await goOn();
-		expect(screen.queryByRole("heading", { name: "Volunteer details" })).toBeNull();
+		expect(screen.queryByRole("heading", { name: "Additional Info" })).toBeNull();
 	});
 });
 
@@ -1224,6 +1257,7 @@ describe("what you have already done", () => {
 		await onTheStep();
 
 		fireEvent.change(screen.getByLabelText(/^Profession/), { target: { value: "Other" } });
+		fireEvent.click(screen.getByRole("option", { name: "Other" }));
 		expect(screen.getByLabelText(/^Other profession/)).toBeTruthy();
 
 		await goOn();
@@ -1275,7 +1309,7 @@ describe("which disability, from the register", () => {
 	};
 
 	const disclose = () =>
-		answer(/^Do you have a disability\?/, "Yes");
+		answer(/^Are you a person with disability\?/, "Yes");
 
 	it("is drawn only once somebody has said there is something", async () => {
 		open();
@@ -1295,11 +1329,11 @@ describe("which disability, from the register", () => {
 		disclose();
 		await goOn();
 
-		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Personal Info" })).toBeTruthy();
 
 		nameOne("Deafness");
 		await goOn();
-		expect(screen.queryByRole("heading", { name: "Personal details" })).toBeNull();
+		expect(screen.queryByRole("heading", { name: "Personal Info" })).toBeNull();
 	});
 
 	it("sends the register's keys to the profile, beside the answer itself", async () => {
@@ -1333,7 +1367,7 @@ describe("which disability, from the register", () => {
 		disclose();
 		nameOne("Deafness");
 
-		answer(/^Do you have a disability\?/, "No");
+		answer(/^Are you a person with disability\?/, "No");
 
 		await goOn();
 		await goOn();
@@ -1429,7 +1463,7 @@ describe("a Continue that will not go on, and says which field is why", () => {
 
 		expect(outstanding()).toContain("Answer the disability question");
 		expect(document.activeElement).toBe(
-			within(screen.getByRole("group", { name: /^Do you have a disability\?/ })).getAllByRole(
+			within(screen.getByRole("group", { name: /^Are you a person with disability\?/ })).getAllByRole(
 				"radio",
 			)[0],
 		);
@@ -1444,13 +1478,13 @@ describe("a Continue that will not go on, and says which field is why", () => {
 	it("takes a blocked Submit back to the step the answer is missing from", async () => {
 		reads.set(API.myProfile, IDENTIFIED);
 
-		await walkTo("Check and submit");
+		await walkTo("Review & Submit");
 
 		// Back up the rail, take an answer away, and return to the end.
-		fireEvent.click(screen.getByRole("button", { name: /Personal details/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Personal Info/ }));
 		fireEvent.change(await screen.findByLabelText(/^Last name/), { target: { value: "" } });
-		fireEvent.click(screen.getByRole("button", { name: /Check and submit/ }));
-		await screen.findByRole("heading", { name: "Check and submit" });
+		fireEvent.click(screen.getByRole("button", { name: /Review & Submit/ }));
+		await screen.findByRole("heading", { name: "Review & Submit" });
 
 		const submit = () => screen.getByRole("button", { name: "Submit registration" });
 
@@ -1458,13 +1492,67 @@ describe("a Continue that will not go on, and says which field is why", () => {
 		// Said before anybody presses anything, and named — "Enter your last
 		// name" over a page of answers with no such box on it would be the form
 		// talking about somewhere else.
-		expect(screen.getByText("Personal details: Enter your last name")).toBeTruthy();
+		expect(screen.getByText("Personal Info: Enter your last name")).toBeTruthy();
 
 		await act(async () => {
 			fireEvent.click(submit());
 		});
 
-		expect(screen.getByRole("heading", { name: "Personal details" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Personal Info" })).toBeTruthy();
 		expect(document.activeElement).toBe(screen.getByLabelText(/^Last name/));
 	});
+});
+
+describe("Kenya Red Cross registration age policy", () => {
+	it.each(["member", "volunteer"])("accepts ages 7 through 150 inclusive for %s", async (path) => {
+		reads.set(API.identityOptions, {
+			...(reads.get(API.identityOptions) as Record<string, unknown>),
+			member_min_age: 7,
+			member_max_age: 150,
+			volunteer_min_age: 7,
+			volunteer_max_age: 150,
+		});
+		mount(<Join />, { route: `/join?path=${path}&type=annual` });
+		await onTheIdentityStep();
+		const today = new Date().toISOString().slice(0, 10);
+		for (const [age, blocked] of [[6, true], [151, true], [7, false], [150, false]] as const) {
+			fireEvent.change(document.getElementById("join-dob")!, {
+				target: { value: `${Number(today.slice(0, 4)) - age}${today.slice(4)}` },
+			});
+			expect(held(), `age ${age}`).toBe(blocked);
+			const input = document.getElementById("join-dob")!;
+			if (blocked) {
+				expect(input.getAttribute("aria-invalid")).toBe("true");
+				expect(screen.getByRole("alert").textContent).toContain(age === 6 ? "at least 7" : "no older than 150");
+			} else {
+				expect(input.getAttribute("aria-invalid")).toBeNull();
+				expect(screen.queryByRole("alert")).toBeNull();
+			}
+		}
+	});
+});
+
+it("groups Other names with the name fields and starts Other Details with Blood group", async () => {
+	open();
+	await onTheIdentityStep();
+	const first = screen.getByLabelText(/^First name/);
+	const other = screen.getByLabelText("Other names");
+	expect(first.closest("section")?.contains(other)).toBe(true);
+	const details = screen.getByRole("heading", {name: "Other Details"}).closest("section")!;
+	expect(details.contains(other)).toBe(false);
+	expect(details.querySelector("input,select")).toBe(screen.getByLabelText("Blood group"));
+	expect(screen.getByRole("group", {name: /^Are you a person with disability\?/})).toBeTruthy();
+});
+
+it("requires a new home selection after explicitly clearing a saved residence", async () => {
+	reads.set(API.myProfile, {...PROFILE, residency_type: "Local", home_geo_node: "GEO-ELSEWHERE"});
+	reads.set(keyFor(API.geoChain, {node: "GEO-ELSEWHERE"}), {chain: []});
+	open();
+	await onTheIdentityStep();
+	await goOn();
+	await screen.findByRole("heading", {name: "Branch / County"});
+	const home = document.getElementById("home-rung-0")!;
+	fireEvent.change(home, {target: {value: BRANCH.name}});
+	fireEvent.change(home, {target: {value: ""}});
+	expect(held()).toBe(true);
 });

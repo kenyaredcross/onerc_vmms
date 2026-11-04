@@ -694,7 +694,7 @@ export function OpeningForm() {
 								label="Purpose"
 								hint={
 									form.vmms_purpose === "Volunteer"
-										? "Volunteers apply inside their own portal, with what the society already holds about them filled in."
+										? "Volunteers apply in their portal, with their saved details filled in."
 										: "Applicants answer the public web form."
 								}
 							>
@@ -940,7 +940,7 @@ export function OpeningForm() {
 										set("allow_equivalent_experience") as (value: boolean) => void
 									}
 									label="Allow Equivalent Experience"
-									hint="Somebody who has done the work but does not hold the certificate is still considered."
+									hint="Applicants without the certificate are still considered."
 								/>
 								<Check
 									checked={form.disqualify_if_below_minimum}
@@ -948,7 +948,7 @@ export function OpeningForm() {
 										set("disqualify_if_below_minimum") as (value: boolean) => void
 									}
 									label="Disqualify if Below Minimum"
-									hint="Otherwise they are ranked lower and a person still reads them."
+									hint="Otherwise applicants are ranked lower but still reviewed."
 								/>
 								<Check
 									checked={form.disqualify_if_requirement_not_met}
@@ -961,7 +961,7 @@ export function OpeningForm() {
 
 							<RowEditor<RequiredAttachment>
 								title="Required Attachments"
-								lead="Documents somebody has to upload before the application form will take their answer."
+								lead="Documents applicants must upload before submitting."
 								addLabel="Add a document"
 								empty="Nothing has to be attached."
 								rows={attachments}
@@ -999,7 +999,7 @@ export function OpeningForm() {
 								{ key: "question", label: "Question", kind: "area", span: 12 },
 								{ key: "help_text", label: "Help Text", kind: "area", span: 12 },
 								{ key: "options", label: "Options", kind: "area", span: 12 },
-								{ key: "is_required", label: "Is Required", kind: "check", checkedLabel: "Required", span: 3 },
+								{ key: "is_required", label: "Required", kind: "check", checkedLabel: "Required", span: 3 },
 								{ key: "is_knock_off", label: "Is Knock Off", kind: "check", checkedLabel: "Knock off", span: 3 },
 								{ key: "enable_scoring", label: "Enable Scoring", kind: "check", checkedLabel: "Score", span: 3 },
 								{ key: "weight", label: "Weight", kind: "number", span: 3 },
@@ -1041,7 +1041,7 @@ export function OpeningForm() {
 
 								<Field
 									label="Notify Unshortlisted Applicants After"
-									hint="Before writing to somebody who was never shortlisted."
+									hint="Days before notifying applicants who were not shortlisted."
 								>
 									<TextInput
 										type="number"
@@ -1273,7 +1273,7 @@ export function OpeningDetailPage() {
 				<div className="min-w-0 space-y-4">
 					{doc.description && (
 						<Card>
-							<h2 className="mb-3 text-[13.5px] font-semibold text-ink">What the post is</h2>
+							<h2 className="mb-3 text-[13.5px] font-semibold text-ink">Position details</h2>
 							<div
 								className="article-body text-[13.5px] leading-relaxed text-slate-strong"
 								// The description is HRMS's own Text Editor field, so it
@@ -1294,7 +1294,7 @@ export function OpeningDetailPage() {
 							}}
 						/>
 						{rows.length === 0 ? (
-							<Empty framed={false} title="Nobody has applied yet" icon={Icon.inbox} />
+							<Empty framed={false} title="No applications yet" icon={Icon.inbox} />
 						) : (
 							<> <Board>
 								{STAGES.map((stage) => {
@@ -1388,7 +1388,7 @@ export function OpeningDetailPage() {
 					onCancel={() => setConfirm(null)}
 				>
 					{confirm === "close"
-						? "Nobody new will be able to apply. Applications already in the pipeline are untouched."
+						? "No new applications will be accepted. Existing applications are not affected."
 						: "The society will be recruiting for this post again."}
 				</ConfirmModal>
 			)}
@@ -1642,7 +1642,7 @@ export function JobApplicant() {
 										to={`/admin/registry/volunteers/${encodeURIComponent(doc.volunteer)}`}
 										className="font-semibold text-blue hover:text-blue-hover"
 									>
-										Open their record
+										Open record
 									</Link>
 								) : (
 									"Not in the register"

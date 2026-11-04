@@ -28,6 +28,7 @@ from frappe import _
 from frappe.utils import format_date
 
 from vmmsx.cards.services import card
+from vmmsx.places import place_name
 from vmmsx.volunteer.services import identity
 
 VOLUNTEER_DOCTYPE = "VMMS Volunteer"
@@ -74,7 +75,6 @@ def context_for(volunteer, absolute_assets: bool = False) -> dict:
 	rather than documents to walk. A context of live objects would invite
 	templates to reach into the ORM, which is what the sandbox exists to prevent.
 	"""
-	from onerc_core.geo.services import adapter
 
 	return {
 		**card.frame(volunteer, absolute_assets=absolute_assets),
@@ -97,7 +97,7 @@ def context_for(volunteer, absolute_assets: bool = False) -> dict:
 		"record_id": volunteer.name,
 		"status": volunteer.status or "",
 		"geo_node": volunteer.home_geo_node or "",
-		"geo_path": adapter.get_full_path(volunteer.home_geo_node) if volunteer.home_geo_node else "",
+		"geo_path": place_name(volunteer.home_geo_node),
 		"joined_on": format_date(volunteer.joined_on) if volunteer.joined_on else "",
 		"issued_on": format_date(frappe.utils.now_datetime()),
 	}
@@ -172,7 +172,6 @@ def verify_dto(volunteer) -> dict:
 	what they asked. The status is included beside it for a reader who wants the
 	society's own word.
 	"""
-	from onerc_core.geo.services import adapter
 
 	return {
 		"kind": _("Volunteer"),
@@ -180,7 +179,7 @@ def verify_dto(volunteer) -> dict:
 		"record_id": volunteer.name,
 		"status": volunteer.status or "",
 		"is_current": holds_card(volunteer),
-		"geo_path": adapter.get_full_path(volunteer.home_geo_node) if volunteer.home_geo_node else "",
+		"geo_path": place_name(volunteer.home_geo_node),
 		"since": format_date(volunteer.joined_on) if volunteer.joined_on else "",
 		# A membership has an end date and a volunteer record does not, so the key
 		# is present and empty rather than absent: one shape for the verify page,

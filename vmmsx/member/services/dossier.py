@@ -143,12 +143,16 @@ def identity_dto(member) -> dict:
 	from onerc_core.geo.services import adapter
 
 	from vmmsx.member.services import identity
+	from vmmsx.registration.services import parity
 
 	person = identity.read(member)
 	home = person.get("home_geo_node")
 
 	return {
 		"member": member.name,
+		"personal_details": parity.profile_dto(member.red_profile)
+		if _may_read_registration_details(member)
+		else None,
 		"red_profile": member.red_profile,
 		"full_name": identity.display_name(member),
 		"email": person.get("email"),
@@ -394,3 +398,19 @@ def history(memberships: list[dict]) -> list[dict]:
 	return sorted(
 		rows, key=lambda entry: (entry["decided_on"] is not None, entry["decided_on"]), reverse=True
 	)
+
+
+def _may_read_registration_details(member) -> bool:
+	"""Sensitive person facts need ownership or a readable scoped membership."""
+	user = frappe.session.user
+	if user == "Administrator" or frappe.db.get_value("Red Profile", member.red_profile, "user") == user:
+		return bool(user and user != "Guest")
+	from vmmsx.api.member import _readable
+
+	for name in frappe.get_all("VMMS Membership", filters={"member": member.name}, pluck="name"):
+		try:
+			_readable(name)
+			return True
+		except frappe.PermissionError:
+			continue
+	return False

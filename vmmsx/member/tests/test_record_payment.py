@@ -43,6 +43,15 @@ class TestRecordingAFeeTakenInPerson(MemberTestCase):
 		# Recording a fee saves the membership, so the role has to be able to
 		# write one — which is also exactly what `_writable` will check.
 		fixtures.grant_membership_access(fixtures.APPROVER_ROLE)
+		# The real manual driver requires payment-write authority as well as the
+		# membership permission checked by our endpoint. This clerk has both.
+		from frappe.permissions import add_permission, update_permission_property
+
+		add_permission("OneRC Payment Transaction", fixtures.APPROVER_ROLE, 0)
+		for permission in ("read", "write"):
+			update_permission_property("OneRC Payment Transaction", fixtures.APPROVER_ROLE, 0, permission, 1)
+		frappe.clear_cache(doctype="OneRC Payment Transaction")
+
 		fixtures.make_template()
 		fixtures.make_type(fixtures.TYPE_AUTO, approval.MODE_AUTO_ON_PAYMENT, fee=1500)
 		fixtures.make_type(fixtures.TYPE_ROUTED, approval.MODE_ROUTED, fee=2000)
@@ -96,9 +105,7 @@ class TestRecordingAFeeTakenInPerson(MemberTestCase):
 		frappe.set_user(self.clerk)
 		api.record_membership_payment(membership, receipt="RCPT-003")
 
-		self.assertEqual(
-			frappe.db.get_value("OneRC Payment Transaction", transaction, "status"), "Completed"
-		)
+		self.assertEqual(frappe.db.get_value("OneRC Payment Transaction", transaction, "status"), "Completed")
 
 	def test_pressing_it_twice_records_one_payment(self):
 		membership = self.apply(fixtures.TYPE_AUTO)
@@ -153,9 +160,7 @@ class TestRecordingAFeeTakenInPerson(MemberTestCase):
 		membership = self.apply(fixtures.TYPE_AUTO, first_name="Selfpay")
 		holder = fixtures.make_user("selfpay", [])
 
-		profile = frappe.db.get_value(
-			fixtures.MEMBER_DOCTYPE, self.reload(membership).member, "red_profile"
-		)
+		profile = frappe.db.get_value(fixtures.MEMBER_DOCTYPE, self.reload(membership).member, "red_profile")
 		frappe.db.set_value("Red Profile", profile, "user", holder)
 
 		frappe.set_user(holder)

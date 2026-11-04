@@ -271,7 +271,7 @@ function IncomeByType({ rows }: { rows: FinanceSummary["income"]["by_type"] }) {
 
 	return (
 		<Card pad={false}>
-			<SectionHead title="Where income came from" />
+			<SectionHead title="Income by source" />
 			{rows.length === 0 ? (
 				<Empty framed={false} title="No membership payments in this period" icon={Icon.receipt} />
 			) : (
@@ -303,7 +303,7 @@ function ExpensesByState({ rows }: { rows: FinanceSummary["expenses"]["by_state"
 
 	return (
 		<Card pad={false}>
-			<SectionHead title="What was paid out" link={{ to: "/admin/finance/stipends", label: "Stipends" }} />
+			<SectionHead title="Payments out" link={{ to: "/admin/finance/stipends", label: "Stipends" }} />
 			{rows.length === 0 ? (
 				<Empty framed={false} title="No stipend payments in this period" icon={Icon.coins} />
 			) : (

@@ -540,7 +540,7 @@ function OpportunityBody({ row }: { row: Opportunity }) {
 				)}
 
 				{row.location && (
-					<Panel icon={<Icon.pin size={16} />} label="Where">
+					<Panel icon={<Icon.pin size={16} />} label="Location">
 						{row.location}
 					</Panel>
 				)}

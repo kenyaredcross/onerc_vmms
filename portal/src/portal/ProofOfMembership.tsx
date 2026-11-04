@@ -129,9 +129,8 @@ export function ProofOfMembership({
 			{failure && <ErrorNote>{failure}</ErrorNote>}
 
 			<Notice>
-				<strong className="font-semibold text-ink">Nothing is charged here.</strong> Someone at your
-				branch reads what you upload and records the dates themselves. Your membership starts
-				counting from what they confirm, not from what is typed below.
+				<strong className="font-semibold text-ink">Nothing is charged here.</strong> Your branch will check your document and confirm the dates. Your membership dates are taken from
+				their confirmation.
 			</Notice>
 
 			{/* ------------------------------------------------------------ who */}
@@ -171,7 +170,7 @@ export function ProofOfMembership({
 
 			{/* --------------------------------------------------------- branch */}
 			<section>
-				<h3 className="text-[13px] font-bold text-ink">Where you joined</h3>
+				<h3 className="text-[13px] font-bold text-ink">Branch</h3>
 				<p className="mt-1 text-[11.5px] leading-relaxed text-slate-body">
 					The branch that will check this. Choose the one you registered with if it is still here.
 				</p>
@@ -188,14 +187,14 @@ export function ProofOfMembership({
 
 			{/* ---------------------------------------------------- the history */}
 			<section>
-				<h3 className="text-[13px] font-bold text-ink">What the document says</h3>
+				<h3 className="text-[13px] font-bold text-ink">Document details</h3>
 				<p className="mt-1 text-[11.5px] leading-relaxed text-slate-body">
 					Copy these from the card, certificate or receipt you are about to upload.
 				</p>
 
 				<div className="mt-3 grid gap-5 sm:grid-cols-2">
 					<Field
-						label="When you originally joined"
+						label="Original join date"
 						required
 						htmlFor="proof-start"
 						hint="The date on the document, not the date you paid."
@@ -214,7 +213,7 @@ export function ProofOfMembership({
 					    empty on it by design — see the membership service. */}
 					{!plan.is_lifetime && (
 						<Field
-							label="When it runs out"
+							label="Expiry date"
 							required
 							htmlFor="proof-expiry"
 							hint={
@@ -243,7 +242,7 @@ export function ProofOfMembership({
 					</Field>
 
 					<Field
-						label="Where you registered"
+						label="Branch / County"
 						htmlFor="proof-where"
 						hint="The branch or office named on the document."
 					>
@@ -295,7 +294,7 @@ export function ProofOfMembership({
 			{/* --------------------------------------------------- declarations */}
 			{declarations.length > 0 && (
 				<section>
-					<h3 className="text-[13px] font-bold text-ink">What you are confirming</h3>
+					<h3 className="text-[13px] font-bold text-ink">Declaration</h3>
 
 					<div className="mt-3 space-y-2.5">
 						{declarations.map((declaration) => (

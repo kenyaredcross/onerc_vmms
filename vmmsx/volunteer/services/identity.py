@@ -173,13 +173,16 @@ def read(volunteer, fields: tuple[str, ...] = _READABLE) -> dict:
 # can ring them. What governs this is who may read the dossier at all, which is
 # the scope role — not a second filter inside it that quietly empties the field.
 _BACKGROUND = {
-	"education": ("institution", "level", "qualification", "started_in", "finished_in", "is_ongoing"),
+	"education": ("institution", "level", "qualification", "class_per", "maj_opt_subj", "started_in", "finished_in", "is_ongoing"),
 	"training": ("course_name", "institution", "started_on", "completed_on", "remarks"),
-	"work_experience": ("organization", "role", "started_on", "ended_on", "is_current", "summary"),
+	"certifications": ("certification_name", "organization", "description", "expire", "issue_date", "expiration_date"),
+	"work_experience": ("organization", "role", "location", "started_on", "ended_on", "is_current", "summary"),
 	"licences": (
 		"license_type",
 		"license_name",
 		"institution",
+		"qualification",
+		"description",
 		"registration_no",
 		"valid_from",
 		"valid_to",
@@ -219,10 +222,15 @@ def background(profile: str) -> dict:
 			held[key] = []
 			continue
 
+		child_doctype = meta.get_field(field).options
+		child_meta = frappe.get_meta(child_doctype)
+		# A bundle can reach a site before its schema migration. New optional
+		# columns must not stop an existing dossier from being readable.
+		available = [column for column in fields if child_meta.has_field(column)]
 		held[key] = frappe.get_all(
-			meta.get_field(field).options,
+			child_doctype,
 			filters={"parenttype": PROFILE_DOCTYPE, "parent": profile, "parentfield": field},
-			fields=list(fields),
+			fields=available,
 			order_by="idx asc",
 		)
 

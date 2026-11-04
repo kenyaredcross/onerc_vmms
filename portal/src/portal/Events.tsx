@@ -531,7 +531,7 @@ export default function Events() {
 						>
 							{narrowed
 								? "No event matches what you are looking for. Try a wider search."
-								: "When your society publishes an event, it appears here."}
+								: "Published events appear here."}
 						</Empty>
 					</div>
 				)}
@@ -618,7 +618,7 @@ function Hero({
 		<div className="relative">
 			<div className="overflow-hidden rounded-2xl bg-gradient-to-br from-rail via-rail to-blue/80 px-7 pb-20 pt-12 text-center shadow-hero md:px-12 md:pb-24 md:pt-16">
 				<div className="eyebrow text-white/60">
-					<EditableText k="portal.events.hero.eyebrow" fallback="What's on" />
+					<EditableText k="portal.events.hero.eyebrow" fallback="Events" />
 				</div>
 				<h1 className="mx-auto mt-3 max-w-2xl text-[30px] font-semibold leading-tight tracking-tight text-white md:text-[38px]">
 					<EditableText
@@ -690,7 +690,7 @@ function Hero({
 
 					<label className="control">
 						<Icon.pin size={15} className="flex-none text-slate-faint" />
-						<span className="sr-only">Where</span>
+						<span className="sr-only">Location</span>
 						<select
 							value={venue}
 							onChange={(event) => setVenue(event.target.value)}
@@ -1049,7 +1049,7 @@ export function Event() {
 						)}
 
 						<dl className="mt-7 grid gap-4 border-y border-card-line py-6 sm:grid-cols-2">
-							<Fact icon={<Icon.calendar size={16} />} label="When">
+							<Fact icon={<Icon.calendar size={16} />} label="Date">
 								{dateLine(row)}
 								{row.start_time && (
 									<span className="block text-slate-faint">
@@ -1060,7 +1060,7 @@ export function Event() {
 								)}
 							</Fact>
 
-							<Fact icon={<Icon.pin size={16} />} label="Where">
+							<Fact icon={<Icon.pin size={16} />} label="Location">
 								{row.venue || row.medium || "To be confirmed"}
 								{row.venue_address && (
 									<span className="block text-slate-faint">{row.venue_address}</span>
@@ -1167,7 +1167,7 @@ function GoingLine({ going }: { going?: number }) {
 	if (!going) {
 		return (
 			<span className="text-slate-faint">
-				<EditableText k="portal.events.going.none" fallback="Nobody has said yet" />
+				<EditableText k="portal.events.going.none" fallback="No one has responded yet" />
 			</span>
 		);
 	}
@@ -1309,12 +1309,12 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 			</div>
 
 			<h3 className="mt-4 text-[15px] font-bold tracking-tight text-ink">
-				<EditableText k="portal.events.attend.heading" fallback="What you need on the day" />
+				<EditableText k="portal.events.attend.heading" fallback="What to bring" />
 			</h3>
 
 			<dl className="mt-4 grid gap-3 sm:grid-cols-2">
 				<div>
-					<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">When</dt>
+					<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">Date</dt>
 					<dd className="mt-1 text-[13.5px] font-semibold text-ink">
 						{when}
 						{time && <span className="block font-normal text-muted">{time}</span>}
@@ -1325,7 +1325,7 @@ function Attend({ row }: { row: EventCard & { venue_address: string } }) {
 				</div>
 
 				<div>
-					<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">Where</dt>
+					<dt className="text-[10px] font-bold uppercase tracking-wider text-slate-faint">Location</dt>
 					<dd className="mt-1 text-[13.5px] font-semibold text-ink">
 						{row.venue || row.medium || "To be confirmed"}
 						{row.venue_address && (

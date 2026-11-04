@@ -67,7 +67,7 @@ export default function Hours() {
 				lead={
 					<EditableText
 						k="portal.hours.lead"
-						fallback="Your coordinator records the hours you serve when they confirm attendance on a deployment. They appear here, and your branch sees the same figures against your record."
+						fallback="Your coordinator records your hours when attendance on a deployment is confirmed."
 					/>
 				}
 			/>
@@ -91,7 +91,7 @@ export default function Hours() {
 				<>
 					<section className="mb-8">
 						<SectionLabel>
-							<EditableText k="portal.hours.section.total" fallback="What you have given" />
+							<EditableText k="portal.hours.section.total" fallback="Volunteer hours" />
 						</SectionLabel>
 						<Totals data={logs.data?.message ?? null} loading={logs.isLoading} />
 					</section>

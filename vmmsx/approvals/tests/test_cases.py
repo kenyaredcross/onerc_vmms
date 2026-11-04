@@ -72,6 +72,29 @@ class TestMyCases(ApprovalTestCase):
 
 	# --- the bands --------------------------------------------------------
 
+	def test_all_includes_readable_applications_not_assigned_to_admin(self):
+		draft = self.application("all draft", self.kenya["kihara"])
+		pending = self.application("all pending", self.kenya["kihara"])
+		engine.submit(self.reload(pending))
+		frappe.set_user("Administrator")
+		result = approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, "all", limit=200)
+		by_name = {row["name"]: row for row in result["cases"]}
+		self.assertIn(draft, by_name)
+		self.assertIn(pending, by_name)
+		self.assertFalse(by_name[pending]["can_act"])
+		self.assertNotIn(pending, {row["name"] for row in approvals.my_queue(fixtures.APPROVABLE_DOCTYPE)})
+		self.assertEqual(result["total"], frappe.db.count(fixtures.APPROVABLE_DOCTYPE))
+
+	def test_all_is_paginated_without_repeating_rows(self):
+		for index in range(3):
+			self.application(f"all pagination {index}", self.kenya["kihara"])
+		first = approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, "all", limit=1)
+		second = approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, "all", limit=1, offset=1)
+		self.assertEqual(len(first["cases"]), 1)
+		self.assertTrue(first["has_more"])
+		self.assertNotEqual(first["cases"][0]["name"], second["cases"][0]["name"])
+		self.assertEqual(first["total"], second["total"])
+
 	def test_the_actionable_band_is_exactly_my_queue(self):
 		application = self.application("routed", self.kenya["kihara"])
 		engine.submit(self.reload(application))
@@ -169,9 +192,7 @@ class TestMyCases(ApprovalTestCase):
 
 		with fixtures.acting_as(self.county):
 			asked = approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, approvals.CASE_CLOSED, limit=2)
-			huge = approvals.my_cases(
-				fixtures.APPROVABLE_DOCTYPE, approvals.CASE_CLOSED, limit=10_000
-			)
+			huge = approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, approvals.CASE_CLOSED, limit=10_000)
 
 		self.assertEqual(len(asked["cases"]), 2)
 		# A caller cannot ask the server to read the whole table.
@@ -182,13 +203,14 @@ class TestMyCases(ApprovalTestCase):
 
 		def scoped_drafts(*args, **kwargs):
 			start = kwargs["limit_start"]
-			return drafts[start:start + kwargs["limit_page_length"]]
+			return drafts[start : start + kwargs["limit_page_length"]]
 
 		def decisions(*args, **kwargs):
 			return ["returned-old"] if "returned-old" in kwargs["filters"]["parent"][1] else []
 
-		with patch.object(approvals.frappe, "get_list", side_effect=scoped_drafts), patch.object(
-			approvals.frappe, "get_all", side_effect=decisions
+		with (
+			patch.object(approvals.frappe, "get_list", side_effect=scoped_drafts),
+			patch.object(approvals.frappe, "get_all", side_effect=decisions),
 		):
 			self.assertEqual(approvals._changed(fixtures.APPROVABLE_DOCTYPE, 2), ["returned-old"])
 

@@ -46,11 +46,9 @@ What is deliberately absent
 * **Money.** A society's income is `onerc_payments`' record, not this app's, and
   a revenue figure assembled here would be a second answer to a question another
   app owns. The console says so rather than showing a number nobody can reconcile.
-* **Applications waiting.** `VMMS Volunteer Application` is deliberately not
-  registered as geo-scopeable (see `hooks.py`), so counting it here would produce
-  a nationwide figure inside a panel labelled with one branch. The review queue
-  already answers "what is waiting on you", person by person, which is the
-  question a coordinator actually has.
+* **Applications waiting.** The review queue already answers "what is waiting
+  on you", person by person, and its All applications list counts what the
+  caller's area holds, which is the question a coordinator actually has.
 """
 
 import frappe

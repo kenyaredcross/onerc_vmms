@@ -1,0 +1,65 @@
+{
+ "actions": [],
+ "creation": "2026-11-02 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "certification_name",
+  "organization",
+  "description",
+  "expire",
+  "issue_date",
+  "expiration_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "certification_name",
+   "label": "Certification Name",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "organization",
+   "label": "Issuing Organization",
+   "fieldtype": "Data",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "description",
+   "label": "Description",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "expire",
+   "label": "Expires",
+   "fieldtype": "Check",
+   "default": "0"
+  },
+  {
+   "fieldname": "issue_date",
+   "label": "Issue Date",
+   "fieldtype": "Date"
+  },
+  {
+   "fieldname": "expiration_date",
+   "label": "Expiration Date",
+   "fieldtype": "Date",
+   "depends_on": "eval:doc.expire"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-02 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Declared Certification",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

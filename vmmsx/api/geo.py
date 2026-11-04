@@ -3,8 +3,7 @@
 
 """Read-only geo browsing, for a client-side cascading picker.
 
-A thin, whitelisted door onto onerc_core's own geo adapter — this file adds no
-logic of its own. It exists because the adapter is Python, and a cascading
+Whitelisted browsing through onerc_core's geographic adapter. It exists because the adapter is Python, and a cascading
 picker running in a browser needs something to call: **no app outside
 onerc_core may import Geo Node or Geo Level directly**, and this endpoint is
 how `vmms_volunteer_application.js` (Home Area and Serving Branch) and the
@@ -57,8 +56,11 @@ def ladder() -> dict:
 
 
 @frappe.whitelist()
-def browse(parent: str | None = None) -> dict:
-	"""One rung of the tree: this node's children, or the top rung if `parent` is empty.
+def browse(parent: str | None = None, level: str | None = None) -> dict:
+	"""Children of a parent, roots, or all nodes at a requested active level.
+
+	`level` lets registration start at County without requiring a Region answer.
+	The stored county node still carries its existing ancestry and routing.
 
 	Built for a cascading picker: call with no `parent` for the first dropdown,
 	then call again with whatever the person picked to fill the next one. An
@@ -66,8 +68,25 @@ def browse(parent: str | None = None) -> dict:
 	chosen has nothing beneath it, which is core's own definition of a leaf,
 	not a level a picker has to be told about separately.
 	"""
-	labels = {row["key"]: row["name"] for row in adapter.level_labels()}
+	levels = adapter.level_labels()
+	labels = {row["key"]: row["name"] for row in levels}
 	nodes = adapter.get_children(parent) if parent else adapter.get_root_regions()
+	if level:
+		orders = {row["key"]: row["order"] for row in levels}
+		if level not in orders:
+			frappe.throw(_("Choose an active geographic level."), frappe.ValidationError)
+		# Stop at the requested level; registration does not need the entire ward tree.
+		pending, nodes, visited = list(nodes), [], set()
+		while pending:
+			node = pending.pop(0)
+			if node["name"] in visited:
+				continue
+			visited.add(node["name"])
+			if node["geo_level"] == level:
+				nodes.append(node)
+			elif orders.get(node["geo_level"], float("inf")) < orders[level]:
+				pending.extend(adapter.get_children(node["name"]))
+		nodes.sort(key=lambda node: (node["geo_node_name"].casefold(), node["name"]))
 
 	return {
 		"parent": parent,

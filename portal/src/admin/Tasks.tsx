@@ -353,7 +353,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 			</div>
 
 			<div className="mt-4">
-				<Labelled label="Subject" hint="One line, as it appears in their list.">
+				<Labelled label="Subject" hint="One line, as shown in the volunteer's task list.">
 					<input
 						className={INPUT}
 						value={subject}
@@ -447,7 +447,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 
 					<div>
 						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-							When
+							Schedule
 						</p>
 						<div className="grid gap-4 sm:grid-cols-3">
 							<Labelled label="Due" hint="To the hour, where the day is not enough.">
@@ -458,7 +458,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 									onChange={(event) => setDueAt(event.target.value)}
 								/>
 							</Labelled>
-							<Labelled label="Answer by" hint="When you need them to accept or decline.">
+							<Labelled label="Answer by" hint="Deadline to accept or decline.">
 								<input
 									type="datetime-local"
 									className={INPUT}
@@ -466,7 +466,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 									onChange={(event) => setResponseDeadline(event.target.value)}
 								/>
 							</Labelled>
-							<Labelled label="Expected hours" hint="What it should take them.">
+							<Labelled label="Expected hours" hint="Expected effort.">
 								<input
 									type="number"
 									min="0"
@@ -494,7 +494,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 							</Labelled>
 							<Labelled
 								label="Remind every (days)"
-								hint="Leave empty and nobody is chased automatically."
+								hint="Leave empty to turn off automatic reminders."
 							>
 								<input
 									type="number"
@@ -509,7 +509,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 
 					<div>
 						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-							Where the work is
+							Location
 						</p>
 						<div className="grid gap-4 sm:grid-cols-2">
 							<Labelled label="Work location">
@@ -555,7 +555,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 										onChange={(event) => setContactName(event.target.value)}
 									/>
 								</Labelled>
-								<Labelled label="Their phone number">
+								<Labelled label="Phone number">
 									<input
 										type="tel"
 										className={INPUT}
@@ -569,7 +569,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 
 					<RowEditor<ChecklistItem>
 						title="Checklist"
-						lead="What the volunteer ticks off. Required items have to be done before they can submit."
+						lead="Checklist for the volunteer. Required items must be completed before submitting."
 						addLabel="Add an item"
 						empty="No checklist."
 						rows={checklist}
@@ -577,7 +577,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 						blank={() => ({ item: "", is_required: true, notes: "" })}
 						columns={[
 							{ key: "item", label: "Item", span: 5 },
-							{ key: "is_required", label: "Has to be done", kind: "check", span: 3 },
+							{ key: "is_required", label: "Required", kind: "check", span: 3 },
 							{ key: "notes", label: "Notes", span: 4 },
 						]}
 					/>
@@ -711,7 +711,7 @@ function VolunteerPicker({
 
 					{!isLoading && !rows.length && (
 						<p className="px-3 py-2 text-[12px] text-slate-faint">
-							Nobody in your area matches that.
+							No matches in your area.
 						</p>
 					)}
 

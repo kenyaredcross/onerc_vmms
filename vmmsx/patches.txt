@@ -138,3 +138,12 @@ vmmsx.patches.ship_default_photographs
 # Reviewed legacy profession options, normalized to match migration crosswalks.
 # Adds missing rows to existing registers; also runs through after_install.
 vmmsx.patches.install_source_professions
+
+# Restore structured registration data and opt-in parity policy fields.
+vmmsx.patches.install_registration_parity
+
+# Configurable blood groups, retaining all previously captured values.
+vmmsx.patches.install_blood_groups
+
+# A society may say memberships are never cancelled (Kenya).
+vmmsx.patches.install_membership_cancellation_setting

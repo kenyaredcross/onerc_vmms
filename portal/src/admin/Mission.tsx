@@ -222,7 +222,7 @@ export function resourceColumns(vocabulary?: TermsVocabularies): Array<Column<Te
 			options: (vocabulary?.funding_statuses ?? []).map((value) => ({ value, label: value })),
 		},
 		{ key: "donor", label: "Donor or source", span: 3 },
-		{ key: "description", label: "What it is for", kind: "area", span: 4 },
+		{ key: "description", label: "Purpose", kind: "area", span: 4 },
 	];
 }
 
@@ -596,7 +596,7 @@ export function MissionEditor({
 
 						<div>
 							<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-								Where these terms may be used
+								Applicable areas
 							</p>
 							<GeoSelects
 								chain={geoChain}
@@ -640,9 +640,9 @@ export function MissionEditor({
 
 						<RowEditor<TermsStakeholder>
 							title="Stakeholders"
-							lead="Who this mission has to deal with, and how to reach them. Printed on the document a deployed volunteer carries."
+							lead="Key contacts for this mission. Printed on the volunteer's deployment document."
 							addLabel="Add a stakeholder"
-							empty="Nobody named yet."
+							empty="No contacts added."
 							rows={stakeholders}
 							onChange={setStakeholders}
 							blank={() => ({
@@ -665,7 +665,7 @@ export function MissionEditor({
 					<div className="space-y-6">
 						<RowEditor
 							title="Objectives"
-							lead="What this mission sets out to achieve. Numbered on the printed document in this order."
+							lead="Mission objectives, numbered in this order on the printed document."
 							addLabel="Add an objective"
 							empty="No objectives written yet."
 							rows={objectives}
@@ -676,7 +676,7 @@ export function MissionEditor({
 
 						<RowEditor
 							title="Expected outputs"
-							lead="What the mission will leave behind."
+							lead="Expected results of the mission."
 							addLabel="Add an output"
 							empty="No outputs written yet."
 							rows={outputs}
@@ -689,8 +689,8 @@ export function MissionEditor({
 							title="Approach"
 							lead={
 								methodOptions.length > 0
-									? "How the work will be done, from your society's own register of methods."
-									: "Your society has not set up any methodologies yet. Add them on the desk and they appear here."
+									? "Methodology for the work."
+									: "No methodologies are set up yet. Add them on the desk."
 							}
 							addLabel="Add a method"
 							empty="No approach described yet."
@@ -707,10 +707,10 @@ export function MissionEditor({
 								},
 								{
 									key: "notes",
-									label: "What it means here",
+									label: "Definition",
 									kind: "area",
 									span: 8,
-									placeholder: "Who it reaches, how many, over what period.",
+									placeholder: "Beneficiaries, number reached and period.",
 								},
 							]}
 						/>
@@ -743,7 +743,7 @@ export function MissionEditor({
 						<div>
 							<RowEditor<TermsResource>
 								title="Resources"
-								lead="What the mission needs, what it is expected to cost, and whose money is behind it."
+								lead="Resources, estimated cost and funding source."
 								addLabel="Add a resource"
 								empty="Nothing listed yet."
 								rows={resources}
@@ -798,7 +798,7 @@ export function MissionEditor({
 							title="Required certifications"
 							lead="Mandatory rows filter candidates; desirable rows rank them higher without excluding them."
 							addLabel="Add a certification"
-							empty="No certification requirements. Anybody deployable is a candidate."
+							empty="No certification requirements. All eligible volunteers are candidates."
 							rows={requirements}
 							onChange={setRequirements}
 							blank={() => ({
@@ -864,7 +864,7 @@ export function MissionEditor({
 				</Button>
 				{saved && <span className="text-[12px] font-semibold text-ink">Saved.</span>}
 				<span className="ml-auto text-[11.5px] text-slate-faint">
-					Each tab saves on its own. The others are left exactly as they are.
+					Each tab is saved separately.
 				</span>
 			</div>
 		</Card>
@@ -1021,7 +1021,7 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 
 	return (
 		<Card>
-			<SectionTitle>The mission in detail</SectionTitle>
+			<SectionTitle>Mission details</SectionTitle>
 			<div className="mt-3 space-y-5">
 				{parts.map(([title, body]) => (
 					<div key={title}>

@@ -32,7 +32,13 @@ def branch_summary(geo_node: str | None = None, months: int | None = None) -> di
 
 @frappe.whitelist()
 def overview_registers() -> dict:
-	"""Complete scoped chart inputs, independent of register-list page limits."""
+	"""Complete scoped chart inputs, independent of register-list page limits.
+
+	**Read in a handful of queries, not one per person.** A national register is
+	thousands of people, and asking for each one's gender separately made this
+	the slowest call in the console. The people are still read through the
+	scoped `get_list`; their profiles are read only after that, in batches.
+	"""
 	from frappe.utils import nowdate
 
 	volunteers = summary._rows(
@@ -46,8 +52,12 @@ def overview_registers() -> dict:
 	)
 
 	# Profile attributes are read only through a registration already admitted by core scope.
-	def gender(profile):
-		return frappe.db.get_value("Red Profile", profile, "gender") if profile else None
+	member_profiles = _values("VMMS Member", {row.member for row in members if row.member}, "red_profile")
+	genders = _values(
+		"Red Profile",
+		{row.red_profile for row in volunteers if row.red_profile} | {p for p in member_profiles.values() if p},
+		"gender",
+	)
 
 	return {
 		"as_of": nowdate(),
@@ -58,7 +68,7 @@ def overview_registers() -> dict:
 				"geo_node": row.home_geo_node,
 				"status": row.status,
 				"joined_on": row.joined_on,
-				"gender": gender(row.red_profile),
+				"gender": genders.get(row.red_profile),
 			}
 			for row in volunteers
 		],
@@ -69,7 +79,7 @@ def overview_registers() -> dict:
 				"geo_node": row.geo_node,
 				"status": row.membership_status,
 				"valid_from": row.valid_from,
-				"gender": gender(frappe.db.get_value("VMMS Member", row.member, "red_profile")),
+				"gender": genders.get(member_profiles.get(row.member)),
 			}
 			for row in members
 		],
@@ -77,26 +87,60 @@ def overview_registers() -> dict:
 	}
 
 
+# Names are read in pieces, so a national reader's `in (...)` list stays a size
+# every database accepts.
+_CHUNK = 1000
+
+
+def _values(doctype: str, names: set, fieldname: str) -> dict:
+	"""{name: fieldname} for these records, read in batches."""
+	ordered = sorted(names)
+	values: dict = {}
+
+	for start in range(0, len(ordered), _CHUNK):
+		values.update(
+			frappe.get_all(
+				doctype,
+				filters={"name": ("in", ordered[start : start + _CHUNK])},
+				fields=["name", fieldname],
+				as_list=True,
+			)
+		)
+
+	return values
+
+
 def _overview_deployments() -> list[dict]:
+	"""Every deployment in scope, with the roster only where the page uses it.
+
+	The overview counts the people out on **active** deployments and nothing
+	else from a roster, so only those rosters are read. The rest go out with an
+	empty list rather than the hundreds of roster reads they used to cost.
+	"""
 	from vmmsx.deployment.services import participation
 
-	names = summary._rows("VMMS Deployment", "geo_node", None, ["name"])
-	rows = []
-	for row in names:
-		doc = frappe.get_doc("VMMS Deployment", row.name)
-		rows.append(
-			{
-				"name": doc.name,
-				"tor_name": frappe.db.get_value("VMMS Terms of Reference", doc.terms_of_reference, "tor_name")
-				or doc.name,
-				"geo_node": doc.geo_node,
-				"status": doc.status,
-				"start_date": doc.start_date,
-				"end_date": doc.end_date,
-				"participants": [
-					{"volunteer": volunteer, "is_on_deployment": True}
-					for volunteer in participation.participants_of(doc.name)
-				],
-			}
-		)
-	return rows
+	rows = summary._rows(
+		"VMMS Deployment",
+		"geo_node",
+		None,
+		["name", "terms_of_reference", "geo_node", "status", "start_date", "end_date"],
+	)
+	terms = _values("VMMS Terms of Reference", {row.terms_of_reference for row in rows if row.terms_of_reference}, "tor_name")
+
+	return [
+		{
+			"name": row.name,
+			"tor_name": terms.get(row.terms_of_reference) or row.name,
+			"geo_node": row.geo_node,
+			"status": row.status,
+			"start_date": row.start_date,
+			"end_date": row.end_date,
+			"participants": [
+				{"volunteer": volunteer, "is_on_deployment": True}
+				for volunteer in participation.participants_of(row.name)
+			]
+			if row.status == "Active"
+			else [],
+		}
+		for row in rows
+	]

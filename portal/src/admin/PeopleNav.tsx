@@ -69,6 +69,15 @@ export const PEOPLE_NAV: Destination[] = [
 		groupKey: "admin.people.nav.insight",
 		section: "registry",
 	},
+	{
+		// Professionals whose licence a coordinator has checked. Also listed under
+		// Operations, where the same list is read as "who can I send".
+		to: "/admin/registry/surge",
+		labelKey: "admin.people.nav.surge",
+		fallback: "Surge roster",
+		groupKey: "admin.people.nav.insight",
+		section: "registry",
+	},
 ];
 
 export function inPeople(pathname: string) {

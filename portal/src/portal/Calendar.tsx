@@ -84,7 +84,7 @@ export default function Calendar() {
 				end: event.end_date || event.start_date,
 				time: formatClock(event.start_time),
 				meta: event.venue || event.medium,
-				metaLabel: "Where",
+				metaLabel: "Location",
 				summary: "You said you would be there.",
 				to: `/events/${encodeURIComponent(event.event)}`,
 				actionLabel: "View event",
@@ -122,7 +122,7 @@ export default function Calendar() {
 				end: dep.end_date || dep.start_date,
 				time: "Full-day deployment",
 				meta: dep.role || branchPath(dep.geo_path),
-				metaLabel: dep.role ? "Role" : "Where",
+				metaLabel: dep.role ? "Role" : "Location",
 				summary: "A mission you have accepted.",
 				to: `/deployments/${encodeURIComponent(dep.deployment)}`,
 				actionLabel: "Open deployment",
@@ -334,8 +334,8 @@ function Detail({ entry }: { entry: CalEntry }) {
 				<Facts
 					columns={2}
 					items={[
-						{ label: "When", value: entry.time || "All day" },
-						entry.meta ? { label: entry.metaLabel ?? "Where", value: entry.meta } : null,
+						{ label: "Time", value: entry.time || "All day" },
+						entry.meta ? { label: entry.metaLabel ?? "Location", value: entry.meta } : null,
 					]}
 				/>
 			</div>

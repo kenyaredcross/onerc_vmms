@@ -342,8 +342,7 @@ function QuestionRow({
 			    wonders why there is no delete. */}
 			{canEdit && question.answer_count > 0 && (
 				<p className="mt-3 border-t border-card-line pt-3 text-[12px] text-slate-faint">
-					Retiring stops this being asked. The {question.answer_count} answers already given
-					stay on the applications they were part of.
+					Retiring stops this question being asked. The {question.answer_count} existing answers are kept.
 				</p>
 			)}
 		</Card>
@@ -416,7 +415,7 @@ function QuestionForm({
 			<div className="grid gap-4 sm:grid-cols-2">
 				<label className="block sm:col-span-2">
 					<span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-faint">
-						What are you asking?
+						Question
 					</span>
 					<input
 						value={label}
@@ -514,8 +513,7 @@ function QuestionForm({
 
 			{question && (
 				<p className="mt-4 text-[12px] text-slate-faint">
-					Rewording this does not change what anybody was already asked: an answer keeps a
-					snapshot of the question as it stood when it was given.
+					Changes apply to new applications only. Existing answers keep the original wording.
 				</p>
 			)}
 

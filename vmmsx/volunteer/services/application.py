@@ -40,7 +40,7 @@ from frappe.utils import cint, getdate, today
 
 from vmmsx.approvals import states
 from vmmsx.approvals.services import contract, engine
-from vmmsx.registration.services import declarations, questions
+from vmmsx.registration.services import attachments, declarations, questions
 from vmmsx.registration.services import society as registration_society
 from vmmsx.volunteer.services import hr, identity
 from vmmsx.volunteer.services import volunteer as volunteer_service
@@ -140,6 +140,9 @@ def assert_ready(application) -> None:
 	chase the missing consent form, rather than being turned away at the door by
 	a requirement somebody else has to satisfy.
 	"""
+	from vmmsx.registration.services import parity
+
+	parity.assert_ready(application)
 	_assert_country_of_citizenship(application)
 	_assert_identification(application)
 	_assert_identity_documents(application)
@@ -184,10 +187,7 @@ def _assert_disability_answered(application) -> None:
 		return
 
 	frappe.throw(
-		_(
-			"Answer the disability question on your profile before submitting. You may choose"
-			" not to say."
-		),
+		_("Answer the disability question on your profile before submitting. You may choose not to say."),
 		frappe.MandatoryError,
 		title=_("Question Not Answered"),
 	)
@@ -694,10 +694,10 @@ def _report(application, previous: str | None) -> None:
 
 
 def _geo_path(application) -> str:
-	"""Where this application is anchored, in the society's own words."""
-	from onerc_core.geo.services import adapter
+	"""Where this application is anchored, by the place's own name."""
+	from vmmsx.places import place_name
 
-	return adapter.get_full_path(application.geo_node) if application.geo_node else ""
+	return place_name(application.geo_node)
 
 
 def _card_attachment(application) -> tuple[str, bytes] | None:
@@ -913,6 +913,8 @@ def decision_dto(application) -> dict:
 	"""
 	from onerc_core.geo.services import adapter
 
+	from vmmsx.registration.services import parity
+
 	person = identity.read(application)
 
 	if person.get("residency_type") == "Abroad":
@@ -937,6 +939,8 @@ def decision_dto(application) -> dict:
 
 	return {
 		"name": application.name,
+		"personal_details": parity.profile_dto(application.red_profile),
+		"background": identity.background(application.red_profile),
 		"red_profile": application.red_profile,
 		"full_name": identity.display_name(application),
 		"email": person.get("email"),
@@ -987,6 +991,13 @@ def decision_dto(application) -> dict:
 		# Read off the acceptance rows' own snapshots, never the live
 		# declarations: what matters is the wording this applicant agreed to.
 		"declarations": declarations.accepted_of(application),
+		# Every file the applicant attached, each opened through
+		# `download_evidence` against this application rather than by its own
+		# private URL, which most reviewers could not open.
+		"attachments": attachments.for_record(APPLICATION_DOCTYPE, application, application.red_profile),
+		# The rest of the identity step: citizenship status, the disability
+		# answers in full, and profession. See `attachments.answers_of_profile`.
+		**attachments.answers_of_profile(application.red_profile),
 	}
 
 

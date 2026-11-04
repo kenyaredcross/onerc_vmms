@@ -166,6 +166,21 @@ def search(
 
 	page = rows[offset : offset + limit] if limit else rows
 
+	# The place is named only for the rows on this page, once per place. It is
+	# not part of what the filters above read, and naming every place on a
+	# national register to show twenty-five of them was most of this call.
+	paths: dict = {}
+
+	for row in page:
+		node = row["geo_node"]
+
+		if node and node not in paths:
+			from onerc_core.geo.services import adapter
+
+			paths[node] = adapter.get_full_path(node)
+
+		row["geo_path"] = paths.get(node) if node else None
+
 	return {
 		# The rows on this page. `total` is how many there are to page through,
 		# and the two are named differently because a screen needs both: one
@@ -205,8 +220,6 @@ def _row(record, as_of, names: dict, type_names: dict) -> dict:
 	uses, so a membership is never listed as current here and shown as lapsed
 	when somebody opens it.
 	"""
-	from onerc_core.geo.services import adapter
-
 	# A plain namespace over the queried fields, so the derivations below can be
 	# the same ones that take a document. Nothing on it is written.
 	membership = frappe._dict(record)
@@ -221,7 +234,8 @@ def _row(record, as_of, names: dict, type_names: dict) -> dict:
 		"membership_type": membership.membership_type,
 		"membership_type_name": type_names.get(membership.membership_type) or membership.membership_type,
 		"geo_node": membership.geo_node,
-		"geo_path": adapter.get_full_path(membership.geo_node) if membership.geo_node else None,
+		# Filled in by `search` for the rows on the page only.
+		"geo_path": None,
 		"membership_status": membership.membership_status,
 		"effective_status": membership_service.effective_status(membership, as_of),
 		"lapsed": membership_service.is_lapsed(membership, as_of),

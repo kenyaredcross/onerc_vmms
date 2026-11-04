@@ -160,8 +160,7 @@ export default function Stories() {
 
 			{!isLoading && !error && rows.length === 0 && (
 				<Empty title="Nothing published here yet" icon={Icon.book}>
-					Stories your society publishes appear here. An administrator writes them on the desk, as
-					Article records.
+					Stories published by your society appear here.
 				</Empty>
 			)}
 

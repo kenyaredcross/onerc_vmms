@@ -53,9 +53,13 @@ def submit(doc, user: str | None = None) -> dict:
 	Three entry states, and each is somebody arriving at a different moment:
 
 	    Draft        the ordinary submission — the rules above, then routing
-	    Submitted    parked before this society had a workflow. Routed now,
-	                 without re-running rules it already passed
+	    Submitted    parked before this society had a workflow, or until the
+	                 document was ready. Routed now, without re-running rules it
+	                 already passed
 	    In Review    already moving: the queue is re-synced and nothing else
+
+	A document that is not `contract.ready_for_review` is parked after the entry
+	rules and stays parked, however often this is called, until it is.
 	"""
 	user = user or frappe.session.user
 	workflow = config.optional(doc.doctype)
@@ -74,12 +78,21 @@ def submit(doc, user: str | None = None) -> dict:
 		return status(doc, user, workflow)
 
 	if state == states.SUBMITTED:
+		if not contract.ready_for_review(doc):
+			return status(doc, user, workflow)
+
 		return _route_parked(doc, workflow, user)
 
 	config.anchor(doc, workflow)
 	config.assert_anchor_allowed(doc, workflow)
 	assert_single_open(doc, workflow)
 	assert_cooldown(doc, workflow)
+
+	if not contract.ready_for_review(doc):
+		# Accepted, and waiting on something only the document can report —
+		# a fee the gateway has not confirmed. Parked past the entry rules, so
+		# routing it later needs nothing more than the document saying yes.
+		return park(doc, user)
 
 	contract.set_state(doc, states.SUBMITTED)
 	routed = _advance(doc, workflow, after=None)
@@ -173,7 +186,12 @@ def decide(doc, decision: str, reason: str | None = None, user: str | None = Non
 	# all. A no-op for a doctype nobody registered as scopeable, and the two
 	# checks agree by construction — routing only ever names holders whose
 	# scope covers the node.
-	guard(doc.doctype, doc.name, user)
+	# Read scope, because reaching the record is the question here: routing
+	# below is the authority. A stage may route to a role that only reads this
+	# doctype (a region's oversight role registered as its reading role), and
+	# asking for the doctype's acting role would refuse the very person the
+	# stage named.
+	guard(doc.doctype, doc.name, user, ptype="read")
 
 	if user not in auth["approvers"]:
 		frappe.throw(
@@ -214,7 +232,7 @@ def decide(doc, decision: str, reason: str | None = None, user: str | None = Non
 	else:
 		routed = _after_approval(doc, workflow, stage, auth)
 
-	return _commit(doc, workflow, routed, user)
+	return _commit(doc, workflow, routed, user, decided=True)
 
 
 def withdraw(doc, reason: str | None = None, user: str | None = None) -> dict:
@@ -456,9 +474,17 @@ def _after_approval(doc, workflow, stage, auth) -> list[str]:
 	return [user for user in auth["approvers"] if user not in approved_by]
 
 
-def _commit(doc, workflow, routed: list[str], user: str) -> dict:
-	"""Save once, then put the document in front of whoever it now belongs to."""
-	_save_transition(doc)
+def _commit(doc, workflow, routed: list[str], user: str, decided: bool = False) -> dict:
+	"""Save once, then put the document in front of whoever it now belongs to.
+
+	`decided` is `decide()` saving a decision it has already authorised against
+	the routed approvers and core's geo scope. That check is the authority, so
+	the save does not ask again whether the approver may *edit* the record: an
+	approver needs to be able to decide an application, not to rewrite it. A
+	County Coordinator who may only read volunteer applications, or a regional
+	approver who may only read memberships, is exactly that person.
+	"""
+	_save_transition(doc, ignore_permissions=decided)
 	assignment.sync(
 		doc.doctype,
 		doc.name,
@@ -667,6 +693,7 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 	workflow = _governing(doc, workflow)
 	auth = authorised(doc, workflow)
 	state = contract.state(doc)
+	held = states.is_open(state) and not contract.ready_for_review(doc)
 	node = doc.get(workflow.geo_node_field)
 	in_the_chain = set(auth["approvers"]) | {row.approver for row in contract.decisions(doc)}
 	visible = user in in_the_chain or scope.has_unrestricted_scope(user)
@@ -682,6 +709,10 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 		# would tell somebody who has applied that they have not — so the
 		# difference is said out loud rather than left to be inferred.
 		"awaiting_workflow": states.is_open(state) and not workflow.get("workflow_for"),
+		# Sent, and held back by the document itself: a membership whose M-Pesa
+		# fee has not come in. Not in anybody's queue and not theirs to decide.
+		"held": held,
+		"held_for": contract.held_for(doc) if held else None,
 		"geo_node": node,
 		"geo_path": adapter.get_full_path(node) if node else None,
 		"applicant": applicant.of(doc, workflow),
@@ -740,11 +771,11 @@ def _stage_description(doc, stage) -> str:
 	return _("{0}: {1} {2}").format(_(stage.stage_label), doc.doctype, doc.name)
 
 
-def _save_transition(doc):
+def _save_transition(doc, ignore_permissions: bool = False):
 	"""Let governed controllers distinguish engine transitions from ordinary edits."""
 	previous = frappe.flags.vmms_approval_transition
 	frappe.flags.vmms_approval_transition = (doc.doctype, doc.name)
 	try:
-		doc.save()
+		doc.save(ignore_permissions=ignore_permissions)
 	finally:
 		frappe.flags.vmms_approval_transition = previous

@@ -4,7 +4,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "disability"
+  "disability",
+  "disability_name",
+  "disability_category"
  ],
  "fields": [
   {
@@ -13,6 +15,20 @@
    "in_list_view": 1,
    "label": "Disability",
    "options": "Disability"
+  },
+  {
+   "fieldname": "disability_name",
+   "label": "Disability Name",
+   "fieldtype": "Data",
+   "fetch_from": "disability.disability_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disability_category",
+   "label": "Disability Category",
+   "fieldtype": "Data",
+   "fetch_from": "disability.disability_type",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,

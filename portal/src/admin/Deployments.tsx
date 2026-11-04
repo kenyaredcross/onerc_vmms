@@ -220,8 +220,8 @@ export function DeploymentsHub() {
 					value={summary.isLoading ? "—" : (figures?.pending ?? "—")}
 					hint={
 						figures && figures.pending > 0
-							? "Asked, and nobody has replied yet"
-							: "Nobody is waiting"
+							? "Asked, no reply yet"
+							: "None waiting"
 					}
 					icon={Icon.hourglass}
 					tint="amber"
@@ -345,7 +345,7 @@ export function DeploymentsHub() {
 						<div className="min-w-0">
 							<SectionTitle>Live operations</SectionTitle>
 							<p className="mt-0.5 text-[11.5px] text-muted">
-								What is running, and what needs intervention.
+								Active deployments and items that need attention.
 							</p>
 						</div>
 						<SectionLink to="/admin/deployments/ongoing">View all</SectionLink>
@@ -378,9 +378,9 @@ export function DeploymentsHub() {
 
 				<Card pad={false} className="min-w-0">
 					<div className="px-5 pb-3 pt-4">
-						<SectionTitle>Operations attention</SectionTitle>
+						<SectionTitle>Needs attention</SectionTitle>
 						<p className="mt-0.5 text-[11.5px] text-muted">
-							Across terms, requests and the rosters themselves.
+							Terms of reference, requests and rosters.
 						</p>
 					</div>
 
@@ -397,7 +397,7 @@ export function DeploymentsHub() {
 							}
 							lead={
 								figures?.terms === null
-									? "Ask an administrator if you need to read them"
+									? "Ask an administrator for access"
 									: `${figures?.terms ?? 0} readable in your area`
 							}
 						/>
@@ -987,7 +987,7 @@ export function OperationsDocuments() {
 		<>
 			<PageHeading
 				title="Operations documents"
-				lead="Private files attached to the project, terms of reference, or deployment they support."
+				lead="Private files attached to the project, terms of reference or deployment."
 				trail={[
 					{ label: "Operations", to: "/admin/deployments" },
 					{ label: "Operations documents" },
@@ -1247,7 +1247,7 @@ const ONGOING_COLUMNS: Array<{
 	{
 		key: "suspended",
 		label: "Suspended",
-		lead: "Stopped, and not finished. Somebody has to decide what happens next.",
+		lead: "Stopped before completion. A decision on next steps is needed.",
 		tone: "bg-warning-soft text-warning",
 		matches: (row) => row.status === "Suspended",
 	},
@@ -1644,10 +1644,10 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 
 	return (
 		<Card>
-			<SectionTitle>Set up a deployment</SectionTitle>
+			<SectionTitle>New deployment</SectionTitle>
 			<p className="mt-1 text-[12.5px] text-muted">
-				Under a terms of reference that has been submitted. Volunteers are put on afterwards, either
-				by placing them or by asking.
+				Created under a submitted terms of reference. Volunteers are added afterwards by placing or
+				asking them.
 			</p>
 
 			{available.isLoading ? (
@@ -1665,9 +1665,8 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 						No submitted terms of reference yet
 					</p>
 					<p className="mx-auto mt-1.5 max-w-[52ch] text-[12.5px] leading-relaxed text-muted">
-						A deployment is run against a mission, and a draft is not one anybody can be asked to
-						agree to. Write the terms first and submit them; this form fills itself in from
-						whichever one you choose.
+						A deployment needs a submitted terms of reference. Write and submit the terms first; this form
+						fills in from the one you choose.
 					</p>
 					<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
 						<ButtonLink to="/admin/deployments/terms?new=1">Write terms of reference</ButtonLink>
@@ -1727,7 +1726,7 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 								onChange={(event) => setRequired(event.target.value)}
 							/>
 						</Labelled>
-						<Labelled label="Status" hint="Where this deployment starts in its lifecycle.">
+						<Labelled label="Status" hint="Initial status of the deployment.">
 							<select className={INPUT} value={status} onChange={(event) => setStatus(event.target.value)}>
 								{["Planned", "Active", "Completed", "Cancelled"].map((option) => (
 									<option key={option} value={option}>
@@ -1764,7 +1763,7 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 
 					<div className="mt-4">
 						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-							Where this deployment happens
+							Location
 						</p>
 						<GeoSelects chain={chain} onChain={setChain} idPrefix="deployment" />
 						<p className="mt-2 text-[12px] text-slate-faint">
@@ -2065,15 +2064,15 @@ function Placement({
 				On the map
 			</p>
 			<p className="mt-1 text-[11.5px] leading-relaxed text-muted">
-				What a volunteer sees on their invitation and in their mission file. Until a place has a
-				point, their screens show the address in words and no map.
+				Shown on the volunteer's invitation and mission file. Without a map point, only the address is
+				shown.
 			</p>
 
 			<div className="mt-3 space-y-2.5">
 				<PlacePin
 					deployment={deployment.name}
 					place="meeting"
-					label="Where people meet"
+					label="Meeting point"
 					point={deployment.where.meeting_point}
 					onChanged={onChanged}
 				/>
@@ -2439,7 +2438,7 @@ function DeploymentDetailsEditor({
 			<Card>
 				<div className="flex flex-wrap items-start justify-between gap-3">
 					<div className="min-w-0">
-						<SectionTitle>Where and when</SectionTitle>
+						<SectionTitle>Location and dates</SectionTitle>
 						<p className="mt-1 text-[12px] text-muted">
 							The site, the meeting point, how people get there, and the hours of the day.
 						</p>
@@ -2489,7 +2488,7 @@ function DeploymentDetailsEditor({
 
 	return (
 		<Card>
-			<SectionTitle>Where and when</SectionTitle>
+			<SectionTitle>Location and dates</SectionTitle>
 
 			<div className="mt-4 space-y-5">
 				<div>
@@ -2497,7 +2496,7 @@ function DeploymentDetailsEditor({
 						The deployment point
 					</p>
 					<div className="grid gap-4 sm:grid-cols-2">
-						<Labelled label="What it is called">
+						<Labelled label="Name">
 							<input
 								className={INPUT}
 								value={form.site_name}
@@ -2517,7 +2516,7 @@ function DeploymentDetailsEditor({
 
 				<div>
 					<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-						Where people meet
+						Meeting point
 					</p>
 					<div className="grid gap-4 sm:grid-cols-2">
 						<Labelled label="Meeting point">
@@ -2545,7 +2544,7 @@ function DeploymentDetailsEditor({
 					<div className="grid gap-4 sm:grid-cols-2">
 						<Labelled
 							label="Travel notes"
-							hint="How to reach it, what to bring, what the road is like."
+							hint="Directions, what to bring and road conditions."
 						>
 							<textarea
 								className={cx(INPUT, "min-h-[72px] resize-y")}
@@ -2561,7 +2560,7 @@ function DeploymentDetailsEditor({
 									onChange={(event) => set("local_contact_name")(event.target.value)}
 								/>
 							</Labelled>
-							<Labelled label="Their phone number">
+							<Labelled label="Phone number">
 								<input
 									type="tel"
 									className={INPUT}
@@ -2594,7 +2593,7 @@ function DeploymentDetailsEditor({
 								onChange={(event) => set("planned_end")(event.target.value)}
 							/>
 						</Labelled>
-						<Labelled label="Briefing" hint="When people are briefed, if they are.">
+						<Labelled label="Briefing" hint="Briefing time, if any.">
 							<input
 								type="datetime-local"
 								className={INPUT}
@@ -2682,7 +2681,7 @@ function DeploymentDetailsEditor({
 				{material.length > 0 && (
 					<div className="rounded-xl border border-amber-line bg-amber-soft/40 px-3.5 py-3">
 						<Labelled
-							label="Why this changed"
+							label="Reason for change"
 							hint="Everybody already on this deployment is told, in these words."
 						>
 							<textarea
@@ -2746,7 +2745,7 @@ function CloseOut({
 	if (deployment.is_closed_out) {
 		return (
 			<Card>
-				<SectionTitle>Closed out</SectionTitle>
+				<SectionTitle>Closure</SectionTitle>
 				<p className="mt-1 text-[12px] text-muted">
 					Filed {formatDate(closed.closed_out_on)}
 					{closed.closed_out_by ? ` by ${closed.closed_out_by}` : ""}.
@@ -2755,7 +2754,7 @@ function CloseOut({
 				{closed.lessons_learned && (
 					<div className="mt-3">
 						<p className="text-[11.5px] font-semibold uppercase tracking-wide text-slate-faint">
-							What was learned
+							Lessons learned
 						</p>
 						<p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-muted">
 							{closed.lessons_learned}
@@ -2803,17 +2802,15 @@ function CloseOut({
 
 	return (
 		<Card>
-			<SectionTitle>Close this out</SectionTitle>
+			<SectionTitle>Close deployment</SectionTitle>
 			<p className="mt-1 text-[12px] text-muted">
-				The work is finished. Closing it out files the mission and takes it off the open register.
-				Both fields below are optional — a thin file is better than an open deployment nobody is
-				running.
+				Closing files the deployment and removes it from the open list. Both fields below are optional.
 			</p>
 
 			<div className="mt-4 space-y-4">
 				<Labelled
-					label="What was learned"
-					hint="What went well, what did not, what the next branch to run this should know."
+					label="Lessons learned"
+					hint="What went well, what did not, and advice for next time."
 				>
 					<textarea
 						className={cx(INPUT, "min-h-[96px] resize-y")}
@@ -2975,14 +2972,13 @@ function Leadership({ deployment }: { deployment: DeploymentDetailDto }) {
 					<div>
 						<p className="text-[13px] font-bold text-ink">{leader.full_name}</p>
 						<p className="text-[11.5px] text-slate-faint">
-							Updates and reports are addressed to them.
+							Updates and reports are sent to the deployment lead.
 						</p>
 					</div>
 				</div>
 			) : (
 				<p className="mt-2 text-[12.5px] text-slate-faint">
-					Nobody is leading this yet. Name one from the roster below — a deployment admits one, so
-					that updates and reports have one person to be addressed to.
+					No deployment lead. Choose one from the roster below.
 				</p>
 			)}
 		</div>
@@ -3001,7 +2997,7 @@ const ROSTER_GROUPS = [
 		key: "asked",
 		title: "Asked, waiting",
 		statuses: ["Pending"],
-		lead: "The question is in front of them. Nobody here holds a place yet.",
+		lead: "Asked. Waiting for a reply.",
 	},
 	{
 		key: "settled",
@@ -3042,8 +3038,7 @@ function Roster({
 
 			{deployment.participants.length === 0 ? (
 				<p className="mt-2 text-[12.5px] text-slate-faint">
-					Nobody on this deployment yet. Find volunteers who fit its terms above — you can place
-					them, or ask them and let them answer.
+					No volunteers on this deployment. Find matching volunteers above to place or ask them.
 				</p>
 			) : (
 				<div className="mt-4 space-y-5">
@@ -3253,7 +3248,7 @@ function Attendance({
 				<div className="mt-3 max-w-[260px]">
 					<Labelled
 						label="Hours served"
-						hint="This becomes their hours on their own record, so it is the figure you are standing behind."
+						hint="Recorded as volunteer hours on the volunteer's record."
 					>
 						<input
 							type="number"
@@ -3285,9 +3280,9 @@ function Attendance({
 
 /** The three answers to "did they go", with what each one means in plain words. */
 const OUTCOMES = [
-	{ status: "Participated", lead: "They served the whole mission." },
-	{ status: "Partial Attendance", lead: "They served part of it." },
-	{ status: "No Show", lead: "They did not come." },
+	{ status: "Participated", lead: "Served the full deployment." },
+	{ status: "Partial Attendance", lead: "Served part of the deployment." },
+	{ status: "No Show", lead: "Did not attend." },
 ] as const;
 
 /* -------------------------------------------------------------- candidates */
@@ -3397,7 +3392,7 @@ function CandidatePane({
 			setPicked(new Set());
 			onAssigned();
 		} catch (problem) {
-			setFailure(errorMessage(problem, "Nobody was assigned."));
+			setFailure(errorMessage(problem, "No one was assigned."));
 		} finally {
 			setBusy(null);
 		}
@@ -3405,10 +3400,10 @@ function CandidatePane({
 
 	return (
 		<Card>
-			<SectionTitle>Volunteers who fit this mission</SectionTitle>
+			<SectionTitle>Matching volunteers</SectionTitle>
 			<p className="mt-1 text-[12px] text-slate-faint">
-				Deployable, holding what these terms require, and inside your own area. Whether they are free
-				and whether they are already committed are shown, not enforced — unless you say so.
+				Eligible volunteers in your area who hold the required certifications. Availability and existing
+				commitments are shown but not enforced unless you choose to.
 			</p>
 
 			<div className="mt-3.5 grid gap-3 sm:grid-cols-2">
@@ -3447,10 +3442,8 @@ function CandidatePane({
 
 			{answer?.register_readable === false && (
 				<Empty title="You cannot see the volunteer register">
-					Staffing a deployment reads the register of volunteers, and that register is shown to
-					whoever holds your society's volunteer role for the area. Your account runs deployments
-					but has not been given that role, so there is nobody here to show — ask an administrator
-					for it, and this panel fills in.
+					You do not have access to the volunteer register for this area. Ask an administrator for the
+					volunteer role to see matching volunteers.
 				</Empty>
 			)}
 
@@ -3472,7 +3465,7 @@ function CandidatePane({
 			)}
 
 			{answer && answer.register_readable !== false && rows.length === 0 && (
-				<Empty title="Nobody matches yet">
+				<Empty title="No matching volunteers">
 					No volunteer on this page is both deployable and holds every certification these terms
 					require. Narrow or clear the search, loosen the two toggles, or widen the terms.
 				</Empty>
@@ -3528,8 +3521,8 @@ function CandidatePane({
 							{busy === "place" ? "Placing…" : `Place ${picked.size || ""}`.trim()}
 						</Button>
 						<p className="text-[11.5px] text-slate-faint">
-							Asking sends each person a question they answer. Placing records that they are
-							going, which is what you want when it was already arranged.
+							Ask sends each volunteer a request to accept or decline. Place adds them directly, for
+							arrangements already agreed.
 						</p>
 					</div>
 				</>
@@ -3827,7 +3820,7 @@ function Feed({
 
 	return (
 		<Card>
-			<SectionTitle>What has happened</SectionTitle>
+			<SectionTitle>Activity</SectionTitle>
 			<p className="mt-1 text-[12px] text-slate-faint">
 				This deployment's own log, and the task reports volunteers have filed against it.
 			</p>
@@ -3837,7 +3830,7 @@ function Feed({
 					className={cx(INPUT, "min-h-[64px] resize-y bg-white")}
 					value={note}
 					onChange={(event) => setNote(event.target.value)}
-					placeholder="What is going on?"
+					placeholder="Add an update"
 				/>
 
 				<div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -3879,8 +3872,7 @@ function Feed({
 
 			{!loading && entries.length === 0 && (
 				<p className="mt-4 text-[12.5px] text-slate-faint">
-					Nothing has been recorded yet. Status changes and roster changes write themselves in as
-					they happen, so this fills up on its own once the deployment is running.
+					No activity yet. Status and roster changes are recorded here automatically.
 				</p>
 			)}
 
@@ -4146,7 +4138,7 @@ function RequestCard({ row }: { row: DeploymentRequestRow }) {
 				    offering a second decision control here. */}
 				{row.approval?.can_act && (
 					<Link
-						to="/admin/queue/volunteers"
+						to="/admin/queue/volunteers/assigned"
 						className="ml-auto text-[12px] font-semibold text-blue-press hover:underline"
 					>
 						Decide this in your review queue →
@@ -4185,7 +4177,7 @@ function standingOf(row: DeploymentRequestRow): { text: string; tone: string } {
 	}
 
 	if (row.approval.is_open) {
-		return { text: "In review, waiting on somebody else", tone: "text-warning" };
+		return { text: "In review with another approver", tone: "text-warning" };
 	}
 
 	return { text: `Decided: ${row.approval.state}`, tone: "text-muted" };

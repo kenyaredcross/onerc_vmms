@@ -18,6 +18,13 @@
   "column_break_fee",
   "is_lifetime",
   "duration_days",
+  "billing_cycle",
+  "requires_age_requirement",
+  "lower_age_limit",
+  "upper_age_limit",
+  "membership_package",
+  "linked_item",
+  "legacy_template",
   "approval_section",
   "approval_mode",
   "column_break_approval",
@@ -161,6 +168,51 @@
    "fieldtype": "Table",
    "label": "Benefits",
    "options": "VMMS Membership Benefit"
+  },
+  {
+   "fieldname": "billing_cycle",
+   "label": "Billing Cycle",
+   "fieldtype": "Select",
+   "options": "\nMonthly\nYearly\nOne Off",
+   "description": "Calendar-based legacy term. Leave blank to use Duration (Days)."
+  },
+  {
+   "fieldname": "requires_age_requirement",
+   "label": "Requires Age Requirement",
+   "fieldtype": "Check",
+   "default": "0"
+  },
+  {
+   "fieldname": "lower_age_limit",
+   "label": "Minimum Age",
+   "fieldtype": "Int",
+   "depends_on": "eval:doc.requires_age_requirement",
+   "description": "Inclusive age at application."
+  },
+  {
+   "fieldname": "upper_age_limit",
+   "label": "Maximum Age",
+   "fieldtype": "Int",
+   "depends_on": "eval:doc.requires_age_requirement",
+   "description": "Inclusive age at application."
+  },
+  {
+   "fieldname": "membership_package",
+   "label": "Membership Package Reference",
+   "fieldtype": "Data",
+   "description": "Legacy package identifier retained without depending on the old application."
+  },
+  {
+   "fieldname": "linked_item",
+   "label": "Accounting Item Reference",
+   "fieldtype": "Data",
+   "description": "Original accounting item identifier for reconciliation."
+  },
+  {
+   "fieldname": "legacy_template",
+   "label": "Legacy Print Format",
+   "fieldtype": "Data",
+   "description": "Original Print Format name; the current certificate uses Certificate Template."
   }
  ],
  "grid_page_length": 50,

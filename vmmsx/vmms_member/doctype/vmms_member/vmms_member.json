@@ -17,6 +17,10 @@
   "register_section",
   "naming_series",
   "red_profile",
+  "legacy_member_id",
+  "customer",
+  "customer_name",
+  "supplier",
   "column_break_identity",
   "status",
   "joined_on",
@@ -124,6 +128,30 @@
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "legacy_member_id",
+   "label": "Legacy Member Number",
+   "fieldtype": "Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "label": "Accounting Customer Reference",
+   "fieldtype": "Data",
+   "description": "Original Customer identifier retained for accounting reconciliation."
+  },
+  {
+   "fieldname": "supplier",
+   "label": "Accounting Supplier Reference",
+   "fieldtype": "Data",
+   "description": "Original Supplier identifier retained for accounting reconciliation."
+  },
+  {
+   "fieldname": "customer_name",
+   "label": "Accounting Customer Name",
+   "fieldtype": "Data",
+   "description": "Original accounting customer display name retained for reconciliation."
   }
  ],
  "grid_page_length": 50,

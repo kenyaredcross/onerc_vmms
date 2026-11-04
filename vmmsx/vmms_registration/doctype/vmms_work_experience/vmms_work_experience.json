@@ -10,7 +10,8 @@
   "started_on",
   "ended_on",
   "is_current",
-  "summary"
+  "summary",
+  "location"
  ],
  "fields": [
   {
@@ -51,6 +52,11 @@
    "fieldname": "summary",
    "fieldtype": "Small Text",
    "label": "What They Did"
+  },
+  {
+   "fieldname": "location",
+   "label": "Location",
+   "fieldtype": "Data"
   }
  ],
  "grid_page_length": 50,

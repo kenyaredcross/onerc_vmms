@@ -849,7 +849,7 @@ export function ConsoleShell({
 						},
 						{
 							title: "The current workspace",
-							body: "Large work areas add a second navigation row or column so their tools stay close together.",
+							body: "Large work areas add a second navigation row or column to keep related tools together.",
 							selector: "[data-tour='console-header']",
 						},
 						{

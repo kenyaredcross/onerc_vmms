@@ -275,10 +275,9 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 	def test_the_dossier_hands_out_no_attachment(self):
 		"""The scans are private files anchored to the profile.
 
-		A URL on this screen would look like evidence and resolve to a refusal for
-		most of the people who can read the screen. They are opened on the desk,
-		on the profile itself — so the field is not in the DTO at all rather than
-		being present and empty.
+		Their own address would resolve to a refusal for most people reading the
+		dossier, so the rows never carry it. Files arrive separately, in
+		`attachments`, each opened through `download_evidence` against the record.
 		"""
 		from vmmsx.volunteer.services import identity
 

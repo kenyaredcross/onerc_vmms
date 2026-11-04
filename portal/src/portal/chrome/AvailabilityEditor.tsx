@@ -104,7 +104,7 @@ export function AvailabilityEditor({
 	if (slots.length === 0) {
 		return (
 			<Empty framed={false} title="Your society has not set up its availability windows yet">
-				Availability options will appear after they are configured by your branch.
+				No availability options yet.
 			</Empty>
 		);
 	}

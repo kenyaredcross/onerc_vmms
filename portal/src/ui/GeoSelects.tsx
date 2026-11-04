@@ -113,6 +113,10 @@ export function GeoSelects({
 	allowedLevels,
 	idPrefix = "geo",
 	disabled = false,
+	fromIndex = 0,
+	showEmptyLevels = false,
+	inline = false,
+	showSummary = true,
 }: {
 	/** The answered rungs, root first. */
 	chain: GeoNode[];
@@ -122,6 +126,10 @@ export function GeoSelects({
 	/** Prefixes the generated input ids, so two pickers can share a page. */
 	idPrefix?: string;
 	disabled?: boolean;
+	fromIndex?: number;
+	showEmptyLevels?: boolean;
+	inline?: boolean;
+	showSummary?: boolean;
 }) {
 	const ladder = useFrappeGetCall<{ message: { levels: GeoLevel[] } }>(
 		API.geoLadder,
@@ -146,12 +154,12 @@ export function GeoSelects({
 	// start, rather than discovering a fourth dropdown after the third.
 	const count = Math.max(rungs.length, chain.length + 1);
 
-	const firstAsked = Array.from({ length: count }).findIndex((_, index) => !settled[index]);
+	const firstAsked = Array.from({ length: count }).findIndex((_, index) => index >= fromIndex && !settled[index]);
 
 	return (
-		<div>
-			<div className="grid gap-4 sm:grid-cols-2">
-				{Array.from({ length: count }).map((_, index) => (
+		<div className={inline ? "contents" : undefined}>
+			<div className={inline ? "contents" : "grid gap-4 sm:grid-cols-2"}>
+				{Array.from({ length: count }).map((_, index) => index < fromIndex ? null : (
 					<Rung
 						key={index}
 						index={index}
@@ -159,7 +167,9 @@ export function GeoSelects({
 						parent={index === 0 ? null : (chain[index - 1] ?? null)}
 						chosen={chain[index] ?? null}
 						fallbackLabel={rungs[index]}
-						required={index === firstAsked}
+						showEmpty={showEmptyLevels && Boolean(rungs[index])}
+						keepVisible={inline}
+						required={index === firstAsked && !chosen}
 						disabled={disabled || (index > 0 && !chain[index - 1])}
 						onSettled={(only) =>
 							setSettled((current) =>
@@ -189,22 +199,13 @@ export function GeoSelects({
 				</div>
 			)}
 
-			<Verdict
+			{showSummary && <Verdict
 				chain={chain}
 				chosen={chosen}
 				answered={chain.length > Math.max(firstAsked, 0)}
-				// The rungs that answered themselves are not part of what anybody
-				// chose, so the summary does not read them back. On a single-society
-				// ladder that is the society's own name — "Tanzania Red Cross
-				// Society · Arusha · Arusha City", where two thirds of the line is
-				// the same on every screen in the product and the branch is the part
-				// being confirmed. Sliced rather than filtered on the name: the rule
-				// is "what you were not asked", which the list already knows, and it
-				// holds at whatever rung it happens to occur.
-				from={Math.max(firstAsked, 0)}
 				allowedLevels={allowedLevels}
 				levels={levels}
-			/>
+			/>}
 		</div>
 	);
 }
@@ -228,6 +229,8 @@ function Rung({
 	parent,
 	chosen,
 	fallbackLabel,
+	showEmpty,
+	keepVisible,
 	required,
 	disabled,
 	onAnswer,
@@ -238,6 +241,8 @@ function Rung({
 	parent: GeoNode | null;
 	chosen: GeoNode | null;
 	fallbackLabel?: string;
+	showEmpty?: boolean;
+	keepVisible?: boolean;
 	required: boolean;
 	disabled: boolean;
 	onAnswer: (node: GeoNode | null) => void;
@@ -266,11 +271,13 @@ function Rung({
 	// same single node does not re-answer.
 	useEffect(() => {
 		onSettled(Boolean(only));
-		if (only && !disabled && chosen?.name !== only.name) onAnswer(only);
+		// A visible residence field waits for an explicit answer; a single
+		// option must not replace a saved home while its path is loading.
+		if (only && !keepVisible && !disabled && chosen?.name !== only.name) onAnswer(only);
 		// `onAnswer` and `onSettled` are inline closures over the parent's current
 		// chain and change on every render; depending on them would loop.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [only?.name, chosen?.name, disabled]);
+	}, [only?.name, chosen?.name, disabled, keepVisible]);
 
 	// The nodes' own level name is the truth about what this rung is; the
 	// ladder's is what to call it before any of them have arrived.
@@ -278,17 +285,18 @@ function Rung({
 
 	// Nothing beneath the rung above means this is the bottom of this branch of
 	// the tree — not an error, and not an empty dropdown to stare at.
-	if (index > 0 && !waiting && !isLoading && !error && nodes.length === 0) return null;
+	const unavailable = !waiting && !isLoading && !error && nodes.length === 0;
+	if (index > 0 && unavailable && !showEmpty) return null;
 
 	// The single-answer case, taken above and not asked about here.
-	if (only) return null;
+	if (only && !keepVisible) return null;
 
 	return (
 		<Field label={label} htmlFor={id} required={required}>
 			<div className="relative">
 				<select
 					id={id}
-					disabled={disabled || isLoading}
+					disabled={disabled || isLoading || (showEmpty && unavailable)}
 					value={chosen?.name ?? ""}
 					onChange={(event) =>
 						onAnswer(nodes.find((node) => node.name === event.target.value) ?? null)
@@ -303,6 +311,8 @@ function Rung({
 							? "Loading…"
 							: error
 								? "Unavailable"
+								: unavailable && showEmpty
+									? "No options available"
 								: waiting
 									? "Choose the one above first"
 									: `Select ${label.toLowerCase()}`}
@@ -339,18 +349,11 @@ function Verdict({
 	chain,
 	chosen,
 	answered,
-	from,
 	allowedLevels,
 	levels,
 }: {
 	chain: GeoNode[];
 	chosen: GeoNode | null;
-	/**
-	 * The first rung this person was actually asked. Everything above it
-	 * answered itself for want of an alternative and is not read back — see the
-	 * call site.
-	 */
-	from: number;
 	/**
 	 * Whether the person has answered a rung they were actually asked. A rung
 	 * that answered itself for want of an alternative fills the chain without
@@ -367,9 +370,9 @@ function Verdict({
 			<p className="mt-4 flex items-center gap-2 rounded-xl border border-blue/20 bg-rail/[0.04] px-3.5 py-2.5 text-[12.5px] text-ink">
 				<span className="h-1.5 w-1.5 flex-none rounded-full bg-rail" aria-hidden="true" />
 				<span className="min-w-0 truncate font-semibold">
-					{(chain.length > from ? chain.slice(from) : chain)
-						.map((node) => node.label)
-						.join(" · ")}
+					{/* The place chosen, by its own name. The rungs above it are the
+					    society's structure and are not read back. */}
+					{chain[chain.length - 1]?.label}
 				</span>
 			</p>
 		);
@@ -382,7 +385,7 @@ function Verdict({
 
 		return (
 			<p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[12.5px] text-amber-800">
-				Keep going down to a <b>{wanted}</b>. That is the level this society records at.
+				Select a <b>{wanted}</b>.
 			</p>
 		);
 	}

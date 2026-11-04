@@ -85,6 +85,7 @@ class TestTheSectionTableIsHonest(IntegrationTestCase):
 			| {entry["section"] for entry in console.ADMIN_SECTIONS}
 			| {entry["section"] for entry in console.COMPANION_SECTIONS}
 			| set(console.UNGATED_SECTIONS)
+			| set(console.OVERSIGHT_SECTIONS)
 		)
 
 		self.assertEqual(set(console.ORDER), named)

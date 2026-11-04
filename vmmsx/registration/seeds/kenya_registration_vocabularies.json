@@ -1,0 +1,1386 @@
+{
+  "professions": [
+    "accountanat",
+    "Accountant",
+    "Accounting",
+    "Acting",
+    "Actor",
+    "Actuary",
+    "Admin",
+    "Admin Assistant",
+    "Administration",
+    "Administration And Front Office Operator",
+    "Administration, Governance & Humanitarian",
+    "Administration/Leadership",
+    "Administrative",
+    "Administrative Assistant",
+    "Administrator",
+    "Adviser",
+    "Advocacy Champion For Health Financing",
+    "Agribusiness Management And Trade",
+    "Agriculture",
+    "Agriculture  Officer",
+    "Agriculture Extension & Information Technology",
+    "Agriculture Field",
+    "AI Researcher",
+    "Air Cargo Management",
+    "Ambulance Driver",
+    "Analytic Chemistry",
+    "Animator",
+    "Aqua Rescue",
+    "Architect",
+    "Architecture",
+    "Armed Constable",
+    "Artist",
+    "Arts And Design",
+    "Arts-Anthropology",
+    "Assistant Librarian And Pursuing Diploma In Quantity Surveying",
+    "Assistant Project Associate",
+    "Assistant Public Health Officer",
+    "Athlete",
+    "Audio Visual Technician",
+    "Ba Kiswahili",
+    "Bachelor",
+    "Bachelor Of Arts In Community Development",
+    "Bachelor of Arts Social Science",
+    "Bachelor Of Science In Chemistry",
+    "Bachelor'S Degree In Environmental Planning And Management.",
+    "Bachelors Of Busines Management",
+    "Bachelors Of Science And Finance Economic",
+    "Bank Teller",
+    "Banker",
+    "Banking &Fainance",
+    "Bar Man",
+    "Barber",
+    "Barista",
+    "Base Titanium",
+    "Bbit",
+    "Bcom",
+    "Beautician",
+    "Beutyify",
+    "Biochemist/Molecular Biologist",
+    "Biochemistrian",
+    "Biologist",
+    "Biomedical Scientist",
+    "Biotechnologist",
+    "BIS assistant",
+    "Broadcasting",
+    "Bsc Marine Affairs",
+    "Business",
+    "Business  Field",
+    "Business  Procurer",
+    "Business Administration",
+    "Business Administrator",
+    "Business Analyst",
+    "Business Development Officer",
+    "Business Field",
+    "Business Lady",
+    "Business Man",
+    "Business Management",
+    "Business Woman",
+    "Businessadministration",
+    "Businesslady",
+    "Businessman",
+    "Bussiness",
+    "Bussiness Women",
+    "Campentry",
+    "Capentry",
+    "Care Giver",
+    "Carpenter",
+    "Carpentry",
+    "Casual",
+    "Casual Labourer",
+    "Casual Worker",
+    "Catering",
+    "Catering And Accomodation",
+    "Catering and Accomodation Magegement",
+    "Catering And Acommodation Operation",
+    "Cctv Operator",
+    "Certificate in Child Care and Protection",
+    "Certificate in Human Resourse",
+    "Certified Professional Mediator",
+    "CHA",
+    "Chef",
+    "Cheff",
+    "Chemist",
+    "Chief",
+    "Chief Officer",
+    "Church",
+    "Civil Engineer",
+    "Civil Engineering",
+    "Civil Servant",
+    "Civil Service",
+    "Clearing & Forwading",
+    "Clearing Agent",
+    "Clerk",
+    "Climate Field",
+    "Clinical Medicine",
+    "Clinical Officer",
+    "Cloud Engineer",
+    "Cmmounity Health",
+    "Coaching",
+    "College Student",
+    "Commerce",
+    "Commercial / Industrial Designer",
+    "Commissioner",
+    "Communication",
+    "Communication Expert",
+    "Communication Specialist",
+    "Communications/It",
+    "Community Developer",
+    "Community Development",
+    "Community Development And Accounting And Finance",
+    "Community Development And Social Work",
+    "Community Development Field",
+    "Community Development/Social Work",
+    "Community Deveopment",
+    "Community Health",
+    "Community Health Aasistance",
+    "Community Health and Development",
+    "Community Health And Development Worker",
+    "Community Health And Hiv/Aids Management And Counselling Psychology",
+    "Community Health And Social Work",
+    "Community Health Assistance",
+    "Community Health Assistant",
+    "Community Health Promoter",
+    "Community Health Promotor",
+    "Community Health Volunteer C.H.V",
+    "Community Health Worker",
+    "Community Officer",
+    "Community resource management",
+    "Community Work",
+    "Computer",
+    "Computer Expert",
+    "Computer Science",
+    "Computer Scientist",
+    "Computer Technology",
+    "Computer Training",
+    "Conservation",
+    "Conservation Manager",
+    "Consoltant and researcher",
+    "Consultant",
+    "Container Inspector",
+    "Content Writer",
+    "Coomunications",
+    "Cooperative Work Officer",
+    "Copywriter",
+    "Correctional Officer",
+    "Coucelor",
+    "Counseling",
+    "Counseling Psychologist",
+    "Counseling Psychology Intern",
+    "Counselling",
+    "Counselling  Psychologist",
+    "Counselling And Criminal Justice Expert",
+    "Counselling Psychologist",
+    "Counselling Psychology",
+    "Counsellor",
+    "Counselor",
+    "County Coordinator",
+    "Cpa,Accounting And Administration",
+    "Creative Field",
+    "Creative Field (Artists)",
+    "Credit Analysis",
+    "Criminologist",
+    "Criminology",
+    "Crm",
+    "Currently Am Studying",
+    "Customer Service Field",
+    "Customer Support Agent",
+    "Cybersecurity Analyst",
+    "Data Analyst",
+    "Data Collectors",
+    "Data Scientist / Data Analyst",
+    "Deejay",
+    "Dentist",
+    "Design",
+    "Design Field",
+    "Designer",
+    "Developer",
+    "Development Agent",
+    "Development Oficer",
+    "Development Studies",
+    "DevOps Engineer",
+    "Digital Marketer",
+    "Diploma In Business Management",
+    "Diplomat",
+    "Director",
+    "Disaster",
+    "Disaster Management",
+    "Disaster Manager",
+    "Doctor",
+    "Dressmaking",
+    "Driver",
+    "Driver  Grade Ii / Customs Clearing And Freight Forwarder",
+    "Driver ..Field",
+    "Driving",
+    "Driving /Logistics",
+    "Drought Information Officer",
+    "Dryland Resource Management",
+    "Ecd Teacher",
+    "Eco Tour Guide",
+    "Economics",
+    "Economics and sociology",
+    "Economics And Statistics",
+    "Economist",
+    "Economist And Statistician",
+    "Eduaction  Field",
+    "Education",
+    "Education & Creative Arts - Music",
+    "Education Field",
+    "Educational",
+    "Elecrtician",
+    "Electric Engineering",
+    "Electrical",
+    "Electrical Engineer",
+    "Electrical Engineering",
+    "Electrical Wiring",
+    "Electrician",
+    "Electrician, Contractor",
+    "Electronic Sales",
+    "Eletrical",
+    "Emergency Response",
+    "Employed",
+    "Employee",
+    "Emt",
+    "Emt/First Aid",
+    "Emtc",
+    "Enforcement Officer",
+    "Engineer",
+    "Engineering",
+    "Engineering Field",
+    "Entrepreneur",
+    "Entreprenuership",
+    "Enviroment",
+    "Enviromental Science",
+    "Environment",
+    "Environment Health And Safety Management",
+    "Environment Officer",
+    "Environment, Occupational Health And Safety",
+    "Environmental And Water",
+    "Environmental Conservation",
+    "Environmental Consultant (Internship)",
+    "Environmental Health",
+    "Environmental Management",
+    "Environmental Officer",
+    "Environmental Science",
+    "Environmental Scientist",
+    "Environmentalist",
+    "Etihad Airways Cabin Crew",
+    "Event Managenent",
+    "Event Planner",
+    "Events Management",
+    "Farmer",
+    "Fashion Designer",
+    "Father",
+    "Field Assistant",
+    "Field Officer",
+    "Field Operation Assistant Manager",
+    "Field Worker",
+    "Filming Production",
+    "Finance",
+    "Finance Field",
+    "Finance Officer / Marketing Officer",
+    "Finance/Accounts",
+    "Financial Analyst",
+    "Fire Fighter",
+    "Fire officer",
+    "Fire Safety Officer/ Firefighter",
+    "Fire Station",
+    "Firefighter",
+    "Fisheries And Blue Economy",
+    "Fitness Trainer",
+    "Food And Beverage",
+    "Food And Beverage Service And Sales",
+    "food monitor",
+    "Food Sciencist",
+    "Forestry",
+    "Freelance Land Surveyor/Planner",
+    "Freelancer",
+    "Front Office",
+    "Fundraising Manager",
+    "Game Developer",
+    "Gardener",
+    "Gender Expert And A Sociologist",
+    "Gender Specialist",
+    "General Manager",
+    "General Support",
+    "Geographical",
+    "Geography Field",
+    "Geologist",
+    "Geology",
+    "Geospatial Engineer",
+    "GIS Analyst",
+    "GIS Specialist",
+    "Governance",
+    "Graduate Psychology",
+    "Graphic Designer",
+    "Hairdressing",
+    "Heailth",
+    "Health",
+    "Health And Nutrition",
+    "Health And Safety Officer",
+    "Health Officer",
+    "Health Promotion And Education",
+    "Health Records & It",
+    "Health Records And Information Management",
+    "Health Records And Information Technology",
+    "Health Relations",
+    "health science field",
+    "Health Sciences",
+    "Health Systems Management",
+    "Health Worker",
+    "Hiv Management",
+    "Hospitality",
+    "Hospitality - Chef",
+    "Hospitality And Tourism Industry",
+    "Hospitality Course",
+    "Hospitality Management",
+    "Hotel Company",
+    "Hotel Industry",
+    "Hotelier",
+    "House Wife",
+    "Housekeeping",
+    "Hse Manager",
+    "Hse Officer",
+    "Huduma Centre",
+    "Human Resource",
+    "Human Resource Field",
+    "Human Resource Manager",
+    "Human Resources",
+    "Humanitarian",
+    "Humanitarian Field",
+    "Hydrologist",
+    "Ict",
+    "Ict And Library Services.",
+    "Ict Field",
+    "Ict Officer",
+    "ICT professional",
+    "Ict Scientist",
+    "Ict Specialist",
+    "Industrial Engineering",
+    "Industrial Manufacturing Field.",
+    "Information Communication Technology",
+    "Information Science, Records Management",
+    "Information Technology",
+    "Information Technology Field",
+    "Interior Designer",
+    "Intern",
+    "International Relation",
+    "International Relations",
+    "International Relations And Diplomacy",
+    "International Response",
+    "International Studies",
+    "It",
+    "It Field",
+    "It Network Engineer",
+    "IT Support Technician",
+    "Journalism",
+    "Journalism And Mass Communication",
+    "Journalism Student At Riara University And An International Relations Student At Strathmore University As Well",
+    "Journalist",
+    "Journalist / Media Person",
+    "Kcse",
+    "Kenya Registered Community Health Nurse",
+    "Kiswahili &Sociallogy",
+    "Kmtc Student",
+    "Lab Technician",
+    "Laboratory Science",
+    "Land Enviromental And Natural Resouces",
+    "Landscape Architecture",
+    "Langauges",
+    "Law",
+    "Lawyer",
+    "Leadership",
+    "Lecturer",
+    "Legal Field",
+    "Librarian",
+    "Lifeguard",
+    "Lifeskills Coach",
+    "Logistics",
+    "Logistics & Chain Management",
+    "Logistics Manager",
+    "Machine Learning Engineer",
+    "Male Champion, Cmdrr",
+    "Manager",
+    "Manufacturing Field",
+    "Marine",
+    "Marine Ranger",
+    "Marine Resource",
+    "Marine Resource Management",
+    "Marine Response",
+    "Marine Science",
+    "Marine Vessel Repair",
+    "Maritime Transport And Logistics",
+    "Market Researcher",
+    "Marketing",
+    "Marketing & Communications Associate",
+    "Marketing Associate",
+    "Marketing Field",
+    "Marketing Officer",
+    "Marketing Specialist",
+    "Masionary",
+    "Mass Communication",
+    "Mass Communication Field",
+    "Mathematics",
+    "Mca",
+    "Meal",
+    "Meal Focal Person",
+    "Mechanic",
+    "Mechanical",
+    "Mechanical Engineer",
+    "Mechanics",
+    "Medical",
+    "Medical Student",
+    "Medical Student, Volunteer Krcs",
+    "Medicine",
+    "Medicine Field",
+    "Member Of County Assembly(Wayu Ward), Religious  Leader",
+    "Mental Health Advocate",
+    "Mental Health/ Psychology",
+    "metorologist",
+    "Metrologist",
+    "Microbiology",
+    "Mining",
+    "Mining Engineer",
+    "Minister Of Mining",
+    "Missionary",
+    "Mobile App Developer",
+    "Mobile Technician",
+    "Monotoring And Evaluation",
+    "Music",
+    "N A",
+    "N/A",
+    "Na",
+    "Natural Resource Management",
+    "Natural Resources And Environment, Aquaculture And Fisheries",
+    "Network Engineer",
+    "Neutical",
+    "Neutritioinist",
+    "News Anchor",
+    "Ngo,Field Research",
+    "None",
+    "Nurse",
+    "Nurse Officer",
+    "Nursing",
+    "Nursing And Public Health Officer",
+    "Nutrionist",
+    "Nutrition",
+    "Nutrition And Dietetics",
+    "Nutrition And Dietics",
+    "Nutrition Field",
+    "Nutrition Officer",
+    "Nutritionist",
+    "Nutritionist Volunteer",
+    "Nutritionists",
+    "Office  Assistant",
+    "Officer",
+    "Onknown",
+    "Operations",
+    "Operator",
+    "Operator/Driver",
+    "Other",
+    "Others",
+    "Padi Open Water Diver/Plant Operator/Driver",
+    "Paramedic",
+    "Parrallegal",
+    "Paster",
+    "Pastor",
+    "Peace Keeper",
+    "Peer Educator (Volunteer)",
+    "Peer Educators",
+    "Persinal Assistant",
+    "Personal Assistant",
+    "Pharmacist",
+    "Pharmacy",
+    "Philosophy",
+    "Photographer",
+    "Pilot",
+    "Planner",
+    "Plant Engeeniaring",
+    "Plant Operator",
+    "Plumber",
+    "Poetry/Drama/ Actor",
+    "Political science",
+    "Priest",
+    "Principal Cve",
+    "Principle Licensing Officer",
+    "Procument",
+    "Procure",
+    "Procurement",
+    "Procurement ,purchesing and managament(Logistics)",
+    "Procurement And Material Management",
+    "Procurement and Supply Chain Management",
+    "Procurement And Supply Chain Officer",
+    "Procurement Contract Supply Chain",
+    "Procurement Field",
+    "Procurement Officer",
+    "Procurement/Administration",
+    "Procurement/Project Management/ Secretariat",
+    "Procurement&Logestic",
+    "Procurer",
+    "Professional Driver",
+    "Program Coordinator",
+    "Program Manager",
+    "Program Offficer",
+    "Project Magement",
+    "Project Management",
+    "Project Manager",
+    "Project Officer",
+    "Project planning",
+    "Project planning and management",
+    "Psychological  Counsellor",
+    "Psychologist",
+    "Psychologists",
+    "Psychology",
+    "Public Administration",
+    "Public Administrator",
+    "Public Health",
+    "Public Health Officer",
+    "Public Health Officer/Hts Counselor",
+    "Public Health Technician",
+    "Public Relation",
+    "Public Relation And Media",
+    "Public Relation Strategist, Blogger, Marketer",
+    "Public Relations",
+    "Public Relations Specialist",
+    "Public Servant",
+    "Public Servants",
+    "Quality Assurance",
+    "Quality Assurance Officer",
+    "Quality Health Safety And Environmental",
+    "Real Estate Agent",
+    "Receptionist",
+    "Regional Admin",
+    "Regional Manager",
+    "Regional Program Coordinator  Global Fund",
+    "Religious Leader",
+    "Research",
+    "Research And Science",
+    "Research Assistant",
+    "Research Field",
+    "Researcher",
+    "Restoring Family Links",
+    "Rfl Volunteer",
+    "Risk Managment",
+    "Safaricom Ba",
+    "Sales & Marketing",
+    "Sales And Marketing, Travel Operations",
+    "Sales Executive",
+    "Sales Field",
+    "Sales Person",
+    "Sales Team Leader",
+    "Salesand Marketing",
+    "Salespperson",
+    "Salon",
+    "Salonist",
+    "Sandfield",
+    "School Van Driver",
+    "Science And Financial Economics",
+    "Scientist",
+    "Secretarial",
+    "Secretary",
+    "Security",
+    "Security  Guard",
+    "Security Guard",
+    "Security Management",
+    "Security Management And Criminology",
+    "Security Officer",
+    "Security Services",
+    "Self Employed",
+    "Self Employment",
+    "Selfemployed",
+    "Service Field",
+    "Shipping",
+    "Shipping And Logistics Officer {Intern}",
+    "Shipping Management",
+    "Shopkeeper",
+    "Social Development",
+    "Social Media Manager",
+    "Social Science Field",
+    "Social Sciences",
+    "Social Work",
+    "Social Work & Administration",
+    "Social Work and Administration",
+    "Social Work And Community Development",
+    "Social Work And Community'S Development",
+    "Social Worker",
+    "Social Worker &C.development",
+    "Social Works And Community Development",
+    "Socialigy And Political Science",
+    "Socialworker",
+    "Sociologist",
+    "Sociology",
+    "Software Developer",
+    "Soldier",
+    "Special Needs",
+    "Staff",
+    "Statistician",
+    "Statistics",
+    "Still A Student At Mount Kenya University",
+    "Stock Controller",
+    "Store Keeper",
+    "Store Keeping",
+    "Storekeeper",
+    "Stripper",
+    "Student",
+    "Student Nurse",
+    "Students",
+    "Studying",
+    "Supply &Constraction",
+    "Supply And Procurement Management",
+    "Supply Chain",
+    "Supply Chain And Management",
+    "Supply Chain Management",
+    "Supply Chain Management Officer",
+    "Supply. Chain  Management",
+    "Suppy Chain Officer",
+    "Systems Administrator",
+    "Tailor",
+    "Tailoring",
+    "Tally Clerk",
+    "Teacher",
+    "Teaching",
+    "Toiloring &Dressmaking",
+    "Tour Guider",
+    "Tourim Maanagement",
+    "Tourism",
+    "Tourism And Hospitality Management",
+    "Tourism Management",
+    "Tours And Travel Consultant",
+    "Trade Officer",
+    "Transcriptionist",
+    "Translator",
+    "Transport Logistic",
+    "Truck Driver",
+    "UI Designer",
+    "Uknown",
+    "Undergraduate",
+    "Unemployed",
+    "Unemployment",
+    "University Student",
+    "Unknonw",
+    "Unknown",
+    "Unknown`",
+    "Unknwn",
+    "Unkonwn",
+    "Unkown",
+    "Us Marine",
+    "UX Designer",
+    "Veterianrian",
+    "Veterinarian",
+    "Veterinary",
+    "Video Editor",
+    "Volunteer",
+    "Volunteer Coordinator",
+    "Volunteer Driver",
+    "Volunteery Works",
+    "Waiter",
+    "Waiter/Waitress",
+    "Waitress",
+    "warehouse supervisor",
+    "Warehousing",
+    "Warehousing Intern",
+    "Wash",
+    "Water Resources Manager",
+    "Welding",
+    "Wildlife and enterprise management",
+    "Work In Ngos",
+    "Youth"
+  ],
+  "driving_classes": [
+    {
+      "name": "A1",
+      "class": "A1 – Moped",
+      "description": "Mopeds.",
+      "is_active": 1
+    },
+    {
+      "name": "A2",
+      "class": "A2 – Light motorcycle",
+      "description": "Light motorcycles.",
+      "is_active": 1
+    },
+    {
+      "name": "A3",
+      "class": "A3 – Motorcycle taxi, courier or three-wheeler",
+      "description": "Motorcycle taxis, courier motorcycles and three-wheelers.",
+      "is_active": 1
+    },
+    {
+      "name": "B1",
+      "class": "B1 – Light vehicle (automatic)",
+      "description": "Automatic cars and vans up to 3,500 kg.",
+      "is_active": 1
+    },
+    {
+      "name": "B2",
+      "class": "B2 – Light vehicle",
+      "description": "Manual or automatic cars and vans up to 3,500 kg.",
+      "is_active": 1
+    },
+    {
+      "name": "B3",
+      "class": "B3 – Professional light vehicle",
+      "description": "Taxis and other light vehicles driven for hire.",
+      "is_active": 1
+    },
+    {
+      "name": "C1",
+      "class": "C1 – Light truck",
+      "description": "Light trucks.",
+      "is_active": 1
+    },
+    {
+      "name": "C",
+      "class": "C – Medium truck",
+      "description": "Medium trucks.",
+      "is_active": 1
+    },
+    {
+      "name": "CE",
+      "class": "CE – Heavy truck",
+      "description": "Heavy trucks, with a trailer or articulated.",
+      "is_active": 1
+    },
+    {
+      "name": "D1",
+      "class": "D1 – Van",
+      "description": "Passenger vans up to 14 passengers.",
+      "is_active": 1
+    },
+    {
+      "name": "D2",
+      "class": "D2 – Minibus",
+      "description": "Minibuses for 14 to 32 passengers.",
+      "is_active": 1
+    },
+    {
+      "name": "D3",
+      "class": "D3 – Bus",
+      "description": "Buses for 33 or more passengers.",
+      "is_active": 1
+    },
+    {
+      "name": "E",
+      "class": "E – Special professional",
+      "description": "Professional driving across several categories.",
+      "is_active": 1
+    },
+    {
+      "name": "F",
+      "class": "F – Driver with a disability",
+      "description": "Vehicles adapted for a driver with a disability.",
+      "is_active": 1
+    },
+    {
+      "name": "G",
+      "class": "G – Industrial, construction and agricultural",
+      "description": "Industrial, construction and agricultural plant and equipment.",
+      "is_active": 1
+    },
+    {
+      "name": "B",
+      "class": "B (old class)",
+      "description": "Kept so older records still show their class. Not offered on new registrations.",
+      "is_active": 0
+    },
+    {
+      "name": "C2/C",
+      "class": "C2/C (old class)",
+      "description": "Kept so older records still show their class. Not offered on new registrations.",
+      "is_active": 0
+    },
+    {
+      "name": "C3",
+      "class": "C3 (old class)",
+      "description": "Kept so older records still show their class. Not offered on new registrations.",
+      "is_active": 0
+    },
+    {
+      "name": "D",
+      "class": "D (old class)",
+      "description": "Kept so older records still show their class. Not offered on new registrations.",
+      "is_active": 0
+    },
+    {
+      "name": "A",
+      "class": "A (old class)",
+      "description": "Kept so older records still show their class. Not offered on new registrations.",
+      "is_active": 0
+    },
+    {
+      "name": "none",
+      "class": "No licence",
+      "description": "Kept so older records still show their class. Not offered on new registrations.",
+      "is_active": 0
+    }
+  ],
+  "disabilities": [
+    {
+      "name": "Acid Attack Victims",
+      "disability_category": "Maxillofacial Disabilities"
+    },
+    {
+      "name": "Autism Spectrum Disorder",
+      "disability_category": "Mental Health Disorders, Intellectual Disabilities and Autism Spectrum Disorder"
+    },
+    {
+      "name": "Blindness",
+      "disability_category": "Visual Impairments"
+    },
+    {
+      "name": "Cerebral Palsy",
+      "disability_category": "Physical Disabilities"
+    },
+    {
+      "name": "Chronic Neurological Conditions",
+      "disability_category": "Progressive Chronic Conditions"
+    },
+    {
+      "name": "Dwarfism",
+      "disability_category": "Physical Disabilities"
+    },
+    {
+      "name": "Hearing Impairment",
+      "disability_category": "Hearing, Speech and Language Disabilities"
+    },
+    {
+      "name": "Hemophilia",
+      "disability_category": "Progressive Chronic Conditions"
+    },
+    {
+      "name": "Intellectual Disability",
+      "disability_category": "Mental Health Disorders, Intellectual Disabilities and Autism Spectrum Disorder"
+    },
+    {
+      "name": "Leprosy Cured Persons",
+      "disability_category": "Physical Disabilities"
+    },
+    {
+      "name": "Locomotor Disability",
+      "disability_category": "Physical Disabilities"
+    },
+    {
+      "name": "Low Vision",
+      "disability_category": "Visual Impairments"
+    },
+    {
+      "name": "Low-Vision",
+      "disability_category": null
+    },
+    {
+      "name": "Mental Illness",
+      "disability_category": "Mental Health Disorders, Intellectual Disabilities and Autism Spectrum Disorder"
+    },
+    {
+      "name": "multiple disabilities",
+      "disability_category": null
+    },
+    {
+      "name": "Multiple Sclerosis",
+      "disability_category": "Progressive Chronic Conditions"
+    },
+    {
+      "name": "Muscular Dystrophy",
+      "disability_category": "Physical Disabilities"
+    },
+    {
+      "name": "None",
+      "disability_category": "None"
+    },
+    {
+      "name": "Other",
+      "disability_category": "Other"
+    },
+    {
+      "name": "Parkinson’s Disease",
+      "disability_category": "Progressive Chronic Conditions"
+    },
+    {
+      "name": "Parkinson\\U2019S Disease",
+      "disability_category": null
+    },
+    {
+      "name": "Sickle Cell Disease",
+      "disability_category": "Progressive Chronic Conditions"
+    },
+    {
+      "name": "Specific Learning Disabilities",
+      "disability_category": "Mental Health Disorders, Intellectual Disabilities and Autism Spectrum Disorder"
+    },
+    {
+      "name": "Speech and Language Disability",
+      "disability_category": "Hearing, Speech and Language Disabilities"
+    },
+    {
+      "name": "Thalassemia",
+      "disability_category": "Progressive Chronic Conditions"
+    }
+  ],
+  "languages": [
+    {
+      "name": "af",
+      "language_code": "af",
+      "language_name": "Afrikaans"
+    },
+    {
+      "name": "am",
+      "language_code": "am",
+      "language_name": "አማርኛ"
+    },
+    {
+      "name": "ar",
+      "language_code": "ar",
+      "language_name": "العربية"
+    },
+    {
+      "name": "ara",
+      "language_code": "ara",
+      "language_name": "Arabic"
+    },
+    {
+      "name": "bg",
+      "language_code": "bg",
+      "language_name": "Bǎlgarski"
+    },
+    {
+      "name": "bn",
+      "language_code": "bn",
+      "language_name": "বাঙালি"
+    },
+    {
+      "name": "bo",
+      "language_code": "bo",
+      "language_name": "ལྷ་སའི་སྐད་"
+    },
+    {
+      "name": "bs",
+      "language_code": "bs",
+      "language_name": "Bosanski"
+    },
+    {
+      "name": "ca",
+      "language_code": "ca",
+      "language_name": "Català"
+    },
+    {
+      "name": "cs",
+      "language_code": "cs",
+      "language_name": "česky"
+    },
+    {
+      "name": "da",
+      "language_code": "da",
+      "language_name": "Dansk"
+    },
+    {
+      "name": "da-DK",
+      "language_code": "da-DK",
+      "language_name": "Dansk (Danmark)"
+    },
+    {
+      "name": "dad",
+      "language_code": "dad",
+      "language_name": "DadSad"
+    },
+    {
+      "name": "de",
+      "language_code": "de",
+      "language_name": "Deutsch"
+    },
+    {
+      "name": "el",
+      "language_code": "el",
+      "language_name": "ελληνικά"
+    },
+    {
+      "name": "en",
+      "language_code": "en",
+      "language_name": "English"
+    },
+    {
+      "name": "en-GB",
+      "language_code": "en-GB",
+      "language_name": "English (United Kingdom)"
+    },
+    {
+      "name": "en-US",
+      "language_code": "en-US",
+      "language_name": "English (United States)"
+    },
+    {
+      "name": "eo",
+      "language_code": "eo",
+      "language_name": "In-Context Translation"
+    },
+    {
+      "name": "es",
+      "language_code": "es",
+      "language_name": "Español"
+    },
+    {
+      "name": "es-AR",
+      "language_code": "es-AR",
+      "language_name": "Español (Argentina)"
+    },
+    {
+      "name": "es-BO",
+      "language_code": "es-BO",
+      "language_name": "Español (Bolivia)"
+    },
+    {
+      "name": "es-CL",
+      "language_code": "es-CL",
+      "language_name": "Español (Chile)"
+    },
+    {
+      "name": "es-CO",
+      "language_code": "es-CO",
+      "language_name": "Español (Colombia)"
+    },
+    {
+      "name": "es-DO",
+      "language_code": "es-DO",
+      "language_name": "Español (República Dominicana)"
+    },
+    {
+      "name": "es-EC",
+      "language_code": "es-EC",
+      "language_name": "Español (Ecuador)"
+    },
+    {
+      "name": "es-GT",
+      "language_code": "es-GT",
+      "language_name": "Español (Guatemala)"
+    },
+    {
+      "name": "es-MX",
+      "language_code": "es-MX",
+      "language_name": "Español (México)"
+    },
+    {
+      "name": "es-NI",
+      "language_code": "es-NI",
+      "language_name": "Español (Nicaragua)"
+    },
+    {
+      "name": "es-PE",
+      "language_code": "es-PE",
+      "language_name": "Español (Perú)"
+    },
+    {
+      "name": "et",
+      "language_code": "et",
+      "language_name": "Eesti"
+    },
+    {
+      "name": "fa",
+      "language_code": "fa",
+      "language_name": "پارسی"
+    },
+    {
+      "name": "fi",
+      "language_code": "fi",
+      "language_name": "Suomi"
+    },
+    {
+      "name": "fil",
+      "language_code": "fil",
+      "language_name": "Filipino"
+    },
+    {
+      "name": "fr",
+      "language_code": "fr",
+      "language_name": "Français"
+    },
+    {
+      "name": "fr-CA",
+      "language_code": "fr-CA",
+      "language_name": "Français Canadien"
+    },
+    {
+      "name": "gu",
+      "language_code": "gu",
+      "language_name": "ગુજરાતી"
+    },
+    {
+      "name": "he",
+      "language_code": "he",
+      "language_name": "עברית"
+    },
+    {
+      "name": "hi",
+      "language_code": "hi",
+      "language_name": "हिंदी"
+    },
+    {
+      "name": "hr",
+      "language_code": "hr",
+      "language_name": "Hrvatski"
+    },
+    {
+      "name": "hu",
+      "language_code": "hu",
+      "language_name": "Magyar"
+    },
+    {
+      "name": "id",
+      "language_code": "id",
+      "language_name": "Indonesia"
+    },
+    {
+      "name": "is",
+      "language_code": "is",
+      "language_name": "íslenska"
+    },
+    {
+      "name": "it",
+      "language_code": "it",
+      "language_name": "Italiano"
+    },
+    {
+      "name": "ja",
+      "language_code": "ja",
+      "language_name": "日本語"
+    },
+    {
+      "name": "kam",
+      "language_code": "kam",
+      "language_name": "Kamba"
+    },
+    {
+      "name": "kik",
+      "language_code": "kik",
+      "language_name": "Kikuyu"
+    },
+    {
+      "name": "km",
+      "language_code": "km",
+      "language_name": "ភាសាខ្មែរ"
+    },
+    {
+      "name": "kn",
+      "language_code": "kn",
+      "language_name": "ಕನ್ನಡ"
+    },
+    {
+      "name": "ko",
+      "language_code": "ko",
+      "language_name": "한국의"
+    },
+    {
+      "name": "ku",
+      "language_code": "ku",
+      "language_name": "کوردی"
+    },
+    {
+      "name": "lo",
+      "language_code": "lo",
+      "language_name": "ລາວ"
+    },
+    {
+      "name": "lt",
+      "language_code": "lt",
+      "language_name": "Lietuvių kalba"
+    },
+    {
+      "name": "luo",
+      "language_code": "luo",
+      "language_name": "Luo"
+    },
+    {
+      "name": "lv",
+      "language_code": "lv",
+      "language_name": "Latviešu valoda"
+    },
+    {
+      "name": "mk",
+      "language_code": "mk",
+      "language_name": "македонски"
+    },
+    {
+      "name": "ml",
+      "language_code": "ml",
+      "language_name": "മലയാളം"
+    },
+    {
+      "name": "mn",
+      "language_code": "mn",
+      "language_name": "Монгол (Mongolian)"
+    },
+    {
+      "name": "mr",
+      "language_code": "mr",
+      "language_name": "मराठी"
+    },
+    {
+      "name": "ms",
+      "language_code": "ms",
+      "language_name": "Melayu"
+    },
+    {
+      "name": "my",
+      "language_code": "my",
+      "language_name": "မြန်မာ"
+    },
+    {
+      "name": "nb",
+      "language_code": "nb",
+      "language_name": "Norsk Bokmål"
+    },
+    {
+      "name": "nl",
+      "language_code": "nl",
+      "language_name": "Nederlands"
+    },
+    {
+      "name": "no",
+      "language_code": "no",
+      "language_name": "Norsk"
+    },
+    {
+      "name": "oth",
+      "language_code": "oth",
+      "language_name": "Other"
+    },
+    {
+      "name": "pl",
+      "language_code": "pl",
+      "language_name": "Polski"
+    },
+    {
+      "name": "ps",
+      "language_code": "ps",
+      "language_name": "پښتو"
+    },
+    {
+      "name": "pt",
+      "language_code": "pt",
+      "language_name": "Português"
+    },
+    {
+      "name": "pt-BR",
+      "language_code": "pt-BR",
+      "language_name": "Português Brasileiro"
+    },
+    {
+      "name": "ro",
+      "language_code": "ro",
+      "language_name": "Român"
+    },
+    {
+      "name": "ru",
+      "language_code": "ru",
+      "language_name": "русский"
+    },
+    {
+      "name": "rw",
+      "language_code": "rw",
+      "language_name": "Kinyarwanda"
+    },
+    {
+      "name": "rwa",
+      "language_code": "rwa",
+      "language_name": "RWANDESE"
+    },
+    {
+      "name": "si",
+      "language_code": "si",
+      "language_name": "සිංහල"
+    },
+    {
+      "name": "sk",
+      "language_code": "sk",
+      "language_name": "Slovenčina (Slovak)"
+    },
+    {
+      "name": "sl",
+      "language_code": "sl",
+      "language_name": "Slovenščina (Slovene)"
+    },
+    {
+      "name": "sq",
+      "language_code": "sq",
+      "language_name": "Shqiptar"
+    },
+    {
+      "name": "sr",
+      "language_code": "sr",
+      "language_name": "српски"
+    },
+    {
+      "name": "sr-BA",
+      "language_code": "sr-BA",
+      "language_name": "Srpski"
+    },
+    {
+      "name": "sv",
+      "language_code": "sv",
+      "language_name": "Svenska"
+    },
+    {
+      "name": "sw",
+      "language_code": "sw",
+      "language_name": "Swahili"
+    },
+    {
+      "name": "ta",
+      "language_code": "ta",
+      "language_name": "தமிழ்"
+    },
+    {
+      "name": "te",
+      "language_code": "te",
+      "language_name": "తెలుగు"
+    },
+    {
+      "name": "th",
+      "language_code": "th",
+      "language_name": "ไทย"
+    },
+    {
+      "name": "tr",
+      "language_code": "tr",
+      "language_name": "Türkçe"
+    },
+    {
+      "name": "uk",
+      "language_code": "uk",
+      "language_name": "українська"
+    },
+    {
+      "name": "ur",
+      "language_code": "ur",
+      "language_name": "اردو"
+    },
+    {
+      "name": "uz",
+      "language_code": "uz",
+      "language_name": "Ўзбек"
+    },
+    {
+      "name": "vi",
+      "language_code": "vi",
+      "language_name": "Việt"
+    },
+    {
+      "name": "zh",
+      "language_code": "zh",
+      "language_name": "简体中文"
+    },
+    {
+      "name": "zh-TW",
+      "language_code": "zh-TW",
+      "language_name": "繁體中文"
+    }
+  ],
+  "identification_types": [
+    "Alien ID",
+    "Birth Certificate",
+    "Millitary ID",
+    "National ID",
+    "NEMIS Number",
+    "Passport"
+  ]
+}

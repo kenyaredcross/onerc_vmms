@@ -28,7 +28,7 @@ export function Availability() {
 		<>
 			<PageHead
 				eyebrow="Your record"
-				title={<EditableText k="portal.availability.heading" fallback="When you can serve" />}
+				title={<EditableText k="portal.availability.heading" fallback="Availability" />}
 				lead="Tell your branch which days and windows you can usually be asked about. It is a pattern, not a promise."
 			/>
 

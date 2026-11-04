@@ -1,0 +1,122 @@
+[
+  {
+    "membership_type": "Youth In School",
+    "amount": 100.0,
+    "currency": "KES",
+    "billing_cycle": "Yearly",
+    "requires_age_requirement": 1,
+    "lower_age_limit": 0,
+    "upper_age_limit": 18,
+    "membership_package": "",
+    "linked_item": "Membership",
+    "template": "Youth In School",
+    "benefits": [
+      {
+        "benefit_name": "Youth Membership Certificate",
+        "description": null
+      },
+      {
+        "benefit_name": "Invite to attend special  events",
+        "description": null
+      },
+      {
+        "benefit_name": "Entitled to be briefed & participate in branch activities",
+        "description": null
+      }
+    ]
+  },
+  {
+    "membership_type": "Youth Out Of School",
+    "amount": 500.0,
+    "currency": "KES",
+    "billing_cycle": "Yearly",
+    "requires_age_requirement": 1,
+    "lower_age_limit": 18,
+    "upper_age_limit": 30,
+    "membership_package": "",
+    "linked_item": "Membership",
+    "template": "Youth Out Of School",
+    "benefits": [
+      {
+        "benefit_name": "Youth Membership Certificate",
+        "description": null
+      },
+      {
+        "benefit_name": "Invite to attend special  events",
+        "description": null
+      },
+      {
+        "benefit_name": "Entitled to be briefed & participate in branch activities",
+        "description": null
+      },
+      {
+        "benefit_name": "Listed In the Branch register of members",
+        "description": null
+      }
+    ]
+  },
+  {
+    "membership_type": "Ordinary Member",
+    "amount": 1000.0,
+    "currency": "KES",
+    "billing_cycle": "Yearly",
+    "requires_age_requirement": 1,
+    "lower_age_limit": 30,
+    "upper_age_limit": 100,
+    "membership_package": "",
+    "linked_item": "Membership",
+    "template": "Odinary Member",
+    "benefits": [
+      {
+        "benefit_name": "Ordinary Membership Certificate",
+        "description": null
+      },
+      {
+        "benefit_name": "Invite to attend special  events",
+        "description": null
+      },
+      {
+        "benefit_name": "Entitled to be briefed & participate in branch activities",
+        "description": null
+      },
+      {
+        "benefit_name": "Listed In the Branch register of members",
+        "description": null
+      }
+    ]
+  },
+  {
+    "membership_type": "Life Member",
+    "amount": 5000.0,
+    "currency": "KES",
+    "billing_cycle": "One Off",
+    "requires_age_requirement": 0,
+    "lower_age_limit": 0,
+    "upper_age_limit": 0,
+    "membership_package": "",
+    "linked_item": "Membership",
+    "template": "Life Member",
+    "benefits": [
+      {
+        "benefit_name": "Life Membership Certificate",
+        "description": null
+      },
+      {
+        "benefit_name": "Invite to attend special  events like Life Members Day",
+        "description": null
+      },
+      {
+        "benefit_name": "Entitled to be briefed & participate in branch activities",
+        "description": null
+      },
+      {
+        "benefit_name": "Listed In the Branch register of members",
+        "description": null
+      },
+      {
+        "benefit_name": "Can Vote or Vie for KRCS Governance positions",
+        "description": null
+      }
+    ]
+  }
+]

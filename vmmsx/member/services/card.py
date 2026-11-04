@@ -24,6 +24,7 @@ from frappe.utils import format_date
 
 from vmmsx.cards.services import card
 from vmmsx.member.services import certificate, identity
+from vmmsx.places import place_name
 
 MEMBER_DOCTYPE = "VMMS Member"
 
@@ -50,7 +51,6 @@ def _photo(member, absolute_assets: bool = False) -> str:
 
 def context_for(membership, absolute_assets: bool = False) -> dict:
 	"""Everything a member card could want to say, as plain values."""
-	from onerc_core.geo.services import adapter
 
 	from vmmsx.member.services import membership as membership_service
 
@@ -72,7 +72,7 @@ def context_for(membership, absolute_assets: bool = False) -> dict:
 		"membership_type": membership_type.membership_type_name,
 		"status": membership_service.effective_status(membership),
 		"geo_node": membership.geo_node or "",
-		"geo_path": adapter.get_full_path(membership.geo_node) if membership.geo_node else "",
+		"geo_path": place_name(membership.geo_node),
 		"valid_from": format_date(membership.valid_from) if membership.valid_from else "",
 		# The certificate's own answer, reused rather than restated: a lifetime
 		# membership has no end date, and "" beside the word "Valid to" reads as a
@@ -116,7 +116,6 @@ def verify_dto(membership) -> dict:
 	holding the card actually asked: who it names, where they belong, and whether
 	it is still good.
 	"""
-	from onerc_core.geo.services import adapter
 
 	from vmmsx.member.services import membership as membership_service
 
@@ -129,7 +128,7 @@ def verify_dto(membership) -> dict:
 		"record_id": membership.name,
 		"status": membership_service.effective_status(membership),
 		"is_current": membership_service.is_current(membership),
-		"geo_path": adapter.get_full_path(membership.geo_node) if membership.geo_node else "",
+		"geo_path": place_name(membership.geo_node),
 		"since": format_date(membership.valid_from) if membership.valid_from else "",
 		"valid_to": certificate._valid_to_text(membership, membership_type),
 	}

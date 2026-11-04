@@ -154,12 +154,12 @@ export default function Analytics() {
 						<div className="grid gap-4 sm:grid-cols-3">
 							<Stat value={summary.tasks.open} label="Tasks open" />
 							<Stat value={summary.tasks.awaiting_sign_off} label="Waiting on your sign-off" />
-							<Stat value={summary.tasks.overdue} label="Past their due date" />
+							<Stat value={summary.tasks.overdue} label="Overdue" />
 						</div>
 					</Card>
 
 					<div>
-						<SectionTitle>Where your people are</SectionTitle>
+						<SectionTitle>Geographic distribution</SectionTitle>
 
 						{summary.coverage.length === 0 ? (
 							<Empty title="Nothing below this level">
@@ -193,9 +193,7 @@ export default function Analytics() {
 								</Table>
 
 								<p className="mt-3 text-[12px] leading-relaxed text-slate-faint">
-									One rung down, not the whole tree beneath: a region coordinator wants their
-									branches rather than every ward in the region. Look inside any of them to
-									narrow every figure on this page to it.
+									Figures for each area one level below. Open an area to narrow every figure on this page.
 								</p>
 							</>
 						)}

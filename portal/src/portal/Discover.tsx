@@ -56,7 +56,7 @@ export function Training() {
 
 			{training && (
 				<section className="mb-8">
-					<SectionLabel>What you hold</SectionLabel>
+					<SectionLabel>Your certifications</SectionLabel>
 
 					{training.certifications.length === 0 ? (
 						<Card>

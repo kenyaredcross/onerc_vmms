@@ -173,3 +173,26 @@ describe("the way out of the card", () => {
 		expect(link.getAttribute("href")).toBe("/home/admin/registry/volunteer/VOL-00001");
 	});
 });
+
+describe("a name that opens a record", () => {
+	it("is a link to the record and still opens the card on focus", async () => {
+		render(
+			<MemoryRouter basename="/home" initialEntries={["/home"]}>
+				<PersonCard label="Nigel Nasser" to="/admin/registry/volunteer/VOL-00001">
+					{() => <p>The summary body</p>}
+				</PersonCard>
+			</MemoryRouter>,
+		);
+
+		// Clicking the name in a register opens the person. It used to be a
+		// button that only pinned the card, so the click appeared to do nothing.
+		const name = screen.getByRole("link", { name: "Nigel Nasser" });
+		expect(name.getAttribute("href")).toBe("/home/admin/registry/volunteer/VOL-00001");
+
+		await act(async () => {
+			fireEvent.focus(name);
+		});
+
+		expect(screen.getByText("The summary body")).toBeTruthy();
+	});
+});

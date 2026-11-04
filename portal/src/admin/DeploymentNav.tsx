@@ -78,6 +78,15 @@ export const DEPLOYMENT_NAV: Destination[] = [
 		groupKey: "admin.deployments.nav.group.plan",
 	},
 	{
+		// The People register's surge roster, read from the staffing side. Gated
+		// on the register, because it is a list of volunteers.
+		to: "/admin/deployments/surge",
+		labelKey: "admin.deployments.nav.surge",
+		fallback: "Surge roster",
+		groupKey: "admin.deployments.nav.group.plan",
+		section: "registry",
+	},
+	{
 		to: "/admin/deployments/ongoing",
 		labelKey: "admin.deployments.nav.ongoing",
 		fallback: "Ongoing deployments",

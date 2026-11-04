@@ -1,4 +1,5 @@
 import {
+	type FocusEvent,
 	type ReactNode,
 	useCallback,
 	useEffect,
@@ -57,12 +58,20 @@ export function PersonCard({
 	cardClassName,
 	/** How wide the card is. One number, because the flip arithmetic needs it. */
 	width = 300,
+	to,
 }: {
 	label: ReactNode;
 	children: () => ReactNode;
 	className?: string;
 	cardClassName?: string;
 	width?: number;
+	/**
+	 * The record the name opens. With it, the name is a link: clicking it opens
+	 * the record, and the card still opens on hover and keyboard focus. In a
+	 * register people click a name to open the person, and a click that only
+	 * pinned a card looked like a link that did nothing.
+	 */
+	to?: string;
 }) {
 	const [open, setOpen] = useState(false);
 	const [pinned, setPinned] = useState(false);
@@ -74,7 +83,7 @@ export function PersonCard({
 	const [at, setAt] = useState<{ above: boolean; top: number; left: number } | null>(null);
 
 	const holder = useRef<HTMLDivElement>(null);
-	const trigger = useRef<HTMLButtonElement>(null);
+	const trigger = useRef<HTMLButtonElement & HTMLAnchorElement>(null);
 	const card = useRef<HTMLDivElement>(null);
 	const id = useId();
 
@@ -110,11 +119,12 @@ export function PersonCard({
 		[],
 	);
 
-	// Escape and a click elsewhere dismiss a pinned card. Both listeners are
-	// attached only while one is pinned, so a register of fifty rows is not
-	// fifty document listeners waiting for a key nobody pressed.
+	// Escape dismisses an open card, and a click elsewhere dismisses a pinned
+	// one. Both listeners are attached only while a card is open, so a register
+	// of fifty rows is not fifty document listeners waiting for a key nobody
+	// pressed.
 	useEffect(() => {
-		if (!pinned) return;
+		if (!open) return;
 
 		const onKey = (event: KeyboardEvent) => {
 			if (event.key !== "Escape") return;
@@ -128,7 +138,7 @@ export function PersonCard({
 		};
 
 		const onPointer = (event: MouseEvent) => {
-			if (within(event.target as Node)) return;
+			if (!pinned || within(event.target as Node)) return;
 
 			close();
 		};
@@ -140,7 +150,7 @@ export function PersonCard({
 			document.removeEventListener("keydown", onKey);
 			document.removeEventListener("mousedown", onPointer);
 		};
-	}, [pinned, close, within]);
+	}, [open, pinned, close, within]);
 
 	/**
 	 * Put the card against the name it belongs to, and keep it there.
@@ -256,37 +266,63 @@ export function PersonCard({
 			onMouseEnter={() => setOpen(true)}
 			onMouseLeave={(event) => onLeave(event.relatedTarget as Node)}
 		>
-			<button
-				ref={trigger}
-				type="button"
-				aria-expanded={open}
-				aria-controls={open ? id : undefined}
-				aria-haspopup="dialog"
-				onFocus={() => {
-					if (ignoreNextFocus.current) {
-						ignoreNextFocus.current = false;
-						return;
-					}
+			{(() => {
+				const shared = {
+					"aria-expanded": open,
+					"aria-controls": open ? id : undefined,
+					"aria-haspopup": "dialog" as const,
+					onFocus: () => {
+						if (ignoreNextFocus.current) {
+							ignoreNextFocus.current = false;
+							return;
+						}
 
-					setOpen(true);
-				}}
-				onBlur={(event) => {
-					// Focus moving *into* the card is not focus leaving. Without
-					// this a keyboard reader could never reach the call or email
-					// action the card exists to offer.
-					if (pinned) return;
-					if (within(event.relatedTarget as Node)) return;
+						setOpen(true);
+					},
+					onBlur: (event: FocusEvent) => {
+						// Focus moving *into* the card is not focus leaving. Without
+						// this a keyboard reader could never reach the call or email
+						// action the card exists to offer.
+						if (pinned) return;
+						if (within(event.relatedTarget as Node)) return;
 
-					setOpen(false);
-				}}
-				onClick={() => {
-					setPinned((was) => !was);
-					setOpen(true);
-				}}
-				className="max-w-full rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-blue/40"
-			>
-				{label}
-			</button>
+						setOpen(false);
+					},
+					className:
+						"block max-w-full rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-blue/40",
+				};
+				const route = to ? appRoute(to) : null;
+
+				if (to && route !== null) {
+					return (
+						<Link ref={trigger} to={route} {...shared}>
+							{label}
+						</Link>
+					);
+				}
+
+				if (to) {
+					return (
+						<a ref={trigger} href={to} {...shared}>
+							{label}
+						</a>
+					);
+				}
+
+				return (
+					<button
+						ref={trigger}
+						type="button"
+						{...shared}
+						onClick={() => {
+							setPinned((was) => !was);
+							setOpen(true);
+						}}
+					>
+						{label}
+					</button>
+				);
+			})()}
 
 			{open &&
 				createPortal(

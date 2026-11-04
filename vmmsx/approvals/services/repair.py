@@ -206,9 +206,16 @@ def _route(doctype: str, name: str) -> bool:
 	"""
 	from vmmsx import elevation
 
+	document = frappe.get_doc(doctype, name)
+
+	# Parked because it is waiting on something of its own, not on a workflow.
+	# Routing it is the document's call; see `contract.ready_for_review`.
+	if not contract.ready_for_review(document):
+		return False
+
 	try:
 		with elevation.as_system():
-			engine.submit(frappe.get_doc(doctype, name))
+			engine.submit(document)
 	except Exception:
 		frappe.log_error(title=f"Approval routing failed for {doctype} {name}")
 

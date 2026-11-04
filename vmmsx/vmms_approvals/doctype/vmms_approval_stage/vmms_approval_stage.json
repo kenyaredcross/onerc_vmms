@@ -132,11 +132,11 @@
   },
   {
    "default": "escalate_up",
-   "description": "What happens when it goes overdue. <b>escalate_up</b>: pass it to the nearest approver above. <b>notify_only</b>: send a reminder. <b>none</b>: leave it.",
+   "description": "What happens when it goes overdue. <b>escalate_up</b>: pass it to the nearest approver above. <b>notify_only</b>: send a reminder. <b>weekly_digest</b>: include it in the approver's weekly summary. <b>none</b>: leave it.",
    "fieldname": "on_sla_breach",
    "fieldtype": "Select",
    "label": "On SLA Breach",
-   "options": "escalate_up\nnotify_only\nnone",
+   "options": "escalate_up\nnotify_only\nweekly_digest\nnone",
    "reqd": 1
   }
  ],

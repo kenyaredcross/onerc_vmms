@@ -201,7 +201,7 @@ export function FormProgressTabs<Key extends string>({
 					<p className="font-bold text-slate-strong">{label}</p>
 					<p className="mt-0.5 text-slate-faint" aria-live="polite">
 						{remaining === 0
-							? "All sections have their core information"
+							? "All sections are complete"
 							: `${remaining} ${remaining === 1 ? "section" : "sections"} still need attention`}
 					</p>
 				</div>
@@ -381,6 +381,7 @@ const STATE_TONES: Record<string, string> = {
 	Assigned: "bg-blue-soft text-blue-press",
 	Declined: NEUTRAL,
 	Submitted: "bg-blue-soft text-blue-press",
+	"Awaiting payment": "bg-warning-soft text-warning",
 	"In Review": "bg-blue-soft text-blue-press",
 	Shortlisted: "bg-warning-soft text-warning",
 	Hold: NEUTRAL,
@@ -1183,6 +1184,8 @@ export function List({ children, className }: { children: ReactNode; className?:
  * Renders nothing when everything fits on one page: a pager under a grid of
  * three cards is furniture explaining that there is no furniture.
  */
+const PAGE_WINDOW = 10;
+
 export function Pager({
 	page,
 	pageCount,
@@ -1197,6 +1200,15 @@ export function Pager({
 	noun?: string;
 }) {
 	if (pageCount <= 1) return null;
+
+	// Ten page numbers at a time. A register of 951 applications is 39 pages,
+	// and a row of 39 buttons wraps across the page. Moving past the tenth page
+	// shows the next ten.
+	const first = Math.floor(page / PAGE_WINDOW) * PAGE_WINDOW;
+	const numbers = Array.from(
+		{ length: Math.min(PAGE_WINDOW, pageCount - first) },
+		(_, index) => first + index,
+	);
 
 	const step =
 		"grid h-8 w-8 place-items-center rounded-lg border border-rail-line bg-white text-muted transition hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-rail-line disabled:hover:text-muted";
@@ -1223,7 +1235,18 @@ export function Pager({
 					</svg>
 				</button>
 
-				{Array.from({ length: pageCount }, (_, index) => index).map((index) => (
+				{first > 0 && (
+					<button
+						type="button"
+						onClick={() => onPage(first - 1)}
+						className="h-8 min-w-8 rounded-lg border border-rail-line bg-white px-2 text-[12.5px] font-semibold text-muted transition hover:border-blue hover:text-blue"
+						aria-label={`Pages ${first - PAGE_WINDOW + 1} to ${first}`}
+					>
+						…
+					</button>
+				)}
+
+				{numbers.map((index) => (
 					<button
 						key={index}
 						type="button"
@@ -1239,6 +1262,17 @@ export function Pager({
 						{index + 1}
 					</button>
 				))}
+
+				{first + PAGE_WINDOW < pageCount && (
+					<button
+						type="button"
+						onClick={() => onPage(first + PAGE_WINDOW)}
+						className="h-8 min-w-8 rounded-lg border border-rail-line bg-white px-2 text-[12.5px] font-semibold text-muted transition hover:border-blue hover:text-blue"
+						aria-label={`Pages ${first + PAGE_WINDOW + 1} to ${Math.min(pageCount, first + 2 * PAGE_WINDOW)}`}
+					>
+						…
+					</button>
+				)}
 
 				<button
 					type="button"

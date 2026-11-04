@@ -105,6 +105,8 @@ export const API = {
 	// society's own questions. Ordinary read permission on the application, so
 	// this is not a second door into one.
 	applicationDecision: "vmmsx.api.volunteer.get_decision",
+	// Who changed what on an application or membership, from Frappe's Version log.
+	auditTrail: "vmmsx.api.registration.audit_trail",
 
 	// vmmsx/api/cards.py — possessive like the rest: neither takes a person, so
 	// neither can be pointed at anybody else's card. `verify` is deliberately
@@ -125,6 +127,15 @@ export const API = {
 	// register rather than across the page a listing happened to fetch. The
 	// distinction is the whole reason it exists: a page's `total` is a page.
 	volunteerRegisterSummary: "vmmsx.api.volunteer.register_summary",
+	// The profession filter's options, and the overview's disability counts.
+	// Both read inside the caller's scope.
+	registerProfessions: "vmmsx.api.volunteer.register_professions",
+	disabilitySummary: "vmmsx.api.volunteer.disability_summary",
+	// The surge roster: checked professionals a branch can call on.
+	surgeRoster: "vmmsx.api.surge.surge_roster",
+	addToSurgeRoster: "vmmsx.api.surge.add_to_surge_roster",
+	renewSurgeLicence: "vmmsx.api.surge.renew_surge_licence",
+	standDownFromSurge: "vmmsx.api.surge.stand_down_from_surge",
 	volunteerDossier: "vmmsx.api.volunteer.get_dossier",
 	// Where one volunteer has served. The coordinator's endpoint: it checks read
 	// on the volunteer and then filters the deployments through core's scoping,
@@ -178,6 +189,11 @@ export const API = {
 	// approver. There is deliberately no endpoint in this app that activates a
 	// membership, and this is not one.
 	recordMembershipPayment: "vmmsx.api.member.record_membership_payment",
+	// A phone payment: where it stands (asking the gateway again), and sending
+	// the prompt again after one ended unpaid.
+	membershipPayment: "vmmsx.api.member.membership_payment",
+	changeMembershipType: "vmmsx.api.member.change_membership_type",
+	payMembershipAgain: "vmmsx.api.member.pay_membership_again",
 
 	// vmmsx/api/person.py
 	//
@@ -417,6 +433,14 @@ export const API = {
 	// refusal of the whole screen.
 	branchSummary: "vmmsx.api.analytics.branch_summary",
 
+	// vmmsx/api/oversight.py — the Region and National tabs. The area is checked
+	// against where the caller is placed, and every count inside it is still
+	// their own scope; `map_shapes` is the society's attached boundary file,
+	// projected server-side, or a dot per county where none is attached.
+	oversightRegion: "vmmsx.api.oversight.region",
+	oversightNational: "vmmsx.api.oversight.national",
+	oversightMapShapes: "vmmsx.api.oversight.map_shapes",
+
 	// vmmsx/api/finance.py — one method, and it reads. There is no write here
 	// because this app holds no record of money: the figures are derived at read
 	// time from memberships and stipend payment forms, and the payload carries
@@ -582,6 +606,10 @@ export const myCertificateUrl = (membership: string): string =>
  */
 export const certificateUrl = (membership: string): string =>
 	`/api/method/vmmsx.api.member.download_certificate?membership=${encodeURIComponent(membership)}`;
+
+/** The copy of a professional licence on a surge roster entry. Read through the volunteer. */
+export const licenceCopyUrl = (entry: string, inline = false): string =>
+	`/api/method/vmmsx.api.surge.licence_copy?name=${encodeURIComponent(entry)}${inline ? "&inline=1" : ""}`;
 
 export const cardUrl = (kind: "volunteer" | "member", name: string): string =>
 	`/api/method/vmmsx.api.cards.download_card?kind=${kind}&name=${encodeURIComponent(name)}`;

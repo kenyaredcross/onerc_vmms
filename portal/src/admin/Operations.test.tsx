@@ -563,7 +563,7 @@ describe("deployment requests", () => {
 		expect(screen.queryByRole("button", { name: /Approve/ })).toBeNull();
 		expect(
 			screen.getByRole("link", { name: "Decide this in your review queue →" }).getAttribute("href"),
-		).toBe("/admin/queue/volunteers");
+		).toBe("/admin/queue/volunteers/assigned");
 		// The stage label is displayed. It is never compared.
 		expect(screen.getByText("County approval")).toBeTruthy();
 	});
@@ -835,9 +835,9 @@ describe("the terms of reference gallery", () => {
 		expect(screen.getByText("Tana River Flood Response — Wave 3")).toBeTruthy();
 		expect(screen.getByText("Flood Preparedness and Response")).toBeTruthy();
 		expect(screen.getByText(/Support flood-affected households/)).toBeTruthy();
-		// The geo scope, rendered through `format.geoPath`: core writes a full
-		// path deepest-first with em dashes, and this is what a reader sees.
-		expect(screen.getByText("Tana River · Tanzania Red Cross Society")).toBeTruthy();
+		// The geo scope, rendered through `format.geoPath`: the place itself,
+		// without the society above it.
+		expect(screen.getByText("Tana River")).toBeTruthy();
 		// And it opens the document rather than an editor.
 		expect(
 			screen.getByRole("link", { name: /Tana River Flood Response/ }).getAttribute("href"),

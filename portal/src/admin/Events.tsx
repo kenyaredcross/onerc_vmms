@@ -113,7 +113,7 @@ export default function AdminEvents() {
 				</Empty>
 			)}
 			{answer?.available && management.data?.message && !management.data.message.can_create && (
-				<p className="mb-5 text-[12.5px] text-muted">Your account can view events. An administrator can grant Buzz Event creation access to let you add them here.</p>
+				<p className="mb-5 text-[12.5px] text-muted">You can view events. Ask an administrator for permission to create events.</p>
 			)}
 
 			{answer?.available && (
@@ -183,8 +183,7 @@ export default function AdminEvents() {
 			<div className="mt-8 rounded-2xl border border-card-line bg-white px-6 py-5">
 				<SectionTitle>Registration and check-in use Buzz</SectionTitle>
 				<p className="max-w-2xl text-[12.5px] leading-relaxed text-muted">
-					Attendees register on Buzz's booking page. Open a card's confirmed registrations
-					to see their names here; use Buzz Desk for tickets, payment and check-in.
+					Attendees register on the Buzz booking page. Use Buzz Desk for tickets, payment and check-in.
 				</p>
 			</div>
 		</>
@@ -408,7 +407,7 @@ function Roster({ event }: { event: EventCard }) {
 				onClick={() => setOpen((shown) => !shown)}
 				className="text-[12px] font-semibold text-ink transition hover:text-blue"
 			>
-				{event.going ?? 0} said they are coming
+				{event.going ?? 0} attending
 				<span className="ml-1.5 text-slate-faint">{open ? "· hide" : "· show who"}</span>
 			</button>
 
@@ -419,7 +418,7 @@ function Roster({ event }: { event: EventCard }) {
 
 					{!isLoading && !error && attendees.length === 0 && (
 						<p className="text-[12px] italic text-slate-faint">
-							Nobody has said they are coming yet.
+							No one is attending yet.
 						</p>
 					)}
 

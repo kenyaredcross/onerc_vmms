@@ -809,7 +809,7 @@ function CommunicationContainer() {
  * nothing under it — somebody addressing the whole society should read that.
  */
 function branchOf(chain: GeoNode[]): string {
-	return (chain.length > 1 ? chain.slice(1) : chain).map((node) => node.label).join(" · ");
+	return chain[chain.length - 1]?.label ?? "";
 }
 
 /**
@@ -824,7 +824,7 @@ const CHANNELS = [
 		key: "notification" as const,
 		label: "Notification",
 		icon: Icon.bell,
-		hint: "In the portal, for anybody with a login.",
+		hint: "Shown in the portal to signed-in users.",
 	},
 	{
 		key: "email" as const,

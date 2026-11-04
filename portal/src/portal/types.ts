@@ -10,6 +10,7 @@
 
 /** `volunteer/services/volunteer.py::profile_dto` + `application.py::verification_dto`. */
 export interface VolunteerProfile {
+	personal_details?: PersonalDetails;
 	volunteer: string;
 	red_profile: string;
 	full_name: string | null;
@@ -48,19 +49,21 @@ export interface VolunteerProfile {
 	 * nowhere, so a volunteer correcting a qualification on their own profile
 	 * page corrects it here the moment they save.
 	 *
-	 * **Attachments are absent from every row on purpose.** The scans are
-	 * private files anchored to the profile, readable by whoever may open the
-	 * profile on the desk — a link here would look like evidence and resolve to
-	 * a refusal. See `identity._BACKGROUND`.
+	 * **Attachments are absent from every row.** The scans are private files
+	 * anchored to the profile; they arrive separately in `attachments`, each
+	 * with a URL checked against the record being read.
 	 */
 	profession?: string | null;
 	background?: DossierBackground;
+	/** The files behind the background and documents, opened through `download_evidence`. */
+	attachments?: RegistrationFile[];
 }
 
 /** The six background tables as a coordinator's screen receives them. */
 export interface DossierBackground {
 	education: Array<Omit<EducationRow, "attachment">>;
 	training: Array<Omit<TrainingRow, "attachment">>;
+	certifications?: DeclaredCertificationRow[];
 	work_experience: WorkExperienceRow[];
 	licences: Array<Omit<LicenceRow, "attachment">>;
 	driving_licences: Array<Omit<DrivingLicenceRow, "attachment">>;
@@ -129,6 +132,7 @@ export interface MyCertifications {
 
 /** `member/services/membership.py::status` plus the two flags `my_memberships` adds. */
 export interface MembershipRow {
+	payer_phone?: string | null;
 	name: string;
 	member: string;
 	member_name: string | null;
@@ -164,6 +168,56 @@ export interface MembershipRow {
 	membership_source: string | null;
 	certificate_available: boolean;
 	renewable: boolean;
+	/** Paid by phone and not paid yet: offer to check the payment or send the prompt again. */
+	awaits_gateway_payment?: boolean;
+	/** Unpaid by phone with no prompt open: another membership type may still be chosen. */
+	can_change_type?: boolean;
+	/** The other types it may switch to: active and open to the holder's age. */
+	switchable_types?: string[];
+	/** Whether a cancel action belongs here at all: off where the society never cancels. */
+	can_cancel?: boolean;
+}
+
+/** `member/services/payment.py::settlement`: how the fee was paid, read from the payments app. */
+export interface PaymentPicture {
+	settled: boolean;
+	payable: boolean;
+	fee_amount: number;
+	fee_currency: string | null;
+	transaction: string | null;
+	receipt: string | null;
+	paid_on: string | null;
+	/** The payments app's name for how it was paid, e.g. "M-Pesa". */
+	gateway: string | null;
+	gateway_status: string | null;
+	gateway_receipt: string | null;
+	amount_paid: number | null;
+	currency_paid: string | null;
+	transaction_date: string | null;
+	/** The phone the payment prompt went to. */
+	paid_from: string | null;
+}
+
+/** `member/services/payment.py::progress`: where a phone payment stands now. */
+export interface PaymentProgress {
+	membership: string;
+	membership_status: string;
+	settled: boolean;
+	/** Initiated, Pending, Completed, Failed or Cancelled; null when nothing was asked for. */
+	status: string | null;
+	receipt: string | null;
+	amount: number | null;
+	currency: string | null;
+	paid_from: string | null;
+	paid_on: string | null;
+	gateway: string | null;
+	/** The gateway's mark, when the app ships one for its driver. */
+	logo?: string | null;
+	transaction: string | null;
+	failure: string | null;
+	can_retry: boolean;
+	/** Only on `pay_membership_again`: what the gateway said when the prompt went out. */
+	message?: string;
 }
 
 /** `approvals/services/engine.py::status`, as returned by `my_queue`. */
@@ -182,6 +236,12 @@ export interface ApprovalStatus {
 	 * not — so never infer this from a missing stage.
 	 */
 	awaiting_workflow: boolean;
+	/**
+	 * Sent, but held back by the document itself — a membership whose M-Pesa fee
+	 * has not come in. The state still reads Submitted; show `held_for` instead.
+	 */
+	held?: boolean;
+	held_for?: { label: string; note: string } | null;
 	geo_node: string | null;
 	geo_path: string | null;
 	/**
@@ -270,8 +330,30 @@ export interface Account {
 }
 
 /** `api/registration.py::_profile_dto`. */
+export interface PersonalDetails {
+	additional_skills?: Array<{additional_skill:string}>;
+	middle_name?: string | null;
+	marital_status?: string | null;
+	number_of_dependants?: number | null;
+	blood_group?: string | null;
+	has_insurance?: string | null;
+	access_to_internet?: string | null;
+	mpesa_mobile_phone?: string | null;
+	place_of_work?: string | null;
+	linkedin?: string | null;
+	github?: string | null;
+	county?: string | null;
+	sub_county?: string | null;
+	ward?: string | null;
+	administrative_location?: string | null;
+	sub_location?: string | null;
+	allergies?: Array<{ allergy: string }>;
+	supporting_documents?: Array<{ type: string; document_name: string; attachment: string | null }>;
+}
+
 export interface RedProfile {
 	red_profile: string;
+	personal_details?: PersonalDetails;
 	first_name: string | null;
 	last_name: string | null;
 	full_name: string;
@@ -320,6 +402,7 @@ export interface RedProfile {
 	other_profession: string | null;
 	education: EducationRow[];
 	training: TrainingRow[];
+	certifications?: DeclaredCertificationRow[];
 	work_experience: WorkExperienceRow[];
 	licences: LicenceRow[];
 	driving_licences: DrivingLicenceRow[];
@@ -331,6 +414,8 @@ export interface EducationRow {
 	institution: string;
 	level: string;
 	qualification: string;
+	class_per?: string;
+	maj_opt_subj?: string;
 	/** A year. `null` where somebody did not say, which is most of them. */
 	started_in: number | null;
 	finished_in: number | null;
@@ -348,9 +433,20 @@ export interface TrainingRow {
 	attachment: string | null;
 }
 
+/** A qualification with its own issuing and expiry details. */
+export interface DeclaredCertificationRow {
+	certification_name: string;
+	organization: string;
+	description: string;
+	expire: boolean;
+	issue_date: string;
+	expiration_date: string;
+}
+
 /** One post somebody has held, paid or unpaid — `VMMS Work Experience`. */
 export interface WorkExperienceRow {
 	organization: string;
+	location?: string;
 	role: string;
 	started_on: string;
 	ended_on: string;
@@ -360,6 +456,8 @@ export interface WorkExperienceRow {
 
 /** A licence or registration somebody holds — `Personnel Licence`. */
 export interface LicenceRow {
+	qualification?: string;
+	description?: string;
 	license_type: string;
 	license_name: string;
 	institution: string;
@@ -437,6 +535,8 @@ export interface SocietyQuestion {
  * for, so nothing in it is a copy that can go stale.
  */
 export interface ApplicationDecision {
+	personal_details?: PersonalDetails;
+	background?: DossierBackground;
 	name: string;
 	full_name: string;
 	email: string | null;
@@ -489,18 +589,56 @@ export interface ApplicationDecision {
 		}
 	>;
 	/** What was agreed to, in the wording that stood on the day. */
-	declarations: Array<{
-		declaration: string;
-		title: string;
-		version: string;
-		declaration_version: string | null;
-		/** See `Declaration.source`. `Link` acceptances have no body to show. */
-		source: "Text" | "Link";
-		body: string | null;
-		external_url: string | null;
-		accepted: boolean;
-		accepted_on: string | null;
-	}>;
+	declarations: AcceptedDeclaration[];
+	/** Every file the applicant attached. See `registration/services/attachments.py`. */
+	attachments?: RegistrationFile[];
+	citizenship_status?: string | null;
+	disability_status?: string | null;
+	/** Free text, shown on the review only. */
+	disability_needs?: string | null;
+	disabilities?: string[];
+	profession?: string | null;
+}
+
+/** One declaration as accepted, with the wording of the version agreed to. */
+export interface AcceptedDeclaration {
+	declaration: string;
+	title: string;
+	version: string;
+	declaration_version: string | null;
+	/** See `Declaration.source`. `Link` acceptances have no body to show. */
+	source: "Text" | "Link";
+	body: string | null;
+	external_url: string | null;
+	accepted: boolean;
+	accepted_on: string | null;
+}
+
+/**
+ * One file from a person's registration. `url` opens it through
+ * `download_evidence`, checked against the record being read; add `inline=1`
+ * to show it in the page.
+ */
+export interface RegistrationFile {
+	key: string;
+	/** Which table it came from, and the row: `education`, 0. */
+	table: string;
+	index: number;
+	group: string;
+	label: string;
+	attachment: string;
+	file_name: string;
+	url: string;
+}
+
+/** One save in a registration's history, from `api/registration.py::audit_trail`. */
+export interface AuditEntry {
+	on: string;
+	by: string;
+	/** "Application", "Membership" or "Personal details". */
+	record: string;
+	kind: "created" | "changed";
+	changes: Array<{ field: string; from: string | null; to: string | null; row?: string }>;
 }
 
 /** One answer as an approver reads it, from `questions.answers_of`. */
@@ -632,10 +770,21 @@ export interface OpenRegistration {
 	reason?: string;
 	/** Has this ever been in front of an approver? */
 	reviewed?: boolean;
+	/** A membership held back until its M-Pesa fee is paid. */
+	awaiting_payment?: boolean;
 }
 
 /** `api/registration.py::identity_options`. */
 export interface IdentityOptions {
+	blood_groups?: string[];
+	identification_patterns?: Record<string,string>;
+	member_requires_identity?: boolean;
+	collect_legacy_details?: boolean;
+	supporting_document_types?: Array<{ key: string; label: string; is_required: boolean; requires_name?: boolean }>;
+	member_min_age?: number | null;
+	member_max_age?: number | null;
+	volunteer_min_age?: number | null;
+	volunteer_max_age?: number | null;
 	genders: string[];
 	/**
 	 * Core's `Disability` register, in the shape every other picker on this form
@@ -734,7 +883,6 @@ export interface Opportunity {
 export interface PaymentMethod {
 	gateway: string;
 	label: string;
-	description: string;
 	/** What the society wants an applicant told before they choose this. */
 	instructions: string;
 	/**
@@ -746,9 +894,17 @@ export interface PaymentMethod {
 	 * `member/services/methods.py` answers it once.
 	 */
 	in_person: boolean;
+	/** The gateway's mark, when the app ships one for its driver. */
+	logo?: string | null;
+	/** The gateway sends a prompt to the payer's phone, so the form asks for the number. */
+	by_phone?: boolean;
 }
 
 export interface PricedType {
+	requires_age_requirement?: boolean;
+	lower_age_limit?: number | null;
+	upper_age_limit?: number | null;
+	billing_cycle?: string | null;
 	known: boolean;
 	membership_type: string;
 	membership_type_name: string;
@@ -1724,6 +1880,58 @@ export interface VolunteerDossier {
 	holds_card: boolean;
 	/** `api/person.py::registers`. See `Registers` for what absent means. */
 	registers: Registers;
+	/** Surge roster entries this person has had, stood-down ones included. */
+	surge?: SurgeEntry[];
+}
+
+/** Where a surge roster entry stands today. Derived on the server, never stored. */
+export type SurgeStanding = "ready" | "expiring" | "licence_expired" | "volunteer_not_active" | "stood_down";
+
+/** One checked professional on a branch's surge roster — `volunteer/services/surge.py`. */
+export interface SurgeEntry {
+	entry: string;
+	volunteer: string;
+	profession: string;
+	status: "Active" | "Stood Down";
+	standing: SurgeStanding;
+	ready: boolean;
+	licence_number: string;
+	issuing_body: string;
+	licence_expiry: string | null;
+	licence_document: string | null;
+	checked_by: string | null;
+	checked_on: string | null;
+	notes: string | null;
+	stood_down_on: string | null;
+	stood_down_by: string | null;
+	stood_down_reason: string | null;
+}
+
+/** A roster row: the entry plus who it is about. */
+export interface SurgeRow extends SurgeEntry {
+	full_name: string | null;
+	photo: string | null;
+	phone: string | null;
+	volunteer_status: string;
+	branch: string;
+}
+
+export interface SurgeRoster {
+	as_of: string;
+	figures: { on_roster: number; people: number; ready: number; expiring: number; needs_review: number };
+	professions: Array<{ profession: string; count: number; ready: number }>;
+	rows: SurgeRow[];
+}
+
+/** Disability among active volunteers in scope. Counts only — `api/volunteer.py::disability_summary`. */
+export interface DisabilitySummary {
+	active: number;
+	yes: number;
+	no: number;
+	prefer_not: number;
+	not_asked: number;
+	categories: Array<{ category: string; count: number }>;
+	unspecified: number;
 }
 
 /**
@@ -1748,6 +1956,7 @@ export type Registers = Partial<Record<"volunteer" | "member", RegisterEntry | n
 
 /** `member/services/dossier.py::identity_dto`. */
 export interface MemberIdentity {
+	personal_details?: PersonalDetails;
 	member: string;
 	red_profile: string;
 	full_name: string | null;
@@ -1791,6 +2000,7 @@ export interface MembershipDossierRow extends MembershipRow {
 	membership_geo_node: string | null;
 	membership_geo_path: string | null;
 	duration_days: number | null;
+	payment?: PaymentPicture;
 	/**
 	 * `dossier._certificate_access` — three separate questions, and a screen
 	 * offering the button needs all three. `available` is whether there is a
@@ -1851,6 +2061,14 @@ export interface MembershipReview {
 	proof_attachment: string | null;
 	membership_source: string | null;
 	answers: SocietyAnswer[];
+	declarations?: AcceptedDeclaration[];
+	attachments?: RegistrationFile[];
+	identifications?: Array<{ id_type: string; id_type_name: string | null; id_number: string; is_primary: boolean }>;
+	citizenship_status?: string | null;
+	disability_status?: string | null;
+	disability_needs?: string | null;
+	disabilities?: string[];
+	profession?: string | null;
 	/**
 	 * Whether this reader may act on the membership — record its fee, cancel it
 	 * — as opposed to decide it. `api/member.py::get_review` reads through the
@@ -2164,6 +2382,7 @@ export interface PeopleReach {
 
 /** `api/approvals.py::my_cases` — one band of a queue. */
 export interface ApprovalCases {
+	total?: number;
 	group: string;
 	count: number;
 	has_more?: boolean;

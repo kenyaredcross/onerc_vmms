@@ -38,7 +38,11 @@ from vmmsx.approvals.services import assignment, config, contract, routing
 BREACH_ESCALATE_UP = "escalate_up"
 BREACH_NOTIFY_ONLY = "notify_only"
 BREACH_NONE = "none"
-BREACH_ACTIONS = (BREACH_ESCALATE_UP, BREACH_NOTIFY_ONLY, BREACH_NONE)
+# Late items are not announced one by one. They go into the approver's weekly
+# summary instead (`approvals/services/digest.py`), which counts what is waiting
+# rather than alerting on each application every day.
+BREACH_WEEKLY_DIGEST = "weekly_digest"
+BREACH_ACTIONS = (BREACH_ESCALATE_UP, BREACH_NOTIFY_ONLY, BREACH_WEEKLY_DIGEST, BREACH_NONE)
 
 # Named, so the log line is a fact the tests can assert on rather than prose
 # that drifts.
@@ -135,9 +139,10 @@ def apply_breach(doc, workflow=None, now=None) -> dict:
 	outcome["breached"] = True
 	outcome["days_overdue"] = days_overdue(doc, stage, now)
 
-	if stage.on_sla_breach == BREACH_NONE:
-		# An explicit society choice to let it sit. Recorded, not silently
-		# reinterpreted as something more helpful.
+	if stage.on_sla_breach in (BREACH_NONE, BREACH_WEEKLY_DIGEST):
+		# NONE is an explicit society choice to let it sit. WEEKLY_DIGEST is
+		# told about once a week by the digest job, not here every day. Either
+		# way this sweep adds nobody and sends nothing.
 		return outcome
 
 	node = config.anchor(doc, workflow)

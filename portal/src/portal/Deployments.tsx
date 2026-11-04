@@ -128,8 +128,7 @@ export default function Deployments() {
 					) : (
 						<Card>
 							<Empty framed={false} icon={Icon.truck} title="No deployment request right now">
-								When a coordinator asks you to join a mission, it appears here with its terms of
-								reference and its dates for you to accept or decline.
+								Deployment requests appear here for you to accept or decline.
 							</Empty>
 						</Card>
 					)}
@@ -283,7 +282,7 @@ function reportingPoint(
 
 	if (site?.has_point && site.latitude != null && site.longitude != null) {
 		return {
-			label: "Where this mission was",
+			label: "Location",
 			name: site.name || site.address || "The mission site",
 			address: site.name ? site.address : null,
 			latitude: site.latitude,
@@ -577,7 +576,7 @@ export function DeploymentRequest() {
 					{terms.responsibilities && (
 						<Card>
 							<h2 className="mb-3 font-display text-[15px] font-bold tracking-[-0.01em] text-ink">
-								What you will do
+								Duties
 							</h2>
 							<p className="whitespace-pre-line text-[12.5px] leading-relaxed text-slate-body">
 								{terms.responsibilities}
@@ -1218,7 +1217,7 @@ function MissionTerms({ terms }: { terms: TermsMission }) {
 				</Part>
 			)}
 			{terms.stakeholders.length > 0 && (
-				<Part title="Who you would be dealing with">
+				<Part title="Key contacts">
 					<ul className="space-y-1">
 						{terms.stakeholders.map((row, i) => (
 							<li key={i}>

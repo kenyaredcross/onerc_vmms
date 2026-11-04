@@ -42,7 +42,7 @@ import frappe
 from frappe import _
 from frappe.utils import cstr, getdate
 
-from vmmsx.registration.services import declarations, evidence, intake, questions
+from vmmsx.registration.services import declarations, evidence, intake, parity, questions
 
 PROFILE_DOCTYPE = "Red Profile"
 APPLICATION_DOCTYPE = "VMMS Volunteer Application"
@@ -96,9 +96,24 @@ OTHER_PROFESSION_FIELD = "vmms_other_profession"
 # `rows_from` gives: a field added to one of these doctypes next year is refused
 # by default here, and would have been accepted by a list of things to strip.
 BACKGROUND_TABLES = {
+	"certifications": (
+		"vmms_certifications",
+		("certification_name", "organization", "description", "expire", "issue_date", "expiration_date"),
+		(),
+	),
 	"education": (
 		"vmms_education",
-		("institution", "level", "qualification", "started_in", "finished_in", "is_ongoing", "attachment"),
+		(
+			"institution",
+			"level",
+			"qualification",
+			"started_in",
+			"finished_in",
+			"is_ongoing",
+			"attachment",
+			"class_per",
+			"maj_opt_subj",
+		),
 		("attachment",),
 	),
 	"training": (
@@ -108,7 +123,7 @@ BACKGROUND_TABLES = {
 	),
 	"work_experience": (
 		"vmms_work_experience",
-		("organization", "role", "started_on", "ended_on", "is_current", "summary"),
+		("organization", "role", "started_on", "ended_on", "is_current", "summary", "location"),
 		(),
 	),
 	"licences": (
@@ -295,6 +310,7 @@ def _profile_dto(profile: str) -> dict:
 			"name",
 			"first_name",
 			"last_name",
+			"full_name",
 			"email",
 			"phone",
 			"gender",
@@ -323,10 +339,11 @@ def _profile_dto(profile: str) -> dict:
 	)
 
 	return {
+		"personal_details": parity.profile_dto(profile),
 		"red_profile": person.name,
 		"first_name": person.first_name,
 		"last_name": person.last_name,
-		"full_name": " ".join(filter(None, [person.first_name, person.last_name])),
+		"full_name": person.full_name,
 		"email": person.email,
 		"phone": person.phone,
 		"gender": person.gender,
@@ -550,12 +567,14 @@ def identity_options() -> dict:
 	retired every row has said something and should be believed.
 	"""
 	return {
+		**parity.options(),
 		"genders": [row["name"] for row in frappe.get_all("Gender", order_by="name asc")],
 		"disabilities": _disability_vocabulary(),
 		# The four the background block draws. Name-only registers come back as
 		# plain lists; the two with a label and a description come back in the
 		# `{key, label, description}` shape every picker in the portal takes.
 		"professions": _names("Profession"),
+		"blood_groups": _names("VMMS Blood Group"),
 		"licence_types": _names("Personnel License Type"),
 		"education_levels": _configured("VMMS Education Level", "level_name", order="sequence asc"),
 		"driving_licence_classes": _configured("VMMS Driving Licence Class", "class_name"),
@@ -710,6 +729,7 @@ def update_my_profile(
 	id_type: str | None = None,
 	id_number: str | None = None,
 	identifications: list | None = None,
+	personal_details: dict | None = None,
 ) -> dict:
 	"""Correct the caller's own Red Profile. The details are theirs.
 
@@ -784,6 +804,7 @@ def update_my_profile(
 		identifications=identifications,
 		disabilities=disabilities,
 		background=background,
+		personal_details=personal_details,
 	)
 
 	return _profile_dto(profile)
@@ -798,6 +819,7 @@ def _write_profile(
 	identifications: list | None = None,
 	disabilities: list | None = None,
 	background: dict | None = None,
+	personal_details: dict | None = None,
 ) -> None:
 	"""Write person-owned registration facts to one already-resolved profile.
 
@@ -888,7 +910,8 @@ def _write_profile(
 		if key in BACKGROUND_TABLES and rows is not None and meta.has_field(BACKGROUND_TABLES[key][0])
 	}
 
-	if changes or identification_supplied or disabilities_supplied or tables:
+	actor = frappe.session.user
+	if changes or identification_supplied or disabilities_supplied or tables or personal_details is not None:
 		# Elevated, and narrowly. A volunteer or member holds no write permission
 		# on Red Profile and should not — it is core's spine and it carries every
 		# person the society knows. What is written here is one row, resolved from
@@ -916,6 +939,7 @@ def _write_profile(
 				field, _allowed, files = BACKGROUND_TABLES[key]
 				document.set(field, _background_rows(document, rows, files))
 
+			parity.write_profile(document, personal_details, actor=actor)
 			document.save()
 
 		frappe.clear_document_cache(PROFILE_DOCTYPE, profile)
@@ -1262,6 +1286,15 @@ def _open_registration(doctype: str) -> str | None:
 	return frappe.db.exists(doctype, {field: value, contract.STATE_FIELD: ("in", open_states)})
 
 
+def _awaits_gateway_payment(doctype: str, name: str | None) -> bool:
+	if doctype != MEMBERSHIP_DOCTYPE or not name:
+		return False
+
+	from vmmsx.member.services import membership as membership_service
+
+	return membership_service.waits_for_gateway(frappe.get_doc(doctype, name))
+
+
 @frappe.whitelist()
 def my_open_registrations() -> dict:
 	"""What the caller has open, **one answer per kind of registration**.
@@ -1303,6 +1336,9 @@ def my_open_registrations() -> dict:
 				"name": name,
 				"path": path,
 				"state": frappe.db.get_value(doctype, name, contract.STATE_FIELD),
+				# A membership held back until its M-Pesa fee is paid. It is not
+				# with the branch yet, and the screen offers the payment instead.
+				"awaiting_payment": _awaits_gateway_payment(doctype, name),
 				# What the approver said, when they sent it back for something.
 				#
 				# An application returned to Draft is waiting on the applicant,
@@ -1712,6 +1748,7 @@ def _registration_dto(document, path: str) -> dict:
 				# it rather than asking again. Empty on a site that has not
 				# installed the field yet, which reads as "not chosen".
 				"payment_method": document.get(PAYMENT_METHOD_FIELD) or "",
+				"payer_phone": document.get("payer_phone") or "",
 				"proof_attachment": document.get("proof_attachment"),
 				# The claim as it stands, so a proof an approver sent back opens
 				# with what was submitted rather than an empty form somebody has
@@ -1775,6 +1812,7 @@ def save_my_volunteer_draft(
 	declarations_accepted: list | dict | None = None,
 	emergency_contacts: list | None = None,
 	guardian_consents: list | None = None,
+	personal_details: dict | None = None,
 ) -> dict:
 	"""Create or replace the caller's volunteer draft without routing it.
 
@@ -1835,6 +1873,7 @@ def save_my_volunteer_draft(
 		identifications=identifications,
 		disabilities=disabilities,
 		background=background,
+		personal_details=personal_details,
 	)
 
 	values = {
@@ -1877,6 +1916,15 @@ def save_my_member_draft(
 	payment_method: str | None = None,
 	answers: dict | None = None,
 	declarations_accepted: list | dict | None = None,
+	personal_details: dict | None = None,
+	country_of_citizenship: str | None = None,
+	citizenship_status: str | None = None,
+	residency_type: str | None = None,
+	home_geo_node: str | None = None,
+	country_of_residence: str | None = None,
+	residence_address: str | None = None,
+	identifications: list | None = None,
+	payer_phone: str | None = None,
 ) -> dict:
 	"""Create or replace the caller's membership draft without starting payment or review.
 
@@ -1914,10 +1962,20 @@ def save_my_member_draft(
 			"gender": gender,
 			"date_of_birth": date_of_birth,
 			"profile_photo": profile_photo,
+			"country_of_citizenship": country_of_citizenship,
+			"citizenship_status": citizenship_status,
+			"residency_type": residency_type,
+			"home_geo_node": home_geo_node,
+			"country_of_residence": country_of_residence,
+			"residence_address": residence_address,
 		},
+		personal_details=personal_details,
+		identifications=identifications,
 	)
 
 	values = {"membership_type": membership_type, "geo_node": geo_node}
+	if payer_phone is not None:
+		values["payer_phone"] = payer_phone.strip()
 
 	# `None` leaves whatever the draft already carries — a form that sends four
 	# fields must not blank a fifth. An unrecognised method is dropped rather
@@ -1929,6 +1987,15 @@ def save_my_member_draft(
 	document = _editable_registration("member")
 
 	if document:
+		if (
+			document.get("payment_transaction")
+			and payer_phone is not None
+			and payer_phone.strip() != (document.get("payer_phone") or "")
+		):
+			frappe.throw(
+				_("The payment phone cannot be changed after payment has been requested."),
+				frappe.ValidationError,
+			)
 		if document.get("payment_transaction") and document.membership_type != membership_type:
 			frappe.throw(
 				_("The membership type cannot be changed after a payment request has been created."),
@@ -1940,6 +2007,7 @@ def save_my_member_draft(
 		document = _register(
 			{
 				"doctype": MEMBERSHIP_DOCTYPE,
+				"payer_phone": (payer_phone or "").strip(),
 				"membership_type": membership_type,
 				"geo_node": geo_node,
 				PAYMENT_METHOD_FIELD: _offered_method(payment_method),
@@ -2012,6 +2080,7 @@ def register_as_volunteer(
 	declarations_accepted: list | dict | None = None,
 	emergency_contacts: list | None = None,
 	guardian_consents: list | None = None,
+	personal_details: dict | None = None,
 ) -> dict:
 	"""Register the caller as a volunteer, and put the application into motion.
 
@@ -2093,6 +2162,7 @@ def register_as_volunteer(
 		identifications=identifications,
 		disabilities=disabilities,
 		background=background,
+		personal_details=personal_details,
 	)
 
 	application = _register(
@@ -2138,6 +2208,15 @@ def register_as_member(
 	payment_method: str | None = None,
 	answers: dict | None = None,
 	declarations_accepted: list | dict | None = None,
+	personal_details: dict | None = None,
+	country_of_citizenship: str | None = None,
+	citizenship_status: str | None = None,
+	residency_type: str | None = None,
+	home_geo_node: str | None = None,
+	country_of_residence: str | None = None,
+	residence_address: str | None = None,
+	identifications: list | None = None,
+	payer_phone: str | None = None,
 ) -> dict:
 	"""Register the caller as a member, and put the membership into motion.
 
@@ -2169,9 +2248,40 @@ def register_as_member(
 
 	from vmmsx.member.services import membership as membership_service
 
+	profile = intake.for_user(
+		frappe.session.user,
+		{
+			key: value
+			for key, value in {
+				"first_name": first_name,
+				"last_name": last_name,
+				"phone": phone,
+				"gender": gender,
+				"date_of_birth": date_of_birth,
+			}.items()
+			if value
+		},
+	)
+	if not profile:
+		frappe.throw(_("Your account could not be matched to a person record."), frappe.ValidationError)
+	_write_profile(
+		profile,
+		{
+			"country_of_citizenship": country_of_citizenship,
+			"citizenship_status": citizenship_status,
+			"residency_type": residency_type,
+			"home_geo_node": home_geo_node,
+			"country_of_residence": country_of_residence,
+			"residence_address": residence_address,
+		},
+		identifications=identifications,
+		personal_details=personal_details,
+	)
+
 	membership = _register(
 		{
 			"doctype": MEMBERSHIP_DOCTYPE,
+			"payer_phone": (payer_phone or "").strip(),
 			"membership_type": membership_type,
 			"geo_node": geo_node,
 			# Checked against what the society offers before it is stored, and
@@ -2342,3 +2452,97 @@ def _secure_proof(document) -> None:
 		)
 
 	document.reload()
+
+
+def _registration_record(doctype: str, name: str):
+	"""The record a reviewer is reading, checked for read, and its person's Red Profile."""
+	_assert_signed_in()
+	if doctype in ("VMMS Volunteer Application", "VMMS Volunteer"):
+		from vmmsx.api.volunteer import _readable
+
+		document = _readable(doctype, name)
+		profile = document.red_profile
+	elif doctype == "VMMS Membership":
+		from vmmsx.api.member import _readable
+
+		document = _readable(name)
+		profile = frappe.db.get_value("VMMS Member", document.member, "red_profile")
+	elif doctype == "VMMS Member":
+		from vmmsx.api.member import _readable, _readable_member
+
+		document = _readable_member(name)
+		profile = document.red_profile
+		owner = frappe.db.get_value(PROFILE_DOCTYPE, profile, "user")
+		if owner != frappe.session.user and frappe.session.user != "Administrator":
+			readable = False
+			for membership_name in frappe.get_all("VMMS Membership", filters={"member": name}, pluck="name"):
+				try:
+					_readable(membership_name)
+					readable = True
+					break
+				except frappe.PermissionError:
+					continue
+			if not readable:
+				frappe.throw(_("You cannot read this member's evidence."), frappe.PermissionError)
+	else:
+		frappe.throw(_("This record cannot provide registration evidence."), frappe.PermissionError)
+	return document, profile
+
+
+@frappe.whitelist()
+def audit_trail(doctype: str, name: str) -> list[dict]:
+	"""Who changed what on this registration, and when. Newest first.
+
+	Covers the application or membership and the applicant's personal details,
+	read from Frappe's `Version` log. Readable by whoever can read the record.
+	"""
+	from vmmsx.registration.services import audit
+
+	if doctype not in ("VMMS Volunteer Application", "VMMS Membership"):
+		frappe.throw(_("This record has no registration history."), frappe.PermissionError)
+	document, profile = _registration_record(doctype, name)
+	label = "Application" if doctype == "VMMS Volunteer Application" else "Membership"
+	return audit.trail(document, profile, label)
+
+
+@frappe.whitelist()
+def download_evidence(doctype: str, name: str, attachment: str, inline: str | int | None = None) -> None:
+	"""Open a file from a person's registration through the record being read.
+
+	The files are private and most are anchored to the Red Profile, which a
+	reviewer cannot read directly. Reading the application, membership or
+	register entry is the permission; the file must be one that record lists in
+	`attachments.for_record`, so this cannot be used to fetch anything else.
+
+	`inline` shows the file in the page (a preview) rather than downloading it.
+	"""
+	from vmmsx.registration.services import attachments
+
+	document, profile = _registration_record(doctype, name)
+	if attachment not in attachments.referenced(doctype, document, profile):
+		frappe.throw(
+			_("This attachment is not registration evidence for this person."), frappe.PermissionError
+		)
+	# The file anchored to this person or this record first; any copy with the
+	# same address otherwise (Frappe shares one stored file between identical
+	# uploads, so the content is the same).
+	file_name = (
+		frappe.db.get_value(
+			"File",
+			{"file_url": attachment, "attached_to_doctype": PROFILE_DOCTYPE, "attached_to_name": profile},
+			"name",
+		)
+		or frappe.db.get_value(
+			"File",
+			{"file_url": attachment, "attached_to_doctype": document.doctype, "attached_to_name": document.name},
+			"name",
+		)
+		or frappe.db.get_value("File", {"file_url": attachment}, "name")
+	)
+	if not file_name:
+		frappe.throw(_("This evidence file is not available."), frappe.DoesNotExistError)
+	file = frappe.get_doc("File", file_name)
+	frappe.local.response.filename = file.file_name
+	frappe.local.response.filecontent = file.get_content()
+	frappe.local.response.type = "download"
+	frappe.local.response.display_content_as = "inline" if frappe.utils.cint(inline) else "attachment"

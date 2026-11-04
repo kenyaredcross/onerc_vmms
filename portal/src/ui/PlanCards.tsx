@@ -55,14 +55,13 @@ export function PlanCards({
 	empty?: ReactNode;
 	/**
 	 * How wide the grid is allowed to get. The membership tab has the page to
-	 * itself and can stand three plans side by side; the join wizard gives up a
-	 * quarter of its width to the step rail, and a third column in what is left
-	 * squeezes a benefit list into two words a line.
-	 *
-	 * Never four. The card is a comparison — a name, a fee, a list read top to
-	 * bottom — and a fourth column takes the width that makes the list readable.
+	 * itself, and a society with four types (Kenya's youth in school, youth out
+	 * of school, ordinary, life) wants them compared in one row, as its old
+	 * system showed them. Four from `lg` (the cards tighten a
+	 * little until `xl`); narrower screens wrap to two. The join wizard gives
+	 * up a quarter of its width to the step rail, so it stays at two.
 	 */
-	columns?: 2 | 3;
+	columns?: 2 | 3 | 4;
 	/** The act, inside the price panel, where the card is not itself the control. */
 	action?: (plan: PricedType) => ReactNode;
 	/** Quiet links under the card: the details panel, the claim on an old card. */
@@ -93,7 +92,7 @@ export function PlanCards({
 			// `items-start`, so the card somebody holds can stand a little proud
 			// of the row without dragging its neighbours' tops down with it.
 			//
-			// **Three wide at most, and it wraps.** A society with six types gets
+			// **Four wide at most, and it wraps.** A society with six types gets
 			// two rows of the same card rather than six narrower ones: the card is
 			// read down — a fee, then a list — and the width that makes the list
 			// legible does not divide six ways. The benefit lists are capped for
@@ -102,6 +101,10 @@ export function PlanCards({
 			className={cx(
 				"grid items-start gap-4 sm:grid-cols-2",
 				columns === 3 && types.length > 2 && "lg:grid-cols-3",
+				columns === 4 && types.length === 3 && "lg:grid-cols-3",
+				// From `lg`, not `xl`: the portal's sidebar takes 264px of the
+				// window, and at `xl` a 1200px laptop still saw two rows of two.
+				columns === 4 && types.length > 3 && "lg:grid-cols-4 lg:gap-3 xl:gap-4",
 			)}
 		>
 			{ordered.map((row) => (
@@ -115,6 +118,7 @@ export function PlanCards({
 					held={held?.includes(row.membership_type) ?? false}
 					action={action}
 					footer={footer}
+					dense={columns === 4 && types.length > 3}
 				/>
 			))}
 		</div>
@@ -176,8 +180,11 @@ function PlanCard({
 	held,
 	action,
 	footer,
+	dense = false,
 }: {
 	row: PricedType;
+	/** Four in a row: a little less padding and a smaller figure until `xl`. */
+	dense?: boolean;
 	choosing: boolean;
 	selected: boolean;
 	onSelect?: (membershipType: string) => void;
@@ -191,7 +198,7 @@ function PlanCard({
 	// a plan it is a plain div, because nothing should be focusable that does not
 	// do anything.
 	const Wrapper = onSelect ? "button" : "div";
-	const { amount, period, monthly } = planPrice(row);
+	const { amount, period } = planPrice(row);
 
 	return (
 		<Wrapper
@@ -203,7 +210,8 @@ function PlanCard({
 					}
 				: {})}
 			className={cx(
-				"group relative flex flex-col rounded-2xl border bg-white p-5 text-left transition",
+				"group relative flex min-w-0 flex-col rounded-2xl border bg-white p-5 text-left transition",
+				dense && "lg:p-4 xl:p-5",
 				// One column has no middle, so the card that would have been in it
 				// goes first: a person scrolling a phone should meet their own
 				// membership before four they could switch to.
@@ -237,15 +245,19 @@ function PlanCard({
 				)}
 			</header>
 
-			<div className="mt-4 rounded-xl bg-surface p-4">
+			<div className={cx("mt-4 rounded-xl bg-surface p-4", dense && "lg:p-3 xl:p-4")}>
 				<div className="flex flex-wrap items-baseline gap-x-2">
-					<span className="text-[27px] font-semibold leading-none tracking-tight text-ink">
+					<span
+						className={cx(
+							"text-[27px] font-semibold leading-none tracking-tight text-ink",
+							dense && "lg:text-[22px] xl:text-[27px]",
+						)}
+					>
 						{amount}
 					</span>
 					{period && <span className="text-[12px] text-slate-body">{period}</span>}
 				</div>
 
-				{monthly && <p className="mt-2 text-[11.5px] font-medium text-blue-press">{monthly}</p>}
 
 				<p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-body">
 					{row.is_lifetime
@@ -285,7 +297,7 @@ function PlanCard({
 			{row.benefits.length > 0 && (
 				<div className="mt-5">
 					<p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-rail-label">
-						What is included
+						Benefits
 					</p>
 					<ul className="mt-3 space-y-2.5">
 						{row.benefits.slice(0, SHOWN_BENEFITS).map((benefit) => (
@@ -318,19 +330,16 @@ function PlanCard({
 					{footer(row)}
 				</div>
 			)}
+		{row.requires_age_requirement && <p className="mt-3 text-xs text-muted">Ages {row.lower_age_limit ?? 0}–{row.upper_age_limit ?? 0}, inclusive.</p>}
 		</Wrapper>
 	);
 }
 
 /**
- * How a type's price reads: the headline, its period, and the quiet second line.
+ * How a type's price reads: the headline and its period.
  *
- * **The second line is derived, never stored.** A society sets one fee and one
- * duration; a yearly figure divided into months is the same fee said in the
- * unit people budget in, which is the one honest thing a pricing page's figure
- * block does. It is hedged — "about" — because it is arithmetic on a price
- * nobody is charged monthly, and it is omitted on anything shorter than two
- * months, where a month is not a smaller unit than the fee.
+ * No monthly breakdown. A society sets one fee for one period, and a
+ * "about Ksh 1 a month" line restated it in a unit nobody is charged in.
  *
  * Exported because the membership tab's details panel says the same thing, and
  * two screens quoting one fee must not arrive at two figures.
@@ -338,22 +347,12 @@ function PlanCard({
 export function planPrice(plan: PricedType): {
 	amount: string;
 	period: string;
-	monthly: string | null;
 } {
-	const months = plan.duration_days / DAYS_IN_A_MONTH;
-
 	return {
 		amount: plan.free ? "Free" : formatMoney(plan.amount, plan.currency),
-		period: plan.is_lifetime ? "once" : periodLabel(plan.duration_days),
-		monthly:
-			plan.free || plan.is_lifetime || months < 2
-				? null
-				: `about ${formatMoney(plan.amount / months, plan.currency)} a month`,
+		period: plan.is_lifetime ? "once" : plan.billing_cycle === "Yearly" ? "a year" : plan.billing_cycle === "Monthly" ? "a month" : periodLabel(plan.duration_days),
 	};
 }
-
-/** The average, because a year is not twelve equal months and the line says "about". */
-const DAYS_IN_A_MONTH = 30.44;
 
 /**
  * "a year" where a duration is one, "every 90 days" where it is not.

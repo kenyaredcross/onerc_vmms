@@ -45,7 +45,7 @@ back to decide anything. This satellite is the truth (core's Design 2).
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, cint, flt, getdate, today
+from frappe.utils import add_days, add_months, add_years, cint, flt, getdate, today
 
 from vmmsx.approvals.services import contract
 from vmmsx.member.services import approval, payment, proof
@@ -53,6 +53,7 @@ from vmmsx.registration.services import questions
 
 MEMBER_DOCTYPE = "VMMS Member"
 MEMBERSHIP_DOCTYPE = "VMMS Membership"
+MEMBERSHIP_TYPE_DOCTYPE = "VMMS Membership Type"
 
 STATUS_DRAFT = "Draft"
 STATUS_AWAITING_PAYMENT = "Awaiting Payment"
@@ -98,7 +99,7 @@ def is_lifetime(membership_type) -> bool:
 	`valid_to` happens to be empty. A membership that has not activated yet has
 	no `valid_to` either, and it is not a lifetime one.
 	"""
-	return bool(membership_type.is_lifetime)
+	return bool(membership_type.is_lifetime or membership_type.get("billing_cycle") == "One Off")
 
 
 def assert_proof_consistent(membership) -> None:
@@ -159,10 +160,15 @@ def submit(membership) -> dict:
 	`approval.begin` hands an already-routed document back to the engine, which
 	re-syncs the queue rather than restarting review.
 	"""
+	from vmmsx.registration.services import parity
+
 	membership_type = type_of(membership)
 
 	_assert_type_usable(membership_type)
+	assert_age_eligibility(membership, membership_type)
+	parity.assert_member_ready(membership)
 	assert_not_already_held(membership)
+	_snapshot_fee(membership, membership_type)
 
 	# Before the fee is requested, deliberately. A society's own questions are as
 	# required as anything else on the form, and discovering that after a gateway
@@ -199,6 +205,127 @@ def submit(membership) -> dict:
 	_sync_member(membership)
 
 	return _with_payment(status(membership), requested)
+
+
+def waits_for_gateway(membership) -> bool:
+	"""Is this application held back until the gateway reports its fee paid?
+
+	True for a fee collected by M-Pesa (or any gateway that confirms its own
+	payments) that has not been paid yet. Never for a proof of an existing
+	membership, a free type, or a fee paid at a branch office.
+	"""
+	if membership.membership_status != STATUS_AWAITING_PAYMENT:
+		return False
+
+	if is_proof(membership) or membership.paid_on:
+		return False
+
+	return payment.confirms_itself(membership)
+
+
+def send_for_approval_once_paid(membership) -> None:
+	"""Route a membership that was held back for its fee, now that it is paid.
+
+	Called after the payment is recorded. For a membership already in front of
+	its branch — one paid at an office, or one with no approver — `begin` does
+	nothing new. Runs as the system, like every write the engine makes on the
+	applicant's behalf, because the caller is often the gateway's callback.
+
+	Never raises: the payment is already recorded and must stand. A membership
+	that could not be routed is logged, and the daily repair routes it.
+	"""
+	from vmmsx import elevation
+
+	if membership.membership_status not in (STATUS_AWAITING_PAYMENT, STATUS_AWAITING_APPROVAL):
+		return
+
+	try:
+		with elevation.as_system():
+			approval.begin(membership, type_of(membership))
+	except Exception:
+		frappe.log_error(title=f"Paid membership could not be sent for approval: {membership.name}")
+
+
+def can_change_type(membership) -> bool:
+	"""May the applicant still switch to another membership type?
+
+	Only while the fee is unpaid, by phone, and no prompt is open on anybody's
+	phone. Until the money arrives nothing has gone to the branch, so there is
+	nothing to unpick. A prompt still open is the one thing that would be: the
+	payer could pay the old fee for the new type.
+	"""
+	return waits_for_gateway(membership) and payment.can_retry(membership)
+
+
+def switchable_types(membership) -> list[str]:
+	"""The other types this membership may switch to: active, and open to the holder's age.
+
+	The same two rules `change_type` enforces, asked in advance so a screen
+	offers only what the server would accept.
+	"""
+	if not can_change_type(membership):
+		return []
+
+	born = _date_of_birth(membership)
+	keys = frappe.get_all(
+		MEMBERSHIP_TYPE_DOCTYPE,
+		filters={"is_active": 1, "name": ("!=", membership.membership_type)},
+		pluck="name",
+	)
+
+	return [key for key in keys if _age_fits(born, frappe.get_cached_doc(MEMBERSHIP_TYPE_DOCTYPE, key))]
+
+
+def change_type(membership, membership_type: str) -> dict:
+	"""Switch an unpaid membership to another type, and charge that type's fee.
+
+	The fee snapshot is taken again from the new type, and the ended payment
+	request is let go so the next one asks for the new amount. A type with no fee
+	needs no payment at all, so the membership goes on to its branch now, the way
+	`submit` sends one.
+	"""
+	from vmmsx import elevation
+
+	if not can_change_type(membership):
+		frappe.throw(
+			_("The membership type can only be changed before the fee is paid, and not while a payment request is open on your phone."),
+			frappe.ValidationError,
+			title=_("Membership Type Not Changed"),
+		)
+
+	if not membership_type or not frappe.db.exists(MEMBERSHIP_TYPE_DOCTYPE, membership_type):
+		frappe.throw(_("Choose a membership type."), frappe.MandatoryError)
+
+	if membership_type == membership.membership_type:
+		return status(membership)
+
+	chosen = frappe.get_cached_doc(MEMBERSHIP_TYPE_DOCTYPE, membership_type)
+	_assert_type_usable(chosen)
+
+	previous = type_of(membership).membership_type_name
+	membership.membership_type = chosen.name
+	assert_age_eligibility(membership, chosen)
+
+	membership.fee_snapshot_taken = 0
+	_snapshot_fee(membership, chosen)
+	membership.payment_transaction = None
+	_set_pending_status(membership, chosen)
+
+	with elevation.as_system():
+		membership.save(ignore_permissions=True)
+		membership.add_comment(
+			"Comment",
+			_("Membership type changed from {0} to {1} before payment.").format(
+				previous, chosen.membership_type_name
+			),
+		)
+
+		# Nothing left to pay: on to the branch, exactly as `submit` would.
+		if not waits_for_gateway(membership):
+			approval.begin(membership, chosen)
+			try_activate(membership)
+
+	return status(membership)
 
 
 def _with_payment(answer: dict, requested: dict | None) -> dict:
@@ -252,88 +379,114 @@ def _assert_type_usable(membership_type) -> None:
 	)
 
 
-def assert_not_already_held(membership) -> None:
-	"""Refuse a proof of a membership this member already holds.
+def _date_of_birth(membership):
+	profile = frappe.db.get_value(MEMBER_DOCTYPE, membership.member, "red_profile")
 
-	**The gap this closes.** `engine.assert_single_open` refuses a second
-	*undecided* membership per member; nothing refuses a second *active* one. The
-	proof path reaches that state without anybody meaning to — a member who has
-	forgotten they were recorded last year proves the membership they are already
-	holding, and the society ends up with two live windows against one plan, two
-	fees and two certificates for one person.
+	return frappe.db.get_value("Red Profile", profile, "date_of_birth") if profile else None
 
-	**Scoped to proof, which is where the phase that asked for it put it.** The
-	general case — an ordinary Gateway application for a plan somebody already
-	holds — is the same defect and is *not* fixed here, deliberately. It is
-	pre-existing, it is out of this phase's scope, and closing it means changing
-	behaviour several other suites are built on. It is recorded for the
-	integration and hardening phase rather than folded in silently.
 
-	**Member, plan and branch — all three.** The scope was worded "the same member
-	and plan", and the branch is here because this app has a multi-branch
-	membership model that predates it and states itself out loud: `register.py`
-	builds the coordinator's register a row per *membership* rather than per
-	member, precisely so that "somebody enrolled at two branches appears twice,
-	once per branch". A person may hold the same plan at the branch where they
-	live and the branch where they work, and both are real memberships with their
-	own fee and their own validity. Dropping the branch from this key would not
-	tighten a duplicate rule; it would delete a feature that `test_dossier` and
-	`test_renewal` both pin.
+def _age_fits(born, membership_type) -> bool:
+	"""Inside the type's inclusive age limits today, or a type with none."""
+	if not membership_type.get("requires_age_requirement"):
+		return True
 
-	**Current, not stored-Active.** A membership sitting at Active with a
-	`valid_to` that has already passed is current in name only, in the ordinary
-	window before the daily sweep notices. Asked through `is_current` so this and
-	`renewal.is_renewable` agree by construction — and so that proving a
-	membership that has lapsed leaves the person on the renewal path rather than
-	locked out of it.
+	if not born:
+		return False
 
-	At submission rather than at insert, for `assert_single_open`'s reason: a
-	coordinator may have several drafts on their desk, and a draft is not a
-	membership anybody holds.
-	"""
-	if not is_proof(membership):
+	born, reference = getdate(born), getdate(today())
+	age = reference.year - born.year - ((reference.month, reference.day) < (born.month, born.day))
+
+	return cint(membership_type.lower_age_limit) <= age <= cint(membership_type.upper_age_limit)
+
+
+def assert_age_eligibility(membership, membership_type) -> None:
+	"""Enforce the plan's inclusive age limits before routing or collecting money."""
+	if not membership_type.get("requires_age_requirement"):
 		return
 
+	born = _date_of_birth(membership)
+
+	if not born:
+		frappe.throw(_("This membership type needs a date of birth before applying."), frappe.MandatoryError)
+
+	lower, upper = cint(membership_type.lower_age_limit), cint(membership_type.upper_age_limit)
+
+	if not _age_fits(born, membership_type):
+		frappe.throw(
+			_("This membership type is available from age {0} to {1}, inclusive.").format(lower, upper),
+			frappe.ValidationError,
+			title=_("Membership Age Requirement"),
+		)
+
+
+def _snapshot_fee(membership, membership_type) -> None:
+	"""Retain the fee agreed at submission when the plan changes later.
+
+	Only the flag says a snapshot was taken. `currency` alone does not: it is a
+	Currency link, so a new membership arrives with the site's default currency
+	already in it, and treating that as a snapshot recorded a fee of nothing —
+	a paid membership type submitted as free.
+	"""
+	if membership.get("fee_snapshot_taken"):
+		return
+
+	charge = payment.fee(membership_type)
+	membership.amount = charge["amount"]
+	membership.currency = charge["currency"]
+	membership.fee_snapshot_taken = 1
+
+
+def assert_not_already_held(membership) -> None:
+	"""Refuse an overlapping application at the same geographic anchor.
+
+	Gateway registrations retain the legacy member + branch duplicate rule,
+	including a pending payment/approval. Historical proof is more specific:
+	the same member, plan and anchor may only be recognised once. An expired
+	period never blocks renewal, even before the daily expiry sweep catches up.
+	"""
 	if not membership.member or not membership.membership_type or not membership.geo_node:
 		return
 
-	held = frappe.get_all(
+	# Serialize registration attempts for this member so two requests cannot
+	# both check before either sees the other's submitted membership.
+	frappe.db.get_value(MEMBER_DOCTYPE, membership.member, "name", for_update=True)
+	filters = {
+		"member": membership.member,
+		"geo_node": membership.geo_node,
+		"membership_status": ("in", (STATUS_ACTIVE, STATUS_AWAITING_PAYMENT, STATUS_AWAITING_APPROVAL)),
+		"name": ("!=", membership.name),
+	}
+	if is_proof(membership):
+		filters["membership_type"] = membership.membership_type
+
+	held = frappe.db.get_values(
 		MEMBERSHIP_DOCTYPE,
-		filters={
-			"member": membership.member,
-			"membership_type": membership.membership_type,
-			"geo_node": membership.geo_node,
-			"membership_status": STATUS_ACTIVE,
-			"name": ("!=", membership.name),
-		},
-		fields=["name", "membership_status", "valid_to"],
+		filters=filters,
+		fieldname=["name", "membership_status", "valid_to", "approval_state"],
+		as_dict=True,
+		for_update=True,
 	)
-
-	current = next((row for row in held if is_current(frappe._dict(row))), None)
-
+	current = next(
+		(
+			row
+			for row in held
+			if row.get("approval_state") not in ("Rejected", "Withdrawn", "Expired")
+			and (
+				is_current(frappe._dict(row))
+				or row["membership_status"] in (STATUS_AWAITING_PAYMENT, STATUS_AWAITING_APPROVAL)
+			)
+		),
+		None,
+	)
 	if not current:
 		return
 
-	# The place is named through core's adapter rather than in words. ACC-03: a
-	# geo level is a society's configuration and never a literal in a source
-	# file, and this message used to say "at this branch" — which is wrong on
-	# every site that registers members at a county or a ward.
-	# `member/tests/test_anchor.py::TestNoLevelNamesInSource` walks the AST and
-	# fails the build over it.
 	from onerc_core.geo.services import adapter
 
 	frappe.throw(
 		_(
-			"This person already holds a current {0} membership at {1} ({2}). A second one"
-			" would be two live memberships against the same plan in the same place. Renew that"
-			" one when it expires, or cancel it first."
-		).format(
-			frappe.bold(frappe.get_cached_value(
-				"VMMS Membership Type", membership.membership_type, "membership_type_name"
-			)),
-			frappe.bold(adapter.get_full_path(membership.geo_node)),
-			frappe.bold(current["name"]),
-		),
+			"This person already has a current or pending membership at {0} ({1}). Finish, renew or cancel that membership first."
+		).format(frappe.bold(adapter.get_full_path(membership.geo_node)), frappe.bold(current["name"])),
 		frappe.ValidationError,
 		title=_("Membership Already Held"),
 	)
@@ -388,6 +541,8 @@ def activate(membership) -> dict:
 	membership.membership_status = _activated_status(end)
 	membership.valid_from = start
 	membership.valid_to = end
+	if not membership.get("member_since_date"):
+		membership.member_since_date = start
 
 	_save(membership)
 	_sync_member(membership)
@@ -451,6 +606,11 @@ def _valid_to(membership_type, start):
 	if is_lifetime(membership_type):
 		return None
 
+	cycle = membership_type.get("billing_cycle")
+	if cycle == "Monthly":
+		return add_months(start, 1)
+	if cycle == "Yearly":
+		return add_years(start, 1)
 	return add_days(start, cint(membership_type.duration_days))
 
 
@@ -464,8 +624,41 @@ def expire(membership) -> dict:
 	return status(membership)
 
 
+CANCELLATION_SETTING = "vmms_memberships_can_be_cancelled"
+
+
+def cancellation_allowed() -> bool:
+	"""Does this society cancel memberships at all? Yes unless it said no."""
+	settings = "National Society Settings"
+
+	if not frappe.get_meta(settings).has_field(CANCELLATION_SETTING):
+		return True
+
+	# Read as stored: `get_single_value` turns a Check nobody has saved into 0,
+	# and a society that never opened the setting has not said no.
+	stored = frappe.db.sql(
+		"select value from `tabSingles` where doctype = %s and field = %s",
+		(settings, CANCELLATION_SETTING),
+	)
+	value = stored[0][0] if stored else None
+
+	return value in (None, "") or bool(cint(value))
+
+
+def can_cancel(membership) -> bool:
+	"""May this membership be cancelled? Whether the caller may is asked separately."""
+	return cancellation_allowed() and membership.membership_status != STATUS_CANCELLED
+
+
 def cancel(membership, reason: str | None = None) -> dict:
 	"""Withdraw a membership before or after activation."""
+	if not cancellation_allowed():
+		frappe.throw(
+			_("Memberships are not cancelled in this society. A membership runs until it expires."),
+			frappe.ValidationError,
+			title=_("Cancelling Is Off"),
+		)
+
 	if membership.membership_status != STATUS_CANCELLED:
 		membership.membership_status = STATUS_CANCELLED
 		_save(membership)
@@ -618,9 +811,7 @@ def _resettle_pending_status(membership) -> None:
 	_set_pending_status(membership, type_of(membership))
 
 	if membership.membership_status != before:
-		membership.db_set(
-			"membership_status", membership.membership_status, update_modified=False
-		)
+		membership.db_set("membership_status", membership.membership_status, update_modified=False)
 
 
 def report_payment(membership, amount=None, receipt=None) -> bool:
@@ -726,10 +917,10 @@ def _report(membership, previous: str | None) -> None:
 
 
 def _geo_path(membership) -> str:
-	"""Where this membership is anchored, in the society's own words."""
-	from onerc_core.geo.services import adapter
+	"""Where this membership is anchored, by the place's own name."""
+	from vmmsx.places import place_name
 
-	return adapter.get_full_path(membership.geo_node) if membership.geo_node else ""
+	return place_name(membership.geo_node)
 
 
 def _card_attachment(membership) -> tuple[str, bytes] | None:
@@ -826,8 +1017,22 @@ def status(membership) -> dict:
 		# expire_membership` will give it, and deriving it twice in two places
 		# is how the button and the endpoint come to disagree.
 		"is_lapsed": is_lapsed(membership),
-		"fee": payment.fee(membership_type),
+		"fee": payment.recorded_fee(membership, membership_type),
+		"payer_phone": membership.get("payer_phone"),
+		"member_since_date": membership.get("member_since_date"),
+		"legacy_membership_id": membership.get("legacy_membership_id"),
+		"billing_cycle": membership_type.get("billing_cycle"),
 		"payment_settled": _payment_settled(membership, membership_type),
+		# Paid by phone and still unpaid: the holder's screen offers to check
+		# the payment or send the prompt again.
+		"awaits_gateway_payment": waits_for_gateway(membership),
+		# The type can still be switched: unpaid, and no prompt open on a phone.
+		"can_change_type": can_change_type(membership),
+		# Which of the other types it may switch to. Empty when it cannot switch.
+		"switchable_types": switchable_types(membership),
+		# Whether a cancel action belongs on any screen: the society's setting
+		# and this membership's status. Who may press it is `can_act`.
+		"can_cancel": can_cancel(membership),
 		"approval_settled": approval.is_settled(membership, membership_type),
 		"payment_transaction": membership.payment_transaction,
 		"payment_receipt": membership.payment_receipt,

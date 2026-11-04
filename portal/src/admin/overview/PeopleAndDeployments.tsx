@@ -2,6 +2,7 @@ import { MetricCard } from "../../ui/MetricCard";
 import { Link } from "react-router-dom";
 import { Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Icon } from "../../ui/icons";
+import { DisabilityPanel } from "./DisabilityPanel";
 import type { Registration } from "./RegistrationOverview";
 
 export interface Deployment {
@@ -53,6 +54,7 @@ export function PeopleAndDeployments({
 					values={volunteers.map((row) => row.gender)}
 				/>
 			</div>
+			<DisabilityPanel />
 			<section className="overview-panel overview-deployments" aria-labelledby="deployment-snapshot-heading">
 				<div className="overview-panel-heading">
 					<div>
@@ -249,7 +251,7 @@ function GenderPanel({
 			</figure>
 			<div className="overview-breakdown-footer">
 				<span>
-					{known} of {values.length} have gender recorded
+					{known} of {values.length} with gender recorded
 				</span>
 				<Link to={`/admin/registry/${kind}`}>
 					View {kind} <Icon.arrow size={13} />

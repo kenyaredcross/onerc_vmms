@@ -592,6 +592,7 @@ def submit_membership_form(geo_node: str, membership_type: str, **values):
 	payload = {
 		"applicant_first_name": "Amina",
 		"applicant_last_name": "Otieno",
+		"applicant_date_of_birth": DEFAULT_DATE_OF_BIRTH,
 		"geo_node": geo_node,
 		"membership_type": membership_type,
 	}

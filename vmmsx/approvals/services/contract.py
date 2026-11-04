@@ -148,6 +148,35 @@ def state(doc) -> str:
 	return doc.get(STATE_FIELD) or states.DRAFT
 
 
+def ready_for_review(doc) -> bool:
+	"""May this document be put in front of an approver yet?
+
+	Asked of the document itself, so the engine still names no doctype. A
+	document says no by defining `ready_for_review()` and returning False — a
+	membership does while the gateway collecting its fee has not reported it
+	paid. One that says nothing is always ready.
+
+	A document that is not ready is accepted and parked rather than refused:
+	the entry rules have been checked, it is the person's open application, and
+	it is routed the moment it says yes.
+	"""
+	ask = getattr(doc, "ready_for_review", None)
+
+	return bool(ask()) if callable(ask) else True
+
+
+def held_for(doc) -> dict | None:
+	"""Why a document that is not ready for review is being held, in its own words.
+
+	`{"label": ..., "note": ...}` from the document's `held_for()`, or None. A
+	held application reads as Submitted to the engine, and a screen showing that
+	word told staff it was with the branch when it was waiting on its applicant.
+	"""
+	ask = getattr(doc, "held_for", None)
+
+	return ask() if callable(ask) else None
+
+
 def set_state(doc, target: str) -> None:
 	"""Move to `target`, through the transition grammar.
 

@@ -479,7 +479,7 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 					<input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} />
 				</Labelled>
 
-				<Labelled label="Status" hint="Where the project starts in its lifecycle.">
+				<Labelled label="Status" hint="Initial status of the project.">
 					<select className={INPUT} value={status} onChange={(e) => setStatus(e.target.value)}>
 						{PROJECT_STATUSES.map((option) => (
 							<option key={option} value={option}>
@@ -530,12 +530,11 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 
 			<div className="mt-4">
 				<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-					Where this project belongs
+					Location
 				</p>
 				<GeoSelects chain={chain} onChain={setChain} idPrefix="project" />
 				<p className="mt-2 text-[12px] text-slate-faint">
-					Required. A project with no place in the organisation would be visible to nobody and reachable by
-					nobody.
+					Required. A project must belong to an area to be visible.
 				</p>
 			</div>
 
@@ -687,9 +686,8 @@ export function TermsList() {
 
 			{!creating && data && rows.length === 0 && (
 				<Empty title="No terms of reference here">
-					A terms of reference is the specification a deployment is run against: what the work is, what a
-					volunteer is expected to do, and what they must hold to do it. Write one, then set up a deployment
-					under it.
+					A terms of reference describes the work, volunteer duties and required certifications. Write
+					one, then create a deployment under it.
 				</Empty>
 			)}
 
@@ -862,7 +860,7 @@ export function TermsDetail() {
 							</div>
 							<p className="mt-1 max-w-2xl text-[12px] text-slate-faint">
 								{terms.is_draft
-									? "Still being written. Nobody can be deployed under a draft: accepting an assignment is accepting this wording, and wording that can still change is not something anybody can agree to. Submit it when it is finished."
+									? "Draft. Volunteers cannot be deployed under a draft. Submit it to use it."
 									: "The wording is fixed. Everyone assigned under these terms agreed to exactly this text, so a change is an amendment — a new document — rather than an edit."}
 							</p>
 						</div>
@@ -1121,8 +1119,8 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 			<div className="p-5">
 				<SectionTitle>Write a terms of reference</SectionTitle>
 				<p className="mt-1 text-[12.5px] text-muted">
-					What the work is and what a volunteer deployed to it is expected to do. Deployments point at it, and
-					it prints on your society's letterhead.
+					Describes the work and volunteer duties. Deployments use it, and it prints on your society's
+					letterhead.
 				</p>
 			</div>
 
@@ -1254,9 +1252,9 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					<div className={activeStep === "plan" ? "" : "hidden"}>
 						<RowEditor<TermsStakeholder>
 							title="Stakeholders"
-							lead="Who the mission deals with and how deployed volunteers can reach them."
+							lead="Key contacts for this mission."
 							addLabel="Add a stakeholder"
-							empty="Nobody named yet."
+							empty="No contacts added."
 							rows={stakeholders}
 							onChange={setStakeholders}
 							blank={() => ({ designation: "", full_name: "", phone_number: "", email: "" })}
@@ -1272,7 +1270,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					<div className={activeStep === "roles" ? "" : "hidden"}>
 						<RowEditor<TermsObjective>
 							title="Objectives"
-							lead="What this mission sets out to achieve, in printed order."
+							lead="Mission objectives, in printed order."
 							addLabel="Add an objective"
 							empty="No objectives written yet."
 							rows={objectives}
@@ -1285,7 +1283,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					<div className={activeStep === "roles" ? "" : "hidden"}>
 						<RowEditor<TermsOutput>
 							title="Expected outputs"
-							lead="What will exist, or be true, after the mission."
+							lead="Expected results of the mission."
 							addLabel="Add an output"
 							empty="No outputs written yet."
 							rows={outputs}
@@ -1298,7 +1296,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 					<div className={activeStep === "plan" ? "" : "hidden"}>
 						<RowEditor<TermsApproach>
 							title="Approach methodology"
-							lead="How the work will be done, using your society's configured methodologies."
+							lead="Methodology for the work."
 							addLabel="Add a method"
 							empty="No approach described yet."
 							rows={approach}
@@ -1347,7 +1345,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				    exactly what had happened to three of them. */}
 						<RowEditor<TermsResource>
 							title="Resources"
-							lead="What is needed, when, in what quantity, at what cost, whose money it is, and from whom."
+							lead="Resources needed, quantities, cost and funding source."
 							addLabel="Add a resource"
 							empty="No resources listed yet."
 							rows={resources}
@@ -1421,7 +1419,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				{activeStep === "overview" && (
 					<div className="mt-4">
 						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-							Where these terms may be used
+							Applicable areas
 						</p>
 						<GeoSelects chain={chain} onChain={setChain} idPrefix="terms" />
 						<p className="mt-2 text-[12px] text-slate-faint">

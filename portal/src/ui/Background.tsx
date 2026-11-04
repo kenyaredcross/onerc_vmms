@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 
 import type {
+	DeclaredCertificationRow,
 	DrivingLicenceRow,
 	EducationRow,
 	IdentityOptions,
@@ -11,16 +12,16 @@ import type {
 	WorkExperienceRow,
 } from "../portal/types";
 import { Button, cx } from "./primitives";
-import { Field, FieldSet, PrivateUpload, TextArea, TextInput, VocabularySelect } from "./form";
+import { Field, FieldSet, PrivateUpload, TextArea, TextInput, VocabularySelect, Combo } from "./form";
 
 /**
- * What somebody has already done: seven person facts, one component.
+ * What somebody has already done: person facts, one component.
  *
  * Extracted from the registration wizard because two screens ask for exactly
  * the same thing at two different moments — a volunteer fills this in when they
  * register, and corrects it on their own profile page afterwards. Those are the
- * same seven fields against the same `update_my_profile` endpoint, and a second
- * copy of six repeating-row editors would have been six places to fix the first
+ * same fields against the same `update_my_profile` endpoint, and a second
+ * copy of repeating-row editors would have been multiple places to fix the first
  * time one of them was wrong.
  *
  * **It knows nothing about registration.** No step, no wizard, no completion
@@ -33,12 +34,13 @@ import { Field, FieldSet, PrivateUpload, TextArea, TextInput, VocabularySelect }
  * than application facts, and why every one of them is optional.
  */
 
-/** The seven fields, carried as one value so callers hold one piece of state. */
+/** Person-owned background details, kept in one value by the editing screens. */
 export interface BackgroundValues {
 	profession: string;
 	other_profession: string;
 	education: EducationRow[];
 	training: TrainingRow[];
+	certifications: DeclaredCertificationRow[];
 	work_experience: WorkExperienceRow[];
 	licences: LicenceRow[];
 	driving_licences: DrivingLicenceRow[];
@@ -51,6 +53,7 @@ export const emptyBackground = (): BackgroundValues => ({
 	other_profession: "",
 	education: [],
 	training: [],
+	certifications: [],
 	work_experience: [],
 	licences: [],
 	driving_licences: [],
@@ -76,6 +79,7 @@ export const backgroundFrom = (held: HeldBackground | null | undefined): Backgro
 	other_profession: held?.other_profession ?? "",
 	education: held?.education ?? [],
 	training: held?.training ?? [],
+	certifications: held?.certifications ?? [],
 	work_experience: held?.work_experience ?? [],
 	licences: held?.licences ?? [],
 	driving_licences: held?.driving_licences ?? [],
@@ -83,15 +87,16 @@ export const backgroundFrom = (held: HeldBackground | null | undefined): Backgro
 });
 
 /**
- * The six tables, filtered to the rows somebody actually filled in.
+ * The seven tables, filtered to the rows somebody actually filled in.
  *
- * The shape `update_my_profile` takes: all six keys always present, because a
+ * The shape `update_my_profile` takes: all seven keys always present, because a
  * key that is absent means "leave that table alone" on the server and a table
  * that vanished from the payload when it was emptied could never be emptied.
  */
 export const backgroundPayload = (values: BackgroundValues) => ({
 	education: values.education.filter(rowIsUsable),
 	training: values.training.filter(rowIsUsable),
+	certifications: values.certifications.filter(rowIsUsable),
 	work_experience: values.work_experience.filter(rowIsUsable),
 	licences: values.licences.filter(rowIsUsable),
 	driving_licences: values.driving_licences.filter(rowIsUsable),
@@ -131,7 +136,7 @@ export const backgroundIsCoherent = (values: BackgroundValues): boolean =>
  * scrolls back through four empty forms wondering which one did not save.
  */
 /**
- * A blank row for each of the six background tables.
+ * A blank row for each background table.
  *
  * Every field starts as an empty string rather than undefined, because these
  * are all controlled inputs and React logs a warning the first time one of them
@@ -142,6 +147,8 @@ export const blankEducation = (): EducationRow => ({
 	institution: "",
 	level: "",
 	qualification: "",
+	class_per: "",
+	maj_opt_subj: "",
 	started_in: null,
 	finished_in: null,
 	is_ongoing: false,
@@ -157,8 +164,18 @@ export const blankTraining = (): TrainingRow => ({
 	attachment: null,
 });
 
+export const blankCertification = (): DeclaredCertificationRow => ({
+	certification_name: "",
+	organization: "",
+	description: "",
+	expire: false,
+	issue_date: "",
+	expiration_date: "",
+});
+
 export const blankExperience = (): WorkExperienceRow => ({
 	organization: "",
+	location: "",
 	role: "",
 	started_on: "",
 	ended_on: "",
@@ -167,6 +184,8 @@ export const blankExperience = (): WorkExperienceRow => ({
 });
 
 export const blankLicence = (): LicenceRow => ({
+	qualification: "",
+	description: "",
 	license_type: "",
 	license_name: "",
 	institution: "",
@@ -231,6 +250,7 @@ export function backgroundLines(
 	const {
 		education,
 		training,
+		certifications,
 		work_experience: experience,
 		licences,
 		driving_licences: drivingLicences,
@@ -250,6 +270,8 @@ export function backgroundLines(
 			value: parts(
 				row.institution,
 				row.qualification,
+				row.class_per ?? null,
+				row.maj_opt_subj ?? null,
 				row.level ? labelOf(options?.education_levels, row.level) : null,
 			),
 		})),
@@ -257,13 +279,17 @@ export function backgroundLines(
 			label: "Training",
 			value: parts(row.course_name, row.institution),
 		})),
+		...certifications.filter(rowIsUsable).map((row) => ({
+			label: "Certification",
+			value: parts(row.certification_name, row.organization, row.description, row.issue_date, row.expire ? row.expiration_date : null),
+		})),
 		...experience.filter(rowIsUsable).map((row) => ({
 			label: "Work experience",
-			value: parts(row.role, row.organization),
+			value: parts(row.role, row.organization, row.location ?? null),
 		})),
 		...licences.filter(rowIsUsable).map((row) => ({
 			label: "Licence",
-			value: parts(row.license_name, row.institution, row.registration_no),
+			value: parts(row.license_name, row.institution, row.registration_no, row.qualification ?? null, row.description ?? null),
 		})),
 		...drivingLicences.filter(rowIsUsable).map((row) => ({
 			label: "Driving licence",
@@ -420,7 +446,7 @@ export const asYear = (value: string): number | null => {
 };
 
 /**
- * The seven fields as an editable block: study, training, work, licences, referees.
+ * The background details as an editable block: study, training, work, licences, referees.
  *
  * **Nothing here is required and the block says so on its own face.** The lead
  * line says every part is optional and each table opens empty, because the
@@ -444,12 +470,21 @@ export function BackgroundFields({
 	value,
 	onChange,
 	openEducationByDefault = false,
+	profiles,
+	onProfiles,
 }: {
+	/**
+	 * The LinkedIn and GitHub addresses, which live with the personal details
+	 * rather than the background. Given, they sit with profession under
+	 * Professional profiles.
+	 */
+	profiles?: ProfileLinks;
+	onProfiles?: (patch: Partial<ProfileLinks>) => void;
 	options?: IdentityOptions;
 	/** The line under the first heading. Two screens, two ways of saying it. */
 	lead?: string;
 	value: BackgroundValues;
-	/** The keys that changed, so a caller holds one piece of state for all seven. */
+	/** The keys that changed, so a caller holds one piece of state for this block. */
 	onChange: (values: Partial<BackgroundValues>) => void;
 	/** Registration opens one education row; the profile editor keeps its compact empty state. */
 	openEducationByDefault?: boolean;
@@ -459,6 +494,7 @@ export function BackgroundFields({
 		other_profession: otherProfession,
 		education,
 		training,
+		certifications,
 		work_experience: experience,
 		licences,
 		driving_licences: drivingLicences,
@@ -472,6 +508,7 @@ export function BackgroundFields({
 		});
 	const onEducation = (rows: EducationRow[]) => onChange({ education: rows });
 	const onTraining = (rows: TrainingRow[]) => onChange({ training: rows });
+	const onCertifications = (rows: DeclaredCertificationRow[]) => onChange({ certifications: rows });
 	const onExperience = (rows: WorkExperienceRow[]) => onChange({ work_experience: rows });
 	const onLicences = (rows: LicenceRow[]) => onChange({ licences: rows });
 	const onDrivingLicences = (rows: DrivingLicenceRow[]) => onChange({ driving_licences: rows });
@@ -496,18 +533,43 @@ export function BackgroundFields({
 
 	return (
 		<div className="space-y-9">
-			<FieldSet title="Profession" description={lead}>
+			<FieldSet title={profiles ? "Professional profiles" : "Profession"} description={lead}>
 				<div className="grid gap-5 sm:grid-cols-2">
+					{profiles && onProfiles && (
+						<>
+							<Field label="LinkedIn profile" htmlFor="bg-linkedin">
+								<TextInput
+									id="bg-linkedin"
+									value={profiles.linkedin}
+									onChange={(next) => onProfiles({ linkedin: next })}
+									placeholder="https://linkedin.com/in/your-profile"
+									invalid={!isProfileLink(profiles.linkedin)}
+								/>
+								<LinkProblem when={!isProfileLink(profiles.linkedin)} />
+							</Field>
+							<Field label="GitHub profile" htmlFor="bg-github">
+								<TextInput
+									id="bg-github"
+									value={profiles.github}
+									onChange={(next) => onProfiles({ github: next })}
+									placeholder="https://github.com/username"
+									invalid={!isProfileLink(profiles.github)}
+								/>
+								<LinkProblem when={!isProfileLink(profiles.github)} />
+							</Field>
+						</>
+					)}
+
 					<Field
 						label="Profession"
 						htmlFor="bg-profession"
 					>
-						<VocabularySelect
+						<Combo
 							id="bg-profession"
 							value={profession}
 							onChange={onProfession}
-							options={professions}
-							placeholder="Select a profession"
+							options={professions.map((option) => option.key)}
+							placeholder="Search professions"
 						/>
 					</Field>
 
@@ -563,6 +625,13 @@ export function BackgroundFields({
 							/>
 						</Field>
 
+						<Field label="Grade or percentage" htmlFor={`ed-grade-${index}`}>
+							<TextInput id={`ed-grade-${index}`} value={row.class_per ?? ""} onChange={(value) => set("class_per", value)} />
+						</Field>
+						<Field label="Major or subjects" htmlFor={`ed-major-${index}`}>
+							<TextInput id={`ed-major-${index}`} value={row.maj_opt_subj ?? ""} onChange={(value) => set("maj_opt_subj", value)} />
+						</Field>
+
 						{/* Years, not dates. Nobody remembers the day they started
 						    secondary school, and a date picker that insisted would be
 						    the control people abandon the form on. */}
@@ -586,7 +655,13 @@ export function BackgroundFields({
 									value={row.finished_in === null ? "" : String(row.finished_in)}
 									onChange={(value) => set("finished_in", asYear(value))}
 									placeholder="Year"
+									min={row.started_in ?? undefined}
+									invalid={!row.is_ongoing && yearEndsBefore(row.started_in, row.finished_in)}
 									disabled={row.is_ongoing}
+								/>
+								<EndBeforeStart
+									when={!row.is_ongoing && yearEndsBefore(row.started_in, row.finished_in)}
+									text="The end year cannot be before the start year."
 								/>
 							</Field>
 						</div>
@@ -655,9 +730,12 @@ export function BackgroundFields({
 							<TextInput
 								id={`tr-to-${index}`}
 								type="date"
+								min={row.started_on || undefined}
+								invalid={endsBefore(row.started_on, row.completed_on)}
 								value={row.completed_on}
 								onChange={(value) => set("completed_on", value)}
 							/>
+							<EndBeforeStart when={endsBefore(row.started_on, row.completed_on)} />
 						</Field>
 
 						<Field label="Notes" htmlFor={`tr-notes-${index}`}>
@@ -676,6 +754,38 @@ export function BackgroundFields({
 								onChange={(value) => set("attachment", value)}
 								choose="Attach a certificate"
 							/>
+						</Field>
+					</>
+				)}
+			/>
+
+			<RowList
+				title="Certifications"
+				description="Add qualifications that have their own issuer and expiry details."
+				rows={certifications}
+				onRows={onCertifications}
+				blank={blankCertification}
+				add="Add a certification"
+				renderRow={(row, index, set, patch) => (
+					<>
+						<Field label="Certification name" required htmlFor={`cert-name-${index}`}>
+							<TextInput id={`cert-name-${index}`} value={row.certification_name} onChange={(value) => set("certification_name", value)} />
+						</Field>
+						<Field label="Certification issuer" htmlFor={`cert-issuer-${index}`}>
+							<TextInput id={`cert-issuer-${index}`} value={row.organization} onChange={(value) => set("organization", value)} />
+						</Field>
+						<Field label="Certification description" htmlFor={`cert-description-${index}`}>
+							<TextArea id={`cert-description-${index}`} value={row.description} onChange={(value) => set("description", value)} rows={2} />
+						</Field>
+						<Field label="Certification issued on" htmlFor={`cert-issued-${index}`}>
+							<TextInput id={`cert-issued-${index}`} type="date" value={row.issue_date} onChange={(value) => set("issue_date", value)} />
+						</Field>
+						<div className="sm:col-span-2">
+							<Check id={`cert-expires-${index}`} checked={row.expire} label="This certification expires" onChange={(on) => patch(on ? { expire: true } : { expire: false, expiration_date: "" })} />
+						</div>
+						<Field label="Certification expires on" htmlFor={`cert-until-${index}`}>
+							<TextInput id={`cert-until-${index}`} type="date" min={row.issue_date || undefined} invalid={row.expire && endsBefore(row.issue_date, row.expiration_date)} value={row.expiration_date} onChange={(value) => set("expiration_date", value)} disabled={!row.expire} />
+							<EndBeforeStart when={row.expire && endsBefore(row.issue_date, row.expiration_date)} />
 						</Field>
 					</>
 				)}
@@ -707,6 +817,10 @@ export function BackgroundFields({
 							/>
 						</Field>
 
+						<Field label="Work location" htmlFor={`we-location-${index}`}>
+							<TextInput id={`we-location-${index}`} value={row.location ?? ""} onChange={(value) => set("location", value)} />
+						</Field>
+
 						<Field label="From" htmlFor={`we-from-${index}`}>
 							<TextInput
 								id={`we-from-${index}`}
@@ -720,10 +834,13 @@ export function BackgroundFields({
 							<TextInput
 								id={`we-to-${index}`}
 								type="date"
+								min={row.started_on || undefined}
+								invalid={!row.is_current && endsBefore(row.started_on, row.ended_on)}
 								value={row.ended_on}
 								onChange={(value) => set("ended_on", value)}
 								disabled={row.is_current}
 							/>
+							<EndBeforeStart when={!row.is_current && endsBefore(row.started_on, row.ended_on)} />
 						</Field>
 
 						<div className="sm:col-span-2">
@@ -782,6 +899,13 @@ export function BackgroundFields({
 							/>
 						</Field>
 
+						<Field label="Licence qualification" htmlFor={`lc-qual-${index}`}>
+							<TextInput id={`lc-qual-${index}`} value={row.qualification ?? ""} onChange={(value) => set("qualification", value)} />
+						</Field>
+						<Field label="Licence description" htmlFor={`lc-description-${index}`}>
+							<TextArea id={`lc-description-${index}`} value={row.description ?? ""} onChange={(value) => set("description", value)} rows={2} />
+						</Field>
+
 						<Field label="Registration number" htmlFor={`lc-no-${index}`}>
 							<TextInput
 								id={`lc-no-${index}`}
@@ -803,10 +927,13 @@ export function BackgroundFields({
 							<TextInput
 								id={`lc-to-${index}`}
 								type="date"
+								min={row.valid_from || undefined}
+								invalid={!row.does_not_expire && endsBefore(row.valid_from, row.valid_to)}
 								value={row.valid_to}
 								onChange={(value) => set("valid_to", value)}
 								disabled={row.does_not_expire}
 							/>
+							<EndBeforeStart when={!row.does_not_expire && endsBefore(row.valid_from, row.valid_to)} />
 						</Field>
 
 						<div className="sm:col-span-2">
@@ -953,4 +1080,84 @@ export function BackgroundFields({
 			/>
 		</div>
 	);
+}
+
+/* ------------------------------------------------------------- date order */
+
+/** True when both dates are given and the end is earlier than the start. */
+export function endsBefore(start?: string | null, end?: string | null): boolean {
+	return Boolean(start && end && end < start);
+}
+
+function yearEndsBefore(start?: number | null, end?: number | null): boolean {
+	return start != null && end != null && end < start;
+}
+
+/** The line under an end date that is earlier than its start. */
+function EndBeforeStart({ when, text = "This date cannot be before the start date." }: { when: boolean; text?: string }) {
+	if (!when) return null;
+	return (
+		<p role="alert" className="mt-1.5 text-[11.5px] leading-relaxed text-danger">
+			{text}
+		</p>
+	);
+}
+
+/**
+ * Every row whose end date is before its start, as the gaps a step reports.
+ * The server refuses the same rows (`registration/services/dates.py`); this
+ * says so before the applicant presses Continue or Save.
+ */
+export function backgroundDateGaps(value: BackgroundValues): Array<{ anchor: string; note: string }> {
+	const gaps: Array<{ anchor: string; note: string }> = [];
+	value.education.forEach((row, index) => {
+		if (!row.is_ongoing && yearEndsBefore(row.started_in, row.finished_in))
+			gaps.push({ anchor: `ed-to-${index}`, note: `Education ${index + 1}: the end year is before the start year` });
+	});
+	value.training.forEach((row, index) => {
+		if (endsBefore(row.started_on, row.completed_on))
+			gaps.push({ anchor: `tr-to-${index}`, note: `Course ${index + 1}: completed before it started` });
+	});
+	(value.certifications ?? []).forEach((row, index) => {
+		if (row.expire && endsBefore(row.issue_date, row.expiration_date))
+			gaps.push({ anchor: `cert-until-${index}`, note: `Certification ${index + 1}: expires before it was issued` });
+	});
+	value.work_experience.forEach((row, index) => {
+		if (!row.is_current && endsBefore(row.started_on, row.ended_on))
+			gaps.push({ anchor: `we-to-${index}`, note: `Experience ${index + 1}: ends before it started` });
+	});
+	value.licences.forEach((row, index) => {
+		if (!row.does_not_expire && endsBefore(row.valid_from, row.valid_to))
+			gaps.push({ anchor: `lc-to-${index}`, note: `Licence ${index + 1}: valid until is before valid from` });
+	});
+	return gaps;
+}
+
+/* -------------------------------------------------------- profile links */
+
+export interface ProfileLinks {
+	linkedin: string;
+	github: string;
+}
+
+/** Empty, or a web address. The server accepts only http and https. */
+export function isProfileLink(value: string): boolean {
+	return !value.trim() || /^https?:\/\/[^\s]+$/i.test(value.trim());
+}
+
+function LinkProblem({ when }: { when: boolean }) {
+	if (!when) return null;
+	return (
+		<p role="alert" className="mt-1.5 text-[11.5px] leading-relaxed text-danger">
+			Enter the full address, starting with https://
+		</p>
+	);
+}
+
+/** The profile links that would be refused, as the gaps a step reports. */
+export function profileLinkGaps(links: ProfileLinks): Array<{ anchor: string; note: string }> {
+	const gaps: Array<{ anchor: string; note: string }> = [];
+	if (!isProfileLink(links.linkedin)) gaps.push({ anchor: "bg-linkedin", note: "Enter your LinkedIn profile as a full address" });
+	if (!isProfileLink(links.github)) gaps.push({ anchor: "bg-github", note: "Enter your GitHub profile as a full address" });
+	return gaps;
 }

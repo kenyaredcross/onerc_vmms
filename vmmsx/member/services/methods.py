@@ -64,6 +64,20 @@ MANUAL = "Manual"
 #: applicant's own answer, and the form that knows it composes that sentence.
 MANUAL_LABEL = "Pay at a branch office"
 
+# How an applicant recognises a way of paying, keyed on the payments app's
+# driver rather than on a gateway's name: a society names its gateway records
+# what it likes, and the driver is what actually collects the money. A driver
+# not listed here is shown by its label alone.
+#
+# `by_phone`: the driver sends a prompt to the payer's phone, so the form asks
+# for that number and the screen after submitting waits for the PIN.
+_DRIVERS = {
+	"onerc_payments.gateways.mpesa_daraja.MpesaDarajaGateway": {
+		"logo": "/assets/vmmsx/images/payments/mpesa.png",
+		"by_phone": True,
+	},
+}
+
 
 def is_available() -> bool:
 	"""Is the payments app installed, with a gateway register to read?"""
@@ -114,6 +128,11 @@ def is_offered(gateway: str | None) -> bool:
 		return False
 
 	return any(row["gateway"] == gateway for row in offered())
+
+
+def is_in_person(gateway: str | None) -> bool:
+	"""Is this the method where somebody at the society records the payment by hand?"""
+	return gateway == MANUAL
 
 
 def default() -> str | None:
@@ -215,7 +234,7 @@ def _live_gateways() -> list[dict]:
 	rows = frappe.get_all(
 		GATEWAY_DOCTYPE,
 		filters={"is_active": 1, "supports_inbound": 1},
-		fields=["name", "label", "description"],
+		fields=["name", "label", "description", "driver_class"],
 		order_by="name asc",
 		# Another app's configuration register, read to find out what this
 		# society may be offered. The caller is an applicant filling in a form
@@ -237,10 +256,25 @@ def _live_gateways() -> list[dict]:
 			# and the branch the applicant just chose is the answer. A flag
 			# rather than the gateway's name, so no screen has to carry a list
 			# of which gateways are counters and which are phones.
-			"in_person": row.name == MANUAL,
+			"in_person": is_in_person(row.name),
+			**_presentation(row.driver_class),
 		}
 		for row in rows
 	]
+
+
+def _presentation(driver_class: str | None) -> dict:
+	known = _DRIVERS.get((driver_class or "").strip(), {})
+
+	return {"logo": known.get("logo"), "by_phone": bool(known.get("by_phone"))}
+
+
+def presentation_of(gateway: str | None) -> dict:
+	"""The logo and phone flag for one gateway, for a screen following a payment."""
+	if not gateway or not frappe.db.table_exists(GATEWAY_DOCTYPE):
+		return _presentation(None)
+
+	return _presentation(frappe.db.get_value(GATEWAY_DOCTYPE, gateway, "driver_class"))
 
 
 def _configured() -> list[dict]:

@@ -299,7 +299,36 @@ def on_user_insert(doc, method=None) -> None:
 	and the alternative would be a copy of Frappe's sign-up endpoint just to add
 	one field to the document it creates.
 	"""
+	_store_first_password(doc)
+
 	if doc.user_type != "Website User" or doc.redirect_url:
 		return
 
 	doc.db_set("redirect_url", PORTAL_HOME, update_modified=False)
+
+
+def _store_first_password(doc) -> None:
+	"""Store a new account's first password now, so no later save mistakes it for a change.
+
+	Frappe keeps the password a new account was created with in memory and
+	stores it at the very end of creation. In between, after-insert hooks run
+	with the "being created" flag switched off, and Buzz's hook adds a role by
+	saving the account. That save sees the remembered password, treats it as
+	a change, and emails the person "Security Alert: Your password has been
+	changed" a moment before their welcome email. Every account made through
+	sign-up got it.
+
+	This hook runs first among the after-insert hooks. It stores the password
+	the way Frappe would have, then forgets it, so the saves after it see no
+	password at all. The account ends with the same password; only the false
+	alert is gone. A password set later, on purpose, still sends the alert.
+	"""
+	pending = getattr(doc, "_User__new_password", None)
+
+	if not pending:
+		return
+
+	from frappe.utils.password import update_password
+
+	update_password(user=doc.name, pwd=pending)
+	doc._User__new_password = None

@@ -40,8 +40,14 @@ def decide(doctype: str, name: str, decision: str, reason: str | None = None) ->
 
 	Refused unless the acting user is among the approvers this document
 	resolved to — holding the role is not enough.
+
+	**Read permission, not write.** Being able to open the record (core's geo
+	scope included) is the precondition; `engine.decide` is the authority. An
+	approver whose role may only read applications is still the person the
+	document routed to, and asking for write here refused every county
+	Volunteer Approver on a site whose role reads volunteer applications only.
 	"""
-	return engine.decide(_approvable(doctype, name, ptype="write"), decision, reason)
+	return engine.decide(_approvable(doctype, name, ptype="read"), decision, reason)
 
 
 @frappe.whitelist()
@@ -153,31 +159,39 @@ def _assert_governed(doctype: str) -> None:
 # reachable by offset instead of disappearing behind this limit.
 _CASE_CEILING = 200
 
-# The three bands a queue screen navigates between, named once.
+# The four bands a queue screen navigates between, named once.
 #
-# `actionable` is `my_queue` — what is routed to this user right now. The other
-# two are history, and history is not personal: an application this branch sent
+# `all` is every application the caller may read — what the queue opens on, so
+# an administrator or a coordinator with no assignment is not shown an empty
+# page in front of applications they may read. Reading is not deciding: each row
+# still carries the engine's own `can_act`. `actionable` is `my_queue` — what is
+# routed to this user right now. The other two are history, and history is not
+# personal: an application this branch sent
 # back for corrections is the branch's to see, not only the approver who
 # happened to press the button. Both are bounded by the same floor everything
 # else in this app stands on — `frappe.get_list`, which runs core's permission
 # query condition — so a coordinator reads their own areas and nothing else.
+CASE_ALL = "all"
 CASE_ACTIONABLE = "actionable"
 CASE_CHANGES = "changes"
 CASE_CLOSED = "closed"
 
-CASE_GROUPS = (CASE_ACTIONABLE, CASE_CHANGES, CASE_CLOSED)
+CASE_GROUPS = (CASE_ALL, CASE_ACTIONABLE, CASE_CHANGES, CASE_CLOSED)
 
 
 @frappe.whitelist()
 def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = None, offset: int = 0) -> dict:
 	"""One band of `doctype`'s approvals, inside the caller's own scope.
 
-	The queue screens navigate three bands and `my_queue` only answers the
-	first. This answers all three from the governed doctype itself rather than
-	from ToDo rows, because the other two are not assignments: an application
-	sent back for corrections has no approver at all, and a closed one has
-	finished having any.
+	The queue screens navigate four bands and `my_queue` only answers one of
+	them. This answers the rest from the governed doctype itself rather than
+	from ToDo rows, because they are not assignments: an application sent back
+	for corrections has no approver at all, a closed one has finished having
+	any, and the whole list is everything the caller may read whether or not it
+	is theirs to decide. `all` also returns `total`, counted by the same scoped
+	`frappe.get_list` as the page.
 
+	    all          every application the caller may read, paginated
 	    actionable   routed to this user now — `my_queue`, re-checked per row
 	    changes      state is exactly Draft **and** somebody has recorded a
 	                 "More info requested" decision on it, which is the only
@@ -215,18 +229,31 @@ def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = Non
 	# different things about one permission. Nothing is disclosed either way:
 	# "nothing here for you" is the same answer in both cases.
 	if not frappe.has_permission(doctype, "read"):
-		return {"group": group, "count": 0, "cases": []}
+		return {"group": group, "count": 0, "total": 0, "cases": []}
 
 	page_size = _bounded(limit)
 	try:
 		start = max(0, int(offset))
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		start = 0
-	names = _changed(doctype, page_size + 1, start) if group == CASE_CHANGES else _closed(doctype, page_size + 1, start)
+	if group == CASE_ALL:
+		names = frappe.get_list(
+			doctype,
+			order_by="modified desc, name desc",
+			limit_start=start,
+			limit_page_length=page_size + 1,
+			pluck="name",
+		)
+	else:
+		names = (
+			_changed(doctype, page_size + 1, start)
+			if group == CASE_CHANGES
+			else _closed(doctype, page_size + 1, start)
+		)
 	has_more = len(names) > page_size
 	names = names[:page_size]
 
-	return {
+	answer = {
 		"group": group,
 		"count": len(names),
 		"has_more": has_more,
@@ -235,13 +262,21 @@ def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = Non
 		# the listing above; nothing here is a second door into a document.
 		"cases": [engine.status(frappe.get_doc(doctype, name)) for name in names],
 	}
+	if group == CASE_ALL:
+		# The aggregate uses the same permission-aware query as the page. Never
+		# expose an unrestricted database count alongside a scoped list.
+		totals = frappe.get_list(
+			doctype, fields=[{"COUNT": "name", "as": "total"}], order_by=None, limit_page_length=1
+		)
+		answer["total"] = int(totals[0]["total"]) if totals else 0
+	return answer
 
 
 def _bounded(limit) -> int:
 	"""A caller's page size, never above the ceiling and never below one."""
 	try:
 		asked = int(limit or _CASE_CEILING)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		asked = _CASE_CEILING
 
 	return max(1, min(asked, _CASE_CEILING))
@@ -285,7 +320,11 @@ def _changed(doctype: str, limit, offset: int = 0) -> list[str]:
 		returned = set(
 			frappe.get_all(
 				contract.DECISION_DOCTYPE,
-				filters={"parenttype": doctype, "parent": ("in", drafts), "decision": states.DECISION_MORE_INFO},
+				filters={
+					"parenttype": doctype,
+					"parent": ("in", drafts),
+					"decision": states.DECISION_MORE_INFO,
+				},
 				pluck="parent",
 			)
 		)
@@ -293,4 +332,4 @@ def _changed(doctype: str, limit, offset: int = 0) -> list[str]:
 		scanned += len(drafts)
 		if len(drafts) < _CASE_CEILING:
 			break
-	return selected[offset:offset + limit]
+	return selected[offset : offset + limit]

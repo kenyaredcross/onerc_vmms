@@ -43,6 +43,13 @@ COORDINATOR_ROLE = f"{fixtures.TEST_PREFIX} Renewal Coordinator"
 
 
 class RenewalTestCase(MemberTestCase):
+	def setUp(self):
+		super().setUp()
+		# Methods share class-level people. Keep one method's open renewal from
+		# becoming another method's duplicate under the registration guard.
+		frappe.db.savepoint("renewal_method")
+		self.addCleanup(frappe.db.rollback, save_point="renewal_method")
+
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
@@ -322,22 +329,21 @@ class TestRenewableFlag(RenewalTestCase):
 		rows = self.mine()
 
 		self.assertTrue(rows[self.past_due_active.name]["renewable"])
-		self.assertEqual(
-			rows[self.past_due_active.name]["membership_status"], membership_service.STATUS_ACTIVE
-		)
+		# The API reports effective lapse without mutating the stored pre-sweep row.
+		self.assertEqual(self.membership_status(self.past_due_active.name), membership_service.STATUS_ACTIVE)
+		self.assertEqual(rows[self.past_due_active.name]["membership_status"], membership_service.STATUS_EXPIRED)
 
 	def test_an_expired_membership_with_a_pending_renewal_is_not_renewable_again(self):
 		result = renewal_service.renew(self.expired)
 		self.assertFalse(self.mine()[self.expired.name]["renewable"])
 
-		with fixtures.acting_as(self.user), self.assertRaisesRegex(
-			frappe.ValidationError, "already has a renewal application"
+		with (
+			fixtures.acting_as(self.user),
+			self.assertRaisesRegex(frappe.ValidationError, "already has a renewal application"),
 		):
 			member_api.renew_membership(self.expired.name)
 
-		self.assertEqual(
-			frappe.db.count(fixtures.MEMBERSHIP_DOCTYPE, {"renews": self.expired.name}), 1
-		)
+		self.assertEqual(frappe.db.count(fixtures.MEMBERSHIP_DOCTYPE, {"renews": self.expired.name}), 1)
 		self.assertEqual(result["name"], renewal_service.existing_renewal(self.expired))
 
 	def test_the_flag_is_computed_server_side_on_every_row(self):

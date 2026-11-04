@@ -50,6 +50,7 @@ def apply_for_membership(
 	geo_node: str,
 	membership_source: str | None = None,
 	proof_attachment: str | None = None,
+	payer_phone: str | None = None,
 ) -> dict:
 	"""Create a membership and put it into motion.
 
@@ -71,6 +72,7 @@ def apply_for_membership(
 		"member": member.name,
 		"membership_type": membership_type,
 		"geo_node": geo_node,
+		"payer_phone": payer_phone,
 	}
 
 	if membership_source:
@@ -271,6 +273,58 @@ def record_membership_payment(name: str, receipt: str | None = None) -> dict:
 	from vmmsx.member.services import payment
 
 	return payment.confirm_in_person(_writable(name), receipt)
+
+
+@frappe.whitelist()
+def membership_payment(name: str) -> dict:
+	"""Where this membership's fee stands, asking the gateway again if it has not answered.
+
+	The applicant's screen calls this every few seconds after the M-Pesa prompt
+	goes to their phone. Once the payment has gone through, the membership is
+	recorded as paid and sent to its branch inside this same call, so the answer
+	already says so. `_readable`: the holder, or anybody who may read it.
+	"""
+	from vmmsx.member.services import payment
+
+	return payment.progress(_readable(name))
+
+
+@frappe.whitelist()
+def pay_membership_again(name: str, payer_phone: str | None = None) -> dict:
+	"""Send the payment prompt again, after the last one ended unpaid.
+
+	The holder, from their own portal, or a coordinator who may act on the
+	membership. Refused while the last request is still open, so nobody is asked
+	to pay twice.
+	"""
+	from vmmsx.member.services import payment
+
+	membership = frappe.get_doc(MEMBERSHIP_DOCTYPE, name)
+
+	if not _is_holder(membership):
+		membership.check_permission("write")
+
+	answer = payment.retry(membership, payer_phone)
+
+	return {**answer, **payment.progress(membership)}
+
+
+@frappe.whitelist()
+def change_membership_type(name: str, membership_type: str) -> dict:
+	"""Switch to another membership type before the fee is paid.
+
+	The holder, from their own portal, or a coordinator who may act on the
+	membership. Refused once the fee is paid or while a payment prompt is open,
+	because the payer could otherwise pay one type's fee for another.
+	"""
+	from vmmsx.member.services import membership as membership_service
+
+	membership = frappe.get_doc(MEMBERSHIP_DOCTYPE, name)
+
+	if not _is_holder(membership):
+		membership.check_permission("write")
+
+	return {**membership_service.change_type(membership, membership_type), "can_act": _can_act(membership)}
 
 
 @frappe.whitelist()
@@ -588,16 +642,15 @@ def membership_type_pricing(membership_type: str | None = None) -> dict:
 		"known": True,
 		"membership_type": record.name,
 		"membership_type_name": record.membership_type_name,
-		# Who the type is for, in the society's own words. The reference design
-		# puts an eligibility line under the price ("open to ages 18-30"), and
-		# that line is *this field* — a society writes it, because no age rule
-		# exists on this doctype and inventing one in a browser bundle would be a
-		# second answer nothing enforces.
 		"description": record.description,
 		"amount": charge["amount"],
 		"currency": charge["currency"],
 		"free": not payment_service.is_payable(record),
 		"duration_days": record.duration_days,
+		"billing_cycle": record.get("billing_cycle"),
+		"requires_age_requirement": bool(record.get("requires_age_requirement")),
+		"lower_age_limit": record.get("lower_age_limit"),
+		"upper_age_limit": record.get("upper_age_limit"),
 		# What the type carries, which is the whole of what a chooser is choosing
 		# between. Active rows only and in table order: a society orders its own
 		# benefits, and a retired one is not part of the offer.
@@ -695,13 +748,20 @@ def payment_methods() -> dict:
 			{
 				"gateway": row["gateway"],
 				"label": row["label"],
-				"description": row["description"],
+				# Not the gateway's own description. That is written for whoever
+				# configures the payments app ("Supports STK Push (inbound) and
+				# B2C (outbound)") and was reaching people being asked to pay.
+				# What an applicant reads is the society's `instructions`, or a
+				# sentence the form composes from the flags below.
 				"instructions": row["instructions"],
 				# Whether this one is paid at a counter. The form needs it to
 				# name the office the applicant has just chosen; see
 				# `methods._live_gateways`, which is the only place the question
 				# is answered.
 				"in_person": row["in_person"],
+				# The gateway's mark, and whether it prompts the payer's phone.
+				"logo": row["logo"],
+				"by_phone": row["by_phone"],
 			}
 			for row in methods.offered()
 		]

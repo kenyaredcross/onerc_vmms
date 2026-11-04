@@ -7,6 +7,7 @@ import { API, errorMessage } from "../lib/api";
 import { branchPath, formatClock, formatDate, formatHours } from "../lib/format";
 import { firstName, useSession } from "../lib/session";
 import { Icon } from "../ui/icons";
+import { PhonePayment } from "../ui/PhonePayment";
 import { AvailabilityNudge } from "./chrome/AvailabilityNudge";
 import { HomeDocument } from "./ui/HomeDocument";
 import { HomeStatTile as StatTile } from "./ui/HomeStatTile";
@@ -183,7 +184,15 @@ export default function Dashboard() {
 				{/* ------------------------------------------------------------- left */}
 				<div className="flex min-w-0 flex-col gap-[22px]">
 					{pending.map((row) => (
-						<Application key={row.name} row={row} />
+						<Application
+							key={row.name}
+							row={row}
+							phone={rows.find((membership) => membership.name === row.name)?.payer_phone ?? null}
+							onPaid={() => {
+								void open.mutate();
+								void memberships.mutate();
+							}}
+						/>
 					))}
 
 					{settled && (offerVolunteer || offerMember) && (
@@ -344,7 +353,7 @@ export default function Dashboard() {
 
 /* --------------------------------------------------------------- standing */
 
-type StandingKey = "new" | "draft" | "review" | "action" | "active" | "member";
+type StandingKey = "new" | "draft" | "payment" | "review" | "action" | "active" | "member";
 
 /**
  * Where this person stands, from the records themselves.
@@ -367,6 +376,10 @@ function standingOf(
 	openMember: OpenRegistration | null,
 ): StandingKey {
 	const application = openVolunteer ?? openMember;
+
+	// Before anything else: a membership whose M-Pesa fee has not come in has
+	// not gone to anybody, and paying is the one thing this person has to do.
+	if (openMember?.awaiting_payment) return "payment";
 
 	if (application) {
 		if (application.state === "Draft") return application.reviewed ? "action" : "draft";
@@ -391,6 +404,11 @@ const WELCOME: Record<StandingKey, { eyebrow: string; lead: string; accent: stri
 		eyebrow: "Welcome back",
 		lead: "Pick up exactly where you stopped. Your profile, documents and completed answers are still here.",
 		accent: "saved",
+	},
+	payment: {
+		eyebrow: "Your membership fee is not paid yet",
+		lead: "Your registration goes to your branch for review once the fee is paid. You can pay it on your phone below.",
+		accent: "fee.",
 	},
 	review: {
 		eyebrow: "Your application is in",
@@ -418,6 +436,7 @@ const WELCOME: Record<StandingKey, { eyebrow: string; lead: string; accent: stri
 const HEADLINE: Record<StandingKey, [string, string]> = {
 	new: ["Start where your heart wants to", ""],
 	draft: ["Your application is", " and waiting."],
+	payment: ["One step left: pay your membership", ""],
 	review: ["Your application is with your", ""],
 	action: ["One update will keep your application", ""],
 	active: ["Ready to make an", ", {name}?"],
@@ -503,7 +522,7 @@ function ChoiceCard({
 						? "Give your time as a volunteer or become a member of the society. You can add the other path later."
 						: offerVolunteer
 							? "You are already a member. Volunteering is a separate record, and you may hold both."
-							: "You already volunteer with us. Membership is a separate record, and you may hold both."}
+							: "You are already a volunteer. You can also become a member."}
 				</p>
 			</div>
 
@@ -886,8 +905,7 @@ function RecordVolunteer({
 		return (
 			<RecordBlock label="Volunteer">
 				<p className="text-[12.5px] leading-relaxed text-slate-body">
-					Your application is with your branch. Your volunteer record starts once somebody there
-					accepts it.
+					Your application is with your branch for review.
 				</p>
 			</RecordBlock>
 		);
@@ -1038,12 +1056,12 @@ const STATE_COPY: Record<string, { tone: "info" | "warn"; title: string; body: s
 	"In Review": {
 		tone: "info",
 		title: "Your application is under review",
-		body: "Somebody at your branch is looking at it. You will be told as soon as there is a decision.",
+		body: "Your branch is reviewing it. You will be notified of the decision.",
 	},
 	Draft: {
 		tone: "warn",
 		title: "Your application needs something from you",
-		body: "Your branch has asked for something before they can go further.",
+		body: "Your branch has requested more information.",
 	},
 };
 
@@ -1055,6 +1073,9 @@ const UNSENT = {
 
 /** The four stages a registration passes through, as the concept draws them. */
 const STAGES = ["Submitted", "Branch review", "Next approval", "Activation"];
+
+/** A membership paid by phone is not submitted until the fee comes in. */
+const PAYMENT_STAGES = ["Payment", "Branch review", "Next approval", "Activation"];
 
 function stageIndex(state: string, unsent: boolean): number {
 	if (unsent) return -1;
@@ -1068,7 +1089,95 @@ function applicationKind(row: OpenRegistration): string {
 	return row.path === "member" ? "membership" : "volunteer";
 }
 
-function Application({ row }: { row: OpenRegistration }) {
+function Stages({ stages, at }: { stages: string[]; at: number }) {
+	return (
+		<ol className="mt-5 grid gap-2 border-t border-card-line pt-5 sm:grid-cols-4">
+			{stages.map((stage, index) => (
+				<li key={stage} className="flex items-center gap-2 text-[11.5px]">
+					<span
+						className={cx(
+							"grid h-5 w-5 flex-none place-items-center rounded-full text-[10px] font-bold",
+							index < at
+								? "bg-success text-white"
+								: index === at
+									? "bg-blue text-white"
+									: "bg-surface text-muted",
+						)}
+						aria-hidden="true"
+					>
+						{index < at ? "✓" : index + 1}
+					</span>
+					<span className={index <= at ? "font-semibold text-ink" : "text-muted"}>{stage}</span>
+				</li>
+			))}
+		</ol>
+	);
+}
+
+/**
+ * A membership held back until its M-Pesa fee arrives.
+ *
+ * The approval state reads Submitted, but nothing has gone to the branch: the
+ * engine parks it, with no stage and in nobody's queue, until the payment is
+ * confirmed. Telling the applicant "your application is in" after they
+ * cancelled the prompt was telling them the opposite of what had happened.
+ */
+function PaymentDue({
+	row,
+	phone,
+	onPaid,
+}: {
+	row: OpenRegistration;
+	phone?: string | null;
+	onPaid?: () => void;
+}) {
+	return (
+		<Card className="p-6 sm:p-7">
+			<div className="flex items-start gap-4">
+				<span
+					className="grid h-10 w-10 flex-none place-items-center rounded-full bg-red-soft text-red-ink"
+					aria-hidden="true"
+				>
+					<Icon.bell size={18} />
+				</span>
+				<div className="min-w-0 flex-1">
+					<h2 className="font-display text-[17px] font-bold tracking-[-0.02em] text-ink">
+						Your membership fee is not paid yet
+					</h2>
+					<p className="mt-2 text-[12.5px] leading-relaxed text-slate-body">
+						Your registration goes to your branch for review once the payment is received.
+					</p>
+					<div className="mt-4 max-w-lg">
+						<PhonePayment membership={row.name} phone={phone} onSettled={onPaid} />
+					</div>
+					<Link
+						to="/membership#membership-types"
+						className="mt-3 inline-block text-[12px] font-bold text-blue hover:text-blue-hover"
+					>
+						Change membership type
+					</Link>
+				</div>
+			</div>
+
+			<Stages stages={PAYMENT_STAGES} at={0} />
+		</Card>
+	);
+}
+
+function Application({
+	row,
+	phone,
+	onPaid,
+}: {
+	row: OpenRegistration;
+	/** The number the last prompt went to, offered again for the next one. */
+	phone?: string | null;
+	onPaid?: () => void;
+}) {
+	if (row.awaiting_payment) {
+		return <PaymentDue row={row} phone={phone} onPaid={onPaid} />;
+	}
+
 	const unsent = row.state === "Draft" && !row.reviewed;
 	const copy = (unsent ? UNSENT : STATE_COPY[row.state]) ?? {
 		tone: "info" as const,
@@ -1109,28 +1218,7 @@ function Application({ row }: { row: OpenRegistration }) {
 				</div>
 			</div>
 
-			{!unsent && (
-				<ol className="mt-5 grid gap-2 border-t border-card-line pt-5 sm:grid-cols-4">
-					{STAGES.map((stage, index) => (
-						<li key={stage} className="flex items-center gap-2 text-[11.5px]">
-							<span
-								className={cx(
-									"grid h-5 w-5 flex-none place-items-center rounded-full text-[10px] font-bold",
-									index < at
-										? "bg-success text-white"
-										: index === at
-											? "bg-blue text-white"
-											: "bg-surface text-muted",
-								)}
-								aria-hidden="true"
-							>
-								{index < at ? "✓" : index + 1}
-							</span>
-							<span className={index <= at ? "font-semibold text-ink" : "text-muted"}>{stage}</span>
-						</li>
-					))}
-				</ol>
-			)}
+			{!unsent && <Stages stages={STAGES} at={at} />}
 
 			{row.state === "Draft" && (
 				<Link

@@ -282,6 +282,12 @@ doc_events = {
 	# they had the authority and no way to see the work. Re-syncing on migrate
 	# fixed that for a deploy and left it broken for every appointment made
 	# between deploys. See `repair.on_authority_changed`.
+	# An end date is never before its start date on a registration row:
+	# licences, certifications, training, experience and education. On the
+	# profile itself so the portal, the console and the desk are all held to it.
+	"Red Profile": {
+		"validate": "vmmsx.registration.services.dates.validate_profile",
+	},
 	"Geo Assignment": {
 		"on_update": "vmmsx.approvals.services.repair.on_authority_changed",
 		"on_trash": "vmmsx.approvals.services.repair.on_authority_changed",
@@ -301,6 +307,15 @@ doc_events = {
 	"Project": {
 		"validate": "vmmsx.deployment.services.project.on_validate",
 	},
+	# Only the approval engine moves an application. A read-only field is a form
+	# hint, so without this anybody with write permission could set
+	# `approval_state` to Approved over the REST API and skip every stage. The
+	# service certificate request carries the same rule in its own controller.
+	"VMMS Volunteer Application": {"validate": "vmmsx.approvals.services.guard.validate"},
+	"VMMS Membership": {"validate": "vmmsx.approvals.services.guard.validate"},
+	"VMMS Deployment Request": {"validate": "vmmsx.approvals.services.guard.validate"},
+	"VMMS Terms of Reference": {"validate": "vmmsx.approvals.services.guard.validate"},
+	"VMMS Branch Transfer": {"validate": "vmmsx.approvals.services.guard.validate"},
 }
 
 # Where signing in lands, and the only thing on this site that can decide it for
@@ -340,6 +355,8 @@ on_session_creation = "vmmsx.registration.services.desk.on_session_creation"
 # layer a narrower coordinator role onto one child by naming that doctype's own
 # geo scope role in National Society Settings — see that module's docstring.
 after_migrate = [
+	"vmmsx.patches.install_registration_parity.execute",
+	"vmmsx.patches.install_blood_groups.execute",
 	"vmmsx.setup.geo_cost_center_fields.install",
 	"vmmsx.finance.services.geo_cost_center.backfill",
 	# The Custom Fields vmmsx owns on ERPNext's `Project`: the owning Geo Node,
@@ -360,6 +377,9 @@ after_migrate = [
 	# These are product defaults, not questions every national society needs to
 	# answer. Existing non-empty choices remain untouched.
 	"vmmsx.setup.default_roles.install",
+	# The region's oversight role: reads every county in its region, edits none.
+	# After the shipped roles, because it adds read permissions beside theirs.
+	"vmmsx.setup.regional_oversight.install",
 	"vmmsx.service_certificate.settings.install",
 	# Brand images appear on public portal, login and email surfaces. Core's main
 	# logo already carries this metadata; keep all companion assets consistent.
@@ -539,6 +559,12 @@ scheduler_events = {
 	# sweep costs one indexed query most of the time. Idempotent twice over: it
 	# only picks up submitted broadcasts still marked Scheduled, and the job it
 	# queues is deduplicated on the broadcast's own name.
+	# The weekly approval summaries. Hourly, and it sends only on the society's
+	# chosen weekday from the morning onwards; each person gets one a week, so
+	# the other hours cost one settings read. See `approvals/services/digest.py`.
+	"hourly": [
+		"vmmsx.approvals.services.digest.hourly",
+	],
 	"cron": {
 		"*/15 * * * *": [
 			"vmmsx.notifications.services.whatsapp.release_scheduled",
@@ -606,11 +632,17 @@ onerc_affiliation_providers = [
 #
 # Installed by vmmsx.patches.install_volunteer_scope_role.
 #
-# What is *not* registered here is `VMMS Volunteer Application`. Its access is
-# the approval engine's person-gate — who this specific document routed to, right
-# now — and the engine already calls core's `guard` on the governed doctype
-# before every decision. Scoping the application as well would put two different
-# answers to "may you touch this" in front of one document.
+# `VMMS Volunteer Application` is scoped on its Serving Branch, `geo_node`, under
+# the same volunteer scope role. Unscoped, every holder of that role read every
+# application in the country — through Desk and through the portal's application
+# lists — while deciding stayed with the county the engine routes to. A county
+# coordinator now reads their own county's applications; an assignment at a
+# region or at the national node reads everything below it, and System Manager
+# reads everything without one. Deciding is still the engine's person-gate:
+# reading an application grants no `can_act`. The routed approver and anybody it
+# escalates to hold the stage's role at or above the application's node, so when
+# a society's stage role is its volunteer scope role — Kenya's is — every
+# approver is inside the scope by construction.
 #
 # The Deployment module registers all three of its own doctypes, each on its own
 # anchor and each naming its own settings field, for three separate reasons.
@@ -642,22 +674,31 @@ onerc_scopeable_doctypes = [
 	{"doctype": "VMMS Service Certificate Request", "geo_node_field": "geo_node", "role_from_setting": "vmms_service_certificate_scope_role"},
 	# Asset management has its own shipped role and default setting. It still
 	# needs a Geo Assignment before a non-administrator can reach a branch.
-	{"doctype": "VMMS Branch Asset", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role"},
-	{"doctype": "VMMS Asset Transaction", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role"},
+	{"doctype": "VMMS Branch Asset", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role", "read_role_from_setting": "vmms_regional_oversight_role"},
+	{"doctype": "VMMS Asset Transaction", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role", "read_role_from_setting": "vmms_regional_oversight_role"},
 	{
 		"doctype": "VMMS Membership",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_membership_scope_role",
+		"read_role_from_setting": "vmms_regional_oversight_role",
 	},
 	{
 		"doctype": "VMMS Volunteer",
 		"geo_node_field": "home_geo_node",
 		"role_from_setting": "vmms_volunteer_scope_role",
+		"read_role_from_setting": "vmms_regional_oversight_role",
+	},
+	{
+		"doctype": "VMMS Volunteer Application",
+		"geo_node_field": "geo_node",
+		"role_from_setting": "vmms_volunteer_scope_role",
+		"read_role_from_setting": "vmms_regional_oversight_role",
 	},
 	{
 		"doctype": "VMMS Deployment",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_deployment_scope_role",
+		"read_role_from_setting": "vmms_regional_oversight_role",
 	},
 	# ERPNext's own `Project` is the programme of work, and vmmsx scopes it on the
 	# Custom Field it owns — see `setup/project_fields.py`, which is also why that

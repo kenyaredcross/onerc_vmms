@@ -105,6 +105,7 @@ a.overview-metric:hover { border-color: #AEB9C5; background: #fff; }
 
 /* Overview: people composition and field operations, using the same panel rhythm. */
 .overview-snapshot { margin-top: 24px; }
+.overview-disability .overview-breakdown-label a { color: var(--overview-ink); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
 .overview-gender-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
 .overview-summary-icon { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--overview-border); border-radius: 9px; color: var(--overview-muted); background: var(--overview-surface); }
 .overview-gender-total { display: flex; align-items: baseline; gap: 10px; margin: 24px 0; }

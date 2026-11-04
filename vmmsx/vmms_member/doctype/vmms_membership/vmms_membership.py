@@ -130,6 +130,12 @@ class VMMSMembership(Document):
 			return
 
 		membership_service.assert_proof_consistent(self)
+		if (
+			intake.is_self_registration(self)
+			and membership_service.is_proof(self)
+			and not self.get("proof_claimed_start_date")
+		):
+			frappe.throw(_("Tell us when the membership you are proving started."), frappe.MandatoryError)
 
 	def validate_approvable(self):
 		"""A claimed membership cannot be approved until somebody has checked it.
@@ -191,6 +197,31 @@ class VMMSMembership(Document):
 		if self.member and frappe.db.exists("VMMS Member", self.member):
 			member_service.refresh(self.member)
 
+	# --- the approval engine's question -----------------------------------
+
+	def ready_for_review(self):
+		"""Whether the branch may be asked to decide this yet.
+
+		Not while a fee the gateway collects is unpaid. Somebody who chose
+		M-Pesa pays first, and the application reaches the branch with the
+		receipt already on it. A fee paid at a branch office is different: the
+		office records it from the review screen, so that application goes to
+		the branch straight away. See `payment.confirms_itself`.
+		"""
+		return not membership_service.waits_for_gateway(self)
+
+	def held_for(self):
+		"""What staff are told while `ready_for_review` says no."""
+		if not membership_service.waits_for_gateway(self):
+			return None
+
+		return {
+			"label": _("Awaiting payment"),
+			"note": _(
+				"The applicant has not paid the membership fee yet. The application goes to its approvers by itself once the payment is received."
+			),
+		}
+
 	# --- the onerc_payments contract --------------------------------------
 
 	def on_payment_confirmed(self, amount=None, receipt=None, transaction_id=None):
@@ -222,6 +253,9 @@ class VMMSMembership(Document):
 		# and a person who pays for a routed membership gets only the first until
 		# somebody approves them. Never raises; see `membership.report_payment`.
 		membership_service.report_payment(self, amount=amount, receipt=receipt)
+
+		# Paid, so a membership held back for its fee now goes to its branch.
+		membership_service.send_for_approval_once_paid(self)
 
 	def on_payment_receipt(self, receipt=None, transaction_id=None):
 		"""Optional enrichment — a gateway receipt that arrived late.
