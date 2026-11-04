@@ -13,6 +13,7 @@
   "resolution_rule",
   "geo_level",
   "fixed_geo_node",
+  "anchor_field",
   "column_break_routing",
   "completion_rule",
   "can_reject",
@@ -86,6 +87,12 @@
    "options": "Geo Node"
   },
   {
+   "fieldname": "anchor_field",
+   "fieldtype": "Data",
+   "label": "Route From Field",
+   "description": "The Geo Node field this stage is routed from. Leave empty to use the workflow's own. A branch transfer's second stage names to_geo_node, so the branch the volunteer is joining decides it."
+  },
+  {
    "fieldname": "column_break_routing",
    "fieldtype": "Column Break"
   },
@@ -144,7 +151,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-02 10:00:00.000000",
+ "modified": "2026-11-04 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "VMMS Approvals",
  "name": "VMMS Approval Stage",

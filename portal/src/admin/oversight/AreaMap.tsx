@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { CountyMap } from "../../ui/CountyMap";
 
 import type { AreaRow, MapShapes } from "./types";
 
@@ -67,19 +67,12 @@ export function AreaMap({
 	/** Present on the national tab: shade every county by this figure. */
 	shading?: Shading;
 }) {
-	const [hover, setHover] = useState<string | null>(null);
-	const [, , width, height] = shapes.view_box.split(" ").map(Number);
-	const shown = hover ? shapes.shapes.find((shape) => shape.name === hover) : undefined;
-	const row = hover ? figures.get(hover) : undefined;
-	const dot = Math.max(width, height) / 70;
-
 	const breaks = shading ? steps([...figures.values()].map(shading.value)) : [];
+	const navy = highlight.size > 0 && (!shading || highlight.size < figures.size);
 
-	const fill = (name: string) => {
+	const fill = (name: string, hovered: boolean) => {
 		if (chosen.has(name)) return RED;
-		if (highlight.has(name) && (!shading || highlight.size < figures.size)) {
-			return hover === name ? NAVY_HOVER : NAVY;
-		}
+		if (navy && highlight.has(name)) return hovered ? NAVY_HOVER : NAVY;
 		if (shading) {
 			const county = figures.get(name);
 			const value = county ? shading.value(county) : 0;
@@ -90,72 +83,24 @@ export function AreaMap({
 		return OUTSIDE;
 	};
 
-	const keys = (name: string) => (event: KeyboardEvent) => {
-		if (event.key === "Enter" || event.key === " ") {
-			event.preventDefault();
-			onSelect(name);
-		}
-	};
-
 	return (
 		<div>
-			{/* Sized to the country's own proportions, so the read-out's position
-			    (a percentage of the frame) lands on the county it describes. */}
-			<div className="relative mx-auto" style={{ maxWidth: `${(MAX_HEIGHT * width) / height}px` }}>
-				<svg viewBox={shapes.view_box} className="block h-auto w-full" role="group" aria-label={label}>
-					{shapes.shapes.map((shape) => {
-						const interactive = active.has(shape.name);
-						const county = figures.get(shape.name);
-						const common = {
-							fill: fill(shape.name),
-							stroke: hover === shape.name ? NAVY : "#FFFFFF",
-							strokeWidth: hover === shape.name ? 2 : 1,
-							strokeLinejoin: "round" as const,
-							className: interactive ? "cursor-pointer outline-none transition-[fill] duration-150" : undefined,
-							tabIndex: interactive ? 0 : undefined,
-							role: interactive ? "button" : undefined,
-							"aria-label": interactive && county ? readOut(county) : undefined,
-							"aria-pressed": interactive ? chosen.has(shape.name) : undefined,
-							onMouseEnter: interactive ? () => setHover(shape.name) : undefined,
-							onMouseLeave: interactive ? () => setHover(null) : undefined,
-							onFocus: interactive ? () => setHover(shape.name) : undefined,
-							onBlur: interactive ? () => setHover(null) : undefined,
-							onClick: interactive ? () => onSelect(shape.name) : undefined,
-							onKeyDown: interactive ? keys(shape.name) : undefined,
-						};
-
-						return shape.path ? (
-							<path key={shape.name} d={shape.path} {...common} />
-						) : (
-							<circle key={shape.name} cx={shape.centre[0]} cy={shape.centre[1]} r={dot} {...common} />
-						);
-					})}
-
-					{/* The hovered county once more on top, so its outline is not
-					    hidden under a neighbour's edge. */}
-					{shown?.path && <path d={shown.path} fill="none" stroke={NAVY} strokeWidth={2} pointerEvents="none" />}
-				</svg>
-
-				{shown && row && (
-					<div
-						className="pointer-events-none absolute z-10 min-w-[170px] -translate-x-1/2 -translate-y-[calc(100%+12px)] rounded-md bg-[#24272C] px-3 py-2 text-[12px] text-white shadow-lg"
-						style={{ left: `${(shown.centre[0] / width) * 100}%`, top: `${(shown.centre[1] / height) * 100}%` }}
-						aria-hidden="true"
-					>
-						<div className="mb-1 text-[13px] font-semibold">{row.label}</div>
-						<dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-white/75">
-							<dt>Volunteers</dt>
-							<dd className="text-right font-semibold tabular-nums text-white">{row.volunteers}</dd>
-							<dt>Members</dt>
-							<dd className="text-right font-semibold tabular-nums text-white">{row.members}</dd>
-							<dt>Waiting for approval</dt>
-							<dd className="text-right font-semibold tabular-nums text-white">{row.waiting}</dd>
-							<dt>Materials lent out</dt>
-							<dd className="text-right font-semibold tabular-nums text-white">{row.materials_lent}</dd>
-						</dl>
-					</div>
-				)}
-			</div>
+			<CountyMap
+				shapes={shapes}
+				fill={fill}
+				interactive={(name) => active.has(name)}
+				onSelect={onSelect}
+				describe={(name) => {
+					const row = figures.get(name);
+					return row ? readOut(row) : undefined;
+				}}
+				readOut={(name) => {
+					const row = figures.get(name);
+					return row ? <Figures row={row} /> : null;
+				}}
+				label={label}
+				maxHeight={MAX_HEIGHT}
+			/>
 
 			<div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-muted">
 				{shading ? (
@@ -175,9 +120,7 @@ export function AreaMap({
 				) : (
 					<Key colour={OUTSIDE} label="Rest of the country" />
 				)}
-				{highlight.size > 0 && (!shading || highlight.size < figures.size) && (
-					<Key colour={NAVY} label={highlightLabel} />
-				)}
+				{navy && <Key colour={NAVY} label={highlightLabel} />}
 				<Key colour={RED} label="Chosen" />
 			</div>
 
@@ -188,6 +131,24 @@ export function AreaMap({
 			)}
 			{shapes.credit && <p className="mt-2 text-[11px] text-slate-faint">{shapes.credit}</p>}
 		</div>
+	);
+}
+
+function Figures({ row }: { row: AreaRow }) {
+	return (
+		<>
+			<div className="mb-1 text-[13px] font-semibold">{row.label}</div>
+			<dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-white/75">
+				<dt>Volunteers</dt>
+				<dd className="text-right font-semibold tabular-nums text-white">{row.volunteers}</dd>
+				<dt>Members</dt>
+				<dd className="text-right font-semibold tabular-nums text-white">{row.members}</dd>
+				<dt>Waiting for approval</dt>
+				<dd className="text-right font-semibold tabular-nums text-white">{row.waiting}</dd>
+				<dt>Materials lent out</dt>
+				<dd className="text-right font-semibold tabular-nums text-white">{row.materials_lent}</dd>
+			</dl>
+		</>
 	);
 }
 

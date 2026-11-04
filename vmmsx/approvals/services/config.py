@@ -152,6 +152,30 @@ def anchor(doc, workflow) -> str:
 	)
 
 
+def stage_anchor(doc, workflow, stage) -> str:
+	"""The Geo Node this stage is routed from. Throws when it has none.
+
+	The workflow's own anchor, unless the stage names another field. That is what
+	lets one record be decided in two places: a branch transfer is released by
+	the branch the volunteer is leaving (`from_geo_node`, the workflow's anchor)
+	and accepted by the branch they are joining (`to_geo_node`, named on the
+	second stage).
+	"""
+	field = (stage.get("anchor_field") if stage else None) or workflow.geo_node_field
+	node = doc.get(field)
+
+	if node:
+		return node
+
+	frappe.throw(
+		_(
+			"{0} {1} has no {2}. Every operational record is anchored to a Geo Node before it can move."
+		).format(doc.doctype, frappe.bold(doc.name), frappe.bold(field)),
+		frappe.MandatoryError,
+		title=_("Missing Geo Anchor"),
+	)
+
+
 def assert_anchor_allowed(doc, workflow) -> None:
 	"""ACC-03 — the anchor must sit at a level this society permits.
 

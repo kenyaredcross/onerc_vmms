@@ -51,6 +51,10 @@ import frappe
 # honestly empty, rather than no screen at all.
 GATED_SECTIONS = (
 	{"section": "registry", "doctypes": ("VMMS Volunteer", "VMMS Membership", "VMMS Service Certificate Request")},
+	# Volunteers moving between branches, both ways: leaving the coordinator's
+	# branch and joining it. Gated on the transfer, which is scoped on both of
+	# its branches (`vmmsx/multi_anchor.py`).
+	{"section": "transfers", "doctypes": ("VMMS Branch Transfer",)},
 	{"section": "tasks", "doctypes": ("VMMS Task",)},
 	{"section": "assets", "doctypes": ("VMMS Branch Asset",)},
 	{"section": "deployments", "doctypes": ("VMMS Deployment", "VMMS Deployment Request")},
@@ -155,6 +159,9 @@ ORDER = (
 	# applications.
 	"recruitment",
 	"registry",
+	# After the registers under People: a transfer is something that happens to
+	# a volunteer already on one.
+	"transfers",
 	"tasks",
 	"assets",
 	"deployments",

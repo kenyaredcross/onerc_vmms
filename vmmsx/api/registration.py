@@ -1368,6 +1368,102 @@ def my_open_registrations() -> dict:
 	return answer
 
 
+#: A volunteer in one of these is somebody the society already has, and a
+#: second application from them is refused. Exited is not here on purpose: a
+#: volunteer who left may come back through an application.
+STANDING_VOLUNTEER_STATUSES = ("Active", "Suspended")
+
+
+@frappe.whitelist()
+def my_standing() -> dict:
+	"""Where the caller already belongs. Possessive; takes no argument.
+
+	- `volunteer`: their serving branch, when they are a volunteer the society
+	  already has (`STANDING_VOLUNTEER_STATUSES`), else None;
+	- `memberships`: every branch they hold a membership at or are joining.
+
+	Read by the branch directory, so a card can say "Your branch" rather than
+	offer a form the person has no reason to fill in, and by the join wizard,
+	which turns an existing volunteer away on arrival. Both rules are also
+	enforced at submission — `_assert_not_a_volunteer` here and
+	`membership.assert_not_already_held` — so this is not the check, only the
+	difference between being told first and being told last.
+	"""
+	_assert_signed_in()
+
+	profile = frappe.db.get_value(PROFILE_DOCTYPE, {"user": frappe.session.user}, "name")
+
+	if not profile:
+		return {"volunteer": None, "memberships": []}
+
+	return {"volunteer": _standing_volunteer(profile), "memberships": _standing_memberships(profile)}
+
+
+def _standing_volunteer(profile: str) -> dict | None:
+	row = frappe.db.get_value(
+		"VMMS Volunteer", {"red_profile": profile}, ["name", "status", "home_geo_node"], as_dict=True
+	)
+
+	if not row or row.status not in STANDING_VOLUNTEER_STATUSES:
+		return None
+
+	from vmmsx.deployment.services import transfer_requests
+
+	return {
+		"status": row.status,
+		"branch": row.home_geo_node or "",
+		"branch_label": _place_label(row.home_geo_node),
+		# Whether they may ask to move from the portal, so the branch directory
+		# offers "Ask to move here" only where somebody would decide it.
+		"can_request_transfer": row.status in transfer_requests.MAY_REQUEST and transfer_requests.requests_open(),
+	}
+
+
+def _standing_memberships(profile: str) -> list[dict]:
+	from vmmsx.member.services import membership as membership_service
+
+	member = frappe.db.get_value("VMMS Member", {"red_profile": profile}, "name")
+
+	if not member:
+		return []
+
+	return [
+		{
+			"branch": row.geo_node or "",
+			"branch_label": _place_label(row.geo_node),
+			"status": membership_service.effective_status(row),
+		}
+		for row in membership_service.held_by(member)
+	]
+
+
+def _place_label(geo_node: str | None) -> str:
+	return (frappe.db.get_value("Geo Node", geo_node, "geo_node_name") or "") if geo_node else ""
+
+
+def _assert_not_a_volunteer() -> None:
+	"""Refuse a volunteer application from somebody who is already a volunteer.
+
+	Approving it would change nothing: a second application never moves a
+	volunteer (`volunteer.ensure` keeps the placement they have), so the
+	applicant would fill in a form and a coordinator would review it for no
+	effect. Moving branch is a branch transfer, requested from the profile.
+	"""
+	profile = frappe.db.get_value(PROFILE_DOCTYPE, {"user": frappe.session.user}, "name")
+	standing = _standing_volunteer(profile) if profile else None
+
+	if not standing:
+		return
+
+	frappe.throw(
+		_(
+			"You are already a volunteer with {0}. To move to another branch, request a transfer from your profile."
+		).format(frappe.bold(standing["branch_label"] or _("your branch"))),
+		frappe.ValidationError,
+		title=_("Already a Volunteer"),
+	)
+
+
 def _latest_decision_reason(doctype: str, name: str) -> str:
 	"""The last thing an approver wrote on this application, or nothing.
 
@@ -1827,6 +1923,7 @@ def save_my_volunteer_draft(
 	`GUARDIAN_CONSENT_FIELDS`.
 	"""
 	_assert_signed_in()
+	_assert_not_a_volunteer()
 
 	from vmmsx.api.volunteer import selector_rows
 
@@ -2034,6 +2131,9 @@ def submit_my_registration(path: str) -> dict:
 			title=_("No Draft Registration"),
 		)
 
+	if path == "volunteer":
+		_assert_not_a_volunteer()
+
 	with intake.as_system():
 		if path == "volunteer":
 			from vmmsx.volunteer.services import application as application_service
@@ -2116,6 +2216,7 @@ def register_as_volunteer(
 	"""
 	_assert_signed_in()
 	_assert_nothing_open(APPLICATION_DOCTYPE)
+	_assert_not_a_volunteer()
 
 	from vmmsx.api.volunteer import selector_rows
 	from vmmsx.volunteer.services import application as application_service

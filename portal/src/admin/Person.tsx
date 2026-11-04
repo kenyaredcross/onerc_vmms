@@ -10,6 +10,7 @@ import { Icon } from "../ui/icons";
 import { MultiCombo } from "../ui/form";
 import { PersonHero, RegisterLinks } from "../ui/PersonHero";
 import { RegistrationDetailsSummary } from "../ui/RegistrationDetails";
+import { MoveVolunteer } from "./MoveVolunteer";
 import { RecordPayment, owesAFee } from "./RecordPayment";
 import { SurgeCard } from "./Surge";
 import {
@@ -529,13 +530,16 @@ function VolunteerPage({ name }: { name: string }) {
 			/>
 			</>}
 
-			{tab === "notes" && <RegisterNotes
+			{tab === "notes" && <><RegisterNotes
 				notes={person.notes ?? null}
 				canAct={dossier.can_act}
 				endpoint={API.setVolunteerNotes}
 				name={dossier.volunteer}
 				onChanged={onChanged}
-			/>}
+			/>
+			{/* Closed, at the foot of the notes tab: an occasional act, and most
+			    transfers start with the volunteer asking from their profile. */}
+			<MoveVolunteer volunteer={dossier.volunteer} name={person.full_name || "The volunteer"} /></>}
 
 			{tab === "service" && <><SurgeCard
 				volunteer={dossier.volunteer}

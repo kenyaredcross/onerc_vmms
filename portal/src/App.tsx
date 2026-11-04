@@ -132,6 +132,7 @@ const RegistryVolunteers = lazy(() =>
 	import("./admin/Registry").then((module) => ({ default: module.VolunteersRegistry })),
 );
 // The surge roster, reached from People and from Operations. One screen, two trails.
+const Transfers = lazy(() => import("./admin/Transfers"));
 const SurgeRosterPeople = lazy(() =>
 	import("./admin/Surge").then((module) => ({ default: module.SurgeRosterPeople })),
 );
@@ -325,6 +326,7 @@ const ROUTE_NAMES: Record<string, string> = {
 	"admin/events": "events",
 	"admin/analytics": "analytics",
 	"admin/region": "your region",
+	"admin/transfers": "branch transfers",
 	"admin/national": "the national figures",
 	"admin/content": "page content",
 	"admin/questions": "form questions",
@@ -443,6 +445,7 @@ export default function App() {
 					<Route path="registry/members" element={<RegistryMembers />} />
 					<Route path="registry/volunteers" element={<RegistryVolunteers />} />
 					<Route path="registry/surge" element={<SurgeRosterPeople />} />
+					<Route path="transfers" element={<Transfers />} />
 					{/* The kind is a path segment because a docname cannot say which
 					    register it belongs to, and probing both endpoints to find out
 					    would ask the server a question the link already knew. */}

@@ -774,6 +774,42 @@ export interface OpenRegistration {
 	awaiting_payment?: boolean;
 }
 
+/**
+ * `api/registration.py::my_standing`: where the signed-in person already
+ * belongs. `volunteer` is set only for a volunteer the society already has
+ * (Active or Suspended); `memberships` is every branch they hold a membership
+ * at or are joining.
+ */
+export interface Standing {
+	volunteer: { status: string; branch: string; branch_label: string; can_request_transfer?: boolean } | null;
+	memberships: Array<{ branch: string; branch_label: string; status: string }>;
+}
+
+/** `deployment/services/transfer_requests.py::summary`, one branch transfer. */
+export interface BranchTransfer {
+	name: string;
+	volunteer: string;
+	volunteer_name: string;
+	from_geo_node: string;
+	from_place: string;
+	to_geo_node: string;
+	to_place: string;
+	reason: string;
+	effective_date: string | null;
+	requested_by_volunteer: boolean;
+	requested_on: string | null;
+	transfer_status: "Pending" | "Effective" | "Cancelled";
+	approval_state: string;
+	/** The place whose decision it is waiting for, or "". */
+	waiting_on: string;
+	days_waiting: number;
+	decision_reason: string;
+	is_effective: boolean;
+	can_withdraw: boolean;
+	/** The console only: is it this person's to decide now? */
+	can_act?: boolean;
+}
+
 /** `api/registration.py::identity_options`. */
 export interface IdentityOptions {
 	blood_groups?: string[];
@@ -1097,6 +1133,15 @@ export interface BranchLocation {
 	email: string;
 	opening_hours: string;
 	photo: string;
+	/** The county it sits in, for the directory's map and search. */
+	county?: string;
+	county_label?: string;
+	region?: string;
+	region_label?: string;
+	/** Placed at the top of the tree: the society's headquarters. */
+	is_headquarters?: boolean;
+	/** Placed above the counties and below the top: a regional office. */
+	is_regional?: boolean;
 }
 
 /* ---------------------------------------------------------- deployments */

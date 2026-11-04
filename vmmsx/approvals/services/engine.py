@@ -386,7 +386,7 @@ def authorised(doc, workflow=None) -> dict:
 			"breached": False,
 		}
 
-	node = config.anchor(doc, workflow)
+	node = config.stage_anchor(doc, workflow, stage)
 	routed = routing.routed(stage, node)
 	breached = sla.is_breached(doc, stage)
 	escalated = []
@@ -431,9 +431,8 @@ def _advance(doc, workflow, after: int | None) -> list[str]:
 	the application is approved — by a configuration that asked for no
 	approvals, not by accident.
 	"""
-	node = config.anchor(doc, workflow)
-
 	for stage in config.stages_after(workflow, after):
+		node = config.stage_anchor(doc, workflow, stage)
 		routed = routing.routed(stage, node)
 
 		if routed:

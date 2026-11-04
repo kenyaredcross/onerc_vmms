@@ -78,6 +78,15 @@ export const PEOPLE_NAV: Destination[] = [
 		groupKey: "admin.people.nav.insight",
 		section: "registry",
 	},
+	{
+		// Volunteers leaving this coordinator's branch and joining it, each
+		// decided by both branches in turn.
+		to: "/admin/transfers",
+		labelKey: "admin.people.nav.transfers",
+		fallback: "Branch transfers",
+		groupKey: "admin.people.nav.insight",
+		section: "transfers",
+	},
 ];
 
 export function inPeople(pathname: string) {
@@ -85,7 +94,8 @@ export function inPeople(pathname: string) {
 		pathname === "/admin/people" ||
 		pathname.startsWith("/admin/queue") ||
 		pathname.startsWith("/admin/registry") ||
-		pathname.startsWith("/admin/recruitment")
+		pathname.startsWith("/admin/recruitment") ||
+		pathname.startsWith("/admin/transfers")
 	);
 }
 

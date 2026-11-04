@@ -230,13 +230,28 @@ after_install = "vmmsx.install.after_install"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
+# Records about more than one place, scoped on all of them — which core's
+# one-field scoping cannot say. See `vmmsx/multi_anchor.py`.
 #
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+# A branch transfer is read by the branch the volunteer is leaving and the
+# branch they are joining (the first releases them, the second accepts them),
+# and changed only by the branch they are leaving.
+vmmsx_multi_anchor_doctypes = [
+	{
+		"doctype": "VMMS Branch Transfer",
+		"read_fields": ("from_geo_node", "to_geo_node"),
+		"write_field": "from_geo_node",
+		"role_from_setting": "vmms_branch_transfer_scope_role",
+	},
+]
+
+permission_query_conditions = {
+	"VMMS Branch Transfer": "vmmsx.multi_anchor.get_permission_query_conditions",
+}
+
+has_permission = {
+	"VMMS Branch Transfer": "vmmsx.multi_anchor.has_permission",
+}
 
 # Document Events
 # ---------------
@@ -660,13 +675,12 @@ onerc_affiliation_providers = [
 # covers the node, which is the same property that lets `VMMS Membership` be both
 # approvable and scopeable.
 #
-# `VMMS Branch Transfer` is scoped on `from_geo_node` — the branch the volunteer
-# is leaving. That is where a routed transfer is approved by default, and it
-# keeps the record visible to the branch it is about after the volunteer has
-# moved on. The volunteer themselves moves to the new branch's scope the moment
-# the transfer takes effect, because `VMMS Volunteer` is scoped on the field the
-# transfer writes; nothing had to be built for that, and no history is rewritten
-# to achieve it.
+# `VMMS Branch Transfer` is scoped by vmmsx, not core: it is visible to the
+# branch the volunteer is leaving *and* the branch they are joining, because
+# the first releases them and the second accepts them. Core reads one anchor
+# field, so the rule lives in `vmmsx/multi_anchor.py`. The
+# volunteer moves to the new branch's scope the moment the transfer takes
+# effect, because `VMMS Volunteer` is scoped on the field the transfer writes.
 #
 # All three settings fields ship **empty**, so core fails closed until a society
 # chooses each role. Installed by vmmsx.patches.install_deployment_scope_roles.
@@ -749,11 +763,9 @@ onerc_scopeable_doctypes = [
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_deployment_request_scope_role",
 	},
-	{
-		"doctype": "VMMS Branch Transfer",
-		"geo_node_field": "from_geo_node",
-		"role_from_setting": "vmms_branch_transfer_scope_role",
-	},
+	# `VMMS Branch Transfer` is deliberately not registered here. A transfer is
+	# about two branches and core scopes on one field, so vmmsx scopes it itself
+	# — see `vmmsx_multi_anchor_doctypes` below and `vmmsx/multi_anchor.py`.
 	# The Stipend module registers both of its records, each on its own anchor and
 	# each naming its own settings field.
 	#

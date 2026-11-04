@@ -80,7 +80,8 @@ def published(geo_node: str | None = None) -> dict:
 		ignore_permissions=True,  # See the docstring: bounded by is_published.
 	)
 
-	locations = [_public_dto(row) for row in rows]
+	places = _places()
+	locations = [{**_public_dto(row), **places(row.geo_node)} for row in rows]
 
 	return {
 		"count": len(locations),
@@ -128,6 +129,83 @@ def branch_locations() -> dict:
 		"count": len(rows),
 		"locations": [{**_public_dto(row), "is_published": bool(row.is_published), "notes": row.notes} for row in rows],
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def county_map() -> dict:
+	"""The counties as map shapes, for the directory's map.
+
+	Guest-readable for the same reason `published` is. It carries shapes and
+	names and no figures: the society's attached boundary file (see
+	`analytics/services/boundaries.py`), or a dot per county without one.
+	"""
+	from vmmsx.analytics.services import boundaries, oversight
+
+	area = oversight.national_area()
+
+	if not area:
+		return {"view_box": "0 0 1000 750", "shapes": [], "has_file": False, "matched": 0, "credit": None}
+
+	counties = oversight.counties(area)
+	shapes = boundaries.shapes(counties)
+	labels = {unit["name"]: unit["label"] for unit in counties}
+
+	return {**shapes, "labels": labels, "regions": _county_regions(counties)}
+
+
+def _places():
+	"""A lookup from a location's place to where it sits on the page.
+
+	- `county`: the place at the society's registration level that the location
+	  sits at or under;
+	- `region`: the place just under the top of the tree that it sits in;
+	- `is_headquarters`: placed at the top of the tree;
+	- `is_regional`: placed above the counties but below the top, a regional
+	  office, shown with every county of its region.
+
+	All read once, from the tree, for the whole page.
+	"""
+	from vmmsx.analytics.services import oversight
+
+	nodes = frappe.get_all(
+		"Geo Node",
+		fields=["name", "geo_node_name", "geo_level", "parent_geo_node", "lft", "rgt"],
+		ignore_permissions=True,  # the place tree is public: it is the address book's index
+	)
+	level = oversight.config_level()
+	counties = [node for node in nodes if node.geo_level == level]
+	roots = {node.name for node in nodes if not node.parent_geo_node}
+	regions = [node for node in nodes if node.parent_geo_node in roots]
+	by_name = {node.name: node for node in nodes}
+
+	def within(node, candidates):
+		return next((c for c in candidates if c.lft <= node.lft and node.rgt <= c.rgt), None)
+
+	def place(geo_node: str | None) -> dict:
+		node = by_name.get(geo_node)
+
+		if not node:
+			return {"county": "", "county_label": "", "region": "", "region_label": "", "is_headquarters": False, "is_regional": False}
+
+		county = within(node, counties)
+		region = within(node, regions)
+
+		return {
+			"county": county.name if county else "",
+			"county_label": county.geo_node_name if county else "",
+			"region": region.name if region else "",
+			"region_label": region.geo_node_name if region else "",
+			"is_headquarters": not node.parent_geo_node,
+			"is_regional": bool(node.parent_geo_node and not county and region),
+		}
+
+	return place
+
+
+def _county_regions(counties: list[dict]) -> dict:
+	"""{county: region} for the map, so a chosen county finds its regional office."""
+	place = _places()
+	return {unit["name"]: place(unit["name"])["region"] for unit in counties}
 
 
 def _public_dto(row) -> dict:

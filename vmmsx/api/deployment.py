@@ -1038,7 +1038,16 @@ def request_transfer(
 	transfer_service.snapshot_origin(transfer)
 	transfer.insert()
 
-	return transfer_service.submit(transfer)
+	transfer_service.submit(transfer)
+
+	# Raising it is the release: the branch it is moving somebody to decides
+	# next, and the volunteer is told it was asked for. See `transfer_requests`.
+	from vmmsx.deployment.services import transfer_requests
+
+	transfer_requests.release_by_raiser(transfer)
+	transfer_requests.tell_received(transfer)
+
+	return transfer_service.status(transfer)
 
 
 @frappe.whitelist()

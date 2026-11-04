@@ -149,7 +149,9 @@ def approver_summaries(now=None) -> dict[str, dict]:
 
 def _routed_waiting(doctype, workflow, stage, now) -> dict[str, list[dict]]:
 	"""Each person this stage routes to, and the applications waiting on them."""
-	field = workflow.geo_node_field
+	# The field this stage is routed from, which for a transfer's second stage
+	# is where the volunteer is going. See `config.stage_anchor`.
+	field = stage.get("anchor_field") or workflow.geo_node_field
 	rows = frappe.get_all(
 		doctype,
 		filters={contract.STATE_FIELD: states.IN_REVIEW, contract.STAGE_FIELD: stage.name},
@@ -203,7 +205,7 @@ def _area(user: str, role: str) -> set[str] | None:
 
 def _week_at_stage(doctype, workflow, stage, area, since, now) -> dict:
 	"""Arrived at this stage, and decided at it, in the last seven days, in `area`."""
-	field = workflow.geo_node_field
+	field = stage.get("anchor_field") or workflow.geo_node_field
 	arrived = frappe.get_all(
 		doctype,
 		filters={

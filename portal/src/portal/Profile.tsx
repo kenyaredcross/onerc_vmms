@@ -21,6 +21,7 @@ import {
 import { Field, SelectInput, TextInput, VocabularySelect } from "../ui/form";
 import { Icon } from "../ui/icons";
 import { PersonHero } from "../ui/PersonHero";
+import { TransferCard } from "./TransferCard";
 import {
 	Avatar,
 	Button,
@@ -213,6 +214,7 @@ export default function Profile() {
 					</div>
 					<div className="space-y-6 lg:col-span-2">
 						<PlacementCard profile={profile} />
+						<TransferCard branch={profile.geo_node} active={profile.status === "Active"} />
 						<ServiceCertificatePanel />
 					</div>
 					</div>}

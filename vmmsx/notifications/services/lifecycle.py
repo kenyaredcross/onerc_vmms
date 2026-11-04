@@ -112,7 +112,9 @@ def install() -> dict:
 	created = []
 	upgraded = []
 
-	for template in lifecycle_emails.TEMPLATES:
+	from vmmsx.notifications.seeds import transfer_emails
+
+	for template in (*lifecycle_emails.TEMPLATES, *transfer_emails.TEMPLATES):
 		if frappe.db.exists(TEMPLATE_DOCTYPE, template["name"]):
 			if _upgrade_untouched(template):
 				upgraded.append(template["name"])

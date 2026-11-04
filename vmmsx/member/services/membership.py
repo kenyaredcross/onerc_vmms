@@ -466,18 +466,7 @@ def assert_not_already_held(membership) -> None:
 		as_dict=True,
 		for_update=True,
 	)
-	current = next(
-		(
-			row
-			for row in held
-			if row.get("approval_state") not in ("Rejected", "Withdrawn", "Expired")
-			and (
-				is_current(frappe._dict(row))
-				or row["membership_status"] in (STATUS_AWAITING_PAYMENT, STATUS_AWAITING_APPROVAL)
-			)
-		),
-		None,
-	)
+	current = next((row for row in held if _holds(row)), None)
 	if not current:
 		return
 
@@ -490,6 +479,33 @@ def assert_not_already_held(membership) -> None:
 		frappe.ValidationError,
 		title=_("Membership Already Held"),
 	)
+
+
+def _holds(row) -> bool:
+	"""Is this membership one its member currently holds or is joining?
+
+	Current, or waiting on its fee or its approval, and not since turned down.
+	The one rule behind both the refusal above and `held_by` below, so the
+	page that says "you're a member here" and the server that refuses a second
+	membership at that branch cannot disagree.
+	"""
+	return row.get("approval_state") not in ("Rejected", "Withdrawn", "Expired") and (
+		is_current(frappe._dict(row))
+		or row.get("membership_status") in (STATUS_AWAITING_PAYMENT, STATUS_AWAITING_APPROVAL)
+	)
+
+
+def held_by(member: str) -> list[dict]:
+	"""Every membership this member holds or is joining, with its branch."""
+	rows = frappe.get_all(
+		MEMBERSHIP_DOCTYPE,
+		filters={
+			"member": member,
+			"membership_status": ("in", (STATUS_ACTIVE, STATUS_AWAITING_PAYMENT, STATUS_AWAITING_APPROVAL)),
+		},
+		fields=["name", "geo_node", "membership_status", "valid_to", "approval_state"],
+	)
+	return [row for row in rows if _holds(row)]
 
 
 # --- activation -----------------------------------------------------------

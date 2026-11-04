@@ -28,6 +28,7 @@ from frappe.utils import add_days, today
 from onerc_core.access.services import registry
 from onerc_core.access.services.enforcement import is_in_scope
 
+from vmmsx import multi_anchor
 from vmmsx.deployment.services import society
 from vmmsx.deployment.tests import fixtures
 from vmmsx.deployment.tests.base import DeploymentTestCase
@@ -43,13 +44,9 @@ REGISTERED = (
 		fixtures.DEPLOYMENT_SCOPE_ROLE,
 	),
 	(fixtures.REQUEST_DOCTYPE, "geo_node", society.REQUEST_SCOPE_ROLE_FIELD, fixtures.REQUEST_SCOPE_ROLE),
-	(
-		fixtures.TRANSFER_DOCTYPE,
-		"from_geo_node",
-		society.TRANSFER_SCOPE_ROLE_FIELD,
-		fixtures.TRANSFER_SCOPE_ROLE,
-	),
 )
+# `VMMS Branch Transfer` is scoped by vmmsx on both of its branches rather than
+# registered with core on one; see `vmmsx/multi_anchor.py`.
 
 
 class ScopingTestCase(DeploymentTestCase):
@@ -99,14 +96,19 @@ class TestTheRegistrationIsWellFormed(ScopingTestCase):
 				f"{setting} was not installed",
 			)
 
-	def test_the_transfer_is_anchored_on_the_branch_it_is_leaving(self):
+	def test_the_transfer_is_scoped_by_this_app_on_both_branches(self):
 		"""Stated as its own test because it is the design decision, not a detail.
 
-		Anchoring on `from_geo_node` is what keeps a completed transfer visible to
-		the branch that lost somebody, and it is where a routed transfer is
-		approved by default.
+		A transfer is released by the branch it leaves and accepted by the branch
+		it joins, and core scopes on one field. So it is not registered with core
+		— whose handlers then have no opinion — and vmmsx's own hooks scope it on
+		`from_geo_node` and `to_geo_node` together.
 		"""
-		self.assertEqual(registry.geo_node_field(fixtures.TRANSFER_DOCTYPE), "from_geo_node")
+		self.assertIsNone(registry.for_doctype(fixtures.TRANSFER_DOCTYPE))
+		self.assertEqual(
+			frappe.get_hooks("has_permission").get(fixtures.TRANSFER_DOCTYPE),
+			["vmmsx.multi_anchor.has_permission"],
+		)
 
 
 class TestItFailsClosed(ScopingTestCase):
@@ -189,7 +191,7 @@ class TestTheThreeQuestionsAreSeparate(ScopingTestCase):
 			effective_date=add_days(today(), 30),
 		)
 
-		self.assertFalse(is_in_scope(fixtures.TRANSFER_DOCTYPE, transfer.from_geo_node, self.request_viewer))
+		self.assertFalse(multi_anchor.has_permission(transfer, "read", self.request_viewer))
 
 	def test_each_viewer_does_see_their_own(self):
 		"""The positive half, without which the three tests above prove nothing."""
@@ -206,4 +208,4 @@ class TestTheThreeQuestionsAreSeparate(ScopingTestCase):
 
 		self.assertTrue(is_in_scope(fixtures.DEPLOYMENT_DOCTYPE, deployment.geo_node, self.deployment_viewer))
 		self.assertTrue(is_in_scope(fixtures.REQUEST_DOCTYPE, request.geo_node, self.request_viewer))
-		self.assertTrue(is_in_scope(fixtures.TRANSFER_DOCTYPE, transfer.from_geo_node, self.transfer_viewer))
+		self.assertTrue(multi_anchor.has_permission(transfer, "read", self.transfer_viewer))

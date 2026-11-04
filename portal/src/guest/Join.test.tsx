@@ -1556,3 +1556,69 @@ it("requires a new home selection after explicitly clearing a saved residence", 
 	fireEvent.change(home, {target: {value: ""}});
 	expect(held()).toBe(true);
 });
+
+/**
+ * Somebody who already belongs. A volunteer the society already has is not
+ * offered a second application — approving it would move nobody — and a branch
+ * somebody already holds a membership at is refused at the branch step rather
+ * than at the end of the form.
+ */
+describe("somebody who already belongs", () => {
+	/** The member road's branch step, pressing on until it is the page. */
+	async function toTheMemberBranchStep() {
+		reads.set(API.myProfile, IDENTIFIED);
+		mount(<Join />, { route: "/join?path=member&type=annual" });
+		await onTheIdentityStep();
+
+		for (let press = 0; press < 6; press += 1) {
+			if (screen.queryByRole("heading", { name: "Branch" })) return;
+			await goOn();
+		}
+
+		await screen.findByRole("heading", { name: "Branch" });
+	}
+
+	it("tells an existing volunteer so, instead of drawing the form", async () => {
+		reads.set(API.myStanding, {
+			volunteer: { status: "Active", branch: "GEO-BUNGOMA", branch_label: "Bungoma" },
+			memberships: [],
+		});
+		open();
+
+		expect(await screen.findByRole("heading", { name: "You're already a volunteer." })).toBeTruthy();
+		expect(screen.getByText(/You volunteer with Bungoma/)).toBeTruthy();
+		expect(screen.queryByRole("heading", { name: "Personal Info" })).toBeNull();
+		expect(screen.getByRole("button", { name: "Register as a member instead" })).toBeTruthy();
+	});
+
+	it("still lets an existing volunteer take out a membership", async () => {
+		reads.set(API.myStanding, {
+			volunteer: { status: "Active", branch: "GEO-BUNGOMA", branch_label: "Bungoma" },
+			memberships: [],
+		});
+		mount(<Join />, { route: "/join?path=member&type=annual" });
+
+		expect(await onTheIdentityStep()).toBeTruthy();
+		expect(screen.queryByRole("heading", { name: "You're already a volunteer." })).toBeNull();
+	});
+
+	it("holds the branch step at a branch they are already a member of", async () => {
+		reads.set(API.myStanding, {
+			volunteer: null,
+			memberships: [{ branch: BRANCH.name, branch_label: BRANCH.label, status: "Active" }],
+		});
+		await toTheMemberBranchStep();
+		expect(held()).toBe(true);
+		await goOn();
+		expect(screen.getAllByText("You already have a membership with this branch").length).toBeGreaterThan(0);
+	});
+
+	it("lets the same branch through when the membership is somewhere else", async () => {
+		reads.set(API.myStanding, {
+			volunteer: null,
+			memberships: [{ branch: "GEO-ELSEWHERE", branch_label: "Elsewhere", status: "Active" }],
+		});
+		await toTheMemberBranchStep();
+		expect(held()).toBe(false);
+	});
+});

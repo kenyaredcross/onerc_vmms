@@ -73,6 +73,16 @@ export const API = {
 	// arrival rather than discovered on submit — and per kind, because an
 	// undecided volunteer application is not a reason to refuse a membership.
 	myOpenRegistrations: "vmmsx.api.registration.my_open_registrations",
+	myStanding: "vmmsx.api.registration.my_standing",
+	// Branch transfers. The volunteer's three take no volunteer; the console's
+	// list is the caller's own branches, one direction at a time.
+	myTransfer: "vmmsx.api.transfers.my_transfer",
+	requestMyTransfer: "vmmsx.api.transfers.request_my_transfer",
+	withdrawMyTransfer: "vmmsx.api.transfers.withdraw_my_transfer",
+	branchTransfers: "vmmsx.api.transfers.branch_transfers",
+	transferCounts: "vmmsx.api.transfers.transfer_counts",
+	volunteerTransfer: "vmmsx.api.transfers.volunteer_transfer",
+	requestTransfer: "vmmsx.api.deployment.request_transfer",
 	// The editable body of the caller's one open registration, and the three
 	// explicit applicant actions around it. Draft writes are possessive and stay
 	// out of every approver queue until `submitMyRegistration` is called.
@@ -502,6 +512,8 @@ export const API = {
 	// nothing else. `branchLocations` is the coordinator's, geo-scoped, and carries
 	// the internal notes the public one does not have.
 	publishedLocations: "vmmsx.api.locations.published",
+	// The directory's county map: shapes and names, no figures. Guest-readable.
+	countyMap: "vmmsx.api.locations.county_map",
 
 	// vmmsx/api/faq.py — the society's published answers, in its own categories.
 	// The fourth guest-readable method, and the content behind it is core's `FAQ`

@@ -145,7 +145,7 @@ def apply_breach(doc, workflow=None, now=None) -> dict:
 		# way this sweep adds nobody and sends nothing.
 		return outcome
 
-	node = config.anchor(doc, workflow)
+	node = config.stage_anchor(doc, workflow, stage)
 	late = routing.routed(stage, node)
 
 	if stage.on_sla_breach == BREACH_NOTIFY_ONLY:

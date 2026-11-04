@@ -61,6 +61,7 @@ import type {
 	PricedType,
 	RedProfile,
 	SocietyQuestion,
+	Standing,
 	VocabularyRow,
 } from "../portal/types";
 
@@ -775,6 +776,19 @@ function JoinBody() {
 	const otherOpen = Boolean(openRegistrations.data?.message?.[other]);
 	const resumable = openApplication?.state === "Draft";
 
+	// Where this person already belongs. A volunteer the society already has is
+	// turned away on arrival — a second application never moves anybody, so it
+	// would be a form and a review for nothing — and a branch they already hold
+	// a membership at is refused at the branch step rather than on submit. The
+	// server refuses both either way; see `registration.my_standing`.
+	const standing = useFrappeGetCall<{ message: Standing }>(
+		API.myStanding,
+		undefined,
+		isGuest ? null : "join:my_standing",
+	);
+	const alreadyVolunteer = path === "volunteer" ? standing.data?.message?.volunteer ?? null : null;
+	const heldMemberships = standing.data?.message?.memberships ?? [];
+
 	const draft = useFrappeGetCall<{ message: DraftRegistration | null }>(
 		API.myRegistration,
 		{ path },
@@ -1050,6 +1064,20 @@ function JoinBody() {
 		isGuest || !recordedHome ? null : `join:geo_path:${recordedHome}`,
 	);
 
+	/**
+	 * A branch chosen before arriving: "Volunteer here" on the locations page
+	 * sends `?branch=<place>`. It is where they asked to serve, so it outranks
+	 * their recorded home for the placement step, and like that it is a
+	 * suggestion every rung of which can still be changed. Carried through
+	 * sign-in with the rest of the address.
+	 */
+	const requestedBranch = params.get("branch");
+	const branchChain = useFrappeGetCall<{ message: { chain: GeoNode[] } }>(
+		API.geoChain,
+		requestedBranch ? { node: requestedBranch } : undefined,
+		isGuest || !requestedBranch ? null : `join:branch:${requestedBranch}`,
+	);
+
 	const [prefilled, setPrefilled] = useState(false);
 	const [homePrefilled, setHomePrefilled] = useState(false);
 	const changeHomeChain = (chain: GeoNode[]) => {
@@ -1068,13 +1096,17 @@ function JoinBody() {
 		// has answered could fill in a rung this path is not recorded at and then
 		// have to take it away again.
 		if (prefilled || !levels.data || resumable) return;
+		// Wait for a requested branch, so the recorded home cannot fill in first.
+		if (requestedBranch && branchChain.isLoading) return;
 
-		const chain = suggestion.data?.message?.chain;
+		const chain = branchChain.data?.message?.chain?.length
+			? branchChain.data.message.chain
+			: suggestion.data?.message?.chain;
 		if (!chain?.length) return;
 		setServingChain(usableChain(chain, allowedLevels));
 		setPrefilled(true);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [suggestion.data, levels.data, prefilled, resumable]);
+	}, [suggestion.data, branchChain.data, branchChain.isLoading, levels.data, prefilled, resumable]);
 
 	useEffect(() => {
 		if (!resumable || !levels.data) return;
@@ -1360,6 +1392,13 @@ function JoinBody() {
 				`serving-rung-${servingChain.length}`,
 				path === "member" ? "Choose your branch" : "Choose where you would like to volunteer",
 			);
+			if (path === "member" && node) {
+				need(
+					!heldMemberships.some((held) => held.branch === node.name),
+					`serving-rung-${servingChain.length}`,
+					"You already have a membership with this branch",
+				);
+			}
 
 			return gaps;
 		}
@@ -1975,7 +2014,17 @@ function JoinBody() {
 					<Spinner label="Loading your saved draft…" />
 				)}
 
-				{!sessionLoading && !isGuest && !done && openApplication && !resumable && (
+				{!sessionLoading && !isGuest && !done && alreadyVolunteer && (
+					<div className="mx-auto max-w-2xl">
+						<AlreadyVolunteer
+							branch={alreadyVolunteer.branch_label}
+							canSwitch={!otherOpen}
+							onSwitch={() => switchPath("member")}
+						/>
+					</div>
+				)}
+
+				{!sessionLoading && !isGuest && !done && !alreadyVolunteer && openApplication && !resumable && (
 					<div className="mx-auto max-w-2xl">
 						<AlreadyApplied
 							// The entry *is* this path's entry — it was read out of the
@@ -1993,6 +2042,8 @@ function JoinBody() {
 					!isGuest &&
 					!done &&
 					(!openApplication || resumable) &&
+					!alreadyVolunteer &&
+					!standing.isLoading &&
 					!draft.isLoading && (
 					<div className="grid gap-6 lg:grid-cols-[248px_minmax(0,1fr)] lg:gap-12">
 						{resumable && openApplication?.reason && (
@@ -5478,6 +5529,58 @@ function AlreadyApplied({
 						className="inline-flex items-center rounded-xl border border-card-line bg-white px-5 py-2.5 text-[13px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
 					>
 						Register as a {other} instead
+					</button>
+				)}
+			</div>
+		</Card>
+	);
+}
+
+/**
+ * Somebody the society already has as a volunteer, on the volunteer road.
+ *
+ * Approving a second application would change nothing — `volunteer.ensure`
+ * keeps the placement a volunteer has — so there is no form to offer. Moving
+ * branch is a branch transfer, which they request from their profile.
+ */
+function AlreadyVolunteer({
+	branch,
+	canSwitch,
+	onSwitch,
+}: {
+	branch: string;
+	canSwitch: boolean;
+	onSwitch: () => void;
+}) {
+	return (
+		<Card className="p-7 sm:p-9">
+			<div className="mb-5 grid h-14 w-14 place-items-center rounded-full bg-rail/[0.07] text-ink">
+				<Icon.check size={26} />
+			</div>
+
+			<h1 className="text-[26px] font-semibold leading-tight tracking-tight text-ink">
+				You're already a volunteer.
+			</h1>
+
+			<p className="mt-3 max-w-lg text-[13.5px] leading-relaxed text-muted">
+				You volunteer with {branch || "your branch"}. To move to another branch, request a transfer
+				from your profile.
+			</p>
+
+			<div className="mt-7 flex flex-wrap gap-2.5">
+				<Link
+					to="/profile"
+					className="inline-flex items-center rounded-xl bg-rail px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-rail/90"
+				>
+					Go to your profile
+				</Link>
+				{canSwitch && (
+					<button
+						type="button"
+						onClick={onSwitch}
+						className="inline-flex items-center rounded-xl border border-card-line bg-white px-5 py-2.5 text-[13px] font-bold text-slate-strong transition hover:border-blue hover:text-ink"
+					>
+						Register as a member instead
 					</button>
 				)}
 			</div>

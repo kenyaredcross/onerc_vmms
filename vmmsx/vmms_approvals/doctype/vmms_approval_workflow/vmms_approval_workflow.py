@@ -55,7 +55,7 @@ class VMMSApprovalWorkflow(Document):
 
 		contract.assert_approvable(self.workflow_for)
 
-	def validate_anchor_field(self):
+	def validate_anchor_field(self, fieldname: str | None = None):
 		"""ACC-02 — the anchor is a Link to Geo Node, and it is mandatory.
 
 		Checked here because this is the only place that knows both the field
@@ -63,12 +63,13 @@ class VMMSApprovalWorkflow(Document):
 		field that may be left empty, would produce unplaced records: invisible
 		to geo scoping and unroutable by approvals.
 		"""
-		field = frappe.get_meta(self.workflow_for).get_field(self.geo_node_field)
+		fieldname = fieldname or self.geo_node_field
+		field = frappe.get_meta(self.workflow_for).get_field(fieldname)
 
 		if not field:
 			frappe.throw(
 				_("{0} has no field {1} to anchor on.").format(
-					frappe.bold(self.workflow_for), frappe.bold(self.geo_node_field)
+					frappe.bold(self.workflow_for), frappe.bold(fieldname)
 				),
 				frappe.MandatoryError,
 				title=_("Missing Geo Anchor Field"),
@@ -78,7 +79,7 @@ class VMMSApprovalWorkflow(Document):
 			frappe.throw(
 				_("{0}.{1} must be a Link to {2}, not {3}. An anchor is never free text.").format(
 					frappe.bold(self.workflow_for),
-					frappe.bold(self.geo_node_field),
+					frappe.bold(fieldname),
 					frappe.bold(GEO_NODE_DOCTYPE),
 					frappe.bold(field.fieldtype),
 				),
@@ -90,7 +91,7 @@ class VMMSApprovalWorkflow(Document):
 				_(
 					"{0}.{1} must be mandatory. Every operational record is anchored to a Geo Node"
 					" at creation — there are no unplaced records."
-				).format(frappe.bold(self.workflow_for), frappe.bold(self.geo_node_field)),
+				).format(frappe.bold(self.workflow_for), frappe.bold(fieldname)),
 				title=_("Anchor Not Mandatory"),
 			)
 
@@ -150,6 +151,12 @@ class VMMSApprovalWorkflow(Document):
 				),
 				title=_("Unknown Resolution Rule"),
 			)
+
+		# A stage routed from another field on the record — a transfer's second
+		# stage, decided where the volunteer is going — holds that field to the
+		# same rule as the workflow's own anchor.
+		if stage.get("anchor_field"):
+			self.validate_anchor_field(stage.anchor_field)
 
 		if stage.resolution_rule == routing.RULE_AT_LEVEL and not stage.geo_level:
 			frappe.throw(

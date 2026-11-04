@@ -134,6 +134,16 @@ const QUEUE_MEMBERS: TabDef = {
 // from HRMS's `Job Opening` / `Job Applicant` — a *companion* section, because
 // vmmsx does not require HRMS and a society running without it has no
 // recruitment at all rather than a broken tab.
+// Volunteers moving between branches: leaving this coordinator's branch, and
+// joining it. Its own section because it is its own permission — the transfer
+// is scoped on both of its branches, not on the volunteer register.
+const TRANSFERS: TabDef = {
+	section: "transfers",
+	to: "/admin/transfers",
+	labelKey: "admin.nav.transfers",
+	fallback: "Branch transfers",
+	icon: Icon.arrow,
+};
 const OPENINGS: TabDef = {
 	section: "recruitment",
 	to: "/admin/recruitment/openings",
@@ -259,7 +269,7 @@ const PEOPLE: GroupDef = {
 	// them rather than in a recruitment tab of its own across the rail. The two
 	// recruitment rows drop out entirely on a site without HRMS, which is why
 	// `narrowGroup` below has to cope with a group losing half its children.
-	children: [QUEUE_VOLUNTEERS, QUEUE_MEMBERS, OPENINGS, JOB_APPLICATIONS, MEMBERS, VOLUNTEERS],
+	children: [QUEUE_VOLUNTEERS, QUEUE_MEMBERS, OPENINGS, JOB_APPLICATIONS, MEMBERS, VOLUNTEERS, TRANSFERS],
 };
 
 // The queue left People & Insight and became a group of its own. That group
@@ -452,7 +462,7 @@ export default function AdminLayout() {
 	// `recruitment` belongs in the list because recruitment moved into this
 	// group; while it was missing, somebody holding only job openings had the
 	// row and would have had no panel to reach the second page with.
-	if (["queue", "registry", "recruitment", "analytics"].some((section) => allowed.has(section))) {
+	if (["queue", "registry", "recruitment", "analytics", "transfers"].some((section) => allowed.has(section))) {
 		allowed.add("people");
 	}
 

@@ -55,8 +55,17 @@ class VMMSBranchTransfer(Document):
 			self.transfer_status = transfer_service.STATUS_PENDING
 
 	def on_update(self):
-		"""Re-evaluate whether the placement should move now. Idempotent."""
+		"""Re-evaluate whether the placement should move now, then tell the volunteer.
+
+		Idempotent. The volunteer hears when it is approved or declined — see
+		`transfer_requests.on_update`, which compares against the document as it
+		was before this save.
+		"""
+		from vmmsx.deployment.services import transfer_requests
+
+		previous = self.get_doc_before_save()
 		transfer_service.try_apply(self)
+		transfer_requests.on_update(self, previous)
 
 	def on_trash(self):
 		"""A transfer that moved somebody is not deletable.
