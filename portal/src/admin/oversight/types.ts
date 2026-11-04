@@ -63,6 +63,8 @@ export interface Overview {
 		without_head: Place[];
 		lent_out: number;
 	};
+	/** The reader's records are not reachable yet on this site; say so. */
+	access_pending?: boolean;
 	/** The region tab only: the areas this person may switch between. */
 	areas?: Place[];
 }

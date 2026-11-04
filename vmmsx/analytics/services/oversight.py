@@ -590,6 +590,21 @@ def counties(area: str) -> list[dict]:
 	return _units(_tree(area), area)
 
 
+def access_pending(user: str | None = None) -> bool:
+	"""True for somebody whose only view of the region is the oversight role,
+	on a site whose onerc_core cannot yet admit that role to any record."""
+	from vmmsx.setup.regional_oversight import core_reads_through_oversight_role, role
+
+	user = user or frappe.session.user
+
+	if core_reads_through_oversight_role() or user == "Administrator" or "System Manager" in frappe.get_roles(user):
+		return False
+
+	oversight = role()
+
+	return bool(oversight and oversight in frappe.get_roles(user))
+
+
 def national_area() -> str | None:
 	"""The top of the tree. One root is a society; several is a tree to fix."""
 	from onerc_core.geo.services import adapter

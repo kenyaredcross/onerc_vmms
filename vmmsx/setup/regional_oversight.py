@@ -116,6 +116,19 @@ def _digest_fields() -> None:
 		create_custom_field(SETTINGS_DOCTYPE, dict(field), ignore_validate=True)
 
 
+def core_reads_through_oversight_role() -> bool:
+	"""Does the installed onerc_core let the oversight role read?
+
+	The reading role is an onerc_core capability that is not committed there;
+	it is applied per site from `deploy/onerc_core-read-role/`. Without it the
+	role still exists and still routes the regional approval stage, but core
+	admits its holders to no records, so they see nothing.
+	"""
+	from onerc_core.access.services import registry
+
+	return hasattr(registry, "READ_ROLE_SETTING_KEY")
+
+
 def role() -> str | None:
 	"""The society's regional oversight role, or None if it has not named one."""
 	from onerc_core.society.services import config

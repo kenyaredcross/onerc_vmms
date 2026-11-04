@@ -1,0 +1,312 @@
+diff --git a/onerc_core/access/services/enforcement.py b/onerc_core/access/services/enforcement.py
+index 30c7d70..fe32699 100644
+--- a/onerc_core/access/services/enforcement.py
++++ b/onerc_core/access/services/enforcement.py
+@@ -34,6 +34,11 @@ from frappe import _
+ 
+ from onerc_core.access.services import registry, scope
+ 
++# The permission types a registration's reading role is admitted for. Every
++# other type (write, create, submit, cancel, delete, amend, share) is decided by
++# the registration's own role alone.
++READ_PTYPES = frozenset({"read", "select", "report", "print", "export", "email"})
++
+ # A condition that is false for every row. Returned when a user's scope is
+ # empty: the layer must express "matches nothing", and an empty string would
+ # mean "no filter" — the exact inversion of what an empty scope means.
+@@ -66,7 +71,8 @@ def get_permission_query_conditions(user: str | None = None, doctype: str | None
+ 		# here would break every list view on the site instead of one doctype's.
+ 		return DENY_ALL
+ 
+-	nodes = scope.get_user_geo_scope(user, role)
++	# A list is a read, so the reading role's area counts as well.
++	nodes = _scope_for(user, registration, role, "read")
+ 
+ 	if not nodes:
+ 		return DENY_ALL
+@@ -96,10 +102,12 @@ def has_permission(doc=None, ptype: str | None = None, user: str | None = None,
+ 
+ 	field = registry.geo_node_field(doc.doctype)
+ 
+-	return is_in_scope(doc.doctype, doc.get(field), user)
++	return is_in_scope(doc.doctype, doc.get(field), user, ptype=ptype or "read")
+ 
+ 
+-def is_in_scope(doctype: str, geo_node: str | None, user: str | None = None) -> bool:
++def is_in_scope(
++	doctype: str, geo_node: str | None, user: str | None = None, ptype: str | None = None
++) -> bool:
+ 	"""The shared verdict: may `user` reach a record of `doctype` at `geo_node`?
+ 
+ 	Used by the document layer and the API guard so the two cannot drift. Returns
+@@ -128,10 +136,28 @@ def is_in_scope(doctype: str, geo_node: str | None, user: str | None = None) ->
+ 		# becomes decorative.
+ 		return False
+ 
+-	return geo_node in scope.get_user_geo_scope(user, role)
++	return geo_node in _scope_for(user, registration, role, ptype)
++
++
++def _scope_for(user: str, registration: dict, role: str, ptype: str | None) -> set[str]:
++	"""The nodes `user` reaches for this doctype, for this kind of access.
++
++	The registration's role always counts. Its reading role counts only for a
++	read: `ptype=None`, which is how callers that act on a record have always
++	called `is_in_scope`, stays the role's area alone.
++	"""
++	nodes = set(scope.get_user_geo_scope(user, role))
++
++	if ptype in READ_PTYPES:
++		reader = registry.resolve_read_role(registration)
++
++		if reader and reader != role:
++			nodes |= scope.get_user_geo_scope(user, reader)
++
++	return nodes
+ 
+ 
+-def guard(doctype: str, name: str, user: str | None = None) -> None:
++def guard(doctype: str, name: str, user: str | None = None, ptype: str | None = None) -> None:
+ 	"""Raise `frappe.PermissionError` unless the record is in the user's scope.
+ 
+ 	What a custom endpoint calls before returning anything about a record.
+@@ -153,7 +179,7 @@ def guard(doctype: str, name: str, user: str | None = None) -> None:
+ 	field = registry.geo_node_field(doctype)
+ 	geo_node = frappe.db.get_value(doctype, name, field) if name else None
+ 
+-	if is_in_scope(doctype, geo_node, user):
++	if is_in_scope(doctype, geo_node, user, ptype=ptype):
+ 		return
+ 
+ 	# The resolved role, so the message names the role the society actually
+diff --git a/onerc_core/access/services/registry.py b/onerc_core/access/services/registry.py
+index c914597..4ac4819 100644
+--- a/onerc_core/access/services/registry.py
++++ b/onerc_core/access/services/registry.py
+@@ -81,6 +81,12 @@ ROLE_KEY = "role"
+ ROLE_SETTING_KEY = "role_from_setting"
+ ROLE_KEYS = (ROLE_KEY, ROLE_SETTING_KEY)
+ 
++# Optional, and never instead of the role above: the National Society Settings
++# field naming a role that may also *read* this doctype in the area it is
++# assigned, and do nothing else. Oversight, not authority — see
++# `resolve_read_role()`.
++READ_ROLE_SETTING_KEY = "read_role_from_setting"
++
+ # Kept for message text and for anything reading the historical name. A static
+ # registration still consists of exactly these three keys and nothing else.
+ REQUIRED_KEYS = (*BASE_KEYS, ROLE_KEY)
+@@ -230,6 +236,48 @@ def resolve_role(registration: dict) -> str | None:
+ 	return role
+ 
+ 
++def resolve_read_role(registration: dict) -> str | None:
++	"""A second role that may read this doctype in its assigned area, or None.
++
++	**Reading only.** The registration's own role stays the one role whose scope
++	governs writing, submitting, deleting and every other act; this role widens
++	who may *open* a record, never who may change it. The case it exists for is
++	oversight one rung up: somebody responsible for a region who must see every
++	county's volunteers and members in it without being made the officer who
++	edits them.
++
++	Unset is normal (a society that appoints nobody to oversee) and returns None
++	without a log entry. A value naming no role is a misconfiguration and is
++	logged, and the extra reader is simply not granted: unlike the main role,
++	failing to resolve this one takes nothing away from anybody.
++	"""
++	fieldname = registration.get(READ_ROLE_SETTING_KEY)
++
++	if not fieldname:
++		return None
++
++	from onerc_core.society.services import config
++
++	role = (config.settings().get(fieldname) or "").strip()
++
++	if not role:
++		return None
++
++	if not frappe.db.exists("Role", role):
++		frappe.log_error(
++			title=UNRESOLVED_ROLE_LOG_TITLE,
++			message=(
++				f"{registration.get('doctype')} names {role!r} in National Society Settings"
++				f" {fieldname!r} as a reading role, and no such role exists. Nobody was given"
++				f" extra read access. Registration: {registration}"
++			),
++		)
++
++		return None
++
++	return role
++
++
+ def settings_backed_registrations() -> list[dict]:
+ 	"""Every registration whose role comes from a settings field.
+ 
+@@ -291,6 +339,9 @@ def _validated(raw) -> dict:
+ 	entry = {key: str(raw[key]) for key in BASE_KEYS}
+ 	entry[_role_key(raw)] = str(raw[_role_key(raw)])
+ 
++	if raw.get(READ_ROLE_SETTING_KEY):
++		entry[READ_ROLE_SETTING_KEY] = str(raw[READ_ROLE_SETTING_KEY])
++
+ 	return entry
+ 
+ 
+diff --git a/onerc_core/access/tests/test_read_role.py b/onerc_core/access/tests/test_read_role.py
+new file mode 100644
+index 0000000..2c27335
+--- /dev/null
++++ b/onerc_core/access/tests/test_read_role.py
+@@ -0,0 +1,149 @@
++# Copyright (c) 2026, Kelvin Njenga and contributors
++# For license information, please see license.txt
++
++"""A registration's reading role widens who may open a record, never who may act.
++
++The case: somebody responsible for a region must see every county's records in
++it without becoming the officer who edits them. The registration's own role
++keeps governing every act; `read_role_from_setting` adds a second role whose
++area counts for reads only.
++
++The stand-in doctype gives both test roles full DocPerms, so the *only* thing
++keeping the reader from writing is this layer. A test that passed because the
++DocPerm said no would prove nothing.
++"""
++
++import frappe
++from frappe.tests import IntegrationTestCase
++
++from onerc_core.access.services import enforcement, registry
++from onerc_core.access.services.registry import READ_ROLE_SETTING_KEY, SCOPEABLE_DOCTYPE_HOOK
++from onerc_core.access.tests import fixtures
++
++EXTRA_TEST_RECORD_DEPENDENCIES = []
++
++NONEXISTENT_ROLE = "ACC-TEST Reading Role That Does Not Exist"
++
++
++def reading_registration() -> dict:
++	return {**fixtures.registration(fixtures.APPROVER_ROLE), READ_ROLE_SETTING_KEY: fixtures.SCOPE_ROLE_SETTING}
++
++
++class ReadRoleTestCase(IntegrationTestCase):
++	@classmethod
++	def setUpClass(cls):
++		super().setUpClass()
++
++		fixtures.ensure_scoped_doctype()
++		fixtures.ensure_setting_field()
++		fixtures.reset()
++
++		cls.tree = fixtures.build_tree()
++		cls.records = {
++			key: fixtures.make_record(key, cls.tree[key]) for key in ("county_a", "ward_a1", "county_b", "county_c")
++		}
++
++		# The county officer acts in County A. The regional reader holds the
++		# reading role over the whole region.
++		cls.officer = fixtures.make_user("read_officer", [fixtures.APPROVER_ROLE])
++		cls.reader = fixtures.make_user("read_regional", [fixtures.VIEWER_ROLE])
++		fixtures.make_assignment(cls.officer, fixtures.APPROVER_ROLE, cls.tree["county_a"])
++		fixtures.make_assignment(cls.reader, fixtures.VIEWER_ROLE, cls.tree["region"])
++
++	@classmethod
++	def tearDownClass(cls):
++		frappe.db.rollback()
++		fixtures.teardown()
++		super().tearDownClass()
++
++	def setUp(self):
++		super().setUp()
++		self.addCleanup(frappe.set_user, "Administrator")
++		self.addCleanup(fixtures.set_scope_role_setting, None)
++		fixtures.set_scope_role_setting(fixtures.VIEWER_ROLE)
++
++	def registered(self):
++		return self.patch_hooks({SCOPEABLE_DOCTYPE_HOOK: [reading_registration()]})
++
++	def listed_by(self, user: str) -> set[str]:
++		frappe.set_user(user)
++		names = set(frappe.get_list(fixtures.SCOPED_DOCTYPE, pluck="name", limit_page_length=0))
++		frappe.set_user("Administrator")
++		return names
++
++	def may(self, user: str, key: str, ptype: str) -> bool:
++		doc = frappe.get_doc(fixtures.SCOPED_DOCTYPE, self.records[key])
++		return frappe.has_permission(fixtures.SCOPED_DOCTYPE, doc=doc, user=user, ptype=ptype)
++
++	def guard_permits(self, user: str, key: str, ptype: str | None = None) -> bool:
++		try:
++			enforcement.guard(fixtures.SCOPED_DOCTYPE, self.records[key], user=user, ptype=ptype)
++		except frappe.PermissionError:
++			return False
++		return True
++
++	# --- the registration -------------------------------------------------
++
++	def test_the_key_is_kept_and_optional(self):
++		with self.registered():
++			entry = registry.for_doctype(fixtures.SCOPED_DOCTYPE)
++
++		self.assertEqual(entry[READ_ROLE_SETTING_KEY], fixtures.SCOPE_ROLE_SETTING)
++		self.assertNotIn(READ_ROLE_SETTING_KEY, registry._validated(fixtures.registration()))
++
++	# --- reading ------------------------------------------------------------
++
++	def test_reader_lists_and_opens_every_county_in_the_region(self):
++		with self.registered():
++			listed = self.listed_by(self.reader)
++
++			for key in self.records:
++				with self.subTest(key=key):
++					self.assertIn(self.records[key], listed)
++					self.assertTrue(self.may(self.reader, key, "read"))
++					self.assertTrue(self.guard_permits(self.reader, key, ptype="read"))
++
++	# --- acting -------------------------------------------------------------
++
++	def test_reader_cannot_write_although_the_docperm_would_allow_it(self):
++		with self.registered():
++			for ptype in ("write", "create", "delete", "submit"):
++				with self.subTest(ptype=ptype):
++					self.assertFalse(self.may(self.reader, "county_b", ptype))
++
++	def test_an_acting_guard_ignores_the_reading_role(self):
++		"""`guard` called without a ptype is how endpoints that act have always called it."""
++		with self.registered():
++			self.assertFalse(self.guard_permits(self.reader, "county_b"))
++
++	# --- the officer is unchanged -------------------------------------------
++
++	def test_the_officer_keeps_exactly_their_own_county(self):
++		with self.registered():
++			listed = self.listed_by(self.officer)
++
++			self.assertEqual(listed, {self.records["county_a"], self.records["ward_a1"]})
++			self.assertTrue(self.may(self.officer, "county_a", "write"))
++			self.assertFalse(self.may(self.officer, "county_b", "read"))
++
++	# --- configuration -------------------------------------------------------
++
++	def test_unset_grants_nothing_and_logs_nothing(self):
++		fixtures.set_scope_role_setting(None)
++		before = fixtures.scope_role_log_count()
++
++		with self.registered():
++			self.assertEqual(self.listed_by(self.reader), set())
++
++		self.assertEqual(fixtures.scope_role_log_count(), before)
++
++	def test_a_role_that_does_not_exist_grants_nothing_and_is_logged(self):
++		fixtures.set_scope_role_setting(NONEXISTENT_ROLE)
++		before = fixtures.scope_role_log_count()
++
++		with self.registered():
++			self.assertEqual(self.listed_by(self.reader), set())
++			# The officer's own access does not depend on the reading role.
++			self.assertIn(self.records["county_a"], self.listed_by(self.officer))
++
++		self.assertGreater(fixtures.scope_role_log_count(), before)

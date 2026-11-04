@@ -32,6 +32,8 @@ nobody, decided by nobody — and `repair.resync_pending` routes everything park
 the moment the workflow arrives. See `park`.
 """
 
+import inspect
+
 import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, now_datetime
@@ -191,7 +193,7 @@ def decide(doc, decision: str, reason: str | None = None, user: str | None = Non
 	# doctype (a region's oversight role registered as its reading role), and
 	# asking for the doctype's acting role would refuse the very person the
 	# stage named.
-	guard(doc.doctype, doc.name, user, ptype="read")
+	_guard_read(doc.doctype, doc.name, user)
 
 	if user not in auth["approvers"]:
 		frappe.throw(
@@ -779,3 +781,21 @@ def _save_transition(doc, ignore_permissions: bool = False):
 		doc.save(ignore_permissions=ignore_permissions)
 	finally:
 		frappe.flags.vmms_approval_transition = previous
+
+
+def _guard_read(doctype: str, name: str, user: str) -> None:
+	"""Core's scope check, asked as a read where the installed core can be.
+
+	Asking as a read lets an onerc_core carrying the reading-role patch (see
+	`deploy/onerc_core-read-role/`) admit a regional oversight approver. An
+	onerc_core without it takes no `ptype` and answers for the doctype's own
+	role, which is how this was always asked before; a site there simply has no
+	regional approvers who could need more.
+	"""
+	if GUARD_TAKES_PTYPE:
+		guard(doctype, name, user, ptype="read")
+	else:
+		guard(doctype, name, user)
+
+
+GUARD_TAKES_PTYPE = "ptype" in inspect.signature(guard).parameters

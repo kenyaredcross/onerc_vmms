@@ -136,6 +136,14 @@ export function AreaView({ mode, title }: { mode: Mode; title: ReactNode }) {
 			/>
 
 			<div className="space-y-5">
+				{view.access_pending && (
+					<div className="rounded-xl border border-card-line bg-blue-soft px-4 py-3 text-[13px] text-ink">
+						Your access to the records in this {mode === "region" ? "region" : "country"} has not been
+						switched on yet, so the figures below are empty. Ask your system administrator to finish
+						setting it up.
+					</div>
+				)}
+
 				<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
 					<MetricCard label="Active volunteers" value={view.totals.volunteers} icon={<Icon.people size={19} />} />
 					<MetricCard

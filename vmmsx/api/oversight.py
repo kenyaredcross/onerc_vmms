@@ -37,7 +37,7 @@ def region(area: str | None = None, place: str | None = None) -> dict:
 	allowed = {row["name"] for row in areas}
 	area = area if area in allowed else areas[0]["name"]
 
-	return {**oversight.overview(area, place), "areas": areas}
+	return {**oversight.overview(area, place), "areas": areas, "access_pending": oversight.access_pending()}
 
 
 @frappe.whitelist()
@@ -51,7 +51,7 @@ def national(place: str | None = None) -> dict:
 	if not area:
 		frappe.throw(_("The society's places have not been set up yet."))
 
-	return oversight.overview(area, place)
+	return {**oversight.overview(area, place), "access_pending": oversight.access_pending()}
 
 
 @frappe.whitelist()

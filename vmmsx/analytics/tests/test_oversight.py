@@ -9,6 +9,9 @@ register at. Society B's Delta is another country entirely, so a count that
 leaks across the top of the tree shows up as a wrong number.
 """
 
+import unittest
+from unittest.mock import patch
+
 import frappe
 from frappe.utils import add_years, nowdate
 
@@ -20,6 +23,13 @@ from vmmsx.setup import regional_oversight
 from onerc_core.geo.tests import fixtures as geo_fixtures
 
 HEAD_ROLE = f"{fixtures.TEST_PREFIX} Head of Region"
+
+# A Head of Region reads through onerc_core's reading role, which is applied per
+# site from deploy/onerc_core-read-role/ rather than committed to onerc_core.
+needs_reading_role = unittest.skipUnless(
+	regional_oversight.core_reads_through_oversight_role(),
+	"onerc_core has no reading role here: apply deploy/onerc_core-read-role/",
+)
 ASSET_DOCTYPE = "VMMS Branch Asset"
 
 
@@ -89,6 +99,7 @@ class TestOversight(DeploymentTestCase):
 
 	# --- the region -----------------------------------------------------------
 
+	@needs_reading_role
 	def test_a_region_is_laid_out_county_by_county(self):
 		with fixtures.acting_as(self.head):
 			result = oversight.overview(self.karura)
@@ -98,6 +109,7 @@ class TestOversight(DeploymentTestCase):
 		self.assertEqual(self.row(result, self.banana)["volunteers"], 1)
 		self.assertEqual(result["totals"]["volunteers"], 3)
 
+	@needs_reading_role
 	def test_materials_count_what_is_lent_out(self):
 		with fixtures.acting_as(self.head):
 			ruaka = self.row(oversight.overview(self.karura), self.ruaka)
@@ -110,6 +122,15 @@ class TestOversight(DeploymentTestCase):
 
 		self.assertEqual(result["totals"]["volunteers"], 0)
 
+	def test_a_head_of_region_is_told_when_their_access_is_not_on(self):
+		with patch.object(regional_oversight, "core_reads_through_oversight_role", return_value=False):
+			self.assertTrue(oversight.access_pending(self.head))
+			self.assertFalse(oversight.access_pending(self.county))
+			self.assertFalse(oversight.access_pending("Administrator"))
+
+		with patch.object(regional_oversight, "core_reads_through_oversight_role", return_value=True):
+			self.assertFalse(oversight.access_pending(self.head))
+
 	def test_counts_inside_a_region_are_still_the_callers_scope(self):
 		with fixtures.acting_as(self.county):
 			result = oversight.overview(self.karura)
@@ -117,6 +138,7 @@ class TestOversight(DeploymentTestCase):
 		self.assertEqual(self.row(result, self.ruaka)["volunteers"], 2)
 		self.assertEqual(self.row(result, self.banana)["volunteers"], 0)
 
+	@needs_reading_role
 	def test_a_selected_county_gets_its_breakdowns(self):
 		with fixtures.acting_as(self.head):
 			result = oversight.overview(self.karura, self.ruaka)
@@ -128,6 +150,7 @@ class TestOversight(DeploymentTestCase):
 		ages = {row["label"]: row["count"] for row in people["age"]}
 		self.assertEqual((ages["18–35"], ages["36–59"]), (1, 1))
 
+	@needs_reading_role
 	def test_a_place_outside_the_area_selects_nothing(self):
 		with fixtures.acting_as(self.head):
 			result = oversight.overview(self.karura, self.tigoni)
