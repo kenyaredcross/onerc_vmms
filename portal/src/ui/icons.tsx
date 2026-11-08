@@ -60,6 +60,8 @@ export const Icon = {
 	/** Beside a field somebody may read and not write. The only one is the email. */
 	lock: (p: IconProps) => <Glyph {...p} d="M8 10V7a4 4 0 1 1 8 0v3M5 10h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" />,
 	plus: (p: IconProps) => <Glyph {...p} d="M12 5v14M5 12h14" />,
+	/** Removing an entry from a repeating section of a form. */
+	trash: (p: IconProps) => <Glyph {...p} d="M4 7h16M10 11v6m4-6v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />,
 	/** The overflow control at the end of a row. */
 	dots: (p: IconProps) => <Glyph {...p} d="M12 6.5v.01M12 12v.01M12 17.5v.01" />,
 	arrow: (p: IconProps) => <Glyph {...p} d="M5 12h14m-6-7 7 7-7 7" />,

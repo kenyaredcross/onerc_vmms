@@ -186,6 +186,7 @@ class TestCorrectingYourOwnProfile(RegistrationTestCase):
 				# about something else answers it.
 				disability_status="Prefer not to say",
 				declarations_accepted=fixtures.required_declarations(),
+				emergency_contacts=fixtures.emergency_contact(),
 			)
 
 		profile = self.profile_of(user)

@@ -134,11 +134,17 @@ def assert_ready(application) -> None:
 	required to hold a half-finished draft. `assert_answered` is a no-op until
 	somebody creates a question, so a society that has added none is unaffected.
 
-	**What is deliberately not here.** Emergency contacts and a minor's guardian
-	consent are required to *approve*, not to submit — see `assert_approvable`.
-	An applicant should be able to send their application in and have the branch
-	chase the missing consent form, rather than being turned away at the door by
-	a requirement somebody else has to satisfy.
+	**An emergency contact is required here as well as at approval.** It used to
+	be an approval condition only, which let applications arrive that no
+	approver could approve until the branch chased a contact the applicant could
+	have typed in. `assert_approvable` keeps its own check for records that
+	never came through this door (imports, desk edits).
+
+	**What is deliberately not here.** A minor's guardian consent is required to
+	*approve*, not to submit — see `assert_approvable`. An applicant should be
+	able to send their application in and have the branch chase the consent
+	form, rather than being turned away at the door by a requirement somebody
+	else has to satisfy.
 	"""
 	from vmmsx.registration.services import parity
 
@@ -149,8 +155,21 @@ def assert_ready(application) -> None:
 	_assert_date_of_birth(application)
 	_assert_disability_answered(application)
 	_assert_residency_complete(application)
+	_assert_emergency_contact_given(application)
 	questions.assert_answered(application)
 	declarations.assert_accepted(application)
+
+
+def _assert_emergency_contact_given(application) -> None:
+	"""At least one emergency contact the applicant lets us call, before submitting."""
+	if any(row.may_contact_in_emergency for row in application.get("emergency_contacts") or []):
+		return
+
+	frappe.throw(
+		_("Add an emergency contact we may call before submitting."),
+		frappe.MandatoryError,
+		title=_("Emergency Contact Needed"),
+	)
 
 
 def _assert_country_of_citizenship(application) -> None:

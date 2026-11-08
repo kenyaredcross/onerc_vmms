@@ -234,7 +234,30 @@ def application_options() -> dict:
 		# recording the verification, but served with the rest of the vocabulary
 		# because it is configuration like everything else in this payload.
 		"guardian_verification_methods": _vocabulary("VMMS Guardian Verification Method", "method_name"),
+		# How an emergency contact knows the applicant, in the society's order.
+		"relationships": _relationships(),
 	}
+
+
+def _relationships() -> list[dict]:
+	"""The active `VMMS Relationship` rows, ordered by `sequence`.
+
+	Not `_vocabulary`, which sorts by label: "Mother" and "Father" belong at the
+	top, not between "Friend" and "Neighbour". Empty before the patch has run,
+	which the form draws as an empty list rather than an error.
+	"""
+	if not frappe.db.table_exists("VMMS Relationship"):
+		return []
+
+	return [
+		{"key": row["name"], "label": row["name"], "description": row["description"]}
+		for row in frappe.get_all(
+			"VMMS Relationship",
+			filters={"is_active": 1},
+			fields=["name", "description"],
+			order_by="sequence asc, name asc",
+		)
+	]
 
 
 def _vocabulary(doctype: str, label_field: str) -> list[dict]:

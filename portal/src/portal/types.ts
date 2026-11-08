@@ -748,6 +748,8 @@ export interface ApplicationOptions {
 	 */
 	minor_age: number | null;
 	guardian_verification_methods: VocabularyRow[];
+	/** `VMMS Relationship`, active rows in the society's order. Absent on an older server. */
+	relationships?: VocabularyRow[];
 }
 
 /**

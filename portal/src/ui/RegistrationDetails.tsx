@@ -1,6 +1,6 @@
 import type { IdentityOptions, PersonalDetails } from "../portal/types";
 import { FileLink, fileNameOf } from "./FilePreview";
-import { Field, FieldSet, PrivateUpload, SelectInput, TextInput } from "./form";
+import { Field, FieldSet, PrivateUpload, RemoveRowButton, RowHeading, SelectInput, TextInput } from "./form";
 import { Button } from "./primitives";
 
 type DocumentType = NonNullable<IdentityOptions["supporting_document_types"]>[number];
@@ -82,6 +82,10 @@ export function RegistrationDetails({
 	const requiredTypes = documentTypes.filter((type) => type.is_required);
 	const requiredKeys = new Set(requiredTypes.map((type) => type.key));
 	const optionalTypes = documentTypes.filter((type) => !type.is_required);
+	// Required documents are uploaded in their own block above, so the entries
+	// here are numbered among themselves: the first one shown is Document 1.
+	const documentNumber = (at: number) =>
+		rows.slice(0, at + 1).filter((row) => !requiredKeys.has(row.type)).length;
 	const updateDocument = (at: number, patch: Partial<(typeof rows)[number]>) =>
 		set(
 			"supporting_documents",
@@ -166,17 +170,15 @@ export function RegistrationDetails({
 										/>
 									</Field>
 								</div>
-								<Button
-									variant="ghost"
+								<RemoveRowButton
+									label={`Remove skill ${index + 1}`}
 									onClick={() =>
 										set(
 											"additional_skills",
 											(value.additional_skills ?? []).filter((_, at) => at !== index),
 										)
 									}
-								>
-									Remove skill
-								</Button>
+								/>
 							</div>
 						))}
 						<Button
@@ -214,17 +216,15 @@ export function RegistrationDetails({
 											/>
 										</Field>
 									</div>
-									<Button
-										variant="ghost"
+									<RemoveRowButton
+										label={`Remove allergy ${index + 1}`}
 										onClick={() =>
 											set(
 												"allergies",
 												(value.allergies ?? []).filter((_, at) => at !== index),
 											)
 										}
-									>
-										Remove allergy
-									</Button>
+									/>
 								</div>
 							))}
 							<Button
@@ -280,6 +280,16 @@ export function RegistrationDetails({
 							{rows.map((row, index) =>
 								requiredKeys.has(row.type) ? null : (
 									<div key={index} className="space-y-3 rounded-xl border border-card-line p-4">
+										<RowHeading
+											label={`Document ${documentNumber(index)}`}
+											removeLabel={`Remove document ${documentNumber(index)}`}
+											onRemove={() =>
+												set(
+													"supporting_documents",
+													rows.filter((_, at) => at !== index),
+												)
+											}
+										/>
 										<Field
 											label="Document type"
 											htmlFor={`${idPrefix}-doc-type-${index}`}
@@ -319,17 +329,6 @@ export function RegistrationDetails({
 											choose={`Upload ${row.type || "document"}`}
 											onChange={(next) => updateDocument(index, { attachment: next })}
 										/>
-										<Button
-											variant="ghost"
-											onClick={() =>
-												set(
-													"supporting_documents",
-													rows.filter((_, at) => at !== index),
-												)
-											}
-										>
-											Remove document
-										</Button>
 									</div>
 								),
 							)}

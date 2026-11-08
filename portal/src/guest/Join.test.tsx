@@ -136,6 +136,11 @@ const OPTIONS: ApplicationOptions = {
 	declarations: [],
 	minor_age: null,
 	guardian_verification_methods: [],
+	relationships: ["Mother", "Father", "Sibling", "Friend", "Other"].map((name) => ({
+		key: name,
+		label: name,
+		description: null,
+	})),
 };
 
 /** The four a society actually ships, trimmed to two for a readable assertion. */
@@ -704,10 +709,23 @@ async function walkTo(heading: string) {
 				fireEvent.click(screen.getByRole("option", { name: choice }));
 			}
 		}
+		// The emergency contact is required to submit, so a walk past it gives one.
+		if (screen.queryByRole("heading", { name: "Emergency contact" })) fillFirstContact();
 		await goOn();
 	}
 
 	await screen.findByRole("heading", { name: heading });
+}
+
+/** One complete emergency contact, typed into the first contact's fields. */
+function fillFirstContact() {
+	fireEvent.change(screen.getAllByLabelText(/^Full name/)[0], { target: { value: "Mercy Otieno" } });
+	fireEvent.change(screen.getAllByLabelText(/^Relationship(?! to applicant)/)[0], {
+		target: { value: "Sibling" },
+	});
+	fireEvent.change(screen.getAllByLabelText(/^Phone number/)[0], {
+		target: { value: "+255700000001" },
+	});
 }
 
 describe("what a volunteer agrees to", () => {
@@ -797,12 +815,35 @@ describe("who to call, and who says a minor may volunteer", () => {
 		reads.set(API.myProfile, IDENTIFIED);
 	});
 
-	it("asks for somebody to call, and lets the step be walked past", async () => {
+	it("asks for somebody to call, and holds the step until one is given", async () => {
 		await walkTo("Emergency contact");
 
 		expect(screen.getByLabelText(/^Full name/)).toBeTruthy();
-		// A condition of approval, not of submission: the branch can chase it.
+		// Required to submit, the same as `assert_ready` on the server.
+		expect(held()).toBe(true);
+
+		fillFirstContact();
+
 		expect(held()).toBe(false);
+	});
+
+	it("offers the relationship as a choice from the society's list", async () => {
+		await walkTo("Emergency contact");
+
+		const relationship = screen.getByLabelText(/^Relationship(?! to applicant)/);
+		const offered = Array.from(relationship.querySelectorAll("option")).map((option) => option.value);
+
+		expect(relationship.tagName).toBe("SELECT");
+		expect(offered).toEqual(["", "Mother", "Father", "Sibling", "Friend", "Other"]);
+	});
+
+	it("holds the step when the only contact may not be called", async () => {
+		await walkTo("Emergency contact");
+
+		fillFirstContact();
+		fireEvent.click(screen.getByLabelText(/Permission to contact in an emergency/));
+
+		expect(held()).toBe(true);
 	});
 
 	it("refuses a contact that is missing any of the three the record insists on", async () => {
@@ -822,17 +863,16 @@ describe("who to call, and who says a minor may volunteer", () => {
 		// letting somebody meet that refusal.
 		expect(held()).toBe(true);
 
-		fireEvent.change(screen.getByLabelText(/^Relationship(?! to applicant)/), { target: { value: "Sister" } });
+		fireEvent.change(screen.getByLabelText(/^Relationship(?! to applicant)/), { target: { value: "Sibling" } });
 
 		expect(held()).toBe(false);
 	});
 
-	it("sends nothing at all when the contact was left blank", async () => {
+	it("will not go on with the contact left blank", async () => {
 		await walkTo("Emergency contact");
 		await goOn();
 
-		await waitFor(() => expect(posted.length).toBeGreaterThan(0));
-		expect(posted[posted.length - 1].payload.emergency_contacts).toEqual([]);
+		expect(screen.getByRole("heading", { name: "Emergency contact" })).toBeTruthy();
 	});
 
 	it("says nothing about a guardian for a society with no age of majority", async () => {
@@ -1004,7 +1044,7 @@ describe("more than one of a thing", () => {
 
 		fireEvent.change(screen.getAllByLabelText(/^Full name/)[1], { target: { value: "Juma" } });
 		fireEvent.change(screen.getAllByLabelText(/^Relationship(?! to applicant)/)[1], {
-			target: { value: "Brother" },
+			target: { value: "Sibling" },
 		});
 		fireEvent.change(screen.getAllByLabelText(/^Phone number/)[1], {
 			target: { value: "+255700000003" },

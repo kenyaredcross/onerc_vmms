@@ -37,6 +37,7 @@ import {
 	FieldSet,
 	MultiCombo,
 	PrivateUpload,
+	RowHeading,
 	SelectInput,
 	TextArea,
 	TextInput,
@@ -458,6 +459,17 @@ function guardianIsUsable(guardian: GuardianConsent): boolean {
 	return Boolean(
 		guardian.guardian_name.trim() && guardian.relationship.trim() && guardian.phone.trim(),
 	);
+}
+
+/**
+ * The relationship picker's choices: the society's active list, plus the value a
+ * saved contact already holds if the society has since switched it off, so a
+ * resumed draft shows what was chosen rather than an empty select.
+ */
+function relationshipChoices(list: VocabularyRow[], current: string): VocabularyRow[] {
+	if (!current || list.some((row) => row.key === current)) return list;
+
+	return [...list, { key: current, label: current, description: null }];
 }
 
 function guardianIsCoherent(guardian: GuardianConsent): boolean {
@@ -1465,16 +1477,31 @@ function JoinBody() {
 			return gaps;
 		}
 
-		// An emergency contact is a condition of *approval*, not of submission —
-		// `assert_approvable`, not `assert_ready` — so this step can be walked
-		// past. What it does insist on is that a half-filled contact is not sent:
-		// a name with no number is not somebody anyone can call.
+		// At least one complete emergency contact we may call, the same rule
+		// `assert_ready` applies on the server. Every contact on the screen must
+		// also be complete or empty: a name with no number is not somebody anyone
+		// can call. The first incomplete contact is the one pointed at; with none
+		// started, that is the first one.
 		//
-		// The guardian block is the same bargain, and deliberately so. A minor
-		// whose parent has not signed anything yet should be able to send the
+		// The guardian block is different, and deliberately so. A minor whose
+		// parent has not signed anything yet should be able to send the
 		// application and let the branch chase the form.
 		if (id === "emergency") {
-			const half = contacts.findIndex((contact) => !contactIsCoherent(contact));
+			const callable = contacts.some(
+				(contact) => contactIsUsable(contact) && contact.may_contact_in_emergency,
+			);
+			let half = contacts.findIndex((contact) => !contactIsCoherent(contact));
+			if (half === -1 && !callable) {
+				half = contacts.findIndex((contact) => !contactIsUsable(contact));
+			}
+
+			if (half === -1 && !callable) {
+				need(
+					false,
+					"ec-permission-0",
+					"Allow us to call at least one emergency contact",
+				);
+			}
 
 			if (half !== -1) {
 				const contact = contacts[half];
@@ -2290,6 +2317,7 @@ function JoinBody() {
 												guardian={guardian}
 												onGuardian={setGuardian}
 												verificationMethods={options?.guardian_verification_methods ?? []}
+												relationships={options?.relationships ?? []}
 											/>
 										)}
 
@@ -2745,7 +2773,6 @@ function stepsFor(
 						eyebrow: "",
 						title: "Emergency contact",
 						sheet: "Emergency Contact",
-						optional: true,
 						blurb: "Add a person to contact in an emergency. This information is visible only to your branch.",
 						needs: "",
 					},
@@ -4121,6 +4148,15 @@ function IdentificationStep({
 						index > 0 && "border-t border-card-line pt-4",
 					)}
 				>
+					{rows.length > 1 && (
+						<RowHeading
+							className="sm:col-span-2"
+							label={`ID document ${index + 1}`}
+							removeLabel={`Remove ID document ${index + 1}`}
+							onRemove={() => remove(index)}
+						/>
+					)}
+
 					<Field
 						label={index === 0 ? "ID type" : "Another ID type"}
 						required={index === 0}
@@ -4167,17 +4203,6 @@ function IdentificationStep({
 						</Field>
 					)}
 
-					{rows.length > 1 && (
-						<div className="sm:col-span-2">
-							<button
-								type="button"
-								onClick={() => remove(index)}
-								className="text-[11.5px] font-semibold text-slate-faint underline-offset-2 hover:text-danger hover:underline"
-							>
-								Remove this document
-							</button>
-						</div>
-					)}
 				</div>
 			))}
 
@@ -4468,9 +4493,9 @@ function DeclarationStep({
  *
  * **The guardian block appears from the date of birth**, using the age of
  * majority the server served. A society that has configured none never sees any
- * of it. Neither half blocks the step: both are conditions of *approval* rather
- * than of submission, so somebody whose parent has not signed the form yet can
- * still send the application in and let the branch chase it.
+ * of it. The emergency contact is required to submit; the guardian block is a
+ * condition of *approval* only, so somebody whose parent has not signed the
+ * form yet can still send the application in and let the branch chase it.
  */
 function EmergencyStep({
 	contacts,
@@ -4480,6 +4505,7 @@ function EmergencyStep({
 	guardian,
 	onGuardian,
 	verificationMethods,
+	relationships,
 }: {
 	contacts: EmergencyContact[];
 	onContacts: (next: EmergencyContact[]) => void;
@@ -4489,6 +4515,8 @@ function EmergencyStep({
 	onGuardian: (next: GuardianConsent) => void;
 	/** `application_options.guardian_verification_methods` — the society's list. */
 	verificationMethods: VocabularyRow[];
+	/** `application_options.relationships` — the society's `VMMS Relationship` list. */
+	relationships: VocabularyRow[];
 }) {
 	const first = contacts[0] ?? blankContact();
 
@@ -4512,15 +4540,18 @@ function EmergencyStep({
 								index > 0 && "border-t border-card-line pt-6",
 							)}
 						>
-							{/* The second and later contacts are numbered, because two
-							    blocks of identically labelled fields on one screen are
-							    ambiguous to read and unusable with a screen reader. The
-							    first is not, because on the overwhelmingly common form
-							    with one contact there is nothing to number. */}
-							{index > 0 && (
-								<p className="sm:col-span-2 text-[11px] font-bold uppercase tracking-wider text-slate-faint">
-									Contact {index + 1}
-								</p>
+							{/* With more than one contact, each is numbered and carries
+							    its own remove button at the top right, because two blocks
+							    of identically labelled fields on one screen are ambiguous
+							    to read and unusable with a screen reader. A single
+							    contact has nothing to number and cannot be removed. */}
+							{contacts.length > 1 && (
+								<RowHeading
+									className="sm:col-span-2"
+									label={`Contact ${index + 1}`}
+									removeLabel={`Remove contact ${index + 1}`}
+									onRemove={() => onContacts(contacts.filter((_row, at) => at !== index))}
+								/>
 							)}
 
 							<Field label="Full name" required htmlFor={`ec-name-${index}`}>
@@ -4533,11 +4564,12 @@ function EmergencyStep({
 							</Field>
 
 							<Field label="Relationship" required htmlFor={`ec-rel-${index}`}>
-								<TextInput
+								<VocabularySelect
 									id={`ec-rel-${index}`}
 									value={contact.relationship}
 									onChange={(value) => set(index, "relationship", value)}
-									placeholder="Mother, brother, friend"
+									options={relationshipChoices(relationships, contact.relationship)}
+									placeholder="Choose a relationship"
 								/>
 							</Field>
 
@@ -4594,17 +4626,6 @@ function EmergencyStep({
 								</label>
 							</div>
 
-							{contacts.length > 1 && (
-								<div className="sm:col-span-2">
-									<button
-										type="button"
-										onClick={() => onContacts(contacts.filter((_row, at) => at !== index))}
-										className="text-[11.5px] font-semibold text-slate-faint underline-offset-2 hover:text-danger hover:underline"
-									>
-										Remove this contact
-									</button>
-								</div>
-							)}
 						</div>
 					))}
 

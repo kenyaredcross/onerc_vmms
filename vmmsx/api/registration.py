@@ -2208,10 +2208,10 @@ def register_as_volunteer(
 	and what is stored is the wording as it stood at this moment — see
 	`registration/services/declarations.py`.
 
-	`emergency_contacts` and `guardian_consents` are accepted here but not
-	insisted on: they are conditions of *approval*, not of submission, so an
-	applicant can send their application in and the branch can chase the consent
-	form. The reviewer's own verification fields cannot be set from here — see
+	`emergency_contacts` must hold at least one contact the applicant lets us
+	call, or `assert_ready` refuses the submission. `guardian_consents` is
+	accepted but not insisted on: it is a condition of *approval*, not of
+	submission, so the branch can chase the consent form. The reviewer's own verification fields cannot be set from here — see
 	`GUARDIAN_CONSENT_FIELDS`.
 	"""
 	_assert_signed_in()

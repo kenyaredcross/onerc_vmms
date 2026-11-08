@@ -147,3 +147,6 @@ vmmsx.patches.install_blood_groups
 
 # A society may say memberships are never cancelled (Kenya).
 vmmsx.patches.install_membership_cancellation_setting
+
+# Emergency contact relationship becomes a list a society can extend.
+vmmsx.patches.install_relationships

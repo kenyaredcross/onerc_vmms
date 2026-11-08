@@ -3,6 +3,7 @@ import { useFrappeFileUpload } from "frappe-react-sdk";
 
 import { errorMessage } from "../lib/api";
 import { FileLink, fileKind, fileNameOf } from "./FilePreview";
+import { Icon } from "./icons";
 import { cx } from "./primitives";
 
 /**
@@ -124,6 +125,48 @@ export function FieldSet({
 			)}
 			<div className="mt-5">{children}</div>
 		</section>
+	);
+}
+
+/**
+ * The bin button that removes one entry from a repeating section.
+ *
+ * It names the entry it removes ("Remove education 2"), so with several
+ * entries on screen nobody has to work out which one a button belongs to.
+ */
+export function RemoveRowButton({ label, onClick }: { label: string; onClick: () => void }) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-danger-line bg-white px-2.5 py-1.5 text-[12px] font-semibold text-danger transition-colors hover:bg-danger-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-danger/40"
+		>
+			<Icon.trash size={15} />
+			{label}
+		</button>
+	);
+}
+
+/**
+ * The line that heads one entry of a repeating section: which entry it is on
+ * the left, and the button that removes it on the top right.
+ */
+export function RowHeading({
+	label,
+	removeLabel,
+	onRemove,
+	className,
+}: {
+	label: string;
+	removeLabel: string;
+	onRemove?: () => void;
+	className?: string;
+}) {
+	return (
+		<div className={cx("flex min-h-[32px] items-center justify-between gap-3", className)}>
+			<p className="text-[11px] font-bold uppercase tracking-wider text-slate-faint">{label}</p>
+			{onRemove && <RemoveRowButton label={removeLabel} onClick={onRemove} />}
+		</div>
 	);
 }
 

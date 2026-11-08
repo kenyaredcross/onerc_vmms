@@ -455,14 +455,29 @@ def emergency_contact(**values) -> list[dict]:
 	"""
 	row = {
 		"contact_name": "Mercy Otieno",
-		"relationship": "Sister",
+		"relationship": "Sibling",
 		"primary_phone": "+254700000001",
 		"alternative_phone": None,
 		"may_contact_in_emergency": 1,
 	}
 	row.update(values)
+	ensure_relationship(row["relationship"])
 
 	return [row]
+
+
+def ensure_relationship(label: str) -> str:
+	"""A `VMMS Relationship` record, so the contact's Link has something to point at.
+
+	The install patch seeds the standard list on a real site; a test site may
+	never have run it.
+	"""
+	if label and not frappe.db.exists("VMMS Relationship", label):
+		frappe.get_doc({"doctype": "VMMS Relationship", "relationship_name": label, "is_active": 1}).insert(
+			ignore_permissions=True
+		)
+
+	return label
 
 
 def accept_declarations(document) -> list[str]:

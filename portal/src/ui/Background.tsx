@@ -12,7 +12,7 @@ import type {
 	WorkExperienceRow,
 } from "../portal/types";
 import { Button, cx } from "./primitives";
-import { Field, FieldSet, PrivateUpload, TextArea, TextInput, VocabularySelect, Combo } from "./form";
+import { Field, FieldSet, PrivateUpload, RowHeading, TextArea, TextInput, VocabularySelect, Combo } from "./form";
 
 /**
  * What somebody has already done: person facts, one component.
@@ -307,6 +307,7 @@ export function backgroundLines(
 
 export function RowList<T extends object>({
 	title,
+	noun,
 	description,
 	rows,
 	onRows,
@@ -315,6 +316,8 @@ export function RowList<T extends object>({
 	renderRow,
 }: {
 	title: string;
+	/** One entry's name, for its heading and remove button: "Education 2", "Remove education 2". */
+	noun: string;
 	description?: string;
 	rows: T[];
 	onRows: (rows: T[]) => void;
@@ -349,16 +352,16 @@ export function RowList<T extends object>({
 						key={index}
 						className={cx("grid gap-5 sm:grid-cols-2", index > 0 && "border-t border-card-line pt-6")}
 					>
-						{/* Numbered from the second, for the reason the emergency
-						    contacts are: two blocks of identically labelled fields on
-						    one screen are ambiguous to read and unusable with a screen
-						    reader, and on the common form with one row there is
-						    nothing to number. */}
-						{index > 0 && (
-							<p className="sm:col-span-2 text-[11px] font-bold uppercase tracking-wider text-slate-faint">
-								{index + 1}
-							</p>
-						)}
+						{/* Every entry is numbered and carries its own remove button at
+						    the top right, named for the entry, so two blocks of
+						    identically labelled fields are never ambiguous to read or
+						    to a screen reader. */}
+						<RowHeading
+							className="sm:col-span-2"
+							label={`${noun} ${index + 1}`}
+							removeLabel={`Remove ${noun.toLowerCase()} ${index + 1}`}
+							onRemove={() => onRows(rows.filter((_row, at) => at !== index))}
+						/>
 
 						{renderRow(
 							row,
@@ -366,16 +369,6 @@ export function RowList<T extends object>({
 							(key, value) => patchAt(index)({ [key]: value } as unknown as Partial<T>),
 							patchAt(index),
 						)}
-
-						<div className="sm:col-span-2">
-							<button
-								type="button"
-								onClick={() => onRows(rows.filter((_row, at) => at !== index))}
-								className="text-[11.5px] font-semibold text-slate-faint underline-offset-2 hover:text-danger hover:underline"
-							>
-								Remove
-							</button>
-						</div>
 					</div>
 				))}
 
@@ -588,6 +581,7 @@ export function BackgroundFields({
 
 			<RowList
 				title="Education"
+				noun="Education"
 				description="Add schools, colleges, or universities attended."
 				rows={education.length || !openEducationByDefault ? education : [blankEducation()]}
 				onRows={onEducation}
@@ -694,6 +688,7 @@ export function BackgroundFields({
 
 			<RowList
 				title="Training and courses"
+				noun="Course"
 				description="Add relevant training and completed courses."
 				rows={training}
 				onRows={onTraining}
@@ -761,6 +756,7 @@ export function BackgroundFields({
 
 			<RowList
 				title="Certifications"
+				noun="Certification"
 				description="Add qualifications that have their own issuer and expiry details."
 				rows={certifications}
 				onRows={onCertifications}
@@ -793,6 +789,7 @@ export function BackgroundFields({
 
 			<RowList
 				title="Work experience"
+				noun="Work experience"
 				description="Add paid, unpaid, or volunteer work experience."
 				rows={experience}
 				onRows={onExperience}
@@ -866,6 +863,7 @@ export function BackgroundFields({
 
 			<RowList
 				title="Licences and registrations"
+				noun="Licence"
 				description="Add professional licences, registrations, or certifications."
 				rows={licences}
 				onRows={onLicences}
@@ -961,6 +959,7 @@ export function BackgroundFields({
 
 			<RowList
 				title="Driving licences"
+				noun="Driving licence"
 				description="Add each driving licence class separately."
 				rows={drivingLicences}
 				onRows={onDrivingLicences}
@@ -1009,6 +1008,7 @@ export function BackgroundFields({
 
 			<RowList
 				title="References"
+				noun="Reference"
 				description="Add professional references. Do not list emergency contacts here."
 				rows={references}
 				onRows={onReferences}

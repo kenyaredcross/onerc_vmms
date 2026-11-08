@@ -3,39 +3,66 @@
 
 """Who to call, and the difference between having a number and being allowed to use it.
 
-The rule under test is that a society does not enrol somebody as a volunteer
-until it knows who to contact if something happens to them. It is a condition of
-**approval**, not of submission, and the first test here is the one that says why
-that distinction was chosen: an applicant can send their application in and let
-the branch chase the missing detail, rather than being turned away at the door
-over work somebody else has to do.
+The rule under test is that a society does not take an application until it
+knows who to contact if something happens to the applicant. It is checked at
+**submission** (`assert_ready`) and again at **approval** (`assert_approvable`):
+the second catches records that never came through the registration door, such
+as imports and desk edits, which is how the approval tests below build theirs.
 """
 
 import frappe
 
+from vmmsx.patches import install_relationships
 from vmmsx.registration.tests import fixtures
 from vmmsx.registration.tests.base import RegistrationTestCase
 
 EXTRA_TEST_RECORD_DEPENDENCIES = []
 
 
-class TestSubmissionDoesNotRequireOne(RegistrationTestCase):
-	def test_an_application_with_no_emergency_contact_still_submits(self):
+class TestSubmissionRequiresOne(RegistrationTestCase):
+	def test_an_application_with_no_emergency_contact_is_refused(self):
 		user = fixtures.website_account("no.contact.yet")
 
 		with fixtures.acting_as(user):
-			application = fixtures.submit_volunteer_form(self.branch(), emergency_contacts=[])
+			with self.assertRaises(frappe.MandatoryError) as refusal:
+				fixtures.submit_volunteer_form(self.branch(), emergency_contacts=[])
 
-		self.assertEqual(application.approval_state, "In Review")
-		self.assertEqual(application.emergency_contacts, [])
+		self.assertIn("emergency contact", str(refusal.exception).lower())
+
+	def test_a_contact_we_may_not_call_is_not_enough_to_submit(self):
+		user = fixtures.website_account("uncallable.at.submit")
+
+		with fixtures.acting_as(user):
+			with self.assertRaises(frappe.MandatoryError):
+				fixtures.submit_volunteer_form(
+					self.branch(),
+					emergency_contacts=fixtures.emergency_contact(may_contact_in_emergency=0),
+				)
 
 
 class TestApprovalRequiresOne(RegistrationTestCase):
-	def test_approving_without_one_is_refused(self):
-		user = fixtures.website_account("unapprovable.no.contact")
+	def submitted_then_stripped(self, handle: str, **contact):
+		"""A submitted application whose contact was then removed or withheld.
+
+		Submission now insists on a callable contact, so the only way an
+		application reaches approval without one is a later edit or an import.
+		"""
+		user = fixtures.website_account(handle)
 
 		with fixtures.acting_as(user):
-			application = fixtures.submit_volunteer_form(self.branch(), emergency_contacts=[])
+			application = fixtures.submit_volunteer_form(self.branch())
+
+		document = frappe.get_doc(fixtures.APPLICATION_DOCTYPE, application.name)
+		if contact:
+			document.emergency_contacts[0].update(contact)
+		else:
+			document.set("emergency_contacts", [])
+		document.save(ignore_permissions=True)
+
+		return document
+
+	def test_approving_without_one_is_refused(self):
+		application = self.submitted_then_stripped("unapprovable.no.contact")
 
 		with self.assertRaises(frappe.ValidationError) as refusal:
 			self.approve(fixtures.APPLICATION_DOCTYPE, application.name)
@@ -49,10 +76,7 @@ class TestApprovalRequiresOne(RegistrationTestCase):
 		roll back with it. An application left holding a recorded approval it was
 		refused would be the worst of both.
 		"""
-		user = fixtures.website_account("rolled.back")
-
-		with fixtures.acting_as(user):
-			application = fixtures.submit_volunteer_form(self.branch(), emergency_contacts=[])
+		application = self.submitted_then_stripped("rolled.back")
 
 		with self.assertRaises(frappe.ValidationError):
 			self.approve(fixtures.APPLICATION_DOCTYPE, application.name)
@@ -70,23 +94,14 @@ class TestApprovalRequiresOne(RegistrationTestCase):
 		Counting the row rather than the permission would have the register
 		answering yes to a question it cannot answer.
 		"""
-		user = fixtures.website_account("withheld.permission")
-
-		with fixtures.acting_as(user):
-			application = fixtures.submit_volunteer_form(
-				self.branch(),
-				emergency_contacts=fixtures.emergency_contact(may_contact_in_emergency=0),
-			)
+		application = self.submitted_then_stripped("withheld.permission", may_contact_in_emergency=0)
 
 		with self.assertRaises(frappe.ValidationError):
 			self.approve(fixtures.APPLICATION_DOCTYPE, application.name)
 
 	def test_adding_one_afterwards_lets_the_approval_through(self):
 		"""The branch chases the detail, and then the decision goes ahead."""
-		user = fixtures.website_account("contact.added.later")
-
-		with fixtures.acting_as(user):
-			application = fixtures.submit_volunteer_form(self.branch(), emergency_contacts=[])
+		application = self.submitted_then_stripped("contact.added.later")
 
 		document = frappe.get_doc(fixtures.APPLICATION_DOCTYPE, application.name)
 		document.append("emergency_contacts", fixtures.emergency_contact()[0])
@@ -102,7 +117,7 @@ class TestApprovalRequiresOne(RegistrationTestCase):
 		_, application = self.register_as_volunteer("has.a.contact")
 
 		self.assertEqual(len(application.emergency_contacts), 1)
-		self.assertEqual(application.emergency_contacts[0].relationship, "Sister")
+		self.assertEqual(application.emergency_contacts[0].relationship, "Sibling")
 
 		self.approve(fixtures.APPLICATION_DOCTYPE, application.name)
 		application.reload()
@@ -128,3 +143,36 @@ class TestItStaysOffTheIdentitySpine(RegistrationTestCase):
 		# Nothing about the contact reached the profile under any spelling.
 		values = frappe.db.get_value(fixtures.PROFILE_DOCTYPE, profile, ["first_name", "phone"], as_dict=True)
 		self.assertNotEqual(values.phone, application.emergency_contacts[0].primary_phone)
+
+
+class TestTheRelationshipList(RegistrationTestCase):
+	def test_the_form_is_offered_the_standard_list_in_order(self):
+		from vmmsx.api.volunteer import application_options
+
+		install_relationships.execute()
+		offered = [row["key"] for row in application_options()["relationships"]]
+
+		self.assertEqual(offered[:3], ["Mother", "Father", "Sibling"])
+		self.assertIn("Other", offered)
+
+	def test_a_relationship_the_list_does_not_have_is_refused(self):
+		with self.assertRaises(frappe.LinkValidationError):
+			self.register_as_volunteer(
+				"unlisted.relationship",
+				emergency_contacts=[{**fixtures.emergency_contact()[0], "relationship": "Not on the list"}],
+			)
+
+	def test_a_value_stored_before_the_list_existed_is_kept_but_not_offered(self):
+		from vmmsx.api.volunteer import application_options
+
+		_, application = self.register_as_volunteer("legacy.relationship")
+		frappe.db.set_value(
+			"VMMS Emergency Contact", application.emergency_contacts[0].name, "relationship", "Auntie"
+		)
+
+		install_relationships.execute()
+
+		self.assertEqual(frappe.db.get_value("VMMS Relationship", "Auntie", "is_active"), 0)
+		self.assertNotIn("Auntie", [row["key"] for row in application_options()["relationships"]])
+		# And the application holding it still saves.
+		frappe.get_doc(fixtures.APPLICATION_DOCTYPE, application.name).save(ignore_permissions=True)
