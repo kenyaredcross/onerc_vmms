@@ -29,13 +29,13 @@
  ],
  "fields": [
   {
-   "default": "MEM-.#####",
-   "description": "Automatic series for this record's number.",
+   "default": "VM-MEM-.YYYY.-.#####",
+   "description": "Member number, VM-MEM-YYYY-NNNNN as in the old VMMS: numbering starts again each year.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
    "label": "Series",
-   "options": "MEM-.#####",
+   "options": "VM-MEM-.YYYY.-.#####",
    "reqd": 1
   },
   {
@@ -157,7 +157,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-02 18:00:00.000000",
+ "modified": "2026-11-04 16:56:05.366201",
  "modified_by": "Administrator",
  "module": "VMMS Member",
  "name": "VMMS Member",

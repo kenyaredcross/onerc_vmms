@@ -67,13 +67,13 @@
  ],
  "fields": [
   {
-   "default": "MSHIP-.#####",
-   "description": "Automatic series for the membership number.",
+   "default": "VM-MSH-.YYYY.-.#####",
+   "description": "Membership number, VM-MSH-YYYY-NNNNN as in the old VMMS: numbering starts again each year.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
    "label": "Series",
-   "options": "MSHIP-.#####",
+   "options": "VM-MSH-.YYYY.-.#####",
    "reqd": 1
   },
   {
@@ -459,7 +459,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-10 09:00:00.000000",
+ "modified": "2026-11-04 16:56:05.366201",
  "modified_by": "Administrator",
  "module": "VMMS Member",
  "name": "VMMS Membership",

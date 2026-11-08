@@ -388,6 +388,10 @@ after_migrate = [
 	# underneath their own extras, and a role a society still has to create in
 	# Desk before Geo Assignment works is exactly the gap this closes.
 	"vmmsx.setup.core_roles.install",
+	# Volunteer numbers as the old VMMS issued them, VOL-26-031710: one counter
+	# that never restarts, which only a Document Naming Rule can hold. Created
+	# when missing; an existing rule and its counter are never touched.
+	"vmmsx.setup.numbering.install",
 	# Wire the app's shipped roles to the standard jobs they were created for.
 	# These are product defaults, not questions every national society needs to
 	# answer. Existing non-empty choices remain untouched.
