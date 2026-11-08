@@ -159,7 +159,12 @@ class TestDelivery(DigestTestCase):
 
 class TestNationalSummary(DigestTestCase):
 	def test_recipients_hold_the_oversight_role_at_the_top(self):
-		self.assertEqual(digest.national_recipients(), [self.regional])
+		with patch("vmmsx.setup.national_oversight.holders", return_value=[]):
+			self.assertEqual(digest.national_recipients(), [self.regional])
+
+	def test_national_oversight_holders_are_recipients_without_an_assignment(self):
+		with patch("vmmsx.setup.national_oversight.holders", return_value=["nsd@example.org"]):
+			self.assertEqual(digest.national_recipients(), sorted(["nsd@example.org", self.regional]))
 
 	def test_only_items_past_the_threshold_count(self):
 		self.at_region("national", self.kenya["kihara"])

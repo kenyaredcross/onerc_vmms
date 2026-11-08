@@ -308,18 +308,19 @@ def _with_applicant(doctype, workflow, area, now) -> dict:
 
 
 def national_recipients() -> list[str]:
-	"""Holders of the regional oversight role at the top of the tree."""
+	"""Holders of the national oversight role, and of the regional oversight
+	role at the top of the tree."""
 	from onerc_core.access.services import scope
 	from onerc_core.geo.services import adapter
 
+	from vmmsx.setup import national_oversight
 	from vmmsx.setup.regional_oversight import role
 
+	users = set(national_oversight.holders())
 	name = role()
 
 	if not name:
-		return []
-
-	users = set()
+		return sorted(users)
 
 	for root in adapter.get_root_regions():
 		users.update(scope.holders_at(root["name"], name))

@@ -399,6 +399,9 @@ after_migrate = [
 	# The region's oversight role: reads every county in its region, edits none.
 	# After the shipped roles, because it adds read permissions beside theirs.
 	"vmmsx.setup.regional_oversight.install",
+	# The country's oversight role (NSD Coordinator): holding it reads every
+	# register everywhere, with no Geo Assignment; it edits and approves nothing.
+	"vmmsx.setup.national_oversight.install",
 	"vmmsx.service_certificate.settings.install",
 	# Brand images appear on public portal, login and email surfaces. Core's main
 	# logo already carries this metadata; keep all companion assets consistent.
@@ -692,31 +695,35 @@ onerc_scopeable_doctypes = [
 	{"doctype": "VMMS Service Certificate Request", "geo_node_field": "geo_node", "role_from_setting": "vmms_service_certificate_scope_role"},
 	# Asset management has its own shipped role and default setting. It still
 	# needs a Geo Assignment before a non-administrator can reach a branch.
-	{"doctype": "VMMS Branch Asset", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role", "read_role_from_setting": "vmms_regional_oversight_role"},
-	{"doctype": "VMMS Asset Transaction", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role", "read_role_from_setting": "vmms_regional_oversight_role"},
+	{"doctype": "VMMS Branch Asset", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role", "read_role_from_setting": "vmms_regional_oversight_role", "national_read_role_from_setting": "vmms_national_oversight_role"},
+	{"doctype": "VMMS Asset Transaction", "geo_node_field": "geo_node", "role_from_setting": "vmms_asset_scope_role", "read_role_from_setting": "vmms_regional_oversight_role", "national_read_role_from_setting": "vmms_national_oversight_role"},
 	{
 		"doctype": "VMMS Membership",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_membership_scope_role",
 		"read_role_from_setting": "vmms_regional_oversight_role",
+		"national_read_role_from_setting": "vmms_national_oversight_role",
 	},
 	{
 		"doctype": "VMMS Volunteer",
 		"geo_node_field": "home_geo_node",
 		"role_from_setting": "vmms_volunteer_scope_role",
 		"read_role_from_setting": "vmms_regional_oversight_role",
+		"national_read_role_from_setting": "vmms_national_oversight_role",
 	},
 	{
 		"doctype": "VMMS Volunteer Application",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_volunteer_scope_role",
 		"read_role_from_setting": "vmms_regional_oversight_role",
+		"national_read_role_from_setting": "vmms_national_oversight_role",
 	},
 	{
 		"doctype": "VMMS Deployment",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_deployment_scope_role",
 		"read_role_from_setting": "vmms_regional_oversight_role",
+		"national_read_role_from_setting": "vmms_national_oversight_role",
 	},
 	# ERPNext's own `Project` is the programme of work, and vmmsx scopes it on the
 	# Custom Field it owns — see `setup/project_fields.py`, which is also why that

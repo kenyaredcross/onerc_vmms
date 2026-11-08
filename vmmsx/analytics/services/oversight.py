@@ -82,7 +82,9 @@ def overview(area: str, place: str | None = None) -> dict:
 
 	# At the top of the tree "under the area" is everything, and naming every
 	# ward in an `in (...)` would only slow the query down. Scope still applies.
-	nodes = None if _is_root(area) else list(unit_of)
+	# Only where it is the one top: with two, somebody who reads everywhere
+	# (System Manager, the national oversight role) would count both.
+	nodes = None if _is_only_root(area) else list(unit_of)
 
 	_count_people(rows_by_unit, unit_of, nodes)
 	_count_registrations(rows_by_unit, unit_of, nodes)
@@ -99,7 +101,7 @@ def overview(area: str, place: str | None = None) -> dict:
 
 	selected = place if place and place in {row["name"] for row in rows} else None
 	focus = selected or area
-	focus_nodes = None if _is_root(focus) else list(_within(tree, [_bounds_of(tree, focus)]))
+	focus_nodes = None if _is_only_root(focus) else list(_within(tree, [_bounds_of(tree, focus)]))
 
 	return {
 		"as_of": nowdate(),
@@ -518,19 +520,36 @@ def _is_root(name: str) -> bool:
 	return not frappe.db.get_value("Geo Node", name, "parent_geo_node")
 
 
+def _is_only_root(name: str) -> bool:
+	if not _is_root(name):
+		return False
+
+	roots = frappe.get_all("Geo Node", filters={"parent_geo_node": ("is", "not set")}, pluck="name", limit=2)
+
+	return len(roots) == 1
+
+
 # --- who may open which tab ------------------------------------------------------------
 
 
 def national_allowed(user: str | None = None) -> bool:
-	"""National staff: anybody assigned at the top of the tree, and System Manager.
+	"""National staff: the national oversight role, anybody assigned at the top
+	of the tree, and System Manager.
 
-	Any role counts. The national tab is the country's figures, and somebody the
-	society has placed at national level is national staff whatever they hold.
-	What they then *see* is still their own scope, through `get_list`.
+	The national oversight role (NSD Coordinator) counts by itself: holding it is
+	what makes somebody national, with no assignment. Otherwise any role counts.
+	The national tab is the country's figures, and somebody the society has
+	placed at national level is national staff whatever they hold. What they then
+	*see* is still their own scope, through `get_list`.
 	"""
+	from vmmsx.setup import national_oversight
+
 	user = user or frappe.session.user
 
 	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+		return True
+
+	if national_oversight.holds(user):
 		return True
 
 	from frappe.utils import today
@@ -591,13 +610,20 @@ def counties(area: str) -> list[dict]:
 
 
 def access_pending(user: str | None = None) -> bool:
-	"""True for somebody whose only view of the region is the oversight role,
-	on a site whose onerc_core cannot yet admit that role to any record."""
+	"""True for somebody whose view rests on an oversight role (regional or
+	national) that this site's onerc_core cannot yet admit to any record."""
+	from vmmsx.setup import national_oversight
 	from vmmsx.setup.regional_oversight import core_reads_through_oversight_role, role
 
 	user = user or frappe.session.user
 
-	if core_reads_through_oversight_role() or user == "Administrator" or "System Manager" in frappe.get_roles(user):
+	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+		return False
+
+	if national_oversight.holds(user) and not national_oversight.core_reads_nationally():
+		return True
+
+	if core_reads_through_oversight_role():
 		return False
 
 	oversight = role()

@@ -19,16 +19,21 @@ from vmmsx.analytics.services import oversight
 from vmmsx.api import oversight as api
 from vmmsx.deployment.tests import fixtures
 from vmmsx.deployment.tests.base import DeploymentTestCase
-from vmmsx.setup import regional_oversight
+from vmmsx.setup import national_oversight, regional_oversight
 from onerc_core.geo.tests import fixtures as geo_fixtures
 
 HEAD_ROLE = f"{fixtures.TEST_PREFIX} Head of Region"
+NSD_ROLE = f"{fixtures.TEST_PREFIX} NSD Coordinator"
 
 # A Head of Region reads through onerc_core's reading role, which is applied per
 # site from deploy/onerc_core-read-role/ rather than committed to onerc_core.
 needs_reading_role = unittest.skipUnless(
 	regional_oversight.core_reads_through_oversight_role(),
 	"onerc_core has no reading role here: apply deploy/onerc_core-read-role/",
+)
+needs_national_reading = unittest.skipUnless(
+	national_oversight.core_reads_nationally(),
+	"onerc_core has no national reading role here: apply deploy/onerc_core-read-role/",
 )
 ASSET_DOCTYPE = "VMMS Branch Asset"
 
@@ -52,6 +57,10 @@ class TestOversight(DeploymentTestCase):
 		cls.previous_head_role = regional_oversight.role()
 		fixtures.make_role(HEAD_ROLE)
 		fixtures._set_setting(regional_oversight.ROLE_FIELD, HEAD_ROLE)
+		national_oversight.install()
+		cls.previous_national_role = national_oversight.role()
+		fixtures.make_role(NSD_ROLE)
+		fixtures._set_setting(national_oversight.ROLE_FIELD, NSD_ROLE)
 		# Another society's volunteer, placed before the anchor level is set: it
 		# sits at a level of its own society's ladder, not this one's.
 		cls.abroad = fixtures.make_volunteer(fixtures.make_profile("Delta", "Person"), cls.society_b["ward"]).name
@@ -79,18 +88,22 @@ class TestOversight(DeploymentTestCase):
 		cls.national = cls.viewer("oversight-national", fixtures.VOLUNTEER_SCOPE_ROLE, cls.country)
 		cls.county = cls.viewer("oversight-county", fixtures.VOLUNTEER_SCOPE_ROLE, cls.ruaka)
 		cls.nobody = fixtures.make_user("oversight-nobody")
+		# Holds the national role and no Geo Assignment at all.
+		cls.nsd = fixtures.make_user("oversight-nsd", [NSD_ROLE])
 
 	@classmethod
 	def tearDownClass(cls):
 		fixtures._set_setting(regional_oversight.ROLE_FIELD, cls.previous_head_role)
+		fixtures._set_setting(national_oversight.ROLE_FIELD, cls.previous_national_role)
 		super().tearDownClass()
 
 	@classmethod
 	def read_only(cls, doctype: str) -> None:
 		from frappe.permissions import add_permission
 
-		if not frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": HEAD_ROLE}):
-			add_permission(doctype, HEAD_ROLE, 0)
+		for role in (HEAD_ROLE, NSD_ROLE):
+			if not frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role}):
+				add_permission(doctype, role, 0)
 
 		frappe.clear_cache(doctype=doctype)
 
@@ -204,6 +217,35 @@ class TestOversight(DeploymentTestCase):
 		self.assertTrue(oversight.national_allowed(self.national))
 		self.assertTrue({self.karura, self.limuru} <= {row["name"] for row in oversight.regions_for(self.national)})
 
+	def test_the_national_oversight_role_is_national_without_an_assignment(self):
+		self.assertTrue(oversight.national_allowed(self.nsd))
+		self.assertTrue({self.karura, self.limuru} <= {row["name"] for row in oversight.regions_for(self.nsd)})
+
+		with fixtures.acting_as(self.nsd):
+			self.assertIn("area", api.national())
+
+	def test_the_national_oversight_role_is_nothing_once_taken_away(self):
+		with patch.object(national_oversight, "role", return_value=None):
+			self.assertFalse(oversight.national_allowed(self.nsd))
+			self.assertEqual(oversight.regions_for(self.nsd), [])
+
+	def test_an_nsd_coordinator_is_told_when_their_access_is_not_on(self):
+		with patch.object(national_oversight, "core_reads_nationally", return_value=False):
+			self.assertTrue(oversight.access_pending(self.nsd))
+
+		with patch.object(national_oversight, "core_reads_nationally", return_value=True):
+			self.assertFalse(oversight.access_pending(self.nsd))
+
+	@needs_national_reading
+	def test_an_nsd_coordinator_counts_the_whole_country_and_edits_nothing(self):
+		with fixtures.acting_as(self.nsd):
+			result = oversight.overview(self.country)
+
+		self.assertEqual(result["breakdown"]["volunteers"]["total"], 4)
+		volunteer = frappe.get_doc(fixtures.VOLUNTEER_DOCTYPE, self.tigoni_person)
+		self.assertTrue(frappe.has_permission(fixtures.VOLUNTEER_DOCTYPE, doc=volunteer, user=self.nsd, ptype="read"))
+		self.assertFalse(frappe.has_permission(fixtures.VOLUNTEER_DOCTYPE, doc=volunteer, user=self.nsd, ptype="write"))
+
 	def test_a_county_reader_opens_neither(self):
 		for user in (self.county, self.nobody):
 			self.assertEqual(oversight.regions_for(user), [])
@@ -218,4 +260,6 @@ class TestOversight(DeploymentTestCase):
 		self.assertIn("region", console.visible(self.head))
 		self.assertNotIn("national", console.visible(self.head))
 		self.assertIn("national", console.visible(self.national))
+		self.assertIn("national", console.visible(self.nsd))
+		self.assertIn("region", console.visible(self.nsd))
 		self.assertNotIn("region", console.visible(self.county))

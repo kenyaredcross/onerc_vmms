@@ -189,9 +189,15 @@ def _default() -> None:
 
 def _permissions() -> None:
 	"""Read, report and print on each doctype, for the role the setting names."""
-	from frappe.permissions import add_permission, update_permission_property
+	grant_read(frappe.db.get_single_value(SETTINGS_DOCTYPE, ROLE_FIELD))
 
-	name = frappe.db.get_single_value(SETTINGS_DOCTYPE, ROLE_FIELD)
+
+def grant_read(name: str | None) -> None:
+	"""Read, report and print on each of READ_DOCTYPES for `name`. Never more.
+
+	Shared with the national oversight role, which reads the same registers.
+	"""
+	from frappe.permissions import add_permission, update_permission_property
 
 	if not (name and frappe.db.exists("Role", name)):
 		return
