@@ -1382,5 +1382,19 @@
     "National ID",
     "NEMIS Number",
     "Passport"
+  ],
+  "education_levels": [
+    {"name": "primary", "label": "Primary"},
+    {"name": "secondary", "label": "Secondary / High School"},
+    {"name": "undergraduate", "label": "Undergraduate"},
+    {"name": "graduate", "label": "Graduate"},
+    {"name": "postgraduate", "label": "Postgraduate"},
+    {"name": "others", "label": "Others"}
+  ],
+  "licence_types": [
+    "Health",
+    "Nursing Council practicing licence",
+    "OFA CERTFICATE",
+    "Other"
   ]
 }

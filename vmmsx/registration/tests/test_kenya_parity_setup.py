@@ -1,8 +1,14 @@
 import frappe
 from frappe.tests import IntegrationTestCase
 
+from vmmsx.registration.services import parity
 from vmmsx.registration.tests import fixtures
-from vmmsx.setup.registration_parity import configure_kenya
+from vmmsx.setup.registration_parity import (
+	ID_PATTERNS,
+	configure_kenya,
+	drop_region_prefix,
+	install_kenya_vocabularies,
+)
 
 EXTRA_TEST_RECORD_DEPENDENCIES = []
 
@@ -55,3 +61,88 @@ class TestKenyaRegistrationSetup(IntegrationTestCase):
 		)
 		self.assertEqual(frappe.db.get_single_value("National Society Settings", "vmms_member_min_age"), 7)
 		self.assertEqual(frappe.db.get_single_value("National Society Settings", "vmms_member_max_age"), 150)
+
+
+class TestKenyaVocabularies(IntegrationTestCase):
+	def test_the_old_sites_picker_values_are_installed_once(self):
+		frappe.set_user("Administrator")
+		install_kenya_vocabularies()
+
+		for label in ("Health", "Nursing Council practicing licence", "OFA CERTFICATE", "Other"):
+			self.assertTrue(frappe.db.exists("Personnel License Type", label), label)
+		for code in ("kik", "luo", "kam", "oth", "ara", "rwa", "dad"):
+			self.assertTrue(frappe.db.exists("Language", code), code)
+		self.assertTrue(frappe.db.exists("Disability", "None"))
+		self.assertTrue(frappe.db.exists("Profession", "Actuary"))
+		for key, label in (("nemis_number", "NEMIS Number"), ("millitary_id", "Millitary ID")):
+			self.assertEqual(
+				frappe.db.get_value("Identification Type", key, "identification_type_name"), label
+			)
+			self.assertEqual(
+				frappe.db.get_value("Identification Type", key, parity.ID_PATTERN_FIELD), ID_PATTERNS[key]
+			)
+
+		self.assertEqual(
+			frappe.get_all(
+				"VMMS Education Level", filters={"is_active": 1}, order_by="sequence asc", pluck="level_name"
+			),
+			["Primary", "Secondary / High School", "Undergraduate", "Graduate", "Postgraduate", "Others"],
+		)
+
+		again = install_kenya_vocabularies()
+		self.assertEqual(set(again.values()), {0})
+
+	def test_levels_off_the_old_list_are_switched_off_not_deleted(self):
+		frappe.set_user("Administrator")
+		if not frappe.db.exists("VMMS Education Level", "diploma"):
+			frappe.get_doc(
+				{
+					"doctype": "VMMS Education Level",
+					"level_key": "diploma",
+					"level_name": "Diploma",
+					"is_active": 1,
+				}
+			).insert()
+		install_kenya_vocabularies()
+		self.assertEqual(frappe.db.get_value("VMMS Education Level", "diploma", "is_active"), 0)
+
+	def test_new_languages_are_not_offered_as_interface_languages(self):
+		frappe.set_user("Administrator")
+		frappe.db.delete("Language", {"name": "kik"})
+		install_kenya_vocabularies()
+		self.assertEqual(frappe.db.get_value("Language", "kik", "enabled"), 0)
+
+	def test_regions_lose_the_krcs_prefix_and_keep_their_key(self):
+		frappe.set_user("Administrator")
+		if not frappe.db.exists("Geo Level", "region"):
+			frappe.get_doc(
+				{
+					"doctype": "Geo Level",
+					"geo_level_key": "region",
+					"geo_level_name": "Region",
+					"geo_level_order": 2,
+					"requires_parent": 0,
+				}
+			).insert()
+
+		def region(label):
+			return (
+				frappe.get_doc({"doctype": "Geo Node", "geo_node_name": label, "geo_level": "region"})
+				.insert()
+				.name
+			)
+
+		coast = region("KRCS Regtest Coast Region")
+		clash = region("KRCS Regtest Lake")
+		holder = region("Regtest Lake")
+
+		result = drop_region_prefix()
+
+		self.assertIn(
+			{"name": coast, "from": "KRCS Regtest Coast Region", "to": "Regtest Coast Region"},
+			result["renamed"],
+		)
+		self.assertEqual(frappe.db.get_value("Geo Node", coast, "geo_node_name"), "Regtest Coast Region")
+		self.assertIn({"name": clash, "label": "KRCS Regtest Lake", "taken_by": holder}, result["skipped"])
+		self.assertEqual(frappe.db.get_value("Geo Node", clash, "geo_node_name"), "KRCS Regtest Lake")
+		self.assertEqual(drop_region_prefix()["renamed"], [])

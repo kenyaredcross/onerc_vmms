@@ -11,6 +11,7 @@ by this installer.
 """
 
 import json
+import re
 from pathlib import Path
 
 import frappe
@@ -26,13 +27,19 @@ DOCUMENTS = (
 	("Mission Report", False),
 	("Other", False),
 )
+# Keyed by the Identification Type each rule belongs to. The old site's type is
+# spelled "Millitary ID", so `_seed_vocabularies` names it `millitary_id`.
 ID_PATTERNS = {
 	"national_id": r"\d{7,9}",
 	"passport": r"[A-Za-z0-9]{6,9}",
-	"military_id": r"[A-Za-z0-9\-]{5,20}",
+	"millitary_id": r"[A-Za-z0-9\-]{5,20}",
 	"alien_id": r"[A-Za-z0-9\-]{5,20}",
 	"birth_certificate": r"[A-Za-z0-9\-]{6,20}",
+	"nemis_number": r"\d{8,14}",
 }
+# Kenya's regions are named without the society's initials: "Coast Region",
+# not "KRCS Coast Region". Only the leading prefix goes; the rest is kept as is.
+REGION_PREFIX = re.compile(r"^KRCS\s+", re.IGNORECASE)
 
 
 def configure_kenya(plan_mapping=None) -> dict:
@@ -71,12 +78,8 @@ def configure_kenya(plan_mapping=None) -> dict:
 	settings.save()
 	install_document_types()
 	vocabularies = _seed_vocabularies()
-	for key, pattern in ID_PATTERNS.items():
-		if frappe.db.exists("Identification Type", key):
-			doc = frappe.get_doc("Identification Type", key)
-			if not doc.get(parity.ID_PATTERN_FIELD):
-				doc.set(parity.ID_PATTERN_FIELD, pattern)
-				doc.save()
+	_install_id_patterns()
+	regions = drop_region_prefix()
 	created, existing = [], []
 	for source in json.loads(
 		(Path(__file__).parents[1] / "registration/seeds/kenya_registration_plans.json").read_text()
@@ -161,6 +164,7 @@ def configure_kenya(plan_mapping=None) -> dict:
 	return {
 		"regional_membership_stage": regional_stage,
 		"vocabularies_created": vocabularies,
+		"regions": regions,
 		"plans_created": created,
 		"existing_plans_require_review": existing,
 		"workflows_created": workflows,
@@ -185,6 +189,80 @@ def _regional_membership_stage() -> dict:
 	return regional_approval.add_membership_regional_stage()
 
 
+def install_kenya_vocabularies() -> dict:
+	"""The old VMMS's picker values, without the rest of `configure_kenya`.
+
+	Professions, licence types, languages, disabilities (including the old
+	"None"), identification types with their number rules, driving licence
+	classes and the old reasons to join. Only missing values are added, so a
+	rerun changes nothing and values added on the site later are kept. The two
+	exceptions match the old form exactly: education levels and driving licence
+	classes not on the old list are switched off (never deleted).
+
+	`bench --site <site> execute vmmsx.setup.registration_parity.install_kenya_vocabularies`
+	"""
+	frappe.only_for("System Manager")
+	created = _seed_vocabularies()
+	created["id_patterns"] = len(_install_id_patterns())
+	return created
+
+
+def drop_region_prefix() -> dict:
+	"""Rename regions still called "KRCS …" to the name after the prefix.
+
+	Only the label changes. A Geo Node's docname is an opaque key, and every
+	link, assignment and cost centre points at that key, so nothing that refers
+	to a region moves. A region whose shorter name a sibling already holds is
+	left alone and reported, never merged.
+	"""
+	frappe.only_for("System Manager")
+	result = {"renamed": [], "skipped": []}
+	if not frappe.db.exists("Geo Level", "region"):
+		return result
+
+	for name in frappe.get_all(
+		"Geo Node",
+		filters={"geo_level": "region", "geo_node_name": ("like", "KRCS %")},
+		order_by="geo_node_name asc",
+		pluck="name",
+	):
+		doc = frappe.get_doc("Geo Node", name)
+		before = doc.geo_node_name
+		label = REGION_PREFIX.sub("", before).strip()
+		if not label or label == before:
+			continue
+		taken = frappe.get_all(
+			"Geo Node",
+			filters={
+				"geo_node_name": label,
+				"parent_geo_node": doc.parent_geo_node or ("is", "not set"),
+				"name": ("!=", name),
+			},
+			pluck="name",
+			limit=1,
+		)
+		if taken:
+			result["skipped"].append({"name": name, "label": before, "taken_by": taken[0]})
+			continue
+		doc.geo_node_name = label
+		doc.save()
+		result["renamed"].append({"name": name, "from": before, "to": label})
+	return result
+
+
+def _install_id_patterns() -> list[str]:
+	"""Give each Kenya ID type the old number rule, unless the site set its own."""
+	installed = []
+	for key, pattern in ID_PATTERNS.items():
+		if frappe.db.exists("Identification Type", key):
+			doc = frappe.get_doc("Identification Type", key)
+			if not doc.get(parity.ID_PATTERN_FIELD):
+				doc.set(parity.ID_PATTERN_FIELD, pattern)
+				doc.save()
+				installed.append(key)
+	return installed
+
+
 def _seed_vocabularies() -> dict:
 	"""Add exact legacy picker values; never remove or rename existing choices."""
 	data = json.loads(
@@ -195,7 +273,14 @@ def _seed_vocabularies() -> dict:
 		if not frappe.db.exists("Profession", label):
 			frappe.get_doc({"doctype": "Profession", "__newname": label}).insert()
 			counts["professions"] += 1
+	# Personnel License Type is an ordinary register: more types are added on
+	# the desk as they come up, and this only puts back the old site's four.
+	for label in data["licence_types"]:
+		if not frappe.db.exists("Personnel License Type", label):
+			frappe.get_doc({"doctype": "Personnel License Type", "__newname": label}).insert()
+			counts["licence_types"] += 1
 	counts["driving_classes"] = install_driving_classes(data["driving_classes"])
+	counts["education_levels"] = install_education_levels(data["education_levels"])
 	for source in data["disabilities"]:
 		label = source.get("disability_name") or source["name"]
 		category = source.get("disability_category")
@@ -206,6 +291,9 @@ def _seed_vocabularies() -> dict:
 				{"doctype": "Disability", "disability_name": label, "disability_type": category}
 			).insert()
 			counts["disabilities"] += 1
+	# Added switched off. `enabled` means "offered as a desk interface language",
+	# and nothing is translated into Kikuyu or "Other". The registration picker
+	# (`api.volunteer._languages`) lists every Language whatever the flag.
 	for source in data["languages"]:
 		if not frappe.db.exists("Language", source["name"]):
 			frappe.get_doc(
@@ -213,7 +301,7 @@ def _seed_vocabularies() -> dict:
 					"doctype": "Language",
 					"language_code": source.get("language_code") or source["name"],
 					"language_name": source.get("language_name") or source["name"],
-					"enabled": 1,
+					"enabled": 0,
 				}
 			).insert()
 			counts["languages"] += 1
@@ -256,6 +344,39 @@ def install_document_types() -> None:
 		doc.set(parity.REQUIRED_DOCUMENT_FIELD, int(required))
 		doc.set(parity.DOCUMENT_NAME_FIELD, int(label == "Other"))
 		doc.save()
+
+
+def install_education_levels(levels=None) -> int:
+	"""The old VMMS's six education levels, under the old labels and in its order.
+
+	Primary, Secondary and the two degrees keep their keys and take the old
+	label, so a record already holding one is unchanged. Graduate and Others are
+	added. Any other level is switched off rather than deleted, so a record that
+	chose it still shows it; the form simply no longer offers it.
+	"""
+	frappe.only_for("System Manager")
+	if levels is None:
+		levels = json.loads(
+			(
+				Path(__file__).parents[1] / "registration/seeds/kenya_registration_vocabularies.json"
+			).read_text()
+		)["education_levels"]
+	created = 0
+	for index, source in enumerate(levels, start=1):
+		key = source["name"]
+		values = {"level_name": source["label"], "sequence": index * 10, "is_active": 1}
+		if frappe.db.exists("VMMS Education Level", key):
+			doc = frappe.get_doc("VMMS Education Level", key)
+			doc.update(values)
+			doc.save()
+		else:
+			frappe.get_doc({"doctype": "VMMS Education Level", "level_key": key, **values}).insert()
+			created += 1
+	listed = {source["name"] for source in levels}
+	for key in frappe.get_all("VMMS Education Level", filters={"is_active": 1}, pluck="name"):
+		if key not in listed:
+			frappe.db.set_value("VMMS Education Level", key, "is_active", 0)
+	return created
 
 
 def install_driving_classes(classes=None) -> int:
