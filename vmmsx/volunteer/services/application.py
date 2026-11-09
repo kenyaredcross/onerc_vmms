@@ -63,6 +63,7 @@ DOCUMENT_MINIMUM_AGE_FIELD = "vmms_minimum_age"
 # `patches/install_disability_fields.py`, which records why it lives on the
 # spine rather than on the volunteer record.
 DISABILITY_FIELD = "vmms_disability_status"
+EDUCATION_FIELD = "vmms_education"
 
 ACCEPTANCE_FLAG = "vmms_application_accepting"
 
@@ -140,6 +141,9 @@ def assert_ready(application) -> None:
 	have typed in. `assert_approvable` keeps its own check for records that
 	never came through this door (imports, desk edits).
 
+	**So is one education entry**, with its institution and level. Submission
+	only: an imported record that arrived without one can still be approved.
+
 	**What is deliberately not here.** A minor's guardian consent is required to
 	*approve*, not to submit — see `assert_approvable`. An applicant should be
 	able to send their application in and have the branch chase the consent
@@ -156,6 +160,7 @@ def assert_ready(application) -> None:
 	_assert_disability_answered(application)
 	_assert_residency_complete(application)
 	_assert_emergency_contact_given(application)
+	_assert_education_given(application)
 	questions.assert_answered(application)
 	declarations.assert_accepted(application)
 
@@ -169,6 +174,32 @@ def _assert_emergency_contact_given(application) -> None:
 		_("Add an emergency contact we may call before submitting."),
 		frappe.MandatoryError,
 		title=_("Emergency Contact Needed"),
+	)
+
+
+def _assert_education_given(application) -> None:
+	"""At least one education entry on the profile, with its institution and level.
+
+	The rows live on the Red Profile (`vmms_education`), written by the same
+	request just before submission. Silent on a site whose profile has no such
+	table yet, for the reason `_assert_disability_answered` gives.
+	"""
+	profile = application.get("red_profile")
+	if not profile or not frappe.get_meta("Red Profile").has_field(EDUCATION_FIELD):
+		return
+
+	rows = frappe.get_all(
+		"VMMS Education",
+		filters={"parent": profile, "parenttype": "Red Profile", "parentfield": EDUCATION_FIELD},
+		fields=["institution", "level"],
+	)
+	if any((row.institution or "").strip() and row.level for row in rows):
+		return
+
+	frappe.throw(
+		_("Add your education, with the institution and level, before submitting."),
+		frappe.MandatoryError,
+		title=_("Education Needed"),
 	)
 
 

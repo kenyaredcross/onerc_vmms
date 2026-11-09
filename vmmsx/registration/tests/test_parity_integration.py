@@ -100,7 +100,7 @@ class TestParityIntegration(RegistrationTestCase):
 			"parity.background",
 			background={
 				"education": [
-					{"institution": "Community college", "class_per": "A-", "maj_opt_subj": "Nursing"}
+					{"institution": "Community college", "level": fixtures.ensure_education_level(), "class_per": "A-", "maj_opt_subj": "Nursing"}
 				],
 				"work_experience": [{"organization": "Community hospital", "location": "Naivasha"}],
 				"certifications": [
@@ -196,7 +196,7 @@ class TestParityIntegration(RegistrationTestCase):
 		with fixtures.acting_as(user):
 			application = fixtures.submit_volunteer_form(
 				self.branch(),
-				background={"education": [{"institution": "KCA", "attachment": upload}]},
+				background={"education": [{"institution": "KCA", "level": fixtures.ensure_education_level(), "attachment": upload}]},
 			)
 		files = application_service.decision_dto(
 			frappe.get_doc(fixtures.APPLICATION_DOCTYPE, application.name)

@@ -5,6 +5,7 @@ import { API } from "../lib/api";
 import { geoPath } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { PortalShell, type PortalCompanion, type PortalNavItem } from "./PortalShell";
+import { TermsGate } from "./TermsGate";
 import type {
 	Account,
 	DeploymentInvitation,
@@ -145,6 +146,7 @@ export default function PortalLayout() {
 				}
 				branch={branch}
 			/>
+			<TermsGate />
 		</ContentProvider>
 	);
 }

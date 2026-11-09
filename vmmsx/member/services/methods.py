@@ -206,7 +206,11 @@ def sync() -> dict:
 	if created:
 		# Configuration written by a migration running as Administrator. The
 		# society's own edits to this table go through the form and its
-		# permissions, as they should.
+		# permissions, as they should. Mandatory checks are skipped for the same
+		# reason as in `default_roles.install`: on a new site the society's
+		# identity is blank until the setup wizard, and a migrate before it must
+		# not fail on fields this does not touch.
+		settings.flags.ignore_mandatory = True
 		settings.save(ignore_permissions=True)
 
 	return {"created": created, "existed": len(held)}
@@ -275,6 +279,14 @@ def presentation_of(gateway: str | None) -> dict:
 		return _presentation(None)
 
 	return _presentation(frappe.db.get_value(GATEWAY_DOCTYPE, gateway, "driver_class"))
+
+
+def label_of(gateway: str | None) -> str | None:
+	"""What the society calls this way of paying on its own form, e.g. "M-Pesa"."""
+	if not gateway:
+		return None
+
+	return next((row["label"] for row in _configured() if row["gateway"] == gateway and row["label"]), None)
 
 
 def _configured() -> list[dict]:

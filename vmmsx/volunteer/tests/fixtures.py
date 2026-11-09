@@ -233,6 +233,9 @@ def make_profile(first_name: str = "Wanjiru", last_name: str = "Kamau", **kwargs
 	"Prefer not to say" is an answer. A fixture without it would be modelling a
 	form nobody can submit. Pass `vmms_disability_status=None` for the applicant
 	that requirement is meant to refuse.
+
+	**And one education entry**, by the same rule. Pass `vmms_education=[]` for
+	the applicant without one.
 	"""
 	slug = f"{first_name}.{last_name}".lower()
 	values = {
@@ -243,6 +246,10 @@ def make_profile(first_name: str = "Wanjiru", last_name: str = "Kamau", **kwargs
 		"date_of_birth": DEFAULT_DATE_OF_BIRTH,
 		"vmms_disability_status": "Prefer not to say",
 	}
+	if frappe.get_meta("Red Profile").has_field("vmms_education"):
+		from vmmsx.registration.tests.fixtures import education
+
+		values["vmms_education"] = education()
 	values.update(kwargs)
 
 	return frappe.get_doc(values).insert().name

@@ -114,3 +114,4 @@ def available() -> dict:
 		)
 
 	return {"apps": tabs}
+	

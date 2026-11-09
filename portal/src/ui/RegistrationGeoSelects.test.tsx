@@ -87,3 +87,13 @@ it("shows County and disabled Sub County before a separate residence has been se
 	expect(screen.getByLabelText("Location")).toBeTruthy();
 	expect(screen.getByLabelText("Sub Location")).toBeTruthy();
 });
+
+it("asks nothing below the county when it stops at the deepest allowed level", async () => {
+	function Stopping() {
+		const [chain, setChain] = useState<GeoNode[]>([national, west, kisumu]);
+		return <RegistrationGeoSelects chain={chain} onChain={setChain} allowedLevels={["county"]} stopAtAllowed />;
+	}
+	render(<Stopping />);
+	expect((screen.getByLabelText(/^County/) as HTMLSelectElement).value).toBe("kisumu");
+	expect(screen.queryByRole("combobox", { name: "sub_county" })).toBeNull();
+});

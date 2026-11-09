@@ -404,7 +404,13 @@ def published_values(declaration: str) -> dict | None:
 	}
 
 
-def publish(declaration: str, version: str, body: str | None = None, external_url: str | None = None):
+def publish(
+	declaration: str,
+	version: str,
+	body: str | None = None,
+	external_url: str | None = None,
+	requires_reacceptance: bool = False,
+):
 	"""Write a version and publish it in one act. Returns the version document.
 
 	The shape both the installer and the migration patch need, and the shape a
@@ -414,6 +420,9 @@ def publish(declaration: str, version: str, body: str | None = None, external_ur
 	`source` is inferred from which of the two was given rather than passed,
 	because a caller supplying an address and a source of `Text` is a mistake with
 	no sensible reading, and one fewer argument is one fewer way to make it.
+
+	`requires_reacceptance` asks everybody who accepted an earlier version to
+	accept this one at their next portal visit (`consent.py`).
 	"""
 	document = frappe.get_doc(
 		{
@@ -423,6 +432,7 @@ def publish(declaration: str, version: str, body: str | None = None, external_ur
 			"source": SOURCE_LINK if external_url else SOURCE_TEXT,
 			"body": body,
 			"external_url": external_url,
+			"requires_reacceptance": 1 if requires_reacceptance else 0,
 		}
 	)
 

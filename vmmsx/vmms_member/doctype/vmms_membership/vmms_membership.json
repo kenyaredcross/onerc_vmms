@@ -35,6 +35,12 @@
   "column_break_payment",
   "payment_receipt",
   "paid_on",
+  "accounting_section",
+  "accounting_status",
+  "sales_invoice",
+  "column_break_accounting",
+  "payment_entry",
+  "accounting_note",
   "proof_section",
   "membership_source",
   "column_break_proof",
@@ -230,6 +236,50 @@
    "fieldtype": "Datetime",
    "label": "Paid On",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.accounting_status",
+   "fieldname": "accounting_section",
+   "fieldtype": "Section Break",
+   "label": "Accounting"
+  },
+  {
+   "fieldname": "accounting_status",
+   "fieldtype": "Select",
+   "label": "Accounting",
+   "options": "\nPosted\nFailed",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Whether this fee has been posted to ERPNext. Blank means it was not due to be: free, proved from an earlier system, or paid before posting started."
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_accounting",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_entry",
+   "fieldtype": "Link",
+   "label": "Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "accounting_note",
+   "fieldtype": "Small Text",
+   "label": "Why posting failed",
+   "read_only": 1,
+   "no_copy": 1,
+   "depends_on": "eval:doc.accounting_status=='Failed'"
   },
   {
    "fieldname": "proof_section",
@@ -459,7 +509,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-11-04 16:56:05.366201",
+ "modified": "2026-11-08 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "VMMS Member",
  "name": "VMMS Membership",

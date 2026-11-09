@@ -133,6 +133,13 @@ export interface MyCertifications {
 /** `member/services/membership.py::status` plus the two flags `my_memberships` adds. */
 export interface MembershipRow {
 	payer_phone?: string | null;
+	/** Where the fee sits in ERPNext's books; null when it was not due to be posted. */
+	accounting_status?: "Posted" | "Failed" | null;
+	accounting_note?: string | null;
+	sales_invoice?: string | null;
+	payment_entry?: string | null;
+	/** The reader is accounts staff and this paid fee is due in the books and not there yet. */
+	can_post_to_books?: boolean;
 	name: string;
 	member: string;
 	member_name: string | null;
@@ -678,6 +685,18 @@ export interface Declaration {
 	/** The `VMMS Declaration Version` being shown, recorded on the acceptance. */
 	declaration_version: string | null;
 	is_required: boolean;
+}
+
+/**
+ * A required declaration a signed-in volunteer or member has still to accept,
+ * from `registration/services/consent.py::outstanding`.
+ *
+ * `updated` is true when they accepted an earlier version and this one was
+ * published with "Ask everyone to accept again"; false when they never
+ * accepted any version (everybody brought over from the old system).
+ */
+export interface OutstandingDeclaration extends Declaration {
+	updated: boolean;
 }
 
 /**
@@ -2594,4 +2613,34 @@ export interface OperationsDocumentsAnswer {
 	files: OperationsFile[];
 	targets: DocumentTarget[];
 	record_types: string[];
+}
+
+/** `member/services/receipt.py::build`: a paid membership fee's receipt. */
+export interface MembershipReceipt {
+	/** The ERPNext Payment Entry once posted, else `R-` and the membership's name. */
+	receipt_number: string;
+	society: string;
+	logo: string | null;
+	paid_on: string | null;
+	member: { name: string; member_number: string };
+	/** The number the money came from: may be a second line, or a parent's. */
+	phone: string | null;
+	membership: {
+		name: string;
+		type: string;
+		branch: string;
+		valid_from: string | null;
+		valid_to: string | null;
+	};
+	amount: number;
+	currency: string | null;
+	method: string | null;
+	/** Paid by a phone prompt (M-Pesa), so there is always a code to show. */
+	by_phone: boolean;
+	/** The gateway's confirmation code: the M-Pesa receipt number. */
+	gateway_receipt: string | null;
+	transaction: string | null;
+	sales_invoice: string | null;
+	payment_entry: string | null;
+	accounting_status: "Posted" | "Failed" | null;
 }

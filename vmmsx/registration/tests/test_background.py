@@ -86,14 +86,14 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 		if "primary" in keys and "postgraduate" in keys:
 			self.assertLess(keys.index("primary"), keys.index("postgraduate"))
 
-	# --- it stays optional ------------------------------------------------
+	# --- only education is required ----------------------------------------
 
-	def test_a_registration_with_none_of_it_is_still_valid(self):
-		"""The whole block empty, and the application submits.
+	def test_a_registration_with_only_education_is_valid(self):
+		"""One education entry, every other table empty, and the application submits.
 
-		This is the assertion the rest of the feature rests on. Six tables on a
-		registration form is exactly the shape that quietly acquires a required
-		field, and a volunteer application is not a job application.
+		Education is the one table a society needs (`_assert_education_given`);
+		training, experience, licences and referees stay optional, because a
+		volunteer application is not a job application.
 		"""
 		user, application = self.register_as_volunteer("no.background")
 
@@ -101,7 +101,10 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 		# routes a new application straight into review. What matters is that it
 		# left Draft, which is what `assert_ready` refusing would have prevented.
 		self.assertNotEqual(application.approval_state, "Draft")
-		self.assertEqual(self.held(self.profile_of(user), "education"), [])
+		profile = self.profile_of(user)
+		self.assertEqual(len(self.held(profile, "education")), 1)
+		for table in ("training", "work_experience", "references"):
+			self.assertEqual(self.held(profile, table), [])
 
 	# --- writing it -------------------------------------------------------
 
@@ -110,7 +113,7 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 			"full.background",
 			profession="Student",
 			background={
-				"education": [{"institution": "Kenyatta University", "qualification": "BSc Nursing"}],
+				"education": [{"institution": "Kenyatta University", "level": fixtures.ensure_education_level(), "qualification": "BSc Nursing"}],
 				"training": [{"course_name": "First aid"}],
 				"work_experience": [{"organization": "Mission Hospital", "role": "Nurse"}],
 				"references": [{"reference_name": "Grace Wanjiru", "phone": "+254700000222"}],
@@ -147,7 +150,7 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 		user, _ = self.register_as_volunteer(
 			"reads.background",
 			profession="Student",
-			background={"education": [{"institution": "Kenyatta University"}]},
+			background={"education": [{"institution": "Kenyatta University", "level": fixtures.ensure_education_level()}]},
 		)
 
 		with fixtures.acting_as(user):
@@ -170,7 +173,7 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 		user, _ = self.register_as_volunteer(
 			"leaves.tables.alone",
 			background={
-				"education": [{"institution": "Kenyatta University"}],
+				"education": [{"institution": "Kenyatta University", "level": fixtures.ensure_education_level()}],
 				"references": [{"reference_name": "Grace Wanjiru"}],
 			},
 		)
@@ -227,7 +230,12 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 			"extra.field",
 			background={
 				"education": [
-					{"institution": "Kenyatta University", "parent": "somebody-elses-profile", "idx": 99}
+					{
+						"institution": "Kenyatta University",
+						"level": fixtures.ensure_education_level(),
+						"parent": "somebody-elses-profile",
+						"idx": 99,
+					}
 				]
 			},
 		)
@@ -257,7 +265,7 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 			"dossier.background",
 			profession="Professional",
 			background={
-				"education": [{"institution": "Kenyatta University", "qualification": "BSc Nursing"}],
+				"education": [{"institution": "Kenyatta University", "level": fixtures.ensure_education_level(), "qualification": "BSc Nursing"}],
 				"references": [{"reference_name": "Grace Wanjiru", "phone": "+254700000333"}],
 			},
 		)
@@ -290,7 +298,7 @@ class TestTheBackgroundBlock(RegistrationTestCase):
 
 		user, application = self.register_as_volunteer(
 			"corrects.background",
-			background={"education": [{"institution": "Kenyatta University"}]},
+			background={"education": [{"institution": "Kenyatta University", "level": fixtures.ensure_education_level()}]},
 		)
 		self.approve(fixtures.APPLICATION_DOCTYPE, application.name)
 		profile = self.profile_of(user)

@@ -709,12 +709,21 @@ async function walkTo(heading: string) {
 				fireEvent.click(screen.getByRole("option", { name: choice }));
 			}
 		}
-		// The emergency contact is required to submit, so a walk past it gives one.
+		// Education and the emergency contact are required to submit, so a walk
+		// past either gives one.
+		if (screen.queryByRole("heading", { name: "Education and experience" })) fillEducation();
 		if (screen.queryByRole("heading", { name: "Emergency contact" })) fillFirstContact();
 		await goOn();
 	}
 
 	await screen.findByRole("heading", { name: heading });
+}
+
+/** One education entry, institution and level, typed into the first row. */
+function fillEducation() {
+	const place = screen.getAllByLabelText(/^Institution/)[0] as HTMLInputElement;
+	if (!place.value) fireEvent.change(place, { target: { value: "Kibera Secondary" } });
+	fireEvent.change(screen.getAllByLabelText(/^Level/)[0], { target: { value: "secondary" } });
 }
 
 /** One complete emergency contact, typed into the first contact's fields. */
@@ -1210,11 +1219,20 @@ describe("what you have already done", () => {
 		}
 	});
 
-	it("lets somebody straight past it without filling in anything", async () => {
+	it("holds the step until one education entry has its institution and level", async () => {
 		await onTheStep();
+
+		await goOn();
+		expect(screen.getByRole("heading", { name: "Education and experience" })).toBeTruthy();
+
+		fireEvent.change(screen.getByLabelText(/^Institution/), { target: { value: "Kibera Secondary" } });
+		await goOn();
+		expect(screen.getByRole("heading", { name: "Education and experience" })).toBeTruthy();
+
+		fireEvent.change(screen.getByLabelText(/^Level/), { target: { value: "secondary" } });
 		await goOn();
 
-		// Gone, on the first press, with six empty tables behind it.
+		// Gone, with the other five tables left empty: only education is required.
 		expect(screen.queryByRole("heading", { name: "Education and experience" })).toBeNull();
 	});
 
@@ -1244,6 +1262,7 @@ describe("what you have already done", () => {
 		fireEvent.change(screen.getByLabelText(/^Qualification or certification/), {
 			target: { value: "KCSE" },
 		});
+		fireEvent.change(screen.getByLabelText(/^Level/), { target: { value: "secondary" } });
 
 		fireEvent.click(screen.getByRole("button", { name: "Add a referee" }));
 		fireEvent.change(screen.getByLabelText(/^Name/), {
@@ -1256,7 +1275,7 @@ describe("what you have already done", () => {
 		const background = posted[posted.length - 1].payload.background as Record<string, unknown[]>;
 
 		expect(background.education).toEqual([
-			expect.objectContaining({ institution: "Kibera Secondary", qualification: "KCSE" }),
+			expect.objectContaining({ institution: "Kibera Secondary", level: "secondary", qualification: "KCSE" }),
 		]);
 		expect(background.references).toEqual([
 			expect.objectContaining({ reference_name: "Grace Wanjiru" }),
@@ -1295,6 +1314,7 @@ describe("what you have already done", () => {
 
 	it("collects and saves a free-text profession when Other is selected", async () => {
 		await onTheStep();
+		fillEducation();
 
 		fireEvent.change(screen.getByLabelText(/^Profession/), { target: { value: "Other" } });
 		fireEvent.click(screen.getByRole("option", { name: "Other" }));
@@ -1660,5 +1680,124 @@ describe("somebody who already belongs", () => {
 		});
 		await toTheMemberBranchStep();
 		expect(held()).toBe(false);
+	});
+});
+
+describe("membership on one page, for somebody already known", () => {
+	const ORDINARY = {
+		known: true,
+		membership_type: "ordinary",
+		membership_type_name: "Ordinary",
+		description: "For adults.",
+		amount: 500,
+		currency: "KES",
+		free: false,
+		is_lifetime: false,
+		duration_days: 365,
+		requires_approver: true,
+		benefits: [],
+		requires_age_requirement: true,
+		lower_age_limit: 18,
+		upper_age_limit: 150,
+	};
+	const YOUTH = {
+		...ORDINARY,
+		membership_type: "youth",
+		membership_type_name: "Youth in school",
+		description: "For pupils and students in school.",
+		amount: 100,
+		lower_age_limit: 7,
+		upper_age_limit: 17,
+	};
+	const PRIVACY = {
+		name: "member-privacy",
+		title: "Privacy notice",
+		version: "1",
+		source: "Text" as const,
+		body: "<p>We keep your record safe.</p>",
+		external_url: null,
+		declaration_version: "member-privacy-1",
+		is_required: true,
+	};
+
+	beforeEach(() => {
+		reads.set(API.myQuickMembership, { available: true, phone: "0711000222", date_of_birth: "1990-01-01" });
+		reads.set(API.memberGeoLevels, { levels: ["branch"], unconstrained: false });
+		reads.set(API.membershipTypes, {
+			types: [YOUTH, ORDINARY],
+			questions: [],
+			declarations: [PRIVACY],
+			payment_methods: [
+				{ gateway: "Mpesa Daraja", label: "M-Pesa", instructions: "", in_person: false, by_phone: true },
+			],
+		});
+	});
+
+	const openMember = () => mount(<Join />, { route: "/join?path=member" });
+
+	it("asks for type, branch, phone and declarations on one page, and nothing about the person", async () => {
+		openMember();
+
+		expect(await screen.findByRole("heading", { name: "Become a member" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: /Membership type/ })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: /Branch/ })).toBeTruthy();
+		expect(screen.getByRole("button", { name: "Send payment prompt" })).toBeTruthy();
+		expect(screen.queryByRole("heading", { name: "Personal Info" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "Continue" })).toBeNull();
+	});
+
+	it("will not let somebody choose a type their age rules out, and says why", async () => {
+		openMember();
+		await screen.findByRole("heading", { name: "Become a member" });
+
+		fireEvent.click(screen.getAllByRole("radio").find((row) => row.textContent?.includes("Youth in school"))!);
+
+		const popup = await screen.findByRole("dialog", { name: "Youth in school is not open to you" });
+		expect(popup.textContent).toMatch(/for ages 7 to 17\. You are \d+\./);
+		expect(popup.textContent).toContain("For pupils and students in school.");
+		// Not chosen: the type section still offers every type.
+		expect(screen.getAllByRole("radio").every((row) => row.getAttribute("aria-checked") !== "true")).toBe(true);
+	});
+
+	it("holds the button until the declarations are accepted, then sends only the membership", async () => {
+		openMember();
+		await screen.findByRole("heading", { name: "Become a member" });
+
+		fireEvent.click(screen.getAllByRole("radio").find((row) => row.textContent?.includes("Ordinary"))!);
+		expect((screen.getByLabelText(/M-Pesa phone number/) as HTMLInputElement).value).toBe("0711000222");
+
+		const send = screen.getByRole("button", { name: "Send payment prompt" });
+		expect(send.getAttribute("aria-disabled")).toBe("true");
+		fireEvent.click(send);
+		expect(screen.getByRole("alert").textContent).toBe("Accept “Privacy notice”");
+		expect(posted).toHaveLength(0);
+
+		fireEvent.click(screen.getByRole("checkbox", { name: /I have read and agree/ }));
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Send payment prompt" }));
+		});
+
+		const draft = posted.find((row) => row.path === API.saveMyMemberDraft)!.payload;
+		expect(draft).toEqual(
+			expect.objectContaining({
+				membership_type: "ordinary",
+				geo_node: "GEO-BRANCH",
+				payer_phone: "0711000222",
+				payment_method: "Mpesa Daraja",
+				declarations_accepted: ["member-privacy"],
+			}),
+		);
+		for (const personal of ["first_name", "last_name", "residency_type", "identifications", "personal_details"]) {
+			expect(draft).not.toHaveProperty(personal);
+		}
+		expect(posted.some((row) => row.path === API.submitMyRegistration)).toBe(true);
+	});
+
+	it("is the full form for somebody the society does not know yet", async () => {
+		reads.set(API.myQuickMembership, { available: false });
+		openMember();
+
+		expect(await screen.findByRole("button", { name: "Continue" })).toBeTruthy();
+		expect(screen.queryByRole("button", { name: "Send payment prompt" })).toBeNull();
 	});
 });

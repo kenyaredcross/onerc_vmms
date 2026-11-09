@@ -1399,6 +1399,51 @@ def my_standing() -> dict:
 	return {"volunteer": _standing_volunteer(profile), "memberships": _standing_memberships(profile)}
 
 
+#: A volunteer application whose details the society already holds, whether
+#: or not it has been sent: a draft being filled in, or one being decided.
+KNOWN_APPLICATION_STATES = ("Draft", "Submitted", "In Review")
+
+
+@frappe.whitelist()
+def my_quick_membership() -> dict:
+	"""Whether the caller may join as a member on one page, and what to prefill.
+
+	Offered to somebody the society already knows — a volunteer, or somebody
+	with a volunteer application, drafted, pending or in review — **and whose
+	profile already passes the membership checks** (`parity.member_profile_ready`).
+	One rule for all of them, so nobody is sent down the short road to be refused
+	at the end over a detail it never asked for; anybody short of something gets
+	the full form, which asks for it.
+
+	The one-page form asks only for the type, the branch, the phone that will pay
+	and the declarations. `date_of_birth` is returned so it can rule out types by
+	age before anybody presses anything; the server refuses them anyway
+	(`membership.assert_age_eligibility`).
+	"""
+	_assert_signed_in()
+
+	from vmmsx.registration.services import parity
+
+	profile = frappe.db.get_value(
+		PROFILE_DOCTYPE, {"user": frappe.session.user}, ["name", "phone", "date_of_birth"], as_dict=True
+	)
+	if not profile:
+		return {"available": False}
+
+	known = bool(_standing_volunteer(profile.name)) or bool(
+		frappe.db.exists(
+			"VMMS Volunteer Application",
+			{"red_profile": profile.name, "approval_state": ("in", KNOWN_APPLICATION_STATES)},
+		)
+	)
+
+	return {
+		"available": known and parity.member_profile_ready(profile.name),
+		"phone": profile.phone or "",
+		"date_of_birth": profile.date_of_birth,
+	}
+
+
 def _standing_volunteer(profile: str) -> dict | None:
 	row = frappe.db.get_value(
 		"VMMS Volunteer", {"red_profile": profile}, ["name", "status", "home_geo_node"], as_dict=True

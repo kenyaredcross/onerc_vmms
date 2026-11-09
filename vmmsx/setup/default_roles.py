@@ -45,6 +45,11 @@ def install() -> None:
 		changed = True
 
 	if changed:
+		# Only role wiring is written here. On a new site the society's name,
+		# country and language are still empty until the setup wizard runs, and
+		# they are mandatory: without this, `bench migrate` before the wizard
+		# failed on this save and stopped every after-migrate hook behind it.
+		settings.flags.ignore_mandatory = True
 		settings.save(ignore_permissions=True)
 
 	# These values still exist as fields because the runtime access layer

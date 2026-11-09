@@ -10,6 +10,7 @@ import { PersonHero, RegisterLinks } from "../ui/PersonHero";
 import { FileLink, FilePreview } from "../ui/FilePreview";
 import { RegistrationDetailsSummary, isWebAddress } from "../ui/RegistrationDetails";
 import { BackgroundCard } from "./Person";
+import { PostToBooks } from "./PostToBooks";
 import { RecordPayment, owesAFee } from "./RecordPayment";
 import {
 	ActionMenu,
@@ -834,9 +835,43 @@ function MembershipFacts({
 								: null
 						}
 					/>
-					<Field label="Paid from" value={row.payment?.paid_from || row.payer_phone} />
+					<Field label="Phone number" value={row.payment?.paid_from || row.payer_phone} />
 					<Field label="Payment reference" value={row.payment_transaction} />
+					<Field
+						label="In the books"
+						value={
+							row.accounting_status === "Posted"
+								? "Posted to ERPNext"
+								: row.accounting_status === "Failed"
+									? `Not posted: ${row.accounting_note ?? "see the membership"}`
+									: row.can_post_to_books
+										? "Not posted yet"
+										: null
+						}
+					/>
+					<Field label="Sales invoice" value={row.sales_invoice} />
+					<Field label="Payment entry" value={row.payment_entry} />
 				</dl>
+
+				{/* The member's own receipt, as they print it: for a counter query, or
+				    to print a copy for somebody who has lost theirs. */}
+				{row.paid_on && review.membership_source !== "Proof" && (fee?.amount ?? 0) > 0 && (
+					<Link
+						to={`/receipt/${encodeURIComponent(row.name)}`}
+						target="_blank"
+						rel="noreferrer"
+						className="mt-4 inline-flex items-center rounded-lg border border-rail-line bg-white px-3.5 py-2 text-[12.5px] font-semibold text-slate-strong transition hover:border-slate-faint hover:text-ink"
+					>
+						View receipt
+					</Link>
+				)}
+
+				{/* Accounts staff only: the answer to "Not posted" just above. */}
+				{row.can_post_to_books && (
+					<div className="mt-5 border-t border-card-line pt-5">
+						<PostToBooks row={row} onPosted={onRecorded} />
+					</div>
+				)}
 
 				{/* The act that answers the "Not yet" directly above it. This is
 				    where a coordinator lands from the members queue, so a fee taken

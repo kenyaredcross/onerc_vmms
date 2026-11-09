@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "autoname": "CONSENT-.#####",
+ "creation": "2026-11-08 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "red_profile",
+  "user",
+  "declaration",
+  "title",
+  "column_break_consent",
+  "version",
+  "declaration_version",
+  "accepted_on",
+  "wording_section",
+  "source",
+  "external_url",
+  "body_snapshot"
+ ],
+ "fields": [
+  {
+   "fieldname": "red_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Person",
+   "options": "Red Profile",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Signed In As",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declaration",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Declaration",
+   "options": "VMMS Declaration",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_consent",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "declaration_version",
+   "fieldtype": "Link",
+   "label": "Declaration Version",
+   "options": "VMMS Declaration Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "accepted_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Accepted On",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "wording_section",
+   "fieldtype": "Section Break",
+   "label": "What They Accepted"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Text\nLink",
+   "read_only": 1
+  },
+  {
+   "fieldname": "external_url",
+   "fieldtype": "Data",
+   "label": "External URL",
+   "options": "URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "body_snapshot",
+   "fieldtype": "Text Editor",
+   "label": "Wording",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-11-08 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Registration",
+ "name": "VMMS Consent",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "accepted_on",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

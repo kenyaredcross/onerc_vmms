@@ -12,6 +12,7 @@
   "column_break_version",
   "source",
   "published_on",
+  "requires_reacceptance",
   "text_section",
   "body",
   "link_section",
@@ -65,6 +66,13 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "description": "Tick when this version changes what people agree to. Everybody who accepted an earlier version is asked to accept this one the next time they open the portal. Leave clear for a correction that changes nothing, such as a typo.",
+   "fieldname": "requires_reacceptance",
+   "fieldtype": "Check",
+   "label": "Ask everyone to accept again"
+  },
+  {
    "depends_on": "eval:doc.source==\"Text\"",
    "fieldname": "text_section",
    "fieldtype": "Section Break",
@@ -106,7 +114,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-01 09:00:00.000000",
+ "modified": "2026-11-08 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "VMMS Registration",
  "name": "VMMS Declaration Version",

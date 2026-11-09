@@ -1,0 +1,125 @@
+{
+ "actions": [],
+ "creation": "2026-11-08 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "posting_section",
+  "enabled",
+  "posting_starts_on",
+  "column_break_posting",
+  "company",
+  "income_account",
+  "customer_section",
+  "fee_item",
+  "column_break_customer",
+  "customer_group",
+  "territory",
+  "methods_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "posting_section",
+   "fieldtype": "Section Break",
+   "label": "Posting membership payments"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Post membership payments to ERPNext",
+   "description": "When a membership fee is paid, raise a Sales Invoice for the member and settle it with a Payment Entry, both on the branch's cost centre."
+  },
+  {
+   "depends_on": "enabled",
+   "fieldname": "posting_starts_on",
+   "fieldtype": "Date",
+   "label": "Post payments received on or after",
+   "mandatory_depends_on": "enabled",
+   "description": "Payments received before this date are not posted. Memberships proved from an earlier system are never posted."
+  },
+  {
+   "fieldname": "column_break_posting",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "mandatory_depends_on": "enabled"
+  },
+  {
+   "fieldname": "income_account",
+   "fieldtype": "Link",
+   "label": "Membership income account",
+   "options": "Account",
+   "mandatory_depends_on": "enabled",
+   "description": "Every membership type's fee is credited here."
+  },
+  {
+   "fieldname": "customer_section",
+   "fieldtype": "Section Break",
+   "label": "Invoices"
+  },
+  {
+   "fieldname": "fee_item",
+   "fieldtype": "Link",
+   "label": "Membership fee item",
+   "options": "Item",
+   "mandatory_depends_on": "enabled",
+   "description": "The item on each invoice. The line says which membership type and branch it was for."
+  },
+  {
+   "fieldname": "column_break_customer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_group",
+   "fieldtype": "Link",
+   "label": "Customer group for members",
+   "options": "Customer Group"
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Link",
+   "label": "Territory for members",
+   "options": "Territory"
+  },
+  {
+   "fieldname": "methods_note",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted\">Which account the money lands in is set per payment method: National Society Settings, Payment methods, ERPNext mode of payment. The mode of payment's default account for this company is the account debited.</p>"
+  }
+ ],
+ "grid_page_length": 50,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-08 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "VMMS Member",
+ "name": "VMMS Accounting Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "write": 1,
+   "role": "Accounts Manager"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

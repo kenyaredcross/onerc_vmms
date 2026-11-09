@@ -536,10 +536,10 @@ def try_activate(membership) -> dict | None:
 def activate(membership) -> dict:
 	"""Make it real: dates, member status, and the affiliation index.
 
-	Validity is computed here rather than at creation because the clock starts
-	when somebody actually becomes a member, not when they applied — an
-	application that sat with an approver for three weeks must not lose three
-	weeks of what it paid for.
+	Validity is written here, at activation, but a paid membership's window
+	starts on the day it was paid for (see `_validity`): the society decided
+	the fee buys a year from payment, however long the review takes. A free
+	membership has no payment and starts on the day it becomes real.
 
 	**One exception, and it is a decision somebody made rather than a rule.** A
 	membership carrying dates an approver confirmed against uploaded evidence
@@ -549,7 +549,7 @@ def activate(membership) -> dict:
 	`proof.verify()`, only from the review screen, and never from the applicant's
 	claim. Every other membership in this app — an ordinary application, a
 	renewal, a clerk's proof entry — has nothing there to read and reaches the
-	fresh period below, unchanged.
+	fresh period, from payment or from today.
 	"""
 	membership_type = type_of(membership)
 	start, end = _validity(membership, membership_type)
@@ -566,14 +566,35 @@ def activate(membership) -> dict:
 	return status(membership)
 
 
+def validity_window(membership) -> tuple:
+	"""The membership's window: as recorded once active, as it will be before then.
+
+	A paid membership waiting on approval already knows its window, because it
+	runs from the payment. The receipt shows it rather than leaving the dates
+	blank until a reviewer gets to it. `valid_to` of None means no end date.
+	"""
+	if membership.get("valid_from"):
+		return getdate(membership.valid_from), getdate(membership.valid_to) if membership.valid_to else None
+
+	return _validity(membership, type_of(membership))
+
+
 def _validity(membership, membership_type):
-	"""The window this membership is being activated for: verified, or fresh."""
+	"""The window this membership is being activated for: verified, or fresh.
+
+	**A paid membership runs from the day it was paid for, not the day it was
+	approved.** The fee buys a year; a member who paid on 1 March and was
+	approved on 20 March has been paying since 1 March, and their year ends a
+	year after that. Approval is the society's review, not the start of what
+	they bought, and a slow queue must not quietly lengthen or shift it. A free
+	membership has no payment to count from, so it starts at activation.
+	"""
 	verified = proof.verified_validity(membership, membership_type)
 
 	if verified:
 		return verified
 
-	start = getdate(today())
+	start = getdate(membership.paid_on) if membership.get("paid_on") else getdate(today())
 
 	return start, _valid_to(membership_type, start)
 
@@ -989,6 +1010,14 @@ def _sync_member(membership) -> None:
 	member_service.refresh(membership.member)
 
 
+def _can_post_to_books(membership) -> bool:
+	if not membership.get("paid_on") or membership.get("accounting_status") == "Posted":
+		return False
+	from vmmsx.finance.services import membership_posting
+
+	return membership_posting.can_post(membership)
+
+
 def status(membership) -> dict:
 	"""Explicit DTO for one membership. Built field by field.
 
@@ -1035,6 +1064,15 @@ def status(membership) -> dict:
 		"is_lapsed": is_lapsed(membership),
 		"fee": payment.recorded_fee(membership, membership_type),
 		"payer_phone": membership.get("payer_phone"),
+		# Where the fee sits in ERPNext's books: Posted, Failed (with why), or
+		# empty when it was not due to be posted. See `membership_posting`.
+		"accounting_status": membership.get("accounting_status") or None,
+		"accounting_note": membership.get("accounting_note") or None,
+		"sales_invoice": membership.get("sales_invoice") or None,
+		"payment_entry": membership.get("payment_entry") or None,
+		# Accounts staff may post this fee by hand now: paid, due, not yet in the
+		# books. The endpoint asks the same question again.
+		"can_post_to_books": _can_post_to_books(membership),
 		"member_since_date": membership.get("member_since_date"),
 		"legacy_membership_id": membership.get("legacy_membership_id"),
 		"billing_cycle": membership_type.get("billing_cycle"),

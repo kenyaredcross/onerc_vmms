@@ -327,7 +327,28 @@ def assert_member_ready(membership) -> None:
 	profile = frappe.db.get_value("VMMS Member", membership.get("member"), "red_profile")
 	if not profile:
 		frappe.throw(_("Complete your member identity before submitting."), frappe.MandatoryError)
+	_assert_member_profile(frappe.get_doc(PROFILE_DOCTYPE, profile), policy)
+
+
+def member_profile_ready(profile: str) -> bool:
+	"""Would this profile pass `assert_member_ready` as it stands? Changes nothing.
+
+	The one-page membership (`registration.my_quick_membership`) is offered only
+	to somebody for whom this is true, so it never ends in a refusal about a
+	detail it did not ask for. A date of birth is required here whatever the
+	policy, because the page uses it to rule out types by age.
+	"""
 	document = frappe.get_doc(PROFILE_DOCTYPE, profile)
+	if not document.get("date_of_birth"):
+		return False
+	try:
+		_assert_member_profile(document, options())
+	except frappe.ValidationError:
+		return False
+	return True
+
+
+def _assert_member_profile(document, policy) -> None:
 	message = age_error(
 		document.get("date_of_birth"), policy["member_min_age"], policy["member_max_age"], today()
 	)

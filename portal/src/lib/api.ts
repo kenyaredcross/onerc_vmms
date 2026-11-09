@@ -11,6 +11,8 @@
  * than inventing one. See `NotBuilt` in `ui/primitives.tsx`.
  */
 export const API = {
+	myOutstandingDeclarations: "vmmsx.api.consent.my_outstanding_declarations",
+	acceptMyDeclarations: "vmmsx.api.consent.accept_my_declarations",
 	assetUpdate: "vmmsx.api.assets.update_asset",
 	moveBoardTask: "vmmsx.api.tasks.move_board_task",
 	communicationHistory: "vmmsx.api.communication.history",
@@ -172,6 +174,9 @@ export const API = {
 	// vmmsx/api/member.py
 	myMemberships: "vmmsx.api.member.my_memberships",
 	memberCertificate: "vmmsx.api.member.get_certificate",
+	membershipReceipt: "vmmsx.api.member.membership_receipt",
+	myQuickMembership: "vmmsx.api.registration.my_quick_membership",
+	postMembershipPayment: "vmmsx.api.member.post_membership_payment",
 	renewMembership: "vmmsx.api.member.renew_membership",
 	membershipTypes: "vmmsx.api.member.membership_types",
 	memberGeoLevels: "vmmsx.api.member.geo_node_levels",

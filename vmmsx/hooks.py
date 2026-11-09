@@ -373,6 +373,7 @@ after_migrate = [
 	"vmmsx.patches.install_registration_parity.execute",
 	"vmmsx.patches.install_blood_groups.execute",
 	"vmmsx.setup.geo_cost_center_fields.install",
+	"vmmsx.setup.membership_accounting_fields.install",
 	"vmmsx.finance.services.geo_cost_center.backfill",
 	# The Custom Fields vmmsx owns on ERPNext's `Project`: the owning Geo Node,
 	# the donor block, and the risks and assumptions tables. **First**, and on
@@ -548,6 +549,10 @@ scheduler_events = {
 		# Memberships lapse on a date, so somebody has to notice the date
 		# passing. Idempotent: it only moves Active to Expired.
 		"vmmsx.member.services.membership.expire_lapsed",
+		# Every paid membership fee not yet in ERPNext's books: one whose posting
+		# failed (an account not yet set, a closed period), and one never tried
+		# because posting was off when it was paid or its job never ran.
+		"vmmsx.finance.services.membership_posting.post_outstanding",
 		# A branch transfer arranged for next month has to happen next month, and
 		# nothing else would notice the date arriving. Idempotent: it reads each
 		# transfer's own state rather than remembering what it did yesterday, so

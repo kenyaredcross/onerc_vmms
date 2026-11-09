@@ -463,6 +463,7 @@ export function BackgroundFields({
 	value,
 	onChange,
 	openEducationByDefault = false,
+	requireEducation = false,
 	profiles,
 	onProfiles,
 }: {
@@ -481,6 +482,8 @@ export function BackgroundFields({
 	onChange: (values: Partial<BackgroundValues>) => void;
 	/** Registration opens one education row; the profile editor keeps its compact empty state. */
 	openEducationByDefault?: boolean;
+	/** Registration asks for one education entry, with its level (`educationGaps`). */
+	requireEducation?: boolean;
 }) {
 	const {
 		profession,
@@ -597,7 +600,7 @@ export function BackgroundFields({
 							/>
 						</Field>
 
-						<Field label="Level" htmlFor={`ed-level-${index}`}>
+						<Field label="Level" required={requireEducation} htmlFor={`ed-level-${index}`}>
 							<VocabularySelect
 								id={`ed-level-${index}`}
 								value={row.level}
@@ -1091,6 +1094,24 @@ export function endsBefore(start?: string | null, end?: string | null): boolean 
 
 function yearEndsBefore(start?: number | null, end?: number | null): boolean {
 	return start != null && end != null && end < start;
+}
+
+/**
+ * What a volunteer application needs from the education table: one entry with
+ * an institution and a level. The server refuses the same thing
+ * (`application._assert_education_given`); this points at the field to fill.
+ */
+export function educationGaps(value: BackgroundValues): Array<{ anchor: string; note: string }> {
+	const rows = value.education;
+	if (rows.some((row) => row.institution.trim() && row.level)) return [];
+
+	const started = rows.findIndex((row) => row.institution.trim() || row.level);
+	if (started < 0) return [{ anchor: "ed-place-0", note: "Add your education" }];
+
+	const row = rows[started];
+	return row.institution.trim()
+		? [{ anchor: `ed-level-${started}`, note: `Education ${started + 1}: choose the level` }]
+		: [{ anchor: `ed-place-${started}`, note: `Education ${started + 1}: enter the institution` }];
 }
 
 /** The line under an end date that is earlier than its start. */

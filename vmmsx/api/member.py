@@ -381,6 +381,54 @@ def get_review(name: str, as_of: str | None = None) -> dict:
 
 
 @frappe.whitelist()
+def membership_receipt(name: str) -> dict:
+	"""The payment receipt for a paid membership: the member's own, or one staff may read.
+
+	Gated by `_readable`, as the certificate is: the holder through their login,
+	staff through roles and geo scope. See `member/services/receipt.py`.
+
+	**The id is in the page's address, so anybody can type another one.** Someone
+	else's membership and one that does not exist get the same answer, so
+	changing the id tells nobody which memberships are real, and the message
+	is plain words rather than Frappe's permission text.
+	"""
+	from vmmsx.member.services import receipt
+
+	shown = len(frappe.local.message_log)
+	try:
+		membership = _readable(name)
+	except (frappe.PermissionError, frappe.DoesNotExistError):
+		# Drop whatever Frappe queued for the screen; only the line below shows.
+		frappe.local.message_log = frappe.local.message_log[:shown]
+		frappe.throw(frappe._("There is no receipt here for you."), frappe.PermissionError)
+
+	return receipt.build(membership)
+
+
+@frappe.whitelist(methods=["POST"])
+def post_membership_payment(name: str) -> dict:
+	"""Post one paid membership's fee to ERPNext now. For accounts staff.
+
+	The same posting a confirmed payment queues by itself; this is the button
+	for one that failed and whose cause has been fixed, or one paid while
+	posting was off. A failure is answered, not raised: raising would roll back
+	the "Failed" mark and its reason along with everything else, and the reason
+	is what the person pressing the button needs to read.
+	"""
+	from vmmsx.finance.services import membership_posting
+
+	frappe.only_for(membership_posting.POSTERS)
+	_readable(name)
+
+	try:
+		return membership_posting.post(name)
+	except Exception as error:
+		frappe.db.commit()  # nosemgrep: keep the Failed mark and its reason
+		frappe.clear_messages()
+		return {"posted": False, "reason": membership_posting.plain(error)}
+
+
+@frappe.whitelist()
 def get_certificate(name: str) -> dict:
 	"""Render this membership's certificate from its type's configured template.
 

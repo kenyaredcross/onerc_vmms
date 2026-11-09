@@ -39,6 +39,7 @@ const WorkspaceHome = lazy(() => import("./WorkspaceHome"));
 const PortalLayout = lazy(() => import("./portal/PortalLayout"));
 const Dashboard = lazy(() => import("./portal/Dashboard"));
 const Membership = lazy(() => import("./portal/Membership"));
+const Receipt = lazy(() => import("./portal/Receipt"));
 const Hours = lazy(() => import("./portal/Hours"));
 const MyAssets = lazy(() => import("./portal/MyAssets"));
 const Profile = lazy(() => import("./portal/Profile"));
@@ -363,6 +364,17 @@ export default function App() {
 				    second so a checked card always has a URL. */}
 				<Route path="/verify" element={<Verify />} />
 				<Route path="/verify/:token" element={<Verify />} />
+				{/* Outside the portal chrome so that printing it prints the receipt
+				    alone. Members and staff both land here; the server decides who
+				    may read which. */}
+				<Route
+					path="/receipt/:name"
+					element={
+						<RequireAuth>
+							<Receipt />
+						</RequireAuth>
+					}
+				/>
 				<Route
 					path="/start"
 					element={

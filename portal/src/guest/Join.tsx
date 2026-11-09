@@ -19,6 +19,8 @@ import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
 import { fileNameOf } from "../ui/FilePreview";
 import { selectedNode } from "../ui/GeoSelects";
 import { PlanCards } from "../ui/PlanCards";
+import { DeclarationCard } from "../ui/DeclarationCard";
+import { Modal } from "../portal/ui/overlays";
 import {
 	BackgroundFields,
 	backgroundDateGaps,
@@ -27,6 +29,7 @@ import {
 	backgroundFrom,
 	backgroundLines,
 	backgroundPayload,
+	educationGaps,
 	emptyBackground,
 	type BackgroundValues,
 } from "../ui/Background";
@@ -169,7 +172,11 @@ interface Gap {
  * on top of the centred one, which reads as a jump and then a correction.
  */
 function pointAt(anchor: string): void {
-	const field = document.getElementById(anchor);
+	// The branch picker's rungs, where it stops at the county (a membership kept
+	// per county), are one county select: point there instead.
+	const field =
+		document.getElementById(anchor) ??
+		(anchor.startsWith("serving-rung") ? document.getElementById("serving-county") : null);
 	if (!field) return;
 
 	// A radio, a tickbox and the visually hidden file input behind "Upload
@@ -654,8 +661,9 @@ function JoinBody() {
 	 * returning applicant should not retype a qualification the society already
 	 * holds.
 	 *
-	 * **The background tables are optional.** The society can require a profession separately. A
-	 * volunteer application is not a job application. The step exists so somebody
+	 * **One education entry is required; the other tables are optional.** The
+	 * society can require a profession separately. A volunteer application is
+	 * not a job application. The step exists so somebody
 	 * who has a nursing licence can say so, not to make anybody who has not feel
 	 * they have failed a form.
 	 *
@@ -1133,6 +1141,67 @@ function JoinBody() {
 	const node = selectedNode(servingChain, allowedLevels);
 
 	/**
+	 * The one-page membership, for somebody whose details the society already
+	 * holds: a volunteer, or a volunteer application pending or in review
+	 * (`registration.my_quick_membership`). Type, branch, the phone that pays and
+	 * the declarations, then the payment prompt. Nothing about the person is
+	 * sent, so nothing about them is overwritten.
+	 */
+	const quick = useFrappeGetCall<{ message: { available: boolean; phone?: string; date_of_birth?: string | null } }>(
+		API.myQuickMembership,
+		undefined,
+		isGuest || path !== "member" ? null : "join:quick_membership",
+	);
+	const quickMode = path === "member" && Boolean(quick.data?.message?.available);
+	const phoneMethod = paymentMethods.find((method) => method.by_phone ?? !method.in_person) ?? null;
+	const knownPhone = quick.data?.message?.phone ?? "";
+	const knownBirth = dateOfBirth || quick.data?.message?.date_of_birth || "";
+	const knownAge = knownBirth ? ageOn(knownBirth) : null;
+
+	useEffect(() => {
+		if (quickMode && phoneMethod) setPaymentMethod(phoneMethod.gateway);
+	}, [quickMode, phoneMethod]);
+
+	useEffect(() => {
+		if (quickMode && knownPhone) setPayerPhone((current) => current || knownPhone);
+	}, [quickMode, knownPhone]);
+
+	/** The type somebody tried to choose and may not, with the popup that says why. */
+	const [ruledOut, setRuledOut] = useState<PricedType | null>(null);
+	const choosePlan = (key: string) => {
+		const plan = priced.find((row) => row.membership_type === key);
+		if (plan && whyNotEligible(plan, knownAge)) {
+			setRuledOut(plan);
+			return;
+		}
+		setMembershipType(key);
+	};
+
+	const quickGaps = (): Gap[] => {
+		const gaps: Gap[] = [];
+		const need = (met: boolean, anchor: string, note: string) => {
+			if (!met) gaps.push({ anchor, note });
+		};
+		need(Boolean(chosenType), "join-plan", "Choose a membership type");
+		if (chosenType) need(!whyNotEligible(chosenType, knownAge), "join-plan", "Choose a membership type you are eligible for");
+		need(Boolean(node), `serving-rung-${servingChain.length}`, "Choose your branch");
+		if (node) {
+			need(
+				!heldMemberships.some((held) => held.branch === node.name),
+				`serving-rung-${servingChain.length}`,
+				"You already have a membership with this branch",
+			);
+		}
+		if (phoneMethod && !chosenType?.free) {
+			need(payerPhone.replace(/\D/g, "").length >= 9, "join-payer-phone", "Enter the phone number that will pay");
+		}
+		for (const declaration of (memberDeclarations ?? []).filter((row) => row.is_required)) {
+			need(accepted.includes(declaration.name), `declaration-${declaration.name}`, `Accept “${declaration.title}”`);
+		}
+		return gaps;
+	};
+
+	/**
 	 * How the review page names the way this person is going to pay.
 	 *
 	 * The society's label, with the chosen office appended where the method is
@@ -1359,6 +1428,7 @@ function JoinBody() {
 				"Say what your profession is",
 			);
 			gaps.push(...profileLinkGaps({ linkedin: personalDetails.linkedin ?? "", github: personalDetails.github ?? "" }));
+			gaps.push(...educationGaps(background));
 			gaps.push(...backgroundDateGaps(background));
 
 			return gaps;
@@ -1718,8 +1788,19 @@ function JoinBody() {
 	const persistDraft = async (): Promise<void> => {
 		const endpoint =
 			path === "volunteer" ? API.saveMyVolunteerDraft : API.saveMyMemberDraft;
-		const payload =
-			path === "volunteer"
+		// The one-page membership sends the membership and nothing about the
+		// person: their details are already held, and a blank sent here would
+		// overwrite them.
+		const payload = quickMode
+			? {
+					membership_type: membershipType,
+					geo_node: node?.name,
+					payer_phone: payerPhone,
+					payment_method: paymentMethod,
+					answers,
+					declarations_accepted: accepted,
+				}
+			: path === "volunteer"
 				? {
 						...identity,
 						personal_details: personalDetails,
@@ -2068,6 +2149,56 @@ function JoinBody() {
 				{!sessionLoading &&
 					!isGuest &&
 					!done &&
+					quickMode &&
+					(!openApplication || resumable) &&
+					!standing.isLoading &&
+					!draft.isLoading && (
+					<QuickMembership
+						plans={priced}
+						plansLoading={types.isLoading}
+						chosen={chosenType}
+						onChoose={choosePlan}
+						age={knownAge}
+						chain={servingChain}
+						onChain={setServingChain}
+						allowedLevels={allowedLevels}
+						asksPhone={Boolean(phoneMethod) && !chosenType?.free}
+						method={phoneMethod}
+						phone={payerPhone}
+						onPhone={setPayerPhone}
+						declarations={memberDeclarations ?? []}
+						accepted={accepted}
+						onToggle={(name, yes) =>
+							setAccepted((current) =>
+								yes ? (current.includes(name) ? current : [...current, name]) : current.filter((key) => key !== name),
+							)
+						}
+						gaps={quickGaps()}
+						busy={busy}
+						failure={failure}
+						onSend={() => void submit()}
+					/>
+				)}
+
+				<Modal
+					open={Boolean(ruledOut)}
+					onClose={() => setRuledOut(null)}
+					title={ruledOut ? `${ruledOut.membership_type_name} is not open to you` : ""}
+					footer={<Button onClick={() => setRuledOut(null)}>Choose another type</Button>}
+				>
+					{ruledOut && (
+						<div className="space-y-3 text-[13.5px] leading-relaxed text-slate-body">
+							<p className="font-semibold text-ink">{whyNotEligible(ruledOut, knownAge)}</p>
+							{ruledOut.description && <p>{ruledOut.description}</p>}
+						</div>
+					)}
+				</Modal>
+
+				{!sessionLoading &&
+					!isGuest &&
+					!done &&
+					!quickMode &&
+					!(path === "member" && quick.isLoading) &&
 					(!openApplication || resumable) &&
 					!alreadyVolunteer &&
 					!standing.isLoading &&
@@ -2234,7 +2365,7 @@ function JoinBody() {
 													types={priced}
 													loading={types.isLoading}
 													selected={membershipType}
-													onSelect={setMembershipType}
+													onSelect={choosePlan}
 													columns={2}
 												/>
 											</div>
@@ -2301,6 +2432,8 @@ function JoinBody() {
 												}}
 												onProfiles={(patch) => setPersonalDetails((current) => ({ ...current, ...patch }))}
 												openEducationByDefault
+												requireEducation
+												lead="Education is required. Everything else in this section is optional."
 												value={background}
 												onChange={(patch) =>
 													setBackground((held) => ({ ...held, ...patch }))
@@ -2758,14 +2891,9 @@ function stepsFor(
 						eyebrow: "",
 						title: "Education and experience",
 						sheet: "Your education and experience",
-						optional: true,
 						blurb:
-							"Add your education, training, work experience, licences, and references. All fields are optional.",
-						// No `needs`, and there is nothing to put in one. The rail's
-						// amber note names what a step is waiting for, and this step
-						// waits for nothing worth a standing note: `gapsOf("background")`
-						// is empty unless somebody picked "Other" and did not say what.
-						needs: "",
+							"Add your education. Training, work experience, licences and references are optional.",
+						needs: "Add your education",
 					},
 					{
 						id: "emergency",
@@ -2840,6 +2968,18 @@ function usableChain(chain: GeoNode[], allowedLevels?: string[]): GeoNode[] {
 	);
 
 	return deepest === -1 ? chain : chain.slice(0, deepest + 1);
+}
+
+/**
+ * Why somebody of `age` may not take `plan`, or null when they may (or when
+ * their age is not known, which the server then decides).
+ */
+function whyNotEligible(plan: PricedType, age: number | null): string | null {
+	if (!plan.requires_age_requirement || age === null) return null;
+	const lower = plan.lower_age_limit ?? 0;
+	const upper = plan.upper_age_limit ?? 150;
+	if (age >= lower && age <= upper) return null;
+	return `${plan.membership_type_name} is for ages ${lower} to ${upper}. You are ${age}.`;
 }
 
 function labelsFor(
@@ -3713,10 +3853,13 @@ function PlacementStep({
 	chain,
 	onChain,
 	allowedLevels,
+	stopAtAllowed = false,
 }: {
 	chain: GeoNode[];
 	onChain: (chain: GeoNode[]) => void;
 	allowedLevels?: string[];
+	/** Ask nothing below the deepest level this registration records at. */
+	stopAtAllowed?: boolean;
 }) {
 	return (
 		<div>
@@ -3725,6 +3868,7 @@ function PlacementStep({
 				onChain={onChain}
 				allowedLevels={allowedLevels}
 				idPrefix="serving"
+				stopAtAllowed={stopAtAllowed}
 			/>
 		</div>
 	);
@@ -4817,80 +4961,14 @@ function ConsentsStep({
 }) {
 	return (
 		<div className="space-y-4">
-			{declarations.map((declaration) => {
-				const id = `declaration-${declaration.name}`;
-				const ticked = accepted.includes(declaration.name);
-
-				return (
-					<section
-						key={declaration.name}
-						className={cx(
-							"overflow-hidden rounded-xl border transition",
-							ticked ? "border-blue bg-rail/[0.03]" : "border-card-line bg-white",
-						)}
-					>
-						<header className="flex items-baseline justify-between gap-4 border-b border-card-line px-5 py-3">
-							<h3 className="text-[14.5px] font-bold text-ink">
-								{declaration.title}
-								{declaration.is_required && (
-									<span className="ml-1 text-blue" aria-hidden="true">
-										*
-									</span>
-								)}
-							</h3>
-							{/* Shown because it is stored. A person who asks later what
-							    they agreed to gets an answer that names a version. */}
-							<span className="flex-none text-[10.5px] font-semibold uppercase tracking-wider text-slate-faint">
-								Version {declaration.version}
-							</span>
-						</header>
-
-						{/* Two ways a society publishes a policy, and the second one
-						    is not a degraded first. A society whose legal team owns
-						    the privacy notice on its own website is asked to link to
-						    it rather than to keep a second copy here, so the form
-						    sends the applicant to the page it names instead of
-						    reprinting words it does not have. */}
-						{declaration.source === "Link" ? (
-							<div className="px-5 py-4">
-								<a
-									href={declaration.external_url ?? undefined}
-									target="_blank"
-									rel="noreferrer noopener"
-									className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink underline"
-								>
-									Read {declaration.title.toLowerCase()}
-									<span aria-hidden="true">↗</span>
-								</a>
-								<p className="mt-2 text-[12px] leading-relaxed text-slate-faint">
-									Opens in a new tab.
-								</p>
-							</div>
-						) : (
-							<div
-								className="space-y-2.5 px-5 py-4 text-[13px] leading-relaxed text-muted [&_a]:font-semibold [&_a]:text-ink [&_a]:underline"
-								dangerouslySetInnerHTML={{ __html: declaration.body ?? "" }}
-							/>
-						)}
-
-						<label
-							htmlFor={id}
-							className="flex cursor-pointer items-center gap-3 border-t border-card-line bg-surface/60 px-5 py-3.5"
-						>
-							<input
-								id={id}
-								type="checkbox"
-								className="h-4 w-4 shrink-0 accent-brand"
-								checked={ticked}
-								onChange={(event) => onToggle(declaration.name, event.target.checked)}
-							/>
-							<span className="text-[13px] font-semibold text-ink">
-								I have read and agree to this declaration
-							</span>
-						</label>
-					</section>
-				);
-			})}
+			{declarations.map((declaration) => (
+				<DeclarationCard
+					key={declaration.name}
+					declaration={declaration}
+					ticked={accepted.includes(declaration.name)}
+					onToggle={(yes) => onToggle(declaration.name, yes)}
+				/>
+			))}
 		</div>
 	);
 }
@@ -5054,7 +5132,7 @@ function ConfirmStep({
 					</Review>
 
 					{/* Drawn only when there is something in it. Every part of the
-					    background step is optional, and a review panel reading
+					    background step is mostly optional, and a review panel reading
 					    "Not given" six times would tell somebody they had skipped
 					    something they were explicitly invited to skip. */}
 					{background.rows.length > 0 && (
@@ -5700,6 +5778,16 @@ function Success({
 			    reads exactly like having been signed out. The portal is
 			    `/dashboard`, and that is where "go to your portal" has to go. */}
 			<div className="mt-7 flex flex-wrap gap-2.5">
+				{/* Paid, so there is a receipt to print now or keep for later. It
+				    stays on the membership page too. */}
+				{followPayment && paid && membership && (
+					<Link
+						to={`/receipt/${encodeURIComponent(membership)}`}
+						className="inline-flex items-center rounded-xl bg-action px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-action-hover"
+					>
+						View receipt
+					</Link>
+				)}
 				<Link
 					to="/dashboard"
 					className="inline-flex items-center rounded-xl bg-rail px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-rail/90"
@@ -5715,5 +5803,217 @@ function Success({
 				</Link>
 			</div>
 		</Card>
+	);
+}
+
+/* ------------------------------------------------------ one-page membership */
+
+/**
+ * Membership on one page, for somebody whose details the society already holds.
+ *
+ * Four things and a button: the type (a type their age rules out opens a popup
+ * instead of being chosen), the branch, the phone that pays, and the
+ * declarations. "Send payment prompt" submits the membership and puts the
+ * request on the phone in one press; the page after it waits for the payment
+ * and then offers the receipt.
+ *
+ * The button is held, not disabled: pressing it with something missing walks
+ * to the first thing missing and says what it is.
+ */
+function QuickMembership({
+	plans,
+	plansLoading,
+	chosen,
+	onChoose,
+	age,
+	chain,
+	onChain,
+	allowedLevels,
+	asksPhone,
+	method,
+	phone,
+	onPhone,
+	declarations,
+	accepted,
+	onToggle,
+	gaps,
+	busy,
+	failure,
+	onSend,
+}: {
+	plans: PricedType[];
+	plansLoading: boolean;
+	chosen: PricedType | null;
+	onChoose: (key: string) => void;
+	age: number | null;
+	chain: GeoNode[];
+	onChain: (chain: GeoNode[]) => void;
+	allowedLevels?: string[];
+	asksPhone: boolean;
+	/** The society's pay-by-phone method, for its name and its mark. */
+	method: PaymentMethod | null;
+	phone: string;
+	onPhone: (value: string) => void;
+	declarations: Declaration[];
+	accepted: string[];
+	onToggle: (name: string, yes: boolean) => void;
+	gaps: Gap[];
+	busy: boolean;
+	failure: string | null;
+	onSend: () => void;
+}) {
+	const [choosing, setChoosing] = useState(false);
+	const [pressed, setPressed] = useState<string | null>(null);
+	const showPlans = !chosen || choosing || Boolean(whyNotEligible(chosen, age));
+
+	const send = () => {
+		if (gaps.length) {
+			setPressed(gaps[0].note);
+			pointAt(gaps[0].anchor);
+			return;
+		}
+		setPressed(null);
+		onSend();
+	};
+
+	let section = 0;
+	const heading = (title: string) => {
+		section += 1;
+		return (
+			<h2 className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+				<span className="grid h-6 w-6 flex-none place-items-center rounded-full bg-rail text-[11.5px] font-bold text-white">
+					{section}
+				</span>
+				{title}
+			</h2>
+		);
+	};
+
+	return (
+		<div className="mx-auto max-w-2xl">
+			<Card className="p-6 sm:p-8">
+				<h1 className="text-[24px] font-semibold leading-tight tracking-tight text-ink">Become a member</h1>
+				<p className="mt-2 text-[13.5px] leading-relaxed text-muted">Your details are already with us.</p>
+
+				<div className="mt-7 space-y-8">
+					<section className="space-y-3">
+						{heading("Membership type")}
+						{showPlans ? (
+							<div id="join-plan" className="rounded-xl">
+								<PlanCards
+									types={plans}
+									loading={plansLoading}
+									selected={chosen?.membership_type ?? null}
+									onSelect={(key) => {
+										onChoose(key);
+										setChoosing(false);
+									}}
+									columns={2}
+								/>
+							</div>
+						) : (
+							<div
+								id="join-plan"
+								className="flex items-center justify-between gap-4 rounded-xl border border-card-line bg-surface px-4 py-3"
+							>
+								<div>
+									<p className="text-[14px] font-semibold text-ink">{chosen?.membership_type_name}</p>
+									<p className="text-[12.5px] text-muted">
+										{chosen?.free ? "Free" : formatMoney(chosen?.amount, chosen?.currency)}
+									</p>
+								</div>
+								<button
+									type="button"
+									onClick={() => setChoosing(true)}
+									className="text-[12.5px] font-bold text-blue hover:text-blue-hover"
+								>
+									Change
+								</button>
+							</div>
+						)}
+					</section>
+
+					<section className="space-y-3">
+						{heading("Branch")}
+						<PlacementStep chain={chain} onChain={onChain} allowedLevels={allowedLevels} stopAtAllowed />
+					</section>
+
+					{asksPhone && (
+						<section className="space-y-3">
+							{heading("Phone to pay from")}
+							{method && (
+								<div className="flex items-center gap-4 rounded-2xl border border-card-line bg-surface px-5 py-4">
+									{method.logo ? (
+										<PaymentLogo src={method.logo} label={method.label} />
+									) : (
+										<span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-rail text-white" aria-hidden="true">
+											<Icon.card size={20} />
+										</span>
+									)}
+									<div className="min-w-0">
+										<p className="text-[14px] font-bold text-ink">Pay with {method.label}</p>
+										<p className="mt-0.5 text-[12.5px] leading-relaxed text-slate-body">
+											A payment request goes to the phone below. Enter your PIN to pay.
+										</p>
+									</div>
+								</div>
+							)}
+							<Field
+								label={`${method?.label ?? "M-Pesa"} phone number`}
+								htmlFor="join-payer-phone"
+								required
+								hint="The payment request goes to this phone. It can be someone else's."
+							>
+								<TextInput
+									id="join-payer-phone"
+									type="tel"
+									inputMode="tel"
+									placeholder="07XX XXX XXX"
+									value={phone}
+									onChange={onPhone}
+								/>
+							</Field>
+						</section>
+					)}
+
+					{declarations.length > 0 && (
+						<section className="space-y-3">
+							{heading("Declarations")}
+							<div className="space-y-4">
+								{declarations.map((declaration) => (
+									<DeclarationCard
+										key={declaration.name}
+										declaration={declaration}
+										ticked={accepted.includes(declaration.name)}
+										onToggle={(yes) => onToggle(declaration.name, yes)}
+									/>
+								))}
+							</div>
+						</section>
+					)}
+				</div>
+
+				<div className="mt-8 border-t border-card-line pt-6">
+					{failure && (
+						<div className="mb-4">
+							<ErrorNote>{failure}</ErrorNote>
+						</div>
+					)}
+					{pressed && gaps.length > 0 && (
+						<p role="alert" className="mb-3 text-[12.5px] font-medium text-danger">
+							{gaps[0].note}
+						</p>
+					)}
+					<Button onClick={send} held={gaps.length > 0} busy={busy} className="w-full sm:w-auto">
+						{asksPhone ? "Send payment prompt" : "Submit"}
+					</Button>
+					{asksPhone && (
+						<p className="mt-3 text-[12.5px] leading-relaxed text-muted">
+							Enter your {method?.label ?? "M-Pesa"} PIN when the request appears on your phone.
+						</p>
+					)}
+				</div>
+			</Card>
+		</div>
 	);
 }

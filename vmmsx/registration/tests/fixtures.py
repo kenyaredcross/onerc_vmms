@@ -224,6 +224,9 @@ def make_profile(first_name: str, last_name: str, **kwargs) -> str:
 	"Prefer not to say" is an answer. A fixture without it would be modelling a
 	form nobody can submit. Pass `vmms_disability_status=None` for the applicant
 	that requirement is meant to refuse.
+
+	**And one education entry**, by the same rule. Pass `vmms_education=[]` for
+	the applicant without one.
 	"""
 	slug = f"{first_name}.{last_name}".lower()
 	values = {
@@ -234,6 +237,8 @@ def make_profile(first_name: str, last_name: str, **kwargs) -> str:
 		"date_of_birth": DEFAULT_DATE_OF_BIRTH,
 		"vmms_disability_status": "Prefer not to say",
 	}
+	if frappe.get_meta(PROFILE_DOCTYPE).has_field("vmms_education"):
+		values["vmms_education"] = education()
 	values.update(kwargs)
 
 	return frappe.get_doc(values).insert().name
@@ -480,6 +485,35 @@ def ensure_relationship(label: str) -> str:
 	return label
 
 
+def education(**values) -> list[dict]:
+	"""One education entry, in the shape the portal posts.
+
+	Defaulted into every fixture volunteer registration and every fixture
+	profile, because `assert_ready` refuses a submission without one. A test
+	about the requirement passes `background={"education": []}`.
+	"""
+	row = {"institution": "Alliance High School", "level": ensure_education_level(), "qualification": "KCSE"}
+	row.update(values)
+
+	return [row]
+
+
+def ensure_education_level(key: str = "secondary") -> str:
+	"""A `VMMS Education Level`, so an education row's Link has something to point at."""
+	if not frappe.db.exists("VMMS Education Level", key):
+		frappe.get_doc(
+			{
+				"doctype": "VMMS Education Level",
+				"level_key": key,
+				"level_name": key.title(),
+				"sequence": 20,
+				"is_active": 1,
+			}
+		).insert(ignore_permissions=True)
+
+	return key
+
+
 def accept_declarations(document) -> list[str]:
 	"""Record the declarations on a document being built the desk way.
 
@@ -564,7 +598,8 @@ def submit_volunteer_form(geo_node: str, **values):
 	does; passing `applicant_date_of_birth=None` builds the applicant the
 	requirement is meant to refuse.
 
-	**The declarations and the emergency contact are defaulted in**, because a
+	**The declarations, the emergency contact and one education entry are
+	defaulted in**, because a
 	real browser now sends both and every suite that is about something else
 	would otherwise be asserting against a registration no applicant could
 	actually make. Each is overridable, and the tests about those two
@@ -592,7 +627,12 @@ def submit_volunteer_form(geo_node: str, **values):
 		"prior_experience": "School first aid club",
 		"declarations_accepted": required_declarations(),
 		"emergency_contacts": emergency_contact(),
+		"background": {"education": education()},
 	}
+	# A test about one background table keeps the default education beside it;
+	# a test that sends its own `education` (even an empty one) gets exactly that.
+	if isinstance(values.get("background"), dict):
+		values["background"] = {"education": education(), **values["background"]}
 	payload.update(values)
 
 	from vmmsx.api.registration import register_as_volunteer

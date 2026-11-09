@@ -12,6 +12,13 @@ type Props = {
 	allowedLevels?: string[];
 	idPrefix?: string;
 	inline?: boolean;
+	/**
+	 * Ask nothing below the deepest allowed level. Off by default: the join
+	 * form reads sub-county and ward off this picker for the residence, even
+	 * where placement stops at the county. The one-page membership asks no
+	 * residence, so it stops.
+	 */
+	stopAtAllowed?: boolean;
 };
 
 /** Registration starts at County when the configured hierarchy has that level. */
@@ -19,10 +26,19 @@ export function RegistrationGeoSelects(props: Props) {
 	const ladder = useFrappeGetCall<{ message: { levels: GeoLevel[] } }>(API.geoLadder, undefined, "geo:ladder");
 	const levels = ladder.data?.message?.levels ?? [];
 	const county = levels.find((level) => level.name.toLowerCase() === "county");
-	return county ? <CountySelects {...props} county={county} countyRung={[...new Set(levels.map((level) => level.order))].sort((a, b) => a - b).indexOf(county.order)} /> : <GeoSelects {...props} showSummary={!props.inline} />;
+	// With `stopAtAllowed`, nothing below the county is asked for when nothing
+	// below it can be recorded: a membership kept per county stops there.
+	const deepestAllowed = Math.max(
+		-Infinity,
+		...levels.filter((level) => props.allowedLevels?.includes(level.key)).map((level) => level.order),
+	);
+	const countyIsLast = Boolean(
+		props.stopAtAllowed && county && props.allowedLevels?.length && county.order >= deepestAllowed,
+	);
+	return county ? <CountySelects {...props} county={county} countyIsLast={countyIsLast} countyRung={[...new Set(levels.map((level) => level.order))].sort((a, b) => a - b).indexOf(county.order)} /> : <GeoSelects {...props} showSummary={!props.inline} />;
 }
 
-function CountySelects({ chain, onChain, allowedLevels, idPrefix = "geo", county, countyRung, inline = false }: Props & { county: GeoLevel; countyRung: number }) {
+function CountySelects({ chain, onChain, allowedLevels, idPrefix = "geo", county, countyRung, countyIsLast = false, inline = false }: Props & { county: GeoLevel; countyRung: number; countyIsLast?: boolean }) {
 	const [requested, setRequested] = useState<string | null>(null);
 	const countyIndex = chain.findIndex((node) => node.level === county.key);
 	const selected = countyIndex >= 0 ? chain[countyIndex] : null;
@@ -51,6 +67,6 @@ function CountySelects({ chain, onChain, allowedLevels, idPrefix = "geo", county
 			</select>
 		</Field>
 		{error && <ErrorNote>{errorMessage(error, "Unable to load counties.")}</ErrorNote>}
-		{(selected || inline) && <GeoSelects chain={chain} onChain={onChain} allowedLevels={allowedLevels} idPrefix={idPrefix} fromIndex={(countyIndex >= 0 ? countyIndex : countyRung) + 1} showEmptyLevels inline={inline} showSummary={!inline} />}
+		{(selected || inline) && !countyIsLast && <GeoSelects chain={chain} onChain={onChain} allowedLevels={allowedLevels} idPrefix={idPrefix} fromIndex={(countyIndex >= 0 ? countyIndex : countyRung) + 1} showEmptyLevels inline={inline} showSummary={!inline} />}
 	</div>;
 }

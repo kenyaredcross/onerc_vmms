@@ -257,6 +257,12 @@ class VMMSMembership(Document):
 		# Paid, so a membership held back for its fee now goes to its branch.
 		membership_service.send_for_approval_once_paid(self)
 
+		# Into ERPNext's books, after this request commits. Never in the way of
+		# the payment: a failure is recorded on the membership and retried.
+		from vmmsx.finance.services import membership_posting
+
+		membership_posting.queue(self.name)
+
 	def on_payment_receipt(self, receipt=None, transaction_id=None):
 		"""Optional enrichment — a gateway receipt that arrived late.
 
@@ -265,8 +271,14 @@ class VMMSMembership(Document):
 		all on the Manual driver. Nothing here activates anything, and a
 		membership is fully functional if this method is never called: the
 		certificate simply renders without a receipt line.
-		"""
-		if not payment.record_receipt(self, receipt=receipt, transaction_id=transaction_id):
-			return
 
-		self.save(ignore_permissions=True)
+		If the fee is already in ERPNext's books, which is usual (posting runs as
+		soon as the payment is confirmed), the code also goes onto its Payment
+		Entry as the reference accountants match against the M-Pesa statement.
+		"""
+		if payment.record_receipt(self, receipt=receipt, transaction_id=transaction_id):
+			self.save(ignore_permissions=True)
+
+		from vmmsx.finance.services import membership_posting
+
+		membership_posting.attach_receipt(self, receipt)

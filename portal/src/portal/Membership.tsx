@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { ServiceCertificatePanel } from "../certificates/ServiceCertificates";
@@ -609,6 +609,16 @@ function MembershipCard({ row, onChanged }: { row: MembershipRow; onChanged: () 
 					<span className="inline-flex items-center rounded-full border border-card-line bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-body">
 						Receipt {row.payment_receipt}
 					</span>
+				)}
+				{/* Paid through this system, so there is a receipt to print. Not for a
+				    membership proved from an earlier system, nor a free one. */}
+				{row.paid_on && row.membership_source !== "Proof" && (row.fee?.amount ?? 0) > 0 && (
+					<Link
+						to={`/receipt/${encodeURIComponent(row.name)}`}
+						className="inline-flex items-center rounded-full border border-blue-line bg-blue-soft px-3 py-1.5 text-[11px] font-bold text-blue-press transition hover:border-blue"
+					>
+						View receipt
+					</Link>
 				)}
 			</div>
 

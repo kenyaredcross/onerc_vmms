@@ -33,6 +33,7 @@ class TestVolunteerDrafts(RegistrationTestCase):
 			"disability_status": "Prefer not to say",
 			"declarations_accepted": fixtures.required_declarations(),
 			"emergency_contacts": fixtures.emergency_contact(),
+			"background": {"education": fixtures.education()},
 		}
 		values.update(changes)
 

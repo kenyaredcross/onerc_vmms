@@ -26,7 +26,7 @@ class TestRestoredReviewerDetails(RegistrationTestCase):
 			},
 			background={
 				"education": [
-					{"institution": "County College", "class_per": "A-", "maj_opt_subj": "Nursing"}
+					{"institution": "County College", "level": fixtures.ensure_education_level(), "class_per": "A-", "maj_opt_subj": "Nursing"}
 				],
 				"work_experience": [{"organization": "County hospital", "location": "Nakuru"}],
 				"licences": [
