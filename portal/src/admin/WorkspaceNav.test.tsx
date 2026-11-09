@@ -127,6 +127,17 @@ describe("focused coordinator workspaces", () => {
 		expect(screen.queryByRole("link", { name: "Tasks" })).toBeNull();
 	});
 
+	it("does not offer Create deployment to a read-only role", () => {
+		// A Head of Region opens Operations to see the region's deployments and
+		// may create none of them.
+		mount(<DeploymentSubNav sections={new Set(["deployments"])} canCreate={() => false} />, {
+			route: "/admin/deployments",
+		});
+
+		expect(screen.queryByRole("link", { name: "Create deployment" })).toBeNull();
+		expect(screen.getByRole("link", { name: "Ongoing deployments" })).toBeTruthy();
+	});
+
 	it("recognises a deployment detail route as part of Operations", () => {
 		expect(inDeployments("/admin/deployments/DEP-1")).toBe(true);
 		expect(inDeployments("/admin/deployments/terms/TOR-1")).toBe(true);

@@ -43,9 +43,17 @@ READ_DOCTYPES = (
 	"VMMS Branch Asset",
 	"VMMS Asset Transaction",
 	"VMMS Deployment",
+	# The programme a deployment runs under, the people on it and the requests
+	# for one: the Operations screens a regional head opens beside the
+	# deployments themselves. Scoped through core like the deployment.
+	"Project",
+	"VMMS Deployment Assignment",
+	"VMMS Deployment Request",
 	"VMMS Member",
 	"VMMS Membership Type",
 	"VMMS Membership Benefit",
+	# Not scoped, and read by the county roles the same way.
+	"VMMS Terms of Reference",
 )
 
 

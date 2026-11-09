@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Icon } from "../../ui/icons";
 import type { Asset } from "./types";
 
-export function AssetPreview({ asset, anchor, onClose, onEdit }: { asset:Asset; anchor:HTMLElement; onClose:()=>void; onEdit:()=>void }) {
+export function AssetPreview({ asset, anchor, onClose, onEdit }: { asset:Asset; anchor:HTMLElement; onClose:()=>void; onEdit?:()=>void }) {
  const [visible,setVisible]=useState(false),[position,setPosition]=useState<{top:number;left:number}|null>(null);
  const card=useRef<HTMLDivElement>(null);
  useEffect(()=>{const timer=setTimeout(()=>setVisible(true),250);return ()=>clearTimeout(timer);},[]);
@@ -28,6 +28,6 @@ export function AssetPreview({ asset, anchor, onClose, onEdit }: { asset:Asset; 
   onMouseLeave={event=>{if(!(event.relatedTarget instanceof Node&&anchor.contains(event.relatedTarget)))onClose();}}>
   <header>{asset.images?.[0]?<img src={asset.images[0]} alt="" />:<span><Icon.inbox size={24} /></span>}<div><h2>{asset.asset_name}</h2><p>{asset.geo_node}</p><span>{asset.is_active?'Active':'Inactive'}</span></div></header>
   <dl>{[['Asset code',asset.name],['Category',asset.category||'—'],['Unit',asset.unit],['Total stock',asset.total_quantity],['Available',asset.available_quantity],['Issued',asset.total_quantity-asset.available_quantity]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-  <button type="button" onClick={onEdit}>Edit asset <Icon.arrow size={14} /></button>
+  {onEdit&&<button type="button" onClick={onEdit}>Edit asset <Icon.arrow size={14} /></button>}
  </div>,document.body);
 }

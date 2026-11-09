@@ -598,4 +598,8 @@ def deployment_dto(deployment) -> dict:
 		"participants": assignment.roster_of(deployment.name),
 		"leader": assignment.leader_of(deployment.name),
 		"notes": deployment.notes,
+		# Whether this reader may change the deployment, roster included. A
+		# read-only role (Head of Region, NSD) is not offered controls the server
+		# would refuse; the flag draws nothing and grants nothing.
+		"can_write": bool(deployment.has_permission("write")),
 	}

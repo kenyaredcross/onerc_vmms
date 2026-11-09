@@ -750,6 +750,8 @@ onerc_scopeable_doctypes = [
 		"doctype": "Project",
 		"geo_node_field": "vmms_geo_node",
 		"role_from_setting": "vmms_deployment_scope_role",
+		"read_role_from_setting": "vmms_regional_oversight_role",
+		"national_read_role_from_setting": "vmms_national_oversight_role",
 	},
 	# `VMMS Deployment Assignment` reuses the deployment scope role, on the same
 	# argument `VMMS Project` above reuses it: an assignment is one person's part
@@ -768,11 +770,15 @@ onerc_scopeable_doctypes = [
 		"doctype": "VMMS Deployment Assignment",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_deployment_scope_role",
+		"read_role_from_setting": "vmms_regional_oversight_role",
+		"national_read_role_from_setting": "vmms_national_oversight_role",
 	},
 	{
 		"doctype": "VMMS Deployment Request",
 		"geo_node_field": "geo_node",
 		"role_from_setting": "vmms_deployment_request_scope_role",
+		"read_role_from_setting": "vmms_regional_oversight_role",
+		"national_read_role_from_setting": "vmms_national_oversight_role",
 	},
 	# `VMMS Branch Transfer` is deliberately not registered here. A transfer is
 	# about two branches and core scopes on one field, so vmmsx scopes it itself

@@ -56,11 +56,19 @@ def ladder() -> dict:
 
 
 @frappe.whitelist()
-def browse(parent: str | None = None, level: str | None = None) -> dict:
+def browse(parent: str | None = None, level: str | None = None, scoped: str | int | None = None) -> dict:
 	"""Children of a parent, roots, or all nodes at a requested active level.
 
 	`level` lets registration start at County without requiring a Region answer.
 	The stored county node still carries its existing ancestry and routing.
+
+	`scoped` is for staff pickers: only the nodes on the way down to the caller's
+	own Geo Assignments, or inside them, come back. A rung left with one option
+	answers itself in the picker, so a Head of Region finds their region already
+	chosen and a county coordinator their county. National staff (see
+	`oversight.national_allowed`) keep the whole tree. The public join form does
+	not pass it: somebody applying chooses any branch. This narrows what a picker
+	offers; what a person may *read* is still the permission layer's answer.
 
 	Built for a cascading picker: call with no `parent` for the first dropdown,
 	then call again with whatever the person picked to fill the next one. An
@@ -88,6 +96,11 @@ def browse(parent: str | None = None, level: str | None = None) -> dict:
 				pending.extend(adapter.get_children(node["name"]))
 		nodes.sort(key=lambda node: (node["geo_node_name"].casefold(), node["name"]))
 
+	if frappe.utils.cint(scoped):
+		reach = _reach()
+		if reach is not None:
+			nodes = [node for node in nodes if node["name"] in reach]
+
 	return {
 		"parent": parent,
 		"nodes": [
@@ -100,6 +113,53 @@ def browse(parent: str | None = None, level: str | None = None) -> dict:
 			for node in nodes
 		],
 	}
+
+
+def _reach(user: str | None = None) -> set[str] | None:
+	"""Every node a scoped picker may offer this person, or None for all of them.
+
+	Their assignments' nodes, everything beneath those, and the ancestors above
+	them, so the picker can walk down to where they stand. Any role's live
+	assignment counts, through core's own `GRANTS_AUTHORITY_SQL`. Nobody with no
+	assignment and no national standing is offered anything, failing closed like
+	the scope it mirrors.
+	"""
+	from vmmsx.analytics.services import oversight
+
+	user = user or frappe.session.user
+
+	if oversight.national_allowed(user):
+		return None
+
+	reach: set[str] = set()
+	for anchor in _anchors(user):
+		try:
+			reach.add(anchor)
+			reach.update(row["name"] for row in adapter.get_ancestors(anchor))
+			reach.update(adapter.get_descendants(anchor))
+		except frappe.DoesNotExistError:
+			# An assignment at a node since removed grants nothing; it must not
+			# break every picker on the console.
+			continue
+
+	return reach
+
+
+def _anchors(user: str) -> list[str]:
+	"""The nodes of this person's live assignments, whatever the role."""
+	from frappe.utils import getdate, today
+	from onerc_core.onerc_core.doctype.geo_assignment.geo_assignment import GRANTS_AUTHORITY_SQL
+
+	return frappe.db.sql(
+		f"""
+		SELECT DISTINCT assignment.geo_node
+		FROM `tabGeo Assignment` assignment
+		WHERE assignment.user = %(user)s
+			AND {GRANTS_AUTHORITY_SQL}
+		""",
+		{"user": user, "on_date": getdate(today())},
+		pluck=True,
+	)
 
 
 @frappe.whitelist()

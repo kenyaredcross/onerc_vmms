@@ -21,6 +21,48 @@ def _role() -> str:
 	return config.settings().get("vmms_asset_scope_role") or ROLE_ASSET_MANAGER
 
 
+def _read_scope() -> tuple[bool, set[str]]:
+	"""Where this person may *see* stock: (everywhere, nodes).
+
+	The asset role's own scope, plus the regional oversight role's, which reads
+	the asset registers in its region without managing them. National staff and
+	unrestricted users see everywhere. Seeing is not managing: every write still
+	goes through `_manager`.
+	"""
+	from vmmsx.setup import national_oversight, regional_oversight
+
+	user = frappe.session.user
+	if user == "Guest":
+		return False, set()
+	if scope.has_unrestricted_scope() or national_oversight.holds(user):
+		return True, set()
+
+	nodes: set[str] = set()
+	for role in (_role(), regional_oversight.role()):
+		if role and role in frappe.get_roles(user):
+			nodes |= scope.get_user_geo_scope(user, role)
+	return False, nodes
+
+
+def _reader(node: str | None) -> tuple[bool, set[str]]:
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Sign in to see assets."), frappe.PermissionError)
+	everywhere, nodes = _read_scope()
+	if not everywhere and not nodes:
+		frappe.throw(_("You don't have access to branch assets."), frappe.PermissionError)
+	if node and not everywhere and node not in nodes:
+		frappe.throw(_("This branch is outside your area."), frappe.PermissionError)
+	return everywhere, nodes
+
+
+def can_manage() -> bool:
+	"""Does this person hold the asset role (or unrestricted scope)? The rule
+	`_manager` applies before any write, without the branch half."""
+	if frappe.session.user == "Guest":
+		return False
+	return scope.has_unrestricted_scope() or _role() in frappe.get_roles()
+
+
 def _manager(node: str) -> None:
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Sign in to manage assets."), frappe.PermissionError)
@@ -78,12 +120,10 @@ def _row(doc) -> dict:
 
 @frappe.whitelist()
 def branches() -> list[dict]:
-	"""Only nodes covered by this person's asset assignment."""
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Sign in to manage assets."), frappe.PermissionError)
-	if not scope.has_unrestricted_scope() and _role() not in frappe.get_roles():
-		return []
-	nodes = scope.get_user_geo_scope(frappe.session.user, _role())
+	"""The nodes this person may see stock at: their asset or oversight scope."""
+	everywhere, nodes = _read_scope()
+	if everywhere:
+		nodes = set(frappe.get_all("Geo Node", pluck="name"))
 	return (
 		frappe.get_all(
 			"Geo Node", filters={"name": ("in", list(nodes))}, fields=["name"], order_by="name asc"
@@ -95,10 +135,8 @@ def branches() -> list[dict]:
 
 @frappe.whitelist()
 def stock(geo_node: str | None = None, search: str | None = None) -> dict:
-	if geo_node:
-		_manager(geo_node)
-	elif not scope.has_unrestricted_scope() and _role() not in frappe.get_roles():
-		frappe.throw(_("The asset manager role is required."), frappe.PermissionError)
+	# Read through `get_list`, so the core scope is the floor whoever is asking.
+	_reader(geo_node)
 	filters = {"geo_node": geo_node} if geo_node else {}
 	if search and search.strip():
 		filters["asset_name"] = ("like", f"%{search.strip()[:100]}%")
@@ -458,23 +496,16 @@ def _issues(filters: dict) -> list[dict]:
 
 @frappe.whitelist()
 def outstanding(geo_node: str | None = None, search: str | None = None) -> list[dict]:
-	if geo_node:
-		_manager(geo_node)
-	elif not scope.has_unrestricted_scope() and _role() not in frappe.get_roles():
-		frappe.throw(_("The asset manager role is required."), frappe.PermissionError)
+	everywhere, readable = _reader(geo_node)
 	term = (search or "").strip()[:100]
 	if term and len(term) < 2:
 		return []
 	nodes = (
 		[geo_node]
 		if geo_node
-		else (
-			[]
-			if scope.has_unrestricted_scope()
-			else sorted(scope.get_user_geo_scope(frappe.session.user, _role()))
-		)
+		else ([] if everywhere else sorted(readable))
 	)
-	if not nodes and not scope.has_unrestricted_scope():
+	if not nodes and not everywhere:
 		return []
 	where = []
 	values: list = []

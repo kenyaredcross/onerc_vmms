@@ -23,6 +23,7 @@ flag saves a round trip, it does not grant anything.
 
 import frappe
 
+from vmmsx.api import assets
 from vmmsx.staff.services import console
 
 
@@ -56,4 +57,24 @@ def sections() -> dict:
 		# `/app` is never shown a door to it. A volunteer sees no console at all,
 		# and a coordinator without desk access sees the console without this.
 		"desk": bool(has_desk_access()),
+		# Which kinds of record this person may start. A read-only role (Head of
+		# Region, NSD) opens the same screens as a coordinator and is not offered
+		# Add asset, New project, Write terms or Create deployment. Like the
+		# sections, a convenience: every create endpoint still asks for itself.
+		"creates": [
+			key
+			for key, doctype in CREATABLE.items()
+			if frappe.db.exists("DocType", doctype) and frappe.has_permission(doctype, ptype="create")
+		]
+		# Assets are written by whoever holds the asset role, not through a
+		# DocPerm, so the answer is the one `api/assets.py` gives its own writes.
+		+ (["asset"] if assets.can_manage() else []),
 	}
+
+
+# The console's create buttons, by this app's own key for each.
+CREATABLE = {
+	"project": "Project",
+	"terms": "VMMS Terms of Reference",
+	"deployment": "VMMS Deployment",
+}

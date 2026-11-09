@@ -1648,6 +1648,8 @@ export interface DeploymentDetail extends DeploymentSummary {
 	 * deployment counts: somebody named leader who then declined is not leading. */
 	leader: string | null;
 	notes: string | null;
+	/** Whether this reader may change it, roster included. False for read-only roles. */
+	can_write?: boolean;
 }
 
 /** `deployment/services/matching.py::_assess` — one volunteer against one need. */

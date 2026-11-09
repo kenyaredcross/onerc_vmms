@@ -44,6 +44,7 @@ import {
 	cx,
 } from "../ui/primitives";
 import { FolderCard } from "../ui/patterns";
+import { useCanCreate } from "./creates";
 
 /**
  * The paperwork a deployment stands on: a programme of work, and the terms of
@@ -80,6 +81,7 @@ import { FolderCard } from "../ui/patterns";
 /* ---------------------------------------------------------------- projects */
 
 export function ProjectList() {
+	const canCreate = useCanCreate();
 	const [searchParams] = useSearchParams();
 	const [mine, setMine] = useState(true);
 	const [creating, setCreating] = useState(() => searchParams.get("new") === "1");
@@ -98,7 +100,9 @@ export function ProjectList() {
 				<MineToggle mine={mine} onChange={setMine} label="Only mine" />
 				{(data?.message?.open_count ?? 0) > 0 && <Pill tone="signal">{data?.message?.open_count} open</Pill>}
 				<div className="ml-auto">
-					<Button onClick={() => setCreating((was) => !was)}>{creating ? "Close" : "New project"}</Button>
+					{canCreate("project") && (
+						<Button onClick={() => setCreating((was) => !was)}>{creating ? "Close" : "New project"}</Button>
+					)}
 				</div>
 			</div>
 
@@ -532,7 +536,7 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 				<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 					Location
 				</p>
-				<GeoSelects chain={chain} onChain={setChain} idPrefix="project" />
+				<GeoSelects scoped chain={chain} onChain={setChain} idPrefix="project" />
 				<p className="mt-2 text-[12px] text-slate-faint">
 					Required. A project must belong to an area to be visible.
 				</p>
@@ -581,6 +585,7 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
  * cannot drift. See `TermsDetail`.
  */
 export function TermsList() {
+	const canCreate = useCanCreate();
 	const branding = useSocietyBranding();
 	const [searchParams] = useSearchParams();
 	const [mine, setMine] = useState(true);
@@ -612,7 +617,9 @@ export function TermsList() {
 				lead="Approved scope, resources, schedule and accountability, written before a deployment begins."
 				trail={[{ label: "Operations", to: "/admin/deployments" }, { label: "Terms of Reference" }]}
 				actions={
-					<Button onClick={() => setCreating((was) => !was)}>{creating ? "Close" : "Write terms"}</Button>
+					canCreate("terms") ? (
+						<Button onClick={() => setCreating((was) => !was)}>{creating ? "Close" : "Write terms"}</Button>
+					) : undefined
 				}
 			/>
 
@@ -1421,7 +1428,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 							Applicable areas
 						</p>
-						<GeoSelects chain={chain} onChain={setChain} idPrefix="terms" />
+						<GeoSelects scoped chain={chain} onChain={setChain} idPrefix="terms" />
 						<p className="mt-2 text-[12px] text-slate-faint">
 							Optional. Leave it empty and the terms apply anywhere; set it and a deployment anchored outside
 							that branch and everything beneath it is refused.

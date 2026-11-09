@@ -206,6 +206,9 @@ function Volunteers() {
 	const [disability, setDisability] = useParamFilter("disability");
 	const [disabilityCategory, setDisabilityCategory] = useParamFilter("disability_category");
 	const [chain, setChain] = useState<GeoNode[]>([]);
+	// Rungs the scoped picker answered itself: where this person already stands,
+	// so not a filter they chose and not one they can remove.
+	const [floor, setFloor] = useState(0);
 	const [page, setPage] = useState(0);
 
 	const professions = useFrappeGetCall<{
@@ -213,7 +216,7 @@ function Volunteers() {
 	}>(API.registerProfessions, undefined, "registry:volunteers:professions");
 
 	const geoNode = chain.length > 0 ? chain[chain.length - 1].name : undefined;
-	const branchLabel = branchOf(chain);
+	const branchLabel = chain.length > floor ? branchOf(chain) : "";
 
 	/**
 	 * Any change to the criteria puts the reader back on the first page.
@@ -258,7 +261,7 @@ function Volunteers() {
 	);
 
 	const chips = [
-		...(branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []),
+		...(branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)(chain.slice(0, floor)) }] : []),
 		...(disabilityCategory
 			? [{ key: "disability_category", label: `Disability: ${disabilityCategory}`, clear: () => narrow(setDisabilityCategory)("") }]
 			: disability
@@ -325,7 +328,7 @@ function Volunteers() {
 					setProfession("");
 					setDisability("");
 					setDisabilityCategory("");
-					setChain([]);
+					setChain(chain.slice(0, floor));
 					setPage(0);
 				}}
 			>
@@ -333,7 +336,7 @@ function Volunteers() {
 					{/* One select per rung of the society's own ladder. This screen
 					    does not know how deep the hierarchy is or what a rung is
 					    called. */}
-					<GeoSelects chain={chain} onChain={narrow(setChain)} idPrefix="registry-vol" />
+					<GeoSelects scoped chain={chain} onChain={narrow(setChain)} onFloor={setFloor} idPrefix="registry-vol" />
 				</Labelled>
 			</RegisterToolbar>
 
@@ -491,6 +494,9 @@ function Members() {
 	const [search, setSearch] = useQueryTerm();
 	const [membershipType, setMembershipType] = useState("");
 	const [chain, setChain] = useState<GeoNode[]>([]);
+	// Rungs the scoped picker answered itself: where this person already stands,
+	// so not a filter they chose and not one they can remove.
+	const [floor, setFloor] = useState(0);
 	const [page, setPage] = useState(0);
 
 	const summary = useFrappeGetCall<{ message: MemberRegisterSummary }>(
@@ -500,7 +506,7 @@ function Members() {
 	);
 
 	const geoNode = chain.length > 0 ? chain[chain.length - 1].name : undefined;
-	const branchLabel = branchOf(chain);
+	const branchLabel = chain.length > floor ? branchOf(chain) : "";
 
 	const narrow =
 		<T,>(set: (value: T) => void) =>
@@ -562,17 +568,17 @@ function Members() {
 					...(membershipType
 						? [{ key: "type", label: typeLabel, clear: () => narrow(setMembershipType)("") }]
 						: []),
-					...(branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []),
+					...(branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)(chain.slice(0, floor)) }] : []),
 				]}
 				onClearAll={() => {
 					setSearch("");
 					setMembershipType("");
-					setChain([]);
+					setChain(chain.slice(0, floor));
 					setPage(0);
 				}}
 			>
 				<Labelled label="Branch" hint="Includes all areas below the membership's branch.">
-					<GeoSelects chain={chain} onChain={narrow(setChain)} idPrefix="registry-mem" />
+					<GeoSelects scoped chain={chain} onChain={narrow(setChain)} onFloor={setFloor} idPrefix="registry-mem" />
 				</Labelled>
 			</RegisterToolbar>
 

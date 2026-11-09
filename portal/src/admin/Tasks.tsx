@@ -376,7 +376,7 @@ function AssignForm({ onAssigned }: { onAssigned: () => void }) {
 				<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 					Branch
 				</p>
-				<GeoSelects chain={chain} onChain={setChain} />
+				<GeoSelects scoped chain={chain} onChain={setChain} />
 				<p className="mt-2 text-[12px] text-slate-faint">
 					Leave this empty to anchor the task at the volunteer's own branch.
 				</p>

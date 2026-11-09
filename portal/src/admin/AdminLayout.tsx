@@ -415,7 +415,7 @@ export default function AdminLayout() {
 	const location = useLocation();
 
 	const access = useFrappeGetCall<{
-		message: { available: boolean; sections: string[]; desk?: boolean };
+		message: { available: boolean; sections: string[]; desk?: boolean; creates?: string[] };
 	}>(
 		API.consoleSections,
 		undefined,
@@ -552,7 +552,14 @@ export default function AdminLayout() {
 					// They keep a Tasks row of their own on the rail; `narrowGroup`
 					// says why.
 					inDeployments(location.pathname) && allowed.has("deployments")
-						? (horizontal) => <DeploymentSubNav horizontal={horizontal} sections={allowed} />
+						? (horizontal) => <DeploymentSubNav
+								horizontal={horizontal}
+								sections={allowed}
+								canCreate={(kind) => {
+									const creates = access.data?.message?.creates;
+									return !creates || creates.includes(kind);
+								}}
+							/>
 						: inCommunication(location.pathname)
 							? (horizontal) => <CommunicationSubNav horizontal={horizontal} />
 							: inPeople(location.pathname) && allowed.has("people")

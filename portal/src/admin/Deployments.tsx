@@ -58,6 +58,7 @@ import { DeploymentDestination } from "../ui/DeploymentDestination";
 import { DeploymentArchiveCard } from "../ui/DeploymentArchiveCard";
 import { DeploymentJourney } from "../ui/DeploymentJourney";
 import { exceptionsFor } from "./counts";
+import { useCanCreate } from "./creates";
 
 /**
  * The deployments console — who is going, who was asked, and who could go.
@@ -127,6 +128,7 @@ import { exceptionsFor } from "./counts";
  * as "there are none".
  */
 export function DeploymentsHub() {
+	const canCreate = useCanCreate();
 	// One of the six statuses, or "" for the whole ongoing band. Held here and
 	// passed to both the map and its list, so the pins and the text agree.
 	const [status, setStatus] = useState("");
@@ -176,7 +178,7 @@ export function DeploymentsHub() {
 				actions={
 					<div className="flex flex-wrap gap-2">
 						<ButtonLink to="/admin/deployments/terms">Review terms</ButtonLink>
-						<ButtonLink to="/admin/deployments/new">Create deployment</ButtonLink>
+						{canCreate("deployment") && <ButtonLink to="/admin/deployments/new">Create deployment</ButtonLink>}
 					</div>
 				}
 			/>
@@ -1115,6 +1117,7 @@ export type DeploymentScope = "ongoing" | "past";
  * how much of it is shown.
  */
 export function DeploymentsOngoing() {
+	const canCreate = useCanCreate();
 	const [mine, setMine] = useState(false);
 
 	const { data, error, isLoading } = useFrappeGetCall<{
@@ -1149,7 +1152,7 @@ export function DeploymentsOngoing() {
 					{ label: "Operations", to: "/admin/deployments" },
 					{ label: "Ongoing deployments" },
 				]}
-				actions={<ButtonLink to="/admin/deployments/new">Create deployment</ButtonLink>}
+				actions={canCreate("deployment") ? <ButtonLink to="/admin/deployments/new">Create deployment</ButtonLink> : undefined}
 			/>
 
 			<div className="mb-4 flex flex-wrap items-center gap-2">
@@ -1571,6 +1574,7 @@ function DeploymentCard({ row }: { row: DeploymentSummary }) {
  * are allowed to differ and the deployment's own dates are what govern.
  */
 function DeploymentForm({ onCreated }: { onCreated: () => void }) {
+	const canCreate = useCanCreate();
 	const { call } = useContext(FrappeContext) as FrappeConfig;
 
 	const [terms, setTerms] = useState("");
@@ -1669,7 +1673,7 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 						fills in from the one you choose.
 					</p>
 					<div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-						<ButtonLink to="/admin/deployments/terms?new=1">Write terms of reference</ButtonLink>
+						{canCreate("terms") && <ButtonLink to="/admin/deployments/terms?new=1">Write terms of reference</ButtonLink>}
 						<ButtonLink to="/admin/deployments/terms" variant="quiet">
 							See all terms
 						</ButtonLink>
@@ -1765,7 +1769,7 @@ function DeploymentForm({ onCreated }: { onCreated: () => void }) {
 						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 							Location
 						</p>
-						<GeoSelects chain={chain} onChain={setChain} idPrefix="deployment" />
+						<GeoSelects scoped chain={chain} onChain={setChain} idPrefix="deployment" />
 						<p className="mt-2 text-[12px] text-slate-faint">
 							Required, and it must sit inside whatever scope the terms name. A deployment with
 							no place in the organisation is unroutable and invisible.
@@ -1985,7 +1989,7 @@ export function DeploymentDetail() {
 
 				<Roster deployment={deployment} busy={busy} onAct={act} onFind={() => setMatching((was) => !was)} finding={matching} />
 
-				{matching && (
+				{matching && deployment.can_write !== false && (
 					<CandidatePane
 						deployment={deployment}
 						onAssigned={() => {
@@ -3033,12 +3037,18 @@ function Roster({
 		<Card>
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<SectionTitle>Roster ({deployment.participant_count})</SectionTitle>
-				<Button onClick={onFind}>{finding ? "Close" : "Find volunteers"}</Button>
+				{/* A read-only role (Head of Region, NSD) sees the roster and is not
+				    offered a way to add to it or change it. */}
+				{deployment.can_write !== false && (
+					<Button onClick={onFind}>{finding ? "Close" : "Find volunteers"}</Button>
+				)}
 			</div>
 
 			{deployment.participants.length === 0 ? (
 				<p className="mt-2 text-[12.5px] text-slate-faint">
-					No volunteers on this deployment. Find matching volunteers above to place or ask them.
+					{deployment.can_write === false
+						? "No volunteers on this deployment yet."
+						: "No volunteers on this deployment. Find matching volunteers above to place or ask them."}
 				</p>
 			) : (
 				<div className="mt-4 space-y-5">
@@ -3058,7 +3068,13 @@ function Roster({
 
 								<RecordCollection as="ul" className="mt-2 divide-y divide-card-line">
 									{rows.map((row) => (
-										<RosterEntry key={row.name} row={row} busy={busy} onAct={onAct} />
+										<RosterEntry
+											key={row.name}
+											row={row}
+											busy={busy}
+											onAct={onAct}
+											canWrite={deployment.can_write !== false}
+										/>
 									))}
 								</RecordCollection>
 							</div>
@@ -3084,8 +3100,10 @@ function RosterEntry({
 	row,
 	busy,
 	onAct,
+	canWrite,
 }: {
 	row: RosterRow;
+	canWrite: boolean;
 	busy: string | null;
 	onAct: (label: string, method: string, args: Record<string, unknown>) => Promise<void>;
 }) {
@@ -3130,7 +3148,7 @@ function RosterEntry({
 					<Pill tone="navy">{row.verified_hours}h verified</Pill>
 				) : null}
 
-				{row.is_on_deployment && !row.is_leader && (
+				{canWrite && row.is_on_deployment && !row.is_leader && (
 					<Button
 						variant="quiet"
 						disabled={busy !== null}
@@ -3145,7 +3163,7 @@ function RosterEntry({
 					</Button>
 				)}
 
-				{row.is_open && (
+				{canWrite && row.is_open && (
 					<Button
 						variant="quiet"
 						disabled={busy !== null}
@@ -3159,7 +3177,7 @@ function RosterEntry({
 
 				{/* Nothing to record against somebody who did not come: the day has
 				    been answered and the answer carries no hours. */}
-				{row.is_on_deployment && (!row.has_outcome || row.attended) && (
+				{canWrite && row.is_on_deployment && (!row.has_outcome || row.attended) && (
 					<Button variant="quiet" onClick={() => setRecording((was) => !was)}>
 						{recording
 							? "Close"

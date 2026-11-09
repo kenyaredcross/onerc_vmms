@@ -8,7 +8,7 @@ import { SubNav, type SubNavItem } from "../ui/SubNav";
  * `AdminLayout` is about to bounce them out of. Only rows whose section differs
  * from the panel's own need it — see `DeploymentSubNav`.
  */
-type Destination = SubNavItem & { section?: string };
+type Destination = SubNavItem & { section?: string; creates?: string };
 
 /**
  * The Deployments section's own navigation.
@@ -76,6 +76,8 @@ export const DEPLOYMENT_NAV: Destination[] = [
 		labelKey: "admin.deployments.nav.create",
 		fallback: "Create deployment",
 		groupKey: "admin.deployments.nav.group.plan",
+		// Offered only to somebody who may create one; see `admin/creates.ts`.
+		creates: "deployment",
 	},
 	{
 		// The People register's surge roster, read from the staffing side. Gated
@@ -135,13 +137,18 @@ export function inDeployments(pathname: string): boolean {
 export function DeploymentSubNav({
 	horizontal = false,
 	sections,
+	canCreate,
 }: {
 	horizontal?: boolean;
 	sections?: ReadonlySet<string>;
+	/** Omitted, every create row is offered — the same default as `sections`. */
+	canCreate?: (kind: string) => boolean;
 }) {
-	const items = sections
-		? DEPLOYMENT_NAV.filter((item) => !item.section || sections.has(item.section))
-		: DEPLOYMENT_NAV;
+	const items = DEPLOYMENT_NAV.filter(
+		(item) =>
+			(!sections || !item.section || sections.has(item.section)) &&
+			(!canCreate || !item.creates || canCreate(item.creates)),
+	);
 
 	return <SubNav title="Operations" items={items} horizontal={horizontal} />;
 }

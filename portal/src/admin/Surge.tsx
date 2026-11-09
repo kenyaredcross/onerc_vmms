@@ -182,7 +182,7 @@ function SurgeRosterPage({ trail }: { trail: Array<{ label: string; to?: string 
 				<div className="mt-5 border-t border-card-line pt-5">
 					<span className="block text-[12.5px] font-semibold text-slate-strong">Branch</span>
 					<span className="mb-2 block text-[11.5px] text-slate-faint">Includes all areas below this branch.</span>
-					<GeoSelects chain={chain} onChain={setChain} idPrefix="surge" />
+					<GeoSelects scoped chain={chain} onChain={setChain} idPrefix="surge" />
 				</div>
 			</Card>
 

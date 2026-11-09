@@ -50,8 +50,12 @@ vi.mock("frappe-react-sdk", async (importOriginal) => {
 
 			calls.push({ path, params });
 
+			const read = reads.get(path);
+
 			return {
-				data: { message: reads.get(path) },
+				// A function answers per call, for a read like `geo.browse` whose
+				// answer depends on which parent was asked about.
+				data: { message: typeof read === "function" ? read(params) : read },
 				error: null,
 				isLoading: false,
 				isValidating: false,
@@ -310,6 +314,67 @@ describe("the active member register", () => {
 		show(<MembersRegistry />, "/admin/registry/members");
 
 		expect(screen.getAllByText("No expiry").length).toBeGreaterThan(0);
+	});
+});
+
+describe("the branch filter", () => {
+	const ROOT = { name: "GEO-1", label: "Kenya Red Cross Society", level: "national", level_name: "National" };
+	const REGION = { name: "GEO-4", label: "KRCS Lower Eastern", level: "region", level_name: "Region" };
+	const COUNTIES = [
+		{ name: "GEO-56", label: "Nairobi", level: "county", level_name: "County" },
+		{ name: "GEO-57", label: "Kitui", level: "county", level_name: "County" },
+	];
+
+	function scopedTree() {
+		reads.set(API.geoLadder, {
+			levels: [
+				{ key: "national", name: "National", order: 1, is_lowest: false },
+				{ key: "region", name: "Region", order: 2, is_lowest: false },
+				{ key: "county", name: "County", order: 3, is_lowest: true },
+			],
+		});
+		// What `geo.browse(scoped=1)` gives a Head of Region: one root, their one
+		// region, and only that region's counties.
+		reads.set(API.geoBrowse, (params?: Record<string, unknown>) => ({
+			nodes: !params?.parent ? [ROOT] : params.parent === ROOT.name ? [REGION] : params.parent === REGION.name ? COUNTIES : [],
+		}));
+	}
+
+	it("asks for the caller's own part of the tree and does not offer other regions", async () => {
+		members();
+		scopedTree();
+		show(<MembersRegistry />, "/admin/registry/members");
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: /Filters/ }));
+		});
+
+		const browses = calls.filter((call) => call.path === API.geoBrowse);
+		expect(browses.length).toBeGreaterThan(0);
+		expect(browses.every((call) => call.params?.scoped === 1)).toBe(true);
+
+		// The region answered itself; the first question is the county.
+		expect(screen.queryByRole("option", { name: "KRCS Lower Eastern" })).toBeNull();
+		expect(screen.getByRole("option", { name: "Nairobi" })).toBeTruthy();
+	});
+
+	it("does not show where the person already stands as a filter they can remove", async () => {
+		members();
+		scopedTree();
+		show(<MembersRegistry />, "/admin/registry/members");
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: /Filters/ }));
+		});
+
+		expect(screen.queryByText("Showing")).toBeNull();
+
+		await act(async () => {
+			fireEvent.change(screen.getByRole("combobox", { name: "County" }), { target: { value: "GEO-56" } });
+		});
+
+		expect(screen.getByText("Showing")).toBeTruthy();
+		expect(argsFor(API.findMembers)).toMatchObject({ geo_node: "GEO-56" });
 	});
 });
 

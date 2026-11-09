@@ -100,8 +100,28 @@ describe("the one machine failure worth naming", () => {
 	});
 
 	it("recognises it from the exception type alone", () => {
-		expect(errorMessage({ exc_type: "PermissionError" })).toBe(
+		expect(errorMessage({ exc_type: "SessionExpired" })).toBe(
 			"You have been signed out. Sign in again to carry on.",
 		);
+	});
+
+	it("does not tell a signed-in person who was refused that they were signed out", () => {
+		const refused = {
+			exc_type: "PermissionError",
+			httpStatus: 403,
+			_server_messages: JSON.stringify([JSON.stringify({ message: "Insufficient Permission for <strong>Project</strong>" })]),
+		};
+
+		expect(errorMessage(refused)).toBe("You don't have access to this.");
+		expect(errorMessage({ exc_type: "PermissionError" })).toBe("You don't have access to this.");
+	});
+
+	it("passes a plain refusal from the server through", () => {
+		const refused = {
+			httpStatus: 403,
+			_server_messages: JSON.stringify([JSON.stringify({ message: "This branch is outside your asset scope." })]),
+		};
+
+		expect(errorMessage(refused)).toBe("This branch is outside your asset scope.");
 	});
 });

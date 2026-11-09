@@ -349,7 +349,7 @@ function StartReport({ onCreated }: { onCreated: () => void }) {
 				<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 					Location
 				</p>
-				<GeoSelects chain={chain} onChain={setChain} idPrefix="stipend-report" />
+				<GeoSelects scoped chain={chain} onChain={setChain} idPrefix="stipend-report" />
 			</div>
 
 			{failure && (

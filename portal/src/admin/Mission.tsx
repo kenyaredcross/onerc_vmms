@@ -598,7 +598,7 @@ export function MissionEditor({
 							<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 								Applicable areas
 							</p>
-							<GeoSelects
+							<GeoSelects scoped
 								chain={geoChain}
 								onChain={setGeoChain}
 								idPrefix={`terms-${terms.name}`}

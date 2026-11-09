@@ -685,28 +685,38 @@ export function errorMessage(error: unknown, fallback = "Something went wrong.")
 		return "You have been signed out. Sign in again to carry on.";
 	}
 
+	// Signed in, and refused: a different statement from signed out, and the one
+	// a read-only role meets on a screen it may open but not act on. Frappe's own
+	// wording for it ("Insufficient Permission for Project") names a doctype, so
+	// only the server's plain sentences are passed through.
+	const refused =
+		candidate.exc_type === "PermissionError" || candidate.httpStatus === 403;
+
 	if (candidate._server_messages) {
 		try {
 			const parsed = JSON.parse(candidate._server_messages) as string[];
 
 			for (const entry of parsed) {
 				const text = stripHtml((JSON.parse(entry) as { message?: string })?.message ?? "");
-				if (text && !isMachinery(text)) return text;
+				if (!text || isMachinery(text)) continue;
+				if (refused && /insufficient permission|not permitted/i.test(text)) continue;
+				return text;
 			}
 		} catch {
 			// Not the shape we hoped for; the fallback below is the answer.
 		}
 	}
 
-	return fallback;
+	return refused ? "You don't have access to this." : fallback;
 }
 
 /**
  * Has the session gone? Frappe says so in several voices, none of them plain.
  *
- * `exc_type` is the reliable one when the framework sets it; the 401/403 status
- * and the "login to access" wording are the same statement arriving from the
- * layers that do not.
+ * A 401, an AuthenticationError or SessionExpired, or the "login to access"
+ * wording Frappe gives a Guest calling a signed-in method. **A 403 by itself is
+ * not one of them**: a signed-in person refused a record gets a 403 too, and
+ * telling them they were signed out sent them to sign in again for nothing.
  */
 function isSignedOut(candidate: {
 	exc_type?: string;
@@ -714,11 +724,11 @@ function isSignedOut(candidate: {
 	message?: string;
 	_server_messages?: string;
 }): boolean {
-	if (candidate.exc_type === "PermissionError" || candidate.exc_type === "AuthenticationError") {
+	if (candidate.exc_type === "AuthenticationError" || candidate.exc_type === "SessionExpired") {
 		return true;
 	}
 
-	if (candidate.httpStatus === 401 || candidate.httpStatus === 403) return true;
+	if (candidate.httpStatus === 401) return true;
 
 	const said = `${candidate.message ?? ""} ${candidate._server_messages ?? ""}`.toLowerCase();
 

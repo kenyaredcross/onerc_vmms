@@ -264,7 +264,7 @@ function EventForm({ options, onCreated }: { options: EventOptions; onCreated: (
 					<label className={LABEL}>End date<input className={INPUT} type="date" min={values.start_date || undefined} value={values.end_date} onChange={(e) => field("end_date", e.target.value)} /></label>
 					<label className={LABEL}>End time *<input className={INPUT} type="time" required value={values.end_time} onChange={(e) => field("end_time", e.target.value)} /></label>
 				</div>
-				<div className="mt-4"><GeoSelects chain={chain} onChain={setChain} idPrefix="event-location" /></div>
+				<div className="mt-4"><GeoSelects scoped chain={chain} onChain={setChain} idPrefix="event-location" /></div>
 				<label className={`${LABEL} mt-4`}>Short description<textarea className={INPUT} rows={2} value={values.short_description} onChange={(e) => field("short_description", e.target.value)} /></label>
 				<label className={`${LABEL} mt-4`}>About<textarea className={INPUT} rows={5} value={values.about} onChange={(e) => field("about", e.target.value)} /></label>
 				<div className="mt-4 grid gap-4 sm:grid-cols-2">

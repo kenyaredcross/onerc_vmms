@@ -311,7 +311,7 @@ function CommunicationContainer() {
 	const recipientFields = (
 		<>
 			<label className="comm-field-label">Branch</label>
-			<GeoSelects chain={chain} onChain={setChain} idPrefix="comms" />
+			<GeoSelects scoped chain={chain} onChain={setChain} idPrefix="comms" />
 			<label className="comm-field-label" htmlFor="comm-audience">
 				Audience
 			</label>

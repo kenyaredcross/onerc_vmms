@@ -117,6 +117,8 @@ export function GeoSelects({
 	showEmptyLevels = false,
 	inline = false,
 	showSummary = true,
+	scoped = false,
+	onFloor,
 }: {
 	/** The answered rungs, root first. */
 	chain: GeoNode[];
@@ -130,6 +132,17 @@ export function GeoSelects({
 	showEmptyLevels?: boolean;
 	inline?: boolean;
 	showSummary?: boolean;
+	/**
+	 * Staff pickers: offer only the caller's own part of the tree (`geo.browse`'s
+	 * `scoped`). The levels above where they stand then have one option each and
+	 * answer themselves, so a Head of Region starts at their region's counties.
+	 */
+	scoped?: boolean;
+	/**
+	 * How many leading rungs answered themselves. A filter uses it so the place a
+	 * person already stands is not shown as a filter they chose and can remove.
+	 */
+	onFloor?: (depth: number) => void;
 }) {
 	const ladder = useFrappeGetCall<{ message: { levels: GeoLevel[] } }>(
 		API.geoLadder,
@@ -156,6 +169,14 @@ export function GeoSelects({
 
 	const firstAsked = Array.from({ length: count }).findIndex((_, index) => index >= fromIndex && !settled[index]);
 
+	let floor = 0;
+	while (settled[floor] && chain[floor]) floor += 1;
+
+	useEffect(() => {
+		onFloor?.(floor);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [floor]);
+
 	return (
 		<div className={inline ? "contents" : undefined}>
 			<div className={inline ? "contents" : "grid gap-4 sm:grid-cols-2"}>
@@ -165,6 +186,7 @@ export function GeoSelects({
 						index={index}
 						id={`${idPrefix}-rung-${index}`}
 						parent={index === 0 ? null : (chain[index - 1] ?? null)}
+						scoped={scoped}
 						chosen={chain[index] ?? null}
 						fallbackLabel={rungs[index]}
 						showEmpty={showEmptyLevels && Boolean(rungs[index])}
@@ -233,10 +255,12 @@ function Rung({
 	keepVisible,
 	required,
 	disabled,
+	scoped,
 	onAnswer,
 	onSettled,
 }: {
 	index: number;
+	scoped?: boolean;
 	id: string;
 	parent: GeoNode | null;
 	chosen: GeoNode | null;
@@ -253,9 +277,13 @@ function Rung({
 
 	const { data, error, isLoading } = useFrappeGetCall<{ message: { nodes: GeoNode[] } }>(
 		API.geoBrowse,
-		parent ? { parent: parent.name } : undefined,
+		scoped
+			? { ...(parent ? { parent: parent.name } : {}), scoped: 1 }
+			: parent
+				? { parent: parent.name }
+				: undefined,
 		// No key means no request: a rung whose parent is unanswered asks nothing.
-		waiting ? null : `geo:${parent?.name ?? "root"}`,
+		waiting ? null : `geo:${scoped ? "scoped:" : ""}${parent?.name ?? "root"}`,
 	);
 
 	const nodes = data?.message?.nodes ?? [];
