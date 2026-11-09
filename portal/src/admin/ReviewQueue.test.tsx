@@ -110,7 +110,7 @@ function open(state: ApprovalStatus) {
 		<Routes>
 			<Route path="/admin/queue/:kind/:name" element={<ApplicationReview />} />
 		</Routes>,
-		{ route: `/admin/queue/volunteers/${state.name}?tab=decision` },
+		{ route: `/admin/queue/volunteers/${state.name}?tab=documents` },
 	);
 }
 

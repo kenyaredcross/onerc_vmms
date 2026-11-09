@@ -94,11 +94,11 @@ const MembershipQueue = lazy(() =>
 // than tabs inside one page, for the reason every other split in this file
 // gives: "what is waiting on me", "what went back to the applicant" and "what
 // is finished" are three jobs, and each needs a link somebody can send.
-const VolunteerQueueAssigned = lazy(() =>
-	import("./admin/ReviewQueue").then((module) => ({ default: () => <module.VolunteerQueue band="assigned" /> })),
+const VolunteerQueueDrafts = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({ default: () => <module.VolunteerQueue band="drafts" /> })),
 );
-const MembershipQueueAssigned = lazy(() =>
-	import("./admin/ReviewQueue").then((module) => ({ default: () => <module.MembershipQueue band="assigned" /> })),
+const MembershipQueueDrafts = lazy(() =>
+	import("./admin/ReviewQueue").then((module) => ({ default: () => <module.MembershipQueue band="drafts" /> })),
 );
 const VolunteerQueueChanges = lazy(() =>
 	import("./admin/ReviewQueue").then((module) => ({
@@ -121,6 +121,10 @@ const MembershipQueueClosed = lazy(() =>
 	})),
 );
 const ApplicationReview = lazy(() => import("./admin/ReviewQueue"));
+const Professions = lazy(() => import("./admin/Professions"));
+const ProfessionPeople = lazy(() =>
+	import("./admin/Professions").then((module) => ({ default: module.ProfessionPeople })),
+);
 // Addressing a branch's own people. Its own chunk because it is the one console
 // screen most coordinators will never open, and it carries a composer nothing
 // else needs.
@@ -443,8 +447,11 @@ export default function App() {
 					    for a reader; React Router ranks a static segment above a
 					    dynamic one itself, so neither can be shadowed by a
 					    docname. */}
-					<Route path="queue/volunteers/assigned" element={<VolunteerQueueAssigned />} />
-					<Route path="queue/members/assigned" element={<MembershipQueueAssigned />} />
+					{/* "Assigned to me" was folded into In review; old links land there. */}
+					<Route path="queue/volunteers/assigned" element={<Navigate to="/admin/queue/volunteers" replace />} />
+					<Route path="queue/members/assigned" element={<Navigate to="/admin/queue/members" replace />} />
+					<Route path="queue/volunteers/drafts" element={<VolunteerQueueDrafts />} />
+					<Route path="queue/members/drafts" element={<MembershipQueueDrafts />} />
 					<Route path="queue/volunteers/changes" element={<VolunteerQueueChanges />} />
 					<Route path="queue/volunteers/closed" element={<VolunteerQueueClosed />} />
 					<Route path="queue/members/changes" element={<MembershipQueueChanges />} />
@@ -457,6 +464,8 @@ export default function App() {
 					<Route path="registry/members" element={<RegistryMembers />} />
 					<Route path="registry/volunteers" element={<RegistryVolunteers />} />
 					<Route path="registry/surge" element={<SurgeRosterPeople />} />
+					<Route path="registry/professions" element={<Professions />} />
+					<Route path="registry/professions/:profession" element={<ProfessionPeople />} />
 					<Route path="transfers" element={<Transfers />} />
 					{/* The kind is a path segment because a docname cannot say which
 					    register it belongs to, and probing both endpoints to find out

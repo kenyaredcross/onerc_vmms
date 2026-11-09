@@ -32,28 +32,22 @@ export interface QueueSpec {
 }
 
 /**
- * The four bands a queue navigates between, and the one place they are named.
+ * The bands a queue navigates between, and the one place they are named.
  *
- * **Each is a route, not a tab index.** "Every application I may see", "what is
- * waiting on me", "what has gone back to the applicant" and "what is finished"
- * are four different jobs, and each deserves an address somebody can link,
- * bookmark and come back to. A component-local tab would give four screens one
- * URL.
+ * **Each is a route, not a tab index**, so each can be linked, bookmarked and
+ * come back to.
  *
- * The queue opens on All applications, not on the personal queue: an
- * administrator or a coordinator who holds no assignment would otherwise land
- * on an empty page in front of applications they are entitled to read. The
- * personal queue lives at `/assigned`, and anything that means "waiting on
- * you" links there.
+ * The queue opens on In review: everything submitted and being decided inside
+ * the caller's scope. There is no separate "assigned to me" band — a County
+ * Coordinator only ever sees their own county, so it would repeat In review —
+ * and the applications this caller may decide right now are sorted to the top
+ * of In review and marked instead. The old `/assigned` address redirects here.
  *
  * `group` is what `approvals.my_cases` is asked for. `segment` is what appears
- * in the address, and it is empty for the band the queue opens on — so the
- * queue's own route stays `/admin/queue/volunteers` and every existing bookmark
- * and sidebar badge still lands where it always did.
+ * in the address, and it is empty for the band the queue opens on.
  *
- * **None of these is a state and none is a stage.** The states are the closed
- * set in `approvals/states.py` and the server maps a band onto them; a stage is
- * a society's own wording and is compared nowhere in this app.
+ * **None of these is a state and none is a stage.** The server maps a band
+ * onto the closed set in `approvals/states.py`.
  */
 export interface QueueBand {
 	key: string;
@@ -66,18 +60,18 @@ export interface QueueBand {
 
 export const QUEUE_BANDS: QueueBand[] = [
 	{
-		key: "all",
+		key: "in_review",
 		segment: "",
-		label: "All applications",
-		empty: "No applications found.",
-		lead: "All applications you can access.",
+		label: "In review",
+		empty: "No applications are in review.",
+		lead: "Submitted applications waiting for a decision.",
 	},
 	{
-		key: "actionable",
-		segment: "assigned",
-		label: "Assigned to me",
-		empty: "Nothing is waiting on you.",
-		lead: "Applications assigned to you for review.",
+		key: "drafts",
+		segment: "drafts",
+		label: "Drafts",
+		empty: "No draft applications.",
+		lead: "Applications started but not yet submitted.",
 	},
 	{
 		key: "changes",
@@ -95,6 +89,13 @@ export const QUEUE_BANDS: QueueBand[] = [
 	},
 ];
 
+/** The Closed band's filter: one terminal state, or all of them. */
+export const CLOSED_FILTERS = [
+	{ key: "", label: "All" },
+	{ key: "Approved", label: "Approved" },
+	{ key: "Rejected", label: "Rejected" },
+] as const;
+
 /** Where one band of a queue lives. */
 export function bandRoute(spec: QueueSpec, band: QueueBand): string {
 	return band.segment ? `${spec.list}/${band.segment}` : spec.list;
@@ -107,7 +108,7 @@ export const QUEUES = {
 		heading: "Volunteer applications",
 		headingKey: "admin.queue.volunteers.heading",
 		noun: "volunteer applicant",
-		empty: "No volunteer application is waiting on you.",
+		empty: "No volunteer applications are in review.",
 	},
 	members: {
 		doctype: "VMMS Membership",
@@ -115,7 +116,7 @@ export const QUEUES = {
 		heading: "Membership applications",
 		headingKey: "admin.queue.members.heading",
 		noun: "membership applicant",
-		empty: "No membership application is waiting on you.",
+		empty: "No membership applications are in review.",
 	},
 } as const satisfies Record<string, QueueSpec>;
 

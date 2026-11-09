@@ -881,7 +881,16 @@ def my_volunteer() -> dict | None:
 	return {
 		**volunteer_service.profile_dto(volunteer),
 		"verification": application_service.verification_dto(volunteer),
+		# Whether the society issues volunteer cards at all, so the portal does
+		# not offer a card tab or a card link that would come back empty.
+		"issues_card": _issues_cards(),
 	}
+
+
+def _issues_cards() -> bool:
+	from vmmsx.volunteer.services import card as volunteer_card
+
+	return volunteer_card.issued()
 
 
 @frappe.whitelist()

@@ -19,6 +19,8 @@
   "column_break_licence",
   "licence_expiry",
   "licence_document",
+  "expiry_notice",
+  "expiry_notice_for",
   "check_section",
   "checked_by",
   "column_break_check",
@@ -116,6 +118,24 @@
    "label": "Copy of the Licence"
   },
   {
+   "fieldname": "expiry_notice",
+   "fieldtype": "Select",
+   "label": "Expiry Notice Sent",
+   "options": "\nExpiring\nExpired",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "description": "Which licence-expiry notice the County Coordinator was last sent, for the date in Expiry Notice For."
+  },
+  {
+   "fieldname": "expiry_notice_for",
+   "fieldtype": "Date",
+   "label": "Expiry Notice For",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  },
+  {
    "fieldname": "check_section",
    "fieldtype": "Section Break",
    "label": "Checked"
@@ -175,7 +195,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-03 09:00:00.000000",
+ "modified": "2026-11-09 20:14:25.360225",
  "modified_by": "Administrator",
  "module": "VMMS Volunteer",
  "name": "VMMS Surge Roster Entry",

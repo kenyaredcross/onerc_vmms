@@ -150,3 +150,6 @@ vmmsx.patches.install_membership_cancellation_setting
 
 # Emergency contact relationship becomes a list a society can extend.
 vmmsx.patches.install_relationships
+
+# Volunteer card switch, certificate signatures and the principles certificate.
+vmmsx.patches.install_card_and_signature_settings

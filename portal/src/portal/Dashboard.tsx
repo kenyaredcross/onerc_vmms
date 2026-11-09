@@ -935,7 +935,7 @@ function RecordVolunteer({
 			{profile.geo_path && (
 				<div className="mt-1.5 text-[12px] text-slate-body">{branchPath(profile.geo_path)}</div>
 			)}
-			<HomeDocument kind="volunteer" number={profile.volunteer} />
+			{profile.issues_card !== false && <HomeDocument kind="volunteer" number={profile.volunteer} />}
 		</RecordBlock>
 	);
 }

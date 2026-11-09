@@ -401,3 +401,4 @@ def _user_name(user: str | None) -> str | None:
 		return None
 
 	return frappe.utils.get_fullname(user) or user
+

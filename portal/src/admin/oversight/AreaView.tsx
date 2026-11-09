@@ -329,7 +329,7 @@ function Attention({ mode, view }: { mode: Mode; view: Overview }) {
 						<span className="text-ink">
 							<strong className="font-semibold">{attention.mine}</strong> waiting for your decision
 						</span>
-						<ButtonLink to="/admin/queue/members/assigned" variant="primary">
+						<ButtonLink to="/admin/queue/members" variant="primary">
 							Open
 						</ButtonLink>
 					</div>

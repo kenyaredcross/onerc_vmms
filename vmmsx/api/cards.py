@@ -52,7 +52,9 @@ def my_volunteer_card() -> dict | None:
 	"""
 	volunteer = _my_volunteer()
 
-	if not volunteer:
+	# A society that issues no cards has no card to show, which is an answer,
+	# not an error: the portal simply draws nothing.
+	if not volunteer or not volunteer_card.issued():
 		return None
 
 	volunteer_card.assert_holds(volunteer)

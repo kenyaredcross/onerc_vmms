@@ -42,6 +42,8 @@ export interface VolunteerProfile {
 	}>;
 	deployability?: Deployability;
 	verification?: Record<string, unknown>;
+	/** Whether the society issues volunteer cards at all. Only on `my_volunteer`; absent means yes. */
+	issues_card?: boolean;
 	/**
 	 * What kind of work they do, and what they have already done.
 	 *

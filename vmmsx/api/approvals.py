@@ -159,55 +159,61 @@ def _assert_governed(doctype: str) -> None:
 # reachable by offset instead of disappearing behind this limit.
 _CASE_CEILING = 200
 
-# The four bands a queue screen navigates between, named once.
+# The bands a queue screen navigates between, named once.
 #
-# `all` is every application the caller may read — what the queue opens on, so
-# an administrator or a coordinator with no assignment is not shown an empty
-# page in front of applications they may read. Reading is not deciding: each row
-# still carries the engine's own `can_act`. `actionable` is `my_queue` — what is
-# routed to this user right now. The other two are history, and history is not
-# personal: an application this branch sent
-# back for corrections is the branch's to see, not only the approver who
-# happened to press the button. Both are bounded by the same floor everything
-# else in this app stands on — `frappe.get_list`, which runs core's permission
-# query condition — so a coordinator reads their own areas and nothing else.
+# `in_review` is what the queue opens on: every application in the caller's
+# scope that has been submitted and is being decided. The ones this caller may
+# decide right now come first — `my_queue`, re-checked per row — so a regional
+# approver whose scope also covers county-stage work finds their own on top
+# without a separate "assigned to me" list. `drafts` were started and never
+# submitted; `changes` are drafts an approver sent back; `closed` is history,
+# optionally narrowed to one terminal state.
+#
+# `all` and `actionable` stay answerable for callers that still ask for them.
+#
+# History is not personal: an application this branch sent back for
+# corrections is the branch's to see, not only the approver who pressed the
+# button. Every band stands on `frappe.get_list`, which runs core's permission
+# query condition, so a coordinator reads their own areas and nothing else.
 CASE_ALL = "all"
 CASE_ACTIONABLE = "actionable"
+CASE_IN_REVIEW = "in_review"
+CASE_DRAFTS = "drafts"
 CASE_CHANGES = "changes"
 CASE_CLOSED = "closed"
 
-CASE_GROUPS = (CASE_ALL, CASE_ACTIONABLE, CASE_CHANGES, CASE_CLOSED)
+CASE_GROUPS = (CASE_IN_REVIEW, CASE_DRAFTS, CASE_CHANGES, CASE_CLOSED, CASE_ALL, CASE_ACTIONABLE)
+
+# Submitted resolves to In Review inside the same transaction; both mean
+# "with the reviewers", and a membership parked on its payment sits here too.
+_REVIEW_STATES = (states.SUBMITTED, states.IN_REVIEW)
 
 
 @frappe.whitelist()
-def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = None, offset: int = 0) -> dict:
-	"""One band of `doctype`'s approvals, inside the caller's own scope.
+def my_cases(
+	doctype: str,
+	group: str = CASE_IN_REVIEW,
+	limit: int | None = None,
+	offset: int = 0,
+	state: str | None = None,
+) -> dict:
+	"""One band of `doctype`'s applications, inside the caller's own scope.
 
-	The queue screens navigate four bands and `my_queue` only answers one of
-	them. This answers the rest from the governed doctype itself rather than
-	from ToDo rows, because they are not assignments: an application sent back
-	for corrections has no approver at all, a closed one has finished having
-	any, and the whole list is everything the caller may read whether or not it
-	is theirs to decide. `all` also returns `total`, counted by the same scoped
-	`frappe.get_list` as the page.
+	    in_review    Submitted or In Review; the caller's own decisions first
+	    drafts       Draft, never sent back — started and not yet submitted
+	    changes      Draft **and** a "More info requested" decision on it
+	    closed       one of the four terminal states; `state` narrows it to one
+	    all          every application the caller may read
+	    actionable   routed to this user now — `my_queue`
 
-	    all          every application the caller may read, paginated
-	    actionable   routed to this user now — `my_queue`, re-checked per row
-	    changes      state is exactly Draft **and** somebody has recorded a
-	                 "More info requested" decision on it, which is the only
-	                 thing that distinguishes an application waiting on its
-	                 applicant from one nobody has ever submitted
-	    closed       state is one of the four terminal ones
+	`in_review`, `closed` and `all` also return `total`, counted by the same
+	scoped `frappe.get_list` as the page.
 
 	**Every state named here is one of the seven in `states.py` and none of them
-	is derived from a stage label.** The bands are built from `approval_state`
-	and from the decisions table, both of which are code; a society's stage
-	names are displayed by the screen and compared nowhere.
+	is derived from a stage label.**
 
-	**Scope is the floor, not a filter.** The read is `frappe.get_list`, so
-	core's permission query condition applies exactly as it does to the register
-	pages; `frappe.get_all` would skip it and is not used. Nothing the caller
-	sends can widen the result.
+	**Scope is the floor, not a filter.** Nothing the caller sends can widen the
+	result.
 	"""
 	_assert_governed(doctype)
 
@@ -217,17 +223,19 @@ def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = Non
 			title=_("Unknown Case Group"),
 		)
 
+	if state and state not in states.TERMINAL_STATES:
+		frappe.throw(
+			_("{0} is not one of: {1}.").format(frappe.bold(state), ", ".join(states.TERMINAL_STATES)),
+			title=_("Unknown State"),
+		)
+
 	if group == CASE_ACTIONABLE:
 		rows = my_queue(doctype)
 
 		return {"group": group, "count": len(rows), "cases": rows}
 
-	# **An empty band, not an exception, for somebody who may not read this
-	# register at all.** `my_queue` already answers that caller with `[]` — it
-	# reads their own ToDos, and they have none — so a queue screen whose first
-	# band rendered empty and whose second band 500'd would be reporting two
-	# different things about one permission. Nothing is disclosed either way:
-	# "nothing here for you" is the same answer in both cases.
+	# An empty band, not an exception, for somebody who may not read this
+	# register at all: `my_queue` already answers that caller with `[]`.
 	if not frappe.has_permission(doctype, "read"):
 		return {"group": group, "count": 0, "total": 0, "cases": []}
 
@@ -236,7 +244,12 @@ def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = Non
 		start = max(0, int(offset))
 	except TypeError, ValueError:
 		start = 0
-	if group == CASE_ALL:
+
+	filters = None
+	if group == CASE_IN_REVIEW:
+		names = _in_review(doctype, page_size + 1, start)
+		filters = {"approval_state": ("in", list(_REVIEW_STATES))}
+	elif group == CASE_ALL:
 		names = frappe.get_list(
 			doctype,
 			order_by="modified desc, name desc",
@@ -244,12 +257,20 @@ def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = Non
 			limit_page_length=page_size + 1,
 			pluck="name",
 		)
-	else:
-		names = (
-			_changed(doctype, page_size + 1, start)
-			if group == CASE_CHANGES
-			else _closed(doctype, page_size + 1, start)
+		filters = {}
+	elif group == CASE_CLOSED:
+		filters = {"approval_state": state or ("in", list(states.TERMINAL_STATES))}
+		names = frappe.get_list(
+			doctype,
+			filters=filters,
+			order_by="modified desc, name desc",
+			limit_start=start,
+			limit_page_length=page_size + 1,
+			pluck="name",
 		)
+	else:
+		names = _drafts(doctype, page_size + 1, start, returned=group == CASE_CHANGES)
+
 	has_more = len(names) > page_size
 	names = names[:page_size]
 
@@ -257,19 +278,61 @@ def my_cases(doctype: str, group: str = CASE_ACTIONABLE, limit: int | None = Non
 		"group": group,
 		"count": len(names),
 		"has_more": has_more,
-		# `engine.status` per row, so a history screen and a live one describe an
-		# application with the same DTO. Read permission was already applied by
-		# the listing above; nothing here is a second door into a document.
+		# `engine.status` per row, so every band describes an application with
+		# the same DTO. Read permission was already applied by the listing.
 		"cases": [engine.status(frappe.get_doc(doctype, name)) for name in names],
 	}
-	if group == CASE_ALL:
+	if filters is not None:
 		# The aggregate uses the same permission-aware query as the page. Never
 		# expose an unrestricted database count alongside a scoped list.
 		totals = frappe.get_list(
-			doctype, fields=[{"COUNT": "name", "as": "total"}], order_by=None, limit_page_length=1
+			doctype,
+			filters=filters,
+			fields=[{"COUNT": "name", "as": "total"}],
+			order_by=None,
+			limit_page_length=1,
 		)
 		answer["total"] = int(totals[0]["total"]) if totals else 0
 	return answer
+
+
+def _in_review(doctype: str, limit: int, offset: int) -> list[str]:
+	"""Applications with the reviewers, the caller's own decisions first.
+
+	The caller's own come from `my_queue`, which re-checks routing per row, and
+	are kept only if the scoped listing would also show them — so the head of
+	the list can never reach past what the rest of it may. The rest follow,
+	newest first, with those names left out so nothing appears twice.
+	"""
+	filters = {"approval_state": ("in", list(_REVIEW_STATES))}
+	mine = [row["name"] for row in my_queue(doctype)]
+	if mine:
+		mine = frappe.get_list(
+			doctype,
+			filters={**filters, "name": ("in", mine)},
+			order_by="modified asc, name asc",
+			pluck="name",
+			limit_page_length=0,
+		)
+
+	head = mine[offset : offset + limit]
+	rest_start = max(0, offset - len(mine))
+	rest_limit = limit - len(head)
+	if rest_limit <= 0:
+		return head
+
+	rest_filters = dict(filters)
+	if mine:
+		rest_filters["name"] = ("not in", mine)
+	rest = frappe.get_list(
+		doctype,
+		filters=rest_filters,
+		order_by="modified desc, name desc",
+		limit_start=rest_start,
+		limit_page_length=rest_limit,
+		pluck="name",
+	)
+	return head + rest
 
 
 def _bounded(limit) -> int:
@@ -282,27 +345,18 @@ def _bounded(limit) -> int:
 	return max(1, min(asked, _CASE_CEILING))
 
 
-def _closed(doctype: str, limit, offset: int = 0) -> list[str]:
-	"""Applications in one of the four terminal states, newest first."""
-	return frappe.get_list(
-		doctype,
-		filters={"approval_state": ("in", list(states.TERMINAL_STATES))},
-		order_by="modified desc, name desc",
-		limit_start=offset,
-		limit_page_length=limit,
-		pluck="name",
-	)
+def _drafts(doctype: str, limit, offset: int = 0, returned: bool = False) -> list[str]:
+	"""Drafts, newest first: the ones sent back, or the ones never sent.
 
-
-def _changed(doctype: str, limit, offset: int = 0) -> list[str]:
-	"""Drafts that were sent back, newest first.
+	Both bands are Drafts and the decisions table tells them apart — a "More
+	info requested" decision is the only thing that distinguishes an
+	application waiting on its applicant from one nobody has ever submitted.
 
 	Two reads rather than a join: the scoped listing decides which documents the
-	caller may see at all, and the decisions table then says which of those
-	drafts got there by being returned rather than by never having been sent.
-	Doing it the other way round — reading decisions first — would be a query
-	across every branch's applications with the scope applied afterwards, which
-	is the shape of an accidental disclosure.
+	caller may see at all, and the decisions table then says which of those got
+	there by being returned. Reading decisions first would be a query across
+	every branch's applications with the scope applied afterwards, which is the
+	shape of an accidental disclosure.
 	"""
 	selected = []
 	scanned = 0
@@ -317,7 +371,7 @@ def _changed(doctype: str, limit, offset: int = 0) -> list[str]:
 		)
 		if not drafts:
 			break
-		returned = set(
+		sent_back = set(
 			frappe.get_all(
 				contract.DECISION_DOCTYPE,
 				filters={
@@ -328,7 +382,7 @@ def _changed(doctype: str, limit, offset: int = 0) -> list[str]:
 				pluck="parent",
 			)
 		)
-		selected.extend(name for name in drafts if name in returned)
+		selected.extend(name for name in drafts if (name in sent_back) == returned)
 		scanned += len(drafts)
 		if len(drafts) < _CASE_CEILING:
 			break

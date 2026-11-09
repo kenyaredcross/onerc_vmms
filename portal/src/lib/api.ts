@@ -142,6 +142,8 @@ export const API = {
 	// The profession filter's options, and the overview's disability counts.
 	// Both read inside the caller's scope.
 	registerProfessions: "vmmsx.api.volunteer.register_professions",
+	professionSummary: "vmmsx.api.professions.summary",
+	professionPeople: "vmmsx.api.professions.people",
 	disabilitySummary: "vmmsx.api.volunteer.disability_summary",
 	// The surge roster: checked professionals a branch can call on.
 	surgeRoster: "vmmsx.api.surge.surge_roster",

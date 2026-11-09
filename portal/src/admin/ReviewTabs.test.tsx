@@ -155,7 +155,9 @@ describe("the application tabs", () => {
 		expect(labels).toContain("Documents");
 		// The change log is not a tab: it sits at the foot of every tab.
 		expect(labels).not.toContain("History");
-		expect(labels.at(-1)).toBe("Decision");
+		// The decision is not a tab either: it sits beside every tab.
+		expect(labels).not.toContain("Decision");
+		expect(screen.getByRole("complementary", { name: "Decision" })).toBeTruthy();
 	});
 
 	it("shows everything the applicant entered, with profile links that can be clicked", () => {
@@ -221,7 +223,7 @@ describe("the application tabs", () => {
 		expect(screen.getByText(/created this application/)).toBeTruthy();
 	});
 
-	it.each(["applicant", "documents", "decision"])("shows the activity at the foot of the %s tab once switched on", (tab) => {
+	it.each(["applicant", "documents"])("shows the activity at the foot of the %s tab once switched on", (tab) => {
 		open(tab);
 		fireEvent.click(screen.getByRole("switch", { name: "Show activity" }));
 

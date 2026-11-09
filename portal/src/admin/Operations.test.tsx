@@ -563,7 +563,7 @@ describe("deployment requests", () => {
 		expect(screen.queryByRole("button", { name: /Approve/ })).toBeNull();
 		expect(
 			screen.getByRole("link", { name: "Decide this in your review queue →" }).getAttribute("href"),
-		).toBe("/admin/queue/volunteers/assigned");
+		).toBe("/admin/queue/volunteers");
 		// The stage label is displayed. It is never compared.
 		expect(screen.getByText("County approval")).toBeTruthy();
 	});

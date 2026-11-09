@@ -1,7 +1,7 @@
 # Copyright (c) 2026, Nigel and contributors
 # For license information, please see license.txt
 
-"""The three bands a queue screen navigates, and why two of them are not queues.
+"""The bands a queue screen navigates, and why most of them are not queues.
 
 `my_queue` answers one question — what is routed to *this user* right now — and
 a queue screen asks three. The other two cannot be answered from ToDo rows at
@@ -155,6 +155,71 @@ class TestMyCases(ApprovalTestCase):
 		self.assertIn(rejected, closed)
 		self.assertNotIn(open_one, closed)
 
+	def test_in_review_is_submitted_work_and_nothing_else(self):
+		pending = self.application("in review", self.kenya["kihara"])
+		engine.submit(self.reload(pending))
+		never = self.application("in review draft", self.kenya["kihara"])
+		returned = self.sent_back("in review returned")
+
+		with fixtures.acting_as(self.county):
+			answer = approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, approvals.CASE_IN_REVIEW, limit=200)
+
+		names = {case["name"] for case in answer["cases"]}
+		self.assertIn(pending, names)
+		self.assertNotIn(never, names)
+		self.assertNotIn(returned, names)
+		self.assertEqual(answer["total"], len(names))
+
+	def test_in_review_puts_the_callers_own_decisions_first(self):
+		older = self.application("mine, older", self.kenya["kihara"])
+		engine.submit(self.reload(older))
+		newer = self.application("not mine, newer", self.kenya["kihara"])
+		engine.submit(self.reload(newer))
+		frappe.db.set_value(
+			fixtures.APPROVABLE_DOCTYPE, newer, "modified", "2099-01-01 00:00:00", update_modified=False
+		)
+
+		frappe.set_user("Administrator")
+		with patch.object(approvals, "my_queue", return_value=[{"name": older}]):
+			first = approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, approvals.CASE_IN_REVIEW, limit=1)
+			second = approvals.my_cases(
+				fixtures.APPROVABLE_DOCTYPE, approvals.CASE_IN_REVIEW, limit=200, offset=1
+			)
+
+		# Newest-first would put `newer` on top; the caller's own work outranks it.
+		self.assertEqual(first["cases"][0]["name"], older)
+		later = [case["name"] for case in second["cases"]]
+		self.assertIn(newer, later)
+		self.assertNotIn(older, later)
+
+	def test_drafts_are_the_ones_never_sent_back(self):
+		never = self.application("draft never sent", self.kenya["kihara"])
+		returned = self.sent_back("draft returned")
+
+		with fixtures.acting_as(self.county):
+			drafts = self.names_in(approvals.CASE_DRAFTS)
+
+		self.assertIn(never, drafts)
+		self.assertNotIn(returned, drafts)
+
+	def test_the_closed_band_narrows_to_one_terminal_state(self):
+		approved = self.application("narrow approved", self.kenya["kihara"])
+		engine.submit(self.reload(approved))
+		rejected = self.application("narrow rejected", self.kenya["kihara"])
+		engine.submit(self.reload(rejected))
+
+		with fixtures.acting_as(self.county):
+			engine.decide(self.reload(approved), states.DECISION_APPROVED)
+			engine.decide(self.reload(rejected), states.DECISION_REJECTED, reason="Not eligible")
+			only = approvals.my_cases(
+				fixtures.APPROVABLE_DOCTYPE, approvals.CASE_CLOSED, state=states.REJECTED, limit=200
+			)
+
+		names = {case["name"] for case in only["cases"]}
+		self.assertIn(rejected, names)
+		self.assertNotIn(approved, names)
+		self.assertEqual(only["total"], len(names))
+
 	def test_every_case_carries_the_engines_own_status_dto(self):
 		application = self.application("dto", self.kenya["kihara"])
 		engine.submit(self.reload(application))
@@ -177,6 +242,10 @@ class TestMyCases(ApprovalTestCase):
 	def test_an_ungoverned_doctype_is_refused_before_anything_is_read(self):
 		with self.assertRaises(frappe.ValidationError):
 			approvals.my_cases("User", approvals.CASE_CLOSED)
+
+	def test_a_closed_filter_that_is_not_a_terminal_state_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, approvals.CASE_CLOSED, state=states.IN_REVIEW)
 
 	def test_an_unknown_band_is_refused_rather_than_guessed(self):
 		with self.assertRaises(frappe.ValidationError):
@@ -212,7 +281,7 @@ class TestMyCases(ApprovalTestCase):
 			patch.object(approvals.frappe, "get_list", side_effect=scoped_drafts),
 			patch.object(approvals.frappe, "get_all", side_effect=decisions),
 		):
-			self.assertEqual(approvals._changed(fixtures.APPROVABLE_DOCTYPE, 2), ["returned-old"])
+			self.assertEqual(approvals._drafts(fixtures.APPROVABLE_DOCTYPE, 2, returned=True), ["returned-old"])
 
 
 # Scope itself is proved where a *scopeable* governed doctype exists: the

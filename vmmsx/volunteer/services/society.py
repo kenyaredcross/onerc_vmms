@@ -149,3 +149,28 @@ def default_citizenship_country() -> str | None:
 	in by hand.
 	"""
 	return config.settings().get("country") or None
+
+
+# Whether this society issues volunteer cards at all. A Custom Field vmmsx owns,
+# installed by `patches/install_card_and_signature_settings.py`, on by default.
+ISSUES_CARDS_FIELD = "vmms_issues_volunteer_cards"
+
+
+def issues_volunteer_cards() -> bool:
+	"""Does this society issue volunteer cards? Yes unless it said no.
+
+	Read as stored: `get_single_value` turns a Check nobody has saved into 0, and
+	a society that never opened the setting has not said no.
+	"""
+	settings = "National Society Settings"
+
+	if not frappe.get_meta(settings).has_field(ISSUES_CARDS_FIELD):
+		return True
+
+	stored = frappe.db.sql(
+		"select value from `tabSingles` where doctype = %s and field = %s",
+		(settings, ISSUES_CARDS_FIELD),
+	)
+	value = stored[0][0] if stored else None
+
+	return value in (None, "") or bool(frappe.utils.cint(value))

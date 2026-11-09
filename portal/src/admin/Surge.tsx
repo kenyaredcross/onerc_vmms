@@ -388,10 +388,16 @@ function SurgeForm({
 	const id = entry ? `surge-${entry.entry}` : `surge-new-${volunteer}`;
 
 	const professions = (options.data?.message?.professions ?? []).filter((name) => name !== "Other");
+	// A licence that has already expired is not a licence to record; the server
+	// refuses it too. Today in the coordinator's own time zone, as the date
+	// picker shows it.
+	const today = localToday();
+	const expired = Boolean(expiry) && expiry < today;
 	const missing = [
 		!entry && !profession.trim() && { field: `${id}-profession`, label: "Choose the profession" },
 		!number.trim() && { field: `${id}-number`, label: "Enter the licence number" },
 		!issuer.trim() && { field: `${id}-issuer`, label: "Enter who issued the licence" },
+		expired && { field: `${id}-expiry`, label: "This licence has already expired. Ask for the renewed licence." },
 	].filter(Boolean) as Array<{ field: string; label: string }>;
 
 	const submit = async () => {
@@ -450,8 +456,25 @@ function SurgeForm({
 				<Field label="Issued by" required htmlFor={`${id}-issuer`} hint="For example, the Nursing Council of Kenya.">
 					<TextInput id={`${id}-issuer`} value={issuer} onChange={setIssuer} />
 				</Field>
-				<Field label="Valid until" htmlFor={`${id}-expiry`} hint="Leave empty if the licence does not expire.">
-					<TextInput id={`${id}-expiry`} type="date" value={expiry} onChange={setExpiry} />
+				<Field
+					label="Valid until"
+					htmlFor={`${id}-expiry`}
+					hint={
+						expired ? (
+							<span className="text-blue-press">This date has passed. Ask for the renewed licence.</span>
+						) : (
+							"Leave empty if the licence does not expire."
+						)
+					}
+				>
+					<TextInput
+						id={`${id}-expiry`}
+						type="date"
+						value={expiry}
+						onChange={setExpiry}
+						min={today}
+						invalid={expired}
+					/>
 				</Field>
 				<Field label="Copy of the licence" htmlFor={`${id}-copy`}>
 					<PrivateUpload id={`${id}-copy`} value={copy} onChange={setCopy} choose="Attach the licence" />
@@ -680,4 +703,12 @@ export function SurgeCard({
 			)}
 		</Card>
 	);
+}
+
+/** Today as YYYY-MM-DD in the browser's own time zone — what a date input compares against. */
+function localToday(): string {
+	const now = new Date();
+	const month = String(now.getMonth() + 1).padStart(2, "0");
+	const day = String(now.getDate()).padStart(2, "0");
+	return `${now.getFullYear()}-${month}-${day}`;
 }

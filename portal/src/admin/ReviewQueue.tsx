@@ -36,6 +36,7 @@ import {
 import {
 	QUEUES,
 	QUEUE_BANDS,
+	CLOSED_FILTERS,
 	bandRoute,
 	type QueueBand,
 	type QueueKind,
@@ -115,21 +116,14 @@ export function MembershipQueue({ band }: { band?: string } = {}) {
 /**
  * One registration's applications, in one of four routed bands.
  *
- * **The two queues never touch each other's endpoints.** `my_queue` and
- * `my_cases` both take the doctype off this queue's own spec, so a coordinator
- * on the membership page never asks for volunteer applications and the other way
- * round. That is not a filter drawn over a mixed read — it is two calls with two
- * arguments, which is why a branch with four hundred volunteer applications
- * costs nothing to somebody clearing eleven memberships.
+ * **The two queues never touch each other's endpoints.** `my_cases` takes the
+ * doctype off this queue's own spec, so a coordinator on the membership page
+ * never asks for volunteer applications and the other way round.
  *
  * **The bands come from the server and none of them is derived here.**
- * `all` is every application the caller may read, paged, so an administrator
- * or coordinator who holds no assignment still sees the register of
- * applications; `actionable` is what the engine routes to this user right now;
- * `changes` is a Draft with a recorded "More info requested" decision behind
- * it; `closed` is one of the four terminal states. Filtering an array in the
- * browser could not answer any but the second, because none of the others is
- * in this user's queue at all.
+ * `in_review` is Submitted or In Review, with the caller's own decisions first;
+ * `drafts` were never submitted; `changes` were sent back; `closed` is one of
+ * the four terminal states, optionally narrowed by `?state=`.
  *
  * Seeing a row is not deciding it: every row carries the engine's own
  * `can_act`, and the review page asks the engine again before a decision.
@@ -137,34 +131,26 @@ export function MembershipQueue({ band }: { band?: string } = {}) {
 function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	const spec = QUEUES[kind];
 	const band = QUEUE_BANDS.find((row) => row.segment === (segment ?? "")) ?? QUEUE_BANDS[0];
-	const isActionable = band.key === "actionable";
+	const isReview = band.key === "in_review";
+	const isClosed = band.key === "closed";
+	const [params, setParams] = useSearchParams();
+	const closedState = isClosed ? (params.get("state") ?? "") : "";
 	const [offset, setOffset] = useState(0);
-	useEffect(() => setOffset(0), [kind, band.key]);
+	useEffect(() => setOffset(0), [kind, band.key, closedState]);
 
-	// Two reads, and exactly one of them ever runs: `swrKey === null` is how
-	// this codebase says "do not ask". Assigned to me is `my_queue`, which
-	// re-checks routing per row; the other three are `my_cases`, which reads the
-	// governed doctype through a scoped listing because none of them is an
-	// assignment anybody holds.
-	const open = useFrappeGetCall<{ message: ApprovalStatus[] }>(
-		API.myQueue,
-		{ doctype: spec.doctype },
-		isActionable ? `admin:my_queue:${kind}` : null,
-	);
 	const history = useFrappeGetCall<{ message: ApprovalCases }>(
 		API.myCases,
-		{ doctype: spec.doctype, group: band.key, limit: 25, offset },
-		isActionable ? null : `admin:my_cases:${kind}:${band.key}:${offset}`,
+		{ doctype: spec.doctype, group: band.key, limit: 25, offset, ...(closedState ? { state: closedState } : {}) },
+		`admin:my_cases:${kind}:${band.key}:${closedState}:${offset}`,
 	);
 
-	const rows = isActionable ? (open.data?.message ?? []) : (history.data?.message?.cases ?? []);
-	const isLoading = isActionable ? open.isLoading : history.isLoading;
-	const error = isActionable ? open.error : history.error;
+	const rows = history.data?.message?.cases ?? [];
+	const total = history.data?.message?.total;
+	const { isLoading, error } = history;
 	const overdue = rows.filter((row) => row.stage?.is_breached).length;
-	// All applications is paged, so its headline is the server's scoped total
-	// rather than the length of one page.
-	const isAll = band.key === "all";
-	const shown = isAll ? (history.data?.message?.total ?? rows.length) : rows.length;
+	const mine = isReview ? rows.filter((row) => row.can_act).length : 0;
+	const shown = total ?? rows.length;
+	const closedFilter = CLOSED_FILTERS.find((row) => row.key === closedState);
 
 	return (
 		<>
@@ -175,11 +161,11 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 				actions={
 					<div className="flex flex-wrap items-center gap-2">
 						<Pill tone="navy">
-							{shown} {isAll ? (shown === 1 ? "application" : "applications") : isActionable ? "waiting" : "shown"}
+							{shown} {total != null ? (shown === 1 ? "application" : "applications") : "shown"}
 						</Pill>
+						{mine > 0 && <Pill tone="quiet">{mine} for your decision</Pill>}
 						{/* Only when there are any. A permanent "0 overdue" is a
-						    reassurance nobody reads, and it takes the place of the
-						    one that matters. */}
+						    reassurance nobody reads. */}
 						{overdue > 0 && <Pill tone="signal">{overdue} overdue</Pill>}
 					</div>
 				}
@@ -187,38 +173,74 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 
 			<QueueBands spec={spec} current={band} />
 
+			{isClosed && (
+				<div role="group" aria-label="Show closed applications" className="-mt-2 mb-5 flex flex-wrap gap-1.5">
+					{CLOSED_FILTERS.map((filter) => (
+						<button
+							key={filter.key}
+							type="button"
+							aria-pressed={filter.key === closedState}
+							onClick={() => {
+								const updated = new URLSearchParams(params);
+								if (filter.key) updated.set("state", filter.key);
+								else updated.delete("state");
+								setParams(updated, { replace: true });
+							}}
+							className={cx(
+								"rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition",
+								filter.key === closedState
+									? "border-ink bg-ink text-white"
+									: "border-card-line bg-white text-slate-strong hover:border-blue hover:text-ink",
+							)}
+						>
+							{filter.label}
+						</button>
+					))}
+				</div>
+			)}
+
 			{isLoading && <Spinner label="Loading the queue…" />}
 			{error && <ErrorNote>{errorMessage(error)}</ErrorNote>}
 
 			{!isLoading && !error && rows.length === 0 && (
-				<Empty title={isActionable ? spec.empty : band.empty}>{band.lead}</Empty>
+				<Empty
+					title={
+						isReview
+							? spec.empty
+							: isClosed && closedFilter?.key
+								? `No ${closedFilter.label.toLowerCase()} applications.`
+								: band.empty
+					}
+				>
+					{band.lead}
+				</Empty>
 			)}
 
 			{rows.length > 0 && (
 				<Table
 					head={
-						isActionable
+						isReview
 							? ["Applicant", "Branch", "Stage", "Waiting since", "Due", ""]
 							: ["Applicant", "Branch", "State", "Last moved", "Last decision", ""]
 					}
 				>
 					{rows.map((row) => (
-						<QueueRow key={row.name} row={row} spec={spec} actionable={isActionable} />
+						<QueueRow key={row.name} row={row} spec={spec} inReview={isReview} />
 					))}
 				</Table>
 			)}
-			{/* All applications knows its total, so it gets page numbers like the
-			    registers. The other bands only know whether there is more. */}
-			{isAll && !error && history.data?.message?.total != null && (
+			{/* Bands that know their total get page numbers like the registers.
+			    The draft bands only know whether there is more. */}
+			{!error && total != null && total > 25 && (
 				<Pager
 					page={Math.floor(offset / 25)}
-					pageCount={Math.max(1, Math.ceil(history.data.message.total / 25))}
-					total={history.data.message.total}
-					noun={history.data.message.total === 1 ? "application" : "applications"}
+					pageCount={Math.max(1, Math.ceil(total / 25))}
+					total={total}
+					noun={total === 1 ? "application" : "applications"}
 					onPage={(next) => setOffset(next * 25)}
 				/>
 			)}
-			{!isAll && !isActionable && !error && (offset > 0 || history.data?.message?.has_more) && (
+			{total == null && !error && (offset > 0 || history.data?.message?.has_more) && (
 				<div className="mt-4 flex items-center gap-3 text-sm">
 					{/* Only once the page has arrived: while the next page loads its
 					    rows are empty, and "Showing 26–25" is not a range. */}
@@ -289,11 +311,11 @@ function QueueBands({ spec, current }: { spec: QueueSpec; current: QueueBand }) 
 function QueueRow({
 	row,
 	spec,
-	actionable,
+	inReview,
 }: {
 	row: ApprovalStatus;
 	spec: QueueSpec;
-	actionable: boolean;
+	inReview: boolean;
 }) {
 	const to = `${spec.list}/${encodeURIComponent(row.name)}`;
 	const last = row.decisions.at(-1);
@@ -320,10 +342,15 @@ function QueueRow({
 
 			<Cell className="text-muted">{branchPath(row.geo_path)}</Cell>
 
-			{actionable ? (
+			{inReview ? (
 				<>
 					<Cell>
-						{row.stage && (
+						{row.can_act && (
+							<span className="mb-1 inline-flex rounded-full bg-blue-soft px-2 py-0.5 text-[10.5px] font-bold text-blue-press">
+								Your decision
+							</span>
+						)}
+						{row.stage ? (
 							<>
 								<span className="block text-[12.5px] font-semibold text-ink">
 									{row.stage.label}
@@ -334,12 +361,14 @@ function QueueRow({
 								    person's queue rather than the branch's. Without
 								    the line it reads as an ordinary assignment and
 								    the unstaffed branch behind it stays invisible. */}
-								{row.stage.is_blocked && (
+								{row.stage.is_blocked && row.can_act && (
 									<span className="mt-0.5 block text-[11px] text-slate-faint">
 										Escalated to you: no approver at this level
 									</span>
 								)}
 							</>
+						) : (
+							<StateBadge state={shownState(row)} />
 						)}
 					</Cell>
 					<Cell className="text-muted">{formatDate(row.stage?.entered_on ?? null)}</Cell>
@@ -518,7 +547,6 @@ function Review({
 			label: group.name,
 			count: group.answers.length,
 		})),
-		{ key: "decision", label: "Decision", count: status?.decisions.length || undefined },
 	];
 
 	const active = tabs.some((entry) => entry.key === tab) ? tab : tabs[0].key;
@@ -577,6 +605,11 @@ function Review({
 				]}
 			/>
 
+			{/* The decision sits beside the record rather than behind a tab, as in
+			    the UI concept: an approver reads the Documents tab and decides
+			    without leaving it. Below 1200px the panel moves above the tabs. */}
+			<div className="application-review-layout">
+			<div className="min-w-0">
 			<Tabs tabs={tabs} active={active} onSelect={onTab} className="mb-5" />
 
 			{(application.isLoading || membership.isLoading) && (
@@ -660,9 +693,11 @@ function Review({
 					),
 			)}
 
-			{active === "decision" && (
+			</div>
+			<aside className="application-review-sidebar" aria-label="Decision">
 				<Decision status={status} noun={spec.noun} person={person?.full_name ?? status.name} onDecided={onDecided} />
-			)}
+			</aside>
+			</div>
 
 			{/* Under every tab, as Frappe shows Activity under a form. */}
 			<Activity doctype={spec.doctype} name={name} />
@@ -1624,61 +1659,6 @@ function Decision({
 	return (
 		<>
 			<Card className="mb-5">
-				<SectionTitle>Approval status</SectionTitle>
-				<dl className="grid gap-4 sm:grid-cols-2">
-					<Field label="Stage" value={status.stage?.label} />
-					<Field label="Stage started" value={formatDate(status.stage?.entered_on)} />
-					<Field label="Approval needed from" value={completionRule(status.stage?.completion_rule)} />
-					<Field label="Approvers" value={String(status.approver_count)} />
-				</dl>
-
-				{/* `is_blocked` means the stage found nobody at its own level. It is
-				    entered anyway rather than passed — a stage that needs an approver
-				    and cannot find one must be visible, not silently satisfied — and
-				    the engine escalates upward so the application still moves.
-				    Everything in the grid above reads as an ordinary stage, so
-				    without this the screen shows an approval with nobody's name
-				    against it, which is the case the flag was added to describe. It
-				    is a staffing gap, not a broken record, and it is fixed in Geo
-				    Assignment rather than here. */}
-				{status.stage?.is_blocked && (
-					<p className="mt-4 rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
-						No one holds <b>{status.stage.required_role}</b> at this level, so this
-						application was escalated
-						{status.escalated_to?.length ? ` to ${status.escalated_to.join(", ")}` : " upward"}.
-						Assign someone at this level in Geo Assignment to return it to them.
-					</p>
-				)}
-			</Card>
-
-			{status.decisions.length > 0 && (
-				<Card className="mb-5">
-					<SectionTitle>Decision history</SectionTitle>
-					<Table head={["Decision", "Stage", "By", "When"]}>
-						{status.decisions.map((decision, index) => (
-							<Row key={index}>
-								<Cell className="font-semibold text-ink">{decision.decision}</Cell>
-								<Cell className="text-muted">{decision.stage_label}</Cell>
-								{/* `approver`, not `decided_by`. The column read the
-								    latter for as long as it has existed and rendered
-								    nothing: the engine's DTO has never had a field by
-								    that name, and the type here said it did. */}
-								<Cell className="text-muted">{decision.approver}</Cell>
-								<Cell className="text-muted">
-									{formatDate(decision.decided_on ?? null)}
-									{decision.reason && (
-										<span className="mt-1 block text-[11.5px] text-slate-faint">
-											{decision.reason}
-										</span>
-									)}
-								</Cell>
-							</Row>
-						))}
-					</Table>
-				</Card>
-			)}
-
-			<Card>
 				{failure && (
 					<div className="mb-4">
 						<ErrorNote>{failure}</ErrorNote>
@@ -1779,6 +1759,58 @@ function Decision({
 					</>
 				)}
 			</Card>
+
+			<Card className="mb-5">
+				<SectionTitle>Approval status</SectionTitle>
+				<dl className="grid gap-4 sm:grid-cols-2">
+					<Field label="Stage" value={status.stage?.label} />
+					<Field label="Stage started" value={formatDate(status.stage?.entered_on)} />
+					<Field label="Approval needed from" value={completionRule(status.stage?.completion_rule)} />
+					<Field label="Approvers" value={String(status.approver_count)} />
+				</dl>
+
+				{/* `is_blocked` means the stage found nobody at its own level. It is
+				    entered anyway rather than passed — a stage that needs an approver
+				    and cannot find one must be visible, not silently satisfied — and
+				    the engine escalates upward so the application still moves.
+				    Everything in the grid above reads as an ordinary stage, so
+				    without this the screen shows an approval with nobody's name
+				    against it, which is the case the flag was added to describe. It
+				    is a staffing gap, not a broken record, and it is fixed in Geo
+				    Assignment rather than here. */}
+				{status.stage?.is_blocked && (
+					<p className="mt-4 rounded-xl bg-surface px-4 py-3 text-[12.5px] leading-relaxed text-muted">
+						No one holds <b>{status.stage.required_role}</b> at this level, so this
+						application was escalated
+						{status.escalated_to?.length ? ` to ${status.escalated_to.join(", ")}` : " upward"}.
+						Assign someone at this level in Geo Assignment to return it to them.
+					</p>
+				)}
+			</Card>
+
+			{status.decisions.length > 0 && (
+				<Card className="mb-5">
+					<SectionTitle>Decision history</SectionTitle>
+					<ol className="space-y-3">
+						{status.decisions.map((decision, index) => (
+							<li key={index} className="border-l-2 border-card-line pl-3">
+								<span className="block text-[12.5px] font-semibold text-ink">{decision.decision}</span>
+								<span className="block text-[11.5px] text-muted">
+									{decision.stage_label} · {formatDate(decision.decided_on ?? null)}
+								</span>
+								{/* `approver`, not `decided_by`: the engine's DTO has
+								    never had a field by that name. */}
+								<span className="block truncate text-[11.5px] text-slate-faint">{decision.approver}</span>
+								{decision.reason && (
+									<span className="mt-1 block text-[11.5px] leading-relaxed text-slate-body">
+										{decision.reason}
+									</span>
+								)}
+							</li>
+						))}
+					</ol>
+				</Card>
+			)}
 
 			<ConfirmDialog
 				open={confirming && Boolean(picked)}

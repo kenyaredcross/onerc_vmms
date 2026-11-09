@@ -20,24 +20,18 @@ vi.mock("frappe-react-sdk", async (original) => {
 });
 const { VolunteerQueue, MembershipQueue } = await import("./ReviewQueue");
 beforeEach(() => { requests.length = 0; });
-describe("application lists and personal assignments", () => {
-	it.each(["volunteer", "member"])("shows readable %s applications even with no personal assignments", (kind) => {
+describe("application lists without personal assignments", () => {
+	it.each(["volunteer", "member"])("shows %s applications in review even with no personal assignments", (kind) => {
 		mount(kind === "volunteer" ? <VolunteerQueue /> : <MembershipQueue />);
 		expect(screen.getByText("Unassigned applicant")).toBeTruthy();
 		expect(screen.getByText("951 applications")).toBeTruthy();
-		expect(screen.getByRole("link", {name: "Assigned to me"})).toBeTruthy();
-		expect(requests.some((request) => request.path === API.myCases && request.params.group === "all")).toBe(true);
+		expect(screen.queryByRole("link", {name: "Assigned to me"})).toBeNull();
+		expect(requests.some((request) => request.path === API.myCases && request.params.group === "in_review")).toBe(true);
 		expect(requests.some((request) => request.path === API.myQueue)).toBe(false);
-	});
-	it("keeps the personal review queue separate", () => {
-		mount(<VolunteerQueue band="assigned" />);
-		expect(screen.getByText("No volunteer application is waiting on you.")).toBeTruthy();
-		expect(screen.queryByText("Unassigned applicant")).toBeNull();
-		expect(requests.some((request) => request.path === API.myCases)).toBe(false);
 	});
 	it("loads the next scoped page", () => {
 		mount(<VolunteerQueue />);
-		// All applications knows its total, so it pages by number like the registers.
+		// In review knows its total, so it pages by number like the registers.
 		fireEvent.click(screen.getByRole("button", {name: "2"}));
 		expect(screen.getByText("Second page applicant")).toBeTruthy();
 		expect(requests.some((request) => request.path === API.myCases && request.params.offset === 25)).toBe(true);

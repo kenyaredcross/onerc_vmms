@@ -1,0 +1,165 @@
+<style>
+	/* Read by Frappe's PDF renderer for the page itself: A4, narrow margins,
+	   because the frame below draws the page's edge. */
+	.print-format { margin-top: 8mm; margin-bottom: 0mm; margin-left: 8mm; margin-right: 8mm; page-size: A4; }
+
+	@font-face {
+		font-family: "CertificateBlackletter";
+		src: url("{{ blackletter_font }}");
+	}
+
+	/* A fixed frame. The PDF renderer draws CSS at about 0.77 of its size,
+	   so 246 x 360 here is a full A4 page inside the margins; a browser
+	   preview scales the same frame to fit. */
+	.mc-page {
+		width: 246mm;
+		height: 360mm;
+		margin: 0 auto;
+		border: 3px solid #d7282f;
+		border-radius: 34px;
+		padding: 9px;
+		-webkit-box-sizing: border-box;
+		box-sizing: border-box;
+		background: #ffffff;
+	}
+	.mc-inner {
+		border: 2.5px solid #b8973b;
+		border-radius: 25px;
+		height: 100%;
+		padding: 11mm 18mm 9mm;
+		-webkit-box-sizing: border-box;
+		box-sizing: border-box;
+		text-align: center;
+		font-family: Arial, Helvetica, sans-serif;
+		color: #1b1b1b;
+		position: relative;
+	}
+	.mc-logo { height: 30mm; margin-bottom: 4mm; }
+	.mc-society { color: #d7282f; font-size: 33px; letter-spacing: 0.5px; margin: 0 0 4mm; font-weight: normal; }
+	.mc-black { font-family: "CertificateBlackletter", "Old English Text MT", Georgia, serif; }
+	.mc-title { color: #8a7533; font-size: 44px; margin: 0 0 10mm; font-weight: normal; }
+	.mc-certify { font-size: 35px; margin: 0 0 9mm; }
+	.mc-name {
+		font-size: 28px;
+		font-weight: bold;
+		letter-spacing: 1px;
+		text-transform: uppercase;
+		width: 80%;
+		margin: 0 auto 8mm;
+		padding-bottom: 2.5mm;
+		border-bottom: 2px solid #1b1b1b;
+	}
+	.mc-enrolled { font-size: 33px; line-height: 1.35; margin: 0 0 8mm; }
+	.mc-signatures { width: 100%; border-collapse: collapse; margin-bottom: 8mm; }
+	.mc-signatures td { width: 50%; vertical-align: bottom; padding: 0 6mm; }
+	.mc-signature { height: 24mm; text-align: center; }
+	.mc-signature img { max-height: 24mm; max-width: 85mm; }
+	.mc-line { border-top: 2px solid #1b1b1b; padding-top: 2mm; font-size: 13.5px; font-weight: bold; line-height: 1.5; text-transform: uppercase; text-align: center; }
+	.mc-date { font-size: 17px; font-weight: bold; margin: 0 0 10mm; }
+	.mc-fill { display: inline-block; min-width: 18mm; border-bottom: 2px solid #1b1b1b; padding: 0 3mm; font-size: 23px; }
+	.mc-fill.wide { min-width: 68mm; }
+	.mc-principles-title { color: #d7282f; font-size: 14.5px; font-weight: bold; text-decoration: underline; margin: 0 0 6mm; }
+	.mc-principles { width: 100%; border-collapse: collapse; }
+	.mc-principles td { width: 50%; vertical-align: top; padding: 0 5mm; text-align: justify; }
+	.mc-principle { margin-bottom: 3.6mm; font-size: 11px; line-height: 1.4; text-transform: uppercase; }
+	.mc-principle b { display: block; color: #d7282f; font-size: 11.5px; margin-bottom: 0.6mm; }
+	.mc-emblems { margin-top: 4mm; }
+	.mc-emblems svg { margin: 0 12mm; }
+	.mc-serial { position: absolute; right: 18mm; bottom: 9mm; font-size: 13.5px; font-weight: bold; }
+	.mc-serial-blank { display: inline-block; width: 24mm; border-bottom: 1.5px solid #1b1b1b; }
+
+	/* On a screen the frame is shown 600px wide, the width the portal's
+	   preview gives an issued document. The PDF uses print styles and is
+	   unaffected. */
+	@media screen { .mc-page { zoom: 0.645; } }
+</style>
+
+{#- The certificate's name: a benefit of the type ending in "Certificate"
+    ("Life Membership Certificate"), else the type's own name ("Life Member"
+    gives "Life Membership Certificate"), else the plain name. -#}
+{%- set ns = namespace(title="") -%}
+{%- for benefit in benefits or [] -%}
+	{%- if not ns.title and benefit.strip().lower().endswith("certificate") -%}
+		{%- set ns.title = benefit.strip() -%}
+	{%- endif -%}
+{%- endfor -%}
+{%- if not ns.title and membership_type -%}
+	{%- set type_name = membership_type.strip() -%}
+	{%- if type_name.lower().endswith(" member") -%}{%- set type_name = type_name[:type_name|length - 7] -%}{%- endif -%}
+	{%- set ns.title = type_name ~ " Membership Certificate" -%}
+{%- endif -%}
+{%- if not ns.title -%}{%- set ns.title = "Certificate of Membership" -%}{%- endif -%}
+{%- set suffix = " membership certificate" -%}
+{%- set kind = ns.title[:ns.title|length - suffix|length] if ns.title.lower().endswith(suffix) else "" -%}
+{%- set kind = kind.lower() -%}
+{%- set kind = kind.lower() -%}
+
+<div class="mc-page">
+	<div class="mc-inner">
+		{% if society_logo %}
+		<img class="mc-logo" src="{{ society_logo }}" alt="{{ society_name or '' }}">
+		{% endif %}
+
+		<h1 class="mc-society">{{ (society_name or "") | upper }}</h1>
+		<h2 class="mc-title mc-black">{{ ns.title }}</h2>
+
+		<p class="mc-certify mc-black">This is to Certify that</p>
+		<div class="mc-name">{{ member_name }}</div>
+
+		<p class="mc-enrolled mc-black">
+			has been enrolled as {{ "an" if kind[:1] in "aeiou" and kind else "a" }}
+			{% if kind %}{{ kind }} {% endif %}member of the<br>{{ society_name or "" }}.
+		</p>
+
+		<table class="mc-signatures">
+			<tr>
+				<td>
+					<div class="mc-signature">
+						{% if signature_left %}<img src="{{ signature_left }}" alt="">{% endif %}
+					</div>
+					<div class="mc-line">
+						{% if signatory_left %}{{ signatory_left }}<br>{% endif %}{{ society_name or "" }}
+					</div>
+				</td>
+				<td>
+					<div class="mc-signature">
+						{% if signature_right %}<img src="{{ signature_right }}" alt="">{% endif %}
+					</div>
+					<div class="mc-line">
+						{% if signatory_right %}{{ signatory_right }}<br>{% endif %}{{ society_name or "" }}
+					</div>
+				</td>
+			</tr>
+		</table>
+
+		<p class="mc-date">
+			ON THIS <span class="mc-fill">{{ enrolled_day }}</span>
+			DAY OF <span class="mc-fill wide">{{ enrolled_month }}</span>
+			20<span class="mc-fill">{{ enrolled_year[2:] if enrolled_year else "" }}</span>
+		</p>
+
+		<p class="mc-principles-title">THE FUNDAMENTAL PRINCIPLES</p>
+		<table class="mc-principles">
+			<tr>
+				<td>
+					<div class="mc-principle"><b>Humanity:-</b>The Red Cross, born of a desire to bring assistance without discrimination to the wounded on the battlefield, endeavours - in its international and national capacity - to prevent and alleviate human suffering wherever it may be found. Its purpose is to protect life and health and to ensure respect for the human being. It promotes mutual understanding, friendship, co-operation and lasting peace amongst all people.</div>
+					<div class="mc-principle"><b>Impartiality:-</b>It makes no discrimination as to nationality, race, religious beliefs, class or political opinions. It endeavours to relieve the suffering of individuals, being guided solely by their needs, and to give priority to the most urgent cases of distress.</div>
+					<div class="mc-principle"><b>Neutrality:-</b>In order to continue to enjoy the confidence of all, the Red Cross may not take sides in hostilities or engage at any time in controversies of a political, racial, religious or ideological nature.</div>
+				</td>
+				<td>
+					<div class="mc-principle"><b>Independence:-</b>The Red Cross is independent. The National Societies, while auxiliaries in the humanitarian services of their governments and subject to the laws of their respective countries, must always maintain their autonomy so that they may be able at all times to act in accordance with Movement principles.</div>
+					<div class="mc-principle"><b>Voluntary service:-</b>The Red Cross is a voluntary relief organisation not promoted in any manner by desire for gain.</div>
+					<div class="mc-principle"><b>Unity:-</b>There can only be one Red Cross Society in any one country. It must be open to all. It must carry on its humanitarian work throughout its territory.</div>
+					<div class="mc-principle"><b>Universality:-</b>The Red Cross is a world-wide institution in which all societies have equal status and share equal responsibilities and duties in helping each other.</div>
+				</td>
+			</tr>
+		</table>
+
+		<div class="mc-emblems">
+			<svg width="56" height="56" viewBox="0 0 40 40" aria-hidden="true"><path d="M14 0h12v14h14v12H26v14H14V26H0V14h14z" fill="#d7282f"/></svg>
+			<svg width="56" height="56" viewBox="0 0 40 40" aria-hidden="true"><path d="M31.2 8.57A16 16 0 1 0 31.2 31.43A13 13 0 1 1 31.2 8.57Z" fill="#d7282f"/></svg>
+		</div>
+
+		<div class="mc-serial">Serial No. <span class="mc-serial-blank"></span></div>
+	</div>
+</div>

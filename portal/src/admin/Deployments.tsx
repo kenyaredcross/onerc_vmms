@@ -4156,7 +4156,7 @@ function RequestCard({ row }: { row: DeploymentRequestRow }) {
 				    offering a second decision control here. */}
 				{row.approval?.can_act && (
 					<Link
-						to="/admin/queue/volunteers/assigned"
+						to="/admin/queue/volunteers"
 						className="ml-auto text-[12px] font-semibold text-blue-press hover:underline"
 					>
 						Decide this in your review queue →

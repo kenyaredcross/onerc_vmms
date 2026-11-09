@@ -12,10 +12,13 @@ Whether an entry is ready is never stored; see the service.
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import getdate, today
 
 
 class VMMSSurgeRosterEntry(Document):
 	def validate(self):
+		self._refuse_a_past_expiry()
+
 		if self.status != "Active":
 			return
 
@@ -34,3 +37,23 @@ class VMMSSurgeRosterEntry(Document):
 				_("This volunteer is already on the surge roster as {0}.").format(self.profession),
 				frappe.ValidationError,
 			)
+
+	def _refuse_a_past_expiry(self):
+		"""A licence recorded as valid until a date already gone is not a licence.
+
+		Only when the date is being set or changed: an entry whose licence has
+		since run out must still save, to be stood down or have a note added.
+		"""
+		if not self.licence_expiry:
+			return
+
+		if not (self.is_new() or self.has_value_changed("licence_expiry")):
+			return
+
+		if getdate(self.licence_expiry) < getdate(today()):
+			frappe.throw(
+				_("This licence has already expired. Ask for the renewed licence."),
+				frappe.ValidationError,
+				title=_("Licence Expired"),
+			)
+

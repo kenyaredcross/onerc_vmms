@@ -558,6 +558,10 @@ scheduler_events = {
 		# transfer's own state rather than remembering what it did yesterday, so
 		# running it twice moves nobody twice.
 		"vmmsx.deployment.services.transfer.apply_due",
+		# A surge licence running out: the branch's County Coordinator is told
+		# when it comes within 60 days and on the day it expires. Idempotent:
+		# each entry remembers which notice it was sent for which expiry date.
+		"vmmsx.notifications.services.licence_expiry.notify_expiring",
 		# The backstop under the two `doc_events` hooks above. Those catch the
 		# ways authority normally changes; this catches every other way it can —
 		# an assignment expiring on its own `valid_to` date, a role removed by a

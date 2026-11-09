@@ -153,3 +153,22 @@ def assert_anchor_level(geo_node: str) -> None:
 		frappe.ValidationError,
 		title=_("Anchor Level Not Permitted"),
 	)
+
+
+# The two signatures and titles a membership certificate prints. Custom Fields
+# vmmsx owns, installed by `patches/install_card_and_signature_settings.py`.
+# Empty is ordinary: the line is left blank to be signed by hand.
+SIGNATURE_FIELDS = {
+	"left": ("vmms_certificate_signature_left", "vmms_certificate_signatory_left"),
+	"right": ("vmms_certificate_signature_right", "vmms_certificate_signatory_right"),
+}
+
+
+def certificate_signatures() -> dict:
+	"""{side: (signature picture URL, signatory title)}, each empty when unset."""
+	settings = config.settings()
+
+	return {
+		side: (settings.get(picture) or "", settings.get(title) or "")
+		for side, (picture, title) in SIGNATURE_FIELDS.items()
+	}

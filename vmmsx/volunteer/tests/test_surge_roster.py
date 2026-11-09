@@ -10,11 +10,15 @@ standing. The register narrows by profession and by disability through the
 same scoped read, and the overview is told how many, never who.
 """
 
-import frappe
-from frappe.utils import add_days, today
+from unittest.mock import patch
 
+import frappe
+from frappe.utils import add_days, getdate, today
+
+from vmmsx.api import professions as professions_api
 from vmmsx.api import surge as surge_api
 from vmmsx.api import volunteer as volunteer_api
+from vmmsx.notifications.services import licence_expiry
 from vmmsx.volunteer.services import surge
 from vmmsx.volunteer.tests import fixtures
 from vmmsx.volunteer.tests.base import VolunteerTestCase
@@ -330,3 +334,141 @@ class TestTheDisabilityFigures(SurgeTestCase):
 		)
 		profile.append("vmms_disabilities", {"disability": KIND})
 		profile.save(ignore_permissions=True)
+
+
+class TestAPastExpiryIsRefused(SurgeTestCase):
+	def test_the_record_refuses_a_past_date_however_it_is_saved(self):
+		volunteer = self.volunteer_at("Wanjala", self.society_a["ward"])
+		entry = frappe.get_doc(surge.ENTRY_DOCTYPE, self.add(volunteer)["entry"])
+		entry.licence_expiry = add_days(today(), -1)
+
+		with self.assertRaises(frappe.ValidationError) as refused:
+			entry.save(ignore_permissions=True)
+
+		self.assertIn("already expired", str(refused.exception))
+
+	def test_an_entry_whose_licence_has_since_run_out_still_saves(self):
+		volunteer = self.volunteer_at("Chebet", self.society_a["ward"])
+		name = self.add(volunteer)["entry"]
+		frappe.db.set_value(surge.ENTRY_DOCTYPE, name, "licence_expiry", add_days(today(), -3))
+
+		entry = frappe.get_doc(surge.ENTRY_DOCTYPE, name)
+		entry.notes = "Asked for the renewed licence."
+		entry.save(ignore_permissions=True)
+
+		self.assertEqual(frappe.db.get_value(surge.ENTRY_DOCTYPE, name, "notes"), "Asked for the renewed licence.")
+
+
+class TestExpiryNotices(SurgeTestCase):
+	COORDINATOR = "county.coordinator@example.com"
+
+	def sweep(self, as_of=None) -> list[str]:
+		"""Run the daily check and return the subjects that were sent."""
+		with (
+			patch.object(frappe.db, "get_single_value", return_value="County Coordinator"),
+			patch(
+				"vmmsx.approvals.services.routing.holders_exactly_at", return_value=[self.COORDINATOR]
+			) as holders,
+			patch("vmmsx.notifications.services.direct.tell") as tell,
+		):
+			licence_expiry.notify_expiring(as_of=as_of)
+
+		for call in holders.call_args_list:
+			self.assertEqual(call.args[1], "County Coordinator")
+
+		for call in tell.call_args_list:
+			self.assertEqual(call.args[0], [self.COORDINATOR])
+			self.assertEqual(call.kwargs["link"], licence_expiry.ROSTER_LINK)
+
+		return [call.args[1] for call in tell.call_args_list]
+
+	def test_nothing_is_sent_for_a_licence_far_from_expiry(self):
+		self.add(self.volunteer_at("Mutua", self.society_a["ward"]), licence_expiry=add_days(today(), 365))
+
+		self.assertEqual(self.sweep(), [])
+
+	def test_the_coordinator_is_told_once_as_it_comes_due_and_once_on_the_day(self):
+		expiry = add_days(today(), 30)
+		self.add(self.volunteer_at("Akinyi", self.society_a["ward"]), licence_expiry=expiry)
+
+		first = self.sweep()
+		self.assertEqual(len(first), 1)
+		self.assertIn("licence expires on", first[0])
+		self.assertEqual(self.sweep(), [], "the same notice is not sent twice")
+
+		on_the_day = self.sweep(as_of=getdate(expiry))
+		self.assertEqual(len(on_the_day), 1)
+		self.assertIn("expires today", on_the_day[0])
+		self.assertEqual(self.sweep(as_of=add_days(expiry, 1)), [])
+
+	def test_a_missed_day_is_caught_up_with_one_notice(self):
+		expiry = add_days(today(), 10)
+		self.add(self.volunteer_at("Otieno", self.society_a["ward"]), licence_expiry=expiry)
+
+		late = self.sweep(as_of=add_days(expiry, 2))
+
+		self.assertEqual(len(late), 1)
+		self.assertIn("expired on", late[0])
+
+	def test_a_renewed_licence_starts_the_notices_again(self):
+		volunteer = self.volunteer_at("Njoki", self.society_a["ward"])
+		name = self.add(volunteer, licence_expiry=add_days(today(), 20))["entry"]
+		self.assertEqual(len(self.sweep()), 1)
+
+		with fixtures.acting_as(self.here):
+			surge_api.renew_surge_licence(
+				name,
+				licence_number="NCK-2",
+				issuing_body="Nursing Council of Kenya",
+				licence_expiry=add_days(today(), 50),
+			)
+
+		self.assertEqual(len(self.sweep()), 1)
+
+	def test_a_branch_with_nobody_to_tell_is_told_once_somebody_is_appointed(self):
+		self.add(self.volunteer_at("Kerubo", self.society_a["ward"]), licence_expiry=add_days(today(), 15))
+
+		with (
+			patch.object(frappe.db, "get_single_value", return_value="County Coordinator"),
+			patch("vmmsx.approvals.services.routing.holders_exactly_at", return_value=[]),
+			patch("vmmsx.notifications.services.direct.tell") as tell,
+		):
+			summary = licence_expiry.notify_expiring()
+
+		tell.assert_not_called()
+		self.assertEqual(summary["nobody_to_tell"], 1)
+		self.assertEqual(len(self.sweep()), 1)
+
+
+class TestTheProfessionsPage(SurgeTestCase):
+	def test_counts_professions_inside_the_scope_only(self):
+		self.volunteer_at("Imani", self.society_a["ward"], vmms_profession=NURSE)
+		self.volunteer_at("Jabali", self.society_a["ward"], vmms_profession=NURSE)
+		self.volunteer_at("Kito", self.society_a["ward"])
+		self.volunteer_at("Lulu", self.society_b["ward"], vmms_profession=DOCTOR)
+
+		with fixtures.acting_as(self.here):
+			summary = professions_api.summary()
+
+		rows = {row["profession"]: row for row in summary["professions"]}
+		self.assertEqual(rows[NURSE]["volunteers"], 2)
+		self.assertEqual(rows[NURSE]["total"], 2)
+		self.assertNotIn(DOCTOR, rows)
+		self.assertGreaterEqual(summary["without"], 1)
+
+	def test_lists_the_people_who_hold_one_profession(self):
+		nurse = self.volunteer_at("Makena", self.society_a["ward"], vmms_profession=NURSE)
+		self.volunteer_at("Nia", self.society_a["ward"], vmms_profession=DOCTOR)
+		self.volunteer_at("Oloo", self.society_b["ward"], vmms_profession=NURSE)
+
+		with fixtures.acting_as(self.here):
+			found = professions_api.people(NURSE)
+
+		self.assertEqual([row["volunteer"] for row in found["people"]], [nurse])
+		self.assertEqual(found["total"], 1)
+		self.assertIsNone(found["people"][0]["member"])
+
+	def test_a_profession_must_be_named(self):
+		with fixtures.acting_as(self.here), self.assertRaises(frappe.ValidationError):
+			professions_api.people("  ")
+

@@ -181,7 +181,8 @@ export default function Profile() {
 								["overview", "Overview"],
 								["background", "Education & experience"],
 								["certifications", "Certifications"],
-								["card", "Volunteer card"],
+								// Only where the society issues cards (Kenya does not).
+								...(profile.issues_card === false ? [] : [["card", "Volunteer card"] as const]),
 							] as const).map(([key, label]) => (
 								<button
 									key={key}
@@ -224,7 +225,7 @@ export default function Profile() {
 						onSaved={() => void person.mutate()}
 					/>}
 					{tab === "certifications" && <CertificationsCard rows={certs} loading={training.isLoading} />}
-					{tab === "card" && <HolderCard kind="volunteer" />}
+					{tab === "card" && profile.issues_card !== false && <HolderCard kind="volunteer" />}
 				</>
 			)}
 		</>

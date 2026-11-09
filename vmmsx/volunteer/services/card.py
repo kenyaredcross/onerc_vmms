@@ -134,17 +134,31 @@ def pdf_filename(volunteer) -> str:
 	return f"volunteer-card-{volunteer.name}.pdf"
 
 
+def issued() -> bool:
+	"""Does this society issue volunteer cards at all? Some do not (Kenya)."""
+	from vmmsx.volunteer.services import society
+
+	return society.issues_volunteer_cards()
+
+
 def holds_card(volunteer) -> bool:
-	"""Is this volunteer somebody the society currently stands behind?"""
-	return (volunteer.status or "") == ACTIVE
+	"""Does this volunteer have a card: the society issues them, and stands behind this person?"""
+	return issued() and (volunteer.status or "") == ACTIVE
 
 
 def assert_holds(volunteer) -> None:
-	"""Refuse a card for a volunteer who is not active.
+	"""Refuse a card for a society that issues none, or a volunteer who is not active.
 
 	Shared by the screen and the download so the two cannot come to disagree
 	about who has one.
 	"""
+	if not issued():
+		frappe.throw(
+			_("This society does not issue volunteer cards."),
+			frappe.ValidationError,
+			title=_("No Volunteer Cards"),
+		)
+
 	if holds_card(volunteer):
 		return
 

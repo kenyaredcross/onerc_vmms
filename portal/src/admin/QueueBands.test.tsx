@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API } from "../lib/api";
@@ -7,7 +7,8 @@ import { mount } from "../test/harness";
 import type { ApprovalStatus } from "../portal/types";
 
 /**
- * The two application queues, and the four bands each of them navigates.
+ * The two application queues, and the four bands each of them navigates:
+ * In review, Drafts, Changes requested and Closed.
  *
  * **The rule these hold is separation.** Volunteer applications and memberships
  * are two registers with two decision views, and the screens for them must never
@@ -124,47 +125,32 @@ beforeEach(() => {
 });
 
 describe("the two queues never touch each other's endpoints", () => {
-	it("asks my_queue for volunteer applications only, on the volunteer page", () => {
-		reads.set(API.myQueue, [application()]);
+	it("asks for volunteer applications only, on the volunteer page", () => {
+		reads.set(API.myCases, { group: "in_review", count: 1, total: 1, cases: [application()] });
 
-		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
+		show(<VolunteerQueue />, "/admin/queue/volunteers");
 
-		const queue = calls.filter((call) => call.path === API.myQueue);
+		const cases = calls.filter((call) => call.path === API.myCases);
 
-		expect(queue).toHaveLength(1);
-		expect(queue[0].params).toEqual({ doctype: "VMMS Volunteer Application" });
+		expect(cases).toHaveLength(1);
+		expect(cases[0].params).toEqual({
+			doctype: "VMMS Volunteer Application",
+			group: "in_review",
+			limit: 25,
+			offset: 0,
+		});
 		// The other registration's doctype must not appear in any argument.
 		expect(JSON.stringify(calls)).not.toContain("VMMS Membership");
 	});
 
-	it("asks my_queue for memberships only, on the membership page", () => {
-		reads.set(API.myQueue, []);
-
-		show(<MembershipQueue band="assigned" />, "/admin/queue/members/assigned");
-
-		const queue = calls.filter((call) => call.path === API.myQueue);
-
-		expect(queue).toHaveLength(1);
-		expect(queue[0].params).toEqual({ doctype: "VMMS Membership" });
-		expect(JSON.stringify(calls)).not.toContain("VMMS Volunteer Application");
-	});
-
-	it("never calls the history endpoint while the assigned band is showing", () => {
-		reads.set(API.myQueue, []);
-
-		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
-
-		expect(calls.some((call) => call.path === API.myCases)).toBe(false);
-	});
-
-	it("opens on every readable application, not on the caller's own queue", () => {
-		reads.set(API.myCases, { group: "all", count: 0, total: 0, cases: [] });
+	it("asks for memberships only, on the membership page", () => {
+		reads.set(API.myCases, { group: "in_review", count: 0, total: 0, cases: [] });
 
 		show(<MembershipQueue />, "/admin/queue/members");
 
 		expect(calls.find((call) => call.path === API.myCases)?.params).toEqual({
 			doctype: "VMMS Membership",
-			group: "all",
+			group: "in_review",
 			limit: 25,
 			offset: 0,
 		});
@@ -174,27 +160,30 @@ describe("the two queues never touch each other's endpoints", () => {
 });
 
 describe("the four bands", () => {
-	it("reads the changes band from my_cases and not from my_queue", () => {
-		reads.set(API.myCases, { group: "changes", count: 0, cases: [] });
+	it("opens on In review and offers no personal queue", () => {
+		reads.set(API.myCases, { group: "in_review", count: 0, total: 0, cases: [] });
 
+		show(<VolunteerQueue />, "/admin/queue/volunteers");
+
+		expect(screen.getByRole("link", { name: "In review" }).getAttribute("aria-current")).toBe("page");
+		expect(screen.queryByRole("link", { name: "Assigned to me" })).toBeNull();
+		expect(screen.queryByRole("link", { name: "All applications" })).toBeNull();
+	});
+
+	it("reads drafts and changes from my_cases with their own groups", () => {
+		reads.set(API.myCases, { group: "drafts", count: 0, cases: [] });
+
+		show(<VolunteerQueue band="drafts" />, "/admin/queue/volunteers/drafts");
 		show(<VolunteerQueue band="changes" />, "/admin/queue/volunteers/changes");
 
-		const cases = calls.filter((call) => call.path === API.myCases);
+		const groups = calls.filter((call) => call.path === API.myCases).map((call) => call.params?.group);
 
-		expect(cases).toHaveLength(1);
-		expect(cases[0].params).toEqual({
-			doctype: "VMMS Volunteer Application",
-			group: "changes",
-			limit: 25,
-			offset: 0,
-		});
-		// `my_queue` answers "routed to me now" and could not answer this band at
-		// all: an application sent back to its applicant is in nobody's queue.
+		expect(groups).toEqual(["drafts", "changes"]);
 		expect(calls.some((call) => call.path === API.myQueue)).toBe(false);
 	});
 
-	it("reads the closed band from my_cases with the closed group", () => {
-		reads.set(API.myCases, { group: "closed", count: 0, cases: [] });
+	it("reads the closed band with the closed group, and narrows it by state", () => {
+		reads.set(API.myCases, { group: "closed", count: 0, total: 0, cases: [] });
 
 		show(<MembershipQueue band="closed" />, "/admin/queue/members/closed");
 
@@ -204,6 +193,17 @@ describe("the four bands", () => {
 			limit: 25,
 			offset: 0,
 		});
+
+		fireEvent.click(screen.getByRole("button", { name: "Rejected" }));
+
+		expect(calls.at(-1)?.params).toEqual({
+			doctype: "VMMS Membership",
+			group: "closed",
+			limit: 25,
+			offset: 0,
+			state: "Rejected",
+		});
+		expect(screen.getByRole("button", { name: "Rejected" }).getAttribute("aria-pressed")).toBe("true");
 	});
 
 	it("offers all four bands as real routed links from every band", () => {
@@ -211,11 +211,9 @@ describe("the four bands", () => {
 
 		show(<VolunteerQueue band="closed" />, "/admin/queue/volunteers/closed");
 
-		expect(screen.getByRole("link", { name: "All applications" }).getAttribute("href")).toBe(
-			"/admin/queue/volunteers",
-		);
-		expect(screen.getByRole("link", { name: "Assigned to me" }).getAttribute("href")).toBe(
-			"/admin/queue/volunteers/assigned",
+		expect(screen.getByRole("link", { name: "In review" }).getAttribute("href")).toBe("/admin/queue/volunteers");
+		expect(screen.getByRole("link", { name: "Drafts" }).getAttribute("href")).toBe(
+			"/admin/queue/volunteers/drafts",
 		);
 		expect(screen.getByRole("link", { name: "Changes requested" }).getAttribute("href")).toBe(
 			"/admin/queue/volunteers/changes",
@@ -226,7 +224,7 @@ describe("the four bands", () => {
 	});
 
 	it("points each band at its own registration's routes", () => {
-		reads.set(API.myQueue, []);
+		reads.set(API.myCases, { group: "in_review", count: 0, cases: [] });
 
 		show(<MembershipQueue />, "/admin/queue/members");
 
@@ -238,9 +236,9 @@ describe("the four bands", () => {
 
 describe("what a row shows", () => {
 	it("names the applicant rather than the docname, and links to the record", () => {
-		reads.set(API.myQueue, [application()]);
+		reads.set(API.myCases, { group: "in_review", count: 1, total: 1, cases: [application()] });
 
-		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
+		show(<VolunteerQueue />, "/admin/queue/volunteers");
 
 		const link = screen.getAllByRole("link", { name: /Asha Mwangi/ })[0];
 
@@ -248,23 +246,38 @@ describe("what a row shows", () => {
 	});
 
 	it("shows the stage label without ever comparing it", () => {
-		reads.set(API.myQueue, [application()]);
+		reads.set(API.myCases, { group: "in_review", count: 1, total: 1, cases: [application()] });
 
-		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
+		show(<VolunteerQueue />, "/admin/queue/volunteers");
 
 		// Displayed verbatim. A society that renames this stage tomorrow changes
 		// this cell and nothing else in the app.
 		expect(screen.getByText("Branch review")).toBeTruthy();
 	});
 
-	it("reports an overdue row from the engine's own breach flag", () => {
-		reads.set(API.myQueue, [
-			application({
-				stage: { ...application().stage!, is_breached: true, days_overdue: 6 },
-			}),
-		]);
+	it("marks the rows the caller may decide, and only those", () => {
+		reads.set(API.myCases, {
+			group: "in_review",
+			count: 2,
+			total: 2,
+			cases: [application(), application({ name: "APP-0002", can_act: false })],
+		});
 
-		show(<VolunteerQueue band="assigned" />, "/admin/queue/volunteers/assigned");
+		show(<VolunteerQueue />, "/admin/queue/volunteers");
+
+		expect(screen.getAllByText("Your decision")).toHaveLength(1);
+		expect(screen.getByText("1 for your decision")).toBeTruthy();
+	});
+
+	it("reports an overdue row from the engine's own breach flag", () => {
+		reads.set(API.myCases, {
+			group: "in_review",
+			count: 1,
+			total: 1,
+			cases: [application({ stage: { ...application().stage!, is_breached: true, days_overdue: 6 } })],
+		});
+
+		show(<VolunteerQueue />, "/admin/queue/volunteers");
 
 		expect(screen.getByText("6 days over")).toBeTruthy();
 		expect(screen.getByText("1 overdue")).toBeTruthy();

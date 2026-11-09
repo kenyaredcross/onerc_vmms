@@ -70,6 +70,14 @@ export const PEOPLE_NAV: Destination[] = [
 		section: "registry",
 	},
 	{
+		// What the area's active volunteers and members do, and who they are.
+		to: "/admin/registry/professions",
+		labelKey: "admin.people.nav.professions",
+		fallback: "Professions",
+		groupKey: "admin.people.nav.insight",
+		section: "registry",
+	},
+	{
 		// Professionals whose licence a coordinator has checked. Also listed under
 		// Operations, where the same list is read as "who can I send".
 		to: "/admin/registry/surge",

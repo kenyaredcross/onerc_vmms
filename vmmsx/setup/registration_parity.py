@@ -116,9 +116,16 @@ def configure_kenya(plan_mapping=None) -> dict:
 				"linked_item": source["linked_item"],
 				"legacy_template": template,
 				"membership_package": source["membership_package"],
-				"template_key": "membership_certificate"
-				if frappe.db.exists("VMMS Template", "membership_certificate")
-				else None,
+				# Kenya's certificate carries the Fundamental Principles; the
+				# plain one is the fallback on a site that has not got it yet.
+				"template_key": next(
+					(
+						key
+						for key in ("membership_certificate_principles", "membership_certificate")
+						if frappe.db.exists("VMMS Template", key)
+					),
+					None,
+				),
 				"benefits": [
 					{**benefit, "benefit_key": f"legacy-{index + 1}", "is_active": 1}
 					for index, benefit in enumerate(source["benefits"])

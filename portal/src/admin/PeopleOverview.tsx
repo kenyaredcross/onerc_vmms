@@ -68,7 +68,7 @@ export default function PeopleOverview() {
 			{/* ------------------------------------------------------------ pulse */}
 			<div className="mb-5 grid gap-3 md:grid-cols-3">
 				<PulseTile
-					to="/admin/queue/volunteers/assigned"
+					to="/admin/queue/volunteers"
 					label="Waiting for your decision"
 					value={queue.isLoading ? null : totalWaiting}
 					urgent={totalOverdue > 0}
@@ -109,7 +109,7 @@ export default function PeopleOverview() {
 							<SectionTitle>Applications to review</SectionTitle>
 							<p className="mt-0.5 text-[11.5px] text-muted">Overdue applications appear first.</p>
 						</div>
-						{totalWaiting > 0 && <SectionLink to="/admin/queue/volunteers/assigned">See all</SectionLink>}
+						{totalWaiting > 0 && <SectionLink to="/admin/queue/volunteers">See all</SectionLink>}
 					</div>
 
 					{queue.isLoading && (

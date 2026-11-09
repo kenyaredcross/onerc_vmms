@@ -31,9 +31,12 @@ the moment it is asked for, in HTML for a screen and in PDF for a download, and
 a stored copy would only ever be a second answer waiting to go stale.
 """
 
+from base64 import b64encode
+from pathlib import Path
+
 import frappe
 from frappe import _
-from frappe.utils import format_date, now_datetime
+from frappe.utils import format_date, getdate, now_datetime
 from frappe.utils.pdf import get_pdf
 
 from vmmsx.cards.services import assets
@@ -89,12 +92,64 @@ def context_for(membership, absolute_assets: bool = False) -> dict:
 		# certificate with no logo, and the shipped template guards on it.
 		"society_logo": printable_asset(logo) if absolute_assets else logo,
 		"issued_on": format_date(now_datetime()),
+		# The enrolment date in the three pieces a certificate reading "on this
+		# 22 day of October 2026" fills in separately.
+		**_enrolled(membership.valid_from),
+		# Who signs it. A picture that is not uploaded leaves its line blank, to
+		# be signed by hand.
+		**_signatures(absolute_assets),
+		"blackletter_font": _blackletter_font(absolute_assets),
 		# Present only when a gateway actually produced them. A template asking
 		# for a receipt that never arrived renders the row away rather than an
 		# empty box.
 		"payment_receipt": membership.payment_receipt or "",
 		"payment_transaction": membership.payment_transaction or "",
 	}
+
+
+def _enrolled(valid_from) -> dict:
+	"""The day, month name and year a membership began, or empty strings."""
+	if not valid_from:
+		return {"enrolled_day": "", "enrolled_month": "", "enrolled_year": ""}
+
+	day = getdate(valid_from)
+
+	return {
+		"enrolled_day": str(day.day),
+		"enrolled_month": _(day.strftime("%B")),
+		"enrolled_year": str(day.year),
+	}
+
+
+def _signatures(absolute_assets: bool) -> dict:
+	"""The two signature pictures and titles, made printable for the PDF."""
+	context = {}
+
+	for side, (picture, title) in society.certificate_signatures().items():
+		context[f"signature_{side}"] = printable_asset(picture) if absolute_assets else picture
+		context[f"signatory_{side}"] = title
+
+	return context
+
+
+BLACKLETTER_FONT = "UnifrakturMaguntia-Book.ttf"
+
+
+def _blackletter_font(absolute_assets: bool) -> str:
+	"""The old-style lettering some certificates use (OFL font shipped in public/fonts).
+
+	Embedded for the PDF, which has no site to fetch it from; a plain asset URL
+	for a browser.
+	"""
+	if not absolute_assets:
+		return f"/assets/vmmsx/fonts/{BLACKLETTER_FONT}"
+
+	path = Path(frappe.get_app_path("vmmsx", "public", "fonts", BLACKLETTER_FONT))
+
+	try:
+		return f"data:font/ttf;base64,{b64encode(path.read_bytes()).decode()}"
+	except OSError:
+		return ""
 
 
 def _valid_to_text(membership, membership_type) -> str:
