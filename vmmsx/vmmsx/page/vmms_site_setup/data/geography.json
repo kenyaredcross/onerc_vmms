@@ -1,0 +1,4231 @@
+{
+  "source": "https://iebc.or.ke/uploads/resources/L7k6ob1bau.pdf",
+  "source_date": "2022-06-21",
+  "source_sha256": "e4a4b9969c5575587e58e9feacfea875469ed18a41edb0e97e30041c623e0092",
+  "subcounty_model": "krcs-list",
+  "source_policy": "Complete official IEBC ward register, not the inconsistent legacy Ward master",
+  "west_pokot_region": "KRCS North Rift",
+  "counts": {
+    "national": 1,
+    "region": 8,
+    "county": 47,
+    "sub_county": 424
+  },
+  "nodes": [
+    {
+      "code": "KE-NATIONAL",
+      "level": "national",
+      "label": "Kenya Red Cross Society",
+      "parent": null
+    },
+    {
+      "code": "KE-REGION-c4762ee13719",
+      "level": "region",
+      "label": "Central",
+      "parent": "KE-NATIONAL"
+    },
+    {
+      "code": "KE-REGION-3064a2aad345",
+      "level": "region",
+      "label": "Coast Region",
+      "parent": "KE-NATIONAL"
+    },
+    {
+      "code": "KE-REGION-4ec6af0d21e6",
+      "level": "region",
+      "label": "Lower Eastern",
+      "parent": "KE-NATIONAL"
+    },
+    {
+      "code": "KE-REGION-58b5b7d334a2",
+      "level": "region",
+      "label": "North Eastern",
+      "parent": "KE-NATIONAL"
+    },
+    {
+      "code": "KE-REGION-9fbebb05a94c",
+      "level": "region",
+      "label": "North Rift",
+      "parent": "KE-NATIONAL"
+    },
+    {
+      "code": "KE-REGION-bd8b63afa09b",
+      "level": "region",
+      "label": "South Rift",
+      "parent": "KE-NATIONAL"
+    },
+    {
+      "code": "KE-REGION-d8b893de85c4",
+      "level": "region",
+      "label": "Upper Eastern",
+      "parent": "KE-NATIONAL"
+    },
+    {
+      "code": "KE-REGION-f2e254739a4f",
+      "level": "region",
+      "label": "West Kenya",
+      "parent": "KE-NATIONAL"
+    },
+    {
+      "code": "KE-COUNTY-001",
+      "level": "county",
+      "label": "Mombasa",
+      "parent": "KE-REGION-3064a2aad345",
+      "official_label": "Mombasa"
+    },
+    {
+      "code": "KE-COUNTY-002",
+      "level": "county",
+      "label": "Kwale",
+      "parent": "KE-REGION-3064a2aad345",
+      "official_label": "Kwale"
+    },
+    {
+      "code": "KE-COUNTY-003",
+      "level": "county",
+      "label": "Kilifi",
+      "parent": "KE-REGION-3064a2aad345",
+      "official_label": "Kilifi"
+    },
+    {
+      "code": "KE-COUNTY-004",
+      "level": "county",
+      "label": "Tana River",
+      "parent": "KE-REGION-3064a2aad345",
+      "official_label": "Tana River"
+    },
+    {
+      "code": "KE-COUNTY-005",
+      "level": "county",
+      "label": "Lamu",
+      "parent": "KE-REGION-3064a2aad345",
+      "official_label": "Lamu"
+    },
+    {
+      "code": "KE-COUNTY-006",
+      "level": "county",
+      "label": "Taita Taveta",
+      "parent": "KE-REGION-3064a2aad345",
+      "official_label": "Taita Taveta"
+    },
+    {
+      "code": "KE-COUNTY-007",
+      "level": "county",
+      "label": "Garissa",
+      "parent": "KE-REGION-58b5b7d334a2",
+      "official_label": "Garissa"
+    },
+    {
+      "code": "KE-COUNTY-008",
+      "level": "county",
+      "label": "Wajir",
+      "parent": "KE-REGION-58b5b7d334a2",
+      "official_label": "Wajir"
+    },
+    {
+      "code": "KE-COUNTY-009",
+      "level": "county",
+      "label": "Mandera",
+      "parent": "KE-REGION-58b5b7d334a2",
+      "official_label": "Mandera"
+    },
+    {
+      "code": "KE-COUNTY-010",
+      "level": "county",
+      "label": "Marsabit",
+      "parent": "KE-REGION-d8b893de85c4",
+      "official_label": "Marsabit"
+    },
+    {
+      "code": "KE-COUNTY-011",
+      "level": "county",
+      "label": "Isiolo",
+      "parent": "KE-REGION-d8b893de85c4",
+      "official_label": "Isiolo"
+    },
+    {
+      "code": "KE-COUNTY-012",
+      "level": "county",
+      "label": "Meru",
+      "parent": "KE-REGION-c4762ee13719",
+      "official_label": "Meru"
+    },
+    {
+      "code": "KE-COUNTY-013",
+      "level": "county",
+      "label": "Tharaka Nithi",
+      "parent": "KE-REGION-c4762ee13719",
+      "official_label": "Tharaka - Nithi"
+    },
+    {
+      "code": "KE-COUNTY-014",
+      "level": "county",
+      "label": "Embu",
+      "parent": "KE-REGION-c4762ee13719",
+      "official_label": "Embu"
+    },
+    {
+      "code": "KE-COUNTY-015",
+      "level": "county",
+      "label": "Kitui",
+      "parent": "KE-REGION-4ec6af0d21e6",
+      "official_label": "Kitui"
+    },
+    {
+      "code": "KE-COUNTY-016",
+      "level": "county",
+      "label": "Machakos",
+      "parent": "KE-REGION-4ec6af0d21e6",
+      "official_label": "Machakos"
+    },
+    {
+      "code": "KE-COUNTY-017",
+      "level": "county",
+      "label": "Makueni",
+      "parent": "KE-REGION-4ec6af0d21e6",
+      "official_label": "Makueni"
+    },
+    {
+      "code": "KE-COUNTY-018",
+      "level": "county",
+      "label": "Nyandarua",
+      "parent": "KE-REGION-bd8b63afa09b",
+      "official_label": "Nyandarua"
+    },
+    {
+      "code": "KE-COUNTY-019",
+      "level": "county",
+      "label": "Nyeri",
+      "parent": "KE-REGION-c4762ee13719",
+      "official_label": "Nyeri"
+    },
+    {
+      "code": "KE-COUNTY-020",
+      "level": "county",
+      "label": "Kirinyaga",
+      "parent": "KE-REGION-c4762ee13719",
+      "official_label": "Kirinyaga"
+    },
+    {
+      "code": "KE-COUNTY-021",
+      "level": "county",
+      "label": "Murang'a",
+      "parent": "KE-REGION-c4762ee13719",
+      "official_label": "Murang'a"
+    },
+    {
+      "code": "KE-COUNTY-022",
+      "level": "county",
+      "label": "Kiambu",
+      "parent": "KE-REGION-c4762ee13719",
+      "official_label": "Kiambu"
+    },
+    {
+      "code": "KE-COUNTY-023",
+      "level": "county",
+      "label": "Turkana",
+      "parent": "KE-REGION-9fbebb05a94c",
+      "official_label": "Turkana"
+    },
+    {
+      "code": "KE-COUNTY-024",
+      "level": "county",
+      "label": "West Pokot",
+      "parent": "KE-REGION-9fbebb05a94c",
+      "official_label": "West Pokot"
+    },
+    {
+      "code": "KE-COUNTY-025",
+      "level": "county",
+      "label": "Samburu",
+      "parent": "KE-REGION-d8b893de85c4",
+      "official_label": "Samburu"
+    },
+    {
+      "code": "KE-COUNTY-026",
+      "level": "county",
+      "label": "Trans Nzoia",
+      "parent": "KE-REGION-9fbebb05a94c",
+      "official_label": "Trans Nzoia"
+    },
+    {
+      "code": "KE-COUNTY-027",
+      "level": "county",
+      "label": "Uasin Gishu",
+      "parent": "KE-REGION-9fbebb05a94c",
+      "official_label": "Uasin Gishu"
+    },
+    {
+      "code": "KE-COUNTY-028",
+      "level": "county",
+      "label": "Elgeyo Marakwet",
+      "parent": "KE-REGION-9fbebb05a94c",
+      "official_label": "Elgeyo/Marakwet"
+    },
+    {
+      "code": "KE-COUNTY-029",
+      "level": "county",
+      "label": "Nandi",
+      "parent": "KE-REGION-9fbebb05a94c",
+      "official_label": "Nandi"
+    },
+    {
+      "code": "KE-COUNTY-030",
+      "level": "county",
+      "label": "Baringo",
+      "parent": "KE-REGION-bd8b63afa09b",
+      "official_label": "Baringo"
+    },
+    {
+      "code": "KE-COUNTY-031",
+      "level": "county",
+      "label": "Laikipia",
+      "parent": "KE-REGION-c4762ee13719",
+      "official_label": "Laikipia"
+    },
+    {
+      "code": "KE-COUNTY-032",
+      "level": "county",
+      "label": "Nakuru",
+      "parent": "KE-REGION-bd8b63afa09b",
+      "official_label": "Nakuru"
+    },
+    {
+      "code": "KE-COUNTY-033",
+      "level": "county",
+      "label": "Narok",
+      "parent": "KE-REGION-bd8b63afa09b",
+      "official_label": "Narok"
+    },
+    {
+      "code": "KE-COUNTY-034",
+      "level": "county",
+      "label": "Kajiado",
+      "parent": "KE-REGION-4ec6af0d21e6",
+      "official_label": "Kajiado"
+    },
+    {
+      "code": "KE-COUNTY-035",
+      "level": "county",
+      "label": "Kericho",
+      "parent": "KE-REGION-bd8b63afa09b",
+      "official_label": "Kericho"
+    },
+    {
+      "code": "KE-COUNTY-036",
+      "level": "county",
+      "label": "Bomet",
+      "parent": "KE-REGION-bd8b63afa09b",
+      "official_label": "Bomet"
+    },
+    {
+      "code": "KE-COUNTY-037",
+      "level": "county",
+      "label": "Kakamega",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Kakamega"
+    },
+    {
+      "code": "KE-COUNTY-038",
+      "level": "county",
+      "label": "Vihiga",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Vihiga"
+    },
+    {
+      "code": "KE-COUNTY-039",
+      "level": "county",
+      "label": "Bungoma",
+      "parent": "KE-REGION-9fbebb05a94c",
+      "official_label": "Bungoma"
+    },
+    {
+      "code": "KE-COUNTY-040",
+      "level": "county",
+      "label": "Busia",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Busia"
+    },
+    {
+      "code": "KE-COUNTY-041",
+      "level": "county",
+      "label": "Siaya",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Siaya"
+    },
+    {
+      "code": "KE-COUNTY-042",
+      "level": "county",
+      "label": "Kisumu",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Kisumu"
+    },
+    {
+      "code": "KE-COUNTY-043",
+      "level": "county",
+      "label": "Homa Bay",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Homa Bay"
+    },
+    {
+      "code": "KE-COUNTY-044",
+      "level": "county",
+      "label": "Migori",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Migori"
+    },
+    {
+      "code": "KE-COUNTY-045",
+      "level": "county",
+      "label": "Kisii",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Kisii"
+    },
+    {
+      "code": "KE-COUNTY-046",
+      "level": "county",
+      "label": "Nyamira",
+      "parent": "KE-REGION-f2e254739a4f",
+      "official_label": "Nyamira"
+    },
+    {
+      "code": "KE-COUNTY-047",
+      "level": "county",
+      "label": "Nairobi",
+      "parent": "KE-REGION-4ec6af0d21e6",
+      "official_label": "Nairobi City"
+    },
+    {
+      "code": "KE-SC-001-changamwe",
+      "level": "sub_county",
+      "label": "Changamwe",
+      "parent": "KE-COUNTY-001",
+      "source_names": [
+        "Changamwe"
+      ]
+    },
+    {
+      "code": "KE-SC-001-jomvu",
+      "level": "sub_county",
+      "label": "Jomvu",
+      "parent": "KE-COUNTY-001",
+      "source_names": [
+        "Jomvu"
+      ]
+    },
+    {
+      "code": "KE-SC-001-kilindini",
+      "level": "sub_county",
+      "label": "Kilindini",
+      "parent": "KE-COUNTY-001",
+      "source_names": [
+        "KILINDINI"
+      ]
+    },
+    {
+      "code": "KE-SC-001-kisauni",
+      "level": "sub_county",
+      "label": "Kisauni",
+      "parent": "KE-COUNTY-001",
+      "source_names": [
+        "Kisauni"
+      ]
+    },
+    {
+      "code": "KE-SC-001-likoni",
+      "level": "sub_county",
+      "label": "Likoni",
+      "parent": "KE-COUNTY-001",
+      "source_names": [
+        "Likoni"
+      ]
+    },
+    {
+      "code": "KE-SC-001-mombasa",
+      "level": "sub_county",
+      "label": "Mombasa",
+      "parent": "KE-COUNTY-001",
+      "source_names": [
+        "MOMBASA"
+      ]
+    },
+    {
+      "code": "KE-SC-001-mvita",
+      "level": "sub_county",
+      "label": "Mvita",
+      "parent": "KE-COUNTY-001",
+      "source_names": [
+        "Mvita"
+      ]
+    },
+    {
+      "code": "KE-SC-001-nyali",
+      "level": "sub_county",
+      "label": "Nyali",
+      "parent": "KE-COUNTY-001",
+      "source_names": [
+        "Nyali"
+      ]
+    },
+    {
+      "code": "KE-SC-002-kinango",
+      "level": "sub_county",
+      "label": "Kinango",
+      "parent": "KE-COUNTY-002",
+      "source_names": [
+        "Kinango"
+      ]
+    },
+    {
+      "code": "KE-SC-002-kwale",
+      "level": "sub_county",
+      "label": "Kwale",
+      "parent": "KE-COUNTY-002",
+      "source_names": [
+        "KWALE"
+      ]
+    },
+    {
+      "code": "KE-SC-002-lunga-lunga",
+      "level": "sub_county",
+      "label": "Lunga Lunga",
+      "parent": "KE-COUNTY-002",
+      "source_names": [
+        "Lunga Lunga"
+      ]
+    },
+    {
+      "code": "KE-SC-002-matuga",
+      "level": "sub_county",
+      "label": "Matuga",
+      "parent": "KE-COUNTY-002",
+      "source_names": [
+        "Matuga"
+      ]
+    },
+    {
+      "code": "KE-SC-002-msambweni",
+      "level": "sub_county",
+      "label": "Msambweni",
+      "parent": "KE-COUNTY-002",
+      "source_names": [
+        "Msambweni"
+      ]
+    },
+    {
+      "code": "KE-SC-003-ganze",
+      "level": "sub_county",
+      "label": "Ganze",
+      "parent": "KE-COUNTY-003",
+      "source_names": [
+        "Ganze"
+      ]
+    },
+    {
+      "code": "KE-SC-003-kaloleni",
+      "level": "sub_county",
+      "label": "Kaloleni",
+      "parent": "KE-COUNTY-003",
+      "source_names": [
+        "Kaloleni"
+      ]
+    },
+    {
+      "code": "KE-SC-003-kilifi",
+      "level": "sub_county",
+      "label": "Kilifi",
+      "parent": "KE-COUNTY-003",
+      "source_names": [
+        "KILIFI"
+      ]
+    },
+    {
+      "code": "KE-SC-003-kilifi-north",
+      "level": "sub_county",
+      "label": "Kilifi North",
+      "parent": "KE-COUNTY-003",
+      "source_names": [
+        "Kilifi North"
+      ]
+    },
+    {
+      "code": "KE-SC-003-kilifi-south",
+      "level": "sub_county",
+      "label": "Kilifi South",
+      "parent": "KE-COUNTY-003",
+      "source_names": [
+        "Kilifi South"
+      ]
+    },
+    {
+      "code": "KE-SC-003-magarini",
+      "level": "sub_county",
+      "label": "Magarini",
+      "parent": "KE-COUNTY-003",
+      "source_names": [
+        "Magarini"
+      ]
+    },
+    {
+      "code": "KE-SC-003-malindi",
+      "level": "sub_county",
+      "label": "Malindi",
+      "parent": "KE-COUNTY-003",
+      "source_names": [
+        "Malindi"
+      ]
+    },
+    {
+      "code": "KE-SC-003-rabai",
+      "level": "sub_county",
+      "label": "Rabai",
+      "parent": "KE-COUNTY-003",
+      "source_names": [
+        "Rabai"
+      ]
+    },
+    {
+      "code": "KE-SC-004-bura",
+      "level": "sub_county",
+      "label": "Bura",
+      "parent": "KE-COUNTY-004",
+      "source_names": [
+        "Bura"
+      ]
+    },
+    {
+      "code": "KE-SC-004-galole",
+      "level": "sub_county",
+      "label": "Galole",
+      "parent": "KE-COUNTY-004",
+      "source_names": [
+        "Galole"
+      ]
+    },
+    {
+      "code": "KE-SC-004-garissa",
+      "level": "sub_county",
+      "label": "Garissa",
+      "parent": "KE-COUNTY-004",
+      "source_names": [
+        "GARISSA"
+      ]
+    },
+    {
+      "code": "KE-SC-004-garsen",
+      "level": "sub_county",
+      "label": "Garsen",
+      "parent": "KE-COUNTY-004",
+      "source_names": [
+        "Garsen"
+      ]
+    },
+    {
+      "code": "KE-SC-004-tana-delta",
+      "level": "sub_county",
+      "label": "Tana Delta",
+      "parent": "KE-COUNTY-004",
+      "source_names": [
+        "TANA DELTA"
+      ]
+    },
+    {
+      "code": "KE-SC-004-tana-river",
+      "level": "sub_county",
+      "label": "Tana River",
+      "parent": "KE-COUNTY-004",
+      "source_names": [
+        "TANA RIVER"
+      ]
+    },
+    {
+      "code": "KE-SC-005-lamu",
+      "level": "sub_county",
+      "label": "Lamu",
+      "parent": "KE-COUNTY-005",
+      "source_names": [
+        "LAMU"
+      ]
+    },
+    {
+      "code": "KE-SC-005-lamu-east",
+      "level": "sub_county",
+      "label": "Lamu East",
+      "parent": "KE-COUNTY-005",
+      "source_names": [
+        "Lamu East"
+      ]
+    },
+    {
+      "code": "KE-SC-005-lamu-west",
+      "level": "sub_county",
+      "label": "Lamu West",
+      "parent": "KE-COUNTY-005",
+      "source_names": [
+        "Lamu West"
+      ]
+    },
+    {
+      "code": "KE-SC-006-mwatate",
+      "level": "sub_county",
+      "label": "Mwatate",
+      "parent": "KE-COUNTY-006",
+      "source_names": [
+        "Mwatate"
+      ]
+    },
+    {
+      "code": "KE-SC-006-taita",
+      "level": "sub_county",
+      "label": "Taita",
+      "parent": "KE-COUNTY-006",
+      "source_names": [
+        "TAITA"
+      ]
+    },
+    {
+      "code": "KE-SC-006-taveta",
+      "level": "sub_county",
+      "label": "Taveta",
+      "parent": "KE-COUNTY-006",
+      "source_names": [
+        "Taveta"
+      ]
+    },
+    {
+      "code": "KE-SC-006-voi",
+      "level": "sub_county",
+      "label": "Voi",
+      "parent": "KE-COUNTY-006",
+      "source_names": [
+        "Voi"
+      ]
+    },
+    {
+      "code": "KE-SC-006-wundanyi",
+      "level": "sub_county",
+      "label": "Wundanyi",
+      "parent": "KE-COUNTY-006",
+      "source_names": [
+        "Wundanyi"
+      ]
+    },
+    {
+      "code": "KE-SC-007-balambala",
+      "level": "sub_county",
+      "label": "Balambala",
+      "parent": "KE-COUNTY-007",
+      "source_names": [
+        "Balambala"
+      ]
+    },
+    {
+      "code": "KE-SC-007-dadaab",
+      "level": "sub_county",
+      "label": "Dadaab",
+      "parent": "KE-COUNTY-007",
+      "source_names": [
+        "Dadaab"
+      ]
+    },
+    {
+      "code": "KE-SC-007-dujis",
+      "level": "sub_county",
+      "label": "Dujis",
+      "parent": "KE-COUNTY-007",
+      "source_names": [
+        "Dujis"
+      ]
+    },
+    {
+      "code": "KE-SC-007-fafi",
+      "level": "sub_county",
+      "label": "Fafi",
+      "parent": "KE-COUNTY-007",
+      "source_names": [
+        "Fafi"
+      ]
+    },
+    {
+      "code": "KE-SC-007-garissa-township",
+      "level": "sub_county",
+      "label": "Garissa Township",
+      "parent": "KE-COUNTY-007",
+      "source_names": [
+        "Garissa Township"
+      ]
+    },
+    {
+      "code": "KE-SC-007-hulugho",
+      "level": "sub_county",
+      "label": "Hulugho",
+      "parent": "KE-COUNTY-007",
+      "source_names": [
+        "Hulugho"
+      ]
+    },
+    {
+      "code": "KE-SC-007-ijara",
+      "level": "sub_county",
+      "label": "Ijara",
+      "parent": "KE-COUNTY-007",
+      "source_names": [
+        "Ijara"
+      ]
+    },
+    {
+      "code": "KE-SC-007-lagdera",
+      "level": "sub_county",
+      "label": "Lagdera",
+      "parent": "KE-COUNTY-007",
+      "source_names": [
+        "Lagdera"
+      ]
+    },
+    {
+      "code": "KE-SC-008-eldas",
+      "level": "sub_county",
+      "label": "Eldas",
+      "parent": "KE-COUNTY-008",
+      "source_names": [
+        "Eldas"
+      ]
+    },
+    {
+      "code": "KE-SC-008-tarbaj",
+      "level": "sub_county",
+      "label": "Tarbaj",
+      "parent": "KE-COUNTY-008",
+      "source_names": [
+        "Tarbaj"
+      ]
+    },
+    {
+      "code": "KE-SC-008-wajir-east",
+      "level": "sub_county",
+      "label": "Wajir East",
+      "parent": "KE-COUNTY-008",
+      "source_names": [
+        "Wajir East"
+      ]
+    },
+    {
+      "code": "KE-SC-008-wajir-north",
+      "level": "sub_county",
+      "label": "Wajir North",
+      "parent": "KE-COUNTY-008",
+      "source_names": [
+        "Wajir North"
+      ]
+    },
+    {
+      "code": "KE-SC-008-wajir-south",
+      "level": "sub_county",
+      "label": "Wajir South",
+      "parent": "KE-COUNTY-008",
+      "source_names": [
+        "Wajir South"
+      ]
+    },
+    {
+      "code": "KE-SC-008-wajir-west",
+      "level": "sub_county",
+      "label": "Wajir West",
+      "parent": "KE-COUNTY-008",
+      "source_names": [
+        "Wajir West"
+      ]
+    },
+    {
+      "code": "KE-SC-009-banissa",
+      "level": "sub_county",
+      "label": "Banissa",
+      "parent": "KE-COUNTY-009",
+      "source_names": [
+        "Banissa"
+      ]
+    },
+    {
+      "code": "KE-SC-009-kotulo",
+      "level": "sub_county",
+      "label": "Kotulo",
+      "parent": "KE-COUNTY-009",
+      "source_names": [
+        "Kotulo"
+      ]
+    },
+    {
+      "code": "KE-SC-009-lafey",
+      "level": "sub_county",
+      "label": "Lafey",
+      "parent": "KE-COUNTY-009",
+      "source_names": [
+        "Lafey"
+      ]
+    },
+    {
+      "code": "KE-SC-009-mandera-central",
+      "level": "sub_county",
+      "label": "Mandera Central",
+      "parent": "KE-COUNTY-009",
+      "source_names": [
+        "MANDERA CENTRAL"
+      ]
+    },
+    {
+      "code": "KE-SC-009-mandera-east",
+      "level": "sub_county",
+      "label": "Mandera East",
+      "parent": "KE-COUNTY-009",
+      "source_names": [
+        "Mandera East"
+      ]
+    },
+    {
+      "code": "KE-SC-009-mandera-north",
+      "level": "sub_county",
+      "label": "Mandera North",
+      "parent": "KE-COUNTY-009",
+      "source_names": [
+        "Mandera North"
+      ]
+    },
+    {
+      "code": "KE-SC-009-mandera-south",
+      "level": "sub_county",
+      "label": "Mandera South",
+      "parent": "KE-COUNTY-009",
+      "source_names": [
+        "Mandera South"
+      ]
+    },
+    {
+      "code": "KE-SC-009-mandera-west",
+      "level": "sub_county",
+      "label": "Mandera West",
+      "parent": "KE-COUNTY-009",
+      "source_names": [
+        "Mandera West"
+      ]
+    },
+    {
+      "code": "KE-SC-010-chalbi",
+      "level": "sub_county",
+      "label": "Chalbi",
+      "parent": "KE-COUNTY-010",
+      "source_names": [
+        "CHALBI"
+      ]
+    },
+    {
+      "code": "KE-SC-010-laisamis",
+      "level": "sub_county",
+      "label": "Laisamis",
+      "parent": "KE-COUNTY-010",
+      "source_names": [
+        "Laisamis"
+      ]
+    },
+    {
+      "code": "KE-SC-010-marsabit",
+      "level": "sub_county",
+      "label": "Marsabit",
+      "parent": "KE-COUNTY-010",
+      "source_names": [
+        "MARSABIT"
+      ]
+    },
+    {
+      "code": "KE-SC-010-marsabit-central",
+      "level": "sub_county",
+      "label": "Marsabit Central",
+      "parent": "KE-COUNTY-010",
+      "source_names": [
+        "Marsabit Central"
+      ]
+    },
+    {
+      "code": "KE-SC-010-moyale",
+      "level": "sub_county",
+      "label": "Moyale",
+      "parent": "KE-COUNTY-010",
+      "source_names": [
+        "Moyale"
+      ]
+    },
+    {
+      "code": "KE-SC-010-north-horr",
+      "level": "sub_county",
+      "label": "North Horr",
+      "parent": "KE-COUNTY-010",
+      "source_names": [
+        "North Horr"
+      ]
+    },
+    {
+      "code": "KE-SC-010-saku",
+      "level": "sub_county",
+      "label": "Saku",
+      "parent": "KE-COUNTY-010",
+      "source_names": [
+        "Saku"
+      ]
+    },
+    {
+      "code": "KE-SC-011-garbatulla",
+      "level": "sub_county",
+      "label": "Garbatulla",
+      "parent": "KE-COUNTY-011",
+      "source_names": [
+        "GARBATULA",
+        "Garbatulla"
+      ]
+    },
+    {
+      "code": "KE-SC-011-isiolo",
+      "level": "sub_county",
+      "label": "Isiolo",
+      "parent": "KE-COUNTY-011",
+      "source_names": [
+        "ISIOLO"
+      ]
+    },
+    {
+      "code": "KE-SC-011-isiolo-north",
+      "level": "sub_county",
+      "label": "Isiolo North",
+      "parent": "KE-COUNTY-011",
+      "source_names": [
+        "Isiolo North"
+      ]
+    },
+    {
+      "code": "KE-SC-011-isiolo-south",
+      "level": "sub_county",
+      "label": "Isiolo South",
+      "parent": "KE-COUNTY-011",
+      "source_names": [
+        "Isiolo South"
+      ]
+    },
+    {
+      "code": "KE-SC-011-merti",
+      "level": "sub_county",
+      "label": "Merti",
+      "parent": "KE-COUNTY-011",
+      "source_names": [
+        "Merti"
+      ]
+    },
+    {
+      "code": "KE-SC-012-buuri",
+      "level": "sub_county",
+      "label": "Buuri",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "Buuri"
+      ]
+    },
+    {
+      "code": "KE-SC-012-central-imenti",
+      "level": "sub_county",
+      "label": "Central Imenti",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "Central Imenti",
+        "Imenti Central"
+      ]
+    },
+    {
+      "code": "KE-SC-012-igembe",
+      "level": "sub_county",
+      "label": "Igembe",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "IGEMBE"
+      ]
+    },
+    {
+      "code": "KE-SC-012-igembe-central",
+      "level": "sub_county",
+      "label": "Igembe Central",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "Igembe Central"
+      ]
+    },
+    {
+      "code": "KE-SC-012-igembe-north",
+      "level": "sub_county",
+      "label": "Igembe North",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "Igembe North"
+      ]
+    },
+    {
+      "code": "KE-SC-012-igembe-south",
+      "level": "sub_county",
+      "label": "Igembe South",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "Igembe South"
+      ]
+    },
+    {
+      "code": "KE-SC-012-meru-central",
+      "level": "sub_county",
+      "label": "Meru Central",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "MERU CENTRAL"
+      ]
+    },
+    {
+      "code": "KE-SC-012-north-imenti",
+      "level": "sub_county",
+      "label": "North Imenti",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "IMENTI NORTH",
+        "North Imenti"
+      ]
+    },
+    {
+      "code": "KE-SC-012-south-imenti",
+      "level": "sub_county",
+      "label": "South Imenti",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "IMENTI SOUTH",
+        "South Imenti"
+      ]
+    },
+    {
+      "code": "KE-SC-012-tigania",
+      "level": "sub_county",
+      "label": "Tigania",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "TIGANIA"
+      ]
+    },
+    {
+      "code": "KE-SC-012-tigania-east",
+      "level": "sub_county",
+      "label": "Tigania East",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "Tigania East"
+      ]
+    },
+    {
+      "code": "KE-SC-012-tigania-west",
+      "level": "sub_county",
+      "label": "Tigania West",
+      "parent": "KE-COUNTY-012",
+      "source_names": [
+        "Tigania West"
+      ]
+    },
+    {
+      "code": "KE-SC-013-chuka",
+      "level": "sub_county",
+      "label": "Chuka",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Chuka"
+      ]
+    },
+    {
+      "code": "KE-SC-013-chuka-igambangombe",
+      "level": "sub_county",
+      "label": "Chuka/Igambang'ombe",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Chuka/Igambang'ombe"
+      ]
+    },
+    {
+      "code": "KE-SC-013-igambangombe",
+      "level": "sub_county",
+      "label": "Igambang'ombe",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Igambang'ombe"
+      ]
+    },
+    {
+      "code": "KE-SC-013-maara",
+      "level": "sub_county",
+      "label": "Maara",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Maara"
+      ]
+    },
+    {
+      "code": "KE-SC-013-meru-south",
+      "level": "sub_county",
+      "label": "Meru South",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "MERU SOUTH"
+      ]
+    },
+    {
+      "code": "KE-SC-013-muthambi",
+      "level": "sub_county",
+      "label": "Muthambi",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Muthambi"
+      ]
+    },
+    {
+      "code": "KE-SC-013-mwimbi",
+      "level": "sub_county",
+      "label": "Mwimbi",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Mwimbi"
+      ]
+    },
+    {
+      "code": "KE-SC-013-nithi",
+      "level": "sub_county",
+      "label": "Nithi",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Nithi"
+      ]
+    },
+    {
+      "code": "KE-SC-013-tharaka",
+      "level": "sub_county",
+      "label": "Tharaka",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Tharaka"
+      ]
+    },
+    {
+      "code": "KE-SC-013-tharaka-north",
+      "level": "sub_county",
+      "label": "Tharaka North",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Tharaka North"
+      ]
+    },
+    {
+      "code": "KE-SC-013-tharaka-south",
+      "level": "sub_county",
+      "label": "Tharaka South",
+      "parent": "KE-COUNTY-013",
+      "source_names": [
+        "Tharaka South"
+      ]
+    },
+    {
+      "code": "KE-SC-014-embu",
+      "level": "sub_county",
+      "label": "Embu",
+      "parent": "KE-COUNTY-014",
+      "source_names": [
+        "EMBU"
+      ]
+    },
+    {
+      "code": "KE-SC-014-gachoka",
+      "level": "sub_county",
+      "label": "Gachoka",
+      "parent": "KE-COUNTY-014",
+      "source_names": [
+        "Gachoka"
+      ]
+    },
+    {
+      "code": "KE-SC-014-manyatta",
+      "level": "sub_county",
+      "label": "Manyatta",
+      "parent": "KE-COUNTY-014",
+      "source_names": [
+        "Manyatta"
+      ]
+    },
+    {
+      "code": "KE-SC-014-mbeere",
+      "level": "sub_county",
+      "label": "Mbeere",
+      "parent": "KE-COUNTY-014",
+      "source_names": [
+        "MBEERE"
+      ]
+    },
+    {
+      "code": "KE-SC-014-mbeere-north",
+      "level": "sub_county",
+      "label": "Mbeere North",
+      "parent": "KE-COUNTY-014",
+      "source_names": [
+        "Mbeere North"
+      ]
+    },
+    {
+      "code": "KE-SC-014-mbeere-south",
+      "level": "sub_county",
+      "label": "Mbeere South",
+      "parent": "KE-COUNTY-014",
+      "source_names": [
+        "Mbeere South"
+      ]
+    },
+    {
+      "code": "KE-SC-014-runyenjes",
+      "level": "sub_county",
+      "label": "Runyenjes",
+      "parent": "KE-COUNTY-014",
+      "source_names": [
+        "Runyenjes"
+      ]
+    },
+    {
+      "code": "KE-SC-014-siakago",
+      "level": "sub_county",
+      "label": "Siakago",
+      "parent": "KE-COUNTY-014",
+      "source_names": [
+        "Siakago"
+      ]
+    },
+    {
+      "code": "KE-SC-015-kitui",
+      "level": "sub_county",
+      "label": "Kitui",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "KITUI"
+      ]
+    },
+    {
+      "code": "KE-SC-015-kitui-central",
+      "level": "sub_county",
+      "label": "Kitui Central",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Kitui Central"
+      ]
+    },
+    {
+      "code": "KE-SC-015-kitui-east",
+      "level": "sub_county",
+      "label": "Kitui East",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Kitui East"
+      ]
+    },
+    {
+      "code": "KE-SC-015-kitui-rural",
+      "level": "sub_county",
+      "label": "Kitui Rural",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Kitui Rural"
+      ]
+    },
+    {
+      "code": "KE-SC-015-kitui-south",
+      "level": "sub_county",
+      "label": "Kitui South",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Kitui South"
+      ]
+    },
+    {
+      "code": "KE-SC-015-kitui-west",
+      "level": "sub_county",
+      "label": "Kitui West",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Kitui West"
+      ]
+    },
+    {
+      "code": "KE-SC-015-kyuso",
+      "level": "sub_county",
+      "label": "Kyuso",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "KYUSO"
+      ]
+    },
+    {
+      "code": "KE-SC-015-mutomo",
+      "level": "sub_county",
+      "label": "Mutomo",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "MUTOMO"
+      ]
+    },
+    {
+      "code": "KE-SC-015-mwingi",
+      "level": "sub_county",
+      "label": "Mwingi",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "MWINGI"
+      ]
+    },
+    {
+      "code": "KE-SC-015-mwingi-central",
+      "level": "sub_county",
+      "label": "Mwingi Central",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Mwingi Central"
+      ]
+    },
+    {
+      "code": "KE-SC-015-mwingi-east",
+      "level": "sub_county",
+      "label": "Mwingi East",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Mwingi East"
+      ]
+    },
+    {
+      "code": "KE-SC-015-mwingi-north",
+      "level": "sub_county",
+      "label": "Mwingi North",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Mwingi North"
+      ]
+    },
+    {
+      "code": "KE-SC-015-mwingi-west",
+      "level": "sub_county",
+      "label": "Mwingi West",
+      "parent": "KE-COUNTY-015",
+      "source_names": [
+        "Mwingi West"
+      ]
+    },
+    {
+      "code": "KE-SC-016-athi-river",
+      "level": "sub_county",
+      "label": "Athi River",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Athi River"
+      ]
+    },
+    {
+      "code": "KE-SC-016-kangundo",
+      "level": "sub_county",
+      "label": "Kangundo",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Kangundo"
+      ]
+    },
+    {
+      "code": "KE-SC-016-kathiani",
+      "level": "sub_county",
+      "label": "Kathiani",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Kathiani"
+      ]
+    },
+    {
+      "code": "KE-SC-016-machakos",
+      "level": "sub_county",
+      "label": "Machakos",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "MACHAKOS"
+      ]
+    },
+    {
+      "code": "KE-SC-016-machakos-town",
+      "level": "sub_county",
+      "label": "Machakos Town",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Machakos Town"
+      ]
+    },
+    {
+      "code": "KE-SC-016-masinga",
+      "level": "sub_county",
+      "label": "Masinga",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Masinga"
+      ]
+    },
+    {
+      "code": "KE-SC-016-matungulu",
+      "level": "sub_county",
+      "label": "Matungulu",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Matungulu"
+      ]
+    },
+    {
+      "code": "KE-SC-016-mavoko",
+      "level": "sub_county",
+      "label": "Mavoko",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Mavoko"
+      ]
+    },
+    {
+      "code": "KE-SC-016-mwala",
+      "level": "sub_county",
+      "label": "Mwala",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Mwala"
+      ]
+    },
+    {
+      "code": "KE-SC-016-yatta",
+      "level": "sub_county",
+      "label": "Yatta",
+      "parent": "KE-COUNTY-016",
+      "source_names": [
+        "Yatta"
+      ]
+    },
+    {
+      "code": "KE-SC-017-kaiti",
+      "level": "sub_county",
+      "label": "Kaiti",
+      "parent": "KE-COUNTY-017",
+      "source_names": [
+        "Kaiti"
+      ]
+    },
+    {
+      "code": "KE-SC-017-kibwezi",
+      "level": "sub_county",
+      "label": "Kibwezi",
+      "parent": "KE-COUNTY-017",
+      "source_names": [
+        "KIBWEZI"
+      ]
+    },
+    {
+      "code": "KE-SC-017-kibwezi-east",
+      "level": "sub_county",
+      "label": "Kibwezi East",
+      "parent": "KE-COUNTY-017",
+      "source_names": [
+        "Kibwezi East"
+      ]
+    },
+    {
+      "code": "KE-SC-017-kibwezi-west",
+      "level": "sub_county",
+      "label": "Kibwezi West",
+      "parent": "KE-COUNTY-017",
+      "source_names": [
+        "Kibwezi West"
+      ]
+    },
+    {
+      "code": "KE-SC-017-kilome",
+      "level": "sub_county",
+      "label": "Kilome",
+      "parent": "KE-COUNTY-017",
+      "source_names": [
+        "Kilome"
+      ]
+    },
+    {
+      "code": "KE-SC-017-makueni",
+      "level": "sub_county",
+      "label": "Makueni",
+      "parent": "KE-COUNTY-017",
+      "source_names": [
+        "Makueni"
+      ]
+    },
+    {
+      "code": "KE-SC-017-mbooni",
+      "level": "sub_county",
+      "label": "Mbooni",
+      "parent": "KE-COUNTY-017",
+      "source_names": [
+        "Mbooni"
+      ]
+    },
+    {
+      "code": "KE-SC-017-nzaui",
+      "level": "sub_county",
+      "label": "Nzaui",
+      "parent": "KE-COUNTY-017",
+      "source_names": [
+        "NZAUI"
+      ]
+    },
+    {
+      "code": "KE-SC-018-kinangop",
+      "level": "sub_county",
+      "label": "Kinangop",
+      "parent": "KE-COUNTY-018",
+      "source_names": [
+        "Kinangop"
+      ]
+    },
+    {
+      "code": "KE-SC-018-kipipiri",
+      "level": "sub_county",
+      "label": "Kipipiri",
+      "parent": "KE-COUNTY-018",
+      "source_names": [
+        "Kipipiri"
+      ]
+    },
+    {
+      "code": "KE-SC-018-ndaragwa",
+      "level": "sub_county",
+      "label": "Ndaragwa",
+      "parent": "KE-COUNTY-018",
+      "source_names": [
+        "Ndaragwa"
+      ]
+    },
+    {
+      "code": "KE-SC-018-nyandarua-north",
+      "level": "sub_county",
+      "label": "Nyandarua North",
+      "parent": "KE-COUNTY-018",
+      "source_names": [
+        "NYANDARUA NORTH"
+      ]
+    },
+    {
+      "code": "KE-SC-018-nyandarua-south",
+      "level": "sub_county",
+      "label": "Nyandarua South",
+      "parent": "KE-COUNTY-018",
+      "source_names": [
+        "NYANDARUA SOUTH"
+      ]
+    },
+    {
+      "code": "KE-SC-018-ol-jorok",
+      "level": "sub_county",
+      "label": "Ol Jorok",
+      "parent": "KE-COUNTY-018",
+      "source_names": [
+        "Ol Jorok"
+      ]
+    },
+    {
+      "code": "KE-SC-018-ol-kalou",
+      "level": "sub_county",
+      "label": "Ol Kalou",
+      "parent": "KE-COUNTY-018",
+      "source_names": [
+        "Ol Kalou",
+        "Olkalou"
+      ]
+    },
+    {
+      "code": "KE-SC-018-oljoroorok",
+      "level": "sub_county",
+      "label": "Oljoroorok",
+      "parent": "KE-COUNTY-018",
+      "source_names": [
+        "Oljoroorok"
+      ]
+    },
+    {
+      "code": "KE-SC-019-kieni",
+      "level": "sub_county",
+      "label": "Kieni",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Kieni"
+      ]
+    },
+    {
+      "code": "KE-SC-019-kieni-east",
+      "level": "sub_county",
+      "label": "Kieni East",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Kieni East"
+      ]
+    },
+    {
+      "code": "KE-SC-019-kieni-west",
+      "level": "sub_county",
+      "label": "Kieni West",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Kieni West"
+      ]
+    },
+    {
+      "code": "KE-SC-019-mathira",
+      "level": "sub_county",
+      "label": "Mathira",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Mathira"
+      ]
+    },
+    {
+      "code": "KE-SC-019-mathira-east",
+      "level": "sub_county",
+      "label": "Mathira East",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Mathira East"
+      ]
+    },
+    {
+      "code": "KE-SC-019-mathira-west",
+      "level": "sub_county",
+      "label": "Mathira West",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Mathira West"
+      ]
+    },
+    {
+      "code": "KE-SC-019-mukurweini",
+      "level": "sub_county",
+      "label": "Mukurweini",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Mukurweini",
+        "Mukurweni"
+      ]
+    },
+    {
+      "code": "KE-SC-019-nyeri-central",
+      "level": "sub_county",
+      "label": "Nyeri Central",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Nyeri Central"
+      ]
+    },
+    {
+      "code": "KE-SC-019-nyeri-north",
+      "level": "sub_county",
+      "label": "Nyeri North",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "NYERI NORTH"
+      ]
+    },
+    {
+      "code": "KE-SC-019-nyeri-south",
+      "level": "sub_county",
+      "label": "Nyeri South",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "NYERI SOUTH"
+      ]
+    },
+    {
+      "code": "KE-SC-019-nyeri-town",
+      "level": "sub_county",
+      "label": "Nyeri Town",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Nyeri Town"
+      ]
+    },
+    {
+      "code": "KE-SC-019-othaya",
+      "level": "sub_county",
+      "label": "Othaya",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Othaya"
+      ]
+    },
+    {
+      "code": "KE-SC-019-tetu",
+      "level": "sub_county",
+      "label": "Tetu",
+      "parent": "KE-COUNTY-019",
+      "source_names": [
+        "Tetu"
+      ]
+    },
+    {
+      "code": "KE-SC-020-gichugu",
+      "level": "sub_county",
+      "label": "Gichugu",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "Gichugu"
+      ]
+    },
+    {
+      "code": "KE-SC-020-kirinyaga",
+      "level": "sub_county",
+      "label": "Kirinyaga",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "KIRINYAGA"
+      ]
+    },
+    {
+      "code": "KE-SC-020-kirinyaga-central",
+      "level": "sub_county",
+      "label": "Kirinyaga Central",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "Kirinyaga Central"
+      ]
+    },
+    {
+      "code": "KE-SC-020-kirinyaga-east",
+      "level": "sub_county",
+      "label": "Kirinyaga East",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "Kirinyaga East"
+      ]
+    },
+    {
+      "code": "KE-SC-020-kirinyaga-north-mwea-west",
+      "level": "sub_county",
+      "label": "Kirinyaga North/Mwea West",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "Kirinyaga North/Mwea West"
+      ]
+    },
+    {
+      "code": "KE-SC-020-kirinyaga-south",
+      "level": "sub_county",
+      "label": "Kirinyaga South",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "Kirinyaga South"
+      ]
+    },
+    {
+      "code": "KE-SC-020-kirinyaga-west",
+      "level": "sub_county",
+      "label": "Kirinyaga West",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "Kirinyaga West"
+      ]
+    },
+    {
+      "code": "KE-SC-020-mwea",
+      "level": "sub_county",
+      "label": "Mwea",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "Mwea"
+      ]
+    },
+    {
+      "code": "KE-SC-020-ndia",
+      "level": "sub_county",
+      "label": "Ndia",
+      "parent": "KE-COUNTY-020",
+      "source_names": [
+        "Ndia"
+      ]
+    },
+    {
+      "code": "KE-SC-021-gatanga",
+      "level": "sub_county",
+      "label": "Gatanga",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "Gatanga"
+      ]
+    },
+    {
+      "code": "KE-SC-021-kahuro",
+      "level": "sub_county",
+      "label": "Kahuro",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "Kahuro"
+      ]
+    },
+    {
+      "code": "KE-SC-021-kandara",
+      "level": "sub_county",
+      "label": "Kandara",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "Kandara"
+      ]
+    },
+    {
+      "code": "KE-SC-021-kangema",
+      "level": "sub_county",
+      "label": "Kangema",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "Kangema"
+      ]
+    },
+    {
+      "code": "KE-SC-021-kigumo",
+      "level": "sub_county",
+      "label": "Kigumo",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "Kigumo"
+      ]
+    },
+    {
+      "code": "KE-SC-021-kiharu",
+      "level": "sub_county",
+      "label": "Kiharu",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "Kiharu"
+      ]
+    },
+    {
+      "code": "KE-SC-021-maragwa",
+      "level": "sub_county",
+      "label": "Maragwa",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "Maragua",
+        "Maragwa"
+      ]
+    },
+    {
+      "code": "KE-SC-021-mathioya",
+      "level": "sub_county",
+      "label": "Mathioya",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "Mathioya"
+      ]
+    },
+    {
+      "code": "KE-SC-021-muranga-north",
+      "level": "sub_county",
+      "label": "Murang'a North",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "MURANGA NORTH"
+      ]
+    },
+    {
+      "code": "KE-SC-021-muranga-south",
+      "level": "sub_county",
+      "label": "Murang'a South",
+      "parent": "KE-COUNTY-021",
+      "source_names": [
+        "MURANGA SOUTH",
+        "Murang'a South"
+      ]
+    },
+    {
+      "code": "KE-SC-022-gatundu",
+      "level": "sub_county",
+      "label": "Gatundu",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "GATUNDU"
+      ]
+    },
+    {
+      "code": "KE-SC-022-gatundu-north",
+      "level": "sub_county",
+      "label": "Gatundu North",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Gatundu North"
+      ]
+    },
+    {
+      "code": "KE-SC-022-gatundu-south",
+      "level": "sub_county",
+      "label": "Gatundu South",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Gatundu South"
+      ]
+    },
+    {
+      "code": "KE-SC-022-githunguri",
+      "level": "sub_county",
+      "label": "Githunguri",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Githunguri"
+      ]
+    },
+    {
+      "code": "KE-SC-022-juja",
+      "level": "sub_county",
+      "label": "Juja",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Juja"
+      ]
+    },
+    {
+      "code": "KE-SC-022-kabete",
+      "level": "sub_county",
+      "label": "Kabete",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Kabete"
+      ]
+    },
+    {
+      "code": "KE-SC-022-kiambaa",
+      "level": "sub_county",
+      "label": "Kiambaa",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Kiambaa"
+      ]
+    },
+    {
+      "code": "KE-SC-022-kiambu",
+      "level": "sub_county",
+      "label": "Kiambu",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Kiambu"
+      ]
+    },
+    {
+      "code": "KE-SC-022-kiambu-town",
+      "level": "sub_county",
+      "label": "Kiambu Town",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Kiambu Town"
+      ]
+    },
+    {
+      "code": "KE-SC-022-kikuyu",
+      "level": "sub_county",
+      "label": "Kikuyu",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Kikuyu"
+      ]
+    },
+    {
+      "code": "KE-SC-022-lari",
+      "level": "sub_county",
+      "label": "Lari",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Lari"
+      ]
+    },
+    {
+      "code": "KE-SC-022-limuru",
+      "level": "sub_county",
+      "label": "Limuru",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Limuru"
+      ]
+    },
+    {
+      "code": "KE-SC-022-ruiru",
+      "level": "sub_county",
+      "label": "Ruiru",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Ruiru"
+      ]
+    },
+    {
+      "code": "KE-SC-022-thika-east",
+      "level": "sub_county",
+      "label": "Thika East",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "THIKA EAST"
+      ]
+    },
+    {
+      "code": "KE-SC-022-thika-town",
+      "level": "sub_county",
+      "label": "Thika Town",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "Thika Town"
+      ]
+    },
+    {
+      "code": "KE-SC-022-thika-west",
+      "level": "sub_county",
+      "label": "Thika West",
+      "parent": "KE-COUNTY-022",
+      "source_names": [
+        "THIKA WEST"
+      ]
+    },
+    {
+      "code": "KE-SC-023-kibish",
+      "level": "sub_county",
+      "label": "Kibish",
+      "parent": "KE-COUNTY-023",
+      "source_names": [
+        "Kibish"
+      ]
+    },
+    {
+      "code": "KE-SC-023-loima",
+      "level": "sub_county",
+      "label": "Loima",
+      "parent": "KE-COUNTY-023",
+      "source_names": [
+        "Loima"
+      ]
+    },
+    {
+      "code": "KE-SC-023-turkana-central",
+      "level": "sub_county",
+      "label": "Turkana Central",
+      "parent": "KE-COUNTY-023",
+      "source_names": [
+        "Turkana Central"
+      ]
+    },
+    {
+      "code": "KE-SC-023-turkana-east",
+      "level": "sub_county",
+      "label": "Turkana East",
+      "parent": "KE-COUNTY-023",
+      "source_names": [
+        "Turkana East"
+      ]
+    },
+    {
+      "code": "KE-SC-023-turkana-north",
+      "level": "sub_county",
+      "label": "Turkana North",
+      "parent": "KE-COUNTY-023",
+      "source_names": [
+        "Turkana North"
+      ]
+    },
+    {
+      "code": "KE-SC-023-turkana-south",
+      "level": "sub_county",
+      "label": "Turkana South",
+      "parent": "KE-COUNTY-023",
+      "source_names": [
+        "Turkana South"
+      ]
+    },
+    {
+      "code": "KE-SC-023-turkana-west",
+      "level": "sub_county",
+      "label": "Turkana West",
+      "parent": "KE-COUNTY-023",
+      "source_names": [
+        "Turkana West"
+      ]
+    },
+    {
+      "code": "KE-SC-024-kacheliba",
+      "level": "sub_county",
+      "label": "Kacheliba",
+      "parent": "KE-COUNTY-024",
+      "source_names": [
+        "Kacheliba"
+      ]
+    },
+    {
+      "code": "KE-SC-024-kapenguria",
+      "level": "sub_county",
+      "label": "Kapenguria",
+      "parent": "KE-COUNTY-024",
+      "source_names": [
+        "Kapenguria"
+      ]
+    },
+    {
+      "code": "KE-SC-024-pokot-central",
+      "level": "sub_county",
+      "label": "Pokot Central",
+      "parent": "KE-COUNTY-024",
+      "source_names": [
+        "POKOT CENTRAL"
+      ]
+    },
+    {
+      "code": "KE-SC-024-pokot-north",
+      "level": "sub_county",
+      "label": "Pokot North",
+      "parent": "KE-COUNTY-024",
+      "source_names": [
+        "POKOT NORTH"
+      ]
+    },
+    {
+      "code": "KE-SC-024-pokot-south",
+      "level": "sub_county",
+      "label": "Pokot South",
+      "parent": "KE-COUNTY-024",
+      "source_names": [
+        "Pokot South"
+      ]
+    },
+    {
+      "code": "KE-SC-024-sigor",
+      "level": "sub_county",
+      "label": "Sigor",
+      "parent": "KE-COUNTY-024",
+      "source_names": [
+        "Sigor"
+      ]
+    },
+    {
+      "code": "KE-SC-024-west-pokot",
+      "level": "sub_county",
+      "label": "West Pokot",
+      "parent": "KE-COUNTY-024",
+      "source_names": [
+        "WEST POKOT"
+      ]
+    },
+    {
+      "code": "KE-SC-025-samburu-central",
+      "level": "sub_county",
+      "label": "Samburu Central",
+      "parent": "KE-COUNTY-025",
+      "source_names": [
+        "SAMBURU CENTRAL"
+      ]
+    },
+    {
+      "code": "KE-SC-025-samburu-east",
+      "level": "sub_county",
+      "label": "Samburu East",
+      "parent": "KE-COUNTY-025",
+      "source_names": [
+        "Samburu East"
+      ]
+    },
+    {
+      "code": "KE-SC-025-samburu-north",
+      "level": "sub_county",
+      "label": "Samburu North",
+      "parent": "KE-COUNTY-025",
+      "source_names": [
+        "Samburu North"
+      ]
+    },
+    {
+      "code": "KE-SC-025-samburu-west",
+      "level": "sub_county",
+      "label": "Samburu West",
+      "parent": "KE-COUNTY-025",
+      "source_names": [
+        "Samburu West"
+      ]
+    },
+    {
+      "code": "KE-SC-026-cherangany",
+      "level": "sub_county",
+      "label": "Cherangany",
+      "parent": "KE-COUNTY-026",
+      "source_names": [
+        "Cherangany"
+      ]
+    },
+    {
+      "code": "KE-SC-026-endebess",
+      "level": "sub_county",
+      "label": "Endebess",
+      "parent": "KE-COUNTY-026",
+      "source_names": [
+        "Endebess"
+      ]
+    },
+    {
+      "code": "KE-SC-026-kiminini",
+      "level": "sub_county",
+      "label": "Kiminini",
+      "parent": "KE-COUNTY-026",
+      "source_names": [
+        "Kiminini"
+      ]
+    },
+    {
+      "code": "KE-SC-026-kwanza",
+      "level": "sub_county",
+      "label": "Kwanza",
+      "parent": "KE-COUNTY-026",
+      "source_names": [
+        "Kwanza"
+      ]
+    },
+    {
+      "code": "KE-SC-026-saboti",
+      "level": "sub_county",
+      "label": "Saboti",
+      "parent": "KE-COUNTY-026",
+      "source_names": [
+        "Saboti"
+      ]
+    },
+    {
+      "code": "KE-SC-026-trans-nzoia-east",
+      "level": "sub_county",
+      "label": "Trans Nzoia East",
+      "parent": "KE-COUNTY-026",
+      "source_names": [
+        "TRANS NZOIA EAST"
+      ]
+    },
+    {
+      "code": "KE-SC-026-trans-nzoia-west",
+      "level": "sub_county",
+      "label": "Trans Nzoia West",
+      "parent": "KE-COUNTY-026",
+      "source_names": [
+        "TRANS NZOIA WEST"
+      ]
+    },
+    {
+      "code": "KE-SC-027-ainabkoi",
+      "level": "sub_county",
+      "label": "Ainabkoi",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "Ainabkoi"
+      ]
+    },
+    {
+      "code": "KE-SC-027-eldoret-east",
+      "level": "sub_county",
+      "label": "Eldoret East",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "ELDORET EAST"
+      ]
+    },
+    {
+      "code": "KE-SC-027-eldoret-west",
+      "level": "sub_county",
+      "label": "Eldoret West",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "ELDORET WEST"
+      ]
+    },
+    {
+      "code": "KE-SC-027-kapseret",
+      "level": "sub_county",
+      "label": "Kapseret",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "Kapseret"
+      ]
+    },
+    {
+      "code": "KE-SC-027-kesses",
+      "level": "sub_county",
+      "label": "Kesses",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "Kesses"
+      ]
+    },
+    {
+      "code": "KE-SC-027-moiben",
+      "level": "sub_county",
+      "label": "Moiben",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "Moiben"
+      ]
+    },
+    {
+      "code": "KE-SC-027-soy",
+      "level": "sub_county",
+      "label": "Soy",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "Soy"
+      ]
+    },
+    {
+      "code": "KE-SC-027-turbo",
+      "level": "sub_county",
+      "label": "Turbo",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "Turbo"
+      ]
+    },
+    {
+      "code": "KE-SC-027-wareng",
+      "level": "sub_county",
+      "label": "Wareng",
+      "parent": "KE-COUNTY-027",
+      "source_names": [
+        "WARENG"
+      ]
+    },
+    {
+      "code": "KE-SC-028-keiyo",
+      "level": "sub_county",
+      "label": "Keiyo",
+      "parent": "KE-COUNTY-028",
+      "source_names": [
+        "KEIYO"
+      ]
+    },
+    {
+      "code": "KE-SC-028-keiyo-north",
+      "level": "sub_county",
+      "label": "Keiyo North",
+      "parent": "KE-COUNTY-028",
+      "source_names": [
+        "Keiyo North"
+      ]
+    },
+    {
+      "code": "KE-SC-028-keiyo-south",
+      "level": "sub_county",
+      "label": "Keiyo South",
+      "parent": "KE-COUNTY-028",
+      "source_names": [
+        "Keiyo South"
+      ]
+    },
+    {
+      "code": "KE-SC-028-marakwet",
+      "level": "sub_county",
+      "label": "Marakwet",
+      "parent": "KE-COUNTY-028",
+      "source_names": [
+        "MARAKWET"
+      ]
+    },
+    {
+      "code": "KE-SC-028-marakwet-east",
+      "level": "sub_county",
+      "label": "Marakwet East",
+      "parent": "KE-COUNTY-028",
+      "source_names": [
+        "Marakwet East"
+      ]
+    },
+    {
+      "code": "KE-SC-028-marakwet-west",
+      "level": "sub_county",
+      "label": "Marakwet West",
+      "parent": "KE-COUNTY-028",
+      "source_names": [
+        "Marakwet West"
+      ]
+    },
+    {
+      "code": "KE-SC-029-aldai",
+      "level": "sub_county",
+      "label": "Aldai",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "Aldai"
+      ]
+    },
+    {
+      "code": "KE-SC-029-chesumei",
+      "level": "sub_county",
+      "label": "Chesumei",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "Chesumei"
+      ]
+    },
+    {
+      "code": "KE-SC-029-emgwen",
+      "level": "sub_county",
+      "label": "Emgwen",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "Emgwen"
+      ]
+    },
+    {
+      "code": "KE-SC-029-mosop",
+      "level": "sub_county",
+      "label": "Mosop",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "Mosop"
+      ]
+    },
+    {
+      "code": "KE-SC-029-nandi-central",
+      "level": "sub_county",
+      "label": "Nandi Central",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "NANDI CENTRAL"
+      ]
+    },
+    {
+      "code": "KE-SC-029-nandi-east",
+      "level": "sub_county",
+      "label": "Nandi East",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "NANDI EAST"
+      ]
+    },
+    {
+      "code": "KE-SC-029-nandi-hills",
+      "level": "sub_county",
+      "label": "Nandi Hills",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "Nandi Hills"
+      ]
+    },
+    {
+      "code": "KE-SC-029-nandi-north",
+      "level": "sub_county",
+      "label": "Nandi North",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "NANDI NORTH"
+      ]
+    },
+    {
+      "code": "KE-SC-029-nandi-south",
+      "level": "sub_county",
+      "label": "Nandi South",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "NANDI SOUTH"
+      ]
+    },
+    {
+      "code": "KE-SC-029-tinderet",
+      "level": "sub_county",
+      "label": "Tinderet",
+      "parent": "KE-COUNTY-029",
+      "source_names": [
+        "Tinderet"
+      ]
+    },
+    {
+      "code": "KE-SC-030-baringo",
+      "level": "sub_county",
+      "label": "Baringo",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "BARINGO"
+      ]
+    },
+    {
+      "code": "KE-SC-030-baringo-central",
+      "level": "sub_county",
+      "label": "Baringo Central",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "Baringo Central"
+      ]
+    },
+    {
+      "code": "KE-SC-030-baringo-north",
+      "level": "sub_county",
+      "label": "Baringo North",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "Baringo North"
+      ]
+    },
+    {
+      "code": "KE-SC-030-baringo-south",
+      "level": "sub_county",
+      "label": "Baringo South",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "Baringo South"
+      ]
+    },
+    {
+      "code": "KE-SC-030-east-pokot",
+      "level": "sub_county",
+      "label": "East Pokot",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "EAST POKOT"
+      ]
+    },
+    {
+      "code": "KE-SC-030-eldama-ravine",
+      "level": "sub_county",
+      "label": "Eldama Ravine",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "Eldama Ravine"
+      ]
+    },
+    {
+      "code": "KE-SC-030-koibatek",
+      "level": "sub_county",
+      "label": "Koibatek",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "KOIBATEK"
+      ]
+    },
+    {
+      "code": "KE-SC-030-marigat",
+      "level": "sub_county",
+      "label": "Marigat",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "Marigat"
+      ]
+    },
+    {
+      "code": "KE-SC-030-mogotio",
+      "level": "sub_county",
+      "label": "Mogotio",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "Mogotio"
+      ]
+    },
+    {
+      "code": "KE-SC-030-tiaty",
+      "level": "sub_county",
+      "label": "Tiaty",
+      "parent": "KE-COUNTY-030",
+      "source_names": [
+        "Tiaty"
+      ]
+    },
+    {
+      "code": "KE-SC-031-laikipia-central",
+      "level": "sub_county",
+      "label": "Laikipia Central",
+      "parent": "KE-COUNTY-031",
+      "source_names": [
+        "Laikipia Central"
+      ]
+    },
+    {
+      "code": "KE-SC-031-laikipia-east",
+      "level": "sub_county",
+      "label": "Laikipia East",
+      "parent": "KE-COUNTY-031",
+      "source_names": [
+        "Laikipia East"
+      ]
+    },
+    {
+      "code": "KE-SC-031-laikipia-north",
+      "level": "sub_county",
+      "label": "Laikipia North",
+      "parent": "KE-COUNTY-031",
+      "source_names": [
+        "Laikipia North"
+      ]
+    },
+    {
+      "code": "KE-SC-031-laikipia-west",
+      "level": "sub_county",
+      "label": "Laikipia West",
+      "parent": "KE-COUNTY-031",
+      "source_names": [
+        "Laikipia West"
+      ]
+    },
+    {
+      "code": "KE-SC-032-bahati",
+      "level": "sub_county",
+      "label": "Bahati",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Bahati"
+      ]
+    },
+    {
+      "code": "KE-SC-032-gilgil",
+      "level": "sub_county",
+      "label": "Gilgil",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Gilgil"
+      ]
+    },
+    {
+      "code": "KE-SC-032-kuresoi-north",
+      "level": "sub_county",
+      "label": "Kuresoi North",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Kuresoi North"
+      ]
+    },
+    {
+      "code": "KE-SC-032-kuresoi-south",
+      "level": "sub_county",
+      "label": "Kuresoi South",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Kuresoi South"
+      ]
+    },
+    {
+      "code": "KE-SC-032-molo",
+      "level": "sub_county",
+      "label": "Molo",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Molo"
+      ]
+    },
+    {
+      "code": "KE-SC-032-naivasha",
+      "level": "sub_county",
+      "label": "Naivasha",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Naivasha"
+      ]
+    },
+    {
+      "code": "KE-SC-032-nakuru",
+      "level": "sub_county",
+      "label": "Nakuru",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "NAKURU"
+      ]
+    },
+    {
+      "code": "KE-SC-032-nakuru-east",
+      "level": "sub_county",
+      "label": "Nakuru East",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Nakuru East"
+      ]
+    },
+    {
+      "code": "KE-SC-032-nakuru-north",
+      "level": "sub_county",
+      "label": "Nakuru North",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "NAKURU NORTH"
+      ]
+    },
+    {
+      "code": "KE-SC-032-nakuru-town-east",
+      "level": "sub_county",
+      "label": "Nakuru Town East",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Nakuru Town East"
+      ]
+    },
+    {
+      "code": "KE-SC-032-nakuru-town-west",
+      "level": "sub_county",
+      "label": "Nakuru Town West",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Nakuru Town West"
+      ]
+    },
+    {
+      "code": "KE-SC-032-nakuru-west",
+      "level": "sub_county",
+      "label": "Nakuru West",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Nakuru West"
+      ]
+    },
+    {
+      "code": "KE-SC-032-njoro",
+      "level": "sub_county",
+      "label": "Njoro",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Njoro"
+      ]
+    },
+    {
+      "code": "KE-SC-032-rongai",
+      "level": "sub_county",
+      "label": "Rongai",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Rongai"
+      ]
+    },
+    {
+      "code": "KE-SC-032-subukia",
+      "level": "sub_county",
+      "label": "Subukia",
+      "parent": "KE-COUNTY-032",
+      "source_names": [
+        "Subukia"
+      ]
+    },
+    {
+      "code": "KE-SC-033-emurua-dikirr",
+      "level": "sub_county",
+      "label": "Emurua Dikirr",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "Emurua Dikirr"
+      ]
+    },
+    {
+      "code": "KE-SC-033-kilgoris",
+      "level": "sub_county",
+      "label": "Kilgoris",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "Kilgoris"
+      ]
+    },
+    {
+      "code": "KE-SC-033-narok-east",
+      "level": "sub_county",
+      "label": "Narok East",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "Narok East"
+      ]
+    },
+    {
+      "code": "KE-SC-033-narok-north",
+      "level": "sub_county",
+      "label": "Narok North",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "Narok North"
+      ]
+    },
+    {
+      "code": "KE-SC-033-narok-south",
+      "level": "sub_county",
+      "label": "Narok South",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "Narok South"
+      ]
+    },
+    {
+      "code": "KE-SC-033-narok-west",
+      "level": "sub_county",
+      "label": "Narok West",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "Narok West"
+      ]
+    },
+    {
+      "code": "KE-SC-033-trans-mara",
+      "level": "sub_county",
+      "label": "Trans Mara",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "TRANS MARA"
+      ]
+    },
+    {
+      "code": "KE-SC-033-transmara-east",
+      "level": "sub_county",
+      "label": "Transmara East",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "Transmara East"
+      ]
+    },
+    {
+      "code": "KE-SC-033-transmara-west",
+      "level": "sub_county",
+      "label": "Transmara West",
+      "parent": "KE-COUNTY-033",
+      "source_names": [
+        "Transmara West"
+      ]
+    },
+    {
+      "code": "KE-SC-034-kajiado-central",
+      "level": "sub_county",
+      "label": "Kajiado Central",
+      "parent": "KE-COUNTY-034",
+      "source_names": [
+        "Kajiado Central"
+      ]
+    },
+    {
+      "code": "KE-SC-034-kajiado-east",
+      "level": "sub_county",
+      "label": "Kajiado East",
+      "parent": "KE-COUNTY-034",
+      "source_names": [
+        "Kajiado East"
+      ]
+    },
+    {
+      "code": "KE-SC-034-kajiado-north",
+      "level": "sub_county",
+      "label": "Kajiado North",
+      "parent": "KE-COUNTY-034",
+      "source_names": [
+        "Kajiado North"
+      ]
+    },
+    {
+      "code": "KE-SC-034-kajiado-south",
+      "level": "sub_county",
+      "label": "Kajiado South",
+      "parent": "KE-COUNTY-034",
+      "source_names": [
+        "Kajiado South"
+      ]
+    },
+    {
+      "code": "KE-SC-034-kajiado-west",
+      "level": "sub_county",
+      "label": "Kajiado West",
+      "parent": "KE-COUNTY-034",
+      "source_names": [
+        "Kajiado West"
+      ]
+    },
+    {
+      "code": "KE-SC-034-loitokitok",
+      "level": "sub_county",
+      "label": "Loitokitok",
+      "parent": "KE-COUNTY-034",
+      "source_names": [
+        "LOITOKITOK"
+      ]
+    },
+    {
+      "code": "KE-SC-035-ainamoi",
+      "level": "sub_county",
+      "label": "Ainamoi",
+      "parent": "KE-COUNTY-035",
+      "source_names": [
+        "Ainamoi"
+      ]
+    },
+    {
+      "code": "KE-SC-035-belgut",
+      "level": "sub_county",
+      "label": "Belgut",
+      "parent": "KE-COUNTY-035",
+      "source_names": [
+        "Belgut"
+      ]
+    },
+    {
+      "code": "KE-SC-035-bureti",
+      "level": "sub_county",
+      "label": "Bureti",
+      "parent": "KE-COUNTY-035",
+      "source_names": [
+        "Bureti"
+      ]
+    },
+    {
+      "code": "KE-SC-035-kericho",
+      "level": "sub_county",
+      "label": "Kericho",
+      "parent": "KE-COUNTY-035",
+      "source_names": [
+        "KERICHO"
+      ]
+    },
+    {
+      "code": "KE-SC-035-kipkelion",
+      "level": "sub_county",
+      "label": "Kipkelion",
+      "parent": "KE-COUNTY-035",
+      "source_names": [
+        "KIPKELION"
+      ]
+    },
+    {
+      "code": "KE-SC-035-kipkelion-east",
+      "level": "sub_county",
+      "label": "Kipkelion East",
+      "parent": "KE-COUNTY-035",
+      "source_names": [
+        "Kipkelion East"
+      ]
+    },
+    {
+      "code": "KE-SC-035-kipkelion-west",
+      "level": "sub_county",
+      "label": "Kipkelion West",
+      "parent": "KE-COUNTY-035",
+      "source_names": [
+        "Kipkelion West"
+      ]
+    },
+    {
+      "code": "KE-SC-035-sigowet-soin",
+      "level": "sub_county",
+      "label": "Sigowet/Soin",
+      "parent": "KE-COUNTY-035",
+      "source_names": [
+        "Sigowet/Soin",
+        "Soin/Sigowet"
+      ]
+    },
+    {
+      "code": "KE-SC-036-bomet",
+      "level": "sub_county",
+      "label": "Bomet",
+      "parent": "KE-COUNTY-036",
+      "source_names": [
+        "BOMET"
+      ]
+    },
+    {
+      "code": "KE-SC-036-bomet-central",
+      "level": "sub_county",
+      "label": "Bomet Central",
+      "parent": "KE-COUNTY-036",
+      "source_names": [
+        "Bomet Central"
+      ]
+    },
+    {
+      "code": "KE-SC-036-bomet-east",
+      "level": "sub_county",
+      "label": "Bomet East",
+      "parent": "KE-COUNTY-036",
+      "source_names": [
+        "Bomet East"
+      ]
+    },
+    {
+      "code": "KE-SC-036-buret",
+      "level": "sub_county",
+      "label": "Buret",
+      "parent": "KE-COUNTY-036",
+      "source_names": [
+        "Buret"
+      ]
+    },
+    {
+      "code": "KE-SC-036-chepalungu",
+      "level": "sub_county",
+      "label": "Chepalungu",
+      "parent": "KE-COUNTY-036",
+      "source_names": [
+        "Chepalungu"
+      ]
+    },
+    {
+      "code": "KE-SC-036-konoin",
+      "level": "sub_county",
+      "label": "Konoin",
+      "parent": "KE-COUNTY-036",
+      "source_names": [
+        "Konoin"
+      ]
+    },
+    {
+      "code": "KE-SC-036-sotik",
+      "level": "sub_county",
+      "label": "Sotik",
+      "parent": "KE-COUNTY-036",
+      "source_names": [
+        "Sotik"
+      ]
+    },
+    {
+      "code": "KE-SC-037-butere",
+      "level": "sub_county",
+      "label": "Butere",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Butere"
+      ]
+    },
+    {
+      "code": "KE-SC-037-ikolomani",
+      "level": "sub_county",
+      "label": "Ikolomani",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Ikolomani"
+      ]
+    },
+    {
+      "code": "KE-SC-037-kakamega-central",
+      "level": "sub_county",
+      "label": "Kakamega Central",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Kakamega Central"
+      ]
+    },
+    {
+      "code": "KE-SC-037-kakamega-east",
+      "level": "sub_county",
+      "label": "Kakamega East",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Kakamega East"
+      ]
+    },
+    {
+      "code": "KE-SC-037-kakamega-north",
+      "level": "sub_county",
+      "label": "Kakamega North",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Kakamega North"
+      ]
+    },
+    {
+      "code": "KE-SC-037-kakamega-south",
+      "level": "sub_county",
+      "label": "Kakamega South",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Kakamega South"
+      ]
+    },
+    {
+      "code": "KE-SC-037-khwisero",
+      "level": "sub_county",
+      "label": "Khwisero",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Khwisero"
+      ]
+    },
+    {
+      "code": "KE-SC-037-likuyani",
+      "level": "sub_county",
+      "label": "Likuyani",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Likuyani"
+      ]
+    },
+    {
+      "code": "KE-SC-037-lugari",
+      "level": "sub_county",
+      "label": "Lugari",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Lugari"
+      ]
+    },
+    {
+      "code": "KE-SC-037-lurambi",
+      "level": "sub_county",
+      "label": "Lurambi",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Lurambi"
+      ]
+    },
+    {
+      "code": "KE-SC-037-malava",
+      "level": "sub_county",
+      "label": "Malava",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Malava"
+      ]
+    },
+    {
+      "code": "KE-SC-037-matungu",
+      "level": "sub_county",
+      "label": "Matungu",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Matungu"
+      ]
+    },
+    {
+      "code": "KE-SC-037-mumias",
+      "level": "sub_county",
+      "label": "Mumias",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "MUMIAS"
+      ]
+    },
+    {
+      "code": "KE-SC-037-mumias-east",
+      "level": "sub_county",
+      "label": "Mumias East",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Mumias East"
+      ]
+    },
+    {
+      "code": "KE-SC-037-mumias-west",
+      "level": "sub_county",
+      "label": "Mumias West",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Mumias West"
+      ]
+    },
+    {
+      "code": "KE-SC-037-navakholo",
+      "level": "sub_county",
+      "label": "Navakholo",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Navakholo"
+      ]
+    },
+    {
+      "code": "KE-SC-037-shinyalu",
+      "level": "sub_county",
+      "label": "Shinyalu",
+      "parent": "KE-COUNTY-037",
+      "source_names": [
+        "Shinyalu"
+      ]
+    },
+    {
+      "code": "KE-SC-038-emuhaya",
+      "level": "sub_county",
+      "label": "Emuhaya",
+      "parent": "KE-COUNTY-038",
+      "source_names": [
+        "Emuhaya"
+      ]
+    },
+    {
+      "code": "KE-SC-038-hamisi",
+      "level": "sub_county",
+      "label": "Hamisi",
+      "parent": "KE-COUNTY-038",
+      "source_names": [
+        "Hamisi"
+      ]
+    },
+    {
+      "code": "KE-SC-038-isuka-central",
+      "level": "sub_county",
+      "label": "Isuka Central",
+      "parent": "KE-COUNTY-038",
+      "source_names": [
+        "isuka central"
+      ]
+    },
+    {
+      "code": "KE-SC-038-luanda",
+      "level": "sub_county",
+      "label": "Luanda",
+      "parent": "KE-COUNTY-038",
+      "source_names": [
+        "Luanda"
+      ]
+    },
+    {
+      "code": "KE-SC-038-sabatia",
+      "level": "sub_county",
+      "label": "Sabatia",
+      "parent": "KE-COUNTY-038",
+      "source_names": [
+        "Sabatia"
+      ]
+    },
+    {
+      "code": "KE-SC-038-vihiga",
+      "level": "sub_county",
+      "label": "Vihiga",
+      "parent": "KE-COUNTY-038",
+      "source_names": [
+        "Vihiga"
+      ]
+    },
+    {
+      "code": "KE-SC-039-bumula",
+      "level": "sub_county",
+      "label": "Bumula",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Bumula"
+      ]
+    },
+    {
+      "code": "KE-SC-039-bungoma-east",
+      "level": "sub_county",
+      "label": "Bungoma East",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "BUNGOMA EAST"
+      ]
+    },
+    {
+      "code": "KE-SC-039-bungoma-north",
+      "level": "sub_county",
+      "label": "Bungoma North",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "BUNGOMA NORTH"
+      ]
+    },
+    {
+      "code": "KE-SC-039-bungoma-south",
+      "level": "sub_county",
+      "label": "Bungoma South",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "BUNGOMA SOUTH"
+      ]
+    },
+    {
+      "code": "KE-SC-039-bungoma-west",
+      "level": "sub_county",
+      "label": "Bungoma West",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "BUNGOMA WEST"
+      ]
+    },
+    {
+      "code": "KE-SC-039-cheptais",
+      "level": "sub_county",
+      "label": "Cheptais",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Cheptais"
+      ]
+    },
+    {
+      "code": "KE-SC-039-kabuchai",
+      "level": "sub_county",
+      "label": "Kabuchai",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Kabuchai"
+      ]
+    },
+    {
+      "code": "KE-SC-039-kanduyi",
+      "level": "sub_county",
+      "label": "Kanduyi",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Kanduyi"
+      ]
+    },
+    {
+      "code": "KE-SC-039-kimilili",
+      "level": "sub_county",
+      "label": "Kimilili",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Kimilili"
+      ]
+    },
+    {
+      "code": "KE-SC-039-mt-elgon",
+      "level": "sub_county",
+      "label": "Mt. Elgon",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Mt Elgon",
+        "Mt. Elgon"
+      ]
+    },
+    {
+      "code": "KE-SC-039-sirisia",
+      "level": "sub_county",
+      "label": "Sirisia",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Sirisia"
+      ]
+    },
+    {
+      "code": "KE-SC-039-tongaren",
+      "level": "sub_county",
+      "label": "Tongaren",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Tongaren"
+      ]
+    },
+    {
+      "code": "KE-SC-039-webuye-east",
+      "level": "sub_county",
+      "label": "Webuye East",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Webuye East"
+      ]
+    },
+    {
+      "code": "KE-SC-039-webuye-west",
+      "level": "sub_county",
+      "label": "Webuye West",
+      "parent": "KE-COUNTY-039",
+      "source_names": [
+        "Webuye West"
+      ]
+    },
+    {
+      "code": "KE-SC-040-budalangi",
+      "level": "sub_county",
+      "label": "Budalangi",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "Budalangi"
+      ]
+    },
+    {
+      "code": "KE-SC-040-bunyala",
+      "level": "sub_county",
+      "label": "Bunyala",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "BUNYALA"
+      ]
+    },
+    {
+      "code": "KE-SC-040-busia",
+      "level": "sub_county",
+      "label": "Busia",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "BUSIA"
+      ]
+    },
+    {
+      "code": "KE-SC-040-butula",
+      "level": "sub_county",
+      "label": "Butula",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "Butula"
+      ]
+    },
+    {
+      "code": "KE-SC-040-funyula",
+      "level": "sub_county",
+      "label": "Funyula",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "Funyula"
+      ]
+    },
+    {
+      "code": "KE-SC-040-matayos",
+      "level": "sub_county",
+      "label": "Matayos",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "Matayos"
+      ]
+    },
+    {
+      "code": "KE-SC-040-nambale",
+      "level": "sub_county",
+      "label": "Nambale",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "Nambale",
+        "Nambele"
+      ]
+    },
+    {
+      "code": "KE-SC-040-samia",
+      "level": "sub_county",
+      "label": "Samia",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "SAMIA"
+      ]
+    },
+    {
+      "code": "KE-SC-040-teso-north",
+      "level": "sub_county",
+      "label": "Teso North",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "Teso North"
+      ]
+    },
+    {
+      "code": "KE-SC-040-teso-south",
+      "level": "sub_county",
+      "label": "Teso South",
+      "parent": "KE-COUNTY-040",
+      "source_names": [
+        "Teso South"
+      ]
+    },
+    {
+      "code": "KE-SC-041-alego-usonga",
+      "level": "sub_county",
+      "label": "Alego Usonga",
+      "parent": "KE-COUNTY-041",
+      "source_names": [
+        "Alego Usonga"
+      ]
+    },
+    {
+      "code": "KE-SC-041-bondo",
+      "level": "sub_county",
+      "label": "Bondo",
+      "parent": "KE-COUNTY-041",
+      "source_names": [
+        "Bondo"
+      ]
+    },
+    {
+      "code": "KE-SC-041-gem",
+      "level": "sub_county",
+      "label": "Gem",
+      "parent": "KE-COUNTY-041",
+      "source_names": [
+        "Gem"
+      ]
+    },
+    {
+      "code": "KE-SC-041-rarieda",
+      "level": "sub_county",
+      "label": "Rarieda",
+      "parent": "KE-COUNTY-041",
+      "source_names": [
+        "Rarieda"
+      ]
+    },
+    {
+      "code": "KE-SC-041-siaya",
+      "level": "sub_county",
+      "label": "Siaya",
+      "parent": "KE-COUNTY-041",
+      "source_names": [
+        "SIAYA"
+      ]
+    },
+    {
+      "code": "KE-SC-041-ugenya",
+      "level": "sub_county",
+      "label": "Ugenya",
+      "parent": "KE-COUNTY-041",
+      "source_names": [
+        "Ugenya"
+      ]
+    },
+    {
+      "code": "KE-SC-041-ugunja",
+      "level": "sub_county",
+      "label": "Ugunja",
+      "parent": "KE-COUNTY-041",
+      "source_names": [
+        "Ugunja"
+      ]
+    },
+    {
+      "code": "KE-SC-042-kisumu-central",
+      "level": "sub_county",
+      "label": "Kisumu Central",
+      "parent": "KE-COUNTY-042",
+      "source_names": [
+        "Kisumu Central"
+      ]
+    },
+    {
+      "code": "KE-SC-042-kisumu-east",
+      "level": "sub_county",
+      "label": "Kisumu East",
+      "parent": "KE-COUNTY-042",
+      "source_names": [
+        "Kisumu East"
+      ]
+    },
+    {
+      "code": "KE-SC-042-kisumu-west",
+      "level": "sub_county",
+      "label": "Kisumu West",
+      "parent": "KE-COUNTY-042",
+      "source_names": [
+        "Kisumu West"
+      ]
+    },
+    {
+      "code": "KE-SC-042-muhoroni",
+      "level": "sub_county",
+      "label": "Muhoroni",
+      "parent": "KE-COUNTY-042",
+      "source_names": [
+        "Muhoroni"
+      ]
+    },
+    {
+      "code": "KE-SC-042-nyakach",
+      "level": "sub_county",
+      "label": "Nyakach",
+      "parent": "KE-COUNTY-042",
+      "source_names": [
+        "Nyakach"
+      ]
+    },
+    {
+      "code": "KE-SC-042-nyando",
+      "level": "sub_county",
+      "label": "Nyando",
+      "parent": "KE-COUNTY-042",
+      "source_names": [
+        "Nyando"
+      ]
+    },
+    {
+      "code": "KE-SC-042-seme",
+      "level": "sub_county",
+      "label": "Seme",
+      "parent": "KE-COUNTY-042",
+      "source_names": [
+        "Seme"
+      ]
+    },
+    {
+      "code": "KE-SC-043-homa-bay",
+      "level": "sub_county",
+      "label": "Homa Bay",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "HOMABAY",
+        "Homa Bay"
+      ]
+    },
+    {
+      "code": "KE-SC-043-homa-bay-town",
+      "level": "sub_county",
+      "label": "Homa Bay Town",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Homa Bay Town"
+      ]
+    },
+    {
+      "code": "KE-SC-043-kabondo-kasipul",
+      "level": "sub_county",
+      "label": "Kabondo Kasipul",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Kabondo Kasipul"
+      ]
+    },
+    {
+      "code": "KE-SC-043-karachuonyo",
+      "level": "sub_county",
+      "label": "Karachuonyo",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Karachuonyo"
+      ]
+    },
+    {
+      "code": "KE-SC-043-kasipul",
+      "level": "sub_county",
+      "label": "Kasipul",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Kasipul"
+      ]
+    },
+    {
+      "code": "KE-SC-043-mbita",
+      "level": "sub_county",
+      "label": "Mbita",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Mbita"
+      ]
+    },
+    {
+      "code": "KE-SC-043-ndhiwa",
+      "level": "sub_county",
+      "label": "Ndhiwa",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Ndhiwa"
+      ]
+    },
+    {
+      "code": "KE-SC-043-rachuonyo",
+      "level": "sub_county",
+      "label": "Rachuonyo",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "RACHUONYO"
+      ]
+    },
+    {
+      "code": "KE-SC-043-rangwe",
+      "level": "sub_county",
+      "label": "Rangwe",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Rangwe"
+      ]
+    },
+    {
+      "code": "KE-SC-043-suba",
+      "level": "sub_county",
+      "label": "Suba",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Suba"
+      ]
+    },
+    {
+      "code": "KE-SC-043-suba-north",
+      "level": "sub_county",
+      "label": "Suba North",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Suba North"
+      ]
+    },
+    {
+      "code": "KE-SC-043-suba-south",
+      "level": "sub_county",
+      "label": "Suba South",
+      "parent": "KE-COUNTY-043",
+      "source_names": [
+        "Suba South"
+      ]
+    },
+    {
+      "code": "KE-SC-044-awendo",
+      "level": "sub_county",
+      "label": "Awendo",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Awendo"
+      ]
+    },
+    {
+      "code": "KE-SC-044-kuria-east",
+      "level": "sub_county",
+      "label": "Kuria East",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Kuria East"
+      ]
+    },
+    {
+      "code": "KE-SC-044-kuria-west",
+      "level": "sub_county",
+      "label": "Kuria West",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Kuria West"
+      ]
+    },
+    {
+      "code": "KE-SC-044-mabera",
+      "level": "sub_county",
+      "label": "Mabera",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Mabera"
+      ]
+    },
+    {
+      "code": "KE-SC-044-migori",
+      "level": "sub_county",
+      "label": "Migori",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "MIGORI"
+      ]
+    },
+    {
+      "code": "KE-SC-044-nyatike",
+      "level": "sub_county",
+      "label": "Nyatike",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Nyatike"
+      ]
+    },
+    {
+      "code": "KE-SC-044-rongo",
+      "level": "sub_county",
+      "label": "Rongo",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Rongo"
+      ]
+    },
+    {
+      "code": "KE-SC-044-suna-east",
+      "level": "sub_county",
+      "label": "Suna East",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Suna East"
+      ]
+    },
+    {
+      "code": "KE-SC-044-suna-west",
+      "level": "sub_county",
+      "label": "Suna West",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Suna West"
+      ]
+    },
+    {
+      "code": "KE-SC-044-uriri",
+      "level": "sub_county",
+      "label": "Uriri",
+      "parent": "KE-COUNTY-044",
+      "source_names": [
+        "Uriri"
+      ]
+    },
+    {
+      "code": "KE-SC-045-bobasi",
+      "level": "sub_county",
+      "label": "Bobasi",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "Bobasi"
+      ]
+    },
+    {
+      "code": "KE-SC-045-bomachoge-borabu",
+      "level": "sub_county",
+      "label": "Bomachoge Borabu",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "Bomachoge Borabu"
+      ]
+    },
+    {
+      "code": "KE-SC-045-bomachoge-chache",
+      "level": "sub_county",
+      "label": "Bomachoge Chache",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "Bomachoge Chache"
+      ]
+    },
+    {
+      "code": "KE-SC-045-bonchari",
+      "level": "sub_county",
+      "label": "Bonchari",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "Bonchari"
+      ]
+    },
+    {
+      "code": "KE-SC-045-gucha",
+      "level": "sub_county",
+      "label": "Gucha",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "GUCHA"
+      ]
+    },
+    {
+      "code": "KE-SC-045-gucha-south",
+      "level": "sub_county",
+      "label": "Gucha South",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "GUCHA SOUTH"
+      ]
+    },
+    {
+      "code": "KE-SC-045-kisii-central",
+      "level": "sub_county",
+      "label": "Kisii Central",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "KISII CENTRAL"
+      ]
+    },
+    {
+      "code": "KE-SC-045-kisii-south",
+      "level": "sub_county",
+      "label": "Kisii South",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "KISII SOUTH"
+      ]
+    },
+    {
+      "code": "KE-SC-045-kitutu-chache-north",
+      "level": "sub_county",
+      "label": "Kitutu Chache North",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "Kitutu Chache North"
+      ]
+    },
+    {
+      "code": "KE-SC-045-kitutu-chache-south",
+      "level": "sub_county",
+      "label": "Kitutu Chache South",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "Kitutu Chache South"
+      ]
+    },
+    {
+      "code": "KE-SC-045-masaba",
+      "level": "sub_county",
+      "label": "Masaba",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "MASABA"
+      ]
+    },
+    {
+      "code": "KE-SC-045-nyaribari-chache",
+      "level": "sub_county",
+      "label": "Nyaribari Chache",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "Nyaribari Chache"
+      ]
+    },
+    {
+      "code": "KE-SC-045-nyaribari-masaba",
+      "level": "sub_county",
+      "label": "Nyaribari Masaba",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "Nyaribari Masaba"
+      ]
+    },
+    {
+      "code": "KE-SC-045-south-mugirango",
+      "level": "sub_county",
+      "label": "South Mugirango",
+      "parent": "KE-COUNTY-045",
+      "source_names": [
+        "South Mugirango"
+      ]
+    },
+    {
+      "code": "KE-SC-046-borabu",
+      "level": "sub_county",
+      "label": "Borabu",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "Borabu"
+      ]
+    },
+    {
+      "code": "KE-SC-046-kitutu-masaba",
+      "level": "sub_county",
+      "label": "Kitutu Masaba",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "Kitutu Masaba"
+      ]
+    },
+    {
+      "code": "KE-SC-046-manga",
+      "level": "sub_county",
+      "label": "Manga",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "MANGA"
+      ]
+    },
+    {
+      "code": "KE-SC-046-masaba-north",
+      "level": "sub_county",
+      "label": "Masaba North",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "Masaba North"
+      ]
+    },
+    {
+      "code": "KE-SC-046-north-mugirango",
+      "level": "sub_county",
+      "label": "North Mugirango",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "North Mugirango"
+      ]
+    },
+    {
+      "code": "KE-SC-046-nyamira",
+      "level": "sub_county",
+      "label": "Nyamira",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "NYAMIRA"
+      ]
+    },
+    {
+      "code": "KE-SC-046-nyamira-north",
+      "level": "sub_county",
+      "label": "Nyamira North",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "Nyamira North"
+      ]
+    },
+    {
+      "code": "KE-SC-046-nyamira-south",
+      "level": "sub_county",
+      "label": "Nyamira South",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "Nyamira South"
+      ]
+    },
+    {
+      "code": "KE-SC-046-west-mugirango",
+      "level": "sub_county",
+      "label": "West Mugirango",
+      "parent": "KE-COUNTY-046",
+      "source_names": [
+        "West Mugirango"
+      ]
+    },
+    {
+      "code": "KE-SC-047-dagoretti",
+      "level": "sub_county",
+      "label": "Dagoretti",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Dagoretti"
+      ]
+    },
+    {
+      "code": "KE-SC-047-dagoretti-north",
+      "level": "sub_county",
+      "label": "Dagoretti North",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Dagoretti North"
+      ]
+    },
+    {
+      "code": "KE-SC-047-dagoretti-south",
+      "level": "sub_county",
+      "label": "Dagoretti South",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Dagoretti South"
+      ]
+    },
+    {
+      "code": "KE-SC-047-embakasi-central",
+      "level": "sub_county",
+      "label": "Embakasi Central",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Embakasi Central"
+      ]
+    },
+    {
+      "code": "KE-SC-047-embakasi-east",
+      "level": "sub_county",
+      "label": "Embakasi East",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Embakasi East"
+      ]
+    },
+    {
+      "code": "KE-SC-047-embakasi-north",
+      "level": "sub_county",
+      "label": "Embakasi North",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Embakasi North"
+      ]
+    },
+    {
+      "code": "KE-SC-047-embakasi-south",
+      "level": "sub_county",
+      "label": "Embakasi South",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Embakasi South"
+      ]
+    },
+    {
+      "code": "KE-SC-047-embakasi-west",
+      "level": "sub_county",
+      "label": "Embakasi West",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Embakasi West"
+      ]
+    },
+    {
+      "code": "KE-SC-047-kamukunji",
+      "level": "sub_county",
+      "label": "Kamukunji",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Kamukunji"
+      ]
+    },
+    {
+      "code": "KE-SC-047-kasarani",
+      "level": "sub_county",
+      "label": "Kasarani",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Kasarani"
+      ]
+    },
+    {
+      "code": "KE-SC-047-kibra",
+      "level": "sub_county",
+      "label": "Kibra",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Kibra"
+      ]
+    },
+    {
+      "code": "KE-SC-047-kilimani",
+      "level": "sub_county",
+      "label": "Kilimani",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Kilimani"
+      ]
+    },
+    {
+      "code": "KE-SC-047-langata",
+      "level": "sub_county",
+      "label": "Langata",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Lang'ata",
+        "Langata"
+      ]
+    },
+    {
+      "code": "KE-SC-047-makadara",
+      "level": "sub_county",
+      "label": "Makadara",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Makadara"
+      ]
+    },
+    {
+      "code": "KE-SC-047-mathare",
+      "level": "sub_county",
+      "label": "Mathare",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Mathare"
+      ]
+    },
+    {
+      "code": "KE-SC-047-nairobi-east",
+      "level": "sub_county",
+      "label": "Nairobi East",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "NAIROBI EAST"
+      ]
+    },
+    {
+      "code": "KE-SC-047-nairobi-north",
+      "level": "sub_county",
+      "label": "Nairobi North",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "NAIROBI NORTH"
+      ]
+    },
+    {
+      "code": "KE-SC-047-nairobi-west",
+      "level": "sub_county",
+      "label": "Nairobi West",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "NAIROBI WEST"
+      ]
+    },
+    {
+      "code": "KE-SC-047-roysambu",
+      "level": "sub_county",
+      "label": "Roysambu",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Roysambu"
+      ]
+    },
+    {
+      "code": "KE-SC-047-ruaraka",
+      "level": "sub_county",
+      "label": "Ruaraka",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Ruaraka"
+      ]
+    },
+    {
+      "code": "KE-SC-047-starehe",
+      "level": "sub_county",
+      "label": "Starehe",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Starehe"
+      ]
+    },
+    {
+      "code": "KE-SC-047-westlands",
+      "level": "sub_county",
+      "label": "Westlands",
+      "parent": "KE-COUNTY-047",
+      "source_names": [
+        "Westlands"
+      ]
+    }
+  ],
+  "exceptions": [],
+  "scope": "National, regions, counties and the KRCS sub-county list. No wards yet.",
+  "subcounty_source": "KRCS sub-county list (Sub County.csv, 2026-11-09)"
+}
