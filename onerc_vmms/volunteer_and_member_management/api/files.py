@@ -2,8 +2,8 @@ import os
 
 import frappe
 from frappe import _, cint
+from frappe.core.api.file import get_max_file_size
 from frappe.rate_limiter import rate_limit
-from frappe.utils.file_manager import save_file
 
 ALLOWED_UPLOAD_TYPES = {
 	".pdf": frozenset({"application/pdf"}),
@@ -29,6 +29,7 @@ ALLOWED_MAGIC_BYTES = {
 @frappe.whitelist()
 @rate_limit(limit=20, seconds=60 * 5)
 def upload_file():
+	extension = None
 	try:
 		if "file" not in frappe.request.files:
 			frappe.throw(_("No file attached"))
@@ -48,14 +49,20 @@ def upload_file():
 		if content_type not in allowed_content_types:
 			frappe.throw(_("File type is not allowed"))
 
-		# Read at most MAX_UPLOAD_SIZE + 1 bytes so an oversized upload can't be
+		# Frappe's File doctype also enforces System Settings > Max File Size, so the
+		# effective limit is the smaller of the two. Check it here so the user gets a
+		# clear message instead of a generic failure from deep inside save_file.
+		max_size = min(MAX_UPLOAD_SIZE, get_max_file_size())
+
+		# Read at most max_size + 1 bytes so an oversized upload can't be
 		# pulled fully into memory, then enforce the real size limit on actual bytes.
-		content = upload.stream.read(MAX_UPLOAD_SIZE + 1)
+		content = upload.stream.read(max_size + 1)
 		if not content:
 			frappe.throw(_("The file is empty"))
-		if len(content) > MAX_UPLOAD_SIZE:
+		if len(content) > max_size:
 			frappe.throw(
-				_("File is too large. Maximum size is {0} MB.").format(MAX_UPLOAD_SIZE // (1024 * 1024))
+				_("File is too large. Maximum size is {0} MB.").format(f"{max_size / (1024 * 1024):g}"),
+				title=_("File Too Large"),
 			)
 
 		# Verify the real content signature — the extension and declared MIME are
@@ -65,14 +72,24 @@ def upload_file():
 
 		is_private = cint(frappe.request.form.get("is_private", 1))
 
-		file_doc = save_file(
-			fname=filename,
-			content=content,
-			dt=None,
-			dn=None,
-			folder=frappe.request.form.get("folder"),
-			is_private=is_private,
+		# Save through the File doctype, the same way Frappe's own
+		# /api/method/upload_file does, rather than the legacy
+		# frappe.utils.file_manager.save_file. The legacy helper points the new File at
+		# the URL of *any* existing File with the same content hash, so uploading bytes
+		# that another user already uploaded privately fails with "You do not have
+		# permission to access this file", and bytes whose earlier copy is missing from
+		# disk fail with FileNotFoundError. File.save_file only reuses a copy that
+		# actually exists on disk and otherwise writes a new one.
+		file_doc = frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": filename,
+				"folder": frappe.request.form.get("folder") or "Home",
+				"is_private": is_private,
+				"content": content,
+			}
 		)
+		file_doc.insert(ignore_permissions=True)
 
 		frappe.db.commit()
 		return {
@@ -81,8 +98,19 @@ def upload_file():
 			"file_name": file_doc.file_name,
 		}
 
+	except frappe.ValidationError:
+		# Our own checks and Frappe's File validation raise these with a message the
+		# user can act on (too large, wrong type, ...): log as before, but pass the
+		# real message through instead of masking it as "Upload failed".
+		frappe.log_error(_("Upload File Failed"), frappe.get_traceback())
+		raise
+
 	except Exception:
-		frappe.log_error(frappe.get_traceback(), _("Upload File Failed"))
+		frappe.log_error(_("Upload File Failed"), frappe.get_traceback())
+		if extension == ".pdf":
+			frappe.throw(
+				_("This file could not be read as a PDF. It may be damaged; please re-save or re-scan it.")
+			)
 		frappe.throw(_("Upload failed"))
 
 
