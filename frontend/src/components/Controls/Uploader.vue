@@ -263,13 +263,39 @@ async function uploadFile(file: File) {
 	);
 
 	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(text);
+		throw new Error(await getUploadErrorMessage(response));
 	}
 
 	const data = await response.json();
 
 	return data.message;
+}
+
+// Frappe returns errors as JSON with `_server_messages` (a JSON list of JSON
+// strings, each with a `message`). Pull out the human-readable text instead of
+// showing the raw response body.
+async function getUploadErrorMessage(response: Response): Promise<string> {
+	const text = await response.text();
+	try {
+		const body = JSON.parse(text);
+		if (body._server_messages) {
+			const messages = JSON.parse(body._server_messages)
+				.map((m: string) => {
+					try {
+						return JSON.parse(m).message;
+					} catch {
+						return m;
+					}
+				})
+				.filter(Boolean)
+				.map((m: string) => m.replace(/<[^>]*>/g, ""));
+			if (messages.length) return messages.join(" ");
+		}
+	} catch {
+		// not JSON; fall through
+	}
+	if (response.status === 413) return "The file is too large.";
+	return "Upload failed. Please try again.";
 }
 
 const simulateProgress = (update: (p: number) => void) => {
@@ -386,10 +412,6 @@ const handleFiles = async (files: File[]) => {
 	const validFiles = validateFiles(files);
 	if (!validFiles.length) return;
 
-	if (!props.multi && uploadedFiles.value.length > 0) {
-		uploadedFiles.value = [];
-	}
-
 	uploadQueue.value = validFiles.map((f) => ({ file: f, progress: 0 }));
 	uploading.value = true;
 
@@ -410,7 +432,13 @@ const handleFiles = async (files: File[]) => {
 							file_size: file.size,
 					  };
 
-			uploadedFiles.value.push(fileObj);
+			// Only replace the existing single file once the new one has uploaded, so a
+			// failed upload doesn't make the current attachment vanish from view.
+			if (props.multi) {
+				uploadedFiles.value.push(fileObj);
+			} else {
+				uploadedFiles.value = [fileObj];
+			}
 			item.progress = 100;
 
 			if (props.multi) {
