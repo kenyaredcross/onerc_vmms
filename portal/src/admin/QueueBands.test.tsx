@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API } from "../lib/api";
@@ -234,6 +234,27 @@ describe("the four bands", () => {
 	});
 });
 
+describe("searching a queue", () => {
+	it("asks the server, inside the band, once typing pauses", async () => {
+		vi.useFakeTimers();
+		reads.set(API.myCases, { group: "in_review", count: 0, total: 0, cases: [] });
+
+		show(<VolunteerQueue />, "/admin/queue/volunteers");
+		fireEvent.change(screen.getByRole("searchbox"), { target: { value: " Asha " } });
+		await act(async () => vi.advanceTimersByTime(350));
+		vi.useRealTimers();
+
+		expect(calls.at(-1)?.params).toEqual({
+			doctype: "VMMS Volunteer Application",
+			group: "in_review",
+			limit: 25,
+			offset: 0,
+			search: "Asha",
+		});
+		expect(screen.getByText("No applications match “Asha”.")).toBeTruthy();
+	});
+});
+
 describe("what a row shows", () => {
 	it("names the applicant rather than the docname, and links to the record", () => {
 		reads.set(API.myCases, { group: "in_review", count: 1, total: 1, cases: [application()] });
@@ -255,7 +276,7 @@ describe("what a row shows", () => {
 		expect(screen.getByText("Branch review")).toBeTruthy();
 	});
 
-	it("marks the rows the caller may decide, and only those", () => {
+	it("counts the rows the caller may decide, without badging each one", () => {
 		reads.set(API.myCases, {
 			group: "in_review",
 			count: 2,
@@ -265,8 +286,27 @@ describe("what a row shows", () => {
 
 		show(<VolunteerQueue />, "/admin/queue/volunteers");
 
-		expect(screen.getAllByText("Your decision")).toHaveLength(1);
+		// Counted once in the heading; the rows carry no badge.
+		expect(screen.queryByText("Your decision")).toBeNull();
 		expect(screen.getByText("1 for your decision")).toBeTruthy();
+	});
+
+	it("calls a draft sent back for changes what it is, not Draft", () => {
+		reads.set(API.myCases, {
+			group: "changes",
+			count: 2,
+			cases: [
+				application({ name: "APP-0003", state: "Draft", is_open: false, stage: null, sent_back: true }),
+				application({ name: "APP-0004", state: "Draft", is_open: false, stage: null, sent_back: false }),
+			],
+		});
+
+		show(<VolunteerQueue band="changes" />, "/admin/queue/volunteers/changes");
+
+		// The tab is called Changes requested too, so read the rows themselves.
+		const rows = screen.getAllByRole("row").map((row) => row.textContent ?? "");
+		expect(rows.filter((text) => text.includes("Changes requested"))).toHaveLength(1);
+		expect(rows.filter((text) => text.includes("Draft"))).toHaveLength(1);
 	});
 
 	it("reports an overdue row from the engine's own breach flag", () => {

@@ -84,11 +84,11 @@ export function PersonHero({
 			<div
 				className={cx(
 					"grid gap-6 p-5 sm:p-6",
-					// The facts panel takes slightly more room than the face, because
-					// it holds two columns of pairs and the face holds one name. Below
-					// `lg` they stack and the divider becomes a rule above, which is
-					// the only thing that changes.
-					rows.length > 0 && "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8",
+					// The facts panel takes more room than the face, because it holds
+					// two columns of pairs and the face holds one name. Below `lg`
+					// they stack and the divider becomes a rule above, which is the
+					// only thing that changes.
+					rows.length > 0 && "lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)] lg:gap-8",
 				)}
 			>
 				<div className="flex min-w-0 items-center gap-5">
@@ -118,8 +118,11 @@ export function PersonHero({
 					</div>
 				</div>
 
+				{/* The first column is as wide as its longest value — an email
+				    address does not wrap mid-word — and the second keeps the
+				    rest, never less than room for a stage name. */}
 				{rows.length > 0 && (
-					<dl className="grid content-start gap-x-8 gap-y-4 border-t border-white/15 pt-5 sm:grid-cols-2 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+					<dl className="grid content-start gap-x-10 gap-y-4 border-t border-white/15 pt-5 sm:grid-cols-[minmax(0,max-content)_minmax(12rem,1fr)] lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
 						{rows.map((fact) => (
 							<div key={fact.label} className="flex items-baseline gap-2">
 								<dt className="w-[96px] flex-none text-[10px] font-semibold uppercase tracking-wide leading-snug text-white/45">

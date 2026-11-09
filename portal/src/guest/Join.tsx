@@ -2344,15 +2344,19 @@ function JoinBody() {
 												dateError={dateError}
 												requireDateOfBirth={Boolean(identityOptions.data?.message?.member_min_age || identityOptions.data?.message?.member_max_age || chosenType?.requires_age_requirement)}
 												onPhoto={setPhoto}
-												disability={disability}
-												onDisability={answerDisability}
-												disabilityNeeds={disabilityNeeds}
-												onDisabilityNeeds={setDisabilityNeeds}
-												disabilities={disabilities}
-												onDisabilities={setDisabilities}
-												disabilityOptions={identityOptions.data?.message?.disabilities ?? []}
 											/>
-<Sheet><RegistrationDetails bloodGroups={identityOptions.data?.message?.blood_groups} value={personalDetails} onChange={setPersonalDetails} documents={false} showOtherNames={false} showProfileLinks={path !== "volunteer"} idPrefix="join-details" /></Sheet>
+<Sheet><RegistrationDetails bloodGroups={identityOptions.data?.message?.blood_groups} value={personalDetails} onChange={setPersonalDetails} documents={false} showOtherNames={false} showProfileLinks={path !== "volunteer"} idPrefix="join-details"
+	health={(path === "volunteer" || requiresMemberIdentity) && (
+		<DisabilityQuestion
+			disability={disability}
+			onDisability={answerDisability}
+			disabilityNeeds={disabilityNeeds}
+			onDisabilityNeeds={setDisabilityNeeds}
+			disabilities={disabilities}
+			onDisabilities={setDisabilities}
+			disabilityOptions={identityOptions.data?.message?.disabilities ?? []}
+		/>
+	)} /></Sheet>
 </>
 										)}
 
@@ -2495,11 +2499,6 @@ function JoinBody() {
 												chain={servingChain}
 												type={chosenType}
 												citizenship={citizenship}
-												disability={disability}
-												disabilityNames={labelsFor(
-													identityOptions.data?.message?.disabilities,
-													disabilities,
-												)}
 												background={{
 													profession:
 														background.profession === "Other"
@@ -2546,7 +2545,7 @@ function JoinBody() {
 													accepted: accepted.includes(declaration.name),
 												}))}
 											/>
-<div className="p-5"><RegistrationDetailsSummary value={personalDetails}/><p className="mt-3 text-sm">Residence: {residency === ABROAD ? `${residenceCountry} · ${residenceAddress}` : (sameHome ? node?.label : selectedNode(homeChain)?.label)}</p>{payerPhone && <p className="text-sm">Payer phone: {payerPhone}</p>}</div>
+<div className="p-5"><RegistrationDetailsSummary value={personalDetails} disability={disability ? { disability_status: disability, disabilities: labelsFor(identityOptions.data?.message?.disabilities, disabilities) } : undefined}/><p className="mt-3 text-sm">Residence: {residency === ABROAD ? `${residenceCountry} · ${residenceAddress}` : (sameHome ? node?.label : selectedNode(homeChain)?.label)}</p>{payerPhone && <p className="text-sm">Payer phone: {payerPhone}</p>}</div>
 </>
 										)}
 
@@ -3397,13 +3396,6 @@ function IdentityStep({
 	dateError,
 	requireDateOfBirth = false,
 	onPhoto,
-	disability,
-	onDisability,
-	disabilityNeeds,
-	onDisabilityNeeds,
-	disabilities,
-	onDisabilities,
-	disabilityOptions,
 }: {
 	requireIdentity?: boolean;
 	profile: RedProfile | null;
@@ -3433,13 +3425,6 @@ function IdentityStep({
 	dateError?: string;
 	requireDateOfBirth?: boolean;
 	onPhoto: (v: string) => void;
-	disability: string;
-	onDisability: (v: string) => void;
-	disabilityNeeds: string;
-	onDisabilityNeeds: (v: string) => void;
-	disabilities: string[];
-	onDisabilities: (v: string[]) => void;
-	disabilityOptions: VocabularyRow[];
 }) {
 	const email = profile?.email || accountEmail;
 
@@ -3546,8 +3531,8 @@ function IdentityStep({
 			    and what it opens have to stay adjacent, so the column wins. */}
 			{(path === "volunteer" || requireIdentity) && (
 				<Sheet
-					title="Citizenship and support"
-					note="Help us arrange the right guidance and support for you."
+					title="Citizenship"
+					note="Tell us where you are a citizen."
 				>
 					<div className="space-y-8">
 						{/* Drawn only once the vocabularies are in, because the yes/no
@@ -3581,71 +3566,96 @@ function IdentityStep({
 								)}
 							</div>
 						)}
-
-						<div>
-							<fieldset className="min-w-0 border-0 p-0">
-								<legend className="mb-3 flex items-center gap-1 text-[14px] font-semibold text-slate-strong">
-									Are you a person with disability?
-									<span className="text-danger" aria-hidden="true">
-										*
-									</span>
-								</legend>
-								{/* Capped rather than full width. The answers are two or
-								    three words each and a pill stretched across the whole
-								    card is a button pretending to be a banner. */}
-								<div className="max-w-[470px]">
-									<ChoiceRow
-										name="join-disability"
-										value={disability}
-										options={DISABILITY_ANSWERS}
-										onChange={onDisability}
-									/>
-								</div>
-								<p className="mt-2.5 text-[12px] leading-relaxed text-muted">
-									We will ask how we can support you.
-								</p>
-							</fieldset>
-
-							{/* A "Yes" needs at least one type. The free-text support request
-							    follows it, matching the order somebody answers the questions. */}
-							{disability === DISABILITY_DISCLOSED && (
-								<div className="rise-in mt-6 grid gap-5 rounded-xl border border-card-line bg-[#F7FAFC] p-5">
-									<MultiCombo
-										id="join-disabilities"
-										label="Disability type"
-										required
-										options={disabilityOptions}
-										selected={disabilities}
-										onToggle={(key) =>
-											onDisabilities(
-												disabilities.includes(key)
-													? disabilities.filter((entry) => entry !== key)
-													: [...disabilities, key],
-											)
-										}
-										placeholder="Search disability types"
-										empty="This society has not configured a list to choose from."
-									/>
-
-									<Field
-										label="What support would be helpful?"
-										htmlFor="join-disability-needs"
-										hint="Optional"
-									>
-										<TextArea
-											id="join-disability-needs"
-											value={disabilityNeeds}
-											onChange={onDisabilityNeeds}
-											rows={3}
-										/>
-									</Field>
-								</div>
-							)}
-						</div>
 					</div>
 				</Sheet>
 			)}
 		</>
+	);
+}
+
+/**
+ * Whether somebody has a disability, and what would help — asked under Health
+ * and Wellness beside blood group and allergies. Only a volunteer (or a member
+ * whose type requires identity) is asked; `assert_ready` checks it for them.
+ */
+function DisabilityQuestion({
+	disability,
+	onDisability,
+	disabilityNeeds,
+	onDisabilityNeeds,
+	disabilities,
+	onDisabilities,
+	disabilityOptions,
+}: {
+	disability: string;
+	onDisability: (v: string) => void;
+	disabilityNeeds: string;
+	onDisabilityNeeds: (v: string) => void;
+	disabilities: string[];
+	onDisabilities: (v: string[]) => void;
+	disabilityOptions: VocabularyRow[];
+}) {
+	return (
+			<div>
+				<fieldset className="min-w-0 border-0 p-0">
+					<legend className="mb-3 flex items-center gap-1 text-[14px] font-semibold text-slate-strong">
+						Are you a person with disability?
+						<span className="text-danger" aria-hidden="true">
+							*
+						</span>
+					</legend>
+					{/* Capped rather than full width. The answers are two or
+					    three words each and a pill stretched across the whole
+					    card is a button pretending to be a banner. */}
+					<div className="max-w-[470px]">
+						<ChoiceRow
+							name="join-disability"
+							value={disability}
+							options={DISABILITY_ANSWERS}
+							onChange={onDisability}
+						/>
+					</div>
+					<p className="mt-2.5 text-[12px] leading-relaxed text-muted">
+						We will ask how we can support you.
+					</p>
+				</fieldset>
+
+				{/* A "Yes" needs at least one type. The free-text support request
+				    follows it, matching the order somebody answers the questions. */}
+				{disability === DISABILITY_DISCLOSED && (
+					<div className="rise-in mt-6 grid gap-5 rounded-xl border border-card-line bg-[#F7FAFC] p-5">
+						<MultiCombo
+							id="join-disabilities"
+							label="Disability type"
+							required
+							options={disabilityOptions}
+							selected={disabilities}
+							onToggle={(key) =>
+								onDisabilities(
+									disabilities.includes(key)
+										? disabilities.filter((entry) => entry !== key)
+										: [...disabilities, key],
+								)
+							}
+							placeholder="Search disability types"
+							empty="This society has not configured a list to choose from."
+						/>
+
+						<Field
+							label="What support would be helpful?"
+							htmlFor="join-disability-needs"
+							hint="Optional"
+						>
+							<TextArea
+								id="join-disability-needs"
+								value={disabilityNeeds}
+								onChange={onDisabilityNeeds}
+								rows={3}
+							/>
+						</Field>
+					</div>
+				)}
+			</div>
 	);
 }
 
@@ -4987,8 +4997,6 @@ function ConfirmStep({
 	chain,
 	type,
 	citizenship,
-	disability,
-	disabilityNames,
 	background,
 	paymentLabel,
 	identifications,
@@ -5013,10 +5021,6 @@ function ConfirmStep({
 	chain: GeoNode[];
 	type: PricedType | null;
 	citizenship: string;
-	/** The disability answer, or an empty string on the member path. */
-	disability: string;
-	/** What they named beneath it, already in the society's own words. */
-	disabilityNames: string[];
 	/**
 	 * The background step, already flattened to lines this panel can print.
 	 *
@@ -5061,8 +5065,6 @@ function ConfirmStep({
 				// Read back where it was answered. Nationality has no step of its
 				// own any more, so it belongs on the card for the step that asks it.
 				citizenship={path === "volunteer" ? citizenship : null}
-				disability={path === "volunteer" ? disability || null : null}
-				disabilityNames={path === "volunteer" ? disabilityNames : []}
 				onEdit={editor("identity")}
 			/>
 
@@ -5408,8 +5410,6 @@ function PersonCard({
 	dateOfBirth,
 	photo,
 	citizenship,
-	disability,
-	disabilityNames,
 	onEdit,
 }: {
 	name: string;
@@ -5420,24 +5420,6 @@ function PersonCard({
 	photo: string;
 	/** Null on the member path, which is never asked for one. */
 	citizenship: string | null;
-	/** The disability answer, or null on the member path. Never the free text:
-	    what somebody wrote about themselves belongs on the record their branch
-	    reads, not on a summary card. */
-	disability: string | null;
-	/**
-	 * What they named, in the society's own words rather than as register keys.
-	 *
-	 * Shown where the free text is not, and the distinction is the whole of why:
-	 * these are answers picked from a list this screen can put back in front of
-	 * somebody to check, which is what this step is for. A sentence somebody
-	 * wrote about themselves is not a checkbox they might have mis-clicked.
-	 *
-	 * Empty draws nothing at all — the row is absent rather than reading "None
-	 * chosen", because naming one was never required and a summary that reported
-	 * the omission would be scolding somebody for an answer they were told was
-	 * optional.
-	 */
-	disabilityNames: string[];
 	/** Absent when this registration never drew the step. See `Review`. */
 	onEdit?: () => void;
 }) {
@@ -5500,8 +5482,6 @@ function PersonCard({
 				<Line label="Gender" value={gender} />
 				<Line label="Date of birth" value={dateOfBirth ? formatDate(dateOfBirth) : null} />
 				{citizenship && <Line label="Nationality" value={citizenship} />}
-				{disability && <Line label="Disability" value={disability} />}
-				{disabilityNames.length > 0 && <Chips label="Named" values={disabilityNames} />}
 			</dl>
 		</section>
 	);

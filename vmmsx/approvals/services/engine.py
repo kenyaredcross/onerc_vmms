@@ -696,7 +696,8 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 	state = contract.state(doc)
 	held = states.is_open(state) and not contract.ready_for_review(doc)
 	node = doc.get(workflow.geo_node_field)
-	in_the_chain = set(auth["approvers"]) | {row.approver for row in contract.decisions(doc)}
+	decisions = contract.decisions(doc)
+	in_the_chain = set(auth["approvers"]) | {row.approver for row in decisions}
 	visible = user in in_the_chain or scope.has_unrestricted_scope(user)
 
 	return {
@@ -714,6 +715,12 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 		# fee has not come in. Not in anybody's queue and not theirs to decide.
 		"held": held,
 		"held_for": contract.held_for(doc) if held else None,
+		# A draft a reviewer sent back for changes. The state still reads Draft —
+		# that is what lets the applicant edit and resubmit — so the difference
+		# from a draft never sent is said here. The same rule as the queue's
+		# Changes requested band (`api/approvals._drafts`).
+		"sent_back": state == states.DRAFT
+		and any(row.decision == states.DECISION_MORE_INFO for row in decisions),
 		"geo_node": node,
 		"geo_path": adapter.get_full_path(node) if node else None,
 		"applicant": applicant.of(doc, workflow),
@@ -734,7 +741,7 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 				"reason": row.reason,
 				"decided_on": row.decided_on,
 			}
-			for row in contract.decisions(doc)
+			for row in decisions
 		],
 	}
 

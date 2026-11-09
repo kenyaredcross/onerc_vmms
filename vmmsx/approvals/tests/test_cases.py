@@ -202,6 +202,16 @@ class TestMyCases(ApprovalTestCase):
 		self.assertIn(never, drafts)
 		self.assertNotIn(returned, drafts)
 
+	def test_a_sent_back_draft_says_so_and_a_resubmitted_one_stops_saying_it(self):
+		never = self.application("status never sent", self.kenya["kihara"])
+		returned = self.sent_back("status returned")
+
+		self.assertFalse(engine.status(self.reload(never))["sent_back"])
+		self.assertTrue(engine.status(self.reload(returned))["sent_back"])
+
+		engine.submit(self.reload(returned))
+		self.assertFalse(engine.status(self.reload(returned))["sent_back"])
+
 	def test_the_closed_band_narrows_to_one_terminal_state(self):
 		approved = self.application("narrow approved", self.kenya["kihara"])
 		engine.submit(self.reload(approved))
@@ -219,6 +229,33 @@ class TestMyCases(ApprovalTestCase):
 		self.assertIn(rejected, names)
 		self.assertNotIn(approved, names)
 		self.assertEqual(only["total"], len(names))
+
+	def test_a_search_narrows_the_band_to_what_it_matches(self):
+		found = self.application("search found", self.kenya["kihara"])
+		engine.submit(self.reload(found))
+		other = self.application("search other", self.kenya["kihara"])
+		engine.submit(self.reload(other))
+
+		with fixtures.acting_as(self.county):
+			answer = approvals.my_cases(
+				fixtures.APPROVABLE_DOCTYPE, approvals.CASE_IN_REVIEW, limit=200, search=f" {found} "
+			)
+
+		names = {case["name"] for case in answer["cases"]}
+		self.assertEqual(names, {found})
+		self.assertEqual(answer["total"], 1)
+
+	def test_a_search_that_matches_nothing_answers_empty_in_every_band(self):
+		application = self.application("search none", self.kenya["kihara"])
+		engine.submit(self.reload(application))
+
+		with fixtures.acting_as(self.county):
+			for group in (approvals.CASE_IN_REVIEW, approvals.CASE_DRAFTS, approvals.CASE_CHANGES, approvals.CASE_CLOSED):
+				answer = approvals.my_cases(fixtures.APPROVABLE_DOCTYPE, group, search="no-such-application-zz")
+				self.assertEqual(answer["cases"], [], group)
+
+	def test_a_blank_search_is_no_search(self):
+		self.assertIsNone(approvals._search(fixtures.APPROVABLE_DOCTYPE, "   "))
 
 	def test_every_case_carries_the_engines_own_status_dto(self):
 		application = self.application("dto", self.kenya["kihara"])

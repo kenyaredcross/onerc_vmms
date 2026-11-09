@@ -119,3 +119,33 @@ it("lists only optional types when adding a supporting document", () => {
 	expect(Array.from(select.options).map((option) => option.value)).toEqual(["", "CV"]);
 });
 
+
+describe("Health and Wellness", () => {
+	it("reads blood group, allergies and disability together under one heading", () => {
+		mount(
+			<RegistrationDetailsSummary
+				value={{ blood_group: "O+", allergies: [{ allergy: "Penicillin" }, { allergy: "Peanuts" }] }}
+				disability={{ disability_status: "Yes", disabilities: ["Hearing"], disability_needs: "A sign interpreter" }}
+			/>,
+		);
+
+		const health = screen.getByRole("region", { name: "Health and Wellness" });
+		for (const text of ["O+", "Penicillin, Peanuts", "Yes", "Hearing", "A sign interpreter"]) {
+			expect(health.textContent).toContain(text);
+		}
+	});
+
+	it("draws nothing for somebody who gave none of them", () => {
+		mount(<RegistrationDetailsSummary value={{ middle_name: "Wanjiru" }} />);
+
+		expect(screen.queryByText("Health and Wellness")).toBeNull();
+	});
+
+	it("puts blood group in the Health and Wellness section of the form, not Other Details", () => {
+		mount(<Editor />);
+
+		const health = screen.getByRole("heading", { name: "Health and Wellness" }).closest("section")!;
+		expect(health.contains(screen.getByLabelText("Blood group"))).toBe(true);
+		expect(health.contains(screen.getByDisplayValue("Penicillin"))).toBe(true);
+	});
+});

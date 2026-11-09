@@ -2524,7 +2524,9 @@
     "A payment request has gone to your phone.": "Ombi la malipo limetumwa kwenye simu yako.",
     "Nothing was taken from your account.": "Hakuna kilichotolewa kwenye akaunti yako.",
     "We will send a payment request to this number. Enter your PIN on your phone to pay.": "Tutatuma ombi la malipo kwa nambari hii. Weka PIN yako kwenye simu kulipa.",
-    "If you entered your PIN, it can take a minute to arrive.": "Ikiwa uliweka PIN yako, inaweza kuchukua dakika moja kufika."
+    "If you entered your PIN, it can take a minute to arrive.": "Ikiwa uliweka PIN yako, inaweza kuchukua dakika moja kufika.",
+    "Health and Wellness": "Afya na Ustawi",
+    "Tell us where you are a citizen.": "Tuambie wewe ni raia wa nchi gani."
   },
   "ar": {
     "% complete": "٪ مكتمل",
@@ -5051,7 +5053,9 @@
     "A payment request has gone to your phone.": "أُرسل طلب دفع إلى هاتفك.",
     "Nothing was taken from your account.": "لم يُخصم أي مبلغ من حسابك.",
     "We will send a payment request to this number. Enter your PIN on your phone to pay.": "سنرسل طلب دفع إلى هذا الرقم. أدخل رمزك السري على هاتفك للدفع.",
-    "If you entered your PIN, it can take a minute to arrive.": "إذا أدخلت رمزك السري، فقد يستغرق وصول الدفعة دقيقة."
+    "If you entered your PIN, it can take a minute to arrive.": "إذا أدخلت رمزك السري، فقد يستغرق وصول الدفعة دقيقة.",
+    "Health and Wellness": "الصحة والعافية",
+    "Tell us where you are a citizen.": "أخبرنا بالبلد الذي تحمل جنسيته."
   },
   "pt": {
     "% complete": "% completo",
@@ -7578,7 +7582,9 @@
     "A payment request has gone to your phone.": "Foi enviado um pedido de pagamento para o seu telemóvel.",
     "Nothing was taken from your account.": "Não foi retirado nada da sua conta.",
     "We will send a payment request to this number. Enter your PIN on your phone to pay.": "Vamos enviar um pedido de pagamento para este número. Introduza o PIN no telemóvel para pagar.",
-    "If you entered your PIN, it can take a minute to arrive.": "Se introduziu o PIN, pode demorar um minuto a chegar."
+    "If you entered your PIN, it can take a minute to arrive.": "Se introduziu o PIN, pode demorar um minuto a chegar.",
+    "Health and Wellness": "Saúde e Bem-estar",
+    "Tell us where you are a citizen.": "Diga-nos de que país é cidadão."
   },
   "fr": {
     "% complete": "% complet",
@@ -10105,6 +10111,8 @@
     "A payment request has gone to your phone.": "Une demande de paiement a été envoyée sur votre téléphone.",
     "Nothing was taken from your account.": "Rien n'a été prélevé sur votre compte.",
     "We will send a payment request to this number. Enter your PIN on your phone to pay.": "Nous enverrons une demande de paiement à ce numéro. Saisissez votre code PIN sur votre téléphone pour payer.",
-    "If you entered your PIN, it can take a minute to arrive.": "Si vous avez saisi votre code PIN, cela peut prendre une minute."
+    "If you entered your PIN, it can take a minute to arrive.": "Si vous avez saisi votre code PIN, cela peut prendre une minute.",
+    "Health and Wellness": "Santé et Bien-être",
+    "Tell us where you are a citizen.": "Indiquez-nous de quel pays vous êtes citoyen."
   }
 }

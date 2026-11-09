@@ -7,6 +7,7 @@ import { API, errorMessage } from "../lib/api";
 import { branchPath, formatDate, formatMoney, geoPath } from "../lib/format";
 import { Icon } from "../ui/icons";
 import { PersonHero, RegisterLinks } from "../ui/PersonHero";
+import { SearchField } from "../ui/patterns";
 import { FileLink, FilePreview } from "../ui/FilePreview";
 import { RegistrationDetailsSummary, isWebAddress } from "../ui/RegistrationDetails";
 import { BackgroundCard } from "./Person";
@@ -101,8 +102,12 @@ const NO_ANSWERS: SocietyAnswer[] = [];
 /* ------------------------------------------------------------------- lists */
 
 /** The engine's state, unless the document is holding itself back — then why. */
+const CHANGES_REQUESTED = "Changes requested";
+
 function shownState(status: ApprovalStatus): string {
-	return status.held ? (status.held_for?.label ?? "Not ready yet") : status.state;
+	if (status.held) return status.held_for?.label ?? "Not ready yet";
+	if (status.sent_back) return CHANGES_REQUESTED;
+	return status.state;
 }
 
 export function VolunteerQueue({ band }: { band?: string } = {}) {
@@ -136,12 +141,27 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 	const [params, setParams] = useSearchParams();
 	const closedState = isClosed ? (params.get("state") ?? "") : "";
 	const [offset, setOffset] = useState(0);
-	useEffect(() => setOffset(0), [kind, band.key, closedState]);
+	// What is typed, and what is asked for: the request waits for a pause in
+	// typing rather than going out on every keystroke.
+	const [typed, setTyped] = useState("");
+	const [search, setSearch] = useState("");
+	useEffect(() => {
+		const wait = window.setTimeout(() => setSearch(typed.trim()), 300);
+		return () => window.clearTimeout(wait);
+	}, [typed]);
+	useEffect(() => setOffset(0), [kind, band.key, closedState, search]);
 
 	const history = useFrappeGetCall<{ message: ApprovalCases }>(
 		API.myCases,
-		{ doctype: spec.doctype, group: band.key, limit: 25, offset, ...(closedState ? { state: closedState } : {}) },
-		`admin:my_cases:${kind}:${band.key}:${closedState}:${offset}`,
+		{
+			doctype: spec.doctype,
+			group: band.key,
+			limit: 25,
+			offset,
+			...(closedState ? { state: closedState } : {}),
+			...(search ? { search } : {}),
+		},
+		`admin:my_cases:${kind}:${band.key}:${closedState}:${search}:${offset}`,
 	);
 
 	const rows = history.data?.message?.cases ?? [];
@@ -172,6 +192,14 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 			/>
 
 			<QueueBands spec={spec} current={band} />
+
+			<SearchField
+				className="mb-5 max-w-md"
+				label={`Search ${spec.heading.toLowerCase()}`}
+				placeholder="Search by name, email, phone or reference"
+				value={typed}
+				onChange={setTyped}
+			/>
 
 			{isClosed && (
 				<div role="group" aria-label="Show closed applications" className="-mt-2 mb-5 flex flex-wrap gap-1.5">
@@ -205,7 +233,9 @@ function Queue({ kind, band: segment }: { kind: QueueKind; band?: string }) {
 			{!isLoading && !error && rows.length === 0 && (
 				<Empty
 					title={
-						isReview
+						search
+							? `No applications match “${search}”.`
+							: isReview
 							? spec.empty
 							: isClosed && closedFilter?.key
 								? `No ${closedFilter.label.toLowerCase()} applications.`
@@ -345,11 +375,6 @@ function QueueRow({
 			{inReview ? (
 				<>
 					<Cell>
-						{row.can_act && (
-							<span className="mb-1 inline-flex rounded-full bg-blue-soft px-2 py-0.5 text-[10.5px] font-bold text-blue-press">
-								Your decision
-							</span>
-						)}
 						{row.stage ? (
 							<>
 								<span className="block text-[12.5px] font-semibold text-ink">
@@ -749,12 +774,12 @@ function VolunteerApplicant({ record }: { record: ApplicationDecision }) {
 				}
 			/>
 			<Field label="Branch / County" value={branchPath(record.geo_path)} />
-			<Disability answers={record} />
 		</dl>
 		<RegistrationDetailsSummary
 			value={record.personal_details}
 			evidenceContext={{ doctype: "VMMS Volunteer Application", name: record.name }}
 			showProfileLinks={false}
+			disability={record}
 		/>
 		</div>
 	);
@@ -803,9 +828,12 @@ function MembershipApplicant({ review }: { review: MembershipReview }) {
 				}
 			/>
 			{review.profession && <Field label="Profession" value={review.profession} />}
-			<Disability answers={review} />
 		</dl>
-		<RegistrationDetailsSummary value={person?.personal_details} evidenceContext={{doctype:"VMMS Membership",name:review.name}} />
+		<RegistrationDetailsSummary
+			value={person?.personal_details}
+			evidenceContext={{ doctype: "VMMS Membership", name: review.name }}
+			disability={review}
+		/>
 
 		</div>
 	);
@@ -1098,27 +1126,6 @@ function ProfessionalProfiles({
 /** Whether any education or experience table has a row. */
 function hasBackground(background?: ApplicationDecision["background"]): boolean {
 	return Boolean(background && Object.values(background).some((rows) => Array.isArray(rows) && rows.length > 0));
-}
-
-/** The disability answers from the identity step, only when the applicant gave any. */
-function Disability({
-	answers,
-}: {
-	answers: { disability_status?: string | null; disabilities?: string[]; disability_needs?: string | null };
-}) {
-	if (!answers.disability_status && !answers.disabilities?.length && !answers.disability_needs) return null;
-
-	return (
-		<>
-			<Field label="Disability" value={answers.disability_status} />
-			{!!answers.disabilities?.length && <Field label="Type of disability" value={answers.disabilities.join(", ")} />}
-			{answers.disability_needs && (
-				<div className="sm:col-span-2">
-					<Field label="Support needed" value={answers.disability_needs} />
-				</div>
-			)}
-		</>
-	);
 }
 
 /**
@@ -1682,6 +1689,9 @@ function Decision({
 							<ActionMenu
 								label={picked ? `Change: ${picked.verb}` : "Decide"}
 								variant={picked ? "quiet" : "navy"}
+								// Opens rightwards, inside the decision panel: the
+								// panel sits at the right edge of the page.
+								align="left"
 								actions={options.map((key) => ({
 									key,
 									label: DECISIONS[key].verb,

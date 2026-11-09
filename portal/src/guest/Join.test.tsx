@@ -446,7 +446,7 @@ describe("the road a volunteer walks", () => {
 		open();
 
 		await onTheIdentityStep();
-		expect(screen.getByRole("heading", { name: "Citizenship and support" })).toBeTruthy();
+		expect(screen.getByRole("heading", { name: "Citizenship" })).toBeTruthy();
 		expect(screen.queryByText("Where you live")).toBeNull();
 		expect(screen.queryByText("Citizenship and where you live")).toBeNull();
 	});
@@ -1592,7 +1592,7 @@ describe("Kenya Red Cross registration age policy", () => {
 	});
 });
 
-it("groups Other names with the name fields and starts Other Details with Blood group", async () => {
+it("groups Other names with the name fields, and blood group, allergies and disability under Health and Wellness", async () => {
 	open();
 	await onTheIdentityStep();
 	const first = screen.getByLabelText(/^First name/);
@@ -1600,8 +1600,13 @@ it("groups Other names with the name fields and starts Other Details with Blood 
 	expect(first.closest("section")?.contains(other)).toBe(true);
 	const details = screen.getByRole("heading", {name: "Other Details"}).closest("section")!;
 	expect(details.contains(other)).toBe(false);
-	expect(details.querySelector("input,select")).toBe(screen.getByLabelText("Blood group"));
-	expect(screen.getByRole("group", {name: /^Are you a person with disability\?/})).toBeTruthy();
+	expect(details.contains(screen.getByLabelText("Blood group"))).toBe(false);
+
+	const health = screen.getByRole("heading", {name: "Health and Wellness"}).closest("section")!;
+	expect(health.querySelector("input,select")).toBe(screen.getByLabelText("Blood group"));
+	expect(health.contains(screen.getByRole("button", {name: "Add allergy"}))).toBe(true);
+	expect(health.contains(screen.getByRole("group", {name: /^Are you a person with disability\?/}))).toBe(true);
+	expect(screen.getByRole("heading", {name: "Citizenship"})).toBeTruthy();
 });
 
 it("requires a new home selection after explicitly clearing a saved residence", async () => {

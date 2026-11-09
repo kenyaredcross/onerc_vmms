@@ -251,6 +251,11 @@ export interface ApprovalStatus {
 	 */
 	held?: boolean;
 	held_for?: { label: string; note: string } | null;
+	/**
+	 * A draft a reviewer sent back for changes. `state` still reads Draft, which
+	 * is what lets the applicant edit it; show "Changes requested" instead.
+	 */
+	sent_back?: boolean;
 	geo_node: string | null;
 	geo_path: string | null;
 	/**

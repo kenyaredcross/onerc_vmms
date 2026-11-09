@@ -196,6 +196,7 @@ def my_cases(
 	limit: int | None = None,
 	offset: int = 0,
 	state: str | None = None,
+	search: str | None = None,
 ) -> dict:
 	"""One band of `doctype`'s applications, inside the caller's own scope.
 
@@ -208,6 +209,10 @@ def my_cases(
 
 	`in_review`, `closed` and `all` also return `total`, counted by the same
 	scoped `frappe.get_list` as the page.
+
+	`search` narrows any band (but `actionable`) to applications whose
+	reference, or whose applicant's name, email or phone, contains it. It
+	narrows the scoped read and never widens it.
 
 	**Every state named here is one of the seven in `states.py` and none of them
 	is derived from a stage label.**
@@ -245,21 +250,27 @@ def my_cases(
 	except TypeError, ValueError:
 		start = 0
 
+	# The applications a search matches, or None for no search. An empty list
+	# is a search that matched nobody, and every band then answers empty.
+	matching = _search(doctype, search)
+	narrow = {} if matching is None else {"name": ("in", matching or [""])}
+
 	filters = None
 	if group == CASE_IN_REVIEW:
-		names = _in_review(doctype, page_size + 1, start)
-		filters = {"approval_state": ("in", list(_REVIEW_STATES))}
+		names = _in_review(doctype, page_size + 1, start, matching)
+		filters = {"approval_state": ("in", list(_REVIEW_STATES)), **narrow}
 	elif group == CASE_ALL:
+		filters = dict(narrow)
 		names = frappe.get_list(
 			doctype,
+			filters=filters,
 			order_by="modified desc, name desc",
 			limit_start=start,
 			limit_page_length=page_size + 1,
 			pluck="name",
 		)
-		filters = {}
 	elif group == CASE_CLOSED:
-		filters = {"approval_state": state or ("in", list(states.TERMINAL_STATES))}
+		filters = {"approval_state": state or ("in", list(states.TERMINAL_STATES)), **narrow}
 		names = frappe.get_list(
 			doctype,
 			filters=filters,
@@ -269,7 +280,7 @@ def my_cases(
 			pluck="name",
 		)
 	else:
-		names = _drafts(doctype, page_size + 1, start, returned=group == CASE_CHANGES)
+		names = _drafts(doctype, page_size + 1, start, returned=group == CASE_CHANGES, narrow=narrow)
 
 	has_more = len(names) > page_size
 	names = names[:page_size]
@@ -296,7 +307,7 @@ def my_cases(
 	return answer
 
 
-def _in_review(doctype: str, limit: int, offset: int) -> list[str]:
+def _in_review(doctype: str, limit: int, offset: int, matching: list[str] | None = None) -> list[str]:
 	"""Applications with the reviewers, the caller's own decisions first.
 
 	The caller's own come from `my_queue`, which re-checks routing per row, and
@@ -305,7 +316,11 @@ def _in_review(doctype: str, limit: int, offset: int) -> list[str]:
 	newest first, with those names left out so nothing appears twice.
 	"""
 	filters = {"approval_state": ("in", list(_REVIEW_STATES))}
+	if matching is not None:
+		filters["name"] = ("in", matching or [""])
 	mine = [row["name"] for row in my_queue(doctype)]
+	if matching is not None:
+		mine = [name for name in mine if name in set(matching)]
 	if mine:
 		mine = frappe.get_list(
 			doctype,
@@ -323,7 +338,10 @@ def _in_review(doctype: str, limit: int, offset: int) -> list[str]:
 
 	rest_filters = dict(filters)
 	if mine:
-		rest_filters["name"] = ("not in", mine)
+		if matching is not None:
+			rest_filters["name"] = ("in", [name for name in matching if name not in set(mine)] or [""])
+		else:
+			rest_filters["name"] = ("not in", mine)
 	rest = frappe.get_list(
 		doctype,
 		filters=rest_filters,
@@ -345,7 +363,7 @@ def _bounded(limit) -> int:
 	return max(1, min(asked, _CASE_CEILING))
 
 
-def _drafts(doctype: str, limit, offset: int = 0, returned: bool = False) -> list[str]:
+def _drafts(doctype: str, limit, offset: int = 0, returned: bool = False, narrow: dict | None = None) -> list[str]:
 	"""Drafts, newest first: the ones sent back, or the ones never sent.
 
 	Both bands are Drafts and the decisions table tells them apart — a "More
@@ -363,7 +381,7 @@ def _drafts(doctype: str, limit, offset: int = 0, returned: bool = False) -> lis
 	while len(selected) < offset + limit:
 		drafts = frappe.get_list(
 			doctype,
-			filters={"approval_state": states.DRAFT},
+			filters={"approval_state": states.DRAFT, **(narrow or {})},
 			order_by="modified desc, name desc",
 			limit_start=scanned,
 			limit_page_length=_CASE_CEILING,
@@ -387,3 +405,56 @@ def _drafts(doctype: str, limit, offset: int = 0, returned: bool = False) -> lis
 		if len(drafts) < _CASE_CEILING:
 			break
 	return selected[offset : offset + limit]
+
+
+_SEARCH_CEILING = 500
+
+
+def _search(doctype: str, search: str | None) -> list[str] | None:
+	"""Applications whose reference, or whose applicant's name, email or phone, contains `search`.
+
+	None when there is nothing to search for. The applicant is found the way
+	the queue rows find them — the workflow's applicant field, one hop to a Red
+	Profile or two through a record that carries one — so a membership is found
+	by its member's name exactly as a volunteer application is by its
+	applicant's. Read through `frappe.get_list`, so a match outside the
+	caller's scope is never returned.
+	"""
+	from vmmsx.approvals.services import applicant
+
+	text = (search or "").strip()
+	if not text:
+		return None
+
+	like = f"%{text}%"
+	matches = set(
+		frappe.get_list(doctype, filters={"name": ("like", like)}, pluck="name", limit_page_length=_SEARCH_CEILING)
+	)
+
+	field = (config.for_doctype(doctype).applicant_field or "").strip()
+	subject = applicant._link_target(doctype, field) if field else None
+	if subject:
+		profiles = frappe.get_all(
+			applicant.PROFILE_DOCTYPE,
+			or_filters={"full_name": ("like", like), "email": ("like", like), "phone": ("like", like)},
+			pluck="name",
+			limit_page_length=_SEARCH_CEILING,
+		)
+		if subject == applicant.PROFILE_DOCTYPE:
+			values = profiles
+		elif profiles and frappe.get_meta(subject).has_field("red_profile"):
+			values = frappe.get_all(subject, filters={"red_profile": ("in", profiles)}, pluck="name")
+		else:
+			values = []
+		if values:
+			matches.update(
+				frappe.get_list(
+					doctype,
+					filters={field: ("in", values)},
+					pluck="name",
+					limit_page_length=_SEARCH_CEILING,
+				)
+			)
+
+	return sorted(matches)
+

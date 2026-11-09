@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { IdentityOptions, PersonalDetails } from "../portal/types";
 import { FileLink, fileNameOf } from "./FilePreview";
 import { Field, FieldSet, PrivateUpload, RemoveRowButton, RowHeading, SelectInput, TextInput } from "./form";
@@ -65,6 +67,7 @@ export function RegistrationDetails({
 	idPrefix = "registration-details",
 	showOtherNames = true,
 	showProfileLinks = true,
+	health,
 }: {
 	value: PersonalDetails;
 	onChange: (value: PersonalDetails) => void;
@@ -76,6 +79,12 @@ export function RegistrationDetails({
 	showOtherNames?: boolean;
 	/** False where LinkedIn and GitHub are asked under Professional profiles. */
 	showProfileLinks?: boolean;
+	/**
+	 * More questions for the Health and Wellness section, drawn after blood
+	 * group and allergies — the registration form's disability question, which
+	 * it owns because only it asks one.
+	 */
+	health?: ReactNode;
 }) {
 	const set = (key: keyof PersonalDetails, next: unknown) => onChange({ ...value, [key]: next });
 	const rows = value.supporting_documents ?? [];
@@ -100,12 +109,6 @@ export function RegistrationDetails({
 						
 					>
 						<div className="grid gap-4 sm:grid-cols-2">
-							<Field label="Blood group" htmlFor={`${idPrefix}-blood_group`}>
-								<SelectInput id={`${idPrefix}-blood_group`} value={value.blood_group ?? ""}
-									options={Array.from(new Set([...bloodGroups, ...(value.blood_group ? [value.blood_group] : [])]))}
-									placeholder="Select blood group" onChange={(next) => set("blood_group", next)} />
-							</Field>
-
 							{TEXT_FIELDS.filter(
 								([key]) =>
 									(showOtherNames || key !== "middle_name") &&
@@ -193,11 +196,19 @@ export function RegistrationDetails({
 							Add another skill
 						</Button>
 					</FieldSet>
-					<FieldSet
-						title="Allergies"
-						
-					>
-						<div className="space-y-3">
+					<FieldSet title="Health and Wellness">
+						<div className="grid gap-4 sm:grid-cols-2">
+							<Field label="Blood group" htmlFor={`${idPrefix}-blood_group`}>
+								<SelectInput
+									id={`${idPrefix}-blood_group`}
+									value={value.blood_group ?? ""}
+									options={Array.from(new Set([...bloodGroups, ...(value.blood_group ? [value.blood_group] : [])]))}
+									placeholder="Select blood group"
+									onChange={(next) => set("blood_group", next)}
+								/>
+							</Field>
+						</div>
+						<div className="mt-5 space-y-3">
 							{(value.allergies ?? []).map((row, index) => (
 								<div key={index} className="flex items-end gap-3">
 									<div className="flex-1">
@@ -234,6 +245,7 @@ export function RegistrationDetails({
 								Add allergy
 							</Button>
 						</div>
+						{health && <div className="mt-8">{health}</div>}
 					</FieldSet>
 				</>
 			)}
@@ -355,15 +367,18 @@ export function RegistrationDetailsSummary({
 	value,
 	evidenceContext,
 	showProfileLinks = true,
+	disability,
 }: {
 	value?: PersonalDetails;
 	evidenceContext?: { doctype: string; name: string };
 	/** False where LinkedIn and GitHub are shown under Professional profiles. */
 	showProfileLinks?: boolean;
+	/** The disability answers, shown under Health and Wellness where a screen has them. */
+	disability?: DisabilityAnswers;
 }) {
-	if (!value) return null;
+	if (!value && !disability) return null;
+	value = value ?? ({} as PersonalDetails);
 	const items = [
-		["blood_group", "Blood group"] as const,
 		...TEXT_FIELDS.filter(([key]) => showProfileLinks || !PROFILE_LINKS.has(key)),
 		...RESIDENCE_FIELDS,
 		...CHOICE_FIELDS.map(([key, label]) => [key, label] as const),
@@ -399,9 +414,7 @@ export function RegistrationDetailsSummary({
 					Additional skills: {value.additional_skills.map((row) => row.additional_skill).join(", ")}
 				</p>
 			)}
-			{!!value.allergies?.length && (
-				<p>Allergies: {value.allergies.map((row) => row.allergy).join(", ")}</p>
-			)}
+			<HealthAndWellness value={value} disability={disability} />
 			{!!value.supporting_documents?.length && (
 				<ul className="space-y-1">
 					{value.supporting_documents.map((row, index) => (
@@ -424,5 +437,51 @@ export function RegistrationDetailsSummary({
 				</ul>
 			)}
 		</div>
+	);
+}
+
+/** What somebody said about a disability. `disabilities` are display names. */
+export interface DisabilityAnswers {
+	disability_status?: string | null;
+	disabilities?: string[];
+	disability_needs?: string | null;
+}
+
+/**
+ * Blood group, allergies and disability, read together under one heading.
+ *
+ * Nothing is drawn for a person who gave none of them: an empty heading reads
+ * as a section somebody forgot to fill.
+ */
+export function HealthAndWellness({
+	value,
+	disability,
+}: {
+	value?: PersonalDetails;
+	disability?: DisabilityAnswers;
+}) {
+	const allergies = (value?.allergies ?? []).map((row) => row.allergy).filter(Boolean);
+	const rows = [
+		["Blood group", value?.blood_group],
+		["Allergies", allergies.join(", ")],
+		["Disability", disability?.disability_status],
+		["Type of disability", (disability?.disabilities ?? []).join(", ")],
+		["Support needed", disability?.disability_needs],
+	].filter((row): row is [string, string] => Boolean(row[1]));
+
+	if (rows.length === 0) return null;
+
+	return (
+		<section aria-label="Health and Wellness" className="space-y-2 pt-1">
+			<h4 className="text-[11px] font-bold uppercase tracking-wide text-muted">Health and Wellness</h4>
+			<dl className="grid gap-3 sm:grid-cols-2">
+				{rows.map(([label, text]) => (
+					<div key={label} className={label === "Support needed" ? "sm:col-span-2" : undefined}>
+						<dt className="text-xs text-muted">{label}</dt>
+						<dd className="break-words text-ink">{text}</dd>
+					</div>
+				))}
+			</dl>
+		</section>
 	);
 }

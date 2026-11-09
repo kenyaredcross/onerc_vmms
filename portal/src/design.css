@@ -232,11 +232,11 @@ button.overview-metric[aria-pressed="true"] .overview-metric-icon { background: 
 
 /* Keep review actions visible while reading application details. */
 .application-review-layout { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 24px; align-items: start; }
-.application-review-sidebar { min-width: 0; position: sticky; top: 76px; max-height: calc(100vh - 92px); overflow-y: auto; }
+.application-review-sidebar { min-width: 0; position: sticky; top: 76px; }
 .application-review-sidebar dl { grid-template-columns: minmax(0,1fr); margin-top: 16px; }
 @media (max-width: 1199px) {
  .application-review-layout { grid-template-columns: minmax(0,1fr); gap: 20px; }
- .application-review-sidebar { position: static; grid-row: 1; max-height: none; overflow: visible; }
+ .application-review-sidebar { position: static; grid-row: 1; }
 }
 
 /* Long text stays inside content panels without clipping or truncation. */

@@ -16,7 +16,7 @@ type Destination = SubNavItem & { section?: string };
  *
  * Three headings, and the order is the answer to "how did this person get
  * here": everybody asking to join, then everybody who already has. The
- * recruitment pair sits under **Coming in** beside the two application queues
+ * recruitment pair sits under **Applications** beside the two application queues
  * because a job opening is the third door into the society, and a coordinator
  * clearing job applications is doing the same shape of work as one clearing
  * volunteer applications.
@@ -35,7 +35,7 @@ export const PEOPLE_NAV: Destination[] = [
 		labelKey: "admin.people.nav.volunteer_queue",
 		fallback: "Volunteer applications",
 		groupKey: "admin.people.nav.review",
-		groupFallback: "Coming in",
+		groupFallback: "Applications",
 		section: "queue",
 	},
 	{ to: "/admin/queue/members", labelKey: "admin.people.nav.member_queue", fallback: "Membership applications", groupKey: "admin.people.nav.review", section: "queue" },
