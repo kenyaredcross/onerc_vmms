@@ -10,9 +10,14 @@ export function MetricCard({
 	badge,
 	note,
 	to,
+	onClick,
+	pressed,
 	negative = false,
 	noteClassName = "",
 }: {
+	/** Makes the card a toggle button; `pressed` is whether it is the one chosen. */
+	onClick?: () => void;
+	pressed?: boolean;
 	label: ReactNode;
 	value: ReactNode;
 	icon?: ReactNode;
@@ -37,6 +42,13 @@ export function MetricCard({
 			{note != null && <div className={`overview-metric-note ${noteClassName}`}>{note}</div>}
 		</>
 	);
+	if (onClick) {
+		return (
+			<button type="button" className="overview-metric text-left" aria-pressed={!!pressed} onClick={onClick}>
+				{body}
+			</button>
+		);
+	}
 	return to ? (
 		<Link className="overview-metric" to={to}>
 			{body}

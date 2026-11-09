@@ -1091,21 +1091,67 @@ def register_summary(as_of: str | None = None) -> dict:
 	life = [row for row in current if row.get("membership_type") in lifetime]
 	term = [row for row in current if row.get("membership_type") not in lifetime]
 
+	def falling_due(row) -> bool:
+		return bool(row.get("valid_to")) and moment <= getdate(row["valid_to"]) <= horizon
+
 	return {
 		"as_of": moment,
 		"active": len(current),
 		"lifetime": len(life),
 		"term": len(term),
-		"renewing": len(
-			[
-				row
-				for row in term
-				if row.get("valid_to") and moment <= getdate(row["valid_to"]) <= horizon
-			]
-		),
+		"renewing": len([row for row in term if falling_due(row)]),
 		"renewal_window_days": _RENEWAL_WINDOW_DAYS,
+		"by_type": _by_type(current, lifetime, falling_due),
 		"capped": capped,
 	}
+
+
+def _by_type(current: list, lifetime: set, falling_due) -> list[dict]:
+	"""The current memberships counted per membership type, one card each.
+
+	Every type a person may join today is listed, held or not — a type with
+	nobody on it is a zero, not a missing card — in the order the join screen
+	offers them. A type the society has since retired still appears while
+	somebody holds it, after the active ones, because those people are still on
+	the register.
+	"""
+	held: dict[str, list] = {}
+	for row in current:
+		held.setdefault(row.get("membership_type"), []).append(row)
+
+	offered = frappe.get_all(
+		"VMMS Membership Type",
+		filters={"is_active": 1},
+		pluck="name",
+		order_by="fee_amount asc, membership_type_name asc",
+	)
+	keys = list(offered) + sorted(key for key in held if key and key not in offered)
+
+	types = {
+		row.name: row
+		for row in frappe.get_all(
+			"VMMS Membership Type",
+			filters={"name": ("in", keys)},
+			fields=["name", "membership_type_name", "is_lifetime"],
+		)
+	} if keys else {}
+
+	out = []
+	for key in keys:
+		rows = held.get(key, [])
+		kind = types.get(key) or frappe._dict()
+		never_expires = key in lifetime or bool(kind.get("is_lifetime"))
+		out.append(
+			{
+				"membership_type": key,
+				"membership_type_name": kind.get("membership_type_name") or key,
+				"is_lifetime": never_expires,
+				"active": len(rows),
+				"renewing": 0 if never_expires else len([row for row in rows if falling_due(row)]),
+			}
+		)
+
+	return out
 
 
 def _lifetime_types(keys: set) -> set:

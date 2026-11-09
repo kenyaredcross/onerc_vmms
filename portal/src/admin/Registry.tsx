@@ -33,7 +33,7 @@ import type {
 	GeoNode,
 	MemberDossier,
 	MemberRegisterSummary,
-	PricedType,
+	MemberRegisterTypeCount,
 	VolunteerDossier,
 	VolunteerRegisterSummary,
 } from "../portal/types";
@@ -493,12 +493,6 @@ function Members() {
 	const [chain, setChain] = useState<GeoNode[]>([]);
 	const [page, setPage] = useState(0);
 
-	const types = useFrappeGetCall<{ message: { types: PricedType[] } }>(
-		API.membershipTypes,
-		undefined,
-		"admin:membership_types",
-	);
-
 	const summary = useFrappeGetCall<{ message: MemberRegisterSummary }>(
 		API.memberRegisterSummary,
 		undefined,
@@ -545,48 +539,31 @@ function Members() {
 	const rows = message?.rows ?? [];
 	const total = message?.total ?? 0;
 	const figures = summary.data?.message;
+	const chosenType = figures?.by_type?.find((row) => row.membership_type === membershipType);
+	const typeLabel = chosenType?.membership_type_name ?? membershipType;
 
 	return (
 		<>
-			<SummaryStrip
+			<TypeCards
 				loading={summary.isLoading}
 				capped={figures?.capped}
-				tiles={[
-					{ label: "Active memberships", value: figures?.active, hint: "Current as at today" },
-					{
-						// "Term", not "Annual": a society names its own membership
-						// types, and the split is read off `is_lifetime` rather than
-						// off a name one society happens to use.
-						label: "Term memberships",
-						value: figures?.term,
-						hint: "Renewable, with an expiry",
-					},
-					{ label: "Life memberships", value: figures?.lifetime, hint: "No expiry" },
-					{
-						label: "Renewals approaching",
-						value: figures?.renewing,
-						hint: figures ? `Falling due within ${figures.renewal_window_days} days` : "Falling due soon",
-					},
-				]}
+				types={figures?.by_type ?? []}
+				windowDays={figures?.renewal_window_days ?? 60}
+				chosen={membershipType}
+				// Pressing the chosen card again lets go of it, back to everybody.
+				onChoose={(key) => narrow(setMembershipType)(key === membershipType ? "" : key)}
 			/>
 
 			<RegisterToolbar
 				search={search}
 				onSearch={narrow(setSearch)}
 				placeholder="Search by name or membership number"
-				inline={
-					<SelectFilter
-						label="Membership type"
-						value={membershipType}
-						onChange={narrow(setMembershipType)}
-						any="All membership types"
-						options={(types.data?.message?.types ?? []).map((row) => ({
-							value: row.membership_type,
-							label: row.membership_type_name,
-						}))}
-					/>
-				}
-				chips={branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []}
+				chips={[
+					...(membershipType
+						? [{ key: "type", label: typeLabel, clear: () => narrow(setMembershipType)("") }]
+						: []),
+					...(branchLabel ? [{ key: "branch", label: branchLabel, clear: () => narrow(setChain)([]) }] : []),
+				]}
 				onClearAll={() => {
 					setSearch("");
 					setMembershipType("");
@@ -605,7 +582,9 @@ function Members() {
 			{!isLoading && !error && (
 				<>
 					<div className="mb-4 flex flex-wrap gap-2">
-						<Pill tone="page">{total} active memberships match</Pill>
+						<Pill tone="page">
+							{membershipType ? `${total} active · ${typeLabel}` : `${total} active memberships match`}
+						</Pill>
 						<Pill tone="page">{message?.member_count ?? 0} people</Pill>
 						<Pill tone="page">as at {formatDate(message?.as_of ?? null)}</Pill>
 					</div>
@@ -740,6 +719,66 @@ function MemberSummary({ row }: { row: MemberRow }) {
  */
 function recordOf(kind: "volunteer" | "member", name: string): string {
 	return `/admin/registry/${kind}/${encodeURIComponent(name)}`;
+}
+
+/**
+ * One card per membership type, each one a filter on the list below.
+ *
+ * The counts are the scoped aggregate's, never the list's `total`, for the
+ * reason `SummaryStrip` gives; choosing a card narrows the list and leaves the
+ * cards' own numbers where they were.
+ */
+function TypeCards({
+	types,
+	loading,
+	capped,
+	windowDays,
+	chosen,
+	onChoose,
+}: {
+	types: MemberRegisterTypeCount[];
+	loading: boolean;
+	capped?: boolean;
+	windowDays: number;
+	chosen: string;
+	onChoose: (key: string) => void;
+}) {
+	return (
+		<div className="mb-5">
+			{loading ? (
+				<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+					{[0, 1, 2, 3].map((key) => (
+						<Skeleton key={key} className="h-[140px] rounded-2xl" />
+					))}
+				</div>
+			) : (
+				<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" role="group" aria-label="Membership types">
+					{types.map((row) => (
+						<MetricCard
+							key={row.membership_type}
+							label={row.membership_type_name}
+							icon={<Icon.card size={19} />}
+							value={row.active.toLocaleString()}
+							note={
+								row.is_lifetime
+									? "No expiry"
+									: row.renewing > 0
+										? `${row.renewing.toLocaleString()} due for renewal within ${windowDays} days`
+										: "Renewable, none due soon"
+							}
+							pressed={row.membership_type === chosen}
+							onClick={() => onChoose(row.membership_type)}
+						/>
+					))}
+				</div>
+			)}
+			{capped && (
+				<p className="mt-2 text-[11px] leading-relaxed text-muted">
+					Summary totals are partial. Use the table to view all records.
+				</p>
+			)}
+		</div>
+	);
 }
 
 interface SummaryTile {

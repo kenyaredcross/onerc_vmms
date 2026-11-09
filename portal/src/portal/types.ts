@@ -2467,7 +2467,18 @@ export interface MemberRegisterSummary {
 	/** Term memberships falling due inside `renewal_window_days`. */
 	renewing: number;
 	renewal_window_days: number;
+	/** The same current memberships, counted per membership type — one card each. */
+	by_type?: MemberRegisterTypeCount[];
 	capped: boolean;
+}
+
+export interface MemberRegisterTypeCount {
+	membership_type: string;
+	membership_type_name: string;
+	is_lifetime: boolean;
+	active: number;
+	/** Falling due inside `renewal_window_days`; always 0 for a lifetime type. */
+	renewing: number;
 }
 
 /* ------------------------------------------------------ operations, in full */

@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { act, fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API } from "../lib/api";
@@ -122,9 +122,13 @@ function members(rows = [MEMBERSHIP]) {
 		term: 3440,
 		renewing: 118,
 		renewal_window_days: 60,
+		by_type: [
+			{ membership_type: "youth", membership_type_name: "Youth Member", is_lifetime: false, active: 1200, renewing: 40 },
+			{ membership_type: "ordinary", membership_type_name: "Ordinary Member", is_lifetime: false, active: 2240, renewing: 78 },
+			{ membership_type: "life", membership_type_name: "Life Member", is_lifetime: true, active: 402, renewing: 0 },
+		],
 		capped: false,
 	});
-	reads.set(API.membershipTypes, { types: [{ membership_type: "annual", membership_type_name: "Annual" }] });
 }
 
 function show(element: React.ReactNode, route: string) {
@@ -270,17 +274,35 @@ describe("the active member register", () => {
 		expect(argsFor(API.findMembers)).not.toHaveProperty("status");
 	});
 
-	it("shows the four approved summary blocks from the scoped aggregate", () => {
+	it("shows one card per membership type from the scoped aggregate", () => {
 		members();
 		show(<MembersRegistry />, "/admin/registry/members");
 
-		expect(screen.getByText("Active memberships")).toBeTruthy();
-		// "Term", not "Annual": the split is `VMMS Membership Type.is_lifetime`,
-		// never a type's name — a society names its own types.
-		expect(screen.getByText("Term memberships")).toBeTruthy();
-		expect(screen.getByText("Life memberships")).toBeTruthy();
-		expect(screen.getByText("Renewals approaching")).toBeTruthy();
-		expect(screen.getByText("3,842")).toBeTruthy();
+		const cards = screen.getByRole("group", { name: "Membership types" });
+		expect(within(cards).getByText("Youth Member")).toBeTruthy();
+		expect(within(cards).getByText("Ordinary Member")).toBeTruthy();
+		expect(within(cards).getByText("Life Member")).toBeTruthy();
+		expect(within(cards).getByText("2,240")).toBeTruthy();
+		expect(within(cards).getByText("78 due for renewal within 60 days")).toBeTruthy();
+		expect(screen.queryByText("Term memberships")).toBeNull();
+	});
+
+	it("filters the list to a type when its card is pressed, and lets go on a second press", async () => {
+		members();
+		show(<MembersRegistry />, "/admin/registry/members");
+
+		const card = screen.getByRole("button", { name: /Life Member/ });
+		await act(async () => {
+			fireEvent.click(card);
+		});
+		expect(card.getAttribute("aria-pressed")).toBe("true");
+		expect(argsFor(API.findMembers)).toMatchObject({ membership_type: "life", offset: 0 });
+
+		await act(async () => {
+			fireEvent.click(card);
+		});
+		expect(card.getAttribute("aria-pressed")).toBe("false");
+		expect(argsFor(API.findMembers)?.membership_type).toBeUndefined();
 	});
 
 	it("renders a life membership as having no expiry rather than a blank cell", () => {
