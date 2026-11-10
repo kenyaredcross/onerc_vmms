@@ -17,7 +17,9 @@
 				</span>
 				<span
 					class="text-xs font-semibold px-2 py-0.5 rounded-full"
-					:class="ans.is_correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+					:class="
+						ans.is_correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+					"
 				>
 					{{ ans.is_correct ? __("Correct") : __("Incorrect") }}
 				</span>

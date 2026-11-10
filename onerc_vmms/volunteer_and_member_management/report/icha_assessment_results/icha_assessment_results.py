@@ -98,26 +98,30 @@ def _get_data(filters):
 			indicator = "green" if passed else "red"
 			pass_fail_label = f"<span style='color:{'#28a745' if passed else '#dc3545'};font-weight:600'>{'Pass' if passed else 'Fail'}</span>"
 
-			rows.append({
-				"full_name": u.full_name,
-				"email": u.email,
-				"attempt_status": "Completed",
-				"score_display": f"{attempt.score}/{attempt.total_questions}",
-				"percentage": attempt.percentage,
-				"pass_fail": "Pass" if passed else "Fail",
-				"submitted_on": attempt.submitted_on,
-			})
+			rows.append(
+				{
+					"full_name": u.full_name,
+					"email": u.email,
+					"attempt_status": "Completed",
+					"score_display": f"{attempt.score}/{attempt.total_questions}",
+					"percentage": attempt.percentage,
+					"pass_fail": "Pass" if passed else "Fail",
+					"submitted_on": attempt.submitted_on,
+				}
+			)
 		else:
 			pending_count += 1
-			rows.append({
-				"full_name": u.full_name,
-				"email": u.email,
-				"attempt_status": "Not Attempted",
-				"score_display": "-",
-				"percentage": None,
-				"pass_fail": "-",
-				"submitted_on": None,
-			})
+			rows.append(
+				{
+					"full_name": u.full_name,
+					"email": u.email,
+					"attempt_status": "Not Attempted",
+					"score_display": "-",
+					"percentage": None,
+					"pass_fail": "-",
+					"submitted_on": None,
+				}
+			)
 
 	# Apply pass_fail filter
 	if filters.get("pass_fail"):

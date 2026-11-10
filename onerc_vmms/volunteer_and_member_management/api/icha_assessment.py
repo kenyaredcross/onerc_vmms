@@ -147,21 +147,25 @@ def _shuffle_options(q):
 	# e.g. if shuffled_letters = ["C","A","D","B"], then new slot A gets original C, etc.
 	new_options = {}
 	option_map = {}  # original → new position
-	for new_pos, orig_letter in zip(letters, shuffled_letters):
+	for new_pos, orig_letter in zip(letters, shuffled_letters, strict=False):
 		new_options[new_pos] = original_options[orig_letter]
 		option_map[orig_letter] = new_pos
 
 	new_correct = option_map[original_correct]
 
-	return {
-		"name": q["name"],
-		"course": q["course"],
-		"question": q["question"],
-		"option_a": new_options["A"],
-		"option_b": new_options["B"],
-		"option_c": new_options["C"],
-		"option_d": new_options["D"],
-	}, new_correct, option_map
+	return (
+		{
+			"name": q["name"],
+			"course": q["course"],
+			"question": q["question"],
+			"option_a": new_options["A"],
+			"option_b": new_options["B"],
+			"option_c": new_options["C"],
+			"option_d": new_options["D"],
+		},
+		new_correct,
+		option_map,
+	)
 
 
 @frappe.whitelist()
@@ -193,7 +197,9 @@ def get_assessment():
 	served = []
 	shuffle_meta = {}  # {question_name: {new_correct, option_map}}
 	for q in questions:
-		q_dict = {k: q[k] for k in ["name", "course", "question", "option_a", "option_b", "option_c", "option_d"]}
+		q_dict = {
+			k: q[k] for k in ["name", "course", "question", "option_a", "option_b", "option_c", "option_d"]
+		}
 		shuffled_q, new_correct, option_map = _shuffle_options(q_dict)
 		served.append(shuffled_q)
 		shuffle_meta[q["name"]] = {"new_correct": new_correct, "option_map": option_map}
@@ -213,19 +219,23 @@ def get_assessment():
 		"ICHA Assessment Attempt", {"user": user, "status": "Pending"}, "name"
 	)
 	if existing_pending:
-		frappe.db.set_value("ICHA Assessment Attempt", existing_pending, "shuffled_questions", shuffle_meta_json)
+		frappe.db.set_value(
+			"ICHA Assessment Attempt", existing_pending, "shuffled_questions", shuffle_meta_json
+		)
 	else:
-		pending = frappe.get_doc({
-			"doctype": "ICHA Assessment Attempt",
-			"user": user,
-			"submitted_on": now_datetime(),
-			"status": "Pending",
-			"total_questions": len(served),
-			"score": 0,
-			"percentage": 0,
-			"passed": 0,
-			"shuffled_questions": shuffle_meta_json,
-		})
+		pending = frappe.get_doc(
+			{
+				"doctype": "ICHA Assessment Attempt",
+				"user": user,
+				"submitted_on": now_datetime(),
+				"status": "Pending",
+				"total_questions": len(served),
+				"score": 0,
+				"percentage": 0,
+				"passed": 0,
+				"shuffled_questions": shuffle_meta_json,
+			}
+		)
 		pending.insert(ignore_permissions=True)
 		frappe.db.commit()
 
@@ -237,7 +247,7 @@ def get_assessment():
 	}
 
 
-@frappe.whitelist()
+@frappe.whitelist()  # nosemgrep: missing-argument-type-hint -- accepts a JSON string or dict, validated below
 @rate_limit(limit=5, seconds=60 * 5)
 def submit_assessment(answers):
 	"""
@@ -268,7 +278,16 @@ def submit_assessment(answers):
 	question_records = frappe.get_all(
 		"ICHA Question",
 		filters={"name": ["in", question_names]},
-		fields=["name", "course", "question", "option_a", "option_b", "option_c", "option_d", "correct_answer"],
+		fields=[
+			"name",
+			"course",
+			"question",
+			"option_a",
+			"option_b",
+			"option_c",
+			"option_d",
+			"correct_answer",
+		],
 	)
 	question_map = {q.name: q for q in question_records}
 
@@ -347,9 +366,7 @@ def submit_assessment(answers):
 			}
 
 	stored_json = json.dumps({"order": shuffled_order, "options": shuffled_options_store})
-	pending_name = frappe.db.get_value(
-		"ICHA Assessment Attempt", {"user": user, "status": "Pending"}, "name"
-	)
+	pending_name = frappe.db.get_value("ICHA Assessment Attempt", {"user": user, "status": "Pending"}, "name")
 
 	try:
 		frappe.db.begin()
@@ -402,10 +419,18 @@ def submit_assessment(answers):
 				"question_text": question_map[r["question"]].question,
 				"course": r["course"],
 				"options": {
-					"A": shuffled_options_store.get(r["question"], {}).get("option_a", question_map[r["question"]].option_a),
-					"B": shuffled_options_store.get(r["question"], {}).get("option_b", question_map[r["question"]].option_b),
-					"C": shuffled_options_store.get(r["question"], {}).get("option_c", question_map[r["question"]].option_c),
-					"D": shuffled_options_store.get(r["question"], {}).get("option_d", question_map[r["question"]].option_d),
+					"A": shuffled_options_store.get(r["question"], {}).get(
+						"option_a", question_map[r["question"]].option_a
+					),
+					"B": shuffled_options_store.get(r["question"], {}).get(
+						"option_b", question_map[r["question"]].option_b
+					),
+					"C": shuffled_options_store.get(r["question"], {}).get(
+						"option_c", question_map[r["question"]].option_c
+					),
+					"D": shuffled_options_store.get(r["question"], {}).get(
+						"option_d", question_map[r["question"]].option_d
+					),
 				},
 				"selected_answer": r["selected_answer"],
 				"correct_answer": r["correct_answer"],

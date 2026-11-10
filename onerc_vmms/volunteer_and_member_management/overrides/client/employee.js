@@ -3,7 +3,7 @@
 
 frappe.ui.form.on("Employee", {
 	refresh(frm) {
-		if (frm.doc.job_applicant) {
+		if (frm.doc.job_applicant && canPrefillFromApplicant(frm)) {
 			fetchJobApplicantDetails(frm);
 		}
 
@@ -15,10 +15,18 @@ frappe.ui.form.on("Employee", {
 	},
 
 	job_applicant(frm) {
-		if (!frm.doc.job_applicant) return;
+		if (!frm.doc.job_applicant || !canPrefillFromApplicant(frm)) return;
 		fetchJobApplicantDetails(frm);
 	},
 });
+
+// Prefilling copies empty fields from the linked Job Applicant, which is only
+// useful to staff who can edit this record. Volunteers opening their own record
+// have no read access to Job Applicant, and loading it would raise a
+// "Not permitted ... Opportunity Applicant" error on every form refresh.
+function canPrefillFromApplicant(frm) {
+	return frappe.model.can_read("Job Applicant") && !!frm.perm?.[0]?.write;
+}
 
 function addCreateMemberButton(frm) {
 	if (frm.is_new()) return;
