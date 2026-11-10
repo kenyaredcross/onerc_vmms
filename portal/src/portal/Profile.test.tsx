@@ -97,7 +97,7 @@ describe("somebody whose branch sent the application back", () => {
 
 		mount(<Profile />);
 
-		expect(screen.getByText("Your application needs something from you")).toBeTruthy();
+		expect(screen.getByText("Your branch has asked for changes")).toBeTruthy();
 		expect(screen.getByText("Send us your first-aid certificate.")).toBeTruthy();
 		expect(wayIn()).toBeTruthy();
 	});

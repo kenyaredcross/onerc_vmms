@@ -121,6 +121,65 @@ class TestCorrectingAndResubmitting(CorrectionTestCase):
 		self.assertEqual(application.approval_state, "In Review")
 		self.assertEqual(application.prior_experience, "Added the detail the branch asked for")
 
+	def test_a_resubmitted_application_stops_showing_the_request(self):
+		"""Once the applicant has answered the send-back, the portal says it was
+		resubmitted rather than repeating what the branch asked for, until the
+		branch decides again."""
+		from vmmsx.api import registration as registration_api
+
+		user, application = self.register_as_volunteer("answered.the.request")
+
+		self.return_for_correction(application, reason="Your ID copy is unreadable")
+
+		with fixtures.acting_as(user):
+			returned = registration_api.my_open_registrations()["volunteer"]
+			registration_api.save_my_volunteer_draft(
+				geo_node=self.branch(),
+				declarations_accepted=fixtures.required_declarations(),
+				emergency_contacts=fixtures.emergency_contact(),
+			)
+			registration_api.submit_my_registration("volunteer")
+			resubmitted = registration_api.my_open_registrations()["volunteer"]
+
+		self.assertEqual(returned["reason"], "Your ID copy is unreadable")
+		self.assertFalse(returned["resubmitted"])
+
+		self.assertEqual(resubmitted["state"], "In Review")
+		self.assertEqual(resubmitted["reason"], "")
+		self.assertTrue(resubmitted["resubmitted"])
+
+	def test_the_approver_is_told_it_was_resubmitted(self):
+		"""Tagged from the resubmission until somebody decides again."""
+		from vmmsx.api import approvals as approvals_api
+		from vmmsx.api import registration as registration_api
+
+		user, application = self.register_as_volunteer("tells.the.approver")
+
+		with fixtures.acting_as(self.approver):
+			first = approvals_api.get_status(fixtures.APPLICATION_DOCTYPE, application.name)
+
+		self.return_for_correction(application, reason="Your ID copy is unreadable")
+
+		with fixtures.acting_as(user):
+			registration_api.save_my_volunteer_draft(
+				geo_node=self.branch(),
+				declarations_accepted=fixtures.required_declarations(),
+				emergency_contacts=fixtures.emergency_contact(),
+			)
+			registration_api.submit_my_registration("volunteer")
+
+		with fixtures.acting_as(self.approver):
+			again = approvals_api.get_status(fixtures.APPLICATION_DOCTYPE, application.name)
+
+		self.approve(fixtures.APPLICATION_DOCTYPE, application.name)
+
+		with fixtures.acting_as(self.approver):
+			decided = approvals_api.get_status(fixtures.APPLICATION_DOCTYPE, application.name)
+
+		self.assertFalse(first["resubmitted"])
+		self.assertTrue(again["resubmitted"])
+		self.assertFalse(decided["resubmitted"])
+
 	def test_the_history_of_both_rounds_survives(self):
 		"""The correction request is not erased by the resubmission that answers
 		it. Two decisions on one application is the record of what happened."""

@@ -103,6 +103,7 @@ const NO_ANSWERS: SocietyAnswer[] = [];
 
 /** The engine's state, unless the document is holding itself back — then why. */
 const CHANGES_REQUESTED = "Changes requested";
+const RESUBMITTED = "Resubmitted";
 
 function shownState(status: ApprovalStatus): string {
 	if (status.held) return status.held_for?.label ?? "Not ready yet";
@@ -377,8 +378,11 @@ function QueueRow({
 					<Cell>
 						{row.stage ? (
 							<>
-								<span className="block text-[12.5px] font-semibold text-ink">
-									{row.stage.label}
+								<span className="flex flex-wrap items-center gap-2">
+									<span className="text-[12.5px] font-semibold text-ink">{row.stage.label}</span>
+									{/* Sent back once and sent again: this look is a check
+									    of what was asked for. */}
+									{row.resubmitted && <StateBadge state={RESUBMITTED} />}
 								</span>
 								{/* The stage resolved nobody at its own level, so the
 								    engine entered it blocked and escalated upward —
@@ -611,7 +615,10 @@ function Review({
 				subtitle={branchPath(status.geo_path) || undefined}
 				status={shownState(status)}
 				badges={
-					<RegisterLinks registers={registers.data?.message} />
+					<>
+						{status.resubmitted && <StateBadge state={RESUBMITTED} />}
+						<RegisterLinks registers={registers.data?.message} />
+					</>
 				}
 				facts={[
 					{ label: "Email", value: person?.email },
@@ -1561,9 +1568,13 @@ const DECISIONS = {
 	},
 	"More info requested": {
 		verb: "Request more information",
-		button: (noun: string) => `Request more information from this ${noun}`,
+		button: (noun: string) => `Send the request for more information to this ${noun}`,
+		// The settled panel already says what this does, in the pill and the
+		// sentence under it, so the button only has to look like the way out of
+		// the panel. A soft wash with a long sentence on it read as one more note.
+		short: "Send",
 		confirm: "Yes, send it back",
-		tone: "soft" as const,
+		tone: "primary" as const,
 		pill: "border-amber-300 bg-amber-50 text-amber-800",
 		icon: Icon.back,
 		hint: "Returns the application to the applicant with your reason.",
@@ -1749,8 +1760,16 @@ function Decision({
 										variant={picked.tone}
 										disabled={!ready}
 										onClick={() => setConfirming(true)}
+										label={"short" in picked ? picked.button(noun) : undefined}
 									>
-										{picked.button(noun)}
+										{"short" in picked ? (
+											<>
+												<Icon.send size={14} />
+												{picked.short}
+											</>
+										) : (
+											picked.button(noun)
+										)}
 									</Button>
 									<Button variant="quiet" onClick={() => setChosen(null)}>
 										Cancel

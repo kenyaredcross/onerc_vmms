@@ -1323,19 +1323,25 @@ def my_open_registrations() -> dict:
 	"""
 	_assert_signed_in()
 
+	from vmmsx.approvals import states
 	from vmmsx.approvals.services import contract
 
 	answer: dict[str, dict | None] = {}
 
 	for path, doctype in REGISTRATION_PATHS:
 		name = _open_registration(doctype)
+		state = frappe.db.get_value(doctype, name, contract.STATE_FIELD) if name else None
+		# Was the last thing that happened to it a send-back? Resubmitting adds
+		# no decision row, so this stays true from the send-back until the branch
+		# decides again, which is exactly the window both flags below describe.
+		sent_back = bool(name) and _latest_decision(doctype, name) == states.DECISION_MORE_INFO
 
 		answer[path] = (
 			{
 				"doctype": doctype,
 				"name": name,
 				"path": path,
-				"state": frappe.db.get_value(doctype, name, contract.STATE_FIELD),
+				"state": state,
 				# A membership held back until its M-Pesa fee is paid. It is not
 				# with the branch yet, and the screen offers the payment instead.
 				"awaiting_payment": _awaits_gateway_payment(doctype, name),
@@ -1347,7 +1353,17 @@ def my_open_registrations() -> dict:
 				# so anybody who deleted the email had no way back to it. Read
 				# off the document's own audit trail, exactly as the email reads
 				# it, so the two cannot say different things.
-				"reason": _latest_decision_reason(doctype, name),
+				#
+				# Only while it is still back with them. Once they resubmit, the
+				# request has been answered, and showing it under "with your
+				# branch" read as though the branch were still waiting on them.
+				"reason": _latest_decision_reason(doctype, name)
+				if sent_back and state == states.DRAFT
+				else "",
+				# Sent back, corrected and sent again, and the branch has not
+				# decided anything since. The dashboard says "resubmitted" rather
+				# than the plain "under review" an untouched application gets.
+				"resubmitted": sent_back and state != states.DRAFT,
 				# Draft means two opposite things and the portal was reading them
 				# as one. A registration nobody has sent yet is a Draft, and so is
 				# one an approver sent back — and the dashboard told somebody who
@@ -1526,6 +1542,19 @@ def _latest_decision_reason(doctype: str, name: str) -> str:
 	)
 
 	return (rows[0].get("reason") or "") if rows else ""
+
+
+def _latest_decision(doctype: str, name: str) -> str:
+	"""The last decision recorded on this application, or nothing."""
+	rows = frappe.get_all(
+		"VMMS Approval Decision",
+		filters={"parent": name, "parenttype": doctype},
+		fields=["decision"],
+		order_by="idx desc",
+		limit=1,
+	)
+
+	return (rows[0].get("decision") or "") if rows else ""
 
 
 def _has_been_reviewed(doctype: str, name: str) -> bool:

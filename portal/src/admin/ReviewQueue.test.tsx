@@ -145,11 +145,11 @@ describe("deciding on an application", () => {
 		open(status());
 		await choose(/Request more information/);
 
-		expect(submit(/Request more information from this volunteer applicant/).disabled).toBe(true);
+		expect(submit(/Send the request for more information to this volunteer applicant/).disabled).toBe(true);
 		expect(screen.getByText(/Say what is missing/)).toBeTruthy();
 
 		give("Attach a national ID.");
-		expect(submit(/Request more information from this volunteer applicant/).disabled).toBe(false);
+		expect(submit(/Send the request for more information to this volunteer applicant/).disabled).toBe(false);
 	});
 
 	it("treats whitespace as no reason at all", async () => {
@@ -239,5 +239,22 @@ describe("an application held back until its fee is paid", () => {
 
 		expect(screen.getByText(/has not paid the membership fee yet/)).toBeTruthy();
 		expect(screen.queryByRole("button", { name: /Decide/ })).toBeNull();
+	});
+});
+
+describe("an application sent back and sent again", () => {
+	beforeEach(() => reads.clear());
+
+	it("says it was resubmitted beside its state", () => {
+		open(status({ resubmitted: true }));
+
+		expect(screen.getByText("Resubmitted")).toBeTruthy();
+		expect(screen.getAllByText("In Review").length).toBeGreaterThan(0);
+	});
+
+	it("says nothing of the sort on a first review", () => {
+		open(status());
+
+		expect(screen.queryByText("Resubmitted")).toBeNull();
 	});
 });

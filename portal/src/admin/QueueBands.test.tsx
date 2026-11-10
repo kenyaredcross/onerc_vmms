@@ -356,3 +356,22 @@ describe("what a row shows", () => {
 		expect(screen.getByText("Branch review")).toBeTruthy();
 	});
 });
+
+describe("an application sent back and sent again", () => {
+	it("is tagged Resubmitted in the queue, beside its stage", () => {
+		reads.set(API.myCases, {
+			group: "in_review",
+			count: 2,
+			total: 2,
+			cases: [
+				application({ resubmitted: true }),
+				application({ name: "APP-0002", applicant: null }),
+			],
+		});
+
+		show(<VolunteerQueue />, "/admin/queue/volunteers");
+
+		expect(screen.getAllByText("Resubmitted")).toHaveLength(1);
+		expect(screen.getAllByText("Branch review")).toHaveLength(2);
+	});
+});

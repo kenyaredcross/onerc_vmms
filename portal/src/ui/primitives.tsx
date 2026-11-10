@@ -374,6 +374,7 @@ const STATE_TONES: Record<string, string> = {
 	Withdrawn: NEUTRAL,
 	Draft: "bg-warning-soft text-warning",
 	"Changes requested": "bg-warning-soft text-warning",
+	Resubmitted: "bg-warning-soft text-warning",
 	Planned: NEUTRAL,
 	Cancelled: NEUTRAL,
 	Completed: "bg-success-soft text-success",

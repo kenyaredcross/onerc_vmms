@@ -256,6 +256,8 @@ export interface ApprovalStatus {
 	 * is what lets the applicant edit it; show "Changes requested" instead.
 	 */
 	sent_back?: boolean;
+	/** Sent back, corrected and sent again; nobody has decided since. */
+	resubmitted?: boolean;
 	geo_node: string | null;
 	geo_path: string | null;
 	/**
@@ -794,8 +796,11 @@ export interface OpenRegistration {
 	name: string;
 	path: string;
 	state: string;
-	/** What the approver wrote when they sent it back, if they wrote anything. */
+	/** What the approver wrote when they sent it back, if they wrote anything.
+	 * Only set while it is back with the applicant. */
 	reason?: string;
+	/** Sent back, corrected and sent again; the branch has not decided since. */
+	resubmitted?: boolean;
 	/** Has this ever been in front of an approver? */
 	reviewed?: boolean;
 	/** A membership held back until its M-Pesa fee is paid. */

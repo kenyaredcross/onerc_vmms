@@ -137,7 +137,7 @@ describe("a draft nobody has sent yet", () => {
 		mount(<Dashboard />);
 
 		expect(screen.getByText("Your volunteer application is not finished")).toBeTruthy();
-		expect(screen.queryByText("Your application needs something from you")).toBeNull();
+		expect(screen.queryByText("Your branch has asked for changes")).toBeNull();
 	});
 
 	it("offers the way back into the form, on the road it was started on", () => {
@@ -168,7 +168,8 @@ describe("a draft an approver sent back", () => {
 	it("says the branch has asked for something, and shows what", () => {
 		mount(<Dashboard />);
 
-		expect(screen.getByText("Your volunteer application needs something from you")).toBeTruthy();
+		expect(screen.getByText("Your branch has asked for changes")).toBeTruthy();
+		expect(screen.getByText("Update your volunteer application and send it again.")).toBeTruthy();
 		expect(screen.getByText("Send us your first-aid certificate.")).toBeTruthy();
 	});
 
@@ -190,6 +191,25 @@ describe("a registration that is with the branch", () => {
 		mount(<Dashboard />);
 
 		expect(screen.getByText("Your volunteer application is under review")).toBeTruthy();
+		expect(screen.queryByRole("link", { name: /continue application/i })).toBeNull();
+	});
+});
+
+describe("an application sent back and then resubmitted", () => {
+	it("says it was resubmitted, not that the branch is still asking", () => {
+		reads.set(API.myOpenRegistrations, {
+			volunteer: registration({ state: "In Review", reviewed: true, resubmitted: true }),
+		});
+
+		mount(<Dashboard />);
+
+		expect(screen.getByText("Your volunteer application has been resubmitted")).toBeTruthy();
+		expect(
+			screen.getByText(
+				"Your branch has your changes and will review it again. You will be notified of the decision.",
+			),
+		).toBeTruthy();
+		expect(screen.queryByText("Your branch has asked for changes")).toBeNull();
 		expect(screen.queryByRole("link", { name: /continue application/i })).toBeNull();
 	});
 });

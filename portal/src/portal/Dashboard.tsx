@@ -1047,6 +1047,12 @@ function RecordHours({ time, loading }: { time: MyTimeLogs | null; loading: bool
 
 /* --------------------------------------------------------- application */
 
+const RESUBMITTED = {
+	tone: "info" as const,
+	title: "Your application has been resubmitted",
+	body: "Your branch has your changes and will review it again. You will be notified of the decision.",
+};
+
 const STATE_COPY: Record<string, { tone: "info" | "warn"; title: string; body: string }> = {
 	Submitted: {
 		tone: "info",
@@ -1060,8 +1066,8 @@ const STATE_COPY: Record<string, { tone: "info" | "warn"; title: string; body: s
 	},
 	Draft: {
 		tone: "warn",
-		title: "Your application needs something from you",
-		body: "Your branch has requested more information.",
+		title: "Your branch has asked for changes",
+		body: "Update your application and send it again.",
 	},
 };
 
@@ -1179,14 +1185,16 @@ function Application({
 	}
 
 	const unsent = row.state === "Draft" && !row.reviewed;
-	const copy = (unsent ? UNSENT : STATE_COPY[row.state]) ?? {
+	const copy = (unsent ? UNSENT : row.resubmitted ? RESUBMITTED : STATE_COPY[row.state]) ?? {
 		tone: "info" as const,
 		title: `Your application is ${row.state.toLowerCase()}`,
 		body: "",
 	};
 	const warn = copy.tone === "warn";
 	const at = stageIndex(row.state, unsent);
-	const title = copy.title.replace("Your application", `Your ${applicationKind(row)} application`);
+	const kind = applicationKind(row);
+	const title = copy.title.replace("Your application", `Your ${kind} application`);
+	const body = copy.body.replace("your application", `your ${kind} application`);
 
 	return (
 		<Card className="p-6 sm:p-7">
@@ -1207,11 +1215,11 @@ function Application({
 						</h2>
 						<StatusBadge state={row.state} />
 					</div>
-					{copy.body && (
-						<p className="mt-2 text-[12.5px] leading-relaxed text-slate-body">{copy.body}</p>
+					{body && (
+						<p className="mt-2 text-[12.5px] leading-relaxed text-slate-body">{body}</p>
 					)}
 					{row.reason && (
-						<blockquote className="mt-3 rounded-lg border-l-[3px] border-l-warning bg-warning-soft px-4 py-3 text-[12.5px] leading-relaxed text-warning">
+						<blockquote className="mt-3 rounded-lg bg-warning-soft px-4 py-3 text-[12.5px] leading-relaxed text-warning">
 							{row.reason}
 						</blockquote>
 					)}

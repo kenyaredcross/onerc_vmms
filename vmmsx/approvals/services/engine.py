@@ -721,6 +721,14 @@ def status(doc, user: str | None = None, workflow=None) -> dict:
 		# Changes requested band (`api/approvals._drafts`).
 		"sent_back": state == states.DRAFT
 		and any(row.decision == states.DECISION_MORE_INFO for row in decisions),
+		# Sent back, corrected and sent again, and nobody has decided since:
+		# resubmitting records no decision, so the send-back is still the last
+		# row. The approver is told, because a second look is a check of what
+		# was asked for, not a fresh read. Gone at the next decision.
+		"resubmitted": states.is_open(state)
+		and state != states.DRAFT
+		and bool(decisions)
+		and decisions[-1].decision == states.DECISION_MORE_INFO,
 		"geo_node": node,
 		"geo_path": adapter.get_full_path(node) if node else None,
 		"applicant": applicant.of(doc, workflow),

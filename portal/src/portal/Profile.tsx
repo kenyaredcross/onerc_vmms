@@ -265,7 +265,7 @@ function NoRecordYet({ application }: { application: OpenRegistration | null }) 
 			<Empty
 				title={
 					returned
-						? "Your application needs something from you"
+						? "Your branch has asked for changes"
 						: "Your volunteer registration is unfinished"
 				}
 				icon={Icon.people}
@@ -273,7 +273,7 @@ function NoRecordYet({ application }: { application: OpenRegistration | null }) 
 			>
 				{returned
 					? application.reason ||
-						"Your branch has requested more information."
+						"Update your volunteer application and send it again."
 					: "Everything you answered has been saved. Pick it up where you left it, and your profile appears here once your branch has accepted it."}
 			</Empty>
 		);
