@@ -79,7 +79,9 @@ const showMenu = ref(false);
 const menu = ref(null);
 let appsLoaded = false;
 
-const sidebarLinks = computed(() => getSidebarLinks(userResource?.data?.is_volunteer, userResource?.data));
+const sidebarLinks = computed(() =>
+	getSidebarLinks(userResource?.data?.is_volunteer, userResource?.data)
+);
 
 const handleOutsideClick = (e) => {
 	if (menu.value && !menu.value.contains(e.target)) {

@@ -2,7 +2,9 @@
 	<!-- Loading state -->
 	<div v-if="loading" class="max-w-2xl mx-auto py-20 text-center">
 		<div class="flex flex-col items-center gap-4">
-			<div class="size-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+			<div
+				class="size-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"
+			/>
 			<p class="text-gray-500">{{ __("Loading assessment...") }}</p>
 		</div>
 	</div>
@@ -34,12 +36,18 @@
 	<!-- Active assessment form -->
 	<div v-else-if="questions.length" class="max-w-4xl mx-auto px-4 py-10 space-y-8">
 		<!-- Header -->
-		<div class="p-6 rounded-xl shadow-sm border border-gray-200 bg-gradient-to-r from-red-50 to-white">
+		<div
+			class="p-6 rounded-xl shadow-sm border border-gray-200 bg-gradient-to-r from-red-50 to-white"
+		>
 			<h1 class="text-3xl font-bold text-gray-900">
 				{{ __("ICHA Research Assistant Assessment") }}
 			</h1>
 			<p class="mt-2 text-gray-600 text-sm">
-				{{ __("Answer all questions to complete the assessment. You can only submit once.") }}
+				{{
+					__(
+						"Answer all questions to complete the assessment. You can only submit once."
+					)
+				}}
 			</p>
 
 			<!-- Step indicator -->
@@ -47,9 +55,16 @@
 				<span class="text-gray-500">
 					{{ __("Section {0} of {1}", [currentPage + 1, totalPages]) }}
 					&nbsp;·&nbsp;
-					{{ __("Questions {0}–{1} of {2}", [pageStart + 1, pageEnd, questions.length]) }}
+					{{
+						__("Questions {0}–{1} of {2}", [pageStart + 1, pageEnd, questions.length])
+					}}
 				</span>
-				<div class="flex items-center gap-1.5 font-medium" :class="answeredCount === questions.length ? 'text-green-600' : 'text-gray-500'">
+				<div
+					class="flex items-center gap-1.5 font-medium"
+					:class="
+						answeredCount === questions.length ? 'text-green-600' : 'text-gray-500'
+					"
+				>
 					<CheckSquare class="size-4" />
 					<span>{{ answeredCount }}/{{ questions.length }} {{ __("answered") }}</span>
 				</div>
@@ -73,10 +88,14 @@
 					class="h-2 rounded-full transition-all duration-200"
 					:class="[
 						p - 1 === currentPage ? 'w-6 bg-red-500' : 'w-2',
-						pageAnsweredCount(p - 1) === PAGE_SIZE || (p === totalPages && pageAnsweredCount(p - 1) === questions.length - (p - 1) * PAGE_SIZE)
+						pageAnsweredCount(p - 1) === PAGE_SIZE ||
+						(p === totalPages &&
+							pageAnsweredCount(p - 1) === questions.length - (p - 1) * PAGE_SIZE)
 							? 'bg-green-400'
-							: p - 1 < currentPage ? 'bg-gray-400' : 'bg-gray-200',
-						p - 1 === currentPage ? '!bg-red-500' : ''
+							: p - 1 < currentPage
+							? 'bg-gray-400'
+							: 'bg-gray-200',
+						p - 1 === currentPage ? '!bg-red-500' : '',
 					]"
 				/>
 			</div>
@@ -96,7 +115,9 @@
 				"
 			>
 				<div class="flex items-center gap-2 mb-3">
-					<span class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ question.course }}</span>
+					<span class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{
+						question.course
+					}}</span>
 					<span class="text-xs text-gray-300">·</span>
 					<span class="text-xs text-gray-400">Q{{ pageStart + idx + 1 }}</span>
 				</div>
@@ -122,7 +143,8 @@
 							class="mt-0.5 shrink-0 accent-red-600"
 						/>
 						<span class="text-sm text-gray-800 leading-snug">
-							<strong class="mr-1">{{ opt }}.</strong>{{ question[`option_${opt.toLowerCase()}`] }}
+							<strong class="mr-1">{{ opt }}.</strong
+							>{{ question[`option_${opt.toLowerCase()}`] }}
 						</span>
 					</label>
 				</div>
@@ -134,11 +156,19 @@
 			v-if="unansweredHighlight && pageUnanswered > 0"
 			class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
 		>
-			{{ __("Please answer all questions on this page before continuing. {0} question(s) remaining.", [pageUnanswered]) }}
+			{{
+				__(
+					"Please answer all questions on this page before continuing. {0} question(s) remaining.",
+					[pageUnanswered]
+				)
+			}}
 		</div>
 
 		<!-- Error -->
-		<div v-if="submitError" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+		<div
+			v-if="submitError"
+			class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+		>
 			{{ submitError }}
 		</div>
 
@@ -162,7 +192,11 @@
 				class="px-8 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
 			>
 				{{ __("Continue") }}
-				<span class="ml-1 text-red-200 text-sm">({{ pageStart + PAGE_SIZE + 1 }}–{{ Math.min(pageStart + PAGE_SIZE * 2, questions.length) }})</span>
+				<span class="ml-1 text-red-200 text-sm"
+					>({{ pageStart + PAGE_SIZE + 1 }}–{{
+						Math.min(pageStart + PAGE_SIZE * 2, questions.length)
+					}})</span
+				>
 			</button>
 
 			<!-- Submit (last page) -->
@@ -172,10 +206,16 @@
 				:disabled="submitting"
 				@click="handleSubmit"
 				class="px-8 py-3 rounded-xl font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-				:class="submitting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer'"
+				:class="
+					submitting
+						? 'bg-red-400 cursor-not-allowed'
+						: 'bg-red-600 hover:bg-red-700 cursor-pointer'
+				"
 			>
 				<span v-if="submitting" class="flex items-center gap-2">
-					<span class="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+					<span
+						class="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+					/>
 					{{ __("Submitting...") }}
 				</span>
 				<span v-else>{{ __("Submit Assessment") }}</span>
@@ -232,7 +272,9 @@ async function handleContinue() {
 		const first = pageQuestions.value.find((q) => !answers[q.name]);
 		if (first) {
 			await nextTick();
-			document.getElementById(`q-${first.name}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+			document
+				.getElementById(`q-${first.name}`)
+				?.scrollIntoView({ behavior: "smooth", block: "center" });
 		}
 		return;
 	}
@@ -255,7 +297,9 @@ const assessmentResource = createResource({
 		loading.value = false;
 		const msg = err?.exc_type || err?.message || "";
 		if (msg.includes("PermissionError") || msg.includes("AuthenticationError")) {
-			notEligibleReason.value = msg.includes("Research Assistant") ? "wrong_profession" : "permission_error";
+			notEligibleReason.value = msg.includes("Research Assistant")
+				? "wrong_profession"
+				: "permission_error";
 		} else {
 			submitError.value = __("Failed to load the assessment. Please refresh and try again.");
 		}
@@ -284,7 +328,9 @@ async function handleSubmit() {
 			await nextTick();
 		}
 		const first = unanswered[0];
-		document.getElementById(`q-${first.name}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+		document
+			.getElementById(`q-${first.name}`)
+			?.scrollIntoView({ behavior: "smooth", block: "center" });
 		return;
 	}
 

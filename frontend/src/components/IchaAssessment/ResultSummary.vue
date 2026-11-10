@@ -12,8 +12,15 @@
 				<XCircle v-else class="size-7 text-red-600" />
 			</div>
 			<div>
-				<h2 class="text-2xl font-bold" :class="result.passed ? 'text-green-800' : 'text-red-800'">
-					{{ result.passed ? __("Congratulations! You Passed") : __("Assessment Not Passed") }}
+				<h2
+					class="text-2xl font-bold"
+					:class="result.passed ? 'text-green-800' : 'text-red-800'"
+				>
+					{{
+						result.passed
+							? __("Congratulations! You Passed")
+							: __("Assessment Not Passed")
+					}}
 				</h2>
 				<p class="text-sm text-gray-500 mt-0.5">
 					{{ __("Submitted on {0}", [formatDate(result.submitted_on)]) }}
@@ -35,7 +42,9 @@
 				<p class="text-xs text-gray-500 mt-1 font-medium">{{ __("Score") }}</p>
 			</div>
 			<div class="text-center p-4 rounded-lg bg-gray-100">
-				<p class="text-3xl font-black text-gray-800">{{ result.percentage.toFixed(1) }}%</p>
+				<p class="text-3xl font-black text-gray-800">
+					{{ result.percentage.toFixed(1) }}%
+				</p>
 				<p class="text-xs text-gray-500 mt-1 font-medium">{{ __("Percentage") }}</p>
 			</div>
 			<div
@@ -54,10 +63,20 @@
 
 		<p class="mt-4 text-sm text-gray-600">
 			<span v-if="result.passed">
-				{{ __("You scored {0}% and have successfully completed the ICHA Research Assistant Assessment.", [result.percentage.toFixed(1)]) }}
+				{{
+					__(
+						"You scored {0}% and have successfully completed the ICHA Research Assistant Assessment.",
+						[result.percentage.toFixed(1)]
+					)
+				}}
 			</span>
 			<span v-else>
-				{{ __("You scored {0}%. A minimum of 70% is required to pass. Your attempt has been recorded.", [result.percentage.toFixed(1)]) }}
+				{{
+					__(
+						"You scored {0}%. A minimum of 70% is required to pass. Your attempt has been recorded.",
+						[result.percentage.toFixed(1)]
+					)
+				}}
 			</span>
 		</p>
 	</div>

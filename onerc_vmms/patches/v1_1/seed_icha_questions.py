@@ -201,7 +201,6 @@ QUESTIONS = [
 			"and media press releases."
 		),
 	},
-
 	# ── HCD (10 questions) ────────────────────────────────────────────────────
 	{
 		"course": "HCD",
@@ -305,9 +304,7 @@ QUESTIONS = [
 			"cash-for-work registration app in an active conflict zone. What ethical constraint "
 			"must override standard 'fail fast' HCD principles during field testing?"
 		),
-		"option_a": (
-			"Prototyping must never occur until a commercial patent is secured by the agency."
-		),
+		"option_a": ("Prototyping must never occur until a commercial patent is secured by the agency."),
 		"option_b": (
 			"Low-fidelity testing must be sandboxed or ethically pre-screened to ensure system "
 			"failures do not cause real-world loss of aid, security breaches, or harm."
@@ -328,16 +325,12 @@ QUESTIONS = [
 			"humanitarian setting, which prototype method best allows community members to "
 			"evaluate the flow?"
 		),
-		"option_a": (
-			"A 50-page operational manual written in the official administrative language."
-		),
+		"option_a": ("A 50-page operational manual written in the official administrative language."),
 		"option_b": (
 			"A visual, sequence-based Storyboard using localized illustrations depicting "
 			"relatable daily scenarios to invite candid feedback."
 		),
-		"option_c": (
-			"A technical UML architecture diagram showing backend server communication."
-		),
+		"option_c": ("A technical UML architecture diagram showing backend server communication."),
 		"option_d": "A formal legal contract outlining community compliance obligations.",
 	},
 	{
@@ -351,15 +344,9 @@ QUESTIONS = [
 			"It lacks operational viability and long-term sustainability, creating dependency "
 			"rather than localized resilience."
 		),
-		"option_b": (
-			"It fails to satisfy international public relations and marketing objectives."
-		),
-		"option_c": (
-			"It violates the principle of rapid, low-fidelity prototyping during initial research."
-		),
-		"option_d": (
-			"It places too much financial responsibility on international donor agencies."
-		),
+		"option_b": ("It fails to satisfy international public relations and marketing objectives."),
+		"option_c": ("It violates the principle of rapid, low-fidelity prototyping during initial research."),
+		"option_d": ("It places too much financial responsibility on international donor agencies."),
 	},
 	{
 		"course": "HCD",
@@ -373,12 +360,8 @@ QUESTIONS = [
 			"Clear operational milestones, assigned local roles, safety protocols, supply chain "
 			"strategies, and monitoring frameworks."
 		),
-		"option_c": (
-			"A theoretical essay describing the history of design thinking methodology."
-		),
-		"option_d": (
-			"A non-binding pledge from community leaders promising zero equipment maintenance."
-		),
+		"option_c": ("A theoretical essay describing the history of design thinking methodology."),
+		"option_d": ("A non-binding pledge from community leaders promising zero equipment maintenance."),
 	},
 	{
 		"course": "HCD",
@@ -387,9 +370,7 @@ QUESTIONS = [
 			"that households are modifying the stoves with wire to cook traditional large-batch "
 			"meals. How should a human-centered design team respond?"
 		),
-		"option_a": (
-			"Confiscate the modified stoves and issue penalties for violating project guidelines."
-		),
+		"option_a": ("Confiscate the modified stoves and issue penalties for violating project guidelines."),
 		"option_b": (
 			"View the user modifications as critical insight, iterate the stove design to fit "
 			"actual cooking habits, and re-test."
@@ -397,9 +378,7 @@ QUESTIONS = [
 		"option_c": (
 			"Close the project immediately and declare fuel-efficient stoves unviable in the region."
 		),
-		"option_d": (
-			"Ignore the modifications as long as the initial donor metrics are reported on time."
-		),
+		"option_d": ("Ignore the modifications as long as the initial donor metrics are reported on time."),
 	},
 	{
 		"course": "HCD",
@@ -407,9 +386,7 @@ QUESTIONS = [
 			"Which indicator best demonstrates that a humanitarian organization has successfully "
 			"embedded Human-Centered Design into its disaster response operations?"
 		),
-		"option_a": (
-			"The organization holds all strategy meetings behind closed doors in capital cities."
-		),
+		"option_a": ("The organization holds all strategy meetings behind closed doors in capital cities."),
 		"option_b": (
 			"Programs feature continuous, safe feedback loops where community inputs directly "
 			"drive iterative adaptations in service delivery."
@@ -423,7 +400,6 @@ QUESTIONS = [
 			"deploying pre-selected equipment."
 		),
 	},
-
 	# ── TRREE (20 questions) ──────────────────────────────────────────────────
 	{
 		"course": "TREE",
@@ -508,8 +484,7 @@ QUESTIONS = [
 			"adapted by TRREE, is this ethical?"
 		),
 		"option_a": (
-			"Yes, because using a placebo accelerates the research timeline during a public "
-			"health crisis."
+			"Yes, because using a placebo accelerates the research timeline during a public " "health crisis."
 		),
 		"option_b": (
 			"No, because trial participants must receive the established effective intervention "
@@ -531,20 +506,15 @@ QUESTIONS = [
 			"under development will be patented and priced for high-income hospitals. How does "
 			"TRREE evaluate this scenario?"
 		),
-		"option_a": (
-			"As equitable research that provides immediate diagnostic exposure to refugees."
-		),
+		"option_a": ("As equitable research that provides immediate diagnostic exposure to refugees."),
 		"option_b": (
 			"As exploitation, violating justice principles because burdens are placed on a "
 			"vulnerable population without ensuring post-research access or local benefit."
 		),
 		"option_c": (
-			"As an acceptable application of global clinical trial standards in low-resource "
-			"environments."
+			"As an acceptable application of global clinical trial standards in low-resource " "environments."
 		),
-		"option_d": (
-			"As a standard public health research intervention exempt from fair benefit rules."
-		),
+		"option_d": ("As a standard public health research intervention exempt from fair benefit rules."),
 	},
 	{
 		"course": "TREE",
@@ -554,16 +524,14 @@ QUESTIONS = [
 			"implements a fast-track review process. What minimum standard must be maintained?"
 		),
 		"option_a": (
-			"The committee may waive all risk-benefit assessments to approve the project "
-			"within 24 hours."
+			"The committee may waive all risk-benefit assessments to approve the project " "within 24 hours."
 		),
 		"option_b": (
 			"The committee must maintain rigorous multi-disciplinary review of participant "
 			"safety, rights, and protocol validity without compromising ethical standards."
 		),
 		"option_c": (
-			"The committee must delegate the entire review authority to international NGO "
-			"field managers."
+			"The committee must delegate the entire review authority to international NGO " "field managers."
 		),
 		"option_d": (
 			"The committee can eliminate the requirement for local community consultation and "
@@ -602,19 +570,13 @@ QUESTIONS = [
 			"evaluates the project's Community Advisory Board (CAB) plan. Why is local CAB "
 			"engagement critical under TRREE guidelines?"
 		),
-		"option_a": (
-			"It ensures the community funds 50% of the operational research expenses."
-		),
+		"option_a": ("It ensures the community funds 50% of the operational research expenses."),
 		"option_b": (
 			"It provides contextual insights to adapt informed consent, minimize cultural harms, "
 			"and ensure research relevance."
 		),
-		"option_c": (
-			"It replaces the requirement for individual written informed consent forms."
-		),
-		"option_d": (
-			"It allows researchers to bypass local institutional review boards."
-		),
+		"option_c": ("It replaces the requirement for individual written informed consent forms."),
+		"option_d": ("It allows researchers to bypass local institutional review boards."),
 	},
 	{
 		"course": "TREE",
@@ -627,15 +589,9 @@ QUESTIONS = [
 			"The member must disclose the conflict of interest and recuse themselves from "
 			"deliberations and decision-making on that protocol."
 		),
-		"option_b": (
-			"The member may vote on the protocol provided they sign a confidentiality agreement."
-		),
-		"option_c": (
-			"The REC must dissolve immediately and transfer the file to an international tribunal."
-		),
-		"option_d": (
-			"The member should lead the ethical review panel to ensure technical accuracy."
-		),
+		"option_b": ("The member may vote on the protocol provided they sign a confidentiality agreement."),
+		"option_c": ("The REC must dissolve immediately and transfer the file to an international tribunal."),
+		"option_d": ("The member should lead the ethical review panel to ensure technical accuracy."),
 	},
 	{
 		"course": "TREE",
@@ -644,19 +600,13 @@ QUESTIONS = [
 			"deteriorates significantly, increasing participant exposure to military retaliation. "
 			"What is the ethical obligation of the research team and REC?"
 		),
-		"option_a": (
-			"Continue data collection without change until the pre-scheduled project end date."
-		),
+		"option_a": ("Continue data collection without change until the pre-scheduled project end date."),
 		"option_b": (
 			"Suspend or modify the research protocol immediately to mitigate heightened risks "
 			"to human subjects."
 		),
-		"option_c": (
-			"Destroy all collected data to prevent administrative audits by donor agencies."
-		),
-		"option_d": (
-			"Shift the study focus from human observation to non-consensual biological sampling."
-		),
+		"option_c": ("Destroy all collected data to prevent administrative audits by donor agencies."),
+		"option_d": ("Shift the study focus from human observation to non-consensual biological sampling."),
 	},
 	{
 		"course": "TREE",
@@ -665,19 +615,13 @@ QUESTIONS = [
 			"income to starving villagers who agree to participate in a clinical trial. How should "
 			"an ethics reviewer categorize this offer under TRREE consent standards?"
 		),
-		"option_a": (
-			"As a fair operational compensation for participant time and effort."
-		),
+		"option_a": ("As a fair operational compensation for participant time and effort."),
 		"option_b": (
 			"As undue inducement, which compromises voluntary consent by distorting the "
 			"participant's ability to assess research risks."
 		),
-		"option_c": (
-			"As an adaptive humanitarian relief mechanism that bypasses standard consent."
-		),
-		"option_d": (
-			"As a standard practice supported by international clinical trial frameworks."
-		),
+		"option_c": ("As an adaptive humanitarian relief mechanism that bypasses standard consent."),
+		"option_d": ("As a standard practice supported by international clinical trial frameworks."),
 	},
 	{
 		"course": "TREE",
@@ -686,19 +630,13 @@ QUESTIONS = [
 			"research team seeks to obtain consent for a social survey. Which procedure aligns "
 			"with TRREE Module 3 on Informed Consent?"
 		),
-		"option_a": (
-			"Require illiterate participants to sign formal legal English documentation."
-		),
+		"option_a": ("Require illiterate participants to sign formal legal English documentation."),
 		"option_b": (
 			"Administer an oral consent process in the local language, witnessed and documented "
 			"by an independent impartial witness."
 		),
-		"option_c": (
-			"Waive consent entirely because written documentation is physically impossible."
-		),
-		"option_d": (
-			"Obtain blanket consent from camp community leaders on behalf of all individuals."
-		),
+		"option_c": ("Waive consent entirely because written documentation is physically impossible."),
+		"option_d": ("Obtain blanket consent from camp community leaders on behalf of all individuals."),
 	},
 	{
 		"course": "TREE",
@@ -718,9 +656,7 @@ QUESTIONS = [
 			"Unaccompanied minors are strictly prohibited from participating in all forms of "
 			"humanitarian research under all circumstances."
 		),
-		"option_d": (
-			"Require the military camp commander to sign parental release forms for all minors."
-		),
+		"option_d": ("Require the military camp commander to sign parental release forms for all minors."),
 	},
 	{
 		"course": "TREE",
@@ -733,15 +669,9 @@ QUESTIONS = [
 			"The requirement that consent must be freely withdrawn at any time without penalty "
 			"or loss of entitled standard benefits."
 		),
-		"option_b": (
-			"The principle of double-blind operational randomization."
-		),
-		"option_c": (
-			"The obligation to maintain strict epidemiological data disaggregation."
-		),
-		"option_d": (
-			"The requirement for continuous pre-registration of clinical trials."
-		),
+		"option_b": ("The principle of double-blind operational randomization."),
+		"option_c": ("The obligation to maintain strict epidemiological data disaggregation."),
+		"option_d": ("The requirement for continuous pre-registration of clinical trials."),
 	},
 	{
 		"course": "TREE",
@@ -751,19 +681,13 @@ QUESTIONS = [
 			"flood response. Tests show participants understand none of the risks. Under TRREE, "
 			"what is the status of this consent?"
 		),
-		"option_a": (
-			"Valid, because all technical facts were fully disclosed in the local language."
-		),
+		"option_a": ("Valid, because all technical facts were fully disclosed in the local language."),
 		"option_b": (
 			"Invalid, because informed consent requires actual participant comprehension, not "
 			"merely the technical disclosure of information."
 		),
-		"option_c": (
-			"Valid, provided the participant signs or leaves a thumbprint at the end."
-		),
-		"option_d": (
-			"Invalid, because genetics research cannot be conducted in emergency settings."
-		),
+		"option_c": ("Valid, provided the participant signs or leaves a thumbprint at the end."),
+		"option_d": ("Invalid, because genetics research cannot be conducted in emergency settings."),
 	},
 	{
 		"course": "TREE",
@@ -772,19 +696,13 @@ QUESTIONS = [
 			"violence in an active war zone. The data is stored on an unencrypted cloud drive. "
 			"What is the major ethical violation according to TRREE data security standards?"
 		),
-		"option_a": (
-			"Failure to publish the dataset open-access within 48 hours of collection."
-		),
+		"option_a": ("Failure to publish the dataset open-access within 48 hours of collection."),
 		"option_b": (
 			"Severe breach of confidentiality that exposes vulnerable survivors to lethal "
 			"retaliation, re-traumatization, and social stigma."
 		),
-		"option_c": (
-			"Violation of local copyright laws regarding geographical mapping data."
-		),
-		"option_d": (
-			"Failure to charge commercial usage fees for international donor access."
-		),
+		"option_c": ("Violation of local copyright laws regarding geographical mapping data."),
+		"option_d": ("Failure to charge commercial usage fees for international donor access."),
 	},
 	{
 		"course": "TREE",
@@ -792,19 +710,13 @@ QUESTIONS = [
 			"When assessing research involving displaced populations, how does TRREE define "
 			"'vulnerability' in an ethical context?"
 		),
-		"option_a": (
-			"As an inherent biological flaw present in specific ethnic minority groups."
-		),
+		"option_a": ("As an inherent biological flaw present in specific ethnic minority groups."),
 		"option_b": (
 			"As a context-dependent state where individuals have a reduced capacity to protect "
 			"their own interests due to structural, social, or situational factors."
 		),
-		"option_c": (
-			"As an administrative status applied only to individuals under 18 years of age."
-		),
-		"option_d": (
-			"As a complete inability to make autonomous decisions under any circumstances."
-		),
+		"option_c": ("As an administrative status applied only to individuals under 18 years of age."),
+		"option_d": ("As a complete inability to make autonomous decisions under any circumstances."),
 	},
 	{
 		"course": "TREE",
@@ -817,9 +729,7 @@ QUESTIONS = [
 			"The ethical requirement for transparent data governance, local capacity building, "
 			"and equitable benefit-sharing regarding biological resources."
 		),
-		"option_b": (
-			"The prohibition of international transport of biological samples during wartime."
-		),
+		"option_b": ("The prohibition of international transport of biological samples during wartime."),
 		"option_c": (
 			"The mandate that all biological samples must be destroyed immediately after collection."
 		),
@@ -847,9 +757,7 @@ QUESTIONS = [
 			"Clinical research ethics permits non-consensual invasive testing, whereas public "
 			"health surveillance forbids it."
 		),
-		"option_d": (
-			"There is no difference; both operate under identical clinical trial regulations."
-		),
+		"option_d": ("There is no difference; both operate under identical clinical trial regulations."),
 	},
 	{
 		"course": "TREE",
@@ -865,14 +773,9 @@ QUESTIONS = [
 			"As an ethical failure to provide feedback to researched communities, violating "
 			"principles of respect, transparency, and accountability."
 		),
-		"option_c": (
-			"As an exemplary demonstration of data privacy and participant protection."
-		),
-		"option_d": (
-			"As a legal breach of international intellectual property conventions."
-		),
+		"option_c": ("As an exemplary demonstration of data privacy and participant protection."),
+		"option_d": ("As a legal breach of international intellectual property conventions."),
 	},
-
 	# ── Wellness & Resilience (12 questions) ──────────────────────────────────
 	{
 		"course": "Wellness & Resilience",
@@ -976,8 +879,7 @@ QUESTIONS = [
 			"severe distress."
 		),
 		"option_c": (
-			"Gather all affected individuals into a structured circle to deliver group "
-			"psychoeducation."
+			"Gather all affected individuals into a structured circle to deliver group " "psychoeducation."
 		),
 		"option_d": (
 			"Distribute emergency contact numbers and link survivors to secondary health facilities."
@@ -1003,8 +905,7 @@ QUESTIONS = [
 			"inquire about immediate needs."
 		),
 		"option_d": (
-			"Escort the survivor immediately to a clinical psychologist for specialized trauma "
-			"counseling."
+			"Escort the survivor immediately to a clinical psychologist for specialized trauma " "counseling."
 		),
 	},
 	{
@@ -1048,8 +949,7 @@ QUESTIONS = [
 			"maladaptive coping that creates secondary risks."
 		),
 		"option_c": (
-			"Worker A is engaging in presenteeism, whereas Worker B is demonstrating personal "
-			"reframing."
+			"Worker A is engaging in presenteeism, whereas Worker B is demonstrating personal " "reframing."
 		),
 		"option_d": (
 			"Worker A requires organizational intervention, while Worker B is demonstrating "
@@ -1069,15 +969,9 @@ QUESTIONS = [
 			"Cognitive reframing to convert a feeling of helplessness into a manageable "
 			"operational challenge."
 		),
-		"option_b": (
-			"Maladaptive denial of operational realities to preserve team morale."
-		),
-		"option_c": (
-			"Vicarious processing to deflect responsibility onto border control authorities."
-		),
-		"option_d": (
-			"Psychological detachment to avoid addressing project management deficiencies."
-		),
+		"option_b": ("Maladaptive denial of operational realities to preserve team morale."),
+		"option_c": ("Vicarious processing to deflect responsibility onto border control authorities."),
+		"option_d": ("Psychological detachment to avoid addressing project management deficiencies."),
 	},
 	{
 		"course": "Wellness & Resilience",
@@ -1088,9 +982,7 @@ QUESTIONS = [
 			"alerts, and acting snappy with staff. What phenomenon is occurring, and how should "
 			"the manager respond?"
 		),
-		"option_a": (
-			"Eustress; the manager should award the coordinator an exemplary performance review."
-		),
+		"option_a": ("Eustress; the manager should award the coordinator an exemplary performance review."),
 		"option_b": (
 			"Presenteeism; the manager must enforce mandatory rest periods and redistribute the "
 			"workload to safeguard the staff member and operations."
@@ -1112,8 +1004,7 @@ QUESTIONS = [
 			"effective organizational duty-of-care response to prevent burnout?"
 		),
 		"option_a": (
-			"Replacing structured debriefings with mandatory individual self-care assignments "
-			"after hours."
+			"Replacing structured debriefings with mandatory individual self-care assignments " "after hours."
 		),
 		"option_b": (
 			"Establishing mandatory Rest & Recuperation (R&R) cycles, enforceable shift limits, "
@@ -1147,8 +1038,7 @@ QUESTIONS = [
 			"administrative accountability."
 		),
 		"option_d": (
-			"To require staff to pledge availability for immediate redeployment to new emergency "
-			"zones."
+			"To require staff to pledge availability for immediate redeployment to new emergency " "zones."
 		),
 	},
 ]
@@ -1157,8 +1047,29 @@ QUESTIONS = [
 # Correct answers per course, in question order (from official answer keys)
 CORRECT_ANSWERS = {
 	"DiDRR": ["B", "B", "B", "B", "B", "B", "B", "B"],
-	"HCD":   ["B", "B", "B", "B", "B", "B", "A", "B", "B", "B"],
-	"TREE":  ["B", "B", "A", "B", "B", "B", "A", "B", "A", "B", "B", "B", "B", "A", "B", "B", "B", "A", "A", "B"],
+	"HCD": ["B", "B", "B", "B", "B", "B", "A", "B", "B", "B"],
+	"TREE": [
+		"B",
+		"B",
+		"A",
+		"B",
+		"B",
+		"B",
+		"A",
+		"B",
+		"A",
+		"B",
+		"B",
+		"B",
+		"B",
+		"A",
+		"B",
+		"B",
+		"B",
+		"A",
+		"A",
+		"B",
+	],
 	"Wellness & Resilience": ["B", "C", "B", "B", "B", "C", "B", "B", "A", "B", "B", "B"],
 }
 
