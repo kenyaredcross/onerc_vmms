@@ -45,14 +45,20 @@ def society(frappe, settings: dict, apply: bool) -> dict:
 			"levels": frappe.get_all("Geo Level", pluck="geo_level_name", order_by="geo_level_order"),
 		}
 
+	# What somebody already typed into National Society Settings by hand is kept;
+	# the setup form only fills what is still empty.
+	def kept(field, form_key, fallback=""):
+		return (nss.get(field) or settings.get(form_key) or fallback or "").strip()
+
 	values = {
-		"language": (settings.get("society_language") or "English").strip(),
-		"country": (settings.get("society_country") or "Kenya").strip(),
-		"vmms_organization_name": (settings.get("society_name") or "").strip(),
-		"vmms_organization_short_name": (settings.get("society_short_name") or "").strip(),
+		"language": kept("primary_language", "society_language", "English"),
+		"country": kept("country", "society_country", "Kenya"),
+		"vmms_organization_name": kept("organization_name", "society_name"),
+		"vmms_organization_short_name": kept("organization_short_name", "society_short_name"),
 		"vmms_geo_levels_json": json.dumps([{"label": label} for label in LEVELS]),
 		"vmms_application_anchor_order": LEVELS.index(APPLICATION_LEVEL) + 1,
 	}
+	logo = kept("logo", "society_logo")
 	if not values["vmms_organization_name"] or not values["vmms_organization_short_name"]:
 		raise ValueError("Fill in the society's name and short name on the setup form first.")
 	if not frappe.db.exists("Country", values["country"]):
@@ -66,14 +72,14 @@ def society(frappe, settings: dict, apply: bool) -> dict:
 		"language": values["language"],
 		"levels": LEVELS,
 		"applications_taken_at": APPLICATION_LEVEL,
-		"logo": settings.get("society_logo") or f"{LOGO.name} (shipped with the app)",
+		"logo": logo or f"{LOGO.name} (shipped with the app)",
 	}
 	if not apply:
 		# Not done and rolled back like the other steps: the logo would be
 		# written to the site's files, and a rollback does not take a file back.
 		return preview
 
-	values["vmms_logo"] = settings.get("society_logo") or _upload_logo(frappe)
+	values["vmms_logo"] = logo or _upload_logo(frappe)
 	wizard.setup_national_society(values)
 	nss = frappe.get_single(SETTINGS)
 	return {

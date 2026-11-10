@@ -208,9 +208,23 @@ class TestTheSocietyStep(IntegrationTestCase):
 			"County",
 		)
 
+	def test_what_was_typed_into_the_settings_by_hand_is_kept(self):
+		self.forget_the_society()
+		frappe.db.set_single_value("National Society Settings", "organization_name", "Kenya Red Cross")
+		frappe.db.set_single_value("National Society Settings", "logo", "/files/our-logo.png")
+
+		with patch.object(kenya, "_upload_logo") as upload:
+			kenya.society(frappe, steps.settings(), True)
+
+		upload.assert_not_called()
+		nss = frappe.get_single("National Society Settings")
+		self.assertEqual(nss.organization_name, "Kenya Red Cross")
+		self.assertEqual(nss.logo, "/files/our-logo.png")
+
 	def test_the_name_is_required(self):
 		self.forget_the_society()
 		steps.save_settings({"society_name": " "})
+		frappe.db.set_single_value("National Society Settings", "organization_name", "")
 
 		with self.assertRaises(ValueError):
 			kenya.society(frappe, steps.settings(), True)
