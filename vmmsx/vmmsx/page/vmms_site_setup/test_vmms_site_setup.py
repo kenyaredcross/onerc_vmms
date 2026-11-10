@@ -32,6 +32,17 @@ class TestTheStepList(IntegrationTestCase):
 		self.assertEqual((counts["national"], counts["region"], counts["county"]), (1, 8, 47))
 		self.assertTrue(counts.get("sub_county"))
 
+	def test_the_regions_hang_under_the_society_s_own_root_whatever_its_name(self):
+		with patch.object(
+			frappe,
+			"get_all",
+			return_value=[frappe._dict(geo_node_name="Kenya Red Cross", geo_code=None)],
+		):
+			data = geography.under_the_existing_root(frappe, geography.load())
+
+		national = [row for row in data["nodes"] if row["level"] == "national"]
+		self.assertEqual(national[0]["label"], "Kenya Red Cross")
+
 	def test_the_county_map_ships_with_the_app(self):
 		self.assertTrue(kenya.COUNTY_MAP.is_file())
 
@@ -150,3 +161,56 @@ class TestWhoMayUseIt(IntegrationTestCase):
 
 		self.assertEqual([row["key"] for row in state["steps"]], [step.key for step in steps.STEPS])
 		self.assertIn("settings", state)
+
+
+class TestTheSocietyStep(IntegrationTestCase):
+	"""For a site whose setup wizard ran before vmmsx was installed."""
+
+	def forget_the_society(self):
+		frappe.db.set_single_value("National Society Settings", "organization_name", "")
+
+	def test_a_society_already_set_up_is_left_alone(self):
+		from vmmsx.setup import wizard
+
+		if not wizard._already_configured():
+			self.skipTest("this site's society is not set up")
+		with patch.object(wizard, "setup_national_society") as setup:
+			result = kenya.society(frappe, steps.settings(), True)
+
+		self.assertTrue(result["already_set_up"])
+		setup.assert_not_called()
+
+	def test_a_check_says_what_it_would_set_and_writes_nothing(self):
+		self.forget_the_society()
+		with patch.object(kenya, "_upload_logo") as upload:
+			result = kenya.society(frappe, steps.settings(), False)
+
+		upload.assert_not_called()
+		self.assertFalse(result["already_set_up"])
+		self.assertEqual(result["levels"], kenya.LEVELS)
+		self.assertEqual(result["applications_taken_at"], "County")
+		self.assertEqual(frappe.db.get_single_value("National Society Settings", "organization_name"), "")
+
+	def test_a_run_sets_the_society_up_through_the_wizard_s_own_code(self):
+		from vmmsx.setup import wizard
+
+		self.forget_the_society()
+		with patch.object(kenya, "_upload_logo", return_value="/files/krcs-logo.png"):
+			result = kenya.society(frappe, steps.settings(), True)
+
+		self.assertTrue(result["set_up"])
+		self.assertTrue(wizard._already_configured())
+		nss = frappe.get_single("National Society Settings")
+		self.assertEqual(nss.organization_name, "Kenya Red Cross Society")
+		self.assertEqual(nss.logo, "/files/krcs-logo.png")
+		self.assertEqual(
+			frappe.db.get_value("Geo Level", nss.get(wizard.VOLUNTEER_ANCHOR_FIELD), "geo_level_name"),
+			"County",
+		)
+
+	def test_the_name_is_required(self):
+		self.forget_the_society()
+		steps.save_settings({"society_name": " "})
+
+		with self.assertRaises(ValueError):
+			kenya.society(frappe, steps.settings(), True)

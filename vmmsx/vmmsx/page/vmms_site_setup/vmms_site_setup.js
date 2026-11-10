@@ -57,6 +57,23 @@ class VmmsSiteSetup {
 						"Saved on this site. Fill in what a step needs before you run it."
 					)}</p>`,
 				},
+				{ fieldtype: "Section Break", label: __("Society") },
+				{ fieldname: "society_name", fieldtype: "Data", label: __("Society name") },
+				{ fieldname: "society_short_name", fieldtype: "Data", label: __("Short name") },
+				{
+					fieldname: "society_country",
+					fieldtype: "Link",
+					options: "Country",
+					label: __("Country"),
+				},
+				{ fieldtype: "Column Break" },
+				{ fieldname: "society_language", fieldtype: "Data", label: __("Language") },
+				{
+					fieldname: "society_logo",
+					fieldtype: "Attach Image",
+					label: __("Logo"),
+					description: __("Empty uses the Kenya Red Cross logo shipped with the app."),
+				},
 				{ fieldtype: "Section Break", label: __("Roles") },
 				{
 					fieldname: "nsd_emails",

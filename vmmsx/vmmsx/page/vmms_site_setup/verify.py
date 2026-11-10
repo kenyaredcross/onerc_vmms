@@ -69,7 +69,10 @@ def run(frappe, settings: dict, apply: bool) -> dict:
 	if not frappe.is_setup_complete():
 		block("Setup wizard", "Not completed.")
 	elif not wizard._already_configured():
-		block("Setup wizard", "The society's identity, logo or application level is missing.")
+		block(
+			"Society",
+			"The society's name, logo, levels or application level are missing: run the Society step.",
+		)
 	else:
 		ok("Setup wizard complete; society identity set")
 	settings_doc = frappe.get_single("National Society Settings")

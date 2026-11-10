@@ -19,6 +19,90 @@ COUNTY_MAP = HERE / "data" / "kenya-counties.geojson"
 SETTINGS = "National Society Settings"
 
 
+# --- the society (site-setup/02_first_run.py) --------------------------------
+
+# The wizard's vmmsx questions, answered for Kenya. Needed when the setup wizard
+# was completed before vmmsx was installed: its questions never appeared, so the
+# society has no name, logo, levels or application level. Frappe Cloud cannot
+# rerun the wizard without redoing ERPNext's company.
+LEVELS = ["National", "Region", "County", "Sub-county", "Ward"]
+APPLICATION_LEVEL = "County"
+LOGO = HERE / "data" / "krcs-logo.png"
+
+
+def society(frappe, settings: dict, apply: bool) -> dict:
+	"""The society's name, logo, five geographic levels and the level applications are taken at."""
+	from vmmsx.setup import wizard
+
+	nss = frappe.get_single(SETTINGS)
+	if wizard._already_configured():
+		return {
+			"already_set_up": True,
+			"name": nss.organization_name,
+			"short_name": nss.organization_short_name,
+			"country": nss.country,
+			"logo": nss.logo,
+			"levels": frappe.get_all("Geo Level", pluck="geo_level_name", order_by="geo_level_order"),
+		}
+
+	values = {
+		"language": (settings.get("society_language") or "English").strip(),
+		"country": (settings.get("society_country") or "Kenya").strip(),
+		"vmms_organization_name": (settings.get("society_name") or "").strip(),
+		"vmms_organization_short_name": (settings.get("society_short_name") or "").strip(),
+		"vmms_geo_levels_json": json.dumps([{"label": label} for label in LEVELS]),
+		"vmms_application_anchor_order": LEVELS.index(APPLICATION_LEVEL) + 1,
+	}
+	if not values["vmms_organization_name"] or not values["vmms_organization_short_name"]:
+		raise ValueError("Fill in the society's name and short name on the setup form first.")
+	if not frappe.db.exists("Country", values["country"]):
+		raise ValueError(f"There is no country called {values['country']!r}.")
+
+	preview = {
+		"already_set_up": False,
+		"name": values["vmms_organization_name"],
+		"short_name": values["vmms_organization_short_name"],
+		"country": values["country"],
+		"language": values["language"],
+		"levels": LEVELS,
+		"applications_taken_at": APPLICATION_LEVEL,
+		"logo": settings.get("society_logo") or f"{LOGO.name} (shipped with the app)",
+	}
+	if not apply:
+		# Not done and rolled back like the other steps: the logo would be
+		# written to the site's files, and a rollback does not take a file back.
+		return preview
+
+	values["vmms_logo"] = settings.get("society_logo") or _upload_logo(frappe)
+	wizard.setup_national_society(values)
+	nss = frappe.get_single(SETTINGS)
+	return {
+		**preview,
+		"logo": nss.logo,
+		"national_node": frappe.db.get_value(
+			"Geo Node", {"parent_geo_node": ("is", "not set")}, "geo_node_name"
+		),
+		"set_up": wizard._already_configured(),
+	}
+
+
+def _upload_logo(frappe) -> str:
+	"""The bundled logo as a public File, reused if the same file is already there."""
+	from frappe.utils.file_manager import get_content_hash
+
+	content = LOGO.read_bytes()
+	existing = frappe.db.get_value(
+		"File", {"content_hash": get_content_hash(content), "is_private": 0}, "file_url"
+	)
+	if existing:
+		return existing
+	return (
+		frappe.get_doc({"doctype": "File", "file_name": LOGO.name, "content": content, "is_private": 0})
+		.insert(ignore_permissions=True)
+		.file_url
+	)
+
+
 # --- picker lists (configure_vocabularies.py) ---------------------------------
 
 

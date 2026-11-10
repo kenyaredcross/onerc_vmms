@@ -204,8 +204,31 @@ def load() -> dict:
 	return json.loads(DATA.read_text())
 
 
+def under_the_existing_root(frappe, data: dict) -> dict:
+	"""Hang the regions under the society's own national node, whatever it is called.
+
+	The Society step (or the setup wizard) makes one parentless node named after
+	the society. The dataset's root is "Kenya Red Cross Society"; matched by name,
+	a society named anything else would get a second national tree.
+	"""
+	roots = frappe.get_all(
+		"Geo Node",
+		filters={"parent_geo_node": ("is", "not set")},
+		fields=["geo_node_name", "geo_code"],
+	)
+	if len(roots) != 1 or roots[0].geo_code:
+		return data
+	return {
+		**data,
+		"nodes": [
+			{**row, "label": roots[0].geo_node_name} if row["level"] == "national" else row
+			for row in data["nodes"]
+		],
+	}
+
+
 def run(frappe, settings: dict, apply: bool) -> dict:
-	result = seed(frappe, load(), apply=apply)
+	result = seed(frappe, under_the_existing_root(frappe, load()), apply=apply)
 	# The docname of every node, kept by the script for the old-data migration.
 	# Too long to show on a page, and not used here.
 	result.pop("node_map", None)

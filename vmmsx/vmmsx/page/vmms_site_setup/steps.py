@@ -46,6 +46,13 @@ class Step:
 
 STEPS = (
 	Step(
+		"society",
+		"Society",
+		"The society's name, short name, country, language and logo, the five geographic levels from National to Ward, and applications taken at County. Only needed when the setup wizard ran before vmmsx was installed; otherwise it reports the society is already set up.",
+		kenya.society,
+		uses=("society_name", "society_short_name", "society_country", "society_language", "society_logo"),
+	),
+	Step(
 		"geography",
 		"Geography",
 		"Eight regions, 47 counties and the KRCS sub-counties, under the national node the setup wizard made.",
@@ -130,6 +137,11 @@ BY_KEY = {step.key: step for step in STEPS}
 
 def defaults() -> dict:
 	return {
+		"society_name": "Kenya Red Cross Society",
+		"society_short_name": "KRCS",
+		"society_country": "Kenya",
+		"society_language": "English",
+		"society_logo": "",
 		"nsd_emails": "",
 		"boundary_credit": "Boundaries: IEBC, via OCHA (CC BY-IGO)",
 		"mpesa_environment": "Sandbox",
