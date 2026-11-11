@@ -44,11 +44,12 @@ export function ServiceCertificatePanel() {
 	const pending = rows.some((r) => r.status === "Pending");
 	return <>
 		<Card>
-			<div className="flex flex-wrap items-start justify-between gap-3">
-				<div><SectionTitle>Certificate of Service</SectionTitle><p className="mt-1 text-[13px] text-muted">Request an official record of your service.</p></div>
-				{latest?.can_download && <a className="text-[13px] font-semibold text-blue hover:underline" href={downloadUrl(latest.name)}>Download certificate</a>}
-				{choices.length > 0 && !pending && <button type="button" onClick={() => setOpen(true)} className="text-[13px] font-semibold text-blue hover:underline">Request certificate</button>}
-			</div>
+			<SectionTitle>Certificate of Service</SectionTitle>
+			<p className="text-[13px] text-muted">Request an official record of your service.</p>
+			{(latest?.can_download || (choices.length > 0 && !pending)) && <div className="mt-4 flex flex-wrap items-center gap-2.5">
+				{choices.length > 0 && !pending && <Button variant="soft" onClick={() => setOpen(true)}>Request certificate</Button>}
+				{latest?.can_download && <a className="inline-flex items-center rounded-lg border border-rail-line bg-white px-4 py-2 text-[13px] font-semibold text-slate-strong transition hover:border-slate-faint hover:text-ink" href={downloadUrl(latest.name)}>Download certificate</a>}
+			</div>}
 			{options.error && <ErrorNote>{errorMessage(options.error)}</ErrorNote>}
 			{list.error && <ErrorNote>{errorMessage(list.error)}</ErrorNote>}
 			{latest && <div className="mt-3 flex flex-wrap items-center gap-3 text-[12px]">
