@@ -119,8 +119,8 @@ def derive_status(member) -> str:
 
 	# Ever activated? A membership that reached a validity window is a
 	# membership that once existed, so its holder has lapsed rather than never
-	# having joined.
-	ever = frappe.db.exists(MEMBERSHIP_DOCTYPE, {"member": member.name, "valid_from": ("is", "set")})
+	# having joined. See `_activated_filters` for what "reached" means.
+	ever = frappe.db.exists(MEMBERSHIP_DOCTYPE, _activated_filters(member.name))
 
 	return STATUS_LAPSED if ever else STATUS_PROSPECTIVE
 
@@ -253,11 +253,36 @@ def report(member) -> str | None:
 		)
 
 
+def _activated_filters(member_name: str) -> list:
+	"""This member's memberships that actually became memberships.
+
+	**A start date alone does not say so.** In this app `valid_from` is written
+	by `activate()` and nothing else, so for a membership made here a start date
+	*is* the proof of activation. A membership carried over from the old VMMS is
+	different: the old system filled in a start date the moment the record was
+	created, so drafts and unpaid applications arrive with one. Reading those as
+	"once a member" would label everybody who never finished joining as Lapsed,
+	tell core their affiliation Ended, and give them a joining date they never had.
+
+	So the start date counts only on a membership that has left the states a
+	membership is in *before* it becomes active (`membership.ACTIVATABLE`). That
+	is true of every activated one, imported or not: nothing moves a membership
+	back into Draft or Awaiting.
+	"""
+	from vmmsx.member.services import membership as membership_service
+
+	return [
+		["member", "=", member_name],
+		["valid_from", "is", "set"],
+		["membership_status", "not in", list(membership_service.ACTIVATABLE)],
+	]
+
+
 def _first_activation(member_name: str):
-	"""The earliest validity start across this member's memberships."""
+	"""The earliest validity start across this member's activated memberships."""
 	starts = frappe.get_all(
 		MEMBERSHIP_DOCTYPE,
-		filters={"member": member_name, "valid_from": ("is", "set")},
+		filters=_activated_filters(member_name),
 		pluck="valid_from",
 		order_by="valid_from asc",
 		limit=1,
