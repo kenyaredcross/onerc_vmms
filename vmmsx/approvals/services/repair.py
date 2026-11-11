@@ -49,6 +49,19 @@ from vmmsx.approvals.services import config, contract, engine
 # for here instead of quietly falling out of every queue.
 PENDING = (states.SUBMITTED, states.IN_REVIEW)
 
+# Records carried over from the old VMMS, and the field that says so. The
+# importer writes the field; nothing in this app does (it is read-only).
+#
+# **An imported record keeps the state it had in the old system.** A pending
+# membership arrives Submitted with no stage, which is exactly the shape of one
+# `engine.park` held back, so without this the sweep would "route" it: put it
+# into review, give it a stage and drop it in an approver's queue. The import
+# would then have changed the record, and not even during the import. The
+# sweep runs daily, after every migrate and on every Geo Assignment saved. The
+# society decided these in the old system, or never did, and this app must not
+# re-open them on its own.
+IMPORTED_MARKERS = {"VMMS Membership": "legacy_membership_id"}
+
 
 def on_authority_changed(doc=None, method: str | None = None) -> None:
 	"""Somebody's authority moved, so the queues built from it are now stale.
@@ -168,9 +181,23 @@ def _repair_one(doctype: str, name: str) -> bool:
 	routed".
 	"""
 	if _is_parked(doctype, name):
+		# Parked-looking, but carried over from the old system: left as it came.
+		if _is_imported(doctype, name):
+			return False
+
 		return _route(doctype, name)
 
 	return _resync_one(doctype, name)
+
+
+def _is_imported(doctype: str, name: str) -> bool:
+	"""Did this record come across from the old VMMS? See `IMPORTED_MARKERS`."""
+	field = IMPORTED_MARKERS.get(doctype)
+
+	if not field or not frappe.get_meta(doctype).has_field(field):
+		return False
+
+	return bool(frappe.db.get_value(doctype, name, field))
 
 
 def _is_parked(doctype: str, name: str) -> bool:
