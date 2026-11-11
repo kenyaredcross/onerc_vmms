@@ -51,6 +51,8 @@ export function PersonHero({
 	badges,
 	facts,
 	actions,
+	completion,
+	onCompletion,
 	className,
 }: {
 	/** What to call them. Falls back to the docname rather than rendering blank. */
@@ -70,6 +72,14 @@ export function PersonHero({
 	facts?: PersonFact[];
 	/** Buttons that act on this person, kept out of the facts panel. */
 	actions?: ReactNode;
+	/**
+	 * How complete the person's own profile is, 0–100. Drawn as a ring round the
+	 * photograph and a pill beside the status. Only the person's own profile page
+	 * passes it: a coordinator's header is about the record, not a nudge.
+	 */
+	completion?: number | null;
+	/** Pressing the pill: the page takes them to what is missing. */
+	onCompletion?: () => void;
 	className?: string;
 }) {
 	// A header shows what is known. An empty pair here would be four characters
@@ -92,7 +102,13 @@ export function PersonHero({
 				)}
 			>
 				<div className="flex min-w-0 items-center gap-5">
-					<Avatar name={name} photo={photo} size={84} ring />
+					{completion === undefined || completion === null ? (
+						<Avatar name={name} photo={photo} size={84} ring />
+					) : (
+						<CompletionRing percent={completion}>
+							<Avatar name={name} photo={photo} size={84} ring />
+						</CompletionRing>
+					)}
 
 					<div className="min-w-0">
 						<h2 className="text-[22px] font-bold leading-tight tracking-tight text-white">
@@ -103,8 +119,11 @@ export function PersonHero({
 							<p className="mt-1 text-[13px] leading-snug text-white/65">{subtitle}</p>
 						)}
 
-						{(status || badges) && (
+						{(status || badges || (completion !== undefined && completion !== null)) && (
 							<div className="mt-2.5 flex flex-wrap items-center gap-2">
+								{completion !== undefined && completion !== null && (
+									<CompletionPill percent={completion} onClick={onCompletion} />
+								)}
 								{status && <StateBadge state={status} />}
 								{badges}
 							</div>
@@ -141,6 +160,65 @@ export function PersonHero({
 				<div className="flex flex-wrap gap-2 border-t border-white/15 bg-white/[.04] px-5 py-4 sm:px-6">{actions}</div>
 			)}
 		</Card>
+	);
+}
+
+/**
+ * A ring round the photograph that fills as the profile does.
+ *
+ * Green from the start rather than red-to-green: an unfinished profile is not a
+ * fault, and a red ring round somebody's face reads as one. The pill beside the
+ * status carries the number, so the ring only has to carry the shape.
+ */
+function CompletionRing({ percent, children }: { percent: number; children: ReactNode }) {
+	const size = 100;
+	const stroke = 4;
+	const radius = (size - stroke) / 2;
+	const circumference = 2 * Math.PI * radius;
+	const filled = Math.max(0, Math.min(100, percent)) / 100;
+
+	return (
+		<span className="relative grid flex-none place-items-center" style={{ width: size, height: size }}>
+			<svg
+				width={size}
+				height={size}
+				viewBox={`0 0 ${size} ${size}`}
+				className="absolute inset-0 -rotate-90"
+				aria-hidden="true"
+			>
+				<circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgb(255 255 255 / 0.15)" strokeWidth={stroke} />
+				<circle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					fill="none"
+					stroke="#22C55E"
+					strokeWidth={stroke}
+					strokeLinecap="round"
+					strokeDasharray={`${circumference * filled} ${circumference}`}
+					className="transition-[stroke-dasharray] duration-500 motion-reduce:transition-none"
+				/>
+			</svg>
+			{children}
+		</span>
+	);
+}
+
+function CompletionPill({ percent, onClick }: { percent: number; onClick?: () => void }) {
+	const complete = percent >= 100;
+	const className = cx(
+		"inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold",
+		complete ? "bg-success-soft text-success" : "bg-warning-soft text-warning",
+		onClick && !complete && "transition hover:brightness-95",
+	);
+	const label = complete ? "Profile complete" : `${percent}% complete`;
+
+	return onClick && !complete ? (
+		<button type="button" className={className} onClick={onClick}>
+			{label}
+		</button>
+	) : (
+		<span className={className}>{label}</span>
 	);
 }
 

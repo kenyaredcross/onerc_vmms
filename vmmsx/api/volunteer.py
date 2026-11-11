@@ -20,11 +20,13 @@ scope role, which is right for the register and wrong for the person in it.
 """
 
 import frappe
+from frappe import _
 from frappe.utils import cint
 
 from vmmsx.registration.services import declarations, questions
 from vmmsx.registration.services import society as registration_society
 from vmmsx.volunteer.services import application as application_service
+from vmmsx.volunteer.services import capabilities
 from vmmsx.volunteer.services import certification, timelog
 from vmmsx.volunteer.services import volunteer as volunteer_service
 
@@ -884,7 +886,86 @@ def my_volunteer() -> dict | None:
 		# Whether the society issues volunteer cards at all, so the portal does
 		# not offer a card tab or a card link that would come back empty.
 		"issues_card": _issues_cards(),
+		# Their own, so only on this possessive read.
+		"emergency_contacts": _emergency_contacts(volunteer),
 	}
+
+
+def _emergency_contacts(volunteer) -> list[dict]:
+	return [
+		{field: row.get(field) for field in capabilities.EMERGENCY_CONTACT_FIELDS}
+		| {"may_contact_in_emergency": bool(row.get("may_contact_in_emergency"))}
+		for row in volunteer.get("emergency_contacts") or []
+	]
+
+
+@frappe.whitelist()
+def my_profile_completeness() -> dict | None:
+	"""How complete the caller's own profile is, and what is missing. Possessive.
+
+	None for somebody who is not a volunteer. See `completeness.of_volunteer` for
+	why the list is the registration's own.
+	"""
+	from vmmsx.volunteer.services import completeness
+
+	name = _my_volunteer()
+
+	if not name:
+		return None
+
+	return completeness.of_volunteer(frappe.get_doc(VOLUNTEER_DOCTYPE, name))
+
+
+@frappe.whitelist(methods=["POST"])
+def update_my_emergency_contacts(emergency_contacts: list | str | None = None) -> list[dict]:
+	"""Replace the caller's own emergency contacts. Possessive; names nobody.
+
+	The same rule registration applies: at least one contact we may call, each
+	with a name, a relationship from the society's list and a phone number. An
+	empty list is refused rather than stored, because a volunteer with nobody to
+	call is the state this exists to end.
+
+	Saved past the role check, narrowly: a volunteer holds no write permission on
+	the volunteer register, and this writes one table on their own record, from
+	their own session, through the document's own `save()`.
+	"""
+	from vmmsx.api.registration import rows_from
+
+	name = _my_volunteer()
+
+	if not name:
+		frappe.throw(_("You do not have a volunteer record yet."), frappe.PermissionError)
+
+	if isinstance(emergency_contacts, str):
+		emergency_contacts = frappe.parse_json(emergency_contacts)
+
+	rows = rows_from(emergency_contacts or [], capabilities.EMERGENCY_CONTACT_FIELDS)
+
+	for row in rows:
+		if not all(str(row.get(field) or "").strip() for field in ("contact_name", "relationship", "primary_phone")):
+			frappe.throw(
+				_("Give each emergency contact a name, a relationship and a phone number."),
+				frappe.MandatoryError,
+			)
+
+		if not frappe.db.exists("VMMS Relationship", row["relationship"]):
+			frappe.throw(_("Choose a relationship from the list."), frappe.ValidationError)
+
+	for row in rows:
+		row["may_contact_in_emergency"] = 1 if row.get("may_contact_in_emergency") else 0
+
+	if not any(row["may_contact_in_emergency"] for row in rows):
+		frappe.throw(
+			_("Add at least one emergency contact we may call."),
+			frappe.MandatoryError,
+		)
+
+	volunteer = frappe.get_doc(VOLUNTEER_DOCTYPE, name)
+	volunteer.set("emergency_contacts", rows)
+	volunteer.flags.ignore_permissions = True
+	volunteer.save()
+
+	return _emergency_contacts(volunteer)
 
 
 def _issues_cards() -> bool:

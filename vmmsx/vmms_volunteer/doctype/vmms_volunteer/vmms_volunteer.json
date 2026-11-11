@@ -23,6 +23,8 @@
   "languages",
   "column_break_capability",
   "availability",
+  "emergency_section",
+  "emergency_contacts",
   "deployability_section",
   "deployability_indicator",
   "certification_section",
@@ -154,6 +156,18 @@
    "options": "VMMS Availability Selector"
   },
   {
+   "fieldname": "emergency_section",
+   "fieldtype": "Section Break",
+   "label": "Emergency Contacts"
+  },
+  {
+   "description": "Who to call if something happens to this volunteer. Taken from their application at acceptance, and kept up to date by the volunteer from their profile.",
+   "fieldname": "emergency_contacts",
+   "fieldtype": "Table",
+   "label": "Emergency Contacts",
+   "options": "VMMS Emergency Contact"
+  },
+  {
    "fieldname": "deployability_section",
    "fieldtype": "Section Break",
    "label": "Deployability"
@@ -252,7 +266,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-11-04 16:56:05.366201",
+ "modified": "2026-11-10 12:24:08.384001",
  "modified_by": "Administrator",
  "module": "VMMS Volunteer",
  "name": "VMMS Volunteer",

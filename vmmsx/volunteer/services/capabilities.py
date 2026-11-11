@@ -118,6 +118,16 @@ RESIDENCY_ABROAD = "Abroad"
 # --- seeding, at acceptance ------------------------------------------------
 
 
+#: The columns of `VMMS Emergency Contact` an applicant or volunteer fills in.
+EMERGENCY_CONTACT_FIELDS = (
+	"contact_name",
+	"relationship",
+	"primary_phone",
+	"alternative_phone",
+	"may_contact_in_emergency",
+)
+
+
 def seed(volunteer, application) -> dict:
 	"""Copy the application's living data onto the volunteer. Idempotent.
 
@@ -154,6 +164,20 @@ def seed(volunteer, application) -> dict:
 
 		volunteer.set(fieldname, [{link_field: value} for value in values])
 		seeded[fieldname] = values
+
+	# Who to call. The application's rows stay on the application as part of the
+	# decision; the volunteer gets a copy they keep up to date from their own
+	# profile, because a contact changes long after an application has closed.
+	# Blanks only, like everything above.
+	contacts = [
+		{field: row.get(field) for field in EMERGENCY_CONTACT_FIELDS}
+		for row in application.get("emergency_contacts") or []
+		if row.get("contact_name")
+	]
+
+	if contacts and volunteer.meta.has_field("emergency_contacts") and not volunteer.get("emergency_contacts"):
+		volunteer.set("emergency_contacts", contacts)
+		seeded["emergency_contacts"] = [row["contact_name"] for row in contacts]
 
 	if seeded:
 		volunteer.save(ignore_permissions=True)

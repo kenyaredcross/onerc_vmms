@@ -153,3 +153,6 @@ vmmsx.patches.install_relationships
 
 # Volunteer card switch, certificate signatures and the principles certificate.
 vmmsx.patches.install_card_and_signature_settings
+
+# Volunteers keep their own emergency contacts, editable from their profile.
+vmmsx.patches.seed_volunteer_emergency_contacts

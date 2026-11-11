@@ -9,7 +9,21 @@
  */
 
 /** `volunteer/services/volunteer.py::profile_dto` + `application.py::verification_dto`. */
+/**
+ * `api/volunteer.py::my_profile_completeness`. The items are the registration's
+ * own submission checks; `section` names the part of the profile page that
+ * fixes each one.
+ */
+export interface ProfileCompleteness {
+	percent: number;
+	done: number;
+	total: number;
+	items: Array<{ key: string; label: string; section: string; done: boolean }>;
+}
+
 export interface VolunteerProfile {
+	/** Only on `my_volunteer`: their own, kept on the volunteer record. */
+	emergency_contacts?: EmergencyContact[];
 	personal_details?: PersonalDetails;
 	volunteer: string;
 	red_profile: string;

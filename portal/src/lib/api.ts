@@ -128,6 +128,10 @@ export const API = {
 	myMemberCard: "vmmsx.api.cards.my_member_card",
 	volunteerGeoLevels: "vmmsx.api.volunteer.geo_node_levels",
 	myVolunteer: "vmmsx.api.volunteer.my_volunteer",
+	// How complete the caller's own profile is, item by item, and the one write
+	// their emergency contacts need — they live on the volunteer record.
+	myProfileCompleteness: "vmmsx.api.volunteer.my_profile_completeness",
+	updateMyEmergencyContacts: "vmmsx.api.volunteer.update_my_emergency_contacts",
 	myCertifications: "vmmsx.api.volunteer.my_certifications",
 	// Possessive like the rest: it takes no person, so the hours screen cannot be
 	// pointed at anybody else's history. There is no write beside it, and that is

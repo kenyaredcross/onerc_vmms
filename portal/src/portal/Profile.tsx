@@ -1,6 +1,5 @@
-import { RegistrationDetails, RegistrationDetailsSummary } from "../ui/RegistrationDetails";
-import { useContext, useState } from "react";
-import { Link } from "react-router-dom";
+import { useContext, useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { FrappeContext, useFrappeGetCall, type FrappeConfig } from "frappe-react-sdk";
 
 import { ServiceCertificatePanel } from "../certificates/ServiceCertificates";
@@ -18,12 +17,11 @@ import {
 	emptyBackground,
 	type BackgroundValues,
 } from "../ui/Background";
-import { Field, SelectInput, TextInput, VocabularySelect } from "../ui/form";
 import { Icon } from "../ui/icons";
 import { PersonHero } from "../ui/PersonHero";
 import { TransferCard } from "./TransferCard";
+import { PersonalTab, type SectionKey } from "./ProfileSections";
 import {
-	Avatar,
 	Button,
 	ButtonLink,
 	Card,
@@ -37,11 +35,11 @@ import {
 	Spinner,
 } from "../ui/primitives";
 import type {
-	ApplicationOptions,
 	IdentityOptions,
 	MembershipRow,
 	MyCertifications,
 	OpenRegistration,
+	ProfileCompleteness,
 	RedProfile,
 	VolunteerProfile,
 } from "./types";
@@ -66,13 +64,31 @@ import type {
  * with, and this page leads with it too: a volunteer looking at their own
  * profile and a coordinator looking at the same person are looking at the same
  * thing, which is the whole reason to have one component rather than four
- * headers that drifted apart. The card underneath is what this screen has that
- * theirs does not — the pencil.
+ * headers that drifted apart. What this screen adds to it is the person's own:
+ * a ring round the photograph showing how complete the profile is, and a pill
+ * that takes them to the first thing missing.
+ *
+ * **Corrected one section at a time**, on the Personal tab — see
+ * `ProfileSections.tsx`. "Complete" is the registration's own list, read from
+ * `my_profile_completeness`, so the nudge and the submission rules agree.
  */
 export default function Profile() {
-	const [tab, setTab] = useState<"overview" | "background" | "certifications" | "card">(
-		"overview",
-	);
+	const [params, setParams] = useSearchParams();
+	const tab = (TABS.some(([key]) => key === params.get("tab")) ? params.get("tab") : "overview") as TabKey;
+	const edit = params.get("edit");
+	const focus = edit && edit !== "background" ? (edit as SectionKey) : null;
+	const go = (next: TabKey, edit?: string) =>
+		setParams(
+			(current) => {
+				const after = new URLSearchParams(current);
+				after.set("tab", next);
+				if (edit) after.set("edit", edit);
+				else after.delete("edit");
+				return after;
+			},
+			{ replace: true },
+		);
+
 	const volunteer = useFrappeGetCall<{ message: VolunteerProfile | null }>(
 		API.myVolunteer,
 		undefined,
@@ -90,13 +106,18 @@ export default function Profile() {
 		undefined,
 		"portal:my_profile",
 	);
+	// How complete the profile is, and what is missing — the registration's own
+	// list, asked of the server so the two can never disagree.
+	const completion = useFrappeGetCall<{ message: ProfileCompleteness | null }>(
+		API.myProfileCompleteness,
+		undefined,
+		"portal:my_profile_completeness",
+	);
 
 	// Whether this person is also a member, asked of their own memberships
 	// endpoint rather than of the cross-register lookup the admin screens use:
 	// that one reads the registers through core's scoping, and a volunteer has
-	// no scope over the member register — not even their own row. Here the
-	// holder is asking about themselves, which is a different question with a
-	// different door, and `my_memberships` is it.
+	// no scope over the member register — not even their own row.
 	const memberships = useFrappeGetCall<{ message: MembershipRow[] }>(
 		API.myMemberships,
 		undefined,
@@ -105,10 +126,7 @@ export default function Profile() {
 
 	// Whether an application of theirs is already with the branch, and whether it
 	// has been sent. Without it this screen read "no volunteer record" as "never
-	// applied" for everybody — so somebody mid-review was told to apply again,
-	// which the server refuses, and somebody with an unfinished draft was told
-	// nothing about the answers sitting in it. Same key the dashboard and the
-	// deployments list use, so it is one answer rather than three.
+	// applied" for everybody. Same key the dashboard uses.
 	const open = useFrappeGetCall<{ message: Record<string, OpenRegistration | null> }>(
 		API.myOpenRegistrations,
 		undefined,
@@ -119,6 +137,16 @@ export default function Profile() {
 	const certs = training.data?.message?.certifications ?? [];
 	const held = (memberships.data?.message ?? []).find((row) => row.is_active);
 	const application = open.data?.message?.volunteer ?? null;
+	const completeness = completion.data?.message ?? null;
+	const nextMissing = completeness?.items.find((item) => !item.done) ?? null;
+
+	const refresh = () => {
+		void person.mutate();
+		void volunteer.mutate();
+		void completion.mutate();
+	};
+	const fix = (item: { section: string }) =>
+		item.section === "background" ? go("background", "background") : go("personal", item.section);
 
 	return (
 		<>
@@ -145,11 +173,11 @@ export default function Profile() {
 					docname={profile.volunteer}
 					subtitle={geoPath(profile.geo_path) || undefined}
 					status={profile.status}
+					completion={completeness?.percent}
+					onCompletion={nextMissing ? () => fix(nextMissing) : undefined}
 					badges={
-						// The same answer the coordinator's screens give, from this
-						// person's own side of it. Drawn only when they actually hold
-						// a current membership: "not a member" is not news to the
-						// person reading their own profile.
+						// Drawn only when they actually hold a current membership: "not a
+						// member" is not news to the person reading their own profile.
 						held && (
 							<Link
 								to="/membership"
@@ -175,25 +203,21 @@ export default function Profile() {
 
 			{profile && (
 				<>
-					<div className="mb-5 overflow-x-auto rounded-xl bg-surface p-1" role="tablist">
+					<div className="mb-5 overflow-x-auto border-b border-card-line" role="tablist" aria-label="Profile">
 						<div className="flex min-w-max gap-1">
-							{([
-								["overview", "Overview"],
-								["background", "Education & experience"],
-								["certifications", "Certifications"],
-								// Only where the society issues cards (Kenya does not).
-								...(profile.issues_card === false ? [] : [["card", "Volunteer card"] as const]),
-							] as const).map(([key, label]) => (
+							{TABS.filter(([key]) => key !== "card" || profile.issues_card !== false).map(([key, label]) => (
 								<button
 									key={key}
 									type="button"
 									role="tab"
+									id={`profile-tab-${key}`}
 									aria-selected={tab === key}
-									onClick={() => setTab(key)}
-									className={`rounded-lg px-4 py-2.5 text-[12px] font-bold transition ${
+									aria-controls="profile-panel"
+									onClick={() => go(key)}
+									className={`-mb-px border-b-2 px-4 py-2.5 text-[12.5px] font-bold transition ${
 										tab === key
-											? "bg-white text-ink shadow-sm"
-											: "text-muted hover:bg-white/60 hover:text-ink"
+											? "border-ink text-ink"
+											: "border-transparent text-muted hover:text-ink"
 									}`}
 								>
 									{label}
@@ -202,33 +226,149 @@ export default function Profile() {
 						</div>
 					</div>
 
-					{tab === "overview" && <div className="grid items-start gap-6 lg:grid-cols-3">
-					<div className="lg:col-span-1">
-						<IdentityCard
-							profile={profile}
-							person={person.data?.message ?? null}
-							onSaved={() => {
-								void person.mutate();
-								void volunteer.mutate();
-							}}
-						/>
-					</div>
-					<div className="space-y-6 lg:col-span-2">
-						<PlacementCard profile={profile} />
-						<TransferCard branch={profile.geo_node} active={profile.status === "Active"} />
-						<ServiceCertificatePanel />
-					</div>
-					</div>}
+					<div id="profile-panel" role="tabpanel" aria-labelledby={`profile-tab-${tab}`}>
+						{tab === "overview" && (
+							<div className="grid items-start gap-6 lg:grid-cols-3">
+								<div className="space-y-6 lg:col-span-2">
+									<PlacementCard profile={profile} />
+									<ContactCard profile={profile} onEdit={() => go("personal", "emergency")} />
+								</div>
+								<aside className="space-y-6">
+									<CompletionCard completeness={completeness} onFix={fix} />
+								</aside>
+							</div>
+						)}
 
-					{tab === "background" && <BackgroundCard
-						person={person.data?.message ?? null}
-						onSaved={() => void person.mutate()}
-					/>}
-					{tab === "certifications" && <CertificationsCard rows={certs} loading={training.isLoading} />}
-					{tab === "card" && profile.issues_card !== false && <HolderCard kind="volunteer" />}
+						{tab === "personal" && (
+							<PersonalTab
+								profile={profile}
+								person={person.data?.message ?? null}
+								completeness={completeness}
+								focus={focus}
+								onSaved={refresh}
+							/>
+						)}
+
+						{tab === "background" && (
+							<BackgroundCard
+								person={person.data?.message ?? null}
+								openOnArrival={edit === "background"}
+								onSaved={refresh}
+							/>
+						)}
+						{tab === "certifications" && <CertificationsCard rows={certs} loading={training.isLoading} />}
+						{tab === "requests" && (
+							<div className="space-y-6">
+								<TransferCard branch={profile.geo_node} active={profile.status === "Active"} />
+								<ServiceCertificatePanel />
+							</div>
+						)}
+						{tab === "card" && profile.issues_card !== false && <HolderCard kind="volunteer" />}
+					</div>
 				</>
 			)}
 		</>
+	);
+}
+
+const TABS = [
+	["overview", "Overview"],
+	["personal", "Personal"],
+	["background", "Education & experience"],
+	["certifications", "Certifications"],
+	["requests", "Requests"],
+	// Only where the society issues cards (Kenya does not).
+	["card", "Volunteer card"],
+] as const;
+
+type TabKey = (typeof TABS)[number][0];
+
+/**
+ * What is still missing, as things to press.
+ *
+ * Each row takes them to the one section that fixes it, opened, rather than to
+ * a form holding every question: somebody with a phone number to add should not
+ * have to find their ID scan first.
+ */
+function CompletionCard({
+	completeness,
+	onFix,
+}: {
+	completeness: ProfileCompleteness | null;
+	onFix: (item: ProfileCompleteness["items"][number]) => void;
+}) {
+	if (!completeness) return null;
+
+	const missing = completeness.items.filter((item) => !item.done);
+
+	return (
+		<Card>
+			<SectionTitle>Profile completion</SectionTitle>
+			<div className="flex items-baseline justify-between gap-3">
+				<span className="tabular text-[22px] font-bold text-ink">{completeness.percent}%</span>
+				<span className="text-[12px] text-muted">
+					{completeness.done} of {completeness.total} done
+				</span>
+			</div>
+			<div
+				className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface"
+				role="progressbar"
+				aria-valuenow={completeness.percent}
+				aria-valuemin={0}
+				aria-valuemax={100}
+				aria-label="Profile completion"
+			>
+				<span className="block h-full rounded-full bg-success" style={{ width: `${completeness.percent}%` }} />
+			</div>
+
+			{missing.length === 0 ? (
+				<p className="mt-4 text-[12.5px] text-muted">Your profile is complete.</p>
+			) : (
+				<ul className="mt-4 divide-y divide-card-line border-t border-card-line">
+					{missing.map((item) => (
+						<li key={item.key}>
+							<button
+								type="button"
+								onClick={() => onFix(item)}
+								className="flex w-full items-center justify-between gap-3 py-2.5 text-left text-[12.5px] font-semibold text-ink transition hover:text-blue"
+							>
+								{item.label}
+								<Icon.chevron size={13} className="-rotate-90 flex-none text-slate-faint" />
+							</button>
+						</li>
+					))}
+				</ul>
+			)}
+		</Card>
+	);
+}
+
+function ContactCard({ profile, onEdit }: { profile: VolunteerProfile; onEdit: () => void }) {
+	const contacts = profile.emergency_contacts ?? [];
+
+	return (
+		<Card>
+			<div className="mb-4 flex items-center justify-between gap-3">
+				<SectionTitle>Emergency contacts</SectionTitle>
+				<button type="button" onClick={onEdit} className="text-[12px] font-semibold text-blue hover:underline">
+					{contacts.length ? "Change" : "Add a contact"}
+				</button>
+			</div>
+			{contacts.length ? (
+				<ul className="space-y-3">
+					{contacts.map((row, index) => (
+						<li key={index} className="text-[13px] text-ink">
+							<span className="font-semibold">{row.contact_name}</span>
+							<span className="block text-[12px] text-muted">
+								{row.relationship} · {row.primary_phone}
+							</span>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p className="text-[12.5px] text-muted">No emergency contact added.</p>
+			)}
+		</Card>
 	);
 }
 
@@ -374,333 +514,6 @@ export function HolderCard({
 	);
 }
 
-function IdentityCard({
-	profile,
-	person,
-	onSaved,
-}: {
-	profile: VolunteerProfile;
-	person: RedProfile | null;
-	onSaved: () => void;
-}) {
-	const [editing, setEditing] = useState(false);
-
-	return (
-		<Card>
-			{/* The face and the name are in the header above, once. What is left
-			    here is the *control* over them, which is the one thing this screen
-			    has that a coordinator's version of it does not. */}
-			<SectionTitle>Your details</SectionTitle>
-
-			<div className="flex items-center gap-4">
-				<Avatar name={profile.full_name} photo={profile.profile_photo} size={56} ring />
-				<PhotoControl current={profile.profile_photo} onSaved={onSaved} />
-			</div>
-
-			{editing && person ? (
-				<IdentityForm
-					person={person}
-					onCancel={() => setEditing(false)}
-					onSaved={() => {
-						setEditing(false);
-						onSaved();
-					}}
-				/>
-			) : (
-				<>
-					<dl className="mt-6 space-y-4 border-t border-card-line pt-5">
-						<Line label="Email" value={profile.email} locked />
-						<Line label="Phone" value={profile.phone} />
-						<Line label="Gender" value={profile.gender} />
-						<Line label="Date of birth" value={formatDate(profile.date_of_birth)} />
-						<Line label="Preferred language" value={profile.preferred_language} />
-					</dl>
-					<RegistrationDetailsSummary value={person?.personal_details} />
-
-					<div className="mt-5 border-t border-card-line pt-4">
-						{person ? (
-							<>
-								<Button variant="quiet" onClick={() => setEditing(true)}>
-									Correct these details
-								</Button>
-								<p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-faint">
-									These belong to your person record, which the Society holds once for everything
-									you do with it. Your email address is your account and cannot be changed here.
-								</p>
-							</>
-						) : (
-							<p className="text-[11.5px] leading-relaxed text-slate-faint">
-								Your name and contact details belong to your person record, which the Society
-								holds once for everything you do with it.
-							</p>
-						)}
-					</div>
-				</>
-			)}
-		</Card>
-	);
-}
-
-/**
- * The photograph, uploaded by the person it is of.
- *
- * **Two steps, and the second is the same endpoint the rest of this screen
- * uses.** The file goes through the framework's own `upload_file`, which has
- * already decided what this person may store and how large it may be — the same
- * handler `content/Editable.tsx` and the task proof use, rather than a second
- * uploader here. What comes back is a URL, and that URL is saved through
- * `update_my_profile` like any other correction. The server re-checks that it is
- * one of this site's own upload paths, so nothing here is the only thing
- * standing between an arbitrary URL and a printed card.
- *
- * **Public rather than private**, which is a deliberate difference from the task
- * proof. A private file is readable by its uploader alone unless it is anchored
- * to a document, and this one has to render on a coordinator's screen and inside
- * a PDF card handed to a steward. It is the same treatment Frappe gives its own
- * user image.
- *
- * Removing is offered beside replacing: a photograph is an optional field, and
- * `update_my_profile` clears one on an empty string. Somebody who would rather
- * not have their face on a card can take it off without asking anybody.
- */
-function PhotoControl({ current, onSaved }: { current: string | null; onSaved: () => void }) {
-	const { call } = useContext(FrappeContext) as FrappeConfig;
-	const [busy, setBusy] = useState(false);
-	const [failure, setFailure] = useState<string | null>(null);
-
-	const save = async (url: string) => {
-		await call.post(API.updateMyProfile, { profile_photo: url });
-		onSaved();
-	};
-
-	const upload = async (file: File) => {
-		setBusy(true);
-		setFailure(null);
-
-		try {
-			const body = new FormData();
-			body.append("file", file);
-			body.append("is_private", "0");
-
-			const response = await fetch("/api/method/upload_file", {
-				method: "POST",
-				body,
-				headers: { "X-Frappe-CSRF-Token": window.csrf_token ?? "" },
-			});
-
-			if (!response.ok) throw new Error("The upload was refused.");
-
-			const payload = (await response.json()) as { message?: { file_url?: string } };
-			const url = payload.message?.file_url;
-
-			if (!url) throw new Error("The upload came back without a file.");
-
-			await save(url);
-		} catch (uploadError) {
-			setFailure(errorMessage(uploadError, "That photograph could not be saved."));
-		} finally {
-			setBusy(false);
-		}
-	};
-
-	const remove = async () => {
-		setBusy(true);
-		setFailure(null);
-
-		try {
-			// An empty string is how this endpoint clears an optional field. Not
-			// `null`, which means "leave this alone".
-			await save("");
-		} catch (removeError) {
-			setFailure(errorMessage(removeError, "That photograph could not be removed."));
-		} finally {
-			setBusy(false);
-		}
-	};
-
-	return (
-		<div className="mt-2">
-			<div className="flex flex-wrap items-center gap-3">
-				<label className="inline-flex cursor-pointer items-center text-[12px] font-semibold text-ink hover:underline">
-					{busy ? "Saving…" : current ? "Replace photo" : "Add a photo"}
-					<input
-						type="file"
-						accept="image/*"
-						className="hidden"
-						disabled={busy}
-						onChange={(event) => {
-							const file = event.target.files?.[0];
-
-							// Cleared so choosing the same file twice fires again, which
-							// it otherwise would not after a failure.
-							event.target.value = "";
-
-							if (file) void upload(file);
-						}}
-					/>
-				</label>
-
-				{current && !busy && (
-					<button
-						type="button"
-						onClick={() => void remove()}
-						className="text-[12px] font-semibold text-slate-faint hover:text-ink hover:underline"
-					>
-						Remove
-					</button>
-				)}
-			</div>
-
-			{/* Said here because it is not obvious that this is the picture a
-			    steward at a gate will be comparing with a face. */}
-			<p className="mt-1 text-[11px] text-slate-faint">
-				This is the photograph printed on your card.
-			</p>
-
-			{failure && (
-				<div className="mt-2">
-					<ErrorNote>{failure}</ErrorNote>
-				</div>
-			)}
-		</div>
-	);
-}
-
-/**
- * The correction form. Five fields and no email.
- *
- * The vocabularies are fetched only once somebody opens this, because a person
- * reading their own profile is the common case and neither list is worth a
- * round trip for it. `preferred_language` reuses the volunteer application's
- * language list rather than a second endpoint: it is the same Language rows,
- * and a second answer to "what languages exist" would eventually disagree.
- */
-function IdentityForm({
-	person,
-	onCancel,
-	onSaved,
-}: {
-	person: RedProfile;
-	onCancel: () => void;
-	onSaved: () => void;
-}) {
-	const { call } = useContext(FrappeContext) as FrappeConfig;
-
-	const [firstName, setFirstName] = useState(person.first_name ?? "");
-	const [lastName, setLastName] = useState(person.last_name ?? "");
-	const [phone, setPhone] = useState(person.phone ?? "");
-	const [gender, setGender] = useState(person.gender ?? "");
-	const [dateOfBirth, setDateOfBirth] = useState(person.date_of_birth ?? "");
-	const [language, setLanguage] = useState(person.preferred_language ?? "");
-	const [personalDetails, setPersonalDetails] = useState(person.personal_details ?? {});
-
-	const [busy, setBusy] = useState(false);
-	const [failure, setFailure] = useState<string | null>(null);
-
-	const identity = useFrappeGetCall<{ message: IdentityOptions }>(
-		API.identityOptions,
-		undefined,
-		"profile:identity_options",
-	);
-	const vocabularies = useFrappeGetCall<{ message: ApplicationOptions }>(
-		API.applicationOptions,
-		undefined,
-		"profile:application_options",
-	);
-
-	const save = async () => {
-		setBusy(true);
-		setFailure(null);
-
-		try {
-			await call.post(API.updateMyProfile, {
-				first_name: firstName.trim(),
-				last_name: lastName.trim(),
-				phone: phone.trim(),
-				gender,
-				date_of_birth: dateOfBirth,
-				preferred_language: language,
-				personal_details: personalDetails,
-			});
-			onSaved();
-		} catch (saveError) {
-			setFailure(errorMessage(saveError, "That change was not accepted."));
-		} finally {
-			setBusy(false);
-		}
-	};
-
-	const named = Boolean(firstName.trim() && lastName.trim());
-
-	return (
-		<div className="mt-6 space-y-4 border-t border-card-line pt-5">
-			<RegistrationDetails bloodGroups={identity.data?.message?.blood_groups} value={personalDetails} onChange={setPersonalDetails} documentTypes={identity.data?.message?.supporting_document_types} showProfileLinks={false} idPrefix="profile-details"/>
-			{failure && <ErrorNote>{failure}</ErrorNote>}
-
-			<Field label="First name" required htmlFor="profile-first">
-				<TextInput id="profile-first" value={firstName} onChange={setFirstName} />
-			</Field>
-
-			<Field label="Last name" required htmlFor="profile-last">
-				<TextInput id="profile-last" value={lastName} onChange={setLastName} />
-			</Field>
-
-			<Field label="Phone" htmlFor="profile-phone">
-				<TextInput
-					id="profile-phone"
-					type="tel"
-					inputMode="tel"
-					value={phone}
-					onChange={setPhone}
-				/>
-			</Field>
-
-			<Field label="Gender" htmlFor="profile-gender">
-				<SelectInput
-					id="profile-gender"
-					value={gender}
-					options={identity.data?.message?.genders ?? []}
-					onChange={setGender}
-					placeholder="Prefer not to say"
-				/>
-			</Field>
-
-			<Field label="Date of birth" htmlFor="profile-dob">
-				<TextInput
-					id="profile-dob"
-					type="date"
-					max={new Date().toISOString().slice(0, 10)}
-					value={dateOfBirth}
-					onChange={setDateOfBirth}
-				/>
-			</Field>
-
-			<Field
-				label="Preferred language"
-				htmlFor="profile-language"
-				hint="The language you would rather be contacted in."
-			>
-				<VocabularySelect
-					id="profile-language"
-					value={language}
-					options={vocabularies.data?.message?.languages ?? []}
-					onChange={setLanguage}
-					placeholder="No preference"
-				/>
-			</Field>
-
-			<div className="flex items-center gap-2.5 pt-1">
-				<Button variant="navy" onClick={save} disabled={!named || busy}>
-					{busy ? "Saving…" : "Save"}
-				</Button>
-				<Button variant="ghost" onClick={onCancel} disabled={busy}>
-					Cancel
-				</Button>
-			</div>
-		</div>
-	);
-}
-
 function Line({
 	label,
 	value,
@@ -770,9 +583,12 @@ function Block({ label, value }: { label: string; value: string | null }) {
  */
 function BackgroundCard({
 	person,
+	openOnArrival = false,
 	onSaved,
 }: {
 	person: RedProfile | null;
+	/** Sent here by the completion nudge: open the editor once the record is in. */
+	openOnArrival?: boolean;
 	onSaved: () => void;
 }) {
 	const { call } = useContext(FrappeContext) as FrappeConfig;
@@ -808,6 +624,15 @@ function BackgroundCard({
 		setFailure(null);
 		setEditing(true);
 	};
+
+	const [opened, setOpened] = useState(false);
+	useEffect(() => {
+		if (!openOnArrival || opened || !person) return;
+		setOpened(true);
+		start();
+		// `start` reads `person`, which is what this waits for.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [openOnArrival, opened, person]);
 
 	const save = async () => {
 		const dateGap = [...profileLinkGaps(links), ...backgroundDateGaps(draft)][0];
