@@ -485,7 +485,7 @@ def _commit(doc, workflow, routed: list[str], user: str, decided: bool = False) 
 	County Coordinator who may only read volunteer applications, or a regional
 	approver who may only read memberships, is exactly that person.
 	"""
-	_save_transition(doc, ignore_permissions=decided)
+	_save_transition(doc, ignore_permissions=True if decided else None)
 	assignment.sync(
 		doc.doctype,
 		doc.name,
@@ -787,8 +787,16 @@ def _stage_description(doc, stage) -> str:
 	return _("{0}: {1} {2}").format(_(stage.stage_label), doc.doctype, doc.name)
 
 
-def _save_transition(doc, ignore_permissions: bool = False):
-	"""Let governed controllers distinguish engine transitions from ordinary edits."""
+def _save_transition(doc, ignore_permissions: bool | None = None):
+	"""Let governed controllers distinguish engine transitions from ordinary edits.
+
+	`None`, not `False`, when the caller does not say: Frappe's `save` treats any
+	value but `None` as an instruction and overwrites `doc.flags.ignore_permissions`
+	with it. A `False` here wiped the flag a governed controller had set before
+	handing the document over — the service certificate request sets it, because
+	owning the request is the applicant's permission to submit it — and every
+	certificate request was refused on submission.
+	"""
 	previous = frappe.flags.vmms_approval_transition
 	frappe.flags.vmms_approval_transition = (doc.doctype, doc.name)
 	try:
