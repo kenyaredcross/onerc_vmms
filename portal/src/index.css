@@ -9,6 +9,18 @@
 @tailwind utilities;
 
 @layer base {
+	/* The portal is a light page, and says so. Without it, Chrome on a computer
+	   set to dark mode draws a select's dropdown in dark-mode colours — white
+	   option text — over the white background these controls set, so every
+	   option was there and none of them could be read. */
+	:root {
+		color-scheme: light;
+	}
+
+	option {
+		@apply bg-white text-ink;
+	}
+
 	html {
 		-webkit-text-size-adjust: 100%;
 		/* A thin, quiet scrollbar everywhere — Firefox's own property. The
