@@ -77,7 +77,6 @@ export default function Professions() {
 	const needle = search.trim().toLowerCase();
 	const matching = needle ? rows.filter((row) => row.profession.toLowerCase().includes(needle)) : rows;
 	const shown = needle || showAll ? matching : matching.slice(0, SHOWN_AT_FIRST);
-	const largest = rows[0]?.total ?? 0;
 
 	return (
 		<>
@@ -134,20 +133,7 @@ export default function Professions() {
 									</Cell>
 									<Cell className="tabular text-muted">{row.volunteers}</Cell>
 									<Cell className="tabular text-muted">{row.members}</Cell>
-									<Cell>
-										<span className="flex items-center gap-3">
-											<span className="tabular w-8 font-semibold text-ink">{row.total}</span>
-											<span
-												aria-hidden="true"
-												className="hidden h-1.5 w-32 overflow-hidden rounded-full bg-surface sm:block"
-											>
-												<span
-													className="block h-full rounded-full bg-blue"
-													style={{ width: `${largest ? (row.total / largest) * 100 : 0}%` }}
-												/>
-											</span>
-										</span>
-									</Cell>
+									<Cell className="tabular font-semibold text-ink">{row.total}</Cell>
 								</Row>
 							))}
 						</Table>
