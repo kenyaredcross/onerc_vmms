@@ -161,17 +161,62 @@ def shape() -> str:
 	return configured if configured in SHAPES else NOMINATIM
 
 
-def _params(query: str, limit: int) -> dict:
+#: How many candidates Photon is asked for when its answers are kept to the
+#: society's country afterwards. It has no country filter of its own, so a
+#: foreign match can take a place in its list; asking for more leaves enough
+#: once those are dropped.
+COUNTRY_FETCH = 20
+
+
+def country_code() -> str | None:
+	"""The society's own country as a two-letter code — "ke" — or None.
+
+	Core's `country` on National Society Settings, the same field the volunteer
+	application defaults to. A Kenyan society searches Kenya and a Gambian one
+	Gambia without anybody writing either name into this app. None where the
+	settings name no country: the search is then worldwide, as it always was.
+	"""
+	from vmmsx.volunteer.services import society
+
+	country = society.default_citizenship_country()
+	code = country and frappe.db.get_value("Country", country, "code")
+
+	return (code or "").strip().lower() or None
+
+
+def _params(query: str, limit: int, near: dict | None = None) -> dict:
 	"""The query string each provider expects, keyed by shape.
 
 	Written as a table rather than as branches for the same reason the time-log
 	kinds are: adding a provider is adding a row and a reader, never an `if` in
 	the middle of a request.
+
+	**Kept to the society's country** (Nov 2026). Nominatim and Google filter by
+	country themselves; Photon cannot, so it is asked for more candidates and
+	`_read` drops the foreign ones. Photon is also leant toward `near` — the
+	county being worked in — so "Upper Hill" finds Nairobi's before anybody
+	else's.
 	"""
+	code = country_code()
+
 	return {
-		NOMINATIM: {"q": query, "format": "json", "limit": limit, "addressdetails": 1},
-		PHOTON: {"q": query, "limit": limit},
-		GOOGLE: {"address": query, "key": frappe.conf.get(API_KEY) or ""},
+		NOMINATIM: {
+			"q": query,
+			"format": "json",
+			"limit": limit,
+			"addressdetails": 1,
+			**({"countrycodes": code} if code else {}),
+		},
+		PHOTON: {
+			"q": query,
+			"limit": max(limit, COUNTRY_FETCH) if code else limit,
+			**({"lat": near["latitude"], "lon": near["longitude"]} if near else {}),
+		},
+		GOOGLE: {
+			"address": query,
+			"key": frappe.conf.get(API_KEY) or "",
+			**({"components": f"country:{code.upper()}", "region": code} if code else {}),
+		},
 	}[shape()]
 
 
@@ -186,11 +231,20 @@ def _read(payload, limit: int) -> list[dict]:
 	rows = []
 
 	if shape() == PHOTON:
-		for feature in (payload or {}).get("features", [])[:limit]:
+		code = country_code()
+
+		for feature in (payload or {}).get("features", []):
 			point = (feature.get("geometry") or {}).get("coordinates") or []
 			properties = feature.get("properties") or {}
 
 			if len(point) < 2:
+				continue
+
+			# Somewhere in another country is not a place this society deploys
+			# to. An answer that names no country is kept: it cannot be told apart.
+			found_in = (properties.get("countrycode") or "").lower()
+
+			if code and found_in and found_in != code:
 				continue
 
 			rows.append(
@@ -238,10 +292,10 @@ def _read(payload, limit: int) -> list[dict]:
 				}
 			)
 
-	return [row for row in rows if _is_point(row["latitude"], row["longitude"])]
+	return [row for row in rows if _is_point(row["latitude"], row["longitude"])][:limit]
 
 
-def _ask(query: str, limit: int):
+def _ask(query: str, limit: int, near: dict | None = None):
 	"""One call to the configured provider, or None where it could not be made.
 
 	Never raises. A provider that is down is an operational fact somebody can
@@ -253,7 +307,7 @@ def _ask(query: str, limit: int):
 
 		answer = requests.get(
 			frappe.conf.get(PROVIDER_KEY),
-			params=_params(query, limit),
+			params=_params(query, limit, near),
 			headers={"User-Agent": f"vmmsx/{frappe.local.site}"},
 			timeout=TIMEOUT,
 		)
@@ -266,7 +320,7 @@ def _ask(query: str, limit: int):
 		return None
 
 
-def suggest(query: str | None, limit: int = 6) -> dict:
+def suggest(query: str | None, limit: int = 6, near: dict | None = None) -> dict:
 	"""What a half-typed address might be, each with the point that goes with it.
 
 	**The same provider, the same reading, one request per keystroke-ish.** This
@@ -287,7 +341,7 @@ def suggest(query: str | None, limit: int = 6) -> dict:
 	if not is_configured():
 		return {"places": [], "reason": _NOT_CONFIGURED()}
 
-	payload = _ask(query, limit)
+	payload = _ask(query, limit, near)
 
 	if payload is None:
 		return {
@@ -318,7 +372,7 @@ def _NOT_CONFIGURED() -> str:
 	)
 
 
-def locate(query: str | None) -> dict:
+def locate(query: str | None, near: dict | None = None) -> dict:
 	"""Resolve an address to a point. Never raises; always says what happened.
 
 	Returns `{"located": bool, "latitude": …, "longitude": …, "reason": …}`. The
@@ -332,7 +386,7 @@ def locate(query: str | None) -> dict:
 	if not is_configured():
 		return _failed(_NOT_CONFIGURED())
 
-	payload = _ask(query, limit=1)
+	payload = _ask(query, limit=1, near=near)
 
 	if payload is None:
 		return _failed(_("The address could not be looked up just now. Place the pin by hand, or try again."))
@@ -434,7 +488,11 @@ def locate_place(deployment, place: str, force: bool = False) -> dict:
 			"reason": None,
 		}
 
-	answer = locate(deployment.get(fields["address"]))
+	from onerc_core.geo.services import adapter
+
+	# Leant toward the record's own county, so its address is looked up there first.
+	near = adapter.get_point(deployment.geo_node) if deployment.get("geo_node") else None
+	answer = locate(deployment.get(fields["address"]), near=near)
 
 	if not answer["located"]:
 		return answer

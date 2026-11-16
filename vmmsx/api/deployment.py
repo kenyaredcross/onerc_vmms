@@ -21,6 +21,7 @@ could get it wrong. See the scope guarantee at the top of
 """
 
 import frappe
+from frappe import _
 from onerc_core.access.services.enforcement import guard
 
 from vmmsx.deployment.services import deployment as deployment_service
@@ -52,19 +53,29 @@ DEPLOYMENT_GEO_DOCTYPE = "Geo Node"
 
 @frappe.whitelist()
 def find_candidates(
-	terms_of_reference: str,
+	terms_of_reference: str | None,
 	geo_node: str,
 	as_of: str | None = None,
 	limit: int | None = None,
 	offset: int = 0,
 	search: str | None = None,
-	skills: list | None = None,
-	languages: list | None = None,
+	# `str` too: a GET carries every list as JSON text, and Frappe refuses text
+	# for a parameter declared list-only before this function runs.
+	skills: list | str | None = None,
+	languages: list | str | None = None,
 	start_date: str | None = None,
 	end_date: str | None = None,
 	only_available: bool | int | str = False,
 	exclude_conflicts: bool | int | str = False,
 	max_workload: int | None = None,
+	professions: list | str | None = None,
+	surge_only: bool | int | str = False,
+	deployment: str | None = None,
+	availability_slots: list | str | None = None,
+	certification_types: list | str | None = None,
+	residence_counties: list | str | None = None,
+	residence_sub_counties: list | str | None = None,
+	residence_wards: list | str | None = None,
 ) -> dict:
 	"""Volunteers who fit this need, within the caller's own area.
 
@@ -73,9 +84,10 @@ def find_candidates(
 	the certification questions to another date, which is what a caller planning
 	a deployment for next month actually wants to ask.
 
-	`search` (a name or a docname) and `skills` narrow the page before it is
-	assessed, and `offset` pages through it — see `matching.candidates()` for why
-	this is not merely a display filter.
+	`search`, `skills`, `languages`, `professions` and `surge_only` are filters
+	over the whole county, not the page, and `offset` pages through the ranked
+	result — see `matching.matching_names()`. `deployment` leaves out the people
+	already open on it, for a coordinator topping one up.
 
 	`start_date` and `end_date` turn on the availability and clash answers, which
 	rank rather than exclude; `only_available` and `exclude_conflicts` turn each
@@ -90,13 +102,21 @@ def find_candidates(
 		limit=limit,
 		offset=offset,
 		search=search,
-		skills=skills,
-		languages=languages,
 		start_date=start_date,
 		end_date=end_date,
 		only_available=_flag(only_available),
 		exclude_conflicts=_flag(exclude_conflicts),
 		max_workload=max_workload,
+		skills=_listed(skills),
+		languages=_listed(languages),
+		professions=_listed(professions),
+		surge_only=_flag(surge_only),
+		exclude_deployment=deployment or None,
+		availability_slots=_listed(availability_slots),
+		certification_types=_listed(certification_types),
+		residence_counties=_listed(residence_counties),
+		residence_sub_counties=_listed(residence_sub_counties),
+		residence_wards=_listed(residence_wards),
 	)
 
 
@@ -642,6 +662,22 @@ def _geo_path(node: str | None) -> str:
 		return ""
 
 
+def _listed(value) -> list[str]:
+	"""A list as it arrives over HTTP: a real list, a JSON string, or nothing.
+
+	`useFrappeGetCall` sends arrays as repeated query parameters or as JSON
+	depending on how they were built, and a filter that silently became a
+	string would match on its characters.
+	"""
+	if not value:
+		return []
+
+	if isinstance(value, str):
+		value = frappe.parse_json(value) if value.lstrip().startswith("[") else [value]
+
+	return [str(item) for item in value if item]
+
+
 def _flag(value: bool | int | str) -> bool:
 	"""A checkbox as it arrives over HTTP.
 
@@ -771,7 +807,15 @@ def _titled(row: dict) -> dict:
 	history wants "Flood Response Team", not `flood-response`. Added here rather
 	than in the service, because the coordinator's screens already resolve the
 	full terms of reference and do not need a second copy of its label.
+
+	The deployment's own title comes first (Nov 2026): several deployments run
+	under one terms of reference, and a history of identical names says nothing.
 	"""
+	own = row.get("title")
+
+	if own and own != row.get("name"):
+		return row
+
 	return {
 		**row,
 		"title": frappe.db.get_value("VMMS Terms of Reference", row["terms_of_reference"], "tor_name")
@@ -1119,6 +1163,8 @@ def project_options() -> dict:
 		"company": project_service.default_company(),
 		"statuses": list(project_service.STATUSES),
 		"funding_statuses": list(_FUNDING_STATUSES),
+		"priorities": list(project_service.PRIORITIES),
+		"project_types": project_service.project_types(),
 	}
 
 
@@ -1135,6 +1181,8 @@ def create_project(
 	donor: str | None = None,
 	funding_reference: str | None = None,
 	funding_status: str | None = None,
+	priority: str | None = None,
+	project_type: str | None = None,
 ) -> dict:
 	"""Open a programme of work. The Geo Node is required here, at creation.
 
@@ -1144,7 +1192,7 @@ def create_project(
 	somewhere this caller does not run, which is the rule a filtered picker looks
 	like it enforces and does not.
 
-	Everything else about the programme — its type, priority, cost centre,
+	Everything else about the programme — its cost centre,
 	holiday list, the risks and assumptions — is edited on the record afterwards.
 	This is the door, not the whole form.
 	"""
@@ -1162,6 +1210,8 @@ def create_project(
 		donor=donor,
 		funding_reference=funding_reference,
 		funding_status=funding_status,
+		priority=priority,
+		project_type=project_type,
 	)
 
 	return project_service.dto(doc)
@@ -1169,12 +1219,18 @@ def create_project(
 
 @frappe.whitelist()
 def branch_projects(
-	status: str | None = None, limit: int | None = None, mine: bool | int | str = True
+	status: str | None = None, limit: int | None = None, mine: bool | int | str = False
 ) -> dict:
 	"""Programmes of work in the caller's own area, newest first.
 
 	An unknown status answers with nothing rather than with everything, the same
 	direction `branch_deployments` fails in.
+
+	**`mine` defaults off.** Core's geo scope already bounds this register to the
+	caller's own area, so the coordinator and the admins over them are the only
+	people who see a branch's projects anyway; narrowing further to the ones this
+	person typed in hid their colleagues' programmes from them, including the
+	ones they would write terms of reference under.
 	"""
 	if status and status not in project_service.STATUSES:
 		return {"count": 0, "projects": [], "open_count": 0}
@@ -1212,8 +1268,7 @@ def get_project(name: str) -> dict:
 	the reason `get_terms` states: reading a project's whole shape as one call is
 	the only way its pieces cannot disagree with each other.
 
-	No owner filter, unlike `branch_projects`/`branch_terms`: this is the
-	project's own children, not what any one coordinator filed, and geo scope
+	No owner filter: this is the project's own children, not what any one coordinator filed, and geo scope
 	from `frappe.get_list`'s permission query condition is the only floor. Every
 	terms of reference ever written under the project comes back, active or
 	retired, and every deployment regardless of status — a project's detail page
@@ -1468,6 +1523,9 @@ def tor_methodologies() -> dict:
 		"certification_types": certifications,
 		"units": units,
 		"currencies": currencies,
+		# Whether the terms form should ask for an approval mode at all. See
+		# `terms.routes_requests`.
+		"routes_requests": terms.routes_requests(),
 		"funding_statuses": [
 			option.strip() for option in (funding.options or "").split("\n") if option.strip()
 		]
@@ -1490,7 +1548,9 @@ def deployment_options() -> dict:
 			"Email Template",
 			fields=["name", "subject"],
 			order_by="name asc",
-		)
+		),
+		# The professions "who is needed" may name — `Red Profile.vmms_profession`'s list.
+		"professions": frappe.get_all("Profession", pluck="name", order_by="name asc"),
 	}
 
 
@@ -1586,9 +1646,13 @@ def branch_terms(
 	state: str | None = None,
 	search: str | None = None,
 	limit: int | None = None,
-	mine: bool | int | str = True,
+	mine: bool | int | str = False,
+	covering: str | None = None,
 ) -> dict:
 	"""Terms of reference the caller may read, newest first.
+
+	`covering` keeps only the terms whose location is that place or above it —
+	the terms a deployment there may be set up under.
 
 	`project` narrows to one programme's specifications, which is the listing a
 	coordinator wants when they are about to deploy under one of them.
@@ -1596,8 +1660,13 @@ def branch_terms(
 	These are configuration rather than an operational record, so they carry no
 	`geo_node` and core does not scope them: `geo_scope` says where they may be
 	*used*, which is a different question and is enforced when a deployment is
-	anchored. The owner filter is what keeps this register personal, and it is
-	why `mine` defaults on here.
+	anchored.
+
+	**`mine` defaults off, and nothing on the console sends it.** The society
+	decided (Nov 2026) that the register is not personal: everybody whose role
+	may read terms of reference sees all of them. Which roles those are is the
+	only control left on this list, so granting one is granting the whole
+	register. The parameter stays for a caller that does want only its own.
 	"""
 	from vmmsx.approvals import states as approval_states
 
@@ -1611,6 +1680,11 @@ def branch_terms(
 
 	if _flag(mine):
 		filters["owner"] = frappe.session.user
+
+	if covering:
+		from onerc_core.geo.services import adapter
+
+		filters["geo_scope"] = ("in", [covering, *(row["name"] for row in adapter.get_ancestors(covering))])
 
 	if state:
 		# One of the seven in `states.py`, never a stage label: stages are a
@@ -1648,6 +1722,10 @@ def branch_terms(
 		# The closed set a filter control may offer, handed over rather than
 		# retyped in the browser.
 		"states": list(approval_states.STATES),
+		# Whether this society routes terms of reference for approval at all. On
+		# one that does not, every submitted document has no approval state and a
+		# filter offering Approved or In review could only ever answer nothing.
+		"governed": terms.is_governed(),
 	}
 
 
@@ -1685,7 +1763,11 @@ def get_terms(name: str) -> dict:
 		# child tables. Every other caller — every deployment header, every list
 		# row — gets the lean summary, which is why `dto` stays lean.
 		"terms": terms.mission_dto(name),
-		"document": tor_document.render_document(name)["body"],
+		# None for terms attached as a document: the template would print empty
+		# sections around nothing, and the attachment is the document.
+		"document": None
+		if frappe.db.get_value(TERMS_DOCTYPE, name, "tor_attachment")
+		else tor_document.render_document(name)["body"],
 		"deployments": _status_rows(deployment_names),
 	}
 
@@ -1714,6 +1796,24 @@ def download_terms(name: str):
 			frappe.PermissionError,
 		)
 
+	if document.tor_attachment:
+		# Terms written outside the system: the attached document is the TOR, so
+		# it is what comes back, through this door rather than the file's own
+		# address — a volunteer holds no read on the terms record, which is what
+		# Frappe's private-file check would ask of them.
+		attached = frappe.get_doc(
+			"File",
+			{
+				"file_url": document.tor_attachment,
+				"attached_to_doctype": TERMS_DOCTYPE,
+				"attached_to_name": document.name,
+			},
+		)
+		frappe.local.response.filename = attached.file_name
+		frappe.local.response.filecontent = attached.get_content()
+		frappe.local.response.type = "pdf" if attached.file_name.lower().endswith(".pdf") else "download"
+		return
+
 	frappe.local.response.filename = tor_document.pdf_filename(name)
 	frappe.local.response.filecontent = tor_document.pdf_for(name)
 	frappe.local.response.type = "pdf"
@@ -1721,7 +1821,7 @@ def download_terms(name: str):
 
 @frappe.whitelist()
 def create_deployment(
-	terms_of_reference: str,
+	terms_of_reference: str | None,
 	geo_node: str,
 	start_date: str,
 	end_date: str,
@@ -1730,19 +1830,90 @@ def create_deployment(
 	email_template: str | None = None,
 	notes: str | None = None,
 	coordinator: str | None = None,
+	title: str | None = None,
+	skills_needed: list | str | None = None,
+	professions_needed: list | str | None = None,
+	languages_needed: list | str | None = None,
+	notify_by_email: bool | int | str = True,
+	notify_by_sms: bool | int | str = True,
+	requires_contract: bool | int | str = False,
+	send_on: str | None = None,
+	meeting_at_branch_office: bool | int | str = False,
+	volunteers: list | str | None = None,
+	select_all: bool | int | str = False,
+	criteria: dict | str | None = None,
+	mode: str | None = None,
+	tor_attachment: str | None = None,
+	project: str | None = None,
 	**place,
 ) -> dict:
-	"""Set up a deployment directly, under terms that already exist.
+	"""Set up a deployment, and ask or place its people, in one call.
 
-	The other way one comes into being is an approved `VMMS Deployment Request`,
-	and that path is deliberately untouched: this is the branch running its own
-	duty rather than asking anybody for people. The insert is ordinary, so core's
-	query condition refuses a deployment anchored outside the caller's own area.
+	The one page a County Coordinator deploys from: the terms, a title, the
+	period, the location, who is needed and how asks go out — then, if they
+	chose people, those people asked or placed (`mode`), now or at `send_on`.
 
-	`volunteers_required` is optional and zero means the society has not said —
-	a deployment that has not said how many it needs is never full.
+	**A title is required here**, because many deployments share one terms of
+	reference and a list of identical names is no list at all. The record fills
+	one in only for deployments nobody typed — see `default_title`.
+
+	`meeting_at_branch_office` copies the county's branch office (its
+	`VMMS Branch Location`) into the meeting point, which is what the screen's
+	ticked box means. `select_all` with `criteria` asks everybody the search
+	matches rather than the names in `volunteers`: the same question
+	`find_candidates` answered, asked again on the server, so the count the
+	coordinator saw is the number of people asked.
+
+	**Terms written outside the system** come as `tor_attachment` — a file this
+	person has just uploaded — with the `project` they belong to, in place of
+	`terms_of_reference`. `terms.from_attachment` records them as terms of
+	reference of their own, named after the deployment, and the deployment runs
+	under those: in one transaction, so a refused deployment leaves no terms.
+
+	The other way a deployment comes into being is an approved `VMMS Deployment
+	Request`, and that path is untouched. The insert is ordinary, so core's query
+	condition refuses a deployment anchored outside the caller's own area.
 	"""
+	from vmmsx.deployment.services import sending
+
 	frappe.has_permission(DEPLOYMENT_DOCTYPE, ptype="create", throw=True)
+
+	if not (title or "").strip():
+		frappe.throw(_("Give this deployment a title."), frappe.MandatoryError, title=_("Title Needed"))
+
+	_assert_asking(mode)
+
+	place = {field: value for field, value in place.items() if field in deployment_service.PLACE_FIELDS}
+
+	if not terms_of_reference:
+		if not tor_attachment:
+			frappe.throw(
+				_("Choose the terms of reference, or attach the TOR."),
+				frappe.MandatoryError,
+				title=_("Terms of Reference Needed"),
+			)
+
+		terms_of_reference = terms.from_attachment(
+			tor_name=title.strip(),
+			tor_attachment=tor_attachment,
+			project=project,
+			geo_scope=geo_node,
+			expected_start_date=start_date,
+			expected_end_date=end_date,
+		).name
+
+	if _flag(meeting_at_branch_office):
+		office = _branch_office(geo_node)
+
+		if office:
+			place.update(
+				{
+					"meeting_point": office["location_name"],
+					"meeting_address": office["address"],
+					"meeting_latitude": office["latitude"],
+					"meeting_longitude": office["longitude"],
+				}
+			)
 
 	doc = deployment_service.create(
 		terms_of_reference=terms_of_reference,
@@ -1754,10 +1925,256 @@ def create_deployment(
 		email_template=email_template,
 		notes=notes,
 		coordinator=coordinator,
+		title=title.strip(),
+		skills_needed=_listed(skills_needed),
+		professions_needed=_listed(professions_needed),
+		languages_needed=_listed(languages_needed),
+		notify_by_email=_flag(notify_by_email),
+		notify_by_sms=_flag(notify_by_sms),
+		requires_contract=_flag(requires_contract),
+		send_on=send_on or None,
 		**place,
 	)
 
-	return deployment_service.deployment_dto(doc)
+	sent = None
+
+	if mode:
+		people = _everyone_matching(doc, criteria) if _flag(select_all) else _listed(volunteers)
+		sent = sending.send(doc, people, mode)
+
+	return {"deployment": deployment_service.deployment_dto(doc), "sending": sent}
+
+
+@frappe.whitelist()
+def send_to_volunteers(
+	name: str,
+	mode: str,
+	volunteers: list | str | None = None,
+	select_all: bool | int | str = False,
+	criteria: dict | str | None = None,
+) -> dict:
+	"""Ask or place more people on a deployment that already exists.
+
+	The same act as the end of `create_deployment`, from the deployment's own
+	page: now, at its `send_on`, or in the background for a large list. Write
+	permission on the deployment, which brings core's scoping with it.
+	"""
+	from vmmsx.deployment.services import sending
+
+	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
+	deployment.check_permission("write")
+	_assert_asking(mode)
+
+	people = _everyone_matching(deployment, criteria) if _flag(select_all) else _listed(volunteers)
+
+	return sending.send(deployment, people, mode)
+
+
+def _assert_asking(mode: str | None) -> None:
+	"""A coordinator sends a deployment request; the volunteer accepts it.
+
+	Nobody is placed on a deployment directly from these screens (user, Nov
+	2026): a volunteer must accept the request. `sending.PLACE` is still in the
+	service, but no screen or endpoint reaches it.
+	"""
+	from vmmsx.deployment.services import sending
+
+	if mode and mode != sending.ASK:
+		frappe.throw(
+			_("Volunteers accept a deployment request themselves, so they cannot be placed on a deployment directly."),
+			frappe.ValidationError,
+			title=_("Send a Deployment Request"),
+		)
+
+
+@frappe.whitelist(methods=["POST"])
+def unschedule_volunteer(name: str, volunteer: str) -> dict:
+	"""Take one person off a deployment's scheduled asks before they go out."""
+	from vmmsx.deployment.services import sending
+
+	deployment = _readable(DEPLOYMENT_DOCTYPE, name)
+	deployment.check_permission("write")
+	sending.unschedule(deployment, volunteer)
+
+	return deployment_service.deployment_dto(deployment)
+
+
+@frappe.whitelist()
+def deployment_setup() -> dict:
+	"""What the one-page deployment form needs before anything is typed.
+
+	`counties` are the places this person may set a deployment up in, at the
+	society's deployment level, each with its branch office (the default meeting
+	point). For a County Coordinator that is their own county; for somebody with
+	the whole society, every county. Asked of core's own scope check, per
+	county, so this list and the insert can never disagree. `None` where the
+	society has set no deployment level, and the screen falls back to the
+	ordinary place picker.
+	"""
+	from onerc_core.access.services.enforcement import is_in_scope
+	from onerc_core.geo.services import adapter
+
+	from vmmsx.deployment.services import society
+
+	level = society.deployment_anchor_level()
+	counties = None
+
+	if level:
+		counties = [
+			{
+				"name": node.name,
+				"place_name": node.node_name,
+				# Where the map opens before anybody has dropped a pin.
+				"point": adapter.get_point(node.name),
+				"branch_office": _branch_office(node.name),
+			}
+			for node in frappe.get_all(
+				"Geo Node",
+				filters={"geo_level": level},
+				fields=["name", "geo_node_name as node_name"],
+				order_by="geo_node_name asc",
+			)
+			if is_in_scope(DEPLOYMENT_DOCTYPE, node.name, ptype="create")
+		]
+
+	return {
+		"level": level,
+		"counties": counties,
+		"professions": frappe.get_all("Profession", pluck="name", order_by="name asc"),
+		# Shown under the date fields, as Desk does: the times typed are this zone's.
+		"time_zone": frappe.utils.get_system_timezone(),
+		# The open programmes this person can see, for the Project field. Every
+		# one, not only those with terms already written: a TOR attached from
+		# outside the system is recorded under the project chosen here.
+		"projects": frappe.get_list(
+			PROJECT_DOCTYPE,
+			filters={"status": ("in", project_service.OPEN_STATUSES)},
+			fields=["name", "project_name"],
+			order_by="project_name asc",
+			limit_page_length=0,
+		)
+		if frappe.has_permission(PROJECT_DOCTYPE, "read")
+		else [],
+		# Where the society approves its terms in the system, an attached TOR
+		# would go round the approvers, so the page does not offer it.
+		"can_attach_terms": not terms.is_governed(),
+	}
+
+
+@frappe.whitelist()
+def volunteer_filters(geo_node: str) -> dict:
+	"""The choices the quick filters offer for one county.
+
+	`places` is every county, sub-county and ward of residence the county's
+	active volunteers wrote on their profiles, so a filter never offers a ward
+	nobody lives in, and the ward list can narrow to the sub-counties chosen, as
+	the old tool's did. Read through core's query condition on the register, so
+	nobody learns where volunteers outside their own area live.
+	`certification_types` are the society's active types.
+	"""
+	from frappe.desk.reportview import get_match_cond
+	from onerc_core.geo.services import adapter
+
+	from vmmsx.volunteer.services.certification import CERTIFICATION_TYPE_DOCTYPE
+	from vmmsx.volunteer.services.volunteer import STATUS_ACTIVE
+
+	try:
+		scope = get_match_cond("VMMS Volunteer")
+	except frappe.PermissionError:
+		scope = None
+
+	places = []
+
+	if scope is not None and geo_node:
+		places = frappe.db.sql(
+			f"""select distinct
+				person.vmms_residence_county as county,
+				person.vmms_residence_sub_county as sub_county,
+				person.vmms_residence_ward as ward
+			from `tabVMMS Volunteer`
+			join `tabRed Profile` person on person.name = `tabVMMS Volunteer`.red_profile
+			where `tabVMMS Volunteer`.home_geo_node in %(nodes)s
+			and `tabVMMS Volunteer`.status = %(active)s {scope}
+			order by county, sub_county, ward""",
+			{"nodes": (geo_node, *adapter.get_descendants(geo_node)), "active": STATUS_ACTIVE},
+			as_dict=True,
+		)
+
+	return {
+		"places": [row for row in places if row.county or row.sub_county or row.ward],
+		"certification_types": frappe.get_all(
+			CERTIFICATION_TYPE_DOCTYPE,
+			filters={"is_active": 1},
+			fields=["name as key", "certification_type_name as label"],
+			order_by="certification_type_name asc",
+		),
+	}
+
+
+@frappe.whitelist()
+def read_map_link(url: str) -> dict:
+	"""The point a shared Google Maps short link opens at, or None.
+
+	A phone's "Share" gives `https://maps.app.goo.gl/…`, which says nothing until
+	it is followed; the browser cannot follow it (Google sends no CORS header),
+	so this does, hop by hop, reading only the `Location` each answer points at.
+	Restricted to Google's own short-link hosts, so it cannot be used to make this
+	server fetch anything else, and to staff who may create a deployment.
+	"""
+	from vmmsx.deployment.services import map_links
+
+	if not frappe.has_permission(DEPLOYMENT_DOCTYPE, ptype="create"):
+		frappe.throw(_("You cannot read map links."), frappe.PermissionError)
+
+	return {"point": map_links.follow(url)}
+
+
+def _branch_office(geo_node: str | None) -> dict | None:
+	"""The county's branch office, as recorded in `VMMS Branch Location`."""
+	if not geo_node:
+		return None
+
+	rows = frappe.get_all(
+		"VMMS Branch Location",
+		filters={"geo_node": geo_node},
+		fields=["name", "location_name", "address", "latitude", "longitude"],
+		order_by="is_published desc, creation asc",
+		limit=1,
+		ignore_permissions=True,
+	)
+
+	if not rows:
+		return None
+
+	office = rows[0]
+
+	# A pin of 0, 0 is an empty pair of Float fields, not a place in the Gulf of Guinea.
+	if not (office.latitude or office.longitude):
+		office.latitude = office.longitude = None
+
+	return office
+
+
+def _everyone_matching(deployment, criteria) -> list[str]:
+	"""Every volunteer the search matches for this deployment, best first."""
+	criteria = frappe.parse_json(criteria) if isinstance(criteria, str) else (criteria or {})
+
+	return matching.matching_names(
+		deployment.terms_of_reference,
+		deployment.geo_node,
+		as_of=deployment.start_date,
+		search=criteria.get("search"),
+		skills=_listed(criteria.get("skills")),
+		languages=_listed(criteria.get("languages")),
+		professions=_listed(criteria.get("professions")),
+		surge_only=_flag(criteria.get("surge_only") or False),
+		start_date=deployment.start_date,
+		end_date=deployment.end_date,
+		only_available=_flag(criteria.get("only_available") or False),
+		exclude_conflicts=_flag(criteria.get("exclude_conflicts") or False),
+		exclude_deployment=deployment.name,
+		**{field: _listed(criteria.get(field)) for field in matching.LIST_FILTERS},
+	)
 
 
 @frappe.whitelist()
@@ -1811,7 +2228,9 @@ def locate_deployment(name: str, place: str, force: bool | int | str = False) ->
 
 
 @frappe.whitelist()
-def suggest_places(query: str, limit: int = 6) -> dict:
+def suggest_places(
+	query: str, limit: int = 6, latitude: float | None = None, longitude: float | None = None
+) -> dict:
 	"""What a half-typed address might be, with the point that goes with each.
 
 	**A lookup, not a record.** It reads nothing of this society's and writes
@@ -1832,7 +2251,14 @@ def suggest_places(query: str, limit: int = 6) -> dict:
 
 	from vmmsx.deployment.services import geocoding
 
-	return geocoding.suggest(query, limit=min(int(limit or 6), 10))
+	# Where the screen is looking — the county's centre — so nearby places come first.
+	near = (
+		{"latitude": frappe.utils.flt(latitude), "longitude": frappe.utils.flt(longitude)}
+		if latitude not in (None, "") and longitude not in (None, "")
+		else None
+	)
+
+	return geocoding.suggest(query, limit=min(int(limit or 6), 10), near=near)
 
 
 @frappe.whitelist()

@@ -354,6 +354,8 @@ export const API = {
 	// this person filed. It can only narrow — the owner filter is applied on top
 	// of a result the permission layer has already bounded.
 	createProject: "vmmsx.api.deployment.create_project",
+	// The choices the open-a-project form offers: Project Types and the like.
+	projectOptions: "vmmsx.api.deployment.project_options",
 	branchProjects: "vmmsx.api.deployment.branch_projects",
 	setProjectStatus: "vmmsx.api.deployment.set_project_status",
 	// One project in full: its own fields, the terms of reference written under
@@ -378,6 +380,16 @@ export const API = {
 	deploymentOptions: "vmmsx.api.deployment.deployment_options",
 	operationsDocuments: "vmmsx.api.deployment.operations_documents",
 	createDeployment: "vmmsx.api.deployment.create_deployment",
+	// The one-page form: the counties this person may deploy in, each with its
+	// branch office; asking or placing more people later; taking somebody off
+	// the scheduled asks; and reading a pasted Google Maps share link.
+	deploymentSetup: "vmmsx.api.deployment.deployment_setup",
+	sendToVolunteers: "vmmsx.api.deployment.send_to_volunteers",
+	unscheduleVolunteer: "vmmsx.api.deployment.unschedule_volunteer",
+	readMapLink: "vmmsx.api.deployment.read_map_link",
+	// The quick filters' choices for one county: where its volunteers live,
+	// and the certification types.
+	volunteerFilters: "vmmsx.api.deployment.volunteer_filters",
 	// Correcting one afterwards. Every material change goes through the
 	// document's own save, so `change.py` compares, insists on a reason and
 	// tells everybody already on the roster — see `deployment.update`.

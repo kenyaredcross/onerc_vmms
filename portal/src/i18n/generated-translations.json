@@ -2526,7 +2526,13 @@
     "We will send a payment request to this number. Enter your PIN on your phone to pay.": "Tutatuma ombi la malipo kwa nambari hii. Weka PIN yako kwenye simu kulipa.",
     "If you entered your PIN, it can take a minute to arrive.": "Ikiwa uliweka PIN yako, inaweza kuchukua dakika moja kufika.",
     "Health and Wellness": "Afya na Ustawi",
-    "Tell us where you are a citizen.": "Tuambie wewe ni raia wa nchi gani."
+    "Tell us where you are a citizen.": "Tuambie wewe ni raia wa nchi gani.",
+    "Project Name": "Jina la mradi",
+    "Project Type": "Aina ya mradi",
+    "Low": "Chini",
+    "High": "Juu",
+    "Title of exercise": "Jina la zoezi",
+    "Proposed methodology": "Mbinu inayopendekezwa"
   },
   "ar": {
     "% complete": "٪ مكتمل",
@@ -5055,7 +5061,13 @@
     "We will send a payment request to this number. Enter your PIN on your phone to pay.": "سنرسل طلب دفع إلى هذا الرقم. أدخل رمزك السري على هاتفك للدفع.",
     "If you entered your PIN, it can take a minute to arrive.": "إذا أدخلت رمزك السري، فقد يستغرق وصول الدفعة دقيقة.",
     "Health and Wellness": "الصحة والعافية",
-    "Tell us where you are a citizen.": "أخبرنا بالبلد الذي تحمل جنسيته."
+    "Tell us where you are a citizen.": "أخبرنا بالبلد الذي تحمل جنسيته.",
+    "Project Name": "اسم المشروع",
+    "Project Type": "نوع المشروع",
+    "Low": "منخفضة",
+    "High": "عالية",
+    "Title of exercise": "عنوان المهمة الميدانية",
+    "Proposed methodology": "المنهجية المقترحة"
   },
   "pt": {
     "% complete": "% completo",
@@ -7584,7 +7596,13 @@
     "We will send a payment request to this number. Enter your PIN on your phone to pay.": "Vamos enviar um pedido de pagamento para este número. Introduza o PIN no telemóvel para pagar.",
     "If you entered your PIN, it can take a minute to arrive.": "Se introduziu o PIN, pode demorar um minuto a chegar.",
     "Health and Wellness": "Saúde e Bem-estar",
-    "Tell us where you are a citizen.": "Diga-nos de que país é cidadão."
+    "Tell us where you are a citizen.": "Diga-nos de que país é cidadão.",
+    "Project Name": "Nome do projeto",
+    "Project Type": "Tipo de projeto",
+    "Low": "Baixa",
+    "High": "Alta",
+    "Title of exercise": "Título do exercício",
+    "Proposed methodology": "Metodologia proposta"
   },
   "fr": {
     "% complete": "% complet",
@@ -10113,6 +10131,12 @@
     "We will send a payment request to this number. Enter your PIN on your phone to pay.": "Nous enverrons une demande de paiement à ce numéro. Saisissez votre code PIN sur votre téléphone pour payer.",
     "If you entered your PIN, it can take a minute to arrive.": "Si vous avez saisi votre code PIN, cela peut prendre une minute.",
     "Health and Wellness": "Santé et Bien-être",
-    "Tell us where you are a citizen.": "Indiquez-nous de quel pays vous êtes citoyen."
+    "Tell us where you are a citizen.": "Indiquez-nous de quel pays vous êtes citoyen.",
+    "Project Name": "Nom du projet",
+    "Project Type": "Type de projet",
+    "Low": "Basse",
+    "High": "Haute",
+    "Title of exercise": "Intitulé de l'exercice",
+    "Proposed methodology": "Méthodologie proposée"
   }
 }

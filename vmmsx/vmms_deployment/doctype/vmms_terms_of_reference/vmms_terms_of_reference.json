@@ -12,6 +12,7 @@
   "column_break_identity",
   "project",
   "is_active",
+  "tor_attachment",
   "period_section",
   "expected_start_date",
   "column_break_period",
@@ -67,7 +68,7 @@
    "fieldname": "tor_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Title of Mission",
+   "label": "Title of Exercise",
    "reqd": 1,
    "translatable": 1
   },
@@ -102,9 +103,15 @@
    "label": "Is Active"
   },
   {
+   "description": "The terms of reference as a document, for terms written outside the system. When attached, this document is what volunteers read and agree to, and the written sections are not needed.",
+   "fieldname": "tor_attachment",
+   "fieldtype": "Attach",
+   "label": "TOR attachment"
+  },
+  {
    "fieldname": "period_section",
    "fieldtype": "Section Break",
-   "label": "Expected Period"
+   "label": "Period"
   },
   {
    "description": "When the mission is expected to begin. Offered as a default; each deployment's own dates govern. Leave empty for standing work.",
@@ -132,13 +139,13 @@
   {
    "fieldname": "placement_section",
    "fieldtype": "Section Break",
-   "label": "Where It Applies"
+   "label": "Location"
   },
   {
    "description": "The part of the organisation these terms may be used in \u2014 that branch and everything under it. Terms written for the whole society name the national node; naming nothing is not an option, because a mission document that applies nowhere in particular cannot be routed for approval and cannot be told apart from one somebody had not finished.",
    "fieldname": "geo_scope",
    "fieldtype": "Link",
-   "label": "Geo Scope",
+   "label": "Location",
    "options": "Geo Node",
    "reqd": 1
   },
@@ -158,7 +165,7 @@
    "description": "The situation this mission answers to: what happened, what is needed, what has been done already. Printed at the head of the terms.",
    "fieldname": "mission_background",
    "fieldtype": "Text Editor",
-   "label": "Mission Background",
+   "label": "Background",
    "translatable": 1
   },
   {
@@ -181,7 +188,7 @@
   {
    "fieldname": "objectives_section",
    "fieldtype": "Section Break",
-   "label": "Specific Objectives"
+   "label": "Objectives"
   },
   {
    "description": "What this mission sets out to achieve, one per row. Numbered on the printed document in this order.",
@@ -205,13 +212,13 @@
   {
    "fieldname": "approach_section",
    "fieldtype": "Section Break",
-   "label": "Proposed Approach"
+   "label": "Proposed Methodology"
   },
   {
    "description": "How the work will be done, chosen from the society's methodologies, with a note on what each means here.",
    "fieldname": "approach_methods",
    "fieldtype": "Table",
-   "label": "Approach Methodology",
+   "label": "Proposed Methodology",
    "options": "VMMS TOR Approach"
   },
   {
@@ -377,7 +384,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-20 09:00:00.000000",
+ "modified": "2026-11-15 12:52:08.932107",
  "modified_by": "Administrator",
  "module": "VMMS Deployment",
  "name": "VMMS Terms of Reference",

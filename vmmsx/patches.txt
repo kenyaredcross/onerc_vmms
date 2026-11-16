@@ -156,3 +156,8 @@ vmmsx.patches.install_card_and_signature_settings
 
 # Volunteers keep their own emergency contacts, editable from their profile.
 vmmsx.patches.seed_volunteer_emergency_contacts
+
+# The printed terms of reference follows the Kenya Red Cross layout and wording.
+vmmsx.patches.refresh_tor_document_template
+# Deployments get a title; the ones from before titles get their terms and start month.
+vmmsx.patches.title_existing_deployments

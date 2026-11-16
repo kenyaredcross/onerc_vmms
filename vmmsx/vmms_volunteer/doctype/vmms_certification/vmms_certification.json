@@ -39,6 +39,7 @@
   {
    "description": "Whose certification this is.",
    "fieldname": "volunteer",
+   "search_index": 1,
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Volunteer",
@@ -112,7 +113,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-03 09:00:00.000000",
+ "modified": "2026-11-14 18:36:53.043346",
  "modified_by": "Administrator",
  "module": "VMMS Volunteer",
  "name": "VMMS Certification",

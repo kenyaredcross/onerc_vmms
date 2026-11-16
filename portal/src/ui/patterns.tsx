@@ -1,4 +1,4 @@
-import { FolderTile } from "./FolderCard";
+import { FolderPreviewTile } from "./FolderCard";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -176,8 +176,9 @@ export function FilterBar({
  *
  * **The shape carries the idea.** A project is a container — it holds terms of
  * reference, and those hold deployments — and a folder says that before a word
- * is read. The lid is a wash of the shell tone with a tab drawn on it rather
- * than an illustration, so it costs nothing and inherits the theme.
+ * is read. It is laid out as the file library lays out a file, a grey panel
+ * with the folder in it and the facts underneath, so the two registers read as
+ * one family and a long summary cannot stretch a row.
  *
  * The whole card is one `<Link>`, not a div with a click handler, so it is
  * reachable by keyboard, opens in a new tab on a middle click and announces
@@ -186,18 +187,30 @@ export function FilterBar({
 export function FolderCard({
 	to,
 	name,
+	kind,
 	summary,
 	status,
 	counts,
 }: {
 	to: string;
 	name: ReactNode;
+	/** What sort of folder it is — a project's type. Sits in the panel's corner. */
+	kind?: ReactNode;
 	summary?: ReactNode;
 	status?: string | null;
-	/** The short facts on the folder's foot — "3 TORs · 6 deployments". */
+	/** The short facts under the name — "Nairobi · from 1 Jan 2026". */
 	counts?: ReactNode;
 }) {
-	return <FolderTile to={to} title={name} summary={summary} footer={counts} badge={status ? <StateBadge state={status}/> : undefined}/>;
+	return (
+		<FolderPreviewTile
+			to={to}
+			title={name}
+			kicker={kind}
+			meta={counts}
+			summary={summary}
+			badge={status ? <StateBadge state={status} /> : undefined}
+		/>
+	);
 }
 
 /* ------------------------------------------------------------- record rows */

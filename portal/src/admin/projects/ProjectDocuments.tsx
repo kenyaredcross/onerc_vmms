@@ -97,7 +97,12 @@ export function ProjectDocuments({ terms }: { terms: TermsOfReference[] }) {
 							>
 								<DocumentIcon />
 								<span>PDF</span>
-								<StateBadge state={row.approval_state || (row.is_draft ? "Draft" : "Submitted")} />
+								{/* Submitted with no approval state is final on a society that does
+								    not route terms, so it is green like Approved. */}
+								<StateBadge
+									state={row.approval_state || (row.is_draft ? "Draft" : "Submitted")}
+									toneOf={!row.approval_state && !row.is_draft ? "Approved" : undefined}
+								/>
 							</Link>
 							<div className="project-file-information">
 								<Link

@@ -35,7 +35,8 @@ SEED_FILE = "terms_of_reference.html"
 
 CONTEXT_KEYS = (
 	"society_name, society_logo, tor_key, tor_name, purpose, responsibilities, notes,"
-	" geo_scope_path, duration, approval_mode_label, status_label,"
+	" geo_scope_path, period, background, objectives, methodology, duration, approval_mode_label,"
+	" status_label,"
 	" mandatory_certifications, desirable_certifications, project_name, project_summary,"
 	" project_period, project_geo_path, issued_on"
 )

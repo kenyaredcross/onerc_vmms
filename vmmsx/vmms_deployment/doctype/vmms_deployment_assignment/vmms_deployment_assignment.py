@@ -131,3 +131,8 @@ class VMMSDeploymentAssignment(Document):
 			self.name,
 			about=self.volunteer,
 		)
+
+		# The email and the text, where the deployment asked for them.
+		from vmmsx.deployment.services import sending
+
+		sending.notify_ask(self)

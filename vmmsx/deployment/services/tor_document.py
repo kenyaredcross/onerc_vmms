@@ -34,6 +34,7 @@ from frappe.utils.pdf import get_pdf
 
 from vmmsx.cards.services import assets
 from vmmsx.deployment.services import terms
+from vmmsx.places import place_name
 from vmmsx.templating.services import render
 
 # The template these render through. The record it names carries every word of
@@ -53,14 +54,21 @@ _MODE_LABELS = {
 def context_for(terms_of_reference: str, absolute_assets: bool = False) -> dict:
 	"""Everything the printed terms of reference could want to say, as plain values.
 
-	Built from `terms.dto`, which is already the reviewed field list, plus the
-	things only a printed document needs: the letterhead, the certification
-	requirements in the society's own words rather than as keys, and the date it
-	was put on paper.
+	Built from `terms.mission_dto`, which is already the reviewed field list, plus
+	the things only a printed document needs: the letterhead, the certification
+	requirements and methodologies in the society's own words rather than as
+	keys, and the date it was put on paper.
+
+	**Named the way the society's own paper names them** — Title of Exercise,
+	Location, Period, then numbered Background, Purpose, Objectives and Proposed
+	Methodology, from the Kenya Red Cross terms of reference the shipped
+	template follows. The keys a society's rewritten template may already use
+	(`geo_scope_path`, `project_period`, `project_summary`) are all still here.
 	"""
 	from vmmsx.notifications.services import branding
 
-	detail = terms.dto(terms_of_reference)
+	detail = terms.mission_dto(terms_of_reference)
+	project = _project_context(detail["project"])
 	lockup = branding.lockup()
 	logo = lockup.get("brand_logo") or ""
 
@@ -72,14 +80,37 @@ def context_for(terms_of_reference: str, absolute_assets: bool = False) -> dict:
 		"purpose": detail["purpose"] or "",
 		"responsibilities": detail["responsibilities"] or "",
 		"notes": frappe.db.get_value(terms.TERMS_DOCTYPE, terms_of_reference, "notes") or "",
-		"geo_scope_path": detail["geo_scope_path"] or "",
+		# The place's own name, as on the cards and in the emails — "Nairobi", not
+		# the chain up to the society, which the reader of a printed mission
+		# document already knows.
+		"geo_scope_path": place_name(detail["geo_scope"]),
 		"duration": _duration_text(detail["default_duration_days"]),
-		"approval_mode_label": _MODE_LABELS.get(detail["approval_mode"], ""),
+		# Empty — and the row with it — where deployment requests are not routed
+		# for approval at all: there "direct" and "routed" both mean the branch
+		# deploys, and a line promising "no further authorisation" answers a
+		# question nobody on that society is asking.
+		"approval_mode_label": _MODE_LABELS.get(detail["approval_mode"], "")
+		if detail["routes_requests"]
+		else "",
 		"status_label": _("Active") if detail["is_active"] else _("Withdrawn from new deployments"),
 		"mandatory_certifications": _titles(detail["required_certifications"]),
 		"desirable_certifications": _titles(detail["desirable_certifications"]),
 		"issued_on": format_date(frappe.utils.now_datetime()),
-		**_project_context(detail["project"]),
+		# The exercise's own dates, and the programme's only where these terms
+		# set none: "Period" on the society's paper is when this work happens.
+		"period": _period_text(detail["expected_start_date"], detail["expected_end_date"])
+		or project["project_period"],
+		# The mission's own background, as written in the editor; the project's
+		# summary stands in where the terms have none, which is what this
+		# section printed before the mission had a background of its own.
+		"background": detail["mission_background"] or project["project_summary"],
+		"objectives": [row["objective"] for row in detail["objectives"] if row.get("objective")],
+		"methodology": [
+			{"name": row["methodology_name"], "notes": row.get("notes") or ""}
+			for row in detail["approach_methods"]
+			if row.get("methodology")
+		],
+		**project,
 	}
 
 
@@ -149,7 +180,7 @@ def _project_context(project: str | None) -> dict:
 		"project_name": detail["project_name"] or "",
 		"project_summary": detail["summary"] or "",
 		"project_period": _period_text(detail["start_date"], detail["end_date"]),
-		"project_geo_path": detail["geo_path"] or "",
+		"project_geo_path": place_name(detail["geo_node"]),
 	}
 
 
@@ -177,15 +208,20 @@ def _duration_text(days: int | None) -> str:
 	return _("{0} days").format(days) if days != 1 else _("1 day")
 
 
+# The month in words, as the society's own paper writes a period: "12 October
+# 2026", never "12-10-2026", which reads as a different date in half the world.
+_LONG_DATE = "d MMMM yyyy"
+
+
 def _period_text(start: str | None, end: str | None) -> str:
-	"""A project's dates as one line, however many of them are set."""
+	"""A pair of dates as one line, however many of them are set."""
 	if start and end:
-		return f"{format_date(start)} to {format_date(end)}"
+		return f"{format_date(start, _LONG_DATE)} – {format_date(end, _LONG_DATE)}"
 
 	if start:
-		return _("From {0}").format(format_date(start))
+		return _("From {0}").format(format_date(start, _LONG_DATE))
 
 	if end:
-		return _("Until {0}").format(format_date(end))
+		return _("Until {0}").format(format_date(end, _LONG_DATE))
 
 	return ""

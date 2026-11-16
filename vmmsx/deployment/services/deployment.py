@@ -286,6 +286,14 @@ def create(
 	email_template: str | None = None,
 	notes: str | None = None,
 	coordinator: str | None = None,
+	title: str | None = None,
+	skills_needed: list | None = None,
+	professions_needed: list | None = None,
+	languages_needed: list | None = None,
+	notify_by_email: bool = True,
+	notify_by_sms: bool = True,
+	requires_contract: bool = False,
+	send_on=None,
 	**place,
 ):
 	"""Insert a deployment directly, without a request in front of it.
@@ -341,12 +349,83 @@ def create(
 			# filing a deployment is the coordinator running it until somebody
 			# says otherwise.
 			"coordinator": coordinator or frappe.session.user,
+			"title": title,
+			# Who is needed: what Find volunteers starts from, here and on the
+			# deployment's own page when it is topped up later.
+			"skills_needed": [{"skill": value} for value in skills_needed or [] if value],
+			"professions_needed": [{"profession": value} for value in professions_needed or [] if value],
+			"languages_needed": [{"language": value} for value in languages_needed or [] if value],
+			"notify_by_email": 1 if notify_by_email else 0,
+			"notify_by_sms": 1 if notify_by_sms else 0,
+			# Recorded and shown; nothing acts on it yet (Nov 2026).
+			"requires_contract": 1 if requires_contract else 0,
+			"send_on": send_on or None,
 			**{field: value for field, value in place.items() if field in PLACE_FIELDS},
 		}
 	)
 	deployment.insert()
 
 	return deployment
+
+
+def default_title(deployment) -> str:
+	"""A title for a deployment nobody named: its terms and the month it starts.
+
+	"Nairobi Terms – November 2026", with "(2)", "(3)" after it where an open
+	deployment in the same county already has that name. Used by `before_validate` for a routed
+	request's deployment and by the patch that titled the records written before
+	titles existed — never for one a coordinator is creating, who must type one.
+	"""
+	name = frappe.db.get_value("VMMS Terms of Reference", deployment.terms_of_reference, "tor_name")
+	start = deployment.get("planned_start") or deployment.get("start_date")
+	base = " – ".join(
+		part for part in (name or deployment.terms_of_reference, start and frappe.utils.formatdate(start, "MMMM yyyy")) if part
+	)
+	title, number = base, 1
+
+	while _title_taken(title, deployment.name, deployment.get("geo_node")):
+		number += 1
+		title = f"{base} ({number})"
+
+	return title
+
+
+def assert_title_free(deployment) -> None:
+	"""No two open deployments in one county share a title. Finished ones may be reused.
+
+	**Per county** (the deployment's own place, `geo_node`), not across the
+	society (user, Nov 2026). The title tells a county's own deployments apart
+	in its coordinator's lists, and a clash in a county they cannot see would be
+	a refusal they had no way to look into; another county's list is always
+	read with the county beside it.
+
+	Compared without regard to case, because "Nairobi Marathon" and "nairobi
+	marathon" are the same name to anyone reading a list. A deployment that is
+	itself finished is not checked: closing it should never fail over a name.
+	"""
+	if deployment.status not in OPEN_STATUSES:
+		return
+
+	if _title_taken(deployment.title, deployment.name, deployment.geo_node):
+		frappe.throw(
+			_("Another open deployment is already called {0}. Choose a different title.").format(
+				frappe.bold(deployment.title)
+			),
+			frappe.DuplicateEntryError,
+			title=_("Title Already Used"),
+		)
+
+
+def _title_taken(title: str, own_name: str | None, geo_node: str | None) -> bool:
+	"""Whether an open deployment in the same place already has this title."""
+	return bool(
+		frappe.db.sql(
+			"""select 1 from `tabVMMS Deployment`
+			where lower(title) = lower(%s) and status in %s and name != %s
+			and geo_node <=> %s limit 1""",
+			(title, OPEN_STATUSES, own_name or "", geo_node),
+		)
+	)
 
 
 # Everything about where the work is and how to reach it. Named as a set so
@@ -382,9 +461,14 @@ PLACE_FIELDS = (
 #   planned period, and a caller that could set them could make them disagree
 #   with the datetimes they come from.
 EDITABLE_FIELDS = (
+	"title",
 	"coordinator",
 	"volunteers_required",
 	"email_template",
+	"notify_by_email",
+	"notify_by_sms",
+	"requires_contract",
+	"send_on",
 	"notes",
 	"planned_start",
 	"planned_end",
@@ -483,6 +567,7 @@ def status_dto(deployment, counts: dict | None = None) -> dict:
 
 	return {
 		"name": deployment.name,
+		"title": deployment.get("title") or deployment.name,
 		"terms_of_reference": deployment.terms_of_reference,
 		"geo_node": deployment.geo_node,
 		# Through `placement.geo_path`, so a deployment whose anchor was deleted
@@ -576,6 +661,32 @@ def coordinator_dto(deployment) -> dict:
 	}
 
 
+def needs_dto(deployment) -> dict:
+	"""Who this deployment needs, as the keys Find volunteers filters on."""
+	return {
+		"skills": [row.skill for row in deployment.get("skills_needed") or [] if row.skill],
+		"professions": [row.profession for row in deployment.get("professions_needed") or [] if row.profession],
+		"languages": [row.language for row in deployment.get("languages_needed") or [] if row.language],
+	}
+
+
+def sending_dto(deployment) -> dict:
+	"""How asks go out, and who is waiting for the send time."""
+	from vmmsx.deployment.services import assignment
+
+	waiting = [row.volunteer for row in deployment.get("scheduled_asks") or [] if row.volunteer]
+
+	return {
+		"notify_by_email": bool(deployment.get("notify_by_email")),
+		"notify_by_sms": bool(deployment.get("notify_by_sms")),
+		"requires_contract": bool(deployment.get("requires_contract")),
+		"email_template": deployment.get("email_template"),
+		"send_on": deployment.get("send_on"),
+		"asks_sent_on": deployment.get("asks_sent_on"),
+		"scheduled": [{"volunteer": name, "full_name": assignment.volunteer_label(name)} for name in waiting],
+	}
+
+
 def deployment_dto(deployment) -> dict:
 	"""Everything about one deployment: its terms, its period, its place and who is on it."""
 	from vmmsx.deployment.services import assignment, terms
@@ -598,6 +709,8 @@ def deployment_dto(deployment) -> dict:
 		"participants": assignment.roster_of(deployment.name),
 		"leader": assignment.leader_of(deployment.name),
 		"notes": deployment.notes,
+		"needs": needs_dto(deployment),
+		"sending": sending_dto(deployment),
 		# Whether this reader may change the deployment, roster included. A
 		# read-only role (Head of Region, NSD) is not offered controls the server
 		# would refuse; the flag draws nothing and grants nothing.

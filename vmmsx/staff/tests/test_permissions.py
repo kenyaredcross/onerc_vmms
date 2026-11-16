@@ -131,3 +131,51 @@ class TestASharedRoleAcrossTwoSettingsKeepsBothGrants(IntegrationTestCase):
 		self.assertIn("VMMS Deployment", result[self.role])
 		self.assertIn("VMMS Deployment Request", result[self.role])
 		self.assertIn("VMMS Terms of Reference", result[self.role])
+
+
+class TestTheDeploymentCoordinatorMaySubmitTerms(IntegrationTestCase):
+	"""A draft terms of reference its author cannot submit is a mission nobody can
+	deploy against; see the module docstring."""
+
+	def setUp(self):
+		super().setUp()
+		self.role = "VMMSTEST Terms Coordinator"
+		if not frappe.db.exists("Role", self.role):
+			frappe.get_doc({"doctype": "Role", "role_name": self.role, "desk_access": 1}).insert(
+				ignore_permissions=True
+			)
+
+	def tearDown(self):
+		from vmmsx.deployment.services.society import DEPLOYMENT_SCOPE_ROLE_FIELD
+
+		frappe.db.set_single_value("National Society Settings", DEPLOYMENT_SCOPE_ROLE_FIELD, None)
+		super().tearDown()
+
+	def test_the_deployment_scope_role_is_granted_submit_on_terms_and_nothing_destructive(self):
+		from vmmsx.deployment.services.society import DEPLOYMENT_SCOPE_ROLE_FIELD
+
+		frappe.db.set_single_value("National Society Settings", DEPLOYMENT_SCOPE_ROLE_FIELD, self.role)
+		permissions.install()
+
+		row = frappe.get_all(
+			"Custom DocPerm",
+			filters={"parent": "VMMS Terms of Reference", "role": self.role},
+			fields=["read", "write", "create", "submit", "cancel", "amend", "delete"],
+		)[0]
+
+		self.assertEqual((row["read"], row["write"], row["create"], row["submit"]), (1, 1, 1, 1))
+		self.assertEqual((row["cancel"], row["amend"], row["delete"]), (0, 0, 0))
+
+	def test_its_other_doctypes_are_not_made_submittable_by_it(self):
+		from vmmsx.deployment.services.society import DEPLOYMENT_SCOPE_ROLE_FIELD
+
+		frappe.db.set_single_value("National Society Settings", DEPLOYMENT_SCOPE_ROLE_FIELD, self.role)
+		permissions.install()
+
+		for doctype in ("Project", "VMMS Deployment"):
+			row = frappe.get_all(
+				"Custom DocPerm",
+				filters={"parent": doctype, "role": self.role},
+				fields=["submit"],
+			)[0]
+			self.assertEqual(row["submit"], 0, doctype)

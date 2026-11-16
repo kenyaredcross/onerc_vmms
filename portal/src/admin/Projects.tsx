@@ -61,15 +61,16 @@ import { useCanCreate } from "./creates";
  * project needed the other two to exist, which the data model has never
  * required (`VMMS Terms of Reference.project` is optional). The order the
  * records have to exist in still shows up in each form, which only offers what
- * already exists above it: the terms form lists the projects this person
- * opened, the deployment form lists the terms they wrote.
+ * already exists above it: the terms form lists the projects in this person's
+ * area, the deployment form lists the terms the person may read.
  *
- * **`mine` is on by default on both registers and it can only narrow.** The
- * server applies the owner filter on top of a result core's query condition has
- * already bounded to the caller's geo scope, so untick it and what appears is
- * their branch's, never the site's. `doc.owner` is the right question for these
- * two — it asks who *did the filing*, which is the same distinction
- * `deployment/services/invitation.py` draws when it decides who hears an answer.
+ * **Neither register has an "Only mine".** Core's geo scope already bounds
+ * projects to the caller's own area, so a branch's projects are seen by its
+ * coordinator and the admins over them; narrowing to the ones this person typed
+ * in only hid their colleagues' work. Terms of reference carry no geo node and
+ * core does not scope them, so that register shows every terms of reference the
+ * caller's role may read — the society's decision (Nov 2026) on the vmms_kenya
+ * edition. See `api/deployment.py::branch_terms`.
  *
  * **Placement is `GeoSelects`, the one placement control in this app.** A
  * project is anchored at creation and not filled in later (ACC-02), so the form
@@ -83,12 +84,11 @@ import { useCanCreate } from "./creates";
 export function ProjectList() {
 	const canCreate = useCanCreate();
 	const [searchParams] = useSearchParams();
-	const [mine, setMine] = useState(true);
 	const [creating, setCreating] = useState(() => searchParams.get("new") === "1");
 
 	const { data, error, isLoading, mutate } = useFrappeGetCall<{
 		message: { count: number; projects: ProjectSummary[]; open_count: number };
-	}>(API.branchProjects, { mine: mine ? 1 : 0 }, `admin:projects:${mine}`);
+	}>(API.branchProjects, undefined, "admin:projects");
 
 	const rows = data?.message?.projects ?? [];
 
@@ -97,7 +97,6 @@ export function ProjectList() {
 			<PageHeading title="Projects" />
 
 			<div className="mb-4 flex flex-wrap items-center gap-2">
-				<MineToggle mine={mine} onChange={setMine} label="Only mine" />
 				{(data?.message?.open_count ?? 0) > 0 && <Pill tone="signal">{data?.message?.open_count} open</Pill>}
 				<div className="ml-auto">
 					{canCreate("project") && (
@@ -129,7 +128,7 @@ export function ProjectList() {
 			)}
 
 			{rows.length > 0 && (
-				<RecordCollection as="ul" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+				<RecordCollection as="ul" className="folder-preview-grid">
 					{rows.map((row) => (
 						<li key={row.name} className="min-w-0">
 							{/* A project is a container — it holds terms of reference, and
@@ -148,6 +147,7 @@ export function ProjectList() {
 							<FolderCard
 								to={`/admin/projects/${encodeURIComponent(row.name)}`}
 								name={row.project_name}
+								kind={row.project_type}
 								summary={row.summary}
 								status={row.status}
 								counts={
@@ -316,6 +316,8 @@ export function ProjectDetail() {
 							{[
 								{ label: "Reference", value: project.name },
 								{ label: "Branch", value: geoPath(project.geo_path) || "—" },
+								{ label: "Project Type", value: project.project_type || "—" },
+								{ label: "Priority", value: project.priority || "—" },
 								{ label: "Created", value: project.created_on ? formatDate(project.created_on) : "—" },
 							].map((fact) => (
 								<div key={fact.label}>
@@ -349,7 +351,7 @@ function DeploymentRow({ row }: { row: DeploymentSummary }) {
 				className="block rounded-xl border border-card-line bg-white px-4 py-3 transition hover:border-card-line"
 			>
 				<div className="flex items-start justify-between gap-2">
-					<span className="text-[13.5px] font-bold text-ink">{row.terms_of_reference || row.name}</span>
+					<span className="text-[13.5px] font-bold text-ink">{row.title || row.terms_of_reference || row.name}</span>
 					<StateBadge state={row.status} />
 				</div>
 				<div className="mt-1 text-[11.5px] text-muted">{geoPath(row.geo_path)}</div>
@@ -370,6 +372,9 @@ function DeploymentRow({ row }: { row: DeploymentSummary }) {
  * what made every "Open a project" post fail on the server.
  */
 const PROJECT_STATUSES = ["Open", "On hold", "Completed", "Cancelled"];
+
+/** ERPNext's own three, in the order a person reads them. */
+const PROJECT_PRIORITIES = ["Low", "Medium", "High"];
 
 /**
  * Once a project is Completed or Cancelled it has ended, and that is the whole
@@ -432,6 +437,14 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 	const [summary, setSummary] = useState("");
 	const [notes, setNotes] = useState("");
 	const [status, setStatus] = useState("Open");
+	const [priority, setPriority] = useState("Medium");
+	const [projectType, setProjectType] = useState("");
+	const options = useFrappeGetCall<{ message: { project_types: string[] } }>(
+		API.projectOptions,
+		undefined,
+		"admin:project-options",
+	);
+	const projectTypes = options.data?.message.project_types ?? [];
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
 	const [chain, setChain] = useState<GeoNode[]>([]);
@@ -452,6 +465,8 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 				summary: summary.trim() || undefined,
 				notes: notes.trim() || undefined,
 				status,
+				priority,
+				project_type: projectType || undefined,
 				start_date: startDate || undefined,
 				end_date: endDate || undefined,
 			});
@@ -459,6 +474,8 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 			setSummary("");
 			setNotes("");
 			setStatus("Open");
+			setPriority("Medium");
+			setProjectType("");
 			setStartDate("");
 			setEndDate("");
 			setChain([]);
@@ -479,13 +496,35 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 			</p>
 
 			<div className="mt-4 grid gap-4 sm:grid-cols-2">
-				<Labelled label="Project" hint="What your society calls this programme.">
+				<Labelled label="Project Name">
 					<input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} />
 				</Labelled>
 
 				<Labelled label="Status" hint="Initial status of the project.">
 					<select className={INPUT} value={status} onChange={(e) => setStatus(e.target.value)}>
 						{PROJECT_STATUSES.map((option) => (
+							<option key={option} value={option}>
+								{option}
+							</option>
+						))}
+					</select>
+				</Labelled>
+			</div>
+
+			<div className="mt-4 grid gap-4 sm:grid-cols-2">
+				<Labelled label="Project Type">
+					<select className={INPUT} value={projectType} onChange={(e) => setProjectType(e.target.value)}>
+						<option value="" />
+						{projectTypes.map((option) => (
+							<option key={option} value={option}>
+								{option}
+							</option>
+						))}
+					</select>
+				</Labelled>
+				<Labelled label="Priority">
+					<select className={INPUT} value={priority} onChange={(e) => setPriority(e.target.value)}>
+						{PROJECT_PRIORITIES.map((option) => (
 							<option key={option} value={option}>
 								{option}
 							</option>
@@ -537,9 +576,6 @@ function ProjectForm({ onCreated }: { onCreated: () => void }) {
 					Location
 				</p>
 				<GeoSelects scoped chain={chain} onChain={setChain} idPrefix="project" />
-				<p className="mt-2 text-[12px] text-slate-faint">
-					Required. A project must belong to an area to be visible.
-				</p>
 			</div>
 
 			{failure && (
@@ -588,33 +624,35 @@ export function TermsList() {
 	const canCreate = useCanCreate();
 	const branding = useSocietyBranding();
 	const [searchParams] = useSearchParams();
-	const [mine, setMine] = useState(true);
 	const [state, setState] = useState("");
 	const [search, setSearch] = useState("");
 	const [creating, setCreating] = useState(() => searchParams.get("new") === "1");
 
 	const { data, error, isLoading, mutate } = useFrappeGetCall<{
-		message: { count: number; terms: TermsOfReference[]; states: string[] };
+		message: { count: number; terms: TermsOfReference[]; states: string[]; governed?: boolean };
 	}>(
 		API.branchTerms,
 		{
-			mine: mine ? 1 : 0,
 			...(state ? { state } : {}),
 			...(search.trim() ? { search: search.trim() } : {}),
 		},
-		`admin:terms:${mine}:${state}:${search.trim()}`,
+		`admin:terms:${state}:${search.trim()}`,
 	);
 
 	const rows = data?.message?.terms ?? [];
 	// The closed set comes from the server rather than being retyped here, so a
 	// state added to `states.py` reaches this control without a frontend change.
 	const states = data?.message?.states ?? [];
+	// Offered only where terms are routed for approval: elsewhere no submitted
+	// document carries an approval state. False until the server says so, so the
+	// control never flashes up and vanishes on a society that does not route.
+	const governed = data?.message?.governed === true;
 
 	return (
 		<>
 			<PageHeading
 				title="Terms of Reference"
-				lead="Approved scope, resources, schedule and accountability, written before a deployment begins."
+				lead="Scope, resources, schedule and accountability, written before a deployment begins."
 				trail={[{ label: "Operations", to: "/admin/deployments" }, { label: "Terms of Reference" }]}
 				actions={
 					canCreate("terms") ? (
@@ -642,6 +680,7 @@ export function TermsList() {
 						/>
 					</div>
 
+					{governed && (
 					<label className="relative">
 						<span className="sr-only">Approval state</span>
 						<select
@@ -672,8 +711,7 @@ export function TermsList() {
 							<path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
 						</svg>
 					</label>
-
-					<MineToggle mine={mine} onChange={setMine} label="Only mine" />
+					)}
 				</div>
 			</Card>
 
@@ -725,8 +763,8 @@ function TermsPaper({ row, branding }: { row: TermsOfReference; branding: Brandi
   {row.project_name && <p className="tor-paper-project">{row.project_name}</p>}
   <dl className="tor-paper-body">
    {row.purpose && <div><dt>Purpose</dt><dd className="tor-paper-purpose">{row.purpose}</dd></div>}
-   <div><dt>Area</dt><dd>{row.geo_scope_path ? geoPath(row.geo_scope_path) : "All areas"}</dd></div>
-   <div><dt>Expected period</dt><dd>{row.expected_start_date ? `${formatDate(row.expected_start_date)}${row.expected_end_date ? ` – ${formatDate(row.expected_end_date)}` : ""}` : row.default_duration_days ? `${row.default_duration_days} ${row.default_duration_days===1 ? "day" : "days"}` : "Not scheduled"}</dd></div>
+   <div><dt>Location</dt><dd>{row.geo_scope_path ? geoPath(row.geo_scope_path) : "All areas"}</dd></div>
+   <div><dt>Period</dt><dd>{row.expected_start_date ? `${formatDate(row.expected_start_date)}${row.expected_end_date ? ` – ${formatDate(row.expected_end_date)}` : ""}` : row.default_duration_days ? `${row.default_duration_days} ${row.default_duration_days===1 ? "day" : "days"}` : "Not scheduled"}</dd></div>
   </dl>
   <footer className="tor-paper-footer"><span><Icon.file size={14}/>Terms of reference</span><strong>{stamp.action}<Icon.arrow size={14}/></strong></footer>
  </Link>;
@@ -786,12 +824,16 @@ function stampFor(row: TermsOfReference): { label: string; tone: string; action:
 		default:
 			// Frozen wording with no approval workflow governing it. Not "draft"
 			// and not "approved": nobody was asked, because this society did not
-			// ask for anybody to be.
-			return {
-				label: row.is_active ? "Submitted" : "Retired",
-				tone: "border-card-line bg-surface text-slate-strong",
-				action: "Open document",
-			};
+			// ask for anybody to be. Green all the same, because on such a society
+			// submitting is the final word and the document is ready to deploy
+			// under — the same thing Approved means where approval is asked for.
+			return row.is_active
+				? {
+						label: "Submitted",
+						tone: "border-success-line bg-success-soft text-success",
+						action: "Open document",
+					}
+				: { label: "Retired", tone: "border-card-line bg-surface text-slate-strong", action: "Open document" };
 	}
 }
 
@@ -862,18 +904,25 @@ export function TermsDetail() {
 						<div>
 							<div className="flex flex-wrap items-center gap-2">
 								<SectionTitle>Terms of reference</SectionTitle>
-								<StateBadge state={documentState} />
+								<StateBadge
+									state={documentState}
+									toneOf={documentState === "Submitted" ? "Approved" : undefined}
+								/>
 								{terms.is_submitted && !terms.is_active && <Pill tone="quiet">Retired</Pill>}
 							</div>
 							<p className="mt-1 max-w-2xl text-[12px] text-slate-faint">
-								{terms.is_draft
+								{terms.is_attachment
+									? "Written outside the system. The attached TOR is the wording volunteers read and agree to."
+									: terms.is_draft
 									? "Draft. Volunteers cannot be deployed under a draft. Submit it to use it."
 									: "The wording is fixed. Everyone assigned under these terms agreed to exactly this text, so a change is an amendment — a new document — rather than an edit."}
 							</p>
 						</div>
 
 						<div className="flex flex-wrap items-center gap-2">
-							<ButtonLink to={termsPdfUrl(name)}>Print as PDF</ButtonLink>
+							<ButtonLink to={termsPdfUrl(name)}>
+								{terms.is_attachment ? "Open the TOR attachment" : "Print as PDF"}
+							</ButtonLink>
 							{terms.is_draft && (
 								<Button disabled={busy} onClick={() => void submit()}>
 									{busy ? "Submitting…" : "Submit"}
@@ -888,7 +937,7 @@ export function TermsDetail() {
 							<dd className="font-semibold text-ink">{terms.tor_key}</dd>
 						</div>
 						<div>
-							<dt className="text-slate-faint">Expected period</dt>
+							<dt className="text-slate-faint">Period</dt>
 							<dd className="font-semibold text-ink">
 								{terms.expected_start_date ? formatDate(terms.expected_start_date) : "No start set"}
 								{terms.expected_end_date ? ` → ${formatDate(terms.expected_end_date)}` : ""}
@@ -900,12 +949,14 @@ export function TermsDetail() {
 								{terms.default_duration_days ? `${terms.default_duration_days} days` : "No usual length"}
 							</dd>
 						</div>
+						{terms.routes_requests && (
+							<div>
+								<dt className="text-slate-faint">Approval mode</dt>
+								<dd className="font-semibold capitalize text-ink">{terms.approval_mode || "direct"}</dd>
+							</div>
+						)}
 						<div>
-							<dt className="text-slate-faint">Approval mode</dt>
-							<dd className="font-semibold capitalize text-ink">{terms.approval_mode || "direct"}</dd>
-						</div>
-						<div>
-							<dt className="text-slate-faint">Applies within</dt>
+							<dt className="text-slate-faint">Location</dt>
 							<dd className="font-semibold text-ink">
 								{terms.geo_scope_path ? geoPath(terms.geo_scope_path) : "Anywhere"}
 							</dd>
@@ -925,7 +976,7 @@ export function TermsDetail() {
 					)}
 				</Card>
 
-				{terms.is_draft ? (
+				{terms.is_attachment || !document ? null : terms.is_draft ? (
 					<MissionEditor terms={terms} onSaved={() => void mutate()} />
 				) : (
 					<>
@@ -1010,7 +1061,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 	// a closed project here and refusing it on submit would be two answers.
 	const projects = useFrappeGetCall<{ message: { projects: ProjectSummary[] } }>(
 		API.branchProjects,
-		{ mine: 1 },
+		undefined,
 		"admin:projects:for-terms",
 	);
 	const vocabularies = useFrappeGetCall<{ message: TermsVocabularies }>(
@@ -1139,7 +1190,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				{activeStep === "overview" && (
 					<>
 						<div className="mt-4 grid gap-4 sm:grid-cols-2">
-							<Labelled label="Terms of reference" hint="What your society calls this piece of work.">
+							<Labelled label="Title of exercise" hint="What your society calls this piece of work.">
 								<input className={INPUT} value={torName} onChange={(e) => setTorName(e.target.value)} />
 							</Labelled>
 
@@ -1178,16 +1229,20 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 									Active for new work
 								</span>
 							</Labelled>
-							<Labelled label="Approval mode" hint="Direct fulfils locally; routed requires approval.">
-								<select
-									className={INPUT}
-									value={approvalMode}
-									onChange={(event) => setApprovalMode(event.target.value)}
-								>
-									<option value="direct">Direct</option>
-									<option value="routed">Routed</option>
-								</select>
-							</Labelled>
+							{/* Only where deployment requests are routed for approval: without a
+							    workflow, routed is handled as direct and the choice is not one. */}
+							{vocabularies.data?.message?.routes_requests && (
+								<Labelled label="Approval mode" hint="Direct fulfils locally; routed requires approval.">
+									<select
+										className={INPUT}
+										value={approvalMode}
+										onChange={(event) => setApprovalMode(event.target.value)}
+									>
+										<option value="direct">Direct</option>
+										<option value="routed">Routed</option>
+									</select>
+								</Labelled>
+							)}
 						</div>
 
 						<div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -1233,7 +1288,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				{activeStep === "overview" && (
 					<div className="mt-4">
 						<Labelled
-							label="Mission background"
+							label="Background"
 							hint="What happened, what is needed, and what has been done already."
 						>
 							<textarea
@@ -1302,7 +1357,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 
 					<div className={activeStep === "plan" ? "" : "hidden"}>
 						<RowEditor<TermsApproach>
-							title="Approach methodology"
+							title="Proposed methodology"
 							lead="Methodology for the work."
 							addLabel="Add a method"
 							empty="No approach described yet."
@@ -1426,7 +1481,7 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 				{activeStep === "overview" && (
 					<div className="mt-4">
 						<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-							Applicable areas
+							Location
 						</p>
 						<GeoSelects scoped chain={chain} onChain={setChain} idPrefix="terms" />
 						<p className="mt-2 text-[12px] text-slate-faint">
@@ -1468,47 +1523,30 @@ function TermsForm({ onCreated }: { onCreated: () => void }) {
 
 /* ------------------------------------------------------------------ shared */
 
-export function MineToggle({
-	mine,
-	onChange,
-	label,
-}: {
-	mine: boolean;
-	onChange: (value: boolean) => void;
-	label: string;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={() => onChange(!mine)}
-			className={cx(
-				"rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
-				mine
-					? "border-blue bg-rail text-white"
-					: "border-card-line bg-white text-muted hover:border-blue hover:text-ink",
-			)}
-		>
-			{label}
-		</button>
-	);
-}
-
 export const INPUT =
 	"w-full rounded-xl border border-card-line px-3 py-2.5 text-[13px] outline-none focus:border-blue";
 
 export function Labelled({
 	label,
 	hint,
+	required = false,
 	children,
 }: {
 	label: string;
 	hint?: ReactNode;
+	/** Marks the field with a red asterisk, as Desk does, instead of saying "Required." */
+	required?: boolean;
 	children: ReactNode;
 }) {
 	return (
 		<label className="block">
 			<span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-faint">
 				{label}
+				{required && (
+					<span className="ml-1 text-danger" aria-hidden="true">
+						*
+					</span>
+				)}
 			</span>
 			{children}
 			{hint && <span className="mt-1 block text-[11.5px] text-slate-faint">{hint}</span>}

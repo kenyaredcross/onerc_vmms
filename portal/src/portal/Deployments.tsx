@@ -603,7 +603,7 @@ export function DeploymentRequest() {
 									rel="noreferrer"
 									className="text-[12px] font-bold text-blue hover:text-blue-hover"
 								>
-									Download PDF ↗
+									{terms.is_attachment ? "Open the TOR ↗" : "Download PDF ↗"}
 								</a>
 							)}
 						</div>
@@ -1051,7 +1051,7 @@ export function DeploymentRecord() {
 										className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-blue-soft text-[9px] font-bold text-blue-press"
 										aria-hidden="true"
 									>
-										PDF
+										{terms.is_attachment ? "TOR" : "PDF"}
 									</span>
 									<span className="min-w-0 flex-1">
 										<strong className="block truncate text-[12.5px] font-semibold text-ink">
@@ -1168,6 +1168,19 @@ function Activity({
 function MissionTerms({ terms }: { terms: TermsMission }) {
 	return (
 		<div className="space-y-4">
+			{terms.is_attachment && (
+				<p className="text-[12.5px] leading-relaxed text-slate-body">
+					The terms of reference for this deployment are in a separate document.{" "}
+					<a
+						href={termsPdfUrl(terms.name)}
+						target="_blank"
+						rel="noreferrer"
+						className="font-bold text-blue hover:text-blue-hover"
+					>
+						Read the terms of reference ↗
+					</a>
+				</p>
+			)}
 			{terms.mission_background && (
 				<Part title="Background">
 					<div

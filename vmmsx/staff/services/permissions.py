@@ -42,6 +42,16 @@ society already sees should not be a permission error.
 may become, so whichever of the deployment or the deployment-request scope role
 a society has configured may maintain it; a society naming only one of the two
 still gets a usable Deployments workspace rather than one dead card in it.
+
+**And they may submit it.** A terms of reference is submittable, and a draft
+nobody can submit is a mission nobody can deploy against: without `submit` the
+coordinator who wrote it hit a permission error on Submit *and* on Send for
+approval (both check it, `deployment/services/terms.py`), so every draft waited
+on a System Manager. Separating the author from whoever declares the wording
+final is still available, and it is the approval workflow's job rather than a
+withheld right: on a society that routes terms of reference, `before_submit`
+refuses a submit that has not been approved, so this grant lets the coordinator
+send for approval and nothing further.
 """
 
 import frappe
@@ -51,6 +61,9 @@ from onerc_core.society.services import config
 from vmmsx.registration.services import society as self_service
 
 FULL = {"read": 1, "write": 1, "create": 1}
+# Terms of reference only: the one submittable doctype a scope role maintains.
+# See the module docstring on why submit is granted rather than withheld.
+TERMS = {**FULL, "submit": 1}
 READ_ONLY = {"read": 1}
 
 
@@ -117,11 +130,11 @@ def role_grants(resolve: bool = True) -> list[tuple[str | None, dict]]:
 			# scoping like every other row here — `hooks.py` registers `Project` on
 			# `vmms_geo_node` — so it widens who may open the programmes in their own
 			# branch and nothing beyond it.
-			{"Project": FULL, "VMMS Deployment": FULL, "VMMS Terms of Reference": FULL},
+			{"Project": FULL, "VMMS Deployment": FULL, "VMMS Terms of Reference": TERMS},
 		),
 		(
 			holder(deployment_society.REQUEST_SCOPE_ROLE_FIELD),
-			{"VMMS Deployment Request": FULL, "VMMS Terms of Reference": FULL},
+			{"VMMS Deployment Request": FULL, "VMMS Terms of Reference": TERMS},
 		),
 		(holder(deployment_society.TRANSFER_SCOPE_ROLE_FIELD), {"VMMS Branch Transfer": FULL}),
 		(holder(stipend_society.REPORT_SCOPE_ROLE_FIELD), {"VMMS Stipend Progress Report": FULL}),

@@ -193,6 +193,19 @@ class TestScopeIsNeverLeaked(MatchingTestCase):
 				"only_available",
 				"exclude_conflicts",
 				"max_workload",
+				# Narrowing again: the person's profession, the surge roster, and
+				# leaving out the people already on the deployment being topped up.
+				"professions",
+				"surge_only",
+				"exclude_deployment",
+				# The rest of the old Deployment Request Tool's quick filters:
+				# what the volunteer said about when they can serve, what they
+				# hold, and where their profile says they live.
+				"availability_slots",
+				"certification_types",
+				"residence_counties",
+				"residence_sub_counties",
+				"residence_wards",
 			},
 		)
 
@@ -492,3 +505,144 @@ def _code_only(source: str) -> str:
 			return node
 
 	return ast.unparse(StripDocstrings().visit(tree))
+
+
+class TestEveryFilterRunsBeforeThePage(MatchingTestCase):
+	"""The total is everybody who fits, and the page is a slice of it."""
+
+	def test_a_page_of_one_still_counts_everybody_who_fits(self):
+		terms = fixtures.make_terms_requiring(mandatory=(fixtures.CERT_SWIFT_WATER,))
+
+		for index in range(3):
+			self.volunteer_at(self.society_a["branch"], f"Fits{index}", (fixtures.CERT_SWIFT_WATER,))
+
+		for index in range(2):
+			self.volunteer_at(self.society_a["branch"], f"Lacks{index}")
+
+		result = self.search(self.national_user, terms.name, self.society_a["branch"], limit=1)
+
+		self.assertEqual(len(result["candidates"]), 1)
+		self.assertEqual(result["candidate_count"], 3)
+		self.assertEqual(result["considered"], 3)
+		self.assertTrue(result["truncated"])
+
+	def test_the_pages_together_are_the_whole_ranked_list(self):
+		terms = fixtures.make_terms_requiring()
+		made = {self.volunteer_at(self.society_a["branch"], f"Paged{index}").name for index in range(3)}
+
+		total = self.search(self.national_user, terms.name, self.society_a["branch"], limit=1)["candidate_count"]
+		seen = []
+
+		for offset in range(total):
+			page = self.search(self.national_user, terms.name, self.society_a["branch"], limit=1, offset=offset)
+			seen.extend(self.candidate_names(page))
+
+		self.assertEqual(len(seen), total)
+		self.assertEqual(len(seen), len(set(seen)))
+		self.assertTrue(made <= set(seen))
+
+	def test_a_profession_filter_reads_the_persons_profile(self):
+		terms = fixtures.make_terms_requiring()
+		nurse = self.volunteer_at(self.society_a["branch"], "Nurse")
+		driver = self.volunteer_at(self.society_a["branch"], "Driver")
+
+		for volunteer, profession in ((nurse, "MATCHTEST Nurse"), (driver, "MATCHTEST Driver")):
+			if not frappe.db.exists("Profession", profession):
+				frappe.get_doc({"doctype": "Profession", "__newname": profession}).insert(
+					ignore_permissions=True
+				)
+			frappe.db.set_value("Red Profile", volunteer.red_profile, "vmms_profession", profession)
+
+		result = self.search(
+			self.national_user, terms.name, self.society_a["branch"], professions=["MATCHTEST Nurse"]
+		)
+
+		self.assertIn(nurse.name, self.candidate_names(result))
+		self.assertNotIn(driver.name, self.candidate_names(result))
+
+	def test_select_all_is_the_same_answer_as_the_count(self):
+		terms = fixtures.make_terms_requiring()
+
+		for index in range(4):
+			self.volunteer_at(self.society_a["branch"], f"Everyone{index}")
+
+		with fixtures.acting_as(self.national_user):
+			everyone = matching.matching_names(terms.name, self.society_a["branch"])
+			counted = matching.candidates(terms.name, self.society_a["branch"], limit=1)
+
+		self.assertEqual(len(everyone), counted["candidate_count"])
+
+
+class TestTheOldToolsQuickFilters(MatchingTestCase):
+	"""Availability, certifications and residence narrow the whole county, like skills do."""
+
+	def names(self, **filters):
+		terms = fixtures.make_terms_requiring()
+		return self.candidate_names(self.search(self.national_user, terms.name, self.society_a["branch"], **filters))
+
+	def test_availability_given_at_registration(self):
+		slot = frappe.get_all("VMMS Availability Slot", pluck="name", limit=1)
+
+		if not slot:
+			self.skipTest("no availability slots on this site")
+
+		weekends = self.volunteer_at(self.society_a["branch"], "Weekends")
+		anytime = self.volunteer_at(self.society_a["branch"], "Anytime")
+		frappe.get_doc(
+			{
+				"doctype": "VMMS Availability Selector",
+				"parent": weekends.name,
+				"parenttype": "VMMS Volunteer",
+				"parentfield": "availability",
+				"availability_slot": slot[0],
+			}
+		).db_insert()
+
+		found = self.names(availability_slots=slot)
+
+		self.assertIn(weekends.name, found)
+		self.assertNotIn(anytime.name, found)
+
+	def test_a_certification_held_and_in_date(self):
+		certified = self.volunteer_at(self.society_a["branch"], "Certified", (fixtures.CERT_SWIFT_WATER,))
+		uncertified = self.volunteer_at(self.society_a["branch"], "Uncertified")
+
+		found = self.names(certification_types=[fixtures.CERT_SWIFT_WATER])
+
+		self.assertIn(certified.name, found)
+		self.assertNotIn(uncertified.name, found)
+
+	def test_where_their_profile_says_they_live(self):
+		parklands = self.volunteer_at(self.society_a["branch"], "Parklands")
+		kibra = self.volunteer_at(self.society_a["branch"], "Kibra")
+		frappe.db.set_value(
+			"Red Profile",
+			parklands.red_profile,
+			{"vmms_residence_sub_county": "MATCHTEST Westlands", "vmms_residence_ward": "MATCHTEST Parklands"},
+		)
+		frappe.db.set_value(
+			"Red Profile",
+			kibra.red_profile,
+			{"vmms_residence_sub_county": "MATCHTEST Kibra", "vmms_residence_ward": "MATCHTEST Laini Saba"},
+		)
+
+		by_sub_county = self.names(residence_sub_counties=["MATCHTEST Westlands"])
+		by_ward = self.names(residence_wards=["MATCHTEST Laini Saba"])
+
+		self.assertEqual(
+			(parklands.name in by_sub_county, kibra.name in by_sub_county), (True, False)
+		)
+		self.assertEqual((parklands.name in by_ward, kibra.name in by_ward), (False, True))
+
+	def test_the_choices_offered_are_where_the_countys_volunteers_live(self):
+		from vmmsx.api import deployment as api
+
+		volunteer = self.volunteer_at(self.society_a["branch"], "Chooser")
+		frappe.db.set_value(
+			"Red Profile", volunteer.red_profile, "vmms_residence_ward", "MATCHTEST Kilimani"
+		)
+
+		with fixtures.acting_as(self.national_user):
+			wards = {row.ward for row in api.volunteer_filters(self.society_a["branch"])["places"]}
+
+		self.assertIn("MATCHTEST Kilimani", wards)

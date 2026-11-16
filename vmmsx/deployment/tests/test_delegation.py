@@ -212,16 +212,17 @@ class TestTheScopeQuestionHasOneCaller(IntegrationTestCase):
 	def test_matching_still_reads_volunteers_through_a_scoped_channel(self):
 		"""The positive half: matching still asks, just not by resolving scope itself.
 
-		`capabilities.search()`/`capabilities.count()` stand on `frappe.get_list`,
-		which runs core's permission query condition — the identical mechanism
-		every other scoped listing in this app relies on. Without this, the test
-		above would also pass for a module that had quietly stopped reading
-		volunteers by scope at all.
+		The search is one SQL query over the whole county (Nov 2026), so it
+		cannot go through `frappe.get_list`; it puts core's permission query
+		condition into its own `where` with `get_match_cond` instead — the same
+		condition `get_list` would have added, read from the same hook. Without
+		this, the test above would also pass for a module that had quietly
+		stopped reading volunteers by scope at all.
 		"""
 		source = (Path(frappe.get_app_path("vmmsx")) / "deployment" / "services" / SCOPE_CALLER).read_text()
 		names = called_names(source)
 
-		self.assertIn("capabilities", names)
+		self.assertIn("get_match_cond", names)
 
 
 class TestThereIsNoShadowApproval(IntegrationTestCase):

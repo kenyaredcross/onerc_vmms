@@ -33,6 +33,7 @@ import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { BrandLockup } from "../ui/brand";
 import { Button, Card, Spinner, cx } from "../ui/primitives";
+import { geoPath } from "../lib/format";
 
 interface Verified {
 	found: boolean;
@@ -109,7 +110,7 @@ export default function Verify() {
 
 						<dl className="mt-4 space-y-2.5">
 							<Line label="Number" value={result.record_id} mono />
-							<Line label="Branch" value={result.geo_path} />
+							<Line label="Branch" value={geoPath(result.geo_path)} />
 							<Line label="Status" value={result.status} />
 							<Line label="Since" value={result.since} />
 							<Line label="Valid to" value={result.valid_to} />

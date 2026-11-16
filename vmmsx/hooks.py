@@ -600,7 +600,13 @@ scheduler_events = {
 		"*/15 * * * *": [
 			"vmmsx.notifications.services.whatsapp.release_scheduled",
 			"vmmsx.api.communication.release_scheduled",
-		]
+		],
+		# Deployment asks scheduled for a time ("Monday 08:00") go out within five
+		# minutes of it. Idempotent: a deployment's waiting rows are cleared in
+		# the same transaction as its asks are raised.
+		"*/5 * * * *": [
+			"vmmsx.deployment.services.sending.send_due",
+		],
 	},
 }
 

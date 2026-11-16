@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "deployment_section",
+  "title",
   "naming_series",
   "terms_of_reference",
   "column_break_deployment",
@@ -14,7 +15,20 @@
   "coordinator",
   "status",
   "volunteers_required",
+  "needs_section",
+  "skills_needed",
+  "professions_needed",
+  "column_break_needs",
+  "languages_needed",
+  "sending_section",
+  "notify_by_email",
+  "notify_by_sms",
+  "requires_contract",
   "email_template",
+  "column_break_sending",
+  "send_on",
+  "asks_sent_on",
+  "scheduled_asks",
   "period_section",
   "planned_start",
   "start_date",
@@ -215,24 +229,24 @@
   {
    "fieldname": "place_tab",
    "fieldtype": "Tab Break",
-   "label": "Place"
+   "label": "Location"
   },
   {
    "fieldname": "site_section",
    "fieldtype": "Section Break",
-   "label": "Deployment Point"
+   "label": "Location"
   },
   {
-   "description": "What the society calls the place the work happens.",
+   "description": "The site's name, as the society calls it.",
    "fieldname": "site_name",
    "fieldtype": "Data",
-   "label": "Deployment Point"
+   "label": "Site Name"
   },
   {
    "description": "Where it is, in words. What the geocoder is given when there are no coordinates.",
    "fieldname": "site_address",
    "fieldtype": "Small Text",
-   "label": "Address or Description"
+   "label": "Address"
   },
   {
    "fieldname": "column_break_site",
@@ -272,7 +286,7 @@
   {
    "fieldname": "meeting_address",
    "fieldtype": "Small Text",
-   "label": "Address or Description"
+   "label": "Address"
   },
   {
    "fieldname": "column_break_meeting",
@@ -405,12 +419,98 @@
    "fieldname": "mission_report",
    "fieldtype": "Attach",
    "label": "Mission Report"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "bold": 1,
+   "description": "What this deployment is called. No two open deployments share a title."
+  },
+  {
+   "fieldname": "needs_section",
+   "fieldtype": "Section Break",
+   "label": "Who Is Needed"
+  },
+  {
+   "fieldname": "skills_needed",
+   "fieldtype": "Table MultiSelect",
+   "label": "Skills",
+   "options": "VMMS Skill Selector"
+  },
+  {
+   "fieldname": "professions_needed",
+   "fieldtype": "Table MultiSelect",
+   "label": "Professions",
+   "options": "VMMS Profession Selector"
+  },
+  {
+   "fieldname": "column_break_needs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "languages_needed",
+   "fieldtype": "Table MultiSelect",
+   "label": "Languages",
+   "options": "VMMS Language Selector"
+  },
+  {
+   "fieldname": "sending_section",
+   "fieldtype": "Section Break",
+   "label": "Sending"
+  },
+  {
+   "fieldname": "notify_by_email",
+   "fieldtype": "Check",
+   "label": "Email",
+   "default": "1",
+   "description": "Send each ask by email as well as on the portal."
+  },
+  {
+   "fieldname": "notify_by_sms",
+   "fieldtype": "Check",
+   "label": "SMS",
+   "default": "1",
+   "description": "Send each ask by SMS as well as on the portal."
+  },
+  {
+   "fieldname": "requires_contract",
+   "fieldtype": "Check",
+   "label": "Require Contract Before Deployment"
+  },
+  {
+   "fieldname": "column_break_sending",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "send_on",
+   "fieldtype": "Datetime",
+   "label": "Send On",
+   "description": "When the scheduled asks go out. Empty sends them straight away."
+  },
+  {
+   "fieldname": "asks_sent_on",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Asks Sent On",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "scheduled_asks",
+   "fieldtype": "Table",
+   "label": "Scheduled Asks",
+   "options": "VMMS Scheduled Ask",
+   "no_copy": 1,
+   "description": "People to ask at the send time. They are told nothing until then."
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-06 09:00:00.000000",
+ "modified": "2026-11-14 19:17:47.492616",
  "modified_by": "Administrator",
  "module": "VMMS Deployment",
  "name": "VMMS Deployment",
@@ -434,6 +534,8 @@
  "sort_field": "start_date",
  "sort_order": "DESC",
  "states": [],
- "title_field": "terms_of_reference",
- "track_changes": 1
+ "title_field": "title",
+ "track_changes": 1,
+ "show_title_field_in_link": 1,
+ "search_fields": "title,terms_of_reference"
 }

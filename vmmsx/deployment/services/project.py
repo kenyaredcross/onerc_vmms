@@ -53,6 +53,8 @@ outside it is a typo, not a lifecycle — and one predicate, `is_open`, that say
 which of the four still takes new work.
 """
 
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import getdate
@@ -70,6 +72,14 @@ STATUS_COMPLETED = "Completed"
 STATUS_CANCELLED = "Cancelled"
 
 STATUSES = (STATUS_OPEN, STATUS_ON_HOLD, STATUS_COMPLETED, STATUS_CANCELLED)
+
+# ERPNext's own priorities, spelled here for the same reason as the statuses:
+# the create form offers exactly these and a value outside them is a typo.
+PRIORITY_LOW = "Low"
+PRIORITY_MEDIUM = "Medium"
+PRIORITY_HIGH = "High"
+
+PRIORITIES = (PRIORITY_LOW, PRIORITY_MEDIUM, PRIORITY_HIGH)
 
 # Which of the four still take new terms of reference. **On hold does not**, and
 # that is the deliberate reading: a society that has paused a programme has said
@@ -97,6 +107,37 @@ def assert_status(status: str | None) -> None:
 		),
 		frappe.ValidationError,
 		title=_("Unknown Project Status"),
+	)
+
+
+def assert_priority(priority: str | None) -> None:
+	"""Throw unless `priority` is one of ERPNext's three."""
+	if priority in PRIORITIES:
+		return
+
+	frappe.throw(
+		_("{0} is not a project priority. Expected one of: {1}.").format(
+			frappe.bold(priority), ", ".join(PRIORITIES)
+		),
+		frappe.ValidationError,
+		title=_("Unknown Project Priority"),
+	)
+
+
+def project_types() -> list[str]:
+	"""The society's Project Types, ERPNext's own list, alphabetically."""
+	return frappe.get_all("Project Type", pluck="name", order_by="name asc")
+
+
+def assert_project_type(project_type: str | None) -> None:
+	"""Throw unless `project_type` is one of the society's Project Types."""
+	if frappe.db.exists("Project Type", project_type):
+		return
+
+	frappe.throw(
+		_("{0} is not one of this society's project types.").format(frappe.bold(project_type)),
+		frappe.ValidationError,
+		title=_("Unknown Project Type"),
 	)
 
 
@@ -353,6 +394,8 @@ def create(
 	donor: str | None = None,
 	funding_reference: str | None = None,
 	funding_status: str | None = None,
+	priority: str | None = None,
+	project_type: str | None = None,
 ):
 	"""Insert a project. An ordinary insert, deliberately.
 
@@ -381,6 +424,12 @@ def create(
 	if status:
 		assert_status(status)
 
+	if priority:
+		assert_priority(priority)
+
+	if project_type:
+		assert_project_type(project_type)
+
 	doc = frappe.get_doc(
 		{
 			"doctype": PROJECT_DOCTYPE,
@@ -388,6 +437,8 @@ def create(
 			"company": company or default_company(),
 			GEO_NODE_FIELD: geo_node,
 			"status": status or STATUS_OPEN,
+			"priority": priority or None,
+			"project_type": project_type or None,
 			"expected_start_date": getdate(start_date) if start_date else None,
 			"expected_end_date": getdate(end_date) if end_date else None,
 			"notes": summary,
@@ -403,6 +454,24 @@ def create(
 
 
 # --- describing one --------------------------------------------------------
+
+
+# The end of a block, or a line break: where the editor's markup separated two
+# runs of text that stripping the tags would otherwise glue together.
+_BLOCK_BREAK = re.compile(r"</(?:p|div|h[1-6]|li|blockquote|pre|tr|td|th)\s*>|<br\s*/?>", re.IGNORECASE)
+
+
+def summary_text(html: str | None) -> str | None:
+	"""ERPNext's `notes` as one plain sentence-run, or None when it says nothing.
+
+	Not `strip_html` alone: a heading followed by a paragraph comes out of that
+	as "Listening before planningThe day began", because the only thing between
+	the two runs of text was the markup. A space goes where each block ended,
+	then whitespace is collapsed, so what a register shows reads as it was
+	written.
+	"""
+	text = frappe.utils.strip_html(_BLOCK_BREAK.sub(" ", html or ""))
+	return " ".join(text.split()) or None
 
 
 def dto(doc) -> dict:
@@ -435,7 +504,7 @@ def dto(doc) -> dict:
 		"geo_path": geo_path(doc.get(GEO_NODE_FIELD)),
 		"start_date": str(doc.expected_start_date) if doc.expected_start_date else None,
 		"end_date": str(doc.expected_end_date) if doc.expected_end_date else None,
-		"summary": frappe.utils.strip_html(doc.notes or "").strip() or None,
+		"summary": summary_text(doc.notes),
 		"notes": doc.vmms_planning_notes,
 		"priority": doc.priority,
 		"percent_complete": frappe.utils.flt(doc.percent_complete),

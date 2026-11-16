@@ -392,10 +392,22 @@ const STATE_TONES: Record<string, string> = {
 	Open: "bg-blue-soft text-blue-press",
 };
 
-export function StateBadge({ state }: { state?: string | null }) {
+export function StateBadge({
+	state,
+	toneOf,
+}: {
+	state?: string | null;
+	/**
+	 * Colour the badge as this other state while still saying `state`. For a
+	 * word that means different things in different places: a submitted
+	 * application is waiting (blue), a submitted terms of reference on a society
+	 * that does not route them is final (coloured as Approved).
+	 */
+	toneOf?: string;
+}) {
 	if (!state) return null;
 
-	const tone = STATE_TONES[state] ?? NEUTRAL;
+	const tone = STATE_TONES[toneOf ?? state] ?? NEUTRAL;
 
 	return (
 		<span

@@ -179,7 +179,7 @@ function tooltipFor(row: DeploymentSite): HTMLElement {
 	const holder = document.createElement("div");
 
 	const title = document.createElement("strong");
-	title.textContent = row.terms_of_reference || row.name;
+	title.textContent = row.title || row.terms_of_reference || row.name;
 	holder.appendChild(title);
 
 	const line = document.createElement("div");

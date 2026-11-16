@@ -323,6 +323,24 @@ button.overview-metric[aria-pressed="true"] .overview-metric-icon { background: 
 .site-folder-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid #E4E5E7; font-size: 11px; color: #525E6C; }
 .project-folder { padding: 18px; }
 
+/* A folder laid out as the file library lays out a file (.project-file-card):
+   grey panel with the folder in it, the facts underneath, every tile one shape. */
+.folder-preview-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; }
+@media (max-width: 1400px) { .folder-preview-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 1000px) { .folder-preview-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 600px) { .folder-preview-grid { grid-template-columns: minmax(0,1fr); } }
+.folder-preview-card { position: relative; display: flex; flex-direction: column; min-width: 0; height: 100%; border: 1px solid #C9D0D9; border-radius: 14px; padding: 12px; background: white; color: #102033; transition: border-color 150ms; }
+.folder-preview-card:hover { border-color: #45688D; }
+.folder-preview-card:focus-visible { outline: 2px solid #011E41; outline-offset: 3px; }
+.folder-preview { position: relative; display: flex; min-height: 160px; align-items: center; justify-content: center; border-radius: 8px; background: #F3F5F7; color: #011E41; }
+.folder-preview-kicker { position: absolute; left: 12px; bottom: 12px; max-width: calc(100% - 110px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: #525E6C; }
+.folder-preview-badge { position: absolute; right: 10px; bottom: 9px; }
+.folder-preview-information { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 12px 32px 0 0; }
+.folder-preview-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.folder-preview-meta { font-size: 11px; color: #525E6C; }
+.folder-preview-summary { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; font-size: 11px; line-height: 1.6; color: #525E6C; }
+.folder-preview-arrow { position: absolute; right: 12px; bottom: 18px; display: grid; place-items: center; width: 30px; height: 30px; color: #525E6C; }
+
 /* Red signals interactive text; supporting copy and status badges stay legible. */
 :where(.console-root, .portal-root, .movement-public) :is(a, button):not(:disabled):not([aria-disabled="true"]):not(.movement-primary):not(.bg-action):not(.bg-rail):not(.bg-blue):not([role="switch"]):not([role="checkbox"]):is(:hover, :focus-visible) {
  color: var(--interaction-red, var(--movement-red-hover));
@@ -330,7 +348,7 @@ button.overview-metric[aria-pressed="true"] .overview-metric-icon { background: 
 :where(.console-root, .portal-root, .movement-public) :is(a, button):not(:disabled):not([aria-disabled="true"]):not(.movement-primary):not(.bg-action):not(.bg-rail):not(.bg-blue):is(:hover, :focus-visible) :is(svg, .text-ink, .text-blue, .text-blue-press, .text-slate-strong) {
  color: inherit;
 }
-:is(.site-folder-card, .project-folder):is(:hover, :focus-visible) :is(.folder-icon, .site-folder-title, .site-folder-heading > svg) {
+:is(.site-folder-card, .project-folder, .folder-preview-card):is(:hover, :focus-visible) :is(.folder-icon, .site-folder-title, .site-folder-heading > svg, .folder-preview-title, .folder-preview > svg, .folder-preview-arrow) {
  color: var(--interaction-red, var(--movement-red-hover));
 }
 a.overview-metric:is(:hover, :focus-visible) :is(.overview-metric-label, .overview-metric-value > strong, .overview-metric-icon) {

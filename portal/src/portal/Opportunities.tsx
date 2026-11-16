@@ -5,7 +5,7 @@ import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
-import { formatDate } from "../lib/format";
+import { formatDate, geoPath } from "../lib/format";
 import { Icon } from "../ui/icons";
 import {
 	ButtonLink,
@@ -433,7 +433,7 @@ export function MyDeployments() {
 								{row.title || row.deployment_name || String(row.name ?? "")}
 							</div>
 							<div className="mt-0.5 text-[11.5px] text-muted">
-								{row.geo_path}
+								{geoPath(row.geo_path)}
 								{row.start_date && ` · from ${formatDate(row.start_date)}`}
 							</div>
 						</div>

@@ -102,15 +102,11 @@ export function RowEditor<Row extends object>({
 
 	return (
 		<div>
-			<div className="flex flex-wrap items-baseline justify-between gap-2">
+			<div className="flex flex-wrap items-center justify-between gap-2">
 				<p className="text-[12px] font-bold uppercase tracking-wider text-slate-faint">{title}</p>
-				<button
-					type="button"
-					onClick={() => onChange([...rows, blank()])}
-					className="text-[12px] font-semibold text-ink hover:underline"
-				>
-					+ {addLabel}
-				</button>
+				<Button variant="quiet" onClick={() => onChange([...rows, blank()])}>
+					{addLabel}
+				</Button>
 			</div>
 
 			{lead && <p className="mt-1 text-[11.5px] text-slate-faint">{lead}</p>}
@@ -531,7 +527,7 @@ export function MissionEditor({
 				{tab === "mission" && (
 					<div className="space-y-5">
 						<div className="grid gap-4 sm:grid-cols-2">
-							<Labelled label="Title of mission" hint="What your society calls this piece of work.">
+							<Labelled label="Title of exercise" hint="What your society calls this piece of work.">
 								<input
 									className={INPUT}
 									value={torName}
@@ -596,7 +592,7 @@ export function MissionEditor({
 
 						<div>
 							<p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-faint">
-								Applicable areas
+								Location
 							</p>
 							<GeoSelects scoped
 								chain={geoChain}
@@ -628,7 +624,7 @@ export function MissionEditor({
 						</Labelled>
 
 						<Labelled
-							label="Mission background"
+							label="Background"
 							hint="What happened, what is needed, and what has already been done."
 						>
 							<textarea
@@ -686,7 +682,7 @@ export function MissionEditor({
 						/>
 
 						<RowEditor<TermsApproach>
-							title="Approach"
+							title="Proposed methodology"
 							lead={
 								methodOptions.length > 0
 									? "Methodology for the work."
@@ -820,19 +816,23 @@ export function MissionEditor({
 						/>
 
 						<div className="grid gap-4 sm:grid-cols-2">
-							<Labelled
-								label="Approval mode"
-								hint="Direct fulfils locally; routed sends a deployment request through approval."
-							>
-								<select
-									className={INPUT}
-									value={approvalMode}
-									onChange={(event) => setApprovalMode(event.target.value)}
+							{/* Only where deployment requests are routed for approval: without a
+							    workflow, routed is handled as direct and the choice is not one. */}
+							{vocabulary?.routes_requests && (
+								<Labelled
+									label="Approval mode"
+									hint="Direct fulfils locally; routed sends a deployment request through approval."
 								>
-									<option value="direct">Direct</option>
-									<option value="routed">Routed</option>
-								</select>
-							</Labelled>
+									<select
+										className={INPUT}
+										value={approvalMode}
+										onChange={(event) => setApprovalMode(event.target.value)}
+									>
+										<option value="direct">Direct</option>
+										<option value="routed">Routed</option>
+									</select>
+								</Labelled>
+							)}
 
 							<Labelled label="Notes" hint="Anything about these terms that is not covered above.">
 								<textarea
@@ -885,7 +885,7 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 	const parts: Array<[string, ReactNode]> = [];
 
 	if (terms.mission_background) {
-		parts.push(["Mission background", <p className="whitespace-pre-line">{terms.mission_background}</p>]);
+		parts.push(["Background", <p className="whitespace-pre-line">{terms.mission_background}</p>]);
 	}
 
 	if (terms.objectives.length > 0) {
@@ -912,11 +912,11 @@ export function MissionView({ terms }: { terms: TermsMission }) {
 
 	if (terms.approach_methods.length > 0) {
 		parts.push([
-			"Approach",
+			"Proposed methodology",
 			<ul className="space-y-1.5">
 				{terms.approach_methods.map((row, index) => (
 					<li key={index}>
-						<span className="font-semibold text-ink">{row.methodology}</span>
+						<span className="font-semibold text-ink">{row.methodology_name ?? row.methodology}</span>
 						{row.notes ? ` — ${row.notes}` : ""}
 					</li>
 				))}

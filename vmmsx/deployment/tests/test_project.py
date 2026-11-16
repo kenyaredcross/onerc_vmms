@@ -265,6 +265,16 @@ class TestWhatACallerIsToldAboutOne(ProjectTestCase):
 
 		self.assertEqual(project_service.dto(project)["summary"], "Coastal flood response.")
 
+	def test_a_heading_does_not_run_into_the_paragraph_after_it(self):
+		project = self.open_project(
+			summary="<h2>Listening before planning</h2><p>The day began early.<br>Teams met.</p>"
+		)
+
+		self.assertEqual(
+			project_service.dto(project)["summary"],
+			"Listening before planning The day began early. Teams met.",
+		)
+
 	def test_the_planning_note_is_this_apps_own_field_and_not_erpnexts(self):
 		"""They swapped homes on migration, and the two mean different things."""
 		project = self.open_project(summary="The programme.", notes="Waiting on the budget.")
@@ -272,6 +282,38 @@ class TestWhatACallerIsToldAboutOne(ProjectTestCase):
 
 		self.assertEqual(answer["summary"], "The programme.")
 		self.assertEqual(answer["notes"], "Waiting on the budget.")
+
+	def test_the_priority_chosen_at_creation_comes_back(self):
+		project = self.open_project(priority=project_service.PRIORITY_HIGH)
+
+		self.assertEqual(project_service.dto(project)["priority"], "High")
+
+	def test_a_priority_outside_erpnexts_three_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			self.open_project(priority="Urgent")
+
+	def test_a_project_opened_without_a_priority_gets_erpnexts_own(self):
+		"""Nothing is invented here: Frappe fills an empty Select with its first option."""
+		self.assertIn(project_service.dto(self.open_project())["priority"], project_service.PRIORITIES)
+
+	def test_the_project_type_chosen_at_creation_comes_back(self):
+		"""Its own type, not the site's first: a site without the setup wizard has none."""
+		project_type = f"{fixtures.TEST_PREFIX} Relief"
+		if not frappe.db.exists("Project Type", project_type):
+			frappe.get_doc({"doctype": "Project Type", "project_type": project_type}).insert()
+		project = self.open_project(project_type=project_type)
+
+		self.assertEqual(project_service.dto(project)["project_type"], project_type)
+
+	def test_a_project_type_the_society_does_not_have_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			self.open_project(project_type=f"{fixtures.TEST_PREFIX} no such type")
+
+	def test_the_form_is_offered_the_societys_project_types(self):
+		self.assertEqual(
+			project_service.project_types(),
+			sorted(frappe.get_all("Project Type", pluck="name"), key=str.casefold),
+		)
 
 	def test_the_funding_block_comes_back(self):
 		project = self.open_project(

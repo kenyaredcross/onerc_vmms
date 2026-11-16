@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 
 import type { DeploymentArea } from "../portal/types";
 import { cx } from "../ui/primitives";
+import { geoPath } from "../lib/format";
 
 /**
  * Where this society's people are, drawn on a map.
@@ -133,7 +134,7 @@ function popupFor(area: DeploymentArea): HTMLElement {
 	const holder = document.createElement("div");
 
 	const where = document.createElement("strong");
-	where.textContent = area.geo_path ?? area.geo_node;
+	where.textContent = geoPath(area.geo_path) || area.geo_node;
 	holder.appendChild(where);
 
 	const count = document.createElement("div");

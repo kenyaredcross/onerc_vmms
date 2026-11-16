@@ -66,6 +66,7 @@ vi.mock("./OperationsMap", () => ({
 }));
 
 const {
+	DeploymentCreate,
 	DeploymentsHub,
 	DeploymentsOngoing,
 	OperationsDocuments,
@@ -861,6 +862,7 @@ describe("the terms of reference gallery", () => {
 				terms({ name: "T4", tor_name: "Rejected one", approval_state: "Rejected" }),
 			],
 			states: ["Draft", "Submitted", "In Review", "Approved", "Rejected", "Withdrawn", "Expired"],
+			governed: true,
 		});
 
 		show(<TermsList />, "/admin/deployments/terms");
@@ -877,7 +879,7 @@ describe("the terms of reference gallery", () => {
 
 	it("offers only the seven exact states as a filter, from the server's own list", async () => {
 		const states = ["Draft", "Submitted", "In Review", "Approved", "Rejected", "Withdrawn", "Expired"];
-		reads.set(API.branchTerms, { count: 0, terms: [], states });
+		reads.set(API.branchTerms, { count: 0, terms: [], states, governed: true });
 
 		show(<TermsList />, "/admin/deployments/terms");
 
@@ -902,10 +904,92 @@ describe("the terms of reference gallery", () => {
 			// Frozen wording, and no approval workflow governs terms here.
 			terms: [terms({ is_governed: false, approval_state: null })],
 			states: [],
+			governed: false,
 		});
 
 		show(<TermsList />, "/admin/deployments/terms");
 
-		expect(screen.getByText("Submitted")).toBeTruthy();
+		// Green: on a society that does not route terms, submitted is final.
+		expect(screen.getByText("Submitted").className).toContain("text-success");
+	});
+
+	it("offers no approval filter where terms are not routed for approval", () => {
+		reads.set(API.branchTerms, {
+			count: 1,
+			terms: [terms({ is_governed: false, approval_state: null })],
+			states: ["Draft", "Submitted", "In Review", "Approved", "Rejected", "Withdrawn", "Expired"],
+			governed: false,
+		});
+
+		show(<TermsList />, "/admin/deployments/terms");
+
+		expect(screen.queryByLabelText("Approval state")).toBeNull();
+		expect(screen.queryByText("Approved")).toBeNull();
+	});
+});
+
+/* ------------------------------------------------------- create deployment */
+
+describe("creating a deployment", () => {
+	const offered = (name: string, start: string | null, end: string | null) =>
+		({
+			name,
+			tor_name: name,
+			project_name: null,
+			is_offered: true,
+			expected_start_date: start,
+			expected_end_date: end,
+		}) as TermsOfReference;
+
+	beforeEach(() => {
+		reads.set(API.branchTerms, {
+			count: 3,
+			terms: [
+				offered("Floods", "2026-09-14", "2026-09-25"),
+				offered("Cholera", "2026-10-01", "2026-10-20"),
+				offered("Undated", null, null),
+			],
+			states: [],
+		});
+		reads.set(API.deploymentOptions, { email_templates: [] });
+		reads.set(API.deploymentSetup, {
+			level: "County",
+			counties: [{ name: "GEO-1", place_name: "Geita", point: null, branch_office: null }],
+			professions: [],
+		});
+	});
+
+	const pick = (container: HTMLElement, name: string) =>
+		fireEvent.change(container.querySelector("#new-deployment-terms")!, { target: { value: name } });
+	const dates = (container: HTMLElement) =>
+		Array.from(container.querySelectorAll<HTMLInputElement>('input[type="date"]')).map((input) => input.value);
+
+	it("moves the dates when a different terms of reference is chosen", () => {
+		const { container } = show(<DeploymentCreate />, "/admin/deployments/new");
+
+		pick(container, "Floods");
+		expect(dates(container)).toEqual(["2026-09-14", "2026-09-25"]);
+
+		pick(container, "Cholera");
+		expect(dates(container)).toEqual(["2026-10-01", "2026-10-20"]);
+	});
+
+	it("clears the old terms' dates when the new one sets none", () => {
+		const { container } = show(<DeploymentCreate />, "/admin/deployments/new");
+
+		pick(container, "Floods");
+		pick(container, "Undated");
+
+		expect(dates(container)).toEqual(["", ""]);
+	});
+
+	it("keeps a date the coordinator typed", () => {
+		const { container } = show(<DeploymentCreate />, "/admin/deployments/new");
+
+		pick(container, "Floods");
+		fireEvent.change(container.querySelectorAll('input[type="date"]')[0], { target: { value: "2026-09-16" } });
+		pick(container, "Cholera");
+
+		expect(dates(container)).toEqual(["2026-09-16", "2026-10-20"]);
 	});
 });

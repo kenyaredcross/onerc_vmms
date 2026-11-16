@@ -68,6 +68,9 @@ from vmmsx.deployment.services import approval
 from vmmsx.deployment.services import project as project_service
 
 TERMS_DOCTYPE = "VMMS Terms of Reference"
+# What `approval_mode` on these terms governs. Named here rather than imported
+# from `request.py`, which imports this module.
+REQUEST_DOCTYPE = "VMMS Deployment Request"
 
 # What must be on a terms of reference before its wording can be frozen, keyed
 # by fieldname, with the sentence a writer is shown when it is missing.
@@ -83,15 +86,20 @@ TERMS_DOCTYPE = "VMMS Terms of Reference"
 # `_assert_resources_answered` holds that pair.
 REQUIRED_AT_SUBMISSION: tuple[tuple[str, str], ...] = (
 	("project", "the programme of work these terms are written under"),
-	("expected_start_date", "when the mission is expected to begin"),
-	("expected_end_date", "when the mission is expected to end"),
-	("geo_scope", "where these terms apply"),
-	("mission_background", "the mission background"),
-	("objectives", "at least one specific objective"),
+	("expected_start_date", "when the period starts"),
+	("expected_end_date", "when the period ends"),
+	("geo_scope", "the location"),
+	("mission_background", "the background"),
+	("objectives", "at least one objective"),
 	("expected_outputs", "at least one expected output"),
 	("stakeholders", "at least one stakeholder"),
 	("itinerary", "at least one itinerary entry"),
 )
+
+
+# What a terms of reference attached as a document still has to say on the
+# record: the rest of the list is the document's own business.
+ATTACHED_NEEDS = ("project", "expected_start_date", "expected_end_date", "geo_scope")
 
 
 def read(terms_of_reference: str):
@@ -249,6 +257,14 @@ def missing_at_submission(terms) -> list[str]:
 	button and say why without provoking an error, and so `assert_complete` has
 	exactly one place the list is decided.
 	"""
+	if terms.get("tor_attachment"):
+		# **Terms written outside the system.** The attached document is the
+		# wording, so the written sections it would duplicate are not asked for —
+		# only what the system itself runs on: the programme, the period and the
+		# place. As the old Deployment Request Tool allowed, and as the migration
+		# already records the old tool's attached TORs.
+		return [label for field, label in REQUIRED_AT_SUBMISSION if field in ATTACHED_NEEDS and not terms.get(field)]
+
 	missing = [label for field, label in REQUIRED_AT_SUBMISSION if not terms.get(field)]
 
 	if not (terms.get("resources") or terms.get("has_no_resources")):
@@ -292,6 +308,11 @@ def is_governed() -> bool:
 	that configures a workflow this afternoon does not need a restart.
 	"""
 	return approval_config.is_approvable(TERMS_DOCTYPE)
+
+
+def routes_requests() -> bool:
+	"""Does this society route deployment requests for approval at all?"""
+	return approval.has_workflow(REQUEST_DOCTYPE)
 
 
 def is_approved(terms) -> bool:
@@ -511,6 +532,7 @@ def create(
 	itinerary: list | None = None,
 	resources: list | None = None,
 	notes: str | None = None,
+	tor_attachment: str | None = None,
 	submit: bool = False,
 ):
 	"""Write a terms of reference. An ordinary insert, like every other creation here.
@@ -557,6 +579,7 @@ def create(
 			"approval_mode": approval_mode or approval.MODE_DIRECT,
 			"has_no_resources": 1 if frappe.utils.cint(has_no_resources) else 0,
 			"notes": notes,
+			"tor_attachment": tor_attachment or None,
 			"required_certifications": [
 				{
 					"certification_type": row.get("certification_type"),
@@ -582,6 +605,74 @@ def create(
 		doc.submit()
 
 	return doc
+
+
+def from_attachment(
+	tor_name: str,
+	tor_attachment: str,
+	project: str | None,
+	geo_scope: str,
+	expected_start_date: str | None,
+	expected_end_date: str | None,
+):
+	"""Record terms of reference written outside the system, from the document itself.
+
+	The old Deployment Request Tool took either terms from the system or an
+	attached TOR. Here an attached TOR becomes a terms of reference of its own —
+	named, under its project, for its county and period, holding the file — so
+	a deployment still always has terms, its project is still its terms'
+	project, and the society keeps a record of every TOR it deployed under.
+	The migration records the old tool's attached TORs the same way.
+
+	It is submitted at once: the document is already final, which is why it
+	exists outside the system. **Not where the society approves its terms**: there
+	the wording has to go through the approvers, and an attachment would be a
+	way round them, so it is refused.
+
+	**Only a file the caller has just uploaded.** Frappe attaches whatever file
+	sits at an Attach field's address, copying it if it already belongs to
+	another record, so naming somebody else's private file here would hand it to
+	anybody who may read these terms. The file has to be this person's own, and
+	not yet attached to anything.
+	"""
+	if is_governed():
+		frappe.throw(
+			_(
+				"This society approves its terms of reference in the system, so an attached TOR"
+				" cannot be used. Write the terms of reference and send them for approval."
+			),
+			frappe.PermissionError,
+			title=_("Approval Required"),
+		)
+
+	if not project:
+		frappe.throw(_("Choose the project."), frappe.MandatoryError, title=_("Project Needed"))
+
+	uploaded = frappe.db.exists(
+		"File",
+		{
+			"file_url": tor_attachment,
+			"owner": frappe.session.user,
+			"attached_to_doctype": ("is", "not set"),
+		},
+	)
+
+	if not uploaded:
+		frappe.throw(
+			_("The TOR attachment could not be found. Attach the file again."),
+			frappe.ValidationError,
+			title=_("Attach the TOR Again"),
+		)
+
+	return create(
+		tor_name=tor_name,
+		project=project,
+		geo_scope=geo_scope,
+		expected_start_date=expected_start_date,
+		expected_end_date=expected_end_date,
+		tor_attachment=tor_attachment,
+		submit=True,
+	)
 
 
 # The six mission tables, each with the keys this app will copy off a caller's
@@ -707,6 +798,10 @@ def dto(terms_of_reference: str) -> dict:
 		"is_submitted": terms.docstatus == 1,
 		"is_cancelled": terms.docstatus == 2,
 		"is_offered": terms.docstatus == 1 and bool(terms.is_active),
+		# Written outside the system and attached as a document. Its file is
+		# private and reached through `download_terms`, never by its own URL, so
+		# only whether there is one is handed over.
+		"is_attachment": bool(terms.tor_attachment),
 		"amended_from": terms.amended_from,
 		# The thread back through a mission that had to be respecified while
 		# people were already in the field. `supersede` says why this is not an
@@ -723,6 +818,11 @@ def dto(terms_of_reference: str) -> dict:
 		# is a draft awaiting an approver" are different answers and only the first
 		# is true.
 		"is_governed": is_governed(),
+		# Whether deployment requests are routed for approval anywhere on this
+		# site. Without a workflow `approval_mode` changes nothing — routed is
+		# handled as direct (`approval.effective_mode`) — so screens and the
+		# printed document leave it out rather than offer a choice that is not one.
+		"routes_requests": routes_requests(),
 		"approval_state": terms.approval_state or None,
 		"expected_start_date": terms.expected_start_date,
 		"expected_end_date": terms.expected_end_date,
@@ -760,6 +860,20 @@ def mission_dto(terms_of_reference: str) -> dict:
 	silently become part of this app's API.
 	"""
 	terms = read(terms_of_reference)
+	tables = {
+		field: [{key: row.get(key) for key in columns} for row in (terms.get(field) or [])]
+		for field, columns in _MISSION_TABLES.items()
+	}
+
+	# A methodology is stored by its key; a reader wants the society's own name
+	# for it. Added for reading only — `mission_rows` copies back the stored
+	# columns and nothing else, so an editor returning this row cannot write it.
+	for row in tables["approach_methods"]:
+		row["methodology_name"] = (
+			frappe.db.get_value("VMMS TOR Methodology", row["methodology"], "methodology_name")
+			if row.get("methodology")
+			else None
+		) or row.get("methodology")
 
 	return {
 		**dto(terms_of_reference),
@@ -773,10 +887,7 @@ def mission_dto(terms_of_reference: str) -> dict:
 			}
 			for row in (terms.required_certifications or [])
 		],
-		**{
-			field: [{key: row.get(key) for key in columns} for row in (terms.get(field) or [])]
-			for field, columns in _MISSION_TABLES.items()
-		},
+		**tables,
 		# Written back with the rows rather than left for a reader to total, so
 		# the screen and the printed document cannot arrive at two figures. Still
 		# only the mission's own resource lines: nothing here reaches across a

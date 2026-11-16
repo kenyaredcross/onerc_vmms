@@ -1198,6 +1198,8 @@ export interface DeploymentSummary {
 	/** Both ends of the journey, from the deployment record. */
 	where?: DeploymentWhere | null;
 	name: string;
+	/** What the coordinator called it. Unique among open deployments; the docname on an older server. */
+	title?: string;
 	terms_of_reference: string | null;
 	geo_node: string | null;
 	geo_path: string | null;
@@ -1496,8 +1498,13 @@ export interface TermsOfReference {
 	is_cancelled: boolean;
 	/** Submitted *and* still active: the one predicate that means "takes new work". */
 	is_offered: boolean;
+	/** Written outside the system: the TOR is an attached document, opened through `termsPdfUrl`. */
+	is_attachment?: boolean;
 	/** Whether this society routes terms for approval at all. */
 	is_governed: boolean;
+	/** Whether deployment requests are routed for approval on this site. Without
+	 *  it `approval_mode` changes nothing, so screens leave it out. */
+	routes_requests?: boolean;
 	/**
 	 * One of the seven exact states in `approvals/states.py`, or `null` on a
 	 * site that routes nothing. Read straight off the field rather than through
@@ -1537,6 +1544,10 @@ export interface ProjectSummary {
 	/** Open, On hold, Completed or Cancelled — ERPNext's own four, not ours. */
 	status: string;
 	is_open: boolean;
+	/** Low, Medium or High — ERPNext's own. Null on a project nobody prioritised. */
+	priority: string | null;
+	/** One of the society's Project Types, or null. */
+	project_type: string | null;
 	geo_node: string | null;
 	geo_path: string | null;
 	start_date: string | null;
@@ -1566,6 +1577,8 @@ export interface TermsOutput {
 export interface TermsApproach {
 	/** A `VMMS TOR Methodology` docname — the society's own register of methods. */
 	methodology: string | null;
+	/** The society's own name for it. Read-only, from `terms.mission_dto`. */
+	methodology_name?: string | null;
 	notes: string | null;
 }
 
@@ -1645,6 +1658,8 @@ export interface TermsVocabularies {
 	units: string[];
 	currencies: string[];
 	funding_statuses: string[];
+	/** Whether the terms form should ask for an approval mode at all. */
+	routes_requests?: boolean;
 }
 
 /**
@@ -1655,7 +1670,8 @@ export interface TermsVocabularies {
  */
 export interface TermsDocument {
 	terms: TermsMission;
-	document: string;
+	/** Null for terms attached as a document: the attachment is the document. */
+	document: string | null;
 	deployments: DeploymentSummary[];
 }
 
@@ -1695,7 +1711,63 @@ export interface DeploymentDetail extends DeploymentSummary {
 	notes: string | null;
 	/** Whether this reader may change it, roster included. False for read-only roles. */
 	can_write?: boolean;
+	/** Who is needed — what Find volunteers starts from. `needs_dto`. */
+	needs?: DeploymentNeeds;
+	/** How asks go out, and who is waiting for the send time. `sending_dto`. */
+	sending?: DeploymentSending;
 }
+
+export interface DeploymentNeeds {
+	skills: string[];
+	professions: string[];
+	languages: string[];
+}
+
+export interface DeploymentSending {
+	notify_by_email: boolean;
+	notify_by_sms: boolean;
+	/** Recorded and shown. Nothing acts on it yet (Nov 2026). */
+	requires_contract: boolean;
+	email_template: string | null;
+	/** When scheduled asks go out; null sends them straight away. */
+	send_on: string | null;
+	asks_sent_on: string | null;
+	scheduled: Array<{ volunteer: string; full_name: string }>;
+}
+
+/** A county's branch office — the default meeting point. `VMMS Branch Location`. */
+export interface BranchOffice {
+	name: string;
+	location_name: string;
+	address: string | null;
+	latitude: number | null;
+	longitude: number | null;
+}
+
+/** `api/deployment.py::deployment_setup`. */
+export interface DeploymentSetup {
+	level: string | null;
+	/** Where this person may set a deployment up; null where the society set no deployment level. */
+	counties: Array<{
+		name: string;
+		place_name: string;
+		point: { latitude: number; longitude: number } | null;
+		branch_office: BranchOffice | null;
+	}> | null;
+	professions: string[];
+	/** The site's time zone — "Africa/Nairobi" — shown under the date fields. */
+	time_zone?: string;
+	/** Open projects this person can see, for the Project field. */
+	projects?: Array<{ name: string; project_name: string | null }>;
+	/** False where the society approves its terms in the system: no attached TOR there. */
+	can_attach_terms?: boolean;
+}
+
+/** `deployment/services/sending.py::send` — what asking or placing did. */
+export type SendingResult =
+	| ({ state: "sent" } & Partial<AssignmentOutcome>)
+	| { state: "scheduled"; count: number; send_on: string }
+	| { state: "queued"; count: number };
 
 /** `deployment/services/matching.py::_assess` — one volunteer against one need. */
 export interface Candidate {

@@ -22,22 +22,19 @@ true, and each is load-bearing:
    endpoint for reading anybody's register wearing a search-shaped name, and the
    check stopping that would be one more thing to get right. There is nothing to
    get right here.
-2. **The scope comes from core, through `capabilities.search()`/`count()`,
-   which is `frappe.get_list` under a queryable surface.** `frappe.get_list`
-   runs core's permission query condition for `VMMS Volunteer` on every call,
-   the identical mechanism the list view's own `WHERE ... IN` stands on, so a
-   volunteer this service returns is by construction a volunteer the searcher
-   could already open. A society that has not configured a scope role for the
+2. **The scope comes from core, through Frappe's own `get_match_cond` for
+   `VMMS Volunteer`** — core's permission query condition and any user
+   permissions, the identical text `frappe.get_list` and the list view's own
+   `WHERE ... IN` stand on, so a volunteer this service returns is by
+   construction a volunteer the searcher could already open. A society that has not configured a scope role for the
    volunteer register gets nothing back here for the same reason every other
    `frappe.get_list` screen in this app gets nothing: an unresolvable scope is
    `frappe.get_list`'s to fail closed on, not this module's to work around.
 
-The need's own subtree narrows it further, as `geo_node` passed to
-`capabilities.search()`. A searcher with national scope looking for volunteers
+The need's own subtree narrows it further, as `geo_node`. A searcher with national scope looking for volunteers
 for a branch's work gets that branch's volunteers, not the country's, because
 the answer is the *intersection* of what they may see with where the work is —
-computed once, by `capabilities._search_filters()`, rather than a second time
-here.
+computed in the one query `matching_names()` runs.
 
 What is matched, and what is not
 --------------------------------
@@ -52,27 +49,35 @@ Real, and enforced below:
   them. A lapse of any type the society marked as blocking excludes them even
   if these particular terms did not ask for it. Nothing reads a stored flag;
   there is no stored flag to read.
-* **skills and a name/docname search** — `skills` and `search` are passed
-  straight through to `capabilities.search()`, the same queryable surface the
-  volunteer Registry stands on, so "a first aider who also does logistics" is a
-  question this module can now actually ask instead of listing under
-  `PENDING_CRITERIA`.
+* **skills, professions, languages, the surge roster and a name search** —
+  each any-of within itself and all of them together, so "a nurse or a
+  clinical officer who speaks Somali" is one question.
 
 Not matched, and deliberately not faked — see `PENDING_CRITERIA`.
 
-Ranking is over the page fetched, not the whole scope
--------------------------------------------------------
+Every filter runs in one query, over the whole county
+---------------------------------------------------
+`matching_names()` asks the database one question per search: who in the
+need's subtree, inside the searcher's scope, is Active, holds every mandatory
+certification on the date asked about, has no blocking lapse, and fits the
+skills, professions, languages, surge roster and clash filters. All of it is a
+`WHERE` clause on `VMMS Volunteer`, driven by the indexed `home_geo_node`, with
+each per-person question an indexed lookup by `volunteer` or `parent`. Nothing
+is assessed in Python before it has passed every filter.
 
-`candidates()` no longer loads every volunteer in the searcher's area to rank
-them and slice off the top. It asks `capabilities.search()` for one bounded,
-already-scoped page of names — the same pagination the Registry screen uses —
-and only *that* page is assessed and ranked. At a few dozen volunteers in
-scope this is invisible; at the thousands a national society's register can
-hold, assessing everyone before ranking anyone was the actual cost of this
-search, not the certification lookups. `considered` in the response is the
-count `capabilities.count()` would page through, so a caller can tell "there
-are more than are shown" from `truncated` without this module pretending a
-page of fifty is a ranking of three thousand.
+That is what makes the total true. The page-of-fifty design this replaced
+filtered *after* paging, so "3 found" could mean 300 fit, and a coordinator
+picking from a county of thousands never saw the list they asked for. Now
+`considered` and `candidate_count` are the number of people who fit, the
+ranking is over all of them, and the page is a slice of that order. Only the
+page is then read in full (names, photographs, certifications, availability)
+by the bulk readers below.
+
+**The scope is the same one `frappe.get_list` applies**, read from Frappe's own
+`get_match_cond` for `VMMS Volunteer`: core's geo condition and any user
+permissions, verbatim, `AND`ed into the query. A caller with no read on the
+register gets `frappe.PermissionError` from it, which `candidates()` turns into
+`register_readable: false` as before.
 """
 
 import frappe
@@ -154,6 +159,14 @@ def candidates(
 	only_available: bool = False,
 	exclude_conflicts: bool = False,
 	max_workload: int | None = None,
+	professions: list | None = None,
+	surge_only: bool = False,
+	exclude_deployment: str | None = None,
+	availability_slots: list | None = None,
+	certification_types: list | None = None,
+	residence_counties: list | None = None,
+	residence_sub_counties: list | None = None,
+	residence_wards: list | None = None,
 ) -> dict:
 	"""Volunteers who fit this need, within the searcher's own area.
 
@@ -182,26 +195,25 @@ def candidates(
 	because how much is too much depends on the person, the week and the work,
 	and no number in this app knows any of those.
 
-	`search` (a name or a docname), `skills` (a list of `VMMS Skill` keys) and
-	`languages` narrow the page fetched *before* anything is assessed, through
-	`capabilities.search()` — the queryable surface the volunteer Registry
-	already stands on. `offset` pages through the same filtered, scoped result.
+	`search` (a name, email or docname), `skills` (`VMMS Skill` keys),
+	`languages`, `professions` (`Profession` names, read off the person's Red
+	Profile) and `surge_only` (an active, in-licence surge roster entry) are
+	filters in the same query as everything else — see `matching_names()`.
+	`exclude_deployment` leaves out the people already open on that deployment
+	and does not count it as their clash, for a coordinator topping one up.
+	`offset` pages through the ranked result.
 
 	**`terms_of_reference` may be `None`**, and then no certification question is
 	asked at all. A bulk task batch wants to know who is available in a branch
 	without naming a mission document, and inventing a requirement for it would be
 	this app deciding what work needs.
 
-	`limit` bounds the page fetched and defaults to `MATCH_PAGE`. It is not
-	merely a display truncation any more: it is how many volunteers this call
-	assesses at all, which is what keeps this cheap at society scale. Reported
-	back as `truncated` whenever the filtered scope holds more than this page,
-	because a page of fifty must never read as "these are all of them".
+	`limit` is the page size and defaults to `MATCH_PAGE`. Only the page is read
+	in full; `candidate_count` is everybody who fits, and `truncated` says when
+	that is more than the page.
 
 	Returns an explicit dict. Never a Document and never a raw query result.
 	"""
-	from vmmsx.volunteer.services import capabilities
-
 	as_of = getdate(as_of or today())
 	# **No terms of reference means no certification questions**, not an error.
 	# A bulk task batch asks who is available in a branch without naming a
@@ -219,43 +231,51 @@ def candidates(
 	register_readable = True
 
 	try:
-		names = capabilities.search(
-			geo_node=geo_node,
+		ranked = matching_names(
+			terms_of_reference,
+			geo_node,
+			as_of=as_of,
+			required=required,
+			search=search,
 			skills=skills,
 			languages=languages,
-			search=search,
-			limit=page_size,
-			offset=page_offset,
-		)
-		considered_total = capabilities.count(
-			geo_node=geo_node, skills=skills, languages=languages, search=search
+			professions=professions,
+			surge_only=surge_only,
+			start_date=start_date,
+			end_date=end_date,
+			only_available=only_available,
+			exclude_conflicts=exclude_conflicts,
+			max_workload=max_workload,
+			exclude_deployment=exclude_deployment,
+			availability_slots=availability_slots,
+			certification_types=certification_types,
+			residence_counties=residence_counties,
+			residence_sub_counties=residence_sub_counties,
+			residence_wards=residence_wards,
 		)
 	except frappe.PermissionError:
-		# `frappe.get_list`, unlike `frappe.get_all`, throws for a caller who
-		# holds no ordinary read permission on VMMS Volunteer at all — a role
-		# built with only a geo-scope assignment and no Role Permission grant.
-		# Failing closed here means empty rather than a raw permission error on
-		# a screen that asked an honest question, but empty *silently* is the
-		# wrong kind of honest: "nobody fits this work" and "you cannot read the
-		# volunteer register" are different facts, and a coordinator shown the
-		# first when the second is true will go looking for the fault in their
-		# terms of reference. `register_readable` is what lets the screen say
-		# which one it is.
+		# "Nobody fits this work" and "you cannot read the volunteer register"
+		# are different facts, and a coordinator shown the first when the second
+		# is true will go looking for the fault in their terms of reference.
+		# `register_readable` is what lets the screen say which one it is.
 		register_readable = False
-		names = []
-		considered_total = 0
+		ranked = []
+
+	names = ranked[page_offset : page_offset + page_size]
 
 	volunteers = _bulk_volunteers(names)
 	held_by_volunteer = _bulk_certifications(names)
 
-	# Both of these are bulk reads over the page, for the same reason the two
-	# above are: a query per volunteer is what made this screen slow the first
-	# time. They answer nothing at all when the caller gave no dates, which is
-	# why an old caller that never heard of them pays for neither.
+	# The page alone is read in full: names, photographs, certifications,
+	# availability, clashes. Every one a bulk read over the page, never a query
+	# per volunteer.
 	free = _bulk_availability(names, start_date, end_date)
-	clashes = _bulk_conflicts(names, start_date, end_date)
+	clashes = _bulk_conflicts(names, start_date, end_date, exclude_deployment)
 	workload = _bulk_workload(names)
 
+	# Already ranked by `matching_names`. The verdict is asked again per row as
+	# a safety net: a row the query let through that `_assess` refuses is
+	# dropped rather than offered.
 	matched = [
 		assessment
 		for assessment in (
@@ -272,16 +292,7 @@ def candidates(
 			if name in volunteers
 		)
 		if assessment["is_candidate"]
-		# The two advisory criteria, applied as filters only where the caller
-		# asked. `is_unavailable` and not `not is_available`: somebody whose
-		# schedule nobody has written is `unknown`, and dropping them would make a
-		# register that has not answered look like one with nobody free.
-		and not (only_available and assessment["availability"]["is_unavailable"])
-		and not (exclude_conflicts and assessment["clash"]["is_clashing"])
-		and not (max_workload is not None and assessment["workload"] > cint(max_workload))
 	]
-
-	matched.sort(key=_rank)
 
 	return {
 		"terms_of_reference": terms_of_reference,
@@ -294,19 +305,285 @@ def candidates(
 		"end_date": getdate(end_date) if end_date else None,
 		"required_certifications": required["mandatory"],
 		"desirable_certifications": required["desirable"],
-		# The total the filter would page through, not the size of the page
-		# assessed below — the two now differ on purpose. See the module
-		# docstring's "ranking is over the page fetched" note.
-		"considered": considered_total,
+		# Everybody who fits, across the whole county — not the page. The page is
+		# `candidates`, a slice of this many in rank order.
+		"considered": len(ranked),
 		# False when this caller cannot read the volunteer register at all. See
 		# the `except` above: it separates an empty answer from an inaccessible
 		# one, which no other field here can express.
 		"register_readable": register_readable,
-		"candidate_count": len(matched),
-		"truncated": considered_total > page_offset + len(names),
+		"candidate_count": len(ranked),
+		"truncated": len(ranked) > page_offset + len(names),
 		"candidates": matched,
 		"pending_criteria": [dict(row) for row in PENDING_CRITERIA],
 	}
+
+
+# The filters past the needs and the toggles, named once so the endpoint, the
+# "ask everyone matching" path and the search all take the same set.
+LIST_FILTERS = (
+	"availability_slots",
+	"certification_types",
+	"residence_counties",
+	"residence_sub_counties",
+	"residence_wards",
+)
+
+
+def matching_names(
+	terms_of_reference: str | None,
+	geo_node: str | None,
+	as_of=None,
+	required: dict | None = None,
+	search: str | None = None,
+	skills: list | None = None,
+	languages: list | None = None,
+	professions: list | None = None,
+	surge_only: bool = False,
+	start_date=None,
+	end_date=None,
+	only_available: bool = False,
+	exclude_conflicts: bool = False,
+	max_workload: int | None = None,
+	exclude_deployment: str | None = None,
+	availability_slots: list | None = None,
+	certification_types: list | None = None,
+	residence_counties: list | None = None,
+	residence_sub_counties: list | None = None,
+	residence_wards: list | None = None,
+) -> list[str]:
+	"""Everybody who fits, best first, as volunteer names. One query, then a sort.
+
+	The filters are the old Deployment Request Tool's quick filters, kept so a
+	coordinator who used it finds the same ones (Nov 2026): skills, professions
+	(its "designation"), certifications (its "courses"), languages, the
+	availability a volunteer gave at registration, and where they live — county,
+	sub-county and ward of residence, as written on their profile.
+
+	The page `candidates()` shows is a slice of this, and "ask everyone who
+	matches" is all of it — the same answer, so the number a coordinator was
+	shown is the number of people asked.
+
+	Raises `frappe.PermissionError` for a caller who cannot read the volunteer
+	register at all, as `frappe.get_list` would.
+
+	**Ranked in Python, over rows already filtered.** The query returns one short
+	row per person who fits — name, workload, clash, desirable certifications
+	held, whether they have written a schedule — so the ordering `_rank` defines
+	is applied to the whole set without a second definition of it in SQL.
+	Availability is the one key SQL cannot answer (it is a weekly pattern), and it
+	is asked only of the people who have a schedule at all, in two queries.
+	"""
+	from frappe.desk.reportview import get_match_cond
+
+	from vmmsx.deployment.services import assignment
+	from vmmsx.volunteer.services import availability
+	from vmmsx.volunteer.services.capabilities import SELECTORS
+	from vmmsx.volunteer.services.certification import CERTIFICATION_DOCTYPE, CERTIFICATION_TYPE_DOCTYPE
+	from vmmsx.volunteer.services.surge import ENTRY_DOCTYPE, STATUS_ACTIVE as SURGE_ACTIVE
+	from vmmsx.volunteer.services.volunteer import STATUS_ACTIVE
+
+	as_of = getdate(as_of or today())
+	required = required or (
+		terms_service.requirements(terms_of_reference)
+		if terms_of_reference
+		else {"mandatory": [], "desirable": []}
+	)
+	has_span = bool(start_date and end_date)
+
+	# Raises for a caller with no read on the register; `%` is already doubled.
+	scope = get_match_cond(VOLUNTEER_DOCTYPE)
+
+	volunteer = f"`tab{VOLUNTEER_DOCTYPE}`"
+	certifications = f"`tab{CERTIFICATION_DOCTYPE}`"
+	assignments = f"`tab{assignment.ASSIGNMENT_DOCTYPE}`"
+	values = {
+		"active": STATUS_ACTIVE,
+		"as_of": as_of,
+		"open": tuple(assignment.OPEN_STATUSES),
+		"on_deployment": tuple(assignment.ON_DEPLOYMENT),
+		"deployment": exclude_deployment or "",
+	}
+	where = [f"{volunteer}.status = %(active)s"]
+	joins = ""
+
+	if geo_node:
+		where.append(f"{volunteer}.home_geo_node in %(nodes)s")
+		values["nodes"] = (geo_node, *adapter.get_descendants(geo_node))
+
+	# Any of the chosen values within one list; every list together.
+	asked = {"skills": skills, "languages": languages, "availability": availability_slots}
+
+	for fieldname, link_field, _doctype, _label in SELECTORS:
+		wanted = tuple(value for value in (asked.get(fieldname) or []) if value)
+
+		if not wanted:
+			continue
+
+		child = frappe.get_meta(VOLUNTEER_DOCTYPE).get_field(fieldname).options
+		values[fieldname] = wanted
+		where.append(
+			f"""exists (select 1 from `tab{child}` chosen
+				where chosen.parent = {volunteer}.name
+				and chosen.parenttype = %(volunteer_doctype)s
+				and chosen.parentfield = '{fieldname}'
+				and chosen.`{link_field}` in %({fieldname})s)"""
+		)
+		values["volunteer_doctype"] = VOLUNTEER_DOCTYPE
+
+	wanted_professions = tuple(value for value in (professions or []) if value)
+	term = (search or "").strip()
+	# Where they live, as their profile says. Text the registration form wrote,
+	# matched exactly: the choices offered are read from the same column.
+	residence = {
+		field: wanted
+		for field, chosen in (
+			("vmms_residence_county", residence_counties),
+			("vmms_residence_sub_county", residence_sub_counties),
+			("vmms_residence_ward", residence_wards),
+		)
+		if (wanted := tuple(value for value in (chosen or []) if value))
+	}
+
+	if wanted_professions or term or residence:
+		joins = f"left join `tabRed Profile` person on person.name = {volunteer}.red_profile"
+
+	if wanted_professions:
+		values["professions"] = wanted_professions
+		where.append("person.vmms_profession in %(professions)s")
+
+	for field, wanted in residence.items():
+		values[field] = wanted
+		where.append(f"person.`{field}` in %({field})s")
+
+	if term:
+		values["like"] = f"%{term}%"
+		where.append(
+			f"({volunteer}.name like %(like)s or person.full_name like %(like)s or person.email like %(like)s)"
+		)
+
+	if surge_only:
+		values["surge_active"] = SURGE_ACTIVE
+		where.append(
+			f"""exists (select 1 from `tab{ENTRY_DOCTYPE}` entry
+				where entry.volunteer = {volunteer}.name
+				and entry.status = %(surge_active)s
+				and (entry.licence_expiry is null or entry.licence_expiry >= %(as_of)s))"""
+		)
+
+	# Holding every mandatory certification, in date on the day asked about —
+	# `certification.is_lapsed` is "expiry before as_of", so in date is the rest.
+	for index, key in enumerate(required["mandatory"]):
+		values[f"mandatory_{index}"] = key
+		where.append(
+			f"""exists (select 1 from {certifications} held
+				where held.volunteer = {volunteer}.name
+				and held.certification_type = %(mandatory_{index})s
+				and (held.expiry_date is null or held.expiry_date >= %(as_of)s))"""
+		)
+
+	# Holding any of the certifications the coordinator filtered by, in date.
+	wanted_certifications = tuple(value for value in (certification_types or []) if value)
+
+	if wanted_certifications:
+		values["certifications"] = wanted_certifications
+		where.append(
+			f"""exists (select 1 from {certifications} held
+				where held.volunteer = {volunteer}.name
+				and held.certification_type in %(certifications)s
+				and (held.expiry_date is null or held.expiry_date >= %(as_of)s))"""
+		)
+
+	# No lapse of a type the society marked as blocking, asked or not.
+	where.append(
+		f"""not exists (select 1 from {certifications} held
+			join `tab{CERTIFICATION_TYPE_DOCTYPE}` kind on kind.name = held.certification_type
+			where held.volunteer = {volunteer}.name
+			and held.expiry_date < %(as_of)s
+			and kind.blocks_deployment_when_lapsed = 1)"""
+	)
+
+	if exclude_deployment:
+		where.append(
+			f"""not exists (select 1 from {assignments} mine
+				where mine.volunteer = {volunteer}.name
+				and mine.deployment = %(deployment)s
+				and mine.status in %(open)s)"""
+		)
+		# Nor the people already waiting for its send time.
+		where.append(
+			f"""not exists (select 1 from `tabVMMS Scheduled Ask` waiting
+				where waiting.parent = %(deployment)s
+				and waiting.parenttype = 'VMMS Deployment'
+				and waiting.volunteer = {volunteer}.name)"""
+		)
+
+	if has_span:
+		values["start"] = getdate(start_date)
+		values["end"] = getdate(end_date)
+		clash = f"""exists (select 1 from {assignments} other
+			where other.volunteer = {volunteer}.name
+			and other.status in %(on_deployment)s
+			and other.start_date <= %(end)s
+			and other.end_date >= %(start)s
+			and other.deployment != %(deployment)s)"""
+	else:
+		clash = "0"
+
+	if exclude_conflicts and has_span:
+		where.append(f"not {clash}")
+
+	desirable = tuple(required["desirable"])
+	values["desirable"] = desirable or ("",)
+	having = ""
+
+	if max_workload is not None:
+		values["max_workload"] = cint(max_workload)
+		having = "having workload <= %(max_workload)s"
+
+	rows = frappe.db.sql(
+		f"""
+		select
+			{volunteer}.name as name,
+			(select count(*) from {assignments} carrying
+				where carrying.volunteer = {volunteer}.name
+				and carrying.status in %(open)s) as workload,
+			{clash} as clashing,
+			(select count(distinct held.certification_type) from {certifications} held
+				where held.volunteer = {volunteer}.name
+				and held.certification_type in %(desirable)s
+				and (held.expiry_date is null or held.expiry_date >= %(as_of)s)) as desirable_held,
+			exists (select 1 from `tab{availability.SCHEDULE_DOCTYPE}` written
+				where written.volunteer = {volunteer}.name) as has_schedule
+		from {volunteer}
+		{joins}
+		where {" and ".join(where)} {scope}
+		{having}
+		""",
+		values,
+		as_dict=True,
+	)
+
+	# Availability, for the people who have said anything about it at all.
+	scheduled = [row["name"] for row in rows if row["has_schedule"]] if has_span else []
+	answers = availability.assess_many(scheduled, start_date, end_date) if scheduled else {}
+
+	ranked = []
+
+	for row in rows:
+		free = answers.get(row["name"])
+		state = 1 if not free else 0 if free["is_available"] else 2 if free["is_unavailable"] else 1
+
+		if only_available and state == 2:
+			continue
+
+		ranked.append(
+			(state, 1 if row["clashing"] else 0, -cint(row["desirable_held"]), cint(row["workload"]), row["name"])
+		)
+
+	ranked.sort()
+
+	return [key[-1] for key in ranked]
 
 
 def candidates_for(doc, as_of=None, limit: int | None = None) -> dict:
@@ -373,10 +650,15 @@ def _bulk_volunteers(names: list[str]) -> dict:
 		)
 	}
 
+	# A page is nearly always one county, so its place is asked once, not once
+	# per row — the per-row path was half the cost of a search.
+	paths = {node: adapter.get_full_path(node) for node in {row["home_geo_node"] for row in rows} if node}
+
 	for row in rows:
 		person = profiles.get(row["red_profile"]) or {}
 		row["full_name"] = person.get("full_name")
 		row["profile_photo"] = person.get("profile_photo")
+		row["geo_path"] = paths.get(row["home_geo_node"])
 
 	return {row["name"]: row for row in rows}
 
@@ -430,7 +712,7 @@ def _bulk_availability(names: list[str], start_date, end_date) -> dict:
 	return availability.assess_many(names, start_date, end_date)
 
 
-def _bulk_conflicts(names: list[str], start_date, end_date) -> dict:
+def _bulk_conflicts(names: list[str], start_date, end_date, exclude_deployment: str | None = None) -> dict:
 	"""Which of these volunteers are already committed over the same days.
 
 	One query for the whole page. Overlap is the ordinary interval test — an
@@ -457,6 +739,8 @@ def _bulk_conflicts(names: list[str], start_date, end_date) -> dict:
 			"status": ("in", assignment.ON_DEPLOYMENT),
 			"start_date": ("<=", getdate(end_date)),
 			"end_date": (">=", getdate(start_date)),
+			# The deployment being topped up is not somebody's clash with itself.
+			"deployment": ("!=", exclude_deployment or ""),
 		},
 		fields=["volunteer", "deployment", "start_date", "end_date"],
 		ignore_permissions=True,
@@ -563,7 +847,9 @@ def _assess(
 		"photo": volunteer_row.get("profile_photo"),
 		"status": volunteer_row.get("status"),
 		"home_geo_node": home,
-		"geo_path": adapter.get_full_path(home) if home else None,
+		"geo_path": volunteer_row["geo_path"]
+		if "geo_path" in volunteer_row
+		else (adapter.get_full_path(home) if home else None),
 		"deployable": deployability["deployable"],
 		"blocking_reasons": deployability["reasons"],
 		"missing_certifications": missing,

@@ -50,6 +50,7 @@
   },
   {
    "fieldname": "volunteer",
+   "search_index": 1,
    "fieldtype": "Link",
    "label": "Volunteer",
    "options": "VMMS Volunteer",
@@ -195,7 +196,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-09 20:14:25.360225",
+ "modified": "2026-11-14 18:36:53.043346",
  "modified_by": "Administrator",
  "module": "VMMS Volunteer",
  "name": "VMMS Surge Roster Entry",

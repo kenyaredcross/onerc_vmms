@@ -518,3 +518,131 @@ class TestTheEditorsCallArrivesAsFrappeSendsIt(TermsTestCase):
 		)
 
 		self.assertEqual(written["section_counts"]["objectives"], 1)
+
+
+class TestThePrintedTermsNameThePlaceNotItsChain(TermsTestCase):
+	"""The reader of a printed mission document knows which society it belongs to:
+	"Nairobi", as on the cards and in the emails, not "Nairobi — Lower Eastern —
+	Kenya Red Cross Society"."""
+
+	def test_applies_within_is_the_places_own_name(self):
+		from onerc_core.geo.services import adapter
+
+		from vmmsx.deployment.services import tor_document
+
+		scope = self.society_a["branch"]
+		terms = self.bare_terms(geo_scope=scope)
+		context = tor_document.context_for(terms.name)
+
+		self.assertEqual(context["geo_scope_path"], frappe.db.get_value("Geo Node", scope, "geo_node_name"))
+		self.assertNotIn(adapter.PATH_SEPARATOR.strip(), context["geo_scope_path"])
+
+
+class TestThePrintedTermsSayNothingAboutAuthorisationWhereNothingIsRouted(TermsTestCase):
+	"""Without a deployment request workflow, `approval_mode` changes nothing —
+	routed is handled as direct — so the printed document leaves the row out."""
+
+	def test_the_label_is_empty_where_requests_are_not_routed(self):
+		from unittest.mock import patch
+
+		from vmmsx.deployment.services import tor_document
+
+		terms = self.bare_terms()
+
+		with patch("vmmsx.deployment.services.approval.has_workflow", return_value=False):
+			self.assertEqual(tor_document.context_for(terms.name)["approval_mode_label"], "")
+
+	def test_and_says_what_the_mode_means_where_they_are(self):
+		from unittest.mock import patch
+
+		from vmmsx.deployment.services import tor_document
+
+		terms = self.bare_terms()
+
+		with patch("vmmsx.deployment.services.approval.has_workflow", return_value=True):
+			self.assertTrue(tor_document.context_for(terms.name)["approval_mode_label"])
+
+	def test_the_row_is_left_out_of_the_page_where_requests_are_not_routed(self):
+		from unittest.mock import patch
+
+		from vmmsx.deployment.services import tor_document
+
+		terms = self.bare_terms()
+		_use_the_shipped_template()
+
+		with patch("vmmsx.deployment.services.approval.has_workflow", return_value=False):
+			self.assertNotIn("Authorisation", tor_document.render_document(terms.name)["body"])
+
+
+def _use_the_shipped_template() -> None:
+	"""Put the template in the repository on the site, as a fresh install would have it."""
+	from pathlib import Path
+
+	from vmmsx.deployment.services import templates, tor_document
+
+	frappe.db.set_value(
+		templates.TEMPLATE_DOCTYPE,
+		tor_document.TEMPLATE_KEY,
+		"body",
+		(Path(templates.SEED_DIR) / templates.SEED_FILE).read_text(),
+		update_modified=False,
+	)
+
+
+class TestThePrintedTermsReadLikeTheSocietysOwnPaper(TermsTestCase):
+	"""Title of Exercise, Location and Period, then numbered Background, Purpose,
+	Objectives and Proposed Methodology — the Kenya Red Cross terms of reference."""
+
+	def test_the_head_and_the_sections_use_the_societys_wording(self):
+		from vmmsx.deployment.services import tor_document
+
+		terms = self.bare_terms(
+			mission_background="<p>Floods displaced 300 households.</p>",
+			expected_start_date="2026-10-12 08:00:00",
+			expected_end_date="2026-10-30 17:00:00",
+			objectives=[{"objective": "Reach every displaced household."}],
+		)
+		_use_the_shipped_template()
+
+		body = tor_document.render_document(terms.name)["body"]
+
+		for words in ("Title of Exercise:", "Location:", "Period:", "1. Background", "2. Purpose", "3. Objectives"):
+			self.assertIn(words, body)
+		self.assertIn("Floods displaced 300 households.", body)
+		self.assertIn("Reach every displaced household.", body)
+		self.assertNotIn("Applies within", body)
+
+	def test_an_unedited_stored_template_is_replaced_by_the_patch(self):
+		from unittest.mock import patch
+
+		from vmmsx.deployment.services import templates, tor_document
+		from vmmsx.patches import refresh_tor_document_template as refresh
+
+		old = "<p>{{ tor_name }}</p>"
+		frappe.db.set_value(
+			templates.TEMPLATE_DOCTYPE, tor_document.TEMPLATE_KEY, "body", old, update_modified=False
+		)
+
+		with patch.object(refresh, "SHIPPED", {refresh.fingerprint(old)}):
+			refresh.execute()
+
+		self.assertIn(
+			"Title of Exercise",
+			frappe.db.get_value(templates.TEMPLATE_DOCTYPE, tor_document.TEMPLATE_KEY, "body"),
+		)
+
+	def test_an_edited_one_keeps_its_wording_and_only_loses_the_empty_row(self):
+		from vmmsx.deployment.services import templates, tor_document
+		from vmmsx.patches import refresh_tor_document_template as refresh
+
+		edited = f"<p>Our legal office's clause.</p><table>{refresh.OLD_LINE}</table>"
+		frappe.db.set_value(
+			templates.TEMPLATE_DOCTYPE, tor_document.TEMPLATE_KEY, "body", edited, update_modified=False
+		)
+
+		refresh.execute()
+		refresh.execute()  # and again, as a re-run migrate would
+
+		stored = frappe.db.get_value(templates.TEMPLATE_DOCTYPE, tor_document.TEMPLATE_KEY, "body")
+		self.assertIn("Our legal office's clause.", stored)
+		self.assertEqual(stored.count(refresh.GUARDED_LINE), 1)

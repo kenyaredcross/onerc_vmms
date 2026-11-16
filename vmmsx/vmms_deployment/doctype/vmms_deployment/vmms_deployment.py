@@ -53,7 +53,16 @@ GEO_NODE_FIELD = "geo_node"
 
 
 class VMMSDeployment(Document):
+	def before_validate(self):
+		# Only for a deployment no coordinator typed: one a routed request became,
+		# or a record written before titles existed. The screen and the API both
+		# require a title, so a person is never handed one they did not choose.
+		if not (self.title or "").strip():
+			self.title = deployment_service.default_title(self)
+
 	def validate(self):
+		self.title = " ".join((self.title or "").split())
+		deployment_service.assert_title_free(self)
 		self.validate_anchor()
 		self.validate_period()
 		self.validate_roster()

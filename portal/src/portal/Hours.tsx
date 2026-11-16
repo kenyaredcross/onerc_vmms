@@ -3,7 +3,7 @@ import { useFrappeGetCall } from "frappe-react-sdk";
 
 import { EditableText } from "../content/Editable";
 import { API, errorMessage } from "../lib/api";
-import { formatDate } from "../lib/format";
+import { formatDate, geoPath } from "../lib/format";
 import { Icon } from "../ui/icons";
 import {
 	Card,
@@ -269,7 +269,7 @@ function LogEntry({ row }: { row: TimeLogRow }) {
 							{row.category_label}
 						</span>
 					)}
-					{row.geo_path && <span>{row.geo_path}</span>}
+					{row.geo_path && <span>{geoPath(row.geo_path)}</span>}
 				</span>
 			}
 			trailing={
