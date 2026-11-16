@@ -23,6 +23,7 @@ import {
 	usePaged,
 } from "../ui/primitives";
 import { MonthGrid, markDays } from "../ui/MonthGrid";
+import { eventEnded } from "./eventDates";
 import { useAttendance } from "./attendance";
 import type { EventCard } from "./types";
 
@@ -1126,7 +1127,11 @@ export function Event() {
 						)}
 
 						<div className="mt-8">
-							{row.href ? (
+							{eventEnded(row) ? (
+								<p className="rounded-xl bg-surface px-4 py-3 text-[12.5px] italic text-slate-faint">
+									This event has ended.
+								</p>
+							) : row.href ? (
 								<>
 									<a href={row.href} className="movement-primary inline-flex items-center justify-center rounded-full bg-action px-6 py-3 text-[13.5px] font-bold text-white transition hover:bg-action-press">
 										Register for this event →

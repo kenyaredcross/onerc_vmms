@@ -274,10 +274,17 @@ def attend(event: str) -> dict:
 
 	The event is checked against the published listing before the answer is
 	kept, so a docname somebody guessed or an event that has been withdrawn
-	cannot leave a row pointing at nothing.
+	cannot leave a row pointing at nothing. An event that has already ended is
+	refused too: the calendar shows past events, the old site's among them, and
+	planning to attend one of those is not something a branch can use.
 	"""
-	if not seam.detail(event):
+	found = seam.detail(event)
+
+	if not found:
 		frappe.throw(frappe._("That event is not on."), frappe.DoesNotExistError)
+
+	if seam.has_ended(found):
+		frappe.throw(frappe._("That event has ended."))
 
 	return attendance.attend(event)
 

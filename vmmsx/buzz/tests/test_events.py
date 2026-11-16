@@ -506,6 +506,29 @@ class TestBuzzEventDetail(EventFixtures):
 		self.assertIsNone(events.detail("999999999"))
 		self.assertIsNone(events.detail("not-a-docname"))
 
+	def test_an_event_that_has_ended_cannot_be_attended(self):
+		"""The calendar opens past events — the old site's among them — and the
+		detail page they lead to must not take an intention to attend."""
+		name = self.make_event("Over", start_date=add_days(today(), -10), end_date=add_days(today(), -9))
+
+		self.assertTrue(events.has_ended(events.detail(name)))
+
+		with self.assertRaises(frappe.ValidationError):
+			events_api.attend(name)
+
+		self.assertFalse(
+			frappe.db.exists("VMMS Event Attendance", {"event": name}),
+			"a refused answer leaves no row behind",
+		)
+
+	def test_an_event_on_its_last_day_or_still_ahead_has_not_ended(self):
+		running = self.make_event("Running", start_date=add_days(today(), -1), end_date=today())
+		single = self.make_event("Single day", start_date=today())
+
+		self.assertFalse(events.has_ended(events.detail(running)))
+		self.assertFalse(events.has_ended(events.detail(single)))
+		self.assertFalse(events.has_ended({"start_date": "", "end_date": ""}))
+
 
 class TestBuzzAbsent(IntegrationTestCase):
 	"""A site without Buzz is ordinary, and every reader answers empty.

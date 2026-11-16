@@ -524,6 +524,16 @@ def _not_finished() -> list[list]:
 	]
 
 
+def has_ended(card: dict) -> bool:
+	"""The same rule as `_not_finished`, asked of one card: its last day is
+	behind us. `_as_card` already normalises `end_date` to the day the event
+	actually ends, so one comparison answers it. A card with no dates at all
+	has not ended — there is nothing to say it has."""
+	last = card.get("end_date") or card.get("start_date")
+
+	return bool(last) and getdate(last) < getdate(today())
+
+
 def _filters(
 	search: str | None,
 	category: str | None,
