@@ -105,7 +105,7 @@
 		<!-- Footer: autosave note (left), readiness summary (right) -->
 		<div class="mt-6 flex items-center justify-between gap-4 border-t pt-4">
 			<p class="text-xs text-gray-500">
-				{{ __("Files upload immediately. Your application is saved when you continue.") }}
+				{{ __("Each document is saved to your application as soon as it uploads.") }}
 			</p>
 			<span
 				v-if="requiredTypes.length"
@@ -146,7 +146,9 @@ const props = defineProps({
 	requiredTypes: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(["update:modelValue"]);
+// "documents-edited" fires only for the applicant's own changes (not when a draft or
+// profile is loaded), so the wizard can save them to the draft straight away.
+const emit = defineEmits(["update:modelValue", "documents-edited"]);
 
 const localModel = computed({
 	get: () => props.modelValue,
@@ -247,10 +249,12 @@ function syncModel() {
 
 function setAttachment(type, value) {
 	attachmentByType.value = { ...attachmentByType.value, [type]: value || null };
+	emit("documents-edited", "attachment");
 }
 
 function setDocName(type, value) {
 	docNameByType.value = { ...docNameByType.value, [type]: value || "" };
+	emit("documents-edited", "name");
 }
 
 // Document Name is mandatory_depends_on type == "Other" on the child doctype. Frappe only
