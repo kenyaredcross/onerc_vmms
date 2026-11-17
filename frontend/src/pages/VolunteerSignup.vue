@@ -104,6 +104,7 @@
 						:requiredTypes="requiredDocumentTypes.data || []"
 						@update:errors="handleErrorsUpdate"
 						@change="trackChanges"
+						@documents-edited="onDocumentsEdited"
 					/>
 				</section>
 				<section v-show="currentStep === 3">
@@ -623,6 +624,76 @@ const updateApplication = createResource({
 	},
 });
 
+// Save the Documents step to the draft as soon as a file is uploaded or removed, the way
+// Desk saves a form when an attachment is added. Save & Continue only saves once every
+// required document is attached, so without this anything uploaded before then was lost
+// when the applicant left. Only complete rows are sent (the server rejects an "Other"
+// document without a name), and current_step is not sent, so the step is not marked done.
+const DOCUMENT_NAME_SAVE_DELAY_MS = 1000;
+let documentsSaveTimer = null;
+let documentsSaveQueue = Promise.resolve();
+let lastSavedDocuments = null;
+let documentsSaveAttempted = false;
+
+const saveDocumentsResource = createResource({
+	url: "onerc_vmms.volunteer_and_member_management.api.application.update_job_application",
+	onError() {},
+});
+
+function completeDocumentRows() {
+	const rows = [];
+	for (const row of form.supporting_documents || []) {
+		const attachment =
+			typeof row?.attachment === "string" ? row.attachment : row?.attachment?.file_url;
+		if (!row?.type || !attachment) continue;
+
+		if (row.type === "Other") {
+			const documentName = String(row.document_name || "").trim();
+			if (!documentName) continue;
+			rows.push({ type: row.type, attachment, document_name: documentName });
+		} else {
+			rows.push({ type: row.type, attachment });
+		}
+	}
+	return rows;
+}
+
+async function saveDocumentsNow() {
+	if (!applicationId.value) return;
+
+	const rows = completeDocumentRows();
+	const key = JSON.stringify(rows);
+	if (key === lastSavedDocuments) return;
+
+	documentsSaveAttempted = true;
+	try {
+		const data = await saveDocumentsResource.submit({
+			id: applicationId.value,
+			supporting_documents: rows,
+		});
+		if (data?.success === false) throw new Error(data.error);
+		lastSavedDocuments = key;
+	} catch (error) {
+		console.error("Save documents error:", error);
+		toast.error(
+			__("Your documents couldn't be saved just now. Click Save & Continue to try again.")
+		);
+	}
+}
+
+// Saves run one at a time, so two uploads finishing together can't overlap on the same draft.
+function scheduleDocumentsSave(delay = 0) {
+	clearTimeout(documentsSaveTimer);
+	documentsSaveTimer = setTimeout(() => {
+		documentsSaveTimer = null;
+		documentsSaveQueue = documentsSaveQueue.then(saveDocumentsNow);
+	}, delay);
+}
+
+function onDocumentsEdited(kind) {
+	scheduleDocumentsSave(kind === "name" ? DOCUMENT_NAME_SAVE_DELAY_MS : 0);
+}
+
 function populateForm(data) {
 	Object.keys(form).forEach((key) => {
 		if (data[key] !== undefined && data[key] !== null) {
@@ -764,6 +835,20 @@ function validateStep(stepIndex) {
 }
 
 async function saveApplication() {
+	// Let a document save that's already running finish first, so two saves of the draft
+	// never overlap. A pending one is dropped: on the Documents step this save sends the
+	// documents itself, so the draft ends up exactly as shown even if an earlier document
+	// save failed or the documents were changed and then changed back.
+	clearTimeout(documentsSaveTimer);
+	documentsSaveTimer = null;
+	await documentsSaveQueue;
+
+	if (currentStep.value === DOCUMENTS_STEP && documentsSaveAttempted) {
+		changedFields.value.add("supporting_documents");
+		hasUnsavedChanges.value = true;
+		lastSavedDocuments = null;
+	}
+
 	if (!hasUnsavedChanges.value && applicationId.value) {
 		return true;
 	}
@@ -832,6 +917,8 @@ function goToStep(stepIndex) {
 
 async function nextStep() {
 	if (!validateStep(currentStep.value)) {
+		// Keep what has been uploaded so far, even though they can't continue yet.
+		if (currentStep.value === DOCUMENTS_STEP) scheduleDocumentsSave();
 		showErrorDialog.value = true;
 		return;
 	}
