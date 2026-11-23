@@ -7,6 +7,10 @@ from frappe.rate_limiter import rate_limit
 from ..services.user import create_vmms_user
 from ..utils.utils import set_field_value
 
+# Fields a user may change on their own profile through update_user_details. Anything
+# not listed is silently skipped, so every field the portal's profile tabs save
+# (frontend/src/components/Profile/*.vue) must be here, or it appears to save and is
+# gone on refresh. Do not add role, permission or login fields (e.g. `email`).
 SELF_EDITABLE_USER_FIELDS = frozenset(
 	{
 		"first_name",
@@ -28,12 +32,30 @@ SELF_EDITABLE_USER_FIELDS = frozenset(
 		"sub_county",
 		"county",
 		"ward",
+		"sub_location",
 		"access_to_internet",
+		"consent_to_use_of_bio_data",
 		"profession",
+		"linkedin",
+		"github",
 		"user_image",
+		"cover_image",
 		"location",
 		"language",
+		"languages",
 		"time_zone",
+		# Health & Disabilities tab
+		"allergies",
+		"disabilities",
+		# Qualifications & Skills tab
+		"education",
+		"work_experience",
+		"work_references",
+		"additional_skills",
+		"courses",
+		"licences",
+		"driving_licence",
+		# Documents tab
 		"supporting_documents",
 	}
 )
