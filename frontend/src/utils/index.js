@@ -388,7 +388,7 @@ export function getUserTimezone() {
 	}
 }
 
-export function getSidebarLinks(isVolunteer) {
+export function getSidebarLinks(isVolunteer, user) {
 	return [
 		{
 			label: "Profile",
@@ -425,6 +425,13 @@ export function getSidebarLinks(isVolunteer) {
 			icon: "Users",
 			to: "Membership",
 			activeFor: ["Membership"],
+		},
+		// Only Research Assistants can take the ICHA assessment (see api/icha_assessment.py).
+		user?.profession === "Research Assistant" && {
+			label: "ICHA Assessment",
+			icon: "ClipboardCheck",
+			to: "IchaAssessment",
+			activeFor: ["IchaAssessment"],
 		},
 	].filter(Boolean);
 }

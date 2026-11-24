@@ -34,7 +34,8 @@
 			>
 				<button
 					v-for="tab in sidebarLinks.filter(
-						(link) => !['Profile', 'Events'].includes(link.label)
+						(link) =>
+							!['Profile', 'Events', 'ICHA Assessment'].includes(link.label)
 					)"
 					:key="tab.label"
 					:class="isVisible(tab) ? 'block' : 'hidden'"
@@ -114,6 +115,15 @@ const addOtherLinks = () => {
 				to: "Events",
 			},
 		];
+
+		// Only Research Assistants can take the ICHA assessment.
+		if (userResource?.data?.profession === "Research Assistant") {
+			links.push({
+				name: "ICHA Assessment",
+				icon: "ClipboardCheck",
+				to: "IchaAssessment",
+			});
+		}
 
 		links.push(
 			{

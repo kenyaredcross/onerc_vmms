@@ -108,7 +108,9 @@ const userStore = usersStore();
 
 const { isLoggedIn } = sessionStore();
 
-const sidebarLinks = computed(() => getSidebarLinks(userStore.isVolunteer));
+const sidebarLinks = computed(() =>
+	getSidebarLinks(userStore.isVolunteer, userStore.userResource?.data)
+);
 
 let sidebarStore = useSidebar();
 const readOnlyMode = window.read_only_mode;
