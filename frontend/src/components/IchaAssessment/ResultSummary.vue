@@ -73,7 +73,7 @@
 			<span v-else>
 				{{
 					__(
-						"You scored {0}%. A minimum of 70% is required to pass. Your attempt has been recorded.",
+						"You scored {0}%. A minimum of 80% is required to pass. Your attempt has been recorded.",
 						[result.percentage.toFixed(1)]
 					)
 				}}

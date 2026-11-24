@@ -6,6 +6,9 @@ from frappe import _
 from frappe.rate_limiter import rate_limit
 from frappe.utils import now_datetime
 
+# Minimum percentage required to pass the ICHA assessment.
+PASS_PERCENTAGE = 80
+
 
 def _require_research_assistant():
 	"""
@@ -243,7 +246,7 @@ def get_assessment():
 		"already_attempted": False,
 		"questions": served,
 		"total": len(served),
-		"pass_percentage": 70,
+		"pass_percentage": PASS_PERCENTAGE,
 	}
 
 
@@ -342,7 +345,7 @@ def submit_assessment(answers):
 
 	total = len(answer_rows)
 	percentage = round((correct_count / total) * 100, 2) if total else 0.0
-	passed = percentage >= 70.0
+	passed = percentage >= PASS_PERCENTAGE
 
 	# Store question order + per-question shuffled options for review reconstruction
 	shuffled_order = list(answers.keys())
